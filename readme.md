@@ -17,6 +17,9 @@
 Allow customers to Customize their products with live preview. 
 Define each choice that the customer has, add a specific picture with transparent background for the concerned part.
 
+> ![Screenshot](https://raw.githubusercontent.com/marcusig/woocommerce-product-customizer/master/woocommerce-customizer-preview.png) 
+> *(Modal Design is Work in progress)*
+
 ## Coming Soon
 
 - Premium WooCommerce theme with integrated customizer design
