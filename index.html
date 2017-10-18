@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title></title>
+	<link rel="stylesheet" href="">
+	<style>
+		body {
+		  background: #efefef;  
+		}
+		.container {
+		  position: relative;
+		}
+
+		svg {
+		  border: 1px solid #000;
+		} 
+
+		#main_shape {
+		  box-shadow: 0 0 10px #000;  
+		}		
+	</style>
+</head>
+<body>
+
+<div class="container">
+  <svg id="the_svg" width="840" height="680" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+   <!-- Created with SVG-edit - http://svg-edit.googlecode.com/ -->
+    <defs>
+      <filter id="f3" x="0" y="0" width="200%" height="200%">
+        <feOffset result="offOut" in="SourceAlpha" dx="0" dy="20" />
+        <feGaussianBlur result="blurOut" in="offOut" stdDeviation="50" />
+        <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+      </filter>
+    </defs>
+    <g>
+    <title>Layer 1</title>
+	  <g id="svg_container">
+	   <path id="main_shape" d="m372.49996,351.37502c0,-2.48619,2.01381,-4.5,4.5,-4.5c2.48619,0,4.5,2.01381,4.5,4.5c0,2.48619,-2.01381,4.5,-4.5,4.5c-2.48619,0,-4.5,-2.01381,-4.5,-4.5z" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="0" stroke="#000000" fill="#d3d3d3"/>
+	   <path id="arrow" stroke="#000000" d="m403.96012,325.70314l-26.882,26.46013l-26.46013,-26.46013l53.34213,0.00001z" stroke-linecap="null" stroke-linejoin="null" stroke-dasharray="null" stroke-width="0" fill="#d3d3d3"/>
+	  </g>
+	 </g>
+  </svg>
+</div>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+<script type="text/javascript">
+	var main_shape = 'm147.57813,96.67188c0,-4.34703,3.65297,-8,8,-8l286,0c4.34703,0,8,3.65297,8,8l0,221c0,4.34703,-3.65297,8,-8,8l-286,0c-4.34703,0,-8,-3.65297,-8,-8l0,-221z';
+	var circle = 'm372.49996,351.37502c0,-2.48619,2.01381,-4.5,4.5,-4.5c2.48619,0,4.5,2.01381,4.5,4.5c0,2.48619,-2.01381,4.5,-4.5,4.5c-2.48619,0,-4.5,-2.01381,-4.5,-4.5z';
+	var an = anime({
+		targets: '#main_shape',
+		d: main_shape,
+		duration: 2000,
+		loop: true,
+		direction: 'alternate'
+	})
+</script>
+</body>
+</html>

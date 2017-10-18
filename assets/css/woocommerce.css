@@ -1,0 +1,12 @@
+.variation-Customization > div span.choice-thumb {
+/*	position: relative;
+	width: 20px;
+	height: 40px;
+	display: inline-block;
+*/}
+.choice-thumb img {
+	max-width: 20px;
+	max-height: 40px;
+	display: inline-block;
+	vertical-align: middle;
+}

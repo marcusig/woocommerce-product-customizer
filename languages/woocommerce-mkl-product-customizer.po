@@ -1,0 +1,320 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: woocommerce-mkl-product-customizer.1.0.0\n"
+"POT-Creation-Date: 2016-12-29 09:40+0200\n"
+"PO-Revision-Date: 2016-12-29 09:40+0200\n"
+"Last-Translator: \n"
+"Language-Team: Marc Lacroix\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.7\n"
+"X-Poedit-KeywordsList: __;_e;_x\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: ..\n"
+
+#: ../woocommerce-mkl-product-customizer.php:70
+msgid ""
+"Woocommerce has to be active for WooCommerce Product customizer to work."
+msgstr ""
+
+#: ../woocommerce-template.php:97
+msgid "View all categories"
+msgstr ""
+
+#: ../inc/_class-mkl-pc-product-type.php:52 ../inc/frontend/product.php:91
+msgid "Add to cart"
+msgstr ""
+
+#: ../inc/_class-mkl-pc-product-type.php:52
+msgid "Read More"
+msgstr ""
+
+#: ../inc/db.php:33
+msgid "Home"
+msgstr ""
+
+#: ../inc/db.php:34
+msgid "Welcome to the Product Customizer "
+msgstr ""
+
+#: ../inc/db.php:50 ../inc/db.php:72
+msgid "Define the layers the product is composed of. "
+msgstr ""
+
+#: ../inc/db.php:55
+msgid "Layers"
+msgstr ""
+
+#: ../inc/db.php:56
+msgid "Layers of the product "
+msgstr ""
+
+#: ../inc/db.php:60 ../inc/db.php:82 ../inc/db.php:104
+#: ../inc/admin/views/html-product-customizer-templates.php:56
+#: ../inc/admin/views/html-product-customizer-templates.php:114
+#: ../inc/admin/views/html-product-customizer-templates.php:153
+#: ../inc/admin/views/html-product-customizer-templates.php:244
+#: ../inc/frontend/views/parts/toolbar.php:3
+msgid "Cancel"
+msgstr ""
+
+#: ../inc/db.php:64 ../inc/db.php:86 ../inc/db.php:108
+#: ../inc/admin/views/html-product-customizer-templates.php:57
+msgid "Save all"
+msgstr ""
+
+#: ../inc/db.php:68
+msgid "Save layers"
+msgstr ""
+
+#: ../inc/db.php:77
+msgid "Views"
+msgstr ""
+
+#: ../inc/db.php:78
+msgid "Angles of the product "
+msgstr ""
+
+#: ../inc/db.php:90
+msgid "Save angles"
+msgstr ""
+
+#: ../inc/db.php:94
+msgid ""
+"Define the view angles, if you want the client to be able to switch between "
+"them. "
+msgstr ""
+
+#: ../inc/db.php:99
+msgid "Content"
+msgstr ""
+
+#: ../inc/db.php:100
+msgid "Contents "
+msgstr ""
+
+#: ../inc/db.php:112
+msgid "Save contents"
+msgstr ""
+
+#: ../inc/db.php:116
+msgid "Define choices for each layer and assign them pictures"
+msgstr ""
+
+#: ../inc/plugin.php:33
+msgid "No new class... Cheatin&#8217; huh?"
+msgstr ""
+
+#: ../inc/plugin.php:45
+msgid "No serializing... Cheatin&#8217; huh?"
+msgstr ""
+
+#: ../inc/admin/admin-woocommerce.php:67
+msgid "Choisir une image pour "
+msgstr ""
+
+#: ../inc/admin/admin-woocommerce.php:68
+msgid "Choisir une miniature"
+msgstr ""
+
+#: ../inc/admin/product.php:36
+msgid "Customizer options"
+msgstr ""
+
+#: ../inc/admin/product.php:67
+msgid "This product is customizable"
+msgstr ""
+
+#: ../inc/admin/product.php:68
+msgid "Select if you want this product to be customizable"
+msgstr ""
+
+#: ../inc/admin/product.php:96
+msgid "This variation is customizable"
+msgstr ""
+
+#: ../inc/admin/product.php:97
+msgid "Select if you want this v to be customizable"
+msgstr ""
+
+#: ../inc/admin/product.php:108
+msgid "You are configuring \""
+msgstr ""
+
+#: ../inc/admin/product.php:110
+msgid "To proceed, follow the instructions:"
+msgstr ""
+
+#: ../inc/admin/product.php:112
+msgid "define the structure of the product in <strong>Layers</strong>"
+msgstr ""
+
+#: ../inc/admin/product.php:113
+msgid ""
+"define the views / angles in which your product will be visible in  "
+"<strong>Views</strong>"
+msgstr ""
+
+#: ../inc/admin/product.php:114
+msgid "add the Images for each of your choices in  <strong>Content</strong>"
+msgstr ""
+
+#: ../inc/admin/product.php:184 ../inc/frontend/frontend-woocommerce.php:80
+msgid "Select a picture"
+msgstr ""
+
+#: ../inc/admin/product.php:185 ../inc/frontend/frontend-woocommerce.php:81
+msgid "Choose"
+msgstr ""
+
+#: ../inc/admin/product.php:186 ../inc/frontend/frontend-woocommerce.php:82
+msgid "New Layer Name"
+msgstr ""
+
+#: ../inc/admin/product.php:187 ../inc/frontend/frontend-woocommerce.php:83
+msgid "New Angle Name"
+msgstr ""
+
+#: ../inc/admin/product.php:188 ../inc/frontend/frontend-woocommerce.php:84
+msgid "New Choice Name"
+msgstr ""
+
+#: ../inc/admin/product.php:215
+msgid "Configure product's customizer"
+msgstr ""
+
+#: ../inc/admin/product.php:223
+msgid "Edit customizer layers"
+msgstr ""
+
+#: ../inc/admin/views/html-order-item.php:2
+msgid "Customizer Data:"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:17
+msgid "Close media panel"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:49
+msgid "Saved"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:74
+#: ../inc/admin/views/html-product-customizer-templates.php:221
+msgid "Add"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:104
+#: ../inc/admin/views/html-product-customizer-templates.php:143
+msgid "Details"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:109
+#: ../inc/admin/views/html-product-customizer-templates.php:113
+#: ../inc/admin/views/html-product-customizer-templates.php:148
+#: ../inc/admin/views/html-product-customizer-templates.php:152
+#: ../inc/admin/views/html-product-customizer-templates.php:239
+#: ../inc/admin/views/html-product-customizer-templates.php:243
+msgid "Delete"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:111
+msgid "Do you realy want to delete this angle?"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:120
+msgid "Angle Name"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:124
+#: ../inc/admin/views/html-product-customizer-templates.php:163
+#: ../inc/admin/views/html-product-customizer-templates.php:257
+msgid "Description"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:130
+msgid "Angles's picture"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:136
+#: ../inc/admin/views/html-product-customizer-templates.php:180
+msgid "Add / Change picture"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:150
+msgid "Do you realy want to delete this layer?"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:159
+msgid "Layer Name"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:167
+msgid "This layer does not have choices"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:169
+msgid "For exemple if the layer is a shadow or a static element"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:174
+msgid "Layer's icon"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:236
+msgid "Choice informations"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:241
+msgid "Do you realy want to delete this choice?"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:253
+msgid "Choice label"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:266
+msgid "Pictures"
+msgstr ""
+
+#: ../inc/admin/views/html-product-customizer-templates.php:303
+msgid "You need to have Layers and Angles set before entering any content."
+msgstr ""
+
+#: ../inc/base/configuration.php:110
+msgid "You have already saved this configuration!"
+msgstr ""
+
+#: ../inc/base/configuration.php:145
+msgid "Invalid configuration_id ID"
+msgstr ""
+
+#: ../inc/frontend/cart.php:74
+msgid "Customization"
+msgstr ""
+
+#: ../inc/frontend/product.php:39
+msgid "Select options"
+msgstr ""
+
+#: ../inc/frontend/product.php:68
+msgid "Customize"
+msgstr ""
+
+#: ../inc/frontend/product.php:105
+msgid "Please select a variation to customize"
+msgstr ""
+
+#: ../inc/frontend/views/parts/choices.php:2
+msgid "Close"
+msgstr ""
+
+#: ../inc/frontend/views/parts/main-view.php:7
+msgid "Loading Data"
+msgstr ""
+
+#: ../inc/frontend/views/parts/product-viewer.php:6
+msgid "Change angle"
+msgstr ""
