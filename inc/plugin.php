@@ -55,6 +55,7 @@ class Plugin {
 		include( MKL_PC_INCLUDE_PATH . 'utils.php' );
 		include( MKL_PC_INCLUDE_PATH . 'images.php' );
 		include( MKL_PC_INCLUDE_PATH . 'functions.php' );
+		
 		include( MKL_PC_INCLUDE_PATH . 'base/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'base/layer.php' );
 		include( MKL_PC_INCLUDE_PATH . 'base/angle.php' );
@@ -86,14 +87,13 @@ class Plugin {
 
 	protected function __construct() {
 		add_action('plugins_loaded', array( $this, 'init'), 10 );
-		// add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_update' ) );
-		// var_dump( get_site_transient( 'update_plugins' ) );
-		// die();
-		
-		// $this->init();
 	}
 
 	public function init() {
+		if ( ! version_compare( WC()->version, '3.0', '>=' ) ) {
+			add_action( 'admin_notices', 'mkl_pc_fail_woocommerce_version' );
+			return;
+		}		
 		// var_dump( 'self::instance()', self::instance() );
 		$this->_includes();
 		// $this->_hooks();
@@ -106,13 +106,6 @@ class Plugin {
 		
 		$this->db = new DB();
 		$this->ajax = new Ajax();
-
-
-	}
-	public function check_update( $v ){
-		// var_dump($v);
-		// die();
-		return $v;
 	}
 }
 

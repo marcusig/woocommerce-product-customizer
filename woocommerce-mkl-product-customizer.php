@@ -1,8 +1,9 @@
 <?php
+
 /**
 * Plugin Name: WooCommerce Product customizer
 * Plugin URI: http://mklacroix.com
-* Description: WooCommerce Product customizer - Allow cutstomers to Customize their products, with 
+* Description: WooCommerce Product customizer - Allow customers to Customize their products, with live preview
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
 * Version: 1.0.0
@@ -21,22 +22,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MKL_PC_PREFIX', '_mkl_pc_' ); 
 define( 'MKL_PC_DOMAIN', 'woocommerce-mkl-product-customizer' ); 
-/**
- * Check if WooCommerce is active
- */
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MKL_PC_INCLUDE_PATH', plugin_dir_path( __FILE__ ) . 'inc/' );
 define( 'MKL_PC_ASSETS_PATH', plugin_dir_path( __FILE__ ) . 'assets/' );
 define( 'MKL_PC_ASSETS_URL', plugin_dir_url( __FILE__ ) . 'assets/' );
 
+add_action( 'plugins_loaded', 'mkl_pc_load_plugin_textdomain' ); 
+/**
+ * Check Plugin requirements (Woocommerce, Woocommerce >= 3 , PHP >= 5.4)
+ */
 if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 	
-	
-	add_action( 'plugins_loaded', 'mkl_pc_load_plugin_textdomain' ); 
-
-
-	// We're using Namespace, so check if php version is correct
 	if ( ! version_compare( PHP_VERSION, '5.4', '>=' ) ) {
 		add_action( 'admin_notices', 'mkl_pc_fail_php_version' );
 		add_action( 'admin_init', 'mkl_pc_deactivate_plugin' );
@@ -62,11 +59,18 @@ function mkl_pc_fail_php_version() {
 function mkl_pc_fail_loading_woocommerce() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'Woocommerce has to be active for WooCommerce Product customizer to work.', MKL_PC_DOMAIN ) ?> </p>
+		<p><?php _e( 'WooCommerce has to be active for WooCommerce Product customizer to work.', MKL_PC_DOMAIN ) ?> </p>
 	</div>
 	<?php
 }
 
+function mkl_pc_fail_woocommerce_version() {
+	?>
+	<div class="notice notice-warning is-dismissible">
+		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product customizer to work. <br>WooCommerce Version 3+ required.', MKL_PC_DOMAIN ) ?> </p>
+	</div>
+	<?php
+}
 function mkl_pc_load_plugin_textdomain() {
 	load_textdomain( MKL_PC_DOMAIN, WP_LANG_DIR . '/wc_mkl_pc/wc_mkl_pc' . '-' . get_locale() . '.mo' ); 
 	load_plugin_textdomain( MKL_PC_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' ); 	

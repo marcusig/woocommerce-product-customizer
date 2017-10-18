@@ -24,17 +24,18 @@ class Admin_Woocommerce {
 		$this->_includes();
 		$this->order = new Admin_Order();
 		$this->product = new Admin_Product();
-		$this->settings = new Admin_Settings();
+		// $this->settings = new Admin_Settings();
 
 	}
 	private function _includes() {
-		if( !class_exists('MKL_EDD_SL_Plugin_Updater') ){
-			require_once( MKL_PC_INCLUDE_PATH . 'update/EDD_SL_Plugin_Updater.php');
-		}
-		include( MKL_PC_INCLUDE_PATH . 'update/extension-license.php');
+		// Includes for Addons management
+		// if( !class_exists('MKL_EDD_SL_Plugin_Updater') ){
+		// 	require_once( MKL_PC_INCLUDE_PATH . 'update/EDD_SL_Plugin_Updater.php');
+		// }
+		// include( MKL_PC_INCLUDE_PATH . 'update/extension-license.php');
+		// include( MKL_PC_INCLUDE_PATH . 'admin/settings.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
-		include( MKL_PC_INCLUDE_PATH . 'admin/settings.php' );
 	}
 	private function _hooks() {
 		// add_action( 'admin_init', array( &$this, 'woocommerce_loaded' ) ); 
