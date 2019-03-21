@@ -1,0 +1,113 @@
+.mkl-pc-addons {
+	display: flex;
+	flex-wrap: wrap;
+}
+.mkl-pc-addon {
+	
+	padding: 1em;
+	margin: 0 1.9em 2em 0;
+	width: calc(33% - 1em);
+	position: relative; 
+	border: 1px solid #ddd;
+	/* flex-wrap: wrap; */
+	background: #fff;
+	-webkit-box-shadow: 0 1px 1px -1px rgba(0,0,0,0.1);
+	box-shadow: 0 1px 1px -1px rgba(0,0,0,0.1);
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+.mkl-pc-addon:nth-child(n+3) {
+	margin-right: 0;
+}
+
+.mkl-pc-addon .desc {
+	margin-bottom: 2em;
+}
+.mkl-pc-addon h4 {
+	font-size: 1.4em;
+}
+.mkl-pc-addon figure {
+	background: #1d1d1b;
+	margin: -1em -1em 1em -1em;
+	padding: 2em 1em;
+	text-align: center;
+	height: 80px;
+}
+
+.mkl-pc-addon:not(.installed):not(.mkl-pc-theme) {
+	background: #f5f5f5;
+}
+
+.mkl-pc-addon.mkl-pc-theme {
+	width: 100%;
+	display: flex; 
+	align-items: center;
+}
+.mkl-pc-addon.mkl-pc-theme figure {
+	background: transparent;
+	width: 240px;
+	height: auto;
+	padding: 0;
+	/* padding-top: 4em; */
+	text-align: left;
+	margin: 3em 0em 1em -1em;
+}
+
+/* LICENSE */
+.mkl-pc-addon .license {
+	border-top: 1px solid #dedede;
+}
+.mkl-pc-addon .license p {
+	margin: 0;
+	float: left;
+}
+.mkl-pc-addon .license a.mkl-edit-license {
+	float: right;
+	margin-top: 9px;
+	clear: right;
+}
+.license a.mkl-edit-license::after {
+	font-family: 'dashicons';
+	content: '\f140';
+	display: inline-block;
+	font-size:1.4em;
+	vertical-align: middle;
+}
+.license a.mkl-edit-license.open::after {
+	content: '\f143';
+}
+
+.mkl-pc-addon .license a.mkl-edit-license + form {
+	clear: both;
+}
+
+.mkl-pc-addon .license form input[type=text] {
+	padding: 4px 7px;
+}
+.mkl-pc-addon .installed p:before {
+	color: #79ba49;
+	content: '\f147';
+	font-family: 'dashicons';
+	font-size: 2em;
+	vertical-align: middle;
+}
+
+.mkl-pc-addon .mkl-edit-license + form {
+	display: none;
+}
+.mkl-pc-addon .mkl-edit-license.open + form {
+	display: block;
+}
+
+@media only screen and (max-width: 600px) {
+	.mkl-pc-addons {
+		flex-direction: column;
+	}
+	.mkl-pc-addon {
+		width: 100%;
+		margin-right: 0;
+	}
+
+}

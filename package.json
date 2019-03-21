@@ -1,0 +1,20 @@
+{
+  "name": "woocommerce-mkl-pc-extra-price",
+  "version": "1.0.0",
+  "description": "Product Customizer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "gulp": "^4.0.0",
+    "gulp-clean": "^0.4.0",
+    "gulp-plumber": "^1.2.1",
+    "gulp-sass": "^4.0.2",
+    "gulp-zip": "^4.2.0",
+    "run-sequence": "^2.2.1"
+  }
+}
