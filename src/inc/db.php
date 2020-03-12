@@ -306,7 +306,7 @@ class DB {
 				// get the products 'title' attribute
 				$init_data['product_info'] = array(
 					'title' => apply_filters( 'the_title', $product->get_title(), $id ),
-					'bg_image' => 'http://unoiseaudepapier.loc/wp-content/uploads/2017/12/bg-2.jpg',
+					'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 					'product_type' => $product->get_type(),
 				); 
 

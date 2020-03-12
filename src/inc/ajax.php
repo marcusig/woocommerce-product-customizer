@@ -66,7 +66,10 @@ class Ajax {
 				$data = $this->db->get( sanitize_key( $_REQUEST['data'] ), $id );
 				break;
 		}
-		if( isset($_REQUEST['view']) && $_REQUEST['view'] =='dump' && defined('WP_DEBUG') && WP_DEBUG == true ){
+
+		$data = apply_filters('mkl_pc_get_customizer_data', $data, $id);
+
+		if ( isset($_REQUEST['view']) && $_REQUEST['view'] =='dump' && defined('WP_DEBUG') && WP_DEBUG == true ) {
 			echo 'get_customizer_data was executed in ' . (microtime(true) - $start) *1000 . 'ms and we are about to dump';
 			echo '<pre>';
 			var_dump($data);
@@ -75,7 +78,7 @@ class Ajax {
 
 			wp_die();
 
-		} elseif( isset($_REQUEST['view']) && $_REQUEST['view'] =='js' ) {
+		} elseif ( isset($_REQUEST['view']) && $_REQUEST['view'] =='js' ) {
 
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
 			echo 'var PC = PC || {};';

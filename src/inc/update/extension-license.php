@@ -45,7 +45,6 @@ class Extension_License
 		$this->file = $file;
 		$this->author = $author;
 
-		$this->auto_update();
 		add_filter( 'mkl_pc_settings_licenses_addons', array( $this, 'register' ) );
 	}
 
@@ -143,25 +142,6 @@ class Extension_License
 		}
 	}
 
-	/**
-	 * Function that runs all of our auto-update functionality
-	 *
-	 * @since 2.2.47
-	 * @updates 3.0
-	 * @return void
-	 */
-	function auto_update() {
-		if( !$this->is_valid() ) return;
-		$edd_updater = new EDD_SL_Plugin_Updater( $this->store_url, $this->file, array(
-				'author'    => $this->author,  // author of this plugin
-				'version'   => $this->version, // current version number
-				'item_name' => $this->product_nice_name,  // name of this plugin
-				'item_id'   => $this->product_name, // Product sku
-				'license'   => $this->get_setting('license'),  // license key
-				// GET LICENSE KEY: get_option( $this->product_name . '_license_key' )
-			)
-		);
-	} // function auto_update
 
 	/**
 	 * Return whether or not this license is valid.

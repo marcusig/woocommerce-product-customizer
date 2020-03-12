@@ -80,3 +80,4 @@ function mkl_pc_load_plugin_textdomain() {
 function mkl_pc_deactivate_plugin() {
 	deactivate_plugins( plugin_basename( __FILE__ ) );	
 }
+

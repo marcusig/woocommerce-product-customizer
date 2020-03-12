@@ -93,7 +93,7 @@ PC.views.state = Backbone.View.extend({
 		'click .pc-main-save': 'save_state', 
 		'click .pc-main-save-all': 'save_all', 
 		'click .pc-main-cancel': 'cancel', 
-		'click .media-frame-title': 'show_mobile_menu',
+		'click .media-frame-menu-toggle': 'show_mobile_menu',
 	},
 	initialize: function( args ){
 
@@ -195,6 +195,7 @@ PC.views.state = Backbone.View.extend({
 		PC.app.get_admin().close();
 	},
 	show_mobile_menu: function( e ) {
+		console.log(this, this.options);
 		this.options.main_view.$menu.toggleClass('visible');
 	}
 	// save_state: function() {

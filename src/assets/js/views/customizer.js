@@ -150,7 +150,7 @@ PC.options = PC.options || {};
 		},
 
 		render: function() {
-			this.$el.append( this.template() ); 
+			this.$el.append( this.template({name:this.parent.options.title}) );
 			return this.$el; 
 		},
 

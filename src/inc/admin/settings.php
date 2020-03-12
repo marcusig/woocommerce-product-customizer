@@ -14,11 +14,54 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Admin_Settings {
 
 	public $licenses;
+	private $settings_id = 'mkl-pc-customizer';
 
 	function __construct() {
 		add_action( 'admin_menu', array( $this, 'register' ) );
 		add_action( 'admin_init', array( $this, 'init' ), 20 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'scripts') );
+		add_filter( 'woocommerce_get_sections_products', array( $this, 'add_wc_settings_section' ));
+		add_filter( 'woocommerce_get_settings_products', array( $this, 'add_wc_settings_to_section' ), 20, 2);
+		
+		add_action( 'woocommerce_settings_' . sanitize_title( $this->settings_id ) . '_after', array( $this, 'wc_settings_after' ), 20 );
+	}
+
+	public function add_wc_settings_section( $sections ) {
+		$sections[$this->settings_id] = __( 'Product Customizer', MKL_PC_DOMAIN );
+		return $sections;
+	}
+
+	public function add_wc_settings_to_section( $settings, $current_section ) {
+		if ( $this->settings_id == $current_section ) {
+			$pc_settings = array();
+
+			$pc_settings[] = array(
+				'name' => __( 'Product Customizer settings', MKL_PC_DOMAIN ),
+				'type' => 'title',
+				'id' => $this->settings_id,
+			);
+
+			$pc_settings[] = array(
+				'name' => __( 'The first setting', MKL_PC_DOMAIN ),
+				'desc_tip' => __( 'This will add a title to your slider', 'text-domain' ),
+				'type' => 'text',
+				'id' => $this->settings_id . '_something',
+				'desc'     => __( 'Any title you want can be added to your slider with this option!', 'text-domain' ),
+			);
+
+			// Allow adding other settings
+			$pc_settings = apply_filters( 'mklpc_settings', $pc_settings, $this->settings_id, $current_section );
+
+			$pc_settings['sectionend'] = array( 'type' => 'sectionend', 'id' => $this->settings_id );
+
+			return $pc_settings;
+
+		}
+		return $settings;
+	}
+
+	public function wc_settings_after() {
+		// $this->display();
 	}
 
 	public function register() {
@@ -38,23 +81,31 @@ class Admin_Settings {
 	}
 
 	public function display(){
-		global $wp_meta_boxes; 
+		global $wp_meta_boxes;
 		?>
 		<div class="wrap">
-			<h1>Product Customizer for WooCommerce by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></h1>
-			<h2>Settings</h2>
-			<p>These are the basic settings for the plugin. There aren't many, not even sure I need any.</p>
-			<h2>Addons</h2>
-			<p>This is the list of installed and available extensions, they as well as the place to add activate/deactivate the licenses. </p>
-			<h4>Custumizer Style</h4>
-			<label>Include styles</label> 
-			<select>
-				<option>None</option>
-				<option>Core elements</option>
-				<option>Core elements + Simple styling</option>
-			</select>
-			<label>Buttons class</label>
-			<input type="text" name="btns" placeholder="eg: btn btn-primary">
+			<h1><img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-customizer-for-woocommerce.png" alt="Product Customizer for WooCommerce"/><br>by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></h1>
+			<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
+				<a href="#" class="nav-tab nav-tab-active" data-content="settings"><?php _e( 'Settings', MKL_PC_DOMAIN ); ?></a>
+				<a href="#" class="nav-tab" data-content="addons"><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></a>
+			</nav>
+			<div class="mkl-settings-content" data-content="settings">
+				<form>
+					<h4>Custumizer Style</h4>
+					<label>Include styles</label> 
+					<select>
+						<option>None</option>
+						<option>Core elements</option>
+						<option>Core elements + Simple styling</option>
+					</select>
+					<label>Buttons class</label>
+					<input type="text" name="btns" placeholder="eg: btn btn-primary">
+				</form>
+			</div>
+			<div class="mkl-settings-content" data-content="addons">
+				<h2><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></h2>
+			</div>
+
 			<pre>
 				<?php 
 				// var_dump($wp_meta_boxes);
@@ -62,14 +113,15 @@ class Admin_Settings {
 			</pre>
 			<div id="poststuff">
 				<?php 
-				$this->display_addons();
-				//do_meta_boxes( 'mkl_pc_settings', 'advanced', NULL ); 
+				// $this->display_addons();
+				// do_meta_boxes( 'mkl_pc_settings', 'advanced', NULL ); 
 				?>
 			</div>
 		</div>
 		<?php 
 	} 
-    public function setup_licenses() {
+
+	public function setup_licenses() {
         if ( ! class_exists( 'MKL\PC\Extension_License' ) ) return;
 
         $installed_addons = Plugin::instance()->extentions;
@@ -82,8 +134,6 @@ class Admin_Settings {
 
 	public function init() {
 		if( ! current_user_can(  'manage_options' ) ) return; 
-		$this->setup_licenses(); 
-		$this->licenses = apply_filters( 'mkl_pc_settings_licenses_addons', array() );
 		$this->submit_listener(); 
 
         // add_meta_box(

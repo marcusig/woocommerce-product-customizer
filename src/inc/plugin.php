@@ -111,3 +111,7 @@ class Plugin {
 
 Plugin::instance();
 // var_dump('$mkl_pl', $mkl_pl);
+
+function mkl_pc() {
+	return Plugin::instance();
+}

@@ -14,7 +14,7 @@ GENERAL TEMPLATES
 <?php do_action('mkl_pc_admin_templates_before') ?>
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo $class; ?>">
-		<button type="button" class="button-link media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close media panel' ); ?></span></span></button>
+		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close media panel' ); ?></span></span></button>
 		<div class="media-modal-content">
 			<div class="media-frame wp-core-ui">
 				
@@ -27,17 +27,20 @@ GENERAL TEMPLATES
 	<div class="media-modal-backdrop pc-modal-backdrop"></div>
 </script>
 
-<script type="text/html" id="tmpl-mkl-pc-menu">
+<script type="text/html" id="tmpl-mkl-pc-menu">	
+	<h2 class="media-frame-menu-heading"><?php _e( 'Actions' ); ?></h2>
 	<div class="media-frame-menu">
-		<div class="media-menu">
+		<div role="tablist" aria-orientation="vertical" class="media-menu">
 		</div>
 	</div>
-
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-frame-title">
 	<div class="media-frame-title">
-		<h1>{{data.title}}<span class="dashicons dashicons-arrow-down"></span></h1>
+		<h1>{{data.title}}</h1>
+		<button type="button" class="button button-link media-frame-menu-toggle" aria-expanded="false">
+			<?php _e( 'Menu' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
+		</button>
 		<span class="description">{{data.description}}</span>
 	</div>
 </script>
@@ -51,12 +54,13 @@ GENERAL TEMPLATES
 		</div>
 	</div>
 </script>
+
 <script type="text/html" id="tmpl-mkl-pc-frame-title-buttons-notused">
-				<div class="button-group media-button-group">
-					<button type="button" class="button media-button button-large pc-main-cancel"><?php _e( 'Cancel' ); ?></button>
-					<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save all', MKL_PC_DOMAIN ); ?></button>
-					<button type="button" class="button media-button button-primary button-large pc-main-save">{{data.bt_save_text}}</button>
-				</div>
+	<div class="button-group media-button-group">
+		<button type="button" class="button media-button button-large pc-main-cancel"><?php _e( 'Cancel' ); ?></button>
+		<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save all', MKL_PC_DOMAIN ); ?></button>
+		<button type="button" class="button media-button button-primary button-large pc-main-save">{{data.bt_save_text}}</button>
+	</div>
 </script>
 <?php 
 /*

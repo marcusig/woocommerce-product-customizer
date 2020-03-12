@@ -65,7 +65,7 @@ class Frontend_Woocommerce {
 		);
 		foreach($scripts as $script) {
 			list( $key, $file, $version ) = $script;
-			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone'), $version, true );
+			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone', 'accounting'), $version, true );
 		}
 
 		$init_data_url = admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $post->ID .'&security='.wp_create_nonce( 'config-ajax' ) ); 

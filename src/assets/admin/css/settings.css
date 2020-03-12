@@ -1,7 +1,16 @@
+.mkl-settings-content {
+	display: none;
+}
+
+.mkl-settings-content.active {
+	display: block;
+}
+
 .mkl-pc-addons {
 	display: flex;
 	flex-wrap: wrap;
 }
+
 .mkl-pc-addon {
 	
 	padding: 1em;

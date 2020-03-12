@@ -30,10 +30,10 @@ class Admin_Woocommerce {
 	}
 	private function _includes() {
 		// Includes for Addons management
-		if( !class_exists('MKL_EDD_SL_Plugin_Updater') ){
-			require_once( MKL_PC_INCLUDE_PATH . 'update/EDD_SL_Plugin_Updater.php');
-		}
-		include( MKL_PC_INCLUDE_PATH . 'update/extension-license.php');
+		// if( !class_exists('MKL_EDD_SL_Plugin_Updater') ){
+		// 	require_once( MKL_PC_INCLUDE_PATH . 'update/EDD_SL_Plugin_Updater.php');
+		// }
+		// include( MKL_PC_INCLUDE_PATH . 'update/extension-license.php');
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/choice-settings.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
