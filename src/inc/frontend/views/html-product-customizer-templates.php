@@ -19,7 +19,7 @@ do_action('mkl_pc_frontend_templates_before');
 
 foreach( $parts as $part ) {
 	if( file_exists( $part['path'].$part['file'] ) ) {
-		include( $part['path'].$part['file'] );
+		include  $part['path'].$part['file'];
 		
 	} else {
 

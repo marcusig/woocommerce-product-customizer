@@ -46,6 +46,10 @@ PC.options = PC.options || {};
 			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
 			$('body').addClass('customizer_is_opened');
 			if( PC.fe.inline ) $('body').addClass('customizer_is_inline');
+			// Set focus on the first layer
+			setTimeout( function() {
+				this.$el.find('.layers .layer-item').first().focus();
+			}.bind(this), 300);
 			wp.hooks.doAction( 'PC.fe.open', this ); 
 		},
 		close: function() {

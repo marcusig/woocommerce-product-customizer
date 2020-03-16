@@ -15,10 +15,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Frontend_Product {
 	
 	public function __construct() {
-		$this->_hooks(); 
-		$this->button_class = get_option( 'mkl_pc_buttons_class', 'btn btn-primary' );
+		$this->_hooks();
+		$this->options = get_option( 'mkl_pc__settings' );
+		$this->button_class = isset( $this->options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $this->options['mkl_pc__button_classes'] ) : 'btn btn-primary';
 	}
-
 
 	private function _hooks() {
 		add_action( 'wp' , array( &$this, 'wp_init' ) ); 
@@ -33,14 +33,11 @@ class Frontend_Product {
 		add_action( 'mkl_pc_frontend_customizer_footer_form',array( $this, 'customizer_form' ), 20 ); 
 		add_action( 'mkl_pc_templates_empty_viewer', array( &$this, 'variable_empty_customizer_content'), 20 );
 		add_action( 'wp_footer', array(&$this, 'print_product_configuration' ) );
-
 	}
 
 	public function add_to_cart_text( $text, $product ) {
 		if( mkl_pc_is_customizable( $product->get_id() ) && $product->get_type() == 'simple' ) {
-
-			$text = __( 'Select options', 'woocommerce' ); 
-
+			$text = __( 'Select options', 'woocommerce' );
 		} 
 		return $text;
 
@@ -56,9 +53,7 @@ class Frontend_Product {
 	}
 	public function simple_product_supports( $value, $feature, $product ) {
 		if( mkl_pc_is_customizable( $product->get_id() ) && $product->get_type() == 'simple' ) {
-
-			if ( $feature == 'ajax_add_to_cart' )
-				$value = false;
+			if ( $feature == 'ajax_add_to_cart' ) $value = false;
 		}
 		return $value;
 
@@ -66,15 +61,14 @@ class Frontend_Product {
 
 	public function add_customize_button() { 
 		global $product;
-		if( mkl_pc_is_customizable( get_the_id() ) ) {
-			echo apply_filters( 'mkl_pc_customize_button', '<button class="customize-product customize-product-'. $product->get_type().' '. $this->button_class .'" type="button">'.__( 'Customize', MKL_PC_DOMAIN ) .'</button>' ); 
-
+		if ( mkl_pc_is_customizable( get_the_id() ) ) {
+			echo apply_filters( 'mkl_pc_customize_button', '<button class="customize-product customize-product-'. $product->get_type().' '. $this->button_class .'" type="button">'.__( 'Customize', MKL_PC_DOMAIN ) .'</button>' );
 		}
 	}
 
 	public function add_customize_hidden_field() {
 		if( mkl_pc_is_customizable( get_the_id() ) ) {
-			echo '<input type="hidden" name="pc_customizer_data"/>'; 
+			echo '<input type="hidden" name="pc_customizer_data">'; 
 		}			
 	}
 
@@ -90,7 +84,6 @@ class Frontend_Product {
 	 	?>
 			<button type="button" class="<?php echo $this->button_class ?> customizer-add-to-cart"><?php _e( 'Add to cart', 'woocommerce' ) ?></button>
 	 	<?php
-		
 	}
 
 	public function print_product_configuration(){

@@ -1,6 +1,6 @@
 <?php 
 namespace MKL\PC;
-
+return;
 if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * (adapted from Ninja Forms Class_Extension_Updater)

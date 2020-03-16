@@ -18,7 +18,8 @@ class Admin_Product {
 	}
 
 	private function _hooks() {
-		add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
+		// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
+		add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 20, 1 );
 		// add the checkbox to activate customizer on the product
 		add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 		add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
@@ -29,23 +30,35 @@ class Admin_Product {
 	}
 
 	public function on_plugins_loaded() {
+		// Supported product types
 		$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array('simple') );
-		// var_dump($product_types);
 		foreach( $product_types as $product_type ) {
 			add_action( 'woocommerce_process_product_meta_' . $product_type, array( $this, 'save_product_setting' ) );
 		}
 	}
 
-	public function add_pc_settings_tab( $tabs ) {
-		$tabs['customizable-product'] = array(
-			'label'  => __( 'Customizer options', MKL_PC_DOMAIN ),
-			'target' => 'customizable_product_options',
-			'class'  => array( 'customizable_product_tab', 'show_if_is_customizable' ),
+	/**
+	 * Add the settings tab to WooCommerce
+	 *
+	 * @param array $tabs
+	 * @return array
+	 */
+	// public function add_pc_settings_tab( $tabs ) {
+	// 	error_log('did you call me?');
+	// 	$tabs['customizable-product'] = array(
+	// 		'label'  => __( 'Customizer options', MKL_PC_DOMAIN ),
+	// 		'target' => 'customizable_product_options',
+	// 		'class'  => array( 'customizable_product_tab', 'show_if_is_customizable' ),
 
-		);
-		return $tabs;
-	}
+	// 	);
+	// 	return $tabs;
+	// }
 
+	/**
+	 * Add the settings
+	 *
+	 * @return void
+	 */
 	public function add_pc_settings_tab_content() {
 		?>
 		<div id="customizable_product_options" class="panel wc-metaboxes-wrapper">
@@ -143,49 +156,47 @@ class Admin_Product {
 
 
 	public function load_scripts() {
-		// var_dump($screen);
-
 		$scripts = array(
-			array('admin', 'admin.js', '1.0.0'),
+			array('admin', 'admin.js'),
 			//MODELS
-			array('backbone/models/state', 'models/state.js', '1.0.0'),
-			array('backbone/models/choice', 'models/choice.js', '1.0.0'),
-			array('backbone/models/layer', 'models/layer.js', '1.0.0'),
-			array('backbone/models/product', 'models/product.js', '1.0.0'),
-			array('backbone/models/admin', 'models/admin.js', '1.0.0'),
+			array('backbone/models/state', 'models/state.js'),
+			array('backbone/models/choice', 'models/choice.js'),
+			array('backbone/models/layer', 'models/layer.js'),
+			array('backbone/models/product', 'models/product.js'),
+			array('backbone/models/admin', 'models/admin.js'),
 			//COLLECTIONS
-			array('backbone/collections/layers', 'collections/layers.js', '1.0.0'),
-			array('backbone/collections/angles', 'collections/angles.js', '1.0.0'),
-			array('backbone/collections/choices', 'collections/choices.js', '1.0.0'),
-			array('backbone/collections/states', 'collections/states.js', '1.0.0'),
-			array('backbone/collections/products', 'collections/products.js', '1.0.0'),
+			array('backbone/collections/layers', 'collections/layers.js'),
+			array('backbone/collections/angles', 'collections/angles.js'),
+			array('backbone/collections/choices', 'collections/choices.js'),
+			array('backbone/collections/states', 'collections/states.js'),
+			array('backbone/collections/products', 'collections/products.js'),
 			//VIEWS
-			array('backbone/views/home', 'views/customizer_home.js', '1.0.0'),
-			array('backbone/views/layers', 'views/layers.js', '1.0.0'),
-			array('backbone/views/choices', 'views/choices.js', '1.0.0'),
-			array('backbone/views/states', 'views/states.js', '1.0.0'),
-			array('backbone/views/angles', 'views/angles.js', '1.0.0'),
-			array('backbone/views/content', 'views/content.js', '1.0.0'),
-			array('backbone/views/import', 'views/import.js', '1.0.0'),
-			array('backbone/views/app', 'views/app.js', '1.0.0'),
+			array('backbone/views/home', 'views/customizer_home.js'),
+			array('backbone/views/layers', 'views/layers.js'),
+			array('backbone/views/choices', 'views/choices.js'),
+			array('backbone/views/states', 'views/states.js'),
+			array('backbone/views/angles', 'views/angles.js'),
+			array('backbone/views/content', 'views/content.js'),
+			array('backbone/views/import', 'views/import.js'),
+			array('backbone/views/app', 'views/app.js'),
 			//APP
-			array('backbone/app', 'pc_app.js', '1.0.0'), 
-			// array('backbone', 'admin.js', '1.0.0'),
+			array('backbone/app', 'pc_app.js'), 
+			// array('backbone', 'admin.js'),
 		);
 
 		if( $this->_current_screen_is( 'product' ) ) {
 
-			wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , false, '1.0.0' );
+			wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , false, MKL_PC_VERSION );
 			
-			// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), '1.0.0', true );
+			// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
 			// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
 			$scripts = apply_filters( 'mkl_pc_admin_scripts', $scripts );
 
 			wp_enqueue_script( 'jquery-ui-accordion' );
 			// LOAD BACKBONE SCRIPTS
 			foreach($scripts as $script) {
-				list( $key, $file, $version ) = $script;
-				wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone'), $version, true );
+				list( $key, $file ) = $script;
+				wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone'), MKL_PC_VERSION, true );
 			}
 
 			wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', array(
@@ -197,21 +208,26 @@ class Admin_Product {
 			));
 
 			do_action( 'mkl_pc_admin_scripts_product_page' );
-			// wp_enqueue_script( 'mkl_pc/js/admin/backbone/views', $this->plugin->assets_path.'admin/js/pc_app.js', array('jquery', 'backbone'), '1.0.0', true );
-			// wp_enqueue_script( 'mkl_pc/js/admin/app', $this->plugin->assets_path.'admin/js/pc_app.js', array('jquery', 'backbone'), '1.0.0', true );
-			// wp_enqueue_script( 'mkl_pc/js/admin/app', $this->plugin->assets_path.'admin/js/pc_app.js', array('jquery', 'backbone'), '1.0.0', true );
-			// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), '1.0.0', true );
 		}
-		// add_thickbox();
 	}
 
+	/**
+	 * Check if the current screen is a certain post type
+	 *
+	 * @param string $name - The screen post tyme
+	 * @return boolean
+	 */
 	private function _current_screen_is( $name ) {
-
 		$screen = get_current_screen();
-		return ( $screen->post_type == $name ) ?  true : false;
-
+		return $screen->post_type === $name;
 	}
 
+	/**
+	 * Save a product's settigns
+	 *
+	 * @param integer $post_id
+	 * @return void
+	 */
 	public function save_product_setting( $post_id ) {
 		$_is_customizable = isset( $_POST[MKL_PC_PREFIX.'_is_customizable'] ) ? 'yes' : 'no';
 		update_post_meta( $post_id, MKL_PC_PREFIX.'_is_customizable', $_is_customizable );
@@ -222,10 +238,10 @@ class Admin_Product {
 		?>
 			<a href="#" class="button-primary start-customization show_if_is_customizable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Configure product's customizer", MKL_PC_DOMAIN) ?></a>
 		<?php 
-		$return = ob_get_contents();
-		ob_end_clean();
+		$return = ob_get_clean();
 		return $return;
 	}
+
 	public function edit_button( $id = NULL, $type = NULL ) {
 		if( $id && $type ) {
 			return '<a href="#" class="button launch-customizer-editor" data-product-id="'.$id.'" data-product-type="'.$type.'">' . __('Edit customizer layers', MKL_PC_DOMAIN ) . '</a>';
@@ -233,11 +249,14 @@ class Admin_Product {
 			return '';
 		}
 	}
-	public function product_variation_data_fields_DUPLICATE($loop, $variation_data, $variation) {
-		?>
-		<div class="toolbar">
-		<?php echo $this->start_button( $variation->ID, $variation->post_parent ) ?>
-		</div>
-		<?php
+
+	/**
+	 * Write the configuration to the cache
+	 *
+	 * @param [type] $id
+	 * @return void
+	 */
+	public function write_configuration_cache( $id ) {
+		Plugin::instance()->cache->save_config_file( $id );
 	}
 }

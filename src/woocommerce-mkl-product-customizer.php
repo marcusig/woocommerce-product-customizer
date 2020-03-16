@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
+define( 'MKL_PC_VERSION', '1.0.0' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
 define( 'MKL_PC_DOMAIN', 'woocommerce-mkl-product-customizer' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 

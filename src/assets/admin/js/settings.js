@@ -14,6 +14,7 @@
 				$(this).addClass('nav-tab-active');
 				$('.mkl-settings-content[data-content='+$(this).data('content')+']').addClass('active');
 			});
+			$('.mkl-nav-tab-wrapper a').first().trigger('click');
 		}
 	};
 

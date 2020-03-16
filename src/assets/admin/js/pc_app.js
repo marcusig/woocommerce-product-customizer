@@ -140,25 +140,22 @@ Backbone.Model.prototype.toJSON = function() {
 				id:      save_id,
 				nonce:   this.admin_data.get('nonces').update,
 				data: what,
-				
-
 				// id: wp.media.model.settings.post.id
 			});
+
 			if( save_id != this.id ) {
 				options.data.parent_id = this.id;
 			}
 
 			if (collection.length > 0) {
+
 				if( collection instanceof Array ) {
-					// options.data[what] =  ;
 					options.data[what] = {};
 					$.each(collection, function(index, value){
-						options.data[what][index] = ( value instanceof Backbone.Collection ) ? value.toJSON() : value;
+						options.data[what][index] = ( value instanceof Backbone.Collection ) ? JSON.stringify(value) : value;
 					});
-					// console.log('instance of array');
 				} else if( collection instanceof Backbone.Collection ) {
-					// console.log('instance of else', );
-					options.data[what] = collection.toJSON() ;
+					options.data[what] = JSON.stringify(collection);
 				}
 			} else {
 				options.data[what] = 'empty' ;

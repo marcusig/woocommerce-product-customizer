@@ -42,41 +42,39 @@ class Frontend_Woocommerce {
 	}
 
 	public function load_scripts() {
-		global $post, $product; 
+		global $post; 
 
-		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, '1.0.0' );
+		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
 
 		wp_enqueue_script( 'wp-api' );
 		//WP.hooks, until it's included in WP core.
 		wp_enqueue_script( 'mkl_pc/js/wp.hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '0.1', true );
 
+		// Exit if the plugin is not customizable
+		if( !mkl_pc_is_customizable( $post->ID ) ) return;
 
-		if( !mkl_pc_is_customizable( get_the_id() ) )
-			return;
 		$scripts = array(
-			array('backbone/models/choice', 'models/choice.js', '1.0.0'),
-			array('backbone/models/layer', 'models/layer.js', '1.0.0'),
+			array('backbone/models/choice', 'models/choice.js'),
+			array('backbone/models/layer', 'models/layer.js'),
 			//COLLECTIONS
-			array('backbone/collections/layers', 'collections/layers.js', '1.0.0'),
-			array('backbone/collections/angles', 'collections/angles.js', '1.0.0'),
-			array('backbone/collections/choices', 'collections/choices.js', '1.0.0'),
+			array('backbone/collections/layers', 'collections/layers.js'),
+			array('backbone/collections/angles', 'collections/angles.js'),
+			array('backbone/collections/choices', 'collections/choices.js'),
 
 		);
 		foreach($scripts as $script) {
-			list( $key, $file, $version ) = $script;
-			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone', 'accounting'), $version, true );
+			list( $key, $file ) = $script;
+			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone', 'accounting'), MKL_PC_VERSION, true );
 		}
-
-		$init_data_url = admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $post->ID .'&security='.wp_create_nonce( 'config-ajax' ) ); 
 		
-		// to include potential other scripts BEFORE the main customizer one
-		do_action( 'mkl_pc_scripts_product_page_before' ); 
+		// To include potential other scripts BEFORE the main customizer one
+		do_action( 'mkl_pc_scripts_product_page_before' );
 
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
-		wp_enqueue_script( 'mkl_pc/js/views/customizer', MKL_PC_ASSETS_URL.'js/views/customizer.js', array('jquery', 'backbone', 'wp-util' ), '1.0.0', true );
-		wp_enqueue_script( 'mkl_pc/js/product_customizer', MKL_PC_ASSETS_URL.'js/product_customizer.js', array('jquery', 'backbone', 'wp-util' ), '1.0.1', true );
-		// wp_enqueue_script( 'mkl_pc/js/product_customizer_data', site_url();
+		wp_enqueue_script( 'mkl_pc/js/views/customizer', MKL_PC_ASSETS_URL.'js/views/customizer.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/product_customizer', MKL_PC_ASSETS_URL.'js/product_customizer.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
+
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 			'lang' => array(
@@ -90,9 +88,10 @@ class Frontend_Woocommerce {
 		);
 		wp_localize_script( 'mkl_pc/js/product_customizer', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
-		wp_enqueue_script('mkl_pc/js/fe_data', $init_data_url, '1.0.0', true ); 
-		
-		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_customizer.css' , false, '1.0.0' );
+		// $version = $product
+		$date_modified = wc_get_product($post->ID)->get_date_modified();
+		wp_enqueue_script( 'mkl_pc/js/fe_data', Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_customizer.css', array(), MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css' );
 
 		// to include potential other scripts AFTER the main customizer one

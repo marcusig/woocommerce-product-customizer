@@ -337,10 +337,10 @@ body.pc-modal-opened {
 	}
 	button {
 		position: absolute;
-		right: $modal-spacing;
-		top: calc(50% - 1px);
+		right: ($modal-spacing - 1);
+		top: calc(50%);
 		transform: translateY(-50%);
-		@media( max-width: 900px ){ 
+		@media( max-width: 900px ){
 			font-size: 16px; 
 			height: auto; 
 			padding-left: 4px; 

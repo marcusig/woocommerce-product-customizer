@@ -13,23 +13,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-
-class Ajax { 
+class Ajax {
 	private $db = NULL;
 	public function __construct() {
 		$this->_hooks();
-		// $this->plugin = Plugin::instance()->db;
 		if( !$this->db ) {
 			$this->db = Plugin::instance()->db;
-			// var_dump( (microtime(true) - $start) *1000, 'initialized custmizer data');
 		}
 	}
+
+	/**
+	 * Setup hooks
+	 *
+	 * @return void
+	 */
 	private function _hooks() {
 		add_action( 'wp_ajax_pc_get_data', array( $this, 'get_customizer_data' ) );
 		add_action( 'wp_ajax_nopriv_pc_get_data', array( $this, 'get_customizer_data' ) );
 		add_action( 'wp_ajax_pc_set_data', array( $this, 'set_customizer_data' ) );
 	}
 
+	/**
+	 * Get the customizer Data
+	 *
+	 * @return void
+	 */
 	public function get_customizer_data() {
 		global $mkltimestart;
 
@@ -50,7 +58,12 @@ class Ajax {
 		$data = NULL;
 		switch ( $_REQUEST['data'] ) {
 			case 'init' :
-				$data = $this->db->get_init_data( $id );
+				// fe parameter, to use in front end.
+				if( isset($_REQUEST['fe']) && $_REQUEST['fe'] == 1 ) {
+					$data = $this->db->get_front_end_data( $id );
+				} else {
+					$data = $this->db->get_init_data( $id );
+				}
 				break;
 			case 'menu' :
 				$data = $this->db->get_menu();
@@ -83,7 +96,7 @@ class Ajax {
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
 			echo 'var PC = PC || {};';
 			echo 'PC.productData = ' . json_encode( $data ) . ';';
-			wp_die(); 
+			wp_die();
 
 		} else { 
 
@@ -91,28 +104,53 @@ class Ajax {
 
 		}
 	}
+
 	/**
-
-	*/
-
+	 * Save the customizer Data
+	 *
+	 * @return void
+	 */
 	public function set_customizer_data() {
-		if( !isset($_REQUEST['data'] ) ) {
-			wp_send_json('Expecting a data type');
-			return false;
+
+		// CHECK IF THE REQUIRED FIELDS WERE SENT
+		if ( ! isset( $_REQUEST['id'] ) ) wp_send_json_error();
+
+		if ( ! $id = absint( $_REQUEST['id'] ) ) wp_send_json_error();
+
+		// CHECK IF THE USER IS ALLOWED TO EDIT 
+		$ref_id = $id;
+
+		if( isset($_REQUEST['parent_id'] ) ) {
+			$ref_id = absint( $_REQUEST['parent_id'] );
 		}
 
-		$data = $this->db->set( $_REQUEST['data'] );
+		check_ajax_referer( 'update-pc-post_' . $ref_id, 'nonce' );
 		
-		// $data = NULL;
+		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) ) {
+			wp_send_json_error();
+		}
+
+		if( !isset( $_REQUEST['data'] ) ) {
+			wp_send_json_error( 'Expecting a data type' );
+		}
+
+		if (!isset($_REQUEST[$_REQUEST['data']])) {
+			wp_send_json_error( 'No data was received' );
+		}
+
+		$data = json_decode(stripslashes($_REQUEST[$_REQUEST['data']]), true);
+		if (!$data) $data = $_REQUEST[$_REQUEST['data']];
+		$result = $this->db->set( $id, $ref_id, $_REQUEST['data'], $data );
+		
+		// $result = NULL;
 		// switch ( $_REQUEST['data'] ) {
 		// 	case 'menu' :
-		// 		$data = $this->db->set( $_REQUEST['data'] );
+		// 		$result = $this->db->set( $_REQUEST['data'] );
 		// 		break;
 		// 	case 'layers' :
-		// 		$data = $this->db->get_layers();
+		// 		$result = $this->db->get_layers();
 		// 		break;
 		// }
-
-		wp_send_json( $data );
+		wp_send_json( $result );
 	}
 }

@@ -24,6 +24,9 @@ class DB {
 	private $menu = array();
 	private $layers = array();
 
+	/**
+	 * Initialize the class
+	 */
 	public function __construct() {
 		$default_menu = array(
 			array(
@@ -132,77 +135,44 @@ class DB {
 
 	}
 
-	// public function get_layers() {
-	// 	$product_id = null;
-		
-	// 	if(isset($_REQUEST['product_id'])) { 
-
-	// 		$product_id = $_REQUEST['product_id']; 
-	// 		$product = wc_get_product( $product_id ); 
-	// 		$layers =  maybe_unserialize( get_post_meta( $product_id, 'mkl_product_customizer_layers', true ) ); 
-
-	// 		$test = array( array("name"=>"whatever", "description"=>"A description", "order"=>1), array("name"=>"Layer 2", "description"=>"A description 2","order"=>0) ); 
-
-	// 		return apply_filters( 'mkl_product_customizer_layers', $test ); 
-
-	// 	} elseif( $put = json_decode(file_get_contents("php://input")) ) { 
-			
-	// 		if( !isset( $put->id )) { 
-	// 			return 4;
-	// 		} 
-	// 		return true; 
-	// 	}
-	// }
-	/*
-	@Structure
-	@returns a products basic structure
-	-> the basic structure is for ONE simple product, or is common to all of a products VARIATIONS. 
-	-> it includes: LAYERS, ANGLES
-	*/
-	public function get_structure() {
-
-		return apply_filters( 'mkl_product_customizer_pc_structure', array(
-			'layers' => $this->get('layers'),
-			'angles' => $this->get('angles'),
-		) );
-		
-	}
-
-	public function set_structure() {
-
-		$this->set( 'structure' ); 
-
-	}
-
-	/*
-	@Choices
-	@returns a products choices
-	-> The choices are for ONE simple product, or ONE VARIATION. 
-	-> LAYERS and ANGLES have to be set before being able to add choices. 
-	-> One choice has to be set for each LAYER and each ANGLE
-	*/
+	/**
+	 * Get the content data
+	 *
+	 * @param integer $post_id
+	 * @return array
+	 */
 	public function get_content( $post_id ) {
-		// return apply_filters( 'mkl_product_customizer_init_data', $init_data, $product );
 		return apply_filters( 'mkl_product_customizer_content_data', array( 'content' => $this->get( 'content', $post_id ) ), $post_id ); 
 	}
 
+	/**
+	 * Get the angles
+	 *
+	 * @param integer $post_id
+	 * @return array
+	 */
 	public function get_angles( $post_id ) {
-
 		return array( 'angles' => $this->get( 'angles', $post_id ) ); 
-
 	}
 
+	/**
+	 * Getter
+	 *
+	 * @param string  $that
+	 * @param integer $post_id
+	 * @return boolean|array
+	 */
 	public function get( $that, $post_id ) {
 
-		if( ! is_string($that) ) 
-			return false;
+		if( ! is_string($that) ) return false;
 
-		if( ! $this->is_product( $post_id ) )
-			return [false, $post_id];
+		if( ! $this->is_product( $post_id ) ) return false;
 
 		$product = wc_get_product($post_id);
 		$data = maybe_unserialize( $product->get_meta( '_mkl_product_customizer_' . $that ) );
-
+		if (is_string($data)) {
+			$data = json_decode($data);
+		}
 		if( '' == $data || false == $data ) {
 			return false; 
 		} else {
@@ -210,83 +180,69 @@ class DB {
 		}
 	}
 
-	public function set_choices() {
-		$this->set('choices');
-	}
+	/**
+	 * Set Data
+	 *
+	 * @param integer $id
+	 * @param integer $ref_id
+	 * @param string  $component
+	 * @param array   $raw_data
+	 * @return array
+	 */
+	public function set( $id, $ref_id, $component, $raw_data ) {
+		if( ! $this->is_product( $id ) ) return false;
 
-	public function set( $that ) {
-		// CHECK IF THE REQUIRED FIELDS WERE SENT
-		if ( ! isset( $_REQUEST['id'] ) || ! isset( $_REQUEST[$that] ) ) //|| ! isset( $_REQUEST['changes'] )
-			wp_send_json_error();
+		if( $ref_id !== $id && !$this->is_product( $ref_id ) ) return false;
 
-		if ( ! $id = absint( $_REQUEST['id'] ) )
-			wp_send_json_error();
-
-		// CHECK IF THE USER IS ALLOWED TO EDIT 
-		$ref_id = $id;
-
-		if( isset($_REQUEST['parent_id'] ) ) {
-			$ref_id = absint( $_REQUEST['parent_id'] );
-		}
-
-		check_ajax_referer( 'update-pc-post_' . $ref_id, 'nonce' );
-		
-		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) )
-			wp_send_json_error();
-
-		
-		if( ! $this->is_product( $id ) )
-			wp_send_json_error();
-
-		if( $ref_id != $id ) {
-			if( ! $this->is_product( $ref_id ) )
-				wp_send_json_error();
-		}
-
-
-		if( $_REQUEST[$that] === 'empty') {
+		if( 'empty' === $raw_data ) {
 			$data = '';
 		} else {
 			// Remove active state. Defaults to first item
-			foreach ($_REQUEST[$that] as $key => $value) {
+			foreach ($raw_data as $key => $value) {
 				if( isset( $value['active'] ) ) {
-					$_REQUEST[$that][$key]['active'] = false;
+					$raw_data[$key]['active'] = false;
 				} elseif( isset( $value['choices'] ) ) {
 					foreach ( $value['choices'] as $choice_index => $choice) {
 						if( isset( $choice['active'] ) ) {
-							$_REQUEST[$that][$key]['choices'][$choice_index]['active'] = false;
+							$raw_data[$key]['choices'][$choice_index]['active'] = false;
 						}
 					}
 				}
 
 			}
 
-			$data = $this->sanitize( $_REQUEST[$that] ) ;
+			$data = $this->sanitize( $raw_data ) ;
 
 		}
+
 		$product = wc_get_product( $id );
-		$t = $product->update_meta_data( '_mkl_product_customizer_' . $that , $data );
+		$product->update_meta_data( '_mkl_product_customizer_' . $component , $data );
 		$product->save();
-		return 1;
 
+		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
+		do_action( 'mkl_pc_saved_product_configuration', $id );
+
+		return $data;
 	}
 
+	/**
+	 * Get the menu
+	 *
+	 * @return array
+	 */
 	public function get_menu(){
-
 		return apply_filters( 'mkl_product_customizer_admin_menu', $this->menu ); 
-
 	}
 
-	public function get_init_data() { 
+	/**
+	 * Get the basic data structure
+	 *
+	 * @param integer $id - The product's ID
+	 * @return array
+	 */
+	public function get_init_data( $id ) {
 
-		$product = null;
-
-		if ( ! isset( $_REQUEST['id'] ) ) //|| ! isset( $_REQUEST['changes'] )
-			wp_send_json_error();
-
-		if ( ! $id = absint( $_REQUEST['id'] ) )
-			wp_send_json_error();
-
+		$product = wc_get_product( $id );
 		$init_data = array(
 			// 'menu' => $this->get_menu(),
 			'layers' => $this->get('layers', $id),
@@ -294,48 +250,61 @@ class DB {
 			'nonces'      => array(
 				'update' => false,
 				'delete' => false,
-				// 'edit'   => false
 			),
-
+			'product_info' => array()
 		);
 
-		// fe parameter, to use in front end.
-		if( isset($_REQUEST['fe']) && $_REQUEST['fe'] == 1 ) {
-			if( $this->is_product( $id ) ) { 
-				$product = wc_get_product( $id ); 
-				// get the products 'title' attribute
-				$init_data['product_info'] = array(
-					'title' => apply_filters( 'the_title', $product->get_title(), $id ),
-					'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
-					'product_type' => $product->get_type(),
-				); 
+		if ( current_user_can( 'edit_post', $id ) ) $init_data['nonces']['update'] = wp_create_nonce( 'update-pc-post_' . $id );
 
-				// Allows to load the Contents on the init data to avoid having to use AJAX. 
-				if( $product->get_type() == 'simple' ) {
-					// the customizer content
-					$init_data['content'] = $this->get( 'content', $id ); 
-				}
-			}
-		}
-
-		if ( current_user_can( 'edit_post', $id ) ) {
-			$init_data['nonces']['update'] = wp_create_nonce( 'update-pc-post_' . $id );
-			// $init_data['nonces']['edit'] = wp_create_nonce( 'image_editor-' . $id );
-			// $init_data['editLink'] = get_edit_post_link( $id, 'raw' );
-		}
-
-		if ( current_user_can( 'delete_post', $id ) )
-			$init_data['nonces']['delete'] = wp_create_nonce( 'delete-pc-post_' . $id );
+		if ( current_user_can( 'delete_post', $id ) ) $init_data['nonces']['delete'] = wp_create_nonce( 'delete-pc-post_' . $id );
 
 		return apply_filters( 'mkl_product_customizer_init_data', $init_data, $product );
 	}
 
-	private function is_product( $id ) {
+	/**
+	 * Get the Front end Data
+	 *
+	 * @param integer $id - The product's ID
+	 * @return array
+	 */
+	public function get_front_end_data( $id ) {
+		$init_data = $this->get_init_data( $id );
+		$product = wc_get_product( $id ); 
+		// get the products 'title' attribute
+		$init_data['product_info'] = array_merge(
+			$init_data['product_info'], 
+			array(
+				'title' => apply_filters( 'the_title', $product->get_title(), $id ),
+				'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
+				'product_type' => $product->get_type(),
+			) 
+		);
 
-		return in_array( get_post_type( $id ), apply_filters( 'mkl_pc_product_post_types', array( 'product', 'product_variation' ) ) );
+		// Allows to load the Contents on the init data to avoid having to use AJAX. 
+		if( $product->get_type() == 'simple' ) {
+			// the customizer content
+			$init_data['content'] = $this->get( 'content', $id ); 
+		}
 
+		return apply_filters( 'mkl_product_customizer_get_front_end_data', $init_data, $product );
 	}
 
+	/**
+	 * Wether the post is a supported post type
+	 *
+	 * @param integer $id - The product / post ID
+	 * @return boolean
+	 */
+	public function is_product( $id ) {
+		return in_array( get_post_type( $id ), apply_filters( 'mkl_pc_product_post_types', array( 'product', 'product_variation' ) ) );
+	}
+
+	/**
+	 * Sanitize the data
+	 *
+	 * @param mixed $data - The data to sanitize
+	 * @return mixed
+	 */
 	public function sanitize( $data ) {
 		switch ( gettype( $data ) ) {
 			case 'boolean':
@@ -356,12 +325,16 @@ class DB {
 					$data[$key] = $this->sanitize( $value ); 
 				}
 				return $data;
+			case 'object':
+				// Arrays must be mapped in case they also return objects.
+				foreach ((array) $data as $key => $value) {
+					$data->{$key} = $this->sanitize( $value );
+				}
+				return $data;
 			default:
 				return null;
 		}
 
 	}
-
-	// public function get_data( )
 }
 

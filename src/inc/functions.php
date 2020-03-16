@@ -29,26 +29,26 @@ function mkl_pc_get_plugin() {
  * @param array $fields
  * @return string
  */
-function mkl_get_template_fields( $fields = array() ) {
-	$fields_markup = '';
-	foreach( $fields as $field ) {
+// function mkl_get_template_fields( $fields = array() ) {
+// 	$fields_markup = '';
+// 	foreach( $fields as $field ) {
 
-		if( is_string( $field ) ) {
-			$open_tag = apply_filters( 'mkl_pc_field_open_tag', '', $field ) ;
-			$close_tag = apply_filters( 'mkl_pc_field_close_tag', '', $field ) ;
-			$fields_markup .= $open_tag . '{{data.' . $field . '}}' . $close_tag;
-		} elseif( is_array( $field ) ) {
-			if( isset( $field['name'] ) ) {
-				$open_tag = apply_filters( 'mkl_pc_field_open_tag', (isset( $field['open_tag'] ) ? $field['open_tag'] : '' ), $field['name'] ) ;
-				$close_tag = apply_filters( 'mkl_pc_field_close_tag', (isset( $field['close_tag'] ) ? $field['close_tag'] : ' ' ), $field['name'] ) ;
-				$fields_markup .= $open_tag . '{{data.' . $field['name'] . '}}' . $close_tag;
-			}
-		}
+// 		if( is_string( $field ) ) {
+// 			$open_tag = apply_filters( 'mkl_pc_field_open_tag', '', $field ) ;
+// 			$close_tag = apply_filters( 'mkl_pc_field_close_tag', '', $field ) ;
+// 			$fields_markup .= $open_tag . '{{data.' . $field . '}}' . $close_tag;
+// 		} elseif( is_array( $field ) ) {
+// 			if( isset( $field['name'] ) ) {
+// 				$open_tag = apply_filters( 'mkl_pc_field_open_tag', (isset( $field['open_tag'] ) ? $field['open_tag'] : '' ), $field['name'] ) ;
+// 				$close_tag = apply_filters( 'mkl_pc_field_close_tag', (isset( $field['close_tag'] ) ? $field['close_tag'] : ' ' ), $field['name'] ) ;
+// 				$fields_markup .= $open_tag . '{{data.' . $field['name'] . '}}' . $close_tag;
+// 			}
+// 		}
 
-	}
+// 	}
 
-	return $fields_markup;
-}
+// 	return $fields_markup;
+// }
 
 if( ! function_exists('request_is_frontend_ajax') ) {
 
