@@ -6,13 +6,13 @@ PC.options = PC.options || {};
 !(function($){
 	'use strict'; 
 	/*
-		PC.fe.views.customizer 
+		PC.fe.views.configurator 
 		-> MAIN WINDOW
 	*/
-	PC.fe.views.customizer = Backbone.View.extend({
+	PC.fe.views.configurator = Backbone.View.extend({
 		tagName: 'div',
 		className: 'mkl_pc',
-		template: wp.template( 'mkl-pc-customizer' ), 
+		template: wp.template( 'mkl-pc-configurator' ), 
 		initialize: function() {
 			var that = this;
 			this.options = PC.productData.product_info; 
@@ -44,8 +44,8 @@ PC.options = PC.options || {};
 			this.$el.show(); 
 			PC.fe.opened = true;
 			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
-			$('body').addClass('customizer_is_opened');
-			if( PC.fe.inline ) $('body').addClass('customizer_is_inline');
+			$('body').addClass('configurator_is_opened');
+			if( PC.fe.inline ) $('body').addClass('configurator_is_inline');
 			// Set focus on the first layer
 			setTimeout( function() {
 				this.$el.find('.layers .layer-item').first().focus();
@@ -55,7 +55,7 @@ PC.options = PC.options || {};
 		close: function() {
 			PC.fe.opened = false; 
 			this.$el.removeClass( 'opened' ); 
-			$('body').removeClass('customizer_is_opened');
+			$('body').removeClass('configurator_is_opened');
 
 			wp.hooks.doAction( 'PC.fe.close', this ); 
 
@@ -112,16 +112,16 @@ PC.options = PC.options || {};
 	PC.fe.views.toolbar = Backbone.View.extend({
 		tagName: 'div', 
 		className: 'mkl_pc_toolbar', 
-		template: wp.template( 'mkl-pc-customizer-toolbar' ),
+		template: wp.template( 'mkl-pc-configurator-toolbar' ),
 		initialize: function( options ) {
 			this.parent = options.parent || PC.fe;
 			return this; 
 		},
 
 		events: {
-			'click .close-mkl-pc': 'close_customizer',
-			'click .cancel': 'close_customizer',
-			// 'click .customizer-add-to-cart': 'add_to_cart'
+			'click .close-mkl-pc': 'close_configurator',
+			'click .cancel': 'close_configurator',
+			// 'click .configurator-add-to-cart': 'add_to_cart'
 		},
 
 		render: function() {
@@ -132,7 +132,7 @@ PC.options = PC.options || {};
 			return this.$el; 
 		}, 
 
-		close_customizer: function( event ) {
+		close_configurator: function( event ) {
 			this.parent.close(); 
 		}
 	});
@@ -142,15 +142,15 @@ PC.options = PC.options || {};
 	PC.fe.views.footer = Backbone.View.extend({
 		tagName: 'footer', 
 		className: 'mkl_pc_footer', 
-		template: wp.template( 'mkl-pc-customizer-footer' ),
+		template: wp.template( 'mkl-pc-configurator-footer' ),
 		initialize: function( options ) {
 			this.parent = options.parent || PC.fe;
 			return this; 
 		},
 
 		events: {
-			'click .close-mkl-pc': 'close_customizer',
-			'click .customizer-add-to-cart': 'add_to_cart'
+			'click .close-mkl-pc': 'close_configurator',
+			'click .configurator-add-to-cart': 'add_to_cart'
 		},
 
 		render: function() {
@@ -161,11 +161,11 @@ PC.options = PC.options || {};
 		add_to_cart: function() { 
 			var $cart = $('form.cart');
 			var data = PC.fe.save_data.save();
-			$cart.find('input[name=pc_customizer_data]').val( data );
+			$cart.find('input[name=pc_configurator_data]').val( data );
 			$cart.find( '.single_add_to_cart_button' ).trigger( 'click' ); 
 		},
 
-		close_customizer: function( event ) {
+		close_configurator: function( event ) {
 			this.parent.close(); 
 		}
 	});
@@ -173,7 +173,7 @@ PC.options = PC.options || {};
 		PC.fe.views.layers 
 	*/
 	PC.fe.views.layers_list = Backbone.View.extend({
-		// template: wp.template( 'mkl-pc-customizer-viewer' ),
+		// template: wp.template( 'mkl-pc-configurator-viewer' ),
 		tagName: 'ul',
 		className: 'layers',
 		initialize: function( options ) {
@@ -228,7 +228,7 @@ PC.options = PC.options || {};
 	*/
 	PC.fe.views.layers_list_item = Backbone.View.extend({
 		tagName: 'li', 
-		template: wp.template( 'mkl-pc-customizer-layer-item' ),
+		template: wp.template( 'mkl-pc-configurator-layer-item' ),
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.options.model, 'change active', this.activate );
@@ -287,7 +287,7 @@ PC.options = PC.options || {};
 	PC.fe.views.choices = Backbone.View.extend({ 
 		tagName: 'ul', 
 		className: 'layer_choices', 
-		template: wp.template( 'mkl-pc-customizer-choices' ),
+		template: wp.template( 'mkl-pc-configurator-choices' ),
 		initialize: function( options ) { 
 			this.options = options || {}; 
 			return this.render();
@@ -325,7 +325,7 @@ PC.options = PC.options || {};
 	*/
 	PC.fe.views.choice = Backbone.View.extend({
 		tagName: 'li',
-		template: wp.template( 'mkl-pc-customizer-choice-item' ),
+		template: wp.template( 'mkl-pc-configurator-choice-item' ),
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.model, 'change activate', this.activate );
@@ -389,7 +389,7 @@ PC.options = PC.options || {};
 	PC.fe.views.viewer = Backbone.View.extend({
 		tagName: 'div',
 		className: 'mkl_pc_viewer',
-		template: wp.template( 'mkl-pc-customizer-viewer' ), 
+		template: wp.template( 'mkl-pc-configurator-viewer' ), 
 		imagesLoading: 0,
 		initialize: function( options ) {
 			this.parent = options.parent || PC.fe; 
@@ -478,7 +478,7 @@ PC.options = PC.options || {};
 				// On load, we need to set the first choice active
 				this.choices.first().set( 'active', true );			
 			} else {
-				// When we change variation or reopen the customizer, 
+				// When we change variation or reopen the configurator, 
 				// we need to render as the change event won't be triggered. 
 				this.render(); 
 			}
@@ -543,7 +543,7 @@ PC.options = PC.options || {};
 	PC.fe.views.angles = Backbone.View.extend({ 
 		tagName: 'div', 
 		className: 'angles-select',
-		template: wp.template( 'mkl-pc-customizer-angles-list' ), 
+		template: wp.template( 'mkl-pc-configurator-angles-list' ), 
 		initialize: function( options ) { 
 			// this.parent = options.parent || PC.fe; 
 			this.col = PC.fe.angles; 
@@ -608,7 +608,7 @@ PC.options = PC.options || {};
 	PC.fe.views.empty_viewer = Backbone.View.extend({
 		tagName: 'div', 
 		className: 'nothing-selected',
-		template: wp.template( 'mkl-pc-customizer-empty-viewer' ), 
+		template: wp.template( 'mkl-pc-configurator-empty-viewer' ), 
 		initialize: function( options ) { 
 			return this; 
 		},

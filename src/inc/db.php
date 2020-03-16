@@ -33,7 +33,7 @@ class DB {
 				'type' 	=> 'part',
 				'menu_id' 	=> 'home',
 				'label' => __( 'Home', MKL_PC_DOMAIN ),
-				'title' => __( 'Welcome to the Product Customizer ', MKL_PC_DOMAIN ),
+				'title' => __( 'Welcome to the Product Configurator ', MKL_PC_DOMAIN ),
 				// 'menu' => array(
 				// 	array(
 				// 		'class' => 'pc-main-cancel',
@@ -142,7 +142,7 @@ class DB {
 	 * @return array
 	 */
 	public function get_content( $post_id ) {
-		return apply_filters( 'mkl_product_customizer_content_data', array( 'content' => $this->get( 'content', $post_id ) ), $post_id ); 
+		return apply_filters( 'mkl_product_configurator_content_data', array( 'content' => $this->get( 'content', $post_id ) ), $post_id ); 
 	}
 
 	/**
@@ -169,7 +169,7 @@ class DB {
 		if( ! $this->is_product( $post_id ) ) return false;
 
 		$product = wc_get_product($post_id);
-		$data = maybe_unserialize( $product->get_meta( '_mkl_product_customizer_' . $that ) );
+		$data = maybe_unserialize( $product->get_meta( '_mkl_product_configurator_' . $that ) );
 		if (is_string($data)) {
 			$data = json_decode($data);
 		}
@@ -216,7 +216,7 @@ class DB {
 		}
 
 		$product = wc_get_product( $id );
-		$product->update_meta_data( '_mkl_product_customizer_' . $component , $data );
+		$product->update_meta_data( '_mkl_product_configurator_' . $component , $data );
 		$product->save();
 
 		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
@@ -231,7 +231,7 @@ class DB {
 	 * @return array
 	 */
 	public function get_menu(){
-		return apply_filters( 'mkl_product_customizer_admin_menu', $this->menu ); 
+		return apply_filters( 'mkl_product_configurator_admin_menu', $this->menu ); 
 	}
 
 	/**
@@ -258,7 +258,7 @@ class DB {
 
 		if ( current_user_can( 'delete_post', $id ) ) $init_data['nonces']['delete'] = wp_create_nonce( 'delete-pc-post_' . $id );
 
-		return apply_filters( 'mkl_product_customizer_init_data', $init_data, $product );
+		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $product );
 	}
 
 	/**
@@ -282,11 +282,11 @@ class DB {
 
 		// Allows to load the Contents on the init data to avoid having to use AJAX. 
 		if( $product->get_type() == 'simple' ) {
-			// the customizer content
+			// the configurator content
 			$init_data['content'] = $this->get( 'content', $id ); 
 		}
 
-		return apply_filters( 'mkl_product_customizer_get_front_end_data', $init_data, $product );
+		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
 	}
 
 	/**

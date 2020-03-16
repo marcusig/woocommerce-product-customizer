@@ -25,7 +25,7 @@ Backbone.Model.prototype.toJSON = function() {
 		init: function( options ) {
 			PC.lang = PC_lang || {};
 			if( options.product_id === undefined) { 
-				throw( { name: 'Error', message: 'product_id parameter is missing to start the customizer.' } );
+				throw( { name: 'Error', message: 'product_id parameter is missing to start the configurator.' } );
 				return false; 
 			}
 

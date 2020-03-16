@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Admin_Settings {
 
 	public $licenses;
-	private $settings_id = 'mkl-pc-customizer';
+	private $settings_id = 'mkl-pc-configurator';
 
 	function __construct() {
 		add_action( 'admin_menu', array( $this, 'register' ) );
@@ -27,8 +27,8 @@ class Admin_Settings {
 	}
 
 	public function register() {
-		$page_title = 'MKL Product Customizer for WooCommerce';
-		$menu_title = 'Product Customizer';
+		$page_title = 'MKL Product Configurator for WooCommerce';
+		$menu_title = 'Product Configurator';
 		$capability = 'manage_options';
 		$menu_slug = 'mkl_pc_settings';
 		$fn = array( $this, 'display' );
@@ -45,7 +45,7 @@ class Admin_Settings {
 	public function display(){
 		?>
 		<div class="wrap">
-			<h1><img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-customizer-for-woocommerce.png" alt="Product Customizer for WooCommerce"/><br>by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></h1>
+			<h1><img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-configurator-for-woocommerce.png" alt="Product Configurator for WooCommerce"/><br>by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></h1>
 			<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
 				<a href="#" class="nav-tab nav-tab-active" data-content="settings"><?php _e( 'Settings', MKL_PC_DOMAIN ); ?></a>
 				<a href="#" class="nav-tab" data-content="addons"><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></a>
@@ -61,7 +61,8 @@ class Admin_Settings {
 			</div>
 			<div class="mkl-settings-content" data-content="addons">
 				<h2><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></h2>
-				<?php $this->display_addons(); ?>
+				<em>Coming soon</em>
+				<?php // $this->display_addons(); ?>
 			</div>
 		</div>
 		<?php 
@@ -73,23 +74,22 @@ class Admin_Settings {
 
 		add_settings_section(
 			'mkl_pc__mlk_pc_settings_section', 
-			__( 'Your section description', MKL_PC_DOMAIN ), 
-			[$this, 'section_callback'], 
+			__( 'Styling options', MKL_PC_DOMAIN ), 
+			[ $this, 'styling_section_callback' ],
 			'mlk_pc_settings'
 		);
 	
-		add_settings_field( 
+		add_settings_field(
 			'mkl_pc__button_classes', 
-			__( 'Button classes', MKL_PC_DOMAIN ), 
-			[$this, 'field_callback'], 
+			__( 'Button classes', MKL_PC_DOMAIN ),
+			[ $this, 'field_callback' ],
 			'mlk_pc_settings', 
 			'mkl_pc__mlk_pc_settings_section' 
 		);
-
 	}
 
-	public function section_callback() {
-		echo __( 'This section description', MKL_PC_DOMAIN );
+	public function styling_section_callback() {
+		// echo __( 'This section description', MKL_PC_DOMAIN );
 	}
 
 	public function field_callback() {
@@ -97,7 +97,6 @@ class Admin_Settings {
 		?>
 		<input type='text' name='mkl_pc__settings[mkl_pc__button_classes]' value='<?php echo $options['mkl_pc__button_classes']; ?>'>
 		<?php
-			
 	}
 
 	public function display_addons() {
@@ -118,8 +117,8 @@ class Admin_Settings {
 		<div class="mkl-pc-addon mkl-pc-theme">
 			<figure><img src="<?php echo MKL_PC_ASSETS_URL .'admin/images/' ?>mkl-theme-thumbnail.png" alt=""></figure>
 			<div class="content">
-				<h4><?php _e( 'Get the official Live Product Customizer themes', MKL_PC_DOMAIN ) ?></h4>
-				<p><?php _e( 'Beautiful design, integrated live customizing interface, widgetized homepage, flexible, lightweight and much more...', MKL_PC_DOMAIN ) ?></p>
+				<h4><?php _e( 'Get the official Live Product Configurator themes', MKL_PC_DOMAIN ) ?></h4>
+				<p><?php _e( 'Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more...', MKL_PC_DOMAIN ) ?></p>
 				<a href="<?php echo $this->themes_url ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a>
 			</div>
 		</div>

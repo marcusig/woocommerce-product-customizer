@@ -25,7 +25,7 @@ class Admin_Product {
 	private function _hooks() {
 		// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
 		add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 20, 1 );
-		// add the checkbox to activate customizer on the product
+		// add the checkbox to activate configurator on the product
 		add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 		add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
 		add_action( 'admin_footer', array($this, 'editor' ) ); 
@@ -54,9 +54,9 @@ class Admin_Product {
 	 */
 	public function add_pc_settings_tab_content() {
 		?>
-		<div id="customizable_product_options" class="panel wc-metaboxes-wrapper">
+		<div id="configurable_product_options" class="panel wc-metaboxes-wrapper">
 			<?php 
-			do_action( 'woocommerce_product_customizer_options' );
+			do_action( 'woocommerce_product_configurator_options' );
 			?>
 		</div>
 
@@ -75,11 +75,11 @@ class Admin_Product {
 
 		woocommerce_wp_checkbox( 
 			array( 
-					'id' => MKL_PC_PREFIX.'_is_customizable',
-					'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_customizable', 
-					'class' => 'is_customizable',
-					'label' => __( 'This product is customizable', MKL_PC_DOMAIN ), 
-					'description' => __( 'Select if you want this product to be customizable', MKL_PC_DOMAIN ) 
+					'id' => MKL_PC_PREFIX.'_is_configurable',
+					'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_configurable', 
+					'class' => 'is_configurable',
+					'label' => __( 'This product is configurable', MKL_PC_DOMAIN ), 
+					'description' => __( 'Select if you want this product to be configurable', MKL_PC_DOMAIN ) 
 				) 
 			);
 
@@ -94,7 +94,7 @@ class Admin_Product {
 	}
 
 	/**
-	 * Home tab content, displayed in the product customizer editor modal
+	 * Home tab content, displayed in the product configurator editor modal
 	 *
 	 * @return void
 	 */
@@ -132,7 +132,7 @@ class Admin_Product {
 		$data = json_encode( $structure );
 		$product_type = $this->_product->get_type(); 
 		
-		include 'views/html-product-customizer-templates.php';
+		include 'views/html-product-configurator-templates.php';
 
 	}
 
@@ -157,7 +157,7 @@ class Admin_Product {
 			array('backbone/collections/states', 'collections/states.js'),
 			array('backbone/collections/products', 'collections/products.js'),
 			//VIEWS
-			array('backbone/views/home', 'views/customizer_home.js'),
+			array('backbone/views/home', 'views/configurator_home.js'),
 			array('backbone/views/layers', 'views/layers.js'),
 			array('backbone/views/choices', 'views/choices.js'),
 			array('backbone/views/states', 'views/states.js'),
@@ -215,8 +215,8 @@ class Admin_Product {
 	 * @return void
 	 */
 	public function save_product_setting( $post_id ) {
-		$_is_customizable = isset( $_POST[MKL_PC_PREFIX.'_is_customizable'] ) ? 'yes' : 'no';
-		update_post_meta( $post_id, MKL_PC_PREFIX.'_is_customizable', $_is_customizable );
+		$_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? 'yes' : 'no';
+		update_post_meta( $post_id, MKL_PC_PREFIX.'_is_configurable', $_is_configurable );
 	}	
 
 	/**
@@ -229,7 +229,7 @@ class Admin_Product {
 	public function start_button($id, $parent_id = NULL) {
 		ob_start();
 		?>
-			<a href="#" class="button-primary start-customization show_if_is_customizable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Configure product's customizer", MKL_PC_DOMAIN) ?></a>
+			<a href="#" class="button-primary start-configuration show_if_is_configurable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Configure product's configurator", MKL_PC_DOMAIN) ?></a>
 		<?php 
 		$return = ob_get_clean();
 		return $return;
@@ -244,7 +244,7 @@ class Admin_Product {
 	 */
 	public function edit_button( $id = NULL, $type = NULL ) {
 		if( $id && $type ) {
-			return '<a href="#" class="button launch-customizer-editor" data-product-id="'.$id.'" data-product-type="'.$type.'">' . __('Edit customizer layers', MKL_PC_DOMAIN ) . '</a>';
+			return '<a href="#" class="button launch-configurator-editor" data-product-id="'.$id.'" data-product-type="'.$type.'">' . __('Edit configurator layers', MKL_PC_DOMAIN ) . '</a>';
 		} else {
 			return '';
 		}

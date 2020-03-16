@@ -5,13 +5,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Checks if a product is customizable
+ * Checks if a product is configurable
  *
  * @param integer $product_id
  * @return boolean
  */
-function mkl_pc_is_customizable( $product_id = NULL ) {
-	return MKL\PC\Utils::is_customizable( $product_id );
+function mkl_pc_is_configurable( $product_id = NULL ) {
+	return MKL\PC\Utils::is_configurable( $product_id );
 }
 
 /**

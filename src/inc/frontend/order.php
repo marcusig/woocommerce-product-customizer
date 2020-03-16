@@ -20,12 +20,12 @@ class Frontend_Order {
 	}
 
 	public function save_data( $item, $cart_item_key, $values, $order ) {
-		if( isset( $values['customizer_data'] ) ) {
-			$customizer_data = $values['customizer_data'];
+		if( isset( $values['configurator_data'] ) ) {
+			$configurator_data = $values['configurator_data'];
 			
-			if( is_array( $customizer_data ) ) {
+			if( is_array( $configurator_data ) ) {
 				// stores each couple layer name + choice as a order_item_meta, for automatic extraction
-				foreach( $customizer_data as $layer ) {
+				foreach( $configurator_data as $layer ) {
 					if( is_object($layer) ) {
 						if( $layer->is_choice ) :
 							$choice_meta = $this->set_order_item_meta( $layer );
@@ -37,8 +37,8 @@ class Frontend_Order {
 				}
 			}
 			
-			// stores the whole _customizer_data object
-			$item->add_meta_data( '_customizer_data', $customizer_data, false );
+			// stores the whole _configurator_data object
+			$item->add_meta_data( '_configurator_data', $configurator_data, false );
 		}		
 	}
 

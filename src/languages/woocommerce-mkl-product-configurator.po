@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: woocommerce-mkl-product-customizer.1.0.0\n"
+"Project-Id-Version: woocommerce-mkl-product-configurator.1.0.0\n"
 "POT-Creation-Date: 2016-12-29 09:40+0200\n"
 "PO-Revision-Date: 2016-12-29 09:40+0200\n"
 "Last-Translator: \n"
@@ -14,9 +14,9 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: ..\n"
 
-#: ../woocommerce-mkl-product-customizer.php:70
+#: ../woocommerce-mkl-product-configurator.php:70
 msgid ""
-"Woocommerce has to be active for WooCommerce Product customizer to work."
+"Woocommerce has to be active for WooCommerce Product configurator to work."
 msgstr ""
 
 #: ../woocommerce-template.php:97
@@ -36,7 +36,7 @@ msgid "Home"
 msgstr ""
 
 #: ../inc/db.php:34
-msgid "Welcome to the Product Customizer "
+msgid "Welcome to the Product Configurator "
 msgstr ""
 
 #: ../inc/db.php:50 ../inc/db.php:72
@@ -52,16 +52,16 @@ msgid "Layers of the product "
 msgstr ""
 
 #: ../inc/db.php:60 ../inc/db.php:82 ../inc/db.php:104
-#: ../inc/admin/views/html-product-customizer-templates.php:56
-#: ../inc/admin/views/html-product-customizer-templates.php:114
-#: ../inc/admin/views/html-product-customizer-templates.php:153
-#: ../inc/admin/views/html-product-customizer-templates.php:244
+#: ../inc/admin/views/html-product-configurator-templates.php:56
+#: ../inc/admin/views/html-product-configurator-templates.php:114
+#: ../inc/admin/views/html-product-configurator-templates.php:153
+#: ../inc/admin/views/html-product-configurator-templates.php:244
 #: ../inc/frontend/views/parts/toolbar.php:3
 msgid "Cancel"
 msgstr ""
 
 #: ../inc/db.php:64 ../inc/db.php:86 ../inc/db.php:108
-#: ../inc/admin/views/html-product-customizer-templates.php:57
+#: ../inc/admin/views/html-product-configurator-templates.php:57
 msgid "Save all"
 msgstr ""
 
@@ -120,23 +120,23 @@ msgid "Choisir une miniature"
 msgstr ""
 
 #: ../inc/admin/product.php:36
-msgid "Customizer options"
+msgid "Configurator options"
 msgstr ""
 
 #: ../inc/admin/product.php:67
-msgid "This product is customizable"
+msgid "This product is configurable"
 msgstr ""
 
 #: ../inc/admin/product.php:68
-msgid "Select if you want this product to be customizable"
+msgid "Select if you want this product to be configurable"
 msgstr ""
 
 #: ../inc/admin/product.php:96
-msgid "This variation is customizable"
+msgid "This variation is configurable"
 msgstr ""
 
 #: ../inc/admin/product.php:97
-msgid "Select if you want this v to be customizable"
+msgid "Select if you want this v to be configurable"
 msgstr ""
 
 #: ../inc/admin/product.php:108
@@ -182,104 +182,104 @@ msgid "New Choice Name"
 msgstr ""
 
 #: ../inc/admin/product.php:215
-msgid "Configure product's customizer"
+msgid "Configure product's configurator"
 msgstr ""
 
 #: ../inc/admin/product.php:223
-msgid "Edit customizer layers"
+msgid "Edit configurator layers"
 msgstr ""
 
 #: ../inc/admin/views/html-order-item.php:2
-msgid "Customizer Data:"
+msgid "Configurator Data:"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:17
+#: ../inc/admin/views/html-product-configurator-templates.php:17
 msgid "Close media panel"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:49
+#: ../inc/admin/views/html-product-configurator-templates.php:49
 msgid "Saved"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:74
-#: ../inc/admin/views/html-product-customizer-templates.php:221
+#: ../inc/admin/views/html-product-configurator-templates.php:74
+#: ../inc/admin/views/html-product-configurator-templates.php:221
 msgid "Add"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:104
-#: ../inc/admin/views/html-product-customizer-templates.php:143
+#: ../inc/admin/views/html-product-configurator-templates.php:104
+#: ../inc/admin/views/html-product-configurator-templates.php:143
 msgid "Details"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:109
-#: ../inc/admin/views/html-product-customizer-templates.php:113
-#: ../inc/admin/views/html-product-customizer-templates.php:148
-#: ../inc/admin/views/html-product-customizer-templates.php:152
-#: ../inc/admin/views/html-product-customizer-templates.php:239
-#: ../inc/admin/views/html-product-customizer-templates.php:243
+#: ../inc/admin/views/html-product-configurator-templates.php:109
+#: ../inc/admin/views/html-product-configurator-templates.php:113
+#: ../inc/admin/views/html-product-configurator-templates.php:148
+#: ../inc/admin/views/html-product-configurator-templates.php:152
+#: ../inc/admin/views/html-product-configurator-templates.php:239
+#: ../inc/admin/views/html-product-configurator-templates.php:243
 msgid "Delete"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:111
+#: ../inc/admin/views/html-product-configurator-templates.php:111
 msgid "Do you realy want to delete this angle?"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:120
+#: ../inc/admin/views/html-product-configurator-templates.php:120
 msgid "Angle Name"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:124
-#: ../inc/admin/views/html-product-customizer-templates.php:163
-#: ../inc/admin/views/html-product-customizer-templates.php:257
+#: ../inc/admin/views/html-product-configurator-templates.php:124
+#: ../inc/admin/views/html-product-configurator-templates.php:163
+#: ../inc/admin/views/html-product-configurator-templates.php:257
 msgid "Description"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:130
+#: ../inc/admin/views/html-product-configurator-templates.php:130
 msgid "Angles's picture"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:136
-#: ../inc/admin/views/html-product-customizer-templates.php:180
+#: ../inc/admin/views/html-product-configurator-templates.php:136
+#: ../inc/admin/views/html-product-configurator-templates.php:180
 msgid "Add / Change picture"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:150
+#: ../inc/admin/views/html-product-configurator-templates.php:150
 msgid "Do you realy want to delete this layer?"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:159
+#: ../inc/admin/views/html-product-configurator-templates.php:159
 msgid "Layer Name"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:167
+#: ../inc/admin/views/html-product-configurator-templates.php:167
 msgid "This layer does not have choices"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:169
+#: ../inc/admin/views/html-product-configurator-templates.php:169
 msgid "For exemple if the layer is a shadow or a static element"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:174
+#: ../inc/admin/views/html-product-configurator-templates.php:174
 msgid "Layer's icon"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:236
+#: ../inc/admin/views/html-product-configurator-templates.php:236
 msgid "Choice informations"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:241
+#: ../inc/admin/views/html-product-configurator-templates.php:241
 msgid "Do you realy want to delete this choice?"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:253
+#: ../inc/admin/views/html-product-configurator-templates.php:253
 msgid "Choice label"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:266
+#: ../inc/admin/views/html-product-configurator-templates.php:266
 msgid "Pictures"
 msgstr ""
 
-#: ../inc/admin/views/html-product-customizer-templates.php:303
+#: ../inc/admin/views/html-product-configurator-templates.php:303
 msgid "You need to have Layers and Angles set before entering any content."
 msgstr ""
 
@@ -292,7 +292,7 @@ msgid "Invalid configuration_id ID"
 msgstr ""
 
 #: ../inc/frontend/cart.php:74
-msgid "Customization"
+msgid "Configuration"
 msgstr ""
 
 #: ../inc/frontend/product.php:39
@@ -300,11 +300,11 @@ msgid "Select options"
 msgstr ""
 
 #: ../inc/frontend/product.php:68
-msgid "Customize"
+msgid "Configure"
 msgstr ""
 
 #: ../inc/frontend/product.php:105
-msgid "Please select a variation to customize"
+msgid "Please select a variation to configure"
 msgstr ""
 
 #: ../inc/frontend/views/parts/choices.php:2

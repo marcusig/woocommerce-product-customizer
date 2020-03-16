@@ -16,31 +16,21 @@ class Frontend_Cart {
 		$this->_hooks();
 	}
 	private function _hooks() {
-		if( defined('WP_DEBUG') && WP_DEBUG == true ) {
-			add_action( 'init', array( &$this, 'clear_cart_url' ) );
-		}
 		add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 		// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 		add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
 		// add_filter( 'woocommerce_add_cart_item', array( $this, 'wc_add_cart_item'), 10, 2 ); 
 		// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
 	}
-	public function clear_cart_url() {
-		global $woocommerce;
-		if ( isset( $_GET['empty-cart'] ) ) {
-			var_dump('clearing cart');
-			$woocommerce->cart->empty_cart(); 
-		}
-	}
 
-	// Filter data that's saved in the cart, and add the customizer data
+	// Filter data that's saved in the cart, and add the configurator data
 	public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 		// logdebug($cart_item_data);
 		// var_dump('-', $cart_item_data);
-		if( mkl_pc_is_customizable($product_id) ) {
+		if( mkl_pc_is_configurable($product_id) ) {
 
-			if( isset($_POST['pc_customizer_data'] ) && '' != $_POST['pc_customizer_data'] ) { 
-				if( $data = json_decode( stripcslashes( $_POST['pc_customizer_data'] ) ) ) {
+			if( isset($_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
+				if( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
 					if( is_array( $data ) ) { 
 						$layers = array();
 						foreach( $data as $layer_data ) {
@@ -48,7 +38,7 @@ class Frontend_Cart {
 							
 						}
 					}
-					$cart_item_data['customizer_data'] = $layers; 
+					$cart_item_data['configurator_data'] = $layers; 
 				}
 			} 
 		} 
@@ -57,11 +47,11 @@ class Frontend_Cart {
 
 	public function wc_cart_get_item_data( $data, $cart_item ) { 
 
-		if( mkl_pc_is_customizable( $cart_item['product_id'] ) ) { 
-			$customizer_data = $cart_item['customizer_data'] ; 
+		if( mkl_pc_is_configurable( $cart_item['product_id'] ) ) { 
+			$configurator_data = $cart_item['configurator_data'] ; 
 
 			$choices = array(); 
-			foreach ($customizer_data as $layer) { 
+			foreach ($configurator_data as $layer) { 
 				if ( $layer->is_choice ) { 
 					$choice_images = $layer->get_choice( 'images' );
 					$choice_image = '';
@@ -74,7 +64,7 @@ class Frontend_Cart {
 				}
 			}
 			$data[] = array( 
-				'key' => __('Customization', MKL_PC_DOMAIN), 
+				'key' => __('Configuration', MKL_PC_DOMAIN), 
 				'value' => $this->get_choices_html( $choices ), 
 			);
 			
@@ -124,7 +114,7 @@ class Frontend_Cart {
 
 	// public function pc_price_change( $cart_object ) {
 	//     foreach ( $cart_object->cart_contents as $key => $value ) {
-	//         if( mkl_pc_is_customizable($value['product_id']) ) {
+	//         if( mkl_pc_is_configurable($value['product_id']) ) {
 
 	//         }
 	//     }

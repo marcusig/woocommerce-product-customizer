@@ -26,7 +26,7 @@ PC.views = PC.views || {};
 		}, 
 		open: function( options ) { 
 			if( options.product_id === undefined) {
-				throw( { name: 'Error', message: 'product_id parameter is missing to start the customizer.' } );
+				throw( { name: 'Error', message: 'product_id parameter is missing to start the configurator.' } );
 				return false; 
 			}
 

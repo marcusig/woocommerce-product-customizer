@@ -1,14 +1,14 @@
 <?php
 
 /**
-* Plugin Name: WooCommerce Product customizer
+* Plugin Name: WooCommerce Product Configurator
 * Plugin URI: http://mklacroix.com
-* Description: WooCommerce Product customizer - Allow customers to Customize their products, with live preview
+* Description: WooCommerce Product Configurator - Allow customers to Configure their products, with live preview
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
 * Version: 1.0.0
 *
-* Text Domain: woocommerce-mkl-product-customizer
+* Text Domain: woocommerce-mkl-product-configurator
 * Domain Path: /languages/
 *
 * Copyright: © 2015 mklacroix (email : marcus_lacroix@yahoo.fr)
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MKL_PC_VERSION', '1.0.0' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
-define( 'MKL_PC_DOMAIN', 'woocommerce-mkl-product-customizer' );
+define( 'MKL_PC_DOMAIN', 'woocommerce-mkl-product-configurator' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
 define( 'MKL_PC_ADDONS_API_URL', 'http://mklpc.local' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -53,7 +53,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 }
 
 function mkl_pc_fail_php_version() {
-	$message = esc_html__( 'Woocommerce Product Customizer requires PHP version 5.4+, plugin is currently NOT ACTIVE.', MKL_PC_DOMAIN );
+	$message = esc_html__( 'Product Configurator for WooCommerce  requires PHP version 5.4+, plugin is currently NOT ACTIVE.', MKL_PC_DOMAIN );
 	$html_message = sprintf( '<div class="error">%s</div>', wpautop( $message ) );
 	echo wp_kses_post( $html_message );
 }
@@ -61,7 +61,7 @@ function mkl_pc_fail_php_version() {
 function mkl_pc_fail_loading_woocommerce() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'WooCommerce has to be active for WooCommerce Product customizer to work.', MKL_PC_DOMAIN ) ?> </p>
+		<p><?php _e( 'WooCommerce has to be active for WooCommerce Product configurator to work.', MKL_PC_DOMAIN ) ?> </p>
 	</div>
 	<?php
 }
@@ -69,7 +69,7 @@ function mkl_pc_fail_loading_woocommerce() {
 function mkl_pc_fail_woocommerce_version() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product customizer to work. <br>WooCommerce Version 3+ required.', MKL_PC_DOMAIN ) ?> </p>
+		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work. <br>WooCommerce Version 3+ required.', MKL_PC_DOMAIN ) ?> </p>
 	</div>
 	<?php
 }

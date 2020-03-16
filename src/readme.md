@@ -4,25 +4,25 @@
 
 ----
 
-# Woocommerce Product customizer 
+# Woocommerce Product configurator 
 - Contributors: mklacroix
-- Tags: woocommerce, product, addon, custom product, customizer, live
+- Tags: woocommerce, product, addon, custom product, configurator, live
 - Requires at least: 4.0
 - Tested up to: 4.8.2
 - Requires PHP: 5.4
 
-**WooCommerce Product customizer - Allow customers to Customize their products, with live preview**
+**WooCommerce Product configurator - Allow customers to Configure their products, with live preview**
 
 ## Description
-Allow customers to Customize their products with live preview. 
+Allow customers to Configure their products with live preview. 
 Define each choice that the customer has, add a specific picture with transparent background for the concerned part.
 
-> ![Screenshot](https://raw.githubusercontent.com/marcusig/woocommerce-product-customizer/master/woocommerce-customizer-preview.png) 
+> ![Screenshot](https://raw.githubusercontent.com/marcusig/woocommerce-product-configurator/master/woocommerce-configurator-preview.png) 
 > *(Modal Design is Work in progress)*
 
 ## Coming Soon
 
-- Premium WooCommerce theme with integrated customizer design
+- Premium WooCommerce theme with integrated configurator design
 - Premium addons
 
 ## Demo 

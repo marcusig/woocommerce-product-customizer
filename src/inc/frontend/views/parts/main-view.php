@@ -1,4 +1,4 @@
-<script type="text/html" id="tmpl-mkl-pc-customizer">
+<script type="text/html" id="tmpl-mkl-pc-configurator">
 	<div class="overlay"></div>
 	<div class="mkl_pc_container">
 		<div class="mkl_pc_bg" style="background-image: url({{data.bg_image}}); "></div>

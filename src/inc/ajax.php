@@ -28,17 +28,17 @@ class Ajax {
 	 * @return void
 	 */
 	private function _hooks() {
-		add_action( 'wp_ajax_pc_get_data', array( $this, 'get_customizer_data' ) );
-		add_action( 'wp_ajax_nopriv_pc_get_data', array( $this, 'get_customizer_data' ) );
-		add_action( 'wp_ajax_pc_set_data', array( $this, 'set_customizer_data' ) );
+		add_action( 'wp_ajax_pc_get_data', array( $this, 'get_configurator_data' ) );
+		add_action( 'wp_ajax_nopriv_pc_get_data', array( $this, 'get_configurator_data' ) );
+		add_action( 'wp_ajax_pc_set_data', array( $this, 'set_configurator_data' ) );
 	}
 
 	/**
-	 * Get the customizer Data
+	 * Get the configurator Data
 	 *
 	 * @return void
 	 */
-	public function get_customizer_data() {
+	public function get_configurator_data() {
 		global $mkltimestart;
 
 		// check_ajax_referer( 'config-ajax', 'security' );
@@ -80,14 +80,14 @@ class Ajax {
 				break;
 		}
 
-		$data = apply_filters('mkl_pc_get_customizer_data', $data, $id);
+		$data = apply_filters('mkl_pc_get_configurator_data', $data, $id);
 
 		if ( isset($_REQUEST['view']) && $_REQUEST['view'] =='dump' && defined('WP_DEBUG') && WP_DEBUG == true ) {
-			echo 'get_customizer_data was executed in ' . (microtime(true) - $start) *1000 . 'ms and we are about to dump';
+			echo 'get_configurator_data was executed in ' . (microtime(true) - $start) *1000 . 'ms and we are about to dump';
 			echo '<pre>';
 			var_dump($data);
 			echo '</pre>';
-			echo 'this data was dumped after ' . (microtime(true) - $start) *1000 . 'ms since get_customizer_data executed';
+			echo 'this data was dumped after ' . (microtime(true) - $start) *1000 . 'ms since get_configurator_data executed';
 
 			wp_die();
 
@@ -106,11 +106,11 @@ class Ajax {
 	}
 
 	/**
-	 * Save the customizer Data
+	 * Save the configurator Data
 	 *
 	 * @return void
 	 */
-	public function set_customizer_data() {
+	public function set_configurator_data() {
 
 		// CHECK IF THE REQUIRED FIELDS WERE SENT
 		if ( ! isset( $_REQUEST['id'] ) ) wp_send_json_error();

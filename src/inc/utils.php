@@ -89,12 +89,12 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
-		 * Check if a product is customizable
+		 * Check if a product is configurable
 		 *
 		 * @param integer $product_id
 		 * @return boolean
 		 */
-		public static function is_customizable( $product_id = NULL ) {
+		public static function is_configurable( $product_id = NULL ) {
 			if ( NULL == $product_id ) {
 				// if $product_id wasn't given, find the current one
 				$product_id = get_the_id();
@@ -106,7 +106,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			$fetched_product = wc_get_product( $product_id );
 
-			$customizable = $fetched_product->get_meta( MKL_PC_PREFIX.'_is_customizable' );
+			$configurable = $fetched_product->get_meta( MKL_PC_PREFIX.'_is_configurable' );
 
 			// Check if the product type is registered
 //			global $product;
@@ -125,7 +125,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			// }
 
-			return $customizable === 'yes';
+			return $configurable === 'yes';
 		}
 
 		/**
@@ -171,7 +171,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			do_action('mkl_pc_before_template', $template_file, $return_instead_of_echo, $extract_these);
 
 			if (!file_exists($template_file)) {
-				error_log("MKL Product Customizer: template not found: ".$template_file);
+				error_log("MKL Product Configurator: template not found: ".$template_file);
 				echo __('Error:', MKL_PC_DOMAIN).' '.__('template not found', MKL_PC_DOMAIN)." (".$template_file.")";
 			} else {
 				extract($extract_these);

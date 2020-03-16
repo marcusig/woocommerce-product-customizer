@@ -1,5 +1,5 @@
-<div class="customizer-data">
-	<h4><?php _e('Customizer Data:', MKL_PC_DOMAIN) ?></h4>
+<div class="configurator-data">
+	<h4><?php _e('Configurator Data:', MKL_PC_DOMAIN) ?></h4>
 	<ul>
 	<?php 
 	foreach( $data as $layer ) { 

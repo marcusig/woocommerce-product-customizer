@@ -38,24 +38,24 @@ Backbone.Model.prototype.toJSON = function() {
 		// 		// var $form = this;
 		// 	$form.on( 'hide_variation', function( event ) {
 		// 		event.preventDefault();
-		// 		$( '.customize-product' ).attr( 'disabled', 'disabled' );
+		// 		$( '.configure-product' ).attr( 'disabled', 'disabled' );
 		// 	} );
 
 		// 	$form.on( 'show_variation', function( event ) {
 		// 		event.preventDefault(); 
 		// 		var product_id = $('input[name="variation_id"]').val();
 		// 		PC.fe.open( product_id, true );
-		// 		$( '.customize-product' ).removeAttr( 'disabled' );
+		// 		$( '.configure-product' ).removeAttr( 'disabled' );
 		// 	} );
 		// }
 
 		PC.fe.product_type = PC.fe.product_type || 'simple';
 
-		$( '.customize-product-simple' ).on('click', function(event) {
+		$( '.configure-product-simple' ).on('click', function(event) {
 			var product_id;
 			//get product ID
 			product_id = $('*[name="add-to-cart"]').val();
-			// Open customizer
+			// Open configurator
 			try {
 				PC.fe.open( product_id ); 
 			} catch (err) {
@@ -68,15 +68,15 @@ Backbone.Model.prototype.toJSON = function() {
 
 			$(form).find('button').attr('disabled', 'disabled'); 
 			$(form).on('submit', function( event ){ 
-				$('input[name=pc_customizer_data]').val( PC.fe.save_data.save() ); 
-				if( $('input[name=pc_customizer_data]').val() == '' ) {
+				$('input[name=pc_configurator_data]').val( PC.fe.save_data.save() ); 
+				if( $('input[name=pc_configurator_data]').val() == '' ) {
 					event.preventDefault(); 
 					console.log('empty data'); 
 				}
 			});
 		});
 
-		wp.hooks.addAction( 'PC.fe.start', function( customizer ){
+		wp.hooks.addAction( 'PC.fe.start', function( configurator ){
 
 			$('form.cart').find('button').removeAttr('disabled'); 
 
@@ -89,8 +89,8 @@ Backbone.Model.prototype.toJSON = function() {
 			
 		});
 
-		if( PC.fe.config.open_customizer && PC.fe.config.open_customizer == true ) {
-			$( '.customize-product-simple' ).trigger( 'click' );
+		if( PC.fe.config.open_configurator && PC.fe.config.open_configurator == true ) {
+			$( '.configure-product-simple' ).trigger( 'click' );
 		}
 	});
 
@@ -127,7 +127,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		PC.fe.active_product = product_id; 
 
-		this.modal = this.modal || new PC.fe.views.customizer( product_id ); 
+		this.modal = this.modal || new PC.fe.views.configurator( product_id ); 
 
 		PC.fe.init( product_id ); 
 
@@ -195,15 +195,15 @@ Backbone.Model.prototype.toJSON = function() {
 	};
 
 	/*
-	// product is customizable == true
+	// product is configurable == true
 		// PRODUCT IS SIMPLE 
 			-> SERVE Structure and CONTENT
 		// Product is VARIABLE
 			-> SERVE Structure
 			-> on SELECT VARIATION 
-				-> Enable Customize button
+				-> Enable Configure button
 
-			-> Customize button .onClick 
+			-> Configure button .onClick 
 				-> GET Content 
 
 

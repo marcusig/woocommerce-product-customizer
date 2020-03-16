@@ -27,52 +27,52 @@ class Frontend_Product {
 		add_filter( 'woocommerce_product_supports', array( &$this, 'simple_product_supports' ), 10, 3 ); 
 		
 		// add button after form, as form will be moved.
-		add_action( 'woocommerce_after_add_to_cart_form', array( &$this, 'add_customize_button' ) ); 		
-		// add hidden input to store customizer data into form
-		add_action( 'woocommerce_after_add_to_cart_button', array( &$this, 'add_customize_hidden_field' ) ); 
-		add_action( 'mkl_pc_frontend_customizer_footer_form',array( $this, 'customizer_form' ), 20 ); 
-		add_action( 'mkl_pc_templates_empty_viewer', array( &$this, 'variable_empty_customizer_content'), 20 );
+		add_action( 'woocommerce_after_add_to_cart_form', array( &$this, 'add_configure_button' ) ); 		
+		// add hidden input to store configurator data into form
+		add_action( 'woocommerce_after_add_to_cart_button', array( &$this, 'add_configure_hidden_field' ) ); 
+		add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_form' ), 20 ); 
+		add_action( 'mkl_pc_templates_empty_viewer', array( &$this, 'variable_empty_configurator_content'), 20 );
 		add_action( 'wp_footer', array(&$this, 'print_product_configuration' ) );
 	}
 
 	public function add_to_cart_text( $text, $product ) {
-		if( mkl_pc_is_customizable( $product->get_id() ) && $product->get_type() == 'simple' ) {
+		if( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
 			$text = __( 'Select options', 'woocommerce' );
 		} 
 		return $text;
 
 	}
-	// Changes Removes add to cart link for simple + customizable products 
+	// Changes Removes add to cart link for simple + configurable products 
 	// From add to cart link to premalink
 	public function add_to_cart_link( $link, $product ) { 
 		//( is_shop() || is_product_category() ) && 
-		if( mkl_pc_is_customizable( $product->get_id() ) && $product->get_type() == 'simple' ) {
+		if( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
 			$link = $product->get_permalink();
 		}
 		return $link;
 	}
 	public function simple_product_supports( $value, $feature, $product ) {
-		if( mkl_pc_is_customizable( $product->get_id() ) && $product->get_type() == 'simple' ) {
+		if( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
 			if ( $feature == 'ajax_add_to_cart' ) $value = false;
 		}
 		return $value;
 
 	}
 
-	public function add_customize_button() { 
+	public function add_configure_button() { 
 		global $product;
-		if ( mkl_pc_is_customizable( get_the_id() ) ) {
-			echo apply_filters( 'mkl_pc_customize_button', '<button class="customize-product customize-product-'. $product->get_type().' '. $this->button_class .'" type="button">'.__( 'Customize', MKL_PC_DOMAIN ) .'</button>' );
+		if ( mkl_pc_is_configurable( get_the_id() ) ) {
+			echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button">'.__( 'Configure', MKL_PC_DOMAIN ) .'</button>' );
 		}
 	}
 
-	public function add_customize_hidden_field() {
-		if( mkl_pc_is_customizable( get_the_id() ) ) {
-			echo '<input type="hidden" name="pc_customizer_data">'; 
+	public function add_configure_hidden_field() {
+		if( mkl_pc_is_configurable( get_the_id() ) ) {
+			echo '<input type="hidden" name="pc_configurator_data">'; 
 		}			
 	}
 
-	public function customizer_form() {
+	public function configurator_form() {
 		global $product;
  		if ( ! $product->is_sold_individually() ) {
  			woocommerce_quantity_input( array(
@@ -82,28 +82,28 @@ class Frontend_Product {
  			) );
  		}
 	 	?>
-			<button type="button" class="<?php echo $this->button_class ?> customizer-add-to-cart"><?php _e( 'Add to cart', 'woocommerce' ) ?></button>
+			<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart"><?php _e( 'Add to cart', 'woocommerce' ) ?></button>
 	 	<?php
 	}
 
 	public function print_product_configuration(){
 		global $post, $product; 
-		if( !mkl_pc_is_customizable( get_the_id() ) )
+		if( !mkl_pc_is_configurable( get_the_id() ) )
 			return;
 
-		include( 'views/html-product-customizer-templates.php' );
+		include( 'views/html-product-configurator-templates.php' );
 	}
 
-	public function variable_empty_customizer_content() {
-		_e( 'Please select a variation to customize', MKL_PC_DOMAIN );
+	public function variable_empty_configurator_content() {
+		_e( 'Please select a variation to configure', MKL_PC_DOMAIN );
 	}
 
 	public function body_class( $classes ) {
 		// global $post;
 		if( is_product() ) {
 			
-			if( mkl_pc_is_customizable() ) {
-				$classes[] = 'is_customizable';
+			if( mkl_pc_is_configurable() ) {
+				$classes[] = 'is_configurable';
 			}
 		}
 		return $classes;

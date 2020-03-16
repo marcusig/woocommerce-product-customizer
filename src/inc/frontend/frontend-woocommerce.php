@@ -37,7 +37,7 @@ class Frontend_Woocommerce {
 		// add_filter( 'woocommerce_get_price', array( &$this, 'get_price' ), 10, 2 ); 
 		// add_filter( 'woocommerce_cart_item_product' , array( &$this, 'change_item_price' ), 10 , 3); 
 		// 		
-		// variation: include text when prod customizer is opened and no variation is selected
+		// variation: include text when prod configurator is opened and no variation is selected
 
 	}
 
@@ -51,8 +51,8 @@ class Frontend_Woocommerce {
 		//WP.hooks, until it's included in WP core.
 		wp_enqueue_script( 'mkl_pc/js/wp.hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '0.1', true );
 
-		// Exit if the plugin is not customizable
-		if( !mkl_pc_is_customizable( $post->ID ) ) return;
+		// Exit if the plugin is not configurable
+		if( !mkl_pc_is_configurable( $post->ID ) ) return;
 
 		$scripts = array(
 			array('backbone/models/choice', 'models/choice.js'),
@@ -68,12 +68,12 @@ class Frontend_Woocommerce {
 			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone', 'accounting'), MKL_PC_VERSION, true );
 		}
 		
-		// To include potential other scripts BEFORE the main customizer one
+		// To include potential other scripts BEFORE the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_before' );
 
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
-		wp_enqueue_script( 'mkl_pc/js/views/customizer', MKL_PC_ASSETS_URL.'js/views/customizer.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
-		wp_enqueue_script( 'mkl_pc/js/product_customizer', MKL_PC_ASSETS_URL.'js/product_customizer.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
 
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
@@ -86,21 +86,21 @@ class Frontend_Woocommerce {
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array( 'inline' => false ) ),
 		);
-		wp_localize_script( 'mkl_pc/js/product_customizer', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
+		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
 		// $version = $product
 		$date_modified = wc_get_product($post->ID)->get_date_modified();
 		wp_enqueue_script( 'mkl_pc/js/fe_data', Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
-		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_customizer.css', array(), MKL_PC_VERSION );
+		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_configurator.css', array(), MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css' );
 
-		// to include potential other scripts AFTER the main customizer one
+		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );
 
 	}
 
 	// public function change_item_price( $data, $cart_item, $key  ) { 
-	// 	if( mkl_pc_is_customizable( $data->id ) ) {
+	// 	if( mkl_pc_is_configurable( $data->id ) ) {
 
 	// 		// $data->price = 2;
 	// 	}
@@ -111,7 +111,7 @@ class Frontend_Woocommerce {
 
 
 	// public function get_price( $price, $product ) {
-	// 	if( mkl_pc_is_customizable( $product->id ) ) {
+	// 	if( mkl_pc_is_configurable( $product->id ) ) {
 	// 		return $price;
 	// 	}
 	// 	return $price; 
@@ -119,7 +119,7 @@ class Frontend_Woocommerce {
 
 
 
-	// Removes ajax_add_to_cart support for simple + customizable products 
+	// Removes ajax_add_to_cart support for simple + configurable products 
 	// in archive view
 
 

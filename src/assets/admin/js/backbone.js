@@ -1,5 +1,5 @@
 (function($){
-	var PC = window.MKL_Customizer = window.MKL_Customizer || {};
+	var PC = window.MKL_Configurator = window.MKL_Configurator || {};
 	// console.log(Backbone);
 
 	// MAIN ELEMENT CONTAINING THE ELEMENTS 

@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: woocommerce-mkl-product-customizer.1.0.0\n"
+"Project-Id-Version: woocommerce-mkl-product-configurator.1.0.0\n"
 "POT-Creation-Date: 2016-01-22 07:10+0200\n"
 "PO-Revision-Date: 2016-01-22 07:14+0200\n"
 "Last-Translator: \n"
@@ -14,20 +14,20 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: ..\n"
 
-#: ../woocommerce-mkl-product-customizer.php:85
+#: ../woocommerce-mkl-product-configurator.php:85
 #, php-format
 msgid "Error locating %s for inclusion"
 msgstr "Erreur lors de l'inclusion de %s"
 
-#: ../woocommerce-mkl-product-customizer.php:131
-msgid "Produit customizable"
-msgstr "Produit customizable"
+#: ../woocommerce-mkl-product-configurator.php:131
+msgid "Produit configurable"
+msgstr "Produit configurable"
 
-#: ../woocommerce-mkl-product-customizer.php:164
+#: ../woocommerce-mkl-product-configurator.php:164
 msgid "Woocommerce admin"
 msgstr ""
 
-#: ../woocommerce-mkl-product-customizer.php:165
+#: ../woocommerce-mkl-product-configurator.php:165
 msgid "Displays a label then the field."
 msgstr ""
 
@@ -39,18 +39,18 @@ msgstr "Ajouter au panier"
 msgid "Read More"
 msgstr "Lire la suite"
 
-#: ../parts/customizer/structure.php:9
-msgid "Select if you want this product to be customizable"
-msgstr "Cocher cette case si ce produit est customizable"
+#: ../parts/configurator/structure.php:9
+msgid "Select if you want this product to be configurable"
+msgstr "Cocher cette case si ce produit est configurable"
 
-#: ../parts/customizer/structure.php:15
-msgid "This product is customizable"
-msgstr "Ce produit est customizable"
+#: ../parts/configurator/structure.php:15
+msgid "This product is configurable"
+msgstr "Ce produit est configurable"
 
-#: ../parts/customizer/structure.php:44
+#: ../parts/configurator/structure.php:44
 msgid "Name of element"
 msgstr "Nom de l'élément"
 
-#: ../parts/customizer/structure.php:52
+#: ../parts/configurator/structure.php:52
 msgid "Choice"
 msgstr "Choix"
