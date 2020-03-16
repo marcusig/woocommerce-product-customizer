@@ -293,7 +293,7 @@ abstract class Configuration {
 		$attach_id = wp_insert_attachment( $attachment, $filename, $parent_post_id );
 
 		// Make sure that this file is included, as wp_generate_attachment_metadata() depends on it.
-		require_once( ABSPATH . 'wp-admin/includes/image.php' );
+		require_once ABSPATH . 'wp-admin/includes/image.php';
 
 		// Generate the metadata for the attachment, and update the database record.
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $filename );

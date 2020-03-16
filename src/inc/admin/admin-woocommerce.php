@@ -19,14 +19,11 @@ class Admin_Woocommerce {
 	public $ID = NULL;
 	public $admin = NULL;
 	public function __construct() {
-
-		$this->_hooks();
 		$this->_includes();
 		$this->order = new Admin_Order();
 		$this->product = new Admin_Product();
 		$this->settings = new Admin_Settings();
 		$this->choice_settings = new Choice_Settings();
-
 	}
 
 	/**
@@ -40,20 +37,6 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}
-
-	/**
-	 * Setup hooks
-	 *
-	 * @return void
-	 */
-	private function _hooks() {
-		// add_action( 'admin_init', array( &$this, 'woocommerce_loaded' ) ); 
-		// add_action( 'woocommerce_product_customizer_options', array($this, 'product_data_fields' ), 1 );
-		// add_action( 'woocommerce_product_after_variable_attributes', array($this, 'product_variation_data_fields' ), 10, 3 );
-	}
-
-	// /wp-content/plugins/woocommerce-mkl-product-customizer/lib/class-mlk-pc-admin.php
-	// /wp-content/plugins/woocommerce-mkl-product-customizer/lib/class-mkl-pc-admin.php
 
 	public function get_editor_menu( $structure ) {
 		
@@ -99,7 +82,15 @@ class Admin_Woocommerce {
 		}
 	}
 
+	/**
+	 * Get a template part
+	 *
+	 * @param string  $file_path - The file to include
+	 * @param array   $view_data - The data to extract
+	 * @return string
+	 */
 	public function get_template_part( $file_path, $view_data = null ) {
+		if ( ! file_exists( $file_path ) ) return '';
 		if ( $view_data ) extract( $view_data );
 		ob_start();
 		include $file_path;
@@ -111,24 +102,3 @@ class Admin_Woocommerce {
 
 
 } // END CLASS
-
-
-/*
-
-add an ID for each element + choice 
-
-- STRUCTURE
-	view.on.change 
-	- Save STRUCTURE
-- VIEWS
-	view.on.change 
-	- Save VIEWS
-- DATA
-	view.on.show
-	- GET STRUCTURE
-	- GET VIEW
-	view.on.change
-	- SAVE
-
-*/
-

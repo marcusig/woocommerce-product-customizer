@@ -25,7 +25,7 @@ class Admin_Order {
 			$data = (array) unserialize( $item['item_meta']['customizer_data'][0] ); 
 
 			if( count( $data ) > 0 ){
-				include( 'views/html-order-item.php' );
+				include 'views/html-order-item.php';
 			}
 
 		}

@@ -17,6 +17,11 @@ class Admin_Product {
 		$this->_hooks();
 	}
 
+	/**
+	 * Setup hooks
+	 *
+	 * @return void
+	 */
 	private function _hooks() {
 		// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
 		add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 20, 1 );
@@ -29,6 +34,11 @@ class Admin_Product {
 
 	}
 
+	/**
+	 * Plugins loaded
+	 *
+	 * @return void
+	 */
 	public function on_plugins_loaded() {
 		// Supported product types
 		$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array('simple') );
@@ -36,23 +46,6 @@ class Admin_Product {
 			add_action( 'woocommerce_process_product_meta_' . $product_type, array( $this, 'save_product_setting' ) );
 		}
 	}
-
-	/**
-	 * Add the settings tab to WooCommerce
-	 *
-	 * @param array $tabs
-	 * @return array
-	 */
-	// public function add_pc_settings_tab( $tabs ) {
-	// 	error_log('did you call me?');
-	// 	$tabs['customizable-product'] = array(
-	// 		'label'  => __( 'Customizer options', MKL_PC_DOMAIN ),
-	// 		'target' => 'customizable_product_options',
-	// 		'class'  => array( 'customizable_product_tab', 'show_if_is_customizable' ),
-
-	// 	);
-	// 	return $tabs;
-	// }
 
 	/**
 	 * Add the settings
@@ -68,12 +61,15 @@ class Admin_Product {
 		</div>
 
 		<?php
-		
 	}
 
+	/**
+	 * Add the setting to WooCommerce
+	 *
+	 * @return void
+	 */
 	public function add_wc_general_product_data_fields() {
-		global $post, $wc_mkl_pc;
-		// var_dump($post->ID);
+		global $post;
 
 		echo '<div class="options_group wc-metaboxes-wrapper '. join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .'">';
 
@@ -87,8 +83,6 @@ class Admin_Product {
 				) 
 			);
 
-		// piklist('customizer/is_customizer'); 
-
 		?>
 		<div class="toolbar show_if_simple">
 		<?php echo $this->start_button( $post->ID ) ?>
@@ -97,30 +91,13 @@ class Admin_Product {
 		do_action( 'mkl_pc_admin_general_tab' );
 		echo '</div>';
 		
-		// $this->editor();
-
 	}
 
-	public function product_variation_data_fields( $loop, $variation_data, $variation ) {
-		global $wc_mkl_pc;
-		?>
-		<div class="toolbar">
-		<?php
-		woocommerce_wp_checkbox( 
-			array( 
-					'id' => MKL_PC_PREFIX.'_is_customizable',
-					'wrapper_class' => 'is_customizable', 
-					'class' => 'is_customizable',
-					'label' => __( 'This variation is customizable', MKL_PC_DOMAIN ), 
-					'description' => __( 'Select if you want this v to be customizable', MKL_PC_DOMAIN ) 
-				) 
-			);
-
-		?>
-		<?php echo $this->start_button( $variation->ID, $variation->post_parent ) ?>
-		</div>
-		<?php
-	}
+	/**
+	 * Home tab content, displayed in the product customizer editor modal
+	 *
+	 * @return void
+	 */
 	public function home_tab() {
 		?>
 		<h2><?php _e( 'You are configuring "', MKL_PC_DOMAIN) ; echo get_the_title( $this->ID ) ?>"</h2>
@@ -134,6 +111,11 @@ class Admin_Product {
 		<?php 
 	}
 
+	/**
+	 * Add the editor markup to the footer of the products.
+	 *
+	 * @return void
+	 */
 	public function editor() {
 		global $post;
 		
@@ -150,11 +132,15 @@ class Admin_Product {
 		$data = json_encode( $structure );
 		$product_type = $this->_product->get_type(); 
 		
-		include( 'views/html-product-customizer-templates.php' );
+		include 'views/html-product-customizer-templates.php';
 
 	}
 
-
+	/**
+	 * Load the scripts
+	 *
+	 * @return void
+	 */
 	public function load_scripts() {
 		$scripts = array(
 			array('admin', 'admin.js'),
@@ -233,6 +219,13 @@ class Admin_Product {
 		update_post_meta( $post_id, MKL_PC_PREFIX.'_is_customizable', $_is_customizable );
 	}	
 
+	/**
+	 * Outputs the button to start the editor
+	 *
+	 * @param integer $id
+	 * @param integer $parent_id
+	 * @return string
+	 */
 	public function start_button($id, $parent_id = NULL) {
 		ob_start();
 		?>
@@ -242,6 +235,13 @@ class Admin_Product {
 		return $return;
 	}
 
+	/**
+	 * Outputs the edit button
+	 *
+	 * @param integer $id   - Product ID
+	 * @param string  $type - Product type
+	 * @return string
+	 */
 	public function edit_button( $id = NULL, $type = NULL ) {
 		if( $id && $type ) {
 			return '<a href="#" class="button launch-customizer-editor" data-product-id="'.$id.'" data-product-type="'.$type.'">' . __('Edit customizer layers', MKL_PC_DOMAIN ) . '</a>';
@@ -253,7 +253,7 @@ class Admin_Product {
 	/**
 	 * Write the configuration to the cache
 	 *
-	 * @param [type] $id
+	 * @param integer $id
 	 * @return void
 	 */
 	public function write_configuration_cache( $id ) {
