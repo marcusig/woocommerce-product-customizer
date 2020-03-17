@@ -1,3 +1,20 @@
+.settings_page_mkl_pc_settings h1 {
+    position: relative;
+    background: #FFF;
+    margin-left: -20px;
+    margin-top: -9px;
+    margin-right: -20px;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+
+.settings_page_mkl_pc_settings h1 span.by {
+    position: absolute;
+    right: 20px;
+    top: 10px;
+	font-size: 1rem;
+}
+
 .mkl-settings-content {
 	display: none;
 }

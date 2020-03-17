@@ -45,7 +45,10 @@ class Admin_Settings {
 	public function display(){
 		?>
 		<div class="wrap">
-			<h1><img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-configurator-for-woocommerce.png" alt="Product Configurator for WooCommerce"/><br>by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></h1>
+			<h1>
+				<img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-configurator-for-woocommerce.png" alt="Product Configurator for WooCommerce"/>
+				<span class="by">by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></span>
+			</h1>
 			<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
 				<a href="#" class="nav-tab nav-tab-active" data-content="settings"><?php _e( 'Settings', MKL_PC_DOMAIN ); ?></a>
 				<a href="#" class="nav-tab" data-content="addons"><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></a>
