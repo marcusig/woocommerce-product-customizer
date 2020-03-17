@@ -1,9 +1,9 @@
 <?php
 
 /**
-* Plugin Name: WooCommerce Product Configurator
-* Plugin URI: http://mklacroix.com
-* Description: WooCommerce Product Configurator - Allow customers to Configure their products, with live preview
+* Plugin Name: Product Configurator for WooCommerce
+* Plugin URI: http://wc-product-configurator.com
+* Description: Allow customers to configure and customize their products using a live preview powered by a system of layers
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
 * Version: 1.0.0

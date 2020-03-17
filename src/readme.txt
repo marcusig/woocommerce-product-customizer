@@ -1,4 +1,4 @@
-=== Live Product Configurator for WooCommerce ===
+=== Product Configurator for WooCommerce ===
 Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,configure
 Requires at least: 3.9
@@ -12,7 +12,7 @@ Allow your customers to create configurable products with a live preview of the 
 
 == Description ==
 
-The Live Product Configurator for WooCommerce allows you to use layers to produce instant visuals for your customers.
+The Product Configurator for WooCommerce allows you to use layers to produce instant visuals for your customers.
 
 Give your customers a great experience, and make your life easy: no need to create many product variations with their images. 
 
@@ -25,7 +25,7 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 = Using the WordPress dashboard =
 
 1. Navigate to the 'Add New' in the plugins dashboard
-2. Search for 'Live Product Configurator for WooCommerce'
+2. Search for 'Product Configurator for WooCommerce'
 3. Click 'Install Now'
 4. Activate the plugin on the Plugin dashboard
 
@@ -48,5 +48,9 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 == Frequently Asked Questions ==
 
 == Screenshots ==
+
+1. WooCommerce product settings
+2. Editing a configuration
+3. Default front-end display
 
 == Changelog ==
