@@ -4,8 +4,15 @@
     margin-left: -20px;
     margin-top: -9px;
     margin-right: -20px;
-    margin-bottom: 20px;
     padding: 20px;
+}
+.settings_page_mkl_pc_settings .wrap > header {
+	margin-bottom: 20px;
+}
+
+.settings_page_mkl_pc_settings .wrap > header .links {
+	margin-top: 10px;
+	text-align: right;
 }
 
 .settings_page_mkl_pc_settings h1 span.by {
