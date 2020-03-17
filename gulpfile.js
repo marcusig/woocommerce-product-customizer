@@ -11,7 +11,7 @@ const cleanPaths = [
 	// 'woocommerce-mkl-pc-extra-price.zip'
 ];
 
-const folder_name = 'woocommerce-mkl-product-customizer';
+const folder_name = 'product-configurator-for-woocommerce';
 
 /*== Clean Dist and Zip ==*/
 var options = { allowEmpty: true };
