@@ -16,7 +16,5 @@ PC.layer = Backbone.Model.extend({
 		not_a_choice: false,
 	},
 	sync: function( method, model, options ) {
-		// console.log('layer.sync');
-		// console.log(method, model, options);
 	}
 })

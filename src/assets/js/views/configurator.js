@@ -20,7 +20,7 @@ PC.options = PC.options || {};
 			try {
 				this.render();
 			} catch (err) {
-				console.log ('we had an error: ', err);
+				console.log ('There was an error when rendering the configurator: ', err);
 			}
 			return this; 
 		},
@@ -415,7 +415,6 @@ PC.options = PC.options || {};
 				this.layers = [];
 
 				this.add_layers();
-				console.log('rendering layers');
 				// wp.hooks.addAction( 'PC.fe.viewer.layer.render', function( layer ) {
 					
 				// } );
@@ -446,7 +445,6 @@ PC.options = PC.options || {};
 
 		change_layer: function( layer_id, choice_id, view ) { 
 
-			// console.log('change_layer:',layer_id, choice_id, view);
 			// var layer = this.layers[ layer_id ];
 			/*
 				view
@@ -496,7 +494,6 @@ PC.options = PC.options || {};
 				if( that.parent.imagesLoading == 0 ) {
 					that.parent.$el.removeClass('is-loading-image');
 					wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
-					console.log('cl=m:ete');
 				}
 			});
 

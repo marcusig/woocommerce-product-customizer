@@ -185,7 +185,6 @@ PC.views = PC.views || {};
 			
 			this.modal.show();
 			this.backdrop.show();
-			// console.log('Getting States:');
 			// States: menu elements`
 			this.opened = true;
 
@@ -211,7 +210,7 @@ PC.views = PC.views || {};
 
 		},
 		render: function() {
-			// console.log('rendering App modal base');
+			// rendering App modal base		
 			$('body').append( this.$el.html( this.template() ) );
 
 		},

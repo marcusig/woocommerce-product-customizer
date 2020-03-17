@@ -151,6 +151,7 @@ class Ajax {
 		// 		$result = $this->db->get_layers();
 		// 		break;
 		// }
-		wp_send_json( $result );
+		// wp_send_json_error( $result );
+		wp_send_json_success( $result );
 	}
 }

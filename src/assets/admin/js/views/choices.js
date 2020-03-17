@@ -57,7 +57,6 @@ PC.views = PC.views || {};
 		},
 
 		add_one: function( model ) {
-			console.log(model);
 			var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
 			this.$list.append( new_choice.render().el );
 		},
@@ -78,7 +77,6 @@ PC.views = PC.views || {};
 					helper:               'clone',
 					opacity:              0.65,
 					stop: 				  function(event, s){
-						console.log('STOPPING DRAG');
 						s.item.trigger('drop', s.item.index());
 					}
 					
@@ -318,16 +316,12 @@ PC.views = PC.views || {};
 
 	// 	},
 
-	// 	select_attachment: function(e, attachment) {
-	// 		console.log('select_attachment');
-	// 		console.log(e, attachment);
-			
+	// 	select_attachment: function(e, attachment) {			
 	// 		this.model.set('image', {
 	// 			url: attachment.get('url'),
 	// 			id: attachment.id
 	// 		});
 			
-	// 		console.log( this.model );
 	// 		this.render();
 	// 	},	
 	// });

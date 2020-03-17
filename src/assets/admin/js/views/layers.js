@@ -52,7 +52,6 @@ TODO:
 
 		}, 
 		is_being_removed: function() {
-			// console.log('Layers View is being removed.'); 
 		},
 		render: function( ) {
 
@@ -95,8 +94,6 @@ TODO:
 		},
 
 		add_one: function( layer ) {
-			// console.log('add_one');
-			// console.log(this, this.single_view());
 			var singleView = this.single_view();
 			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col });
 			this.$list.append( new_layer.render().el );
@@ -152,7 +149,6 @@ TODO:
 			this.render();
 		},
 		new_attributes: function( name ) {
-			// console.log(PC.app.get_new_id( this.col.models ));
 			return {
 				_id: PC.app.get_new_id( this.col ),
 				name: name,
@@ -190,9 +186,7 @@ TODO:
 
 		},
 		render: function() {
-			// console.log(this.model);
 			this.$el.html( this.template( this.model.attributes ) );
-			// this.$el.prop('tabindex', '0');
 			if( this.model.get('active') == true || this.model.get('active') == 'true' ) this.edit();
 			return this;
 		},
@@ -300,7 +294,6 @@ TODO:
 		delete_layer: function( event ) {
 			var bt = $(event.currentTarget);
 			var action = bt.data('delete');
-			//console.log( this.model.sync );
 			switch (action) {
 				case 'prompt':
 					bt.addClass('hidden');
@@ -308,8 +301,6 @@ TODO:
 					break;
 				case 'confirm':
 					this.model.destroy();
-
-					// console.log('Delete this model.');
 					break;
 				case 'cancel':
 					this.delete_btns.prompt.removeClass('hidden');

@@ -1,6 +1,5 @@
 (function($){
 	var PC = window.MKL_Configurator = window.MKL_Configurator || {};
-	// console.log(Backbone);
 
 	// MAIN ELEMENT CONTAINING THE ELEMENTS 
 	PC.Vue = {};
@@ -13,17 +12,12 @@
 		initialize: function() {
 			this.name = this.attributes.name;
 			this.elms = new PC.Vue.Elements( this.attributes.elements );
-			// console.log('this.elms:');
-			// console.log(this.elms);
-			
-			// console.log(this.elements);
 		},
 		getElms: function() {
 			return this.elms;
 		},
 		toJSON : function() {
 			var attrs = _.clone( this.attributes );
-			// attrs.post_id = wpq.post_id;
 			return attrs;
 		},
 
@@ -36,10 +30,7 @@
 			var data = [];
 			this.each(function(model, index) {
 				var elms = model.getElms();
-				// elms.each(function(elm, index2){
-				// });
 				data[index] = model.toJSON();
-				// console.log(index);
 			});
 			return data ;
 
@@ -57,12 +48,9 @@
 		initialize: function( element ) {
 			this.choices = new PC.Vue.Element.Choices( element.choices );
 			return this;
-			// console.log('this.choices: ');
-			// console.log(this.choices);
 		},
 		toJSON : function() {
 			var attrs = _.clone( this.attributes );
-			// attrs.post_id = wpq.post_id;
 			return attrs;
 		},
 
@@ -95,13 +83,10 @@
 
 	PC.Views.Vues = Backbone.View.extend({
 		initialize: function() {
-			// console.log(this.$el);
 			this.collection.each( this.addVue, this );
 			return this;
 		},
 		addVue: function(model, index) {
-			// console.log('name:');
-			// console.log(model.get('elms'));
 			var vue = new PC.Views.Vue({model: model});
 			this.$el.append(vue.render().el);
 		}
@@ -114,9 +99,6 @@
 			// this. PC.Views.Elements.
 		},
 		render: function() {
-
-			// console.log(this.model.elms);
-
 			var Elements = new PC.Views.Elements({collection: this.model.elms });
 			this.$el.append(this.model.get('name') );
 			this.$el.append( Elements.render().$el );
@@ -154,18 +136,14 @@
 			'click a': 'showChoices'
 		},
 		render: function() {
-			console.log('rendering '+ this.model.get('name'));
 			this.$el.append('<a href="#">' + this.model.get('name') + '</a>');
 			return this;
 		},
 		showChoices: function( e ) {
 			e.preventDefault();
-			// console.log(this.className);
 			$('.' + this.className).removeClass('active');
 			this.$el.addClass('active');
 			this.choices = new PC.Views.Choices({collection: this.model.choices});
-			console.log( 'showChoices click' );
-			
 			this.choices.render();
 		}
 	});
@@ -191,34 +169,24 @@
 		tagName: 'li',
 		className: 'choice',
 		initialize: function() {
-
 			// this.choices = new PC.Views.
 		},
 		events: {
 			'click a': 'showChoicesImgs'
 		},
 		render: function() {
-			console.log('rendering choice.');
 			this.$el.append('<a href="#">' + this.model.get('name') + '</a>');
 			
 			return this;
 		},
 		showChoicesImgs: function( e ) {
 			e.preventDefault();
-			// console.log(this.model.collection);
-			// console.log( this.model.get( 'img' ) );
-			// console.log( this.model.get( 'thumbnail' ) );
 			// this.model.collection.each(this.removeActive, this) ;
 			$('.my-choices .choices-list > li').removeClass('active');
 			$('.choice-imgs').html( new PC.Views.ChoiceImages({model:this.model}).render() );
 			this.$el.addClass('active');
-			// console.log(this);
-
 		}, 
 		removeActive: function( model, index ) {
-			
-			// console.log(model.view);
-
 			// model.$el.removeClass('active');
 		}
 
@@ -237,25 +205,20 @@
 		},
 		editImg: function(e) {
 			e.preventDefault();
-			console.log( this.model.get('img') );
 		},
 		editThumbnail: function(e) {
 			e.preventDefault();
-			console.log( this.model.get('thumbnail') );
 		},
-
 		render: function() {
-
 			var html = '<a href="#" class="img-edit">' + this.model.get('img') + '</a>';
 			html += '<a href="#" class="thumbnail-edit">' + this.model.get('thumbnail') + '</a>';
-			
+
 			return this.$el.html(html);
 		},
 
 	});
 
 	$(document).ready(function() {
-		// console.log(PC);
 		var vues = JSON.parse( $('#_value').val() );
 		if( vues ) {
 			var my_vues = new PC.Vues(vues);
@@ -263,11 +226,7 @@
 			$('#export-data').click(function(event) {
 				/* Act on the event */
 				event.preventDefault();
-				
-				console.log( JSON.stringify( my_vues.export() ) );
-
 			});
-			// console.log(my_vues);
 		}
 	});
 

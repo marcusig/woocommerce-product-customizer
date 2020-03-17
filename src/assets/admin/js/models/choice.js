@@ -32,8 +32,6 @@ PC.choice = Backbone.Model.extend({
 		console.log('choice model parse:', response);
 	},
 	sync: function( method, model, options ) {
-		// console.log('layer.sync');
-		// console.log(method, model, options);
 	}
 });
 

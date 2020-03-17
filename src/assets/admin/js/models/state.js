@@ -11,10 +11,6 @@ PC.state = Backbone.Model.extend({
 		active: false,
 	},
 	initialize: function() {
-
-		// console.log(this.get('label'));
-		// console.log(this.get('type'));
-		// console.log(this.get('menu_id'));
 	}
 });
 

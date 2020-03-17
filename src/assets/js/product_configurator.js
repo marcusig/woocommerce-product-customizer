@@ -138,13 +138,10 @@ Backbone.Model.prototype.toJSON = function() {
 		// 	PC.fe.init( product_id, variation );
 		// 	return;
 		// }
-		// console.log( variation, ( variation && !PC.fe.variations_content ),( variation && !PC.fe.variations_content[product_id] ) );
-		// console.log('gonna open without INIT (because should already be done)');
 		
 		/*
 		check if product_id is different from before
 		*/
-		// console.log(this.layers, this.angles, this.contents);
 
 	};
 

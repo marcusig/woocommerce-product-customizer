@@ -16,8 +16,6 @@ PC.layers = Backbone.Collection.extend({
     },
 
     sync: function( method, model, options ) {
-    	// console.log('layers.sync');
-    	// console.log(method, model, options);
     },
 
     

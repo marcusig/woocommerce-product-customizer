@@ -9,13 +9,9 @@ PC.views = PC.views || {};
 		template: wp.template('mkl-pc-home'), 
 
 		initialize: function() {
-			console.log('View home');
 			this.render();
-			console.log( this.$el );
-
 		},
 		render: function() {
-			console.log('rendering home');
 			this.$el.append( this.template() );
 			return this.$el;
 		},

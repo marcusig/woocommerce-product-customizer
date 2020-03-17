@@ -25,18 +25,6 @@ var PC = PC || {};
 		views: {
 			init: function() {				
 				this.change_product_type();
-				// setTimeout(this.links_action, 100);
-			},
-			links_action: function() {
-				// console.log($('#configurable_product_views .wc-metabox-content > .piklist-field-addmore-wrapper'));
-				// $('#configurable_product_views .wc-metabox-content > .piklist-field-addmore-wrapper').each(function(index, el) {
-				// 	console.log('What?');
-				// 	$(el).find('a.edit-view').click(function(event) {
-				// 		/* Act on the event */
-				// 		event.preventDefault();
-				// 		console.log('Do an action');
-				// 	});
-				// });
 			},
 			change_product_type: function() {
 				$( 'select#product-type' ).change( function () {
@@ -122,7 +110,6 @@ var PC = PC || {};
 		// $( '#woocommerce-product-data' ).on( 'woocommerce_variations_loaded', function() {
 		// 	console.log('variations_loaded');
 		// 	$('.woocommerce_variation .start-configuration').on('click', function(event){
-		// 		// console.log(PC.app);
 		// 		event.preventDefault();
 		// 		// this.
 		// 		var product_id = $(this).data('product-id');
@@ -136,7 +123,6 @@ var PC = PC || {};
 		// });
 
 		$('.start-configuration').on('click', function(event){
-			// console.log(PC.app);
 			event.preventDefault();
 			var product_id = $(this).data('product-id');
 			PC.app.start( {
@@ -145,12 +131,6 @@ var PC = PC || {};
 			} );
 		});
 
-		 // window.MKL_Configurator;
-		// console.log( PC.structure[0].name );
-//PC.structure = <?= $data ?>;
-		// show_if_is_configurable
 	});
-
-
 
 })(jQuery);
