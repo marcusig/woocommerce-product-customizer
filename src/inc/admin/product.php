@@ -100,14 +100,16 @@ class Admin_Product {
 	 */
 	public function home_tab() {
 		?>
-		<h2><?php _e( 'You are configuring "', MKL_PC_DOMAIN) ; echo get_the_title( $this->ID ) ?>"</h2>
+		<h2><?php _e( 'You are configuring', MKL_PC_DOMAIN ); echo ' "' . get_the_title( $this->ID ); ?>"</h2>
 		<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
-		<p><?php _e('To proceed, follow the instructions:', MKL_PC_DOMAIN ); ?></p>
+		<p><?php _e( 'To proceed, follow the instructions:', MKL_PC_DOMAIN ); ?></p>
 		<ol>
-		<li><?php _e( 'define the structure of the product in <strong>Layers</strong>', MKL_PC_DOMAIN) ?></li>
-		<li><?php _e( 'define the views / angles in which your product will be visible in  <strong>Views</strong>', MKL_PC_DOMAIN) ?></li>
-		<li><?php _e( 'add the Images for each of your choices in  <strong>Content</strong>', MKL_PC_DOMAIN) ?></li>
+		<li><?php printf( __( 'define the structure of the product in %sLayers%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
+		<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
+		<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
 		</ol>
+		<h2><?php _e( 'Do you need more functionality?', MKL_PC_DOMAIN) ; ?></h2>
+		<p><a href="<?php echo admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ); ?>"><?php _e( 'Check out the available addons and themes.', MKL_PC_DOMAIN ); ?></a></p>
 		<?php 
 	}
 

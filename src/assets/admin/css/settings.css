@@ -22,6 +22,17 @@
 	font-size: 1rem;
 }
 
+.settings_page_mkl_pc_settings h1 span.version {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    vertical-align: top;
+    transform: translate(4px, -6px);
+    color: #CCC;
+    font-size: 1rem;
+}
+
 .mkl-settings-content {
 	display: none;
 }

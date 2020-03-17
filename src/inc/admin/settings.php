@@ -43,11 +43,17 @@ class Admin_Settings {
 	}
 
 	public function display(){
+		$active = isset( $_REQUEST['tab'] ) ? $_REQUEST['tab'] : 'settings';
+		$tabs = apply_filters( 'mkl_pc_settings_tabs', [
+			'settings' => __( 'Settings', MKL_PC_DOMAIN ),
+			'addons' => __( 'Addons', MKL_PC_DOMAIN )
+		], $active );
 		?>
 		<div class="wrap">
 			<header>
 				<h1>
 					<img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-configurator-for-woocommerce.png" alt="Product Configurator for WooCommerce"/>
+					<span class="version"><?php echo MKL_PC_VERSION; ?></span>
 					<span class="by">by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></span>
 				</h1>
 				<div class="links">
@@ -55,8 +61,11 @@ class Admin_Settings {
 				</div>
 			</header>
 			<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
-				<a href="#" class="nav-tab nav-tab-active" data-content="settings"><?php _e( 'Settings', MKL_PC_DOMAIN ); ?></a>
-				<a href="#" class="nav-tab" data-content="addons"><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></a>
+				<?php
+				foreach( $tabs as $tab_id => $tab ) { ?>
+					<a href="#" class="nav-tab<?php echo ( $active === $tab_id ? ' nav-tab-active' : '' ); ?>" data-content="<?php echo esc_attr( $tab_id ); ?>"><?php echo $tab; ?></a>
+				<?php 
+				} ?>
 			</nav>
 			<div class="mkl-settings-content" data-content="settings">
 				<form method="post" action="options.php">
@@ -72,6 +81,9 @@ class Admin_Settings {
 				<em>Coming soon</em>
 				<?php // $this->display_addons(); ?>
 			</div>
+
+			<?php do_action( 'mkl_pc_settings_content_after', $active ); ?>
+
 		</div>
 		<?php 
 	} 
