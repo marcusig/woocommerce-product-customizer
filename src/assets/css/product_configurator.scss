@@ -696,6 +696,7 @@ $inner_space: 1em;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
+			box-sizing: border-box;
 
 			.single_add_to_cart_button {
 				visibility: visible; 
