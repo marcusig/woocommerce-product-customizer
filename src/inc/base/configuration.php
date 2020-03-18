@@ -153,7 +153,7 @@ abstract class Configuration {
 	public function update( $args ) {
 
 		if ( ! $args['configuration_id'] ) {
-			return new WP_Error( __( 'Invalid configuration_id ID', MKL_PC_DOMAIN ) );
+			return new \WP_Error( __( 'Invalid configuration_id ID', MKL_PC_DOMAIN ) );
 		}
 		return $this->save( $args );
 		

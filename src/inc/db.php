@@ -211,7 +211,7 @@ class DB {
 
 			}
 
-			$data = $this->sanitize( $raw_data ) ;
+			$data = $raw_data;
 
 		}
 
@@ -300,41 +300,178 @@ class DB {
 	}
 
 	/**
+	 * Get the accepted fields
+	 *
+	 * @return array
+	 */
+	public function get_fields() {
+		return apply_filters( 'mkl_pc_db_fields', 
+			[
+				'layerId' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'_id' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'id' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'layer_id' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'angle_id' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'choice_id' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'ID' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'height' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'width' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'angleId' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'order' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'extra_price' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'name' => [ 
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_html',
+				],
+				'angle_name' => [ 
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_html',
+				],
+				'description' => [ 
+					'sanitize' => 'sanitize_textarea_field',
+					'escape' => 'wp_kses_post',
+				],
+				'url' => [ 
+					'sanitize' => 'esc_url_raw',
+					'escape' => 'esc_url',
+				],
+				'active' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'update' => [ 
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'delete' => [ 
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'image' => [ 
+					'sanitize' => 'esc_url_raw',
+					'escape' => 'esc_url',
+				],
+				'bg_image' => [
+					'sanitize' => 'esc_url_raw',
+					'escape' => 'esc_url',
+				],
+				'product_type' => [ 
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_html',
+				],
+			]
+		);
+	}
+
+	/**
 	 * Sanitize the data
 	 *
-	 * @param mixed $data - The data to sanitize
+	 * @param mixed  $data - The data to sanitize
+	 * @param string $key
 	 * @return mixed
 	 */
-	public function sanitize( $data ) {
-		switch ( gettype( $data ) ) {
-			case 'boolean':
-			case 'integer':
-			case 'double':
-			case 'NULL':
-				return $data;
-			case 'string':
-				// the booleans from js are converted to string, we put them back in booleans.
-				if( $data === 'true' || $data === 'false' ) {
-					return filter_var($data, FILTER_VALIDATE_BOOLEAN);
-				}
-				return wp_kses_post( $data ); 
-				// These values can be passed through.
-			case 'array':
-				// Arrays must be mapped in case they also return objects.
-				foreach ($data as $key => $value) {
-					$data[$key] = $this->sanitize( $value ); 
-				}
-				return $data;
-			case 'object':
-				// Arrays must be mapped in case they also return objects.
-				foreach ((array) $data as $key => $value) {
-					$data->{$key} = $this->sanitize( $value );
-				}
-				return $data;
-			default:
-				return null;
+	public function sanitize( $data, $the_key = '' ) {
+		return $this->_sanitize_or_escape( 'sanitize', $data, $the_key );
+	}
+
+	/**
+	 * Sanitize the data
+	 *
+	 * @param mixed  $data - The data to sanitize
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function escape( $data, $the_key = '' ) {
+		return $this->_sanitize_or_escape( 'escape', $data, $the_key );
+	}
+
+	/**
+	 * Sanitize the data
+	 *
+	 * @param mixed  $action - The action to do
+	 * @param mixed  $data   - The data to sanitize
+	 * @param string $key
+	 * @return mixed
+	 */
+	private function _sanitize_or_escape( $action, $data, $the_key = '' ) {
+		$data_type = gettype( $data );
+		if ( 'array' === $data_type ) {
+			foreach ( $data as $key => $value ) {
+				$data[$key] = $this->_sanitize_or_escape( $action, $value, $key );
+			}
+			return $data;
 		}
 
+		if ( 'object' === $data_type ) {
+			foreach ( (array) $data as $key => $value ) {
+				$data->{$key} = $this->_sanitize_or_escape( $action, $value, $key );
+			}
+			return $data;
+		}
+
+		$supported_fields = $this->get_fields();
+
+		// No key is set, we treat as a text field
+		if ( ! $the_key ) return sanitize_text_field( $data );
+
+		// Default to empty field
+		if ( ! in_array( $the_key, array_keys( $supported_fields ) ) ) {
+			return sanitize_text_field( $data );
+		}
+
+		// Default 
+		if ( ! isset( $supported_fields[$the_key][$action] ) ) {
+			if ( 'sanitize' === $action) return sanitize_text_field( $data );
+			return sanitize_text_field( $data );
+		}
+
+		if ( function_exists( $supported_fields[$the_key][$action] ) ) {
+			call_user_func( $supported_fields[$the_key][$action], $data );
+			return $data;
+		}
+
+		if ( 'boolean' == $supported_fields[$the_key][$action] ) {
+			return filter_var( $data, FILTER_VALIDATE_BOOLEAN );
+		}
+
+		error_log( 'MKL Product Configurator: Sanitazing could not be done for the variable ' . $the_key . ' (The function returned and empty string instead)');
+		return '';
 	}
 }
 

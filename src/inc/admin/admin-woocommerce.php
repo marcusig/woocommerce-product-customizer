@@ -63,8 +63,8 @@ class Admin_Woocommerce {
 					$menu .= '<a href="#"> '. $choice .'</a>';
 					$menu .= '
 					<div class="image-selectors">
-						<a href="#" class="image-selector" data-select-image="main">'.__('Choisir une image pour ').$choice.'</a><br>
-						<a href="#" class="image-selector" data-select-image="thumbnail">'.__('Choisir une miniature').'</a>
+						<a href="#" class="image-selector" data-select-image="main">'.__('Choose an image for ').$choice.'</a><br>
+						<a href="#" class="image-selector" data-select-image="thumbnail">'.__('Choose a thumbnail').'</a>
 					</div>';
 					$menu .= '</li>';
 				}

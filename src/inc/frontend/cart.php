@@ -25,12 +25,11 @@ class Frontend_Cart {
 
 	// Filter data that's saved in the cart, and add the configurator data
 	public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
-		// logdebug($cart_item_data);
-		// var_dump('-', $cart_item_data);
 		if( mkl_pc_is_configurable($product_id) ) {
 
 			if( isset($_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
 				if( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
+					$data = Plugin::instance()->db->sanitize( $data );
 					if( is_array( $data ) ) { 
 						$layers = array();
 						foreach( $data as $layer_data ) {

@@ -43,7 +43,7 @@ class Admin_Settings {
 	}
 
 	public function display(){
-		$active = isset( $_REQUEST['tab'] ) ? $_REQUEST['tab'] : 'settings';
+		$active = isset( $_REQUEST['tab'] ) ? sanitize_key( $_REQUEST['tab'] ) : 'settings';
 		$tabs = apply_filters( 'mkl_pc_settings_tabs', [
 			'settings' => __( 'Settings', MKL_PC_DOMAIN ),
 			'addons' => __( 'Addons', MKL_PC_DOMAIN )
@@ -139,7 +139,7 @@ class Admin_Settings {
 			<div class="content">
 				<h4><?php _e( 'Get the official Live Product Configurator themes', MKL_PC_DOMAIN ) ?></h4>
 				<p><?php _e( 'Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more...', MKL_PC_DOMAIN ) ?></p>
-				<a href="<?php echo $this->themes_url ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a>
+				<a href="<?php echo esc_url( $this->themes_url ); ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a>
 			</div>
 		</div>
 		<?php 
@@ -156,7 +156,7 @@ class Admin_Settings {
 	?>	
 		<div class="mkl-pc-addon<?php echo $is_installed ? ' installed' : ''; ?>">
 			<figure>
-				<img src="<?php echo esc_url_raw( $addon->img ) ?>" alt="">
+				<img src="<?php echo esc_url( $addon->img ) ?>" alt="">
 			</figure>
 			<h4>
 				<?php echo esc_textarea( $addon->label ); ?>
@@ -166,7 +166,7 @@ class Admin_Settings {
 				<?php echo esc_textarea( $addon->description ); ?>
 			</div>
 			<?php if ( ! $is_installed ) : ?>
-				<a href="<?php echo esc_url_raw( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now' ) ?></a>
+				<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now' ) ?></a>
 			<?php endif; ?>
 		</div>
 	<?php
