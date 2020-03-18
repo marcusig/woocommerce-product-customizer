@@ -21,10 +21,9 @@ TODO:
 			this.options = options || {};
 			this.admin = PC.app.get_admin();
 			this.product_id = options.app.product.id; 
-
+			this.items = [];
 
 			if( this.admin[this.collectionName] ) { 
-
 				this.col = this.admin[this.collectionName];
 				this.render();
 			} else {
@@ -71,8 +70,6 @@ TODO:
 		},
 		update_sort: function( event, changed_model, position ) {
 			
-			this.col.remove(changed_model);
-
 			this.col.each(function (model, index) {
 				var ordinal = index; 
 				if (index >= position) { 
@@ -83,10 +80,7 @@ TODO:
 	        });
 			changed_model.set('order', position); 
 			
-			this.col.add(changed_model, {at: position});
 			this.col.sort({silent: true});
-			this.add_all( this.col );
-			// this.render();
 
 			// to update ordinals on server:
 			// var ids = this.col.pluck('id');
@@ -96,19 +90,28 @@ TODO:
 		add_one: function( layer ) {
 			var singleView = this.single_view();
 			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col });
+			this.items.push(new_layer);
 			this.$list.append( new_layer.render().el );
+		},
 
+		remove_item: function( item ) {
+			item.remove();
 		},
 
 		add_all: function( collection ){
-			this.$list.empty();
+			_.each( this.items, this.remove_item );
+			this.items = [];
+			// this.$list.empty();
 			collection.each( this.add_one, this ); 
+
 			// .ui-sortable-handle 
 			var that = this;
 			this.$list.sortable({
 					containment:          'parent', 
 					items:                '.mkl-list-item',
+					placeholder:          'mkl-list-item__placeholder',
 					cursor:               'move',
+					tolerance:            'pointer',
 					axis:                 'y',
 					handle:               '.sort',
 					scrollSensitivity:    40,
@@ -117,7 +120,6 @@ TODO:
 					opacity:              0.65,
 					stop: 				  function(event, s){
 						s.item.trigger('drop', s.item.index());
-
 					}
 					
 			});
@@ -141,6 +143,7 @@ TODO:
 			
 		},
 		layers_changed: function(e) {
+			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
 			// if something has changed in the layers collection
 			PC.app.is_modified[this.collectionName] = true; 
 
@@ -182,8 +185,7 @@ TODO:
 		},
 		events: {
 			'click' : 'edit',
-			'drop': 'drop', 
-
+			'drop': 'drop',
 		},
 		render: function() {
 			this.$el.html( this.template( this.model.attributes ) );
@@ -229,7 +231,7 @@ TODO:
 			}
 
 			// triggers the re-order event
-			this.$el.trigger('update-sort', [this.model, index]);
+			this.$el.trigger( 'update-sort', [this.model, index] );
 			// Remove the form view
 			if( this.form ) this.form.remove();
 		}

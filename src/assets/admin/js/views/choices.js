@@ -8,14 +8,18 @@ PC.views = PC.views || {};
 
 	PC.views.choices = Backbone.View.extend({
 		// className: 'choices-list',
+		tagName: 'div',
+		className: 'mkl-choice-list-inner',
 		template: wp.template('mkl-pc-choices'),
 		collectionName:'content',
 		initialize: function( options ) {
 			this.options = options || {};
 
-			if ( !this.options.state )
+			if ( !this.options.state ) {
 				return false;
+			}
 
+			this.items = [];
 			this.product = PC.app.get_product(); 
 			this.content = this.product.get('content');
 			if ( this.content.get( this.model.id ) ) {
@@ -27,15 +31,22 @@ PC.views = PC.views || {};
 			this.state = this.options.state; 
 			this.render(); 
 		},
+
 		events: {
 			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
 			'keypress .structure-toolbar input': 'create',
 			'update-sort': 'update_sort',
-			// 'click .active-layer a': 'hide_choices',
 		},
+
+		remove_item: function( item ) {
+			console.log('removing item');
+			item.remove();
+		},
+
 		render: function() {
-			
+			console.log('rrendering choices');
+			this.$el.empty();
 			this.$el.html( this.template({ input_placeholder: PC.lang.choice_new_placeholder }) );
 
 			this.$active_layer = this.$('.active-layer');
@@ -46,29 +57,43 @@ PC.views = PC.views || {};
 			this.$form = this.state.$('.choice-details'); 
 			this.add_all( this.col ); 
 			this.listenTo( this.col, 'add', this.add_one);
+			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
-
-
+			console.log('rendering choices');
 			return this;
 		},
 
-		choices_changed: function() {
+		choices_changed: function(e,f) {
+			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
 			PC.app.is_modified[this.collectionName] = true;
 		},
 
 		add_one: function( model ) {
 			var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
+			this.items.push( new_choice );
 			this.$list.append( new_choice.render().el );
 		},
 
+		remove_one: function( model ) {
+			console.log('removing');
+			// var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
+			// this.items.push( new_choice );
+			// this.$list.append( new_choice.render().el );
+		},
+
 		add_all: function( collection ){
-			this.$list.empty();
-			collection.each( this.add_one, this ); 
+			// this.$list.empty();
+
+			collection.each( this.add_one, this );
 			// .ui-sortable-handle 
 			var that = this;
-			this.$list.sortable({
-					containment:          'parent', 
+			if ( ! this.$list.sortable( 'instance' ) ) {
+				console.log( 'setting up sortable' );
+				this.$list.sortable({
+					containment:          'parent',
 					items:                '.mkl-list-item',
+					placeholder:          'mkl-list-item__placeholder',
+					tolerance:            'pointer',
 					cursor:               'move',
 					axis:                 'y',
 					handle:               '.sort',
@@ -76,16 +101,44 @@ PC.views = PC.views || {};
 					forcePlaceholderSize: true,
 					helper:               'clone',
 					opacity:              0.65,
-					stop: 				  function(event, s){
-						s.item.trigger('drop', s.item.index());
+					stop: 				  function(event, s) {
+						s.item.trigger( 'drop', s.item.index() );
 					}
-					
-			});
+				});
+			} else {
+				console.log( 'rereshing' );
+				this.$list.sortable( 'refresh' );
+			}
+		},
+
+		update_sort: function( event, changed_model, position ) {
+
+			// this.col.remove(changed_model);
+
+			this.col.each(function (model, index) {
+				var ordinal = index; 
+				if (index >= position) { 
+					ordinal += 1;
+				}
+
+				model.set('order', ordinal); 
+	        });
+			changed_model.set('order', position);
+			
+			// this.col.add( changed_model, { at: position } );
+			this.col.sort( { silent: true } );
+			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
+			// this.render();
+			// this.add_all( this.col );
 		},
 
 		hide_choices: function( e ) {
 			e.preventDefault();
-			this.state.$el.removeClass('show-choices');
+			this.state.$el.removeClass( 'show-choices' );
+
+			_.each( this.items, this.remove_item );
+			this.items = [];
+
 			this.$el.empty();
 			this.$form.empty();
 		},
@@ -106,6 +159,7 @@ PC.views = PC.views || {};
 			this.$new_input.val(''); 
 
 		},
+
 		new_attributes: function( name ) {
 			return {
 				_id: PC.app.get_new_id( this.col ),
@@ -115,30 +169,12 @@ PC.views = PC.views || {};
 				// completed: false
 			};
 		},
-		update_sort: function( event, changed_model, position ) {
-			
-			this.col.remove(changed_model);
-
-			this.col.each(function (model, index) {
-				var ordinal = index; 
-				if (index >= position) { 
-					ordinal += 1;
-				}
-
-				model.set('order', ordinal); 
-	        });
-			changed_model.set('order', position); 
-			
-			this.col.add(changed_model, {at: position});
-			this.col.sort({silent: true});
-			this.add_all( this.col );
-		},
 	});
 
-	PC.views.choice = PC.views.layer.extend({
+	PC.views.choice = PC.views.layer.extend( {
 		edit_view: function(){ return PC.views.choiceDetails; },
 		template: wp.template('mkl-pc-content-choice-list-item'),
-	});
+	} );
 
 
 	PC.views.choiceDetails = Backbone.View.extend({ 

@@ -31,9 +31,9 @@ PC.views = PC.views || {};
 			} else {
 
 				this.$el.append( this.template() ); 
-				this.$list = this.$('.content-layers-list'); 
-				this.$choices = this.$('.content-choices-list'); 
-				this.$form = this.$('.content-choice'); 
+				this.$list = this.$('.content-layers-list');
+				this.$choices = this.$('.content-choices-list');
+				this.$form = this.$('.content-choice');
 
 				this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } ); 
 				this.$list.append(this.layers.el); 
@@ -110,7 +110,9 @@ PC.views = PC.views || {};
 		},
 		toggleLayer: function(e) {
 			e.preventDefault();
-			this.state.active_layer = new PC.views.choices({ model: this.model, el: this.state.$choices, state: this.state }); 
+			if ( this.state.active_layer ) this.state.active_layer.remove();
+			this.state.active_layer = new PC.views.choices({ model: this.model, state: this.state });
+			this.state.$choices.append( this.state.active_layer.$el );
 			this.state.$el.addClass('show-choices');
 		}
 	});
