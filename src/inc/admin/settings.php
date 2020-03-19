@@ -137,7 +137,7 @@ class Admin_Settings {
 		<div class="mkl-pc-addon mkl-pc-theme">
 			<figure><img src="<?php echo MKL_PC_ASSETS_URL .'admin/images/' ?>mkl-theme-thumbnail.png" alt=""></figure>
 			<div class="content">
-				<h4><?php _e( 'Get the official Live Product Configurator themes', MKL_PC_DOMAIN ) ?></h4>
+				<h4><?php _e( 'Get the official Product Configurator themes', MKL_PC_DOMAIN ) ?></h4>
 				<p><?php _e( 'Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more...', MKL_PC_DOMAIN ) ?></p>
 				<a href="<?php echo esc_url( $this->themes_url ); ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a>
 			</div>

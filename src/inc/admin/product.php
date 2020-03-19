@@ -180,7 +180,7 @@ class Admin_Product {
 			// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
 			$scripts = apply_filters( 'mkl_pc_admin_scripts', $scripts );
 
-			wp_enqueue_script( 'jquery-ui-accordion' );
+			// wp_enqueue_script( 'jquery-ui-accordion' );
 			// LOAD BACKBONE SCRIPTS
 			foreach($scripts as $script) {
 				list( $key, $file ) = $script;
@@ -231,7 +231,7 @@ class Admin_Product {
 	public function start_button($id, $parent_id = NULL) {
 		ob_start();
 		?>
-			<a href="#" class="button-primary start-configuration show_if_is_configurable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Configure product's configurator", MKL_PC_DOMAIN) ?></a>
+			<a href="#" class="button-primary start-configuration show_if_is_configurable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Start product's configurator", MKL_PC_DOMAIN) ?></a>
 		<?php 
 		$return = ob_get_clean();
 		return $return;

@@ -16,5 +16,8 @@
     "gulp-sass": "^4.0.2",
     "gulp-zip": "^4.2.0",
     "run-sequence": "^2.2.1"
+  },
+  "devDependencies": {
+    "gulp-wp-pot": "^2.3.6"
   }
 }

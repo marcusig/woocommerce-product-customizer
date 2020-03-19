@@ -8,7 +8,7 @@
 * Author URI: http://mklacroix.com
 * Version: 1.0.0
 *
-* Text Domain: woocommerce-mkl-product-configurator
+* Text Domain: product-configurator-for-woocommerce
 * Domain Path: /languages/
 *
 * Copyright: © 2015 mklacroix (email : marcus_lacroix@yahoo.fr)
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MKL_PC_VERSION', '1.0.0' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
-define( 'MKL_PC_DOMAIN', 'woocommerce-mkl-product-configurator' );
+define( 'MKL_PC_DOMAIN', 'product-configurator-for-woocommerce' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
 define( 'MKL_PC_ADDONS_API_URL', 'http://mklpc.local' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -69,13 +69,14 @@ function mkl_pc_fail_loading_woocommerce() {
 function mkl_pc_fail_woocommerce_version() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work. <br>WooCommerce Version 3+ required.', MKL_PC_DOMAIN ) ?> </p>
+		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work.', MKL_PC_DOMAIN ); ?><br> <?php _e( 'WooCommerce Version 3+ required.', MKL_PC_DOMAIN ); ?> </p>
 	</div>
 	<?php
 }
+
 function mkl_pc_load_plugin_textdomain() {
-	load_textdomain( MKL_PC_DOMAIN, WP_LANG_DIR . '/wc_mkl_pc/wc_mkl_pc' . '-' . get_locale() . '.mo' ); 
-	load_plugin_textdomain( MKL_PC_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' ); 	
+	load_textdomain( MKL_PC_DOMAIN, WP_LANG_DIR . '/product-configurator-for-woocommerce/product-configurator-for-woocommerce' . '-' . get_locale() . '.mo' );
+	load_plugin_textdomain( MKL_PC_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 
 function mkl_pc_deactivate_plugin() {

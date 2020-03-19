@@ -5,6 +5,7 @@ const sass = require('gulp-sass');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
 var plumber = require('gulp-plumber');
+// var wpPot = require('gulp-wp-pot');
 
 const cleanPaths = [
 	'dist/*',
@@ -55,6 +56,19 @@ gulp.task('js', function(done) {
 
 gulp.task('pot', function(done) {
 	done();
+	// return gulp.src('src/**/*.php')
+	// .pipe(plumber(reportError))
+	// // .pipe(sort())
+	// .pipe(wpPot({
+	// 	domain: 'woocommerce-mkl-product-configurator',
+	// 	destFile:'product-configurator-for-woocommerce.pot',
+	// 	package: 'product-configurator-for-woocommerce',
+	// 	bugReport: 'https://github.com/marcusig/woocommerce-product-customizer/issues',
+	// 	lastTranslator: '@marcusig',
+	// 	team: '@Mklacroix'
+	// }))
+	// .pipe(gulp.dest('dist/languages'))
+	// .on('end', done);
 });
 
 gulp.task('build', 
@@ -149,3 +163,10 @@ gulp.task('zip', gulp.series(
 		done();
 	}
 ));
+
+gulp.task('svn', function(done) {
+	return gulp.src('dist/**')
+	.pipe(plumber(reportError))
+	.pipe(gulp.dest('../../../repository/product-configurator-for-woocommerce/trunk'))
+	.on('end', done);	
+});
