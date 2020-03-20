@@ -20,15 +20,26 @@ PC.choices = Backbone.Collection.extend({
     	this.each(function( choice ) {
     		choice.set('active', false);
     	});
-    }
-
+    },
+	resetChoice: function() {
+		this.deactivateAll();
+		this.first().set( 'active', true );
+	},
 });
 
 PC.content_list = Backbone.Collection.extend({
 	model: PC.content, 
 	initialize: function() {
+	},
+	resetConfig: function() {
+		console.log(this);
+		this.each( function( layer ) {
+			if ( ! layer.get( 'not_a_choice' ) ) {
+				layer.get( 'choices' ).resetChoice();
+			}
+		}.bind( this ) );
+	},
 
-	}
 })
 
 PC.choice_pictures = Backbone.Collection.extend({
