@@ -101,7 +101,6 @@ Backbone.Model.prototype.toJSON = function() {
 		if( PC.fe.product_type == 'simple' && PC.productData ) {
 			this.contents = PC.fe.setContent.parse( PC.productData ); 
 			this.modal.$el.trigger('content-is-loaded', 'an argument'); 
-			// PC.fe.open( product_id, variation ); 
 		} 
 		this.product_id = product_id;
 		

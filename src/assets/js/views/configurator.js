@@ -125,7 +125,7 @@ PC.options = PC.options || {};
 		},
 
 		render: function() {
-			this.$el.append( this.template({name:this.parent.options.title}) ); 
+			this.$el.append( this.template( { name:this.parent.options.title } ) );
 			this.$selection = this.$el.find('.choices'); 
 			// this.get_cart(); 
 			this.layers = new PC.fe.views.layers_list({parent: this});
@@ -220,7 +220,8 @@ PC.options = PC.options || {};
 			} else {
 				this.$el.addClass('opened');
 			}
-		}
+		},	
+
 	});
 
 	/*
