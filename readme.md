@@ -1,5 +1,7 @@
 ----
 
+This is the development repository for https://wordpress.org/plugins/product-configurator-for-woocommerce/
+
 # Woocommerce Product configurator 
 - Contributors: mklacroix, marcusig
 - Tags: woocommerce, product, addon, custom product, configurator, live
@@ -21,3 +23,11 @@ Define each choice that the customer has, add a specific picture with transparen
 ## Demo 
 
 [Try live Demo](http://demos.mklacroix.com/shop/custom-chair/)
+
+## Support 
+
+https://wordpress.org/support/plugin/product-configurator-for-woocommerce/
+
+## Bug report
+
+https://github.com/marcusig/woocommerce-product-customizer/issues
