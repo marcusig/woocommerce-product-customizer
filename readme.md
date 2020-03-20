@@ -1,6 +1,7 @@
-----
 
 This is the development repository for https://wordpress.org/plugins/product-configurator-for-woocommerce/
+
+----
 
 # Woocommerce Product configurator 
 - Contributors: mklacroix, marcusig
@@ -22,7 +23,7 @@ Define each choice that the customer has, add a specific picture with transparen
 
 ## Demo 
 
-[Try live Demo](http://demos.mklacroix.com/shop/custom-chair/)
+[Try the demo](http://demos.mklacroix.com/shop/custom-chair/)
 
 ## Support 
 
