@@ -40,8 +40,8 @@ class Cache {
 	public function get_cache_location() {
 		$upload_dir = wp_upload_dir();
 		return apply_filters( 'mkl_pc_cache_dir', array(
-			'path' => $upload_dir['basedir'] . '/woocommerce_uploads/mkl_product_configurations',
-			'url' => $upload_dir['baseurl'] . '/woocommerce_uploads/mkl_product_configurations'
+			'path' => $upload_dir['basedir'] . '/mkl_product_configurations',
+			'url' => $upload_dir['baseurl'] . '/mkl_product_configurations'
 		));
 	}
 
