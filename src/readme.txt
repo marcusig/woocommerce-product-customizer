@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,configure
 Requires at least: 3.9
 Tested up to: 5.4
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 5.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -54,3 +54,7 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 3. Default front-end display
 
 == Changelog ==
+
+= 1.0.1 - 23/March/2020 =
+
+* FIX: Change path where product configuration cache is saved to avoid blocked access
