@@ -1,6 +1,6 @@
 === Product Configurator for WooCommerce ===
 Contributors: mklacroix, marcusig
-Tags: woocommerce,customize,configure
+Tags: woocommerce,customize,product addons,configure
 Requires at least: 3.9
 Tested up to: 5.4
 Stable tag: 1.0.2
