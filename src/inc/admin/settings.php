@@ -78,8 +78,7 @@ class Admin_Settings {
 			</div>
 			<div class="mkl-settings-content" data-content="addons">
 				<h2><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></h2>
-				<em>Coming soon</em>
-				<?php // $this->display_addons(); ?>
+				<?php $this->display_addons(); ?>
 			</div>
 
 			<?php do_action( 'mkl_pc_settings_content_after', $active ); ?>
@@ -139,7 +138,10 @@ class Admin_Settings {
 			<div class="content">
 				<h4><?php _e( 'Get the official Product Configurator themes', MKL_PC_DOMAIN ) ?></h4>
 				<p><?php _e( 'Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more...', MKL_PC_DOMAIN ) ?></p>
-				<a href="<?php echo esc_url( $this->themes_url ); ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a>
+				<em>Coming soon</em>
+				<?php
+				/*  <a href="<?php echo esc_url( $this->themes_url ); ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a> */
+				?>
 			</div>
 		</div>
 		<?php 
@@ -156,17 +158,17 @@ class Admin_Settings {
 	?>	
 		<div class="mkl-pc-addon<?php echo $is_installed ? ' installed' : ''; ?>">
 			<figure>
-				<img src="<?php echo esc_url( $addon->img ) ?>" alt="">
+				<img src="<?php echo esc_url( trailingslashit( MKL_PC_ASSETS_URL ) . 'admin/images/addons/' . $addon->img ) ?>" alt="">
 			</figure>
 			<h4>
 				<?php echo esc_textarea( $addon->label ); ?>
-				<?php if ( $is_installed ) { echo " (installed)"; } ?>
+				<?php if ( $is_installed ) { echo ' <span class="installed">' . __( 'installed' ) . '</span>'; } ?>
 			</h4>
 			<div class="desc">
 				<?php echo esc_textarea( $addon->description ); ?>
 			</div>
 			<?php if ( ! $is_installed ) : ?>
-				<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now' ) ?></a>
+				<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now' ) ?> <span class="dashicons dashicons-external"></span></a>
 			<?php endif; ?>
 		</div>
 	<?php

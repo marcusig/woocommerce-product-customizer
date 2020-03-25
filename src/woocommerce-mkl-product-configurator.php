@@ -24,7 +24,6 @@ define( 'MKL_PC_VERSION', '1.0.1' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
 define( 'MKL_PC_DOMAIN', 'product-configurator-for-woocommerce' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
-define( 'MKL_PC_ADDONS_API_URL', 'http://mklpc.local' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MKL_PC_INCLUDE_PATH', plugin_dir_path( __FILE__ ) . 'inc/' );
 define( 'MKL_PC_ASSETS_PATH', plugin_dir_path( __FILE__ ) . 'assets/' );

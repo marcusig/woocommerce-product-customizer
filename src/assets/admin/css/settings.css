@@ -62,6 +62,9 @@
 	box-sizing: border-box;
 }
 
+.mkl-pc-addon .button span.dashicons {
+	transform: translate(4px, 4px);
+}
 .mkl-pc-addon:nth-child(n+3) {
 	margin-right: 0;
 }
@@ -71,13 +74,34 @@
 }
 .mkl-pc-addon h4 {
 	font-size: 1.4em;
+	position: relative;
 }
+
+.mkl-pc-addon h4 span.installed {
+    position: absolute;
+    right: 10px;
+    top: -35px;
+    background: #ace64f;
+    font-size: 12px;
+    color: #477300;
+    display: inline-block;
+    padding: 6px 16px;
+    line-height: 1;
+    border-radius: 40px;
+    box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5), 0 5px 12px rgba(72, 117, 0, 0.21);
+    text-transform: uppercase;
+}
+
 .mkl-pc-addon figure {
 	background: #1d1d1b;
 	margin: -1em -1em 1em -1em;
 	padding: 2em 1em;
 	text-align: center;
 	height: 80px;
+}
+
+.mkl-pc-addon figure img {
+	max-width: 100%;
 }
 
 .mkl-pc-addon:not(.installed):not(.mkl-pc-theme) {
