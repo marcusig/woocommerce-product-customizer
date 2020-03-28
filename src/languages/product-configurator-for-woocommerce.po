@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Product configurator for WooCommerce\n"
-"POT-Creation-Date: 2020-03-19 06:46+0100\n"
+"POT-Creation-Date: 2020-03-19 10:15+0100\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -35,7 +35,11 @@ msgstr ""
 #: woocommerce-mkl-product-configurator.php:72
 msgid ""
 "Your WooCommerce version is too old for WooCommerce Product Configurator to "
-"work. <br>WooCommerce Version 3+ required."
+"work."
+msgstr ""
+
+#: woocommerce-mkl-product-configurator.php:72
+msgid "WooCommerce Version 3+ required."
 msgstr ""
 
 #: inc/plugin.php:33
@@ -204,7 +208,7 @@ msgid "Button classes"
 msgstr ""
 
 #: inc/admin/settings.php:140
-msgid "Get the official Live Product Configurator themes"
+msgid "Get the official Product Configurator themes"
 msgstr ""
 
 #: inc/admin/settings.php:141
@@ -262,7 +266,7 @@ msgid "Check out the available addons and themes."
 msgstr ""
 
 #: inc/admin/product.php:234
-msgid "Configure product's configurator"
+msgid "Start product's configurator"
 msgstr ""
 
 #: inc/admin/product.php:249
