@@ -15,10 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Ajax {
 	private $db = NULL;
+
 	public function __construct() {
 		$this->_hooks();
 		if( !$this->db ) {
-			$this->db = Plugin::instance()->db;
+			$this->db = mkl_pc()->db;
 		}
 	}
 

@@ -18,6 +18,8 @@ Give your customers a great experience, and make your life easy: no need to crea
 
 Instead, export your layers from Photoshop, a 3D render, or an other source, and allow the user to configure their product using those.
 
+<a href="http://demos.mklacroix.com/shop/custom-chair/">Try the demo</a>
+
 == Installation ==
 
 There are 3 different ways to install this plugin, as with any other wordpress.org plugin.
@@ -54,6 +56,8 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 3. Default front-end display
 
 == Changelog ==
+
+* TWEAK: Fix activation on multisite
 
 = 1.0.2 - 25/March/2020 =
 

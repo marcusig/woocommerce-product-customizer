@@ -29,26 +29,33 @@ define( 'MKL_PC_INCLUDE_PATH', plugin_dir_path( __FILE__ ) . 'inc/' );
 define( 'MKL_PC_ASSETS_PATH', plugin_dir_path( __FILE__ ) . 'assets/' );
 define( 'MKL_PC_ASSETS_URL', plugin_dir_url( __FILE__ ) . 'assets/' );
 
-add_action( 'plugins_loaded', 'mkl_pc_load_plugin_textdomain' ); 
+require_once MKL_PC_INCLUDE_PATH . 'plugin.php';
+
+add_action( 'plugins_loaded', 'mkl_pc_load_plugin_textdomain', 30 );
+add_action( 'plugins_loaded', 'mkl_pc_init', 90 );
+
+
 /**
- * Check Plugin requirements (Woocommerce, Woocommerce >= 3 , PHP >= 5.4)
+ * Initialize the plugin and check if the requirements are met (PHP version and WooCommerce install)
+ *
+ * @return void
  */
-if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-	
-	if ( ! version_compare( PHP_VERSION, '5.4', '>=' ) ) {
-		add_action( 'admin_notices', 'mkl_pc_fail_php_version' );
-		add_action( 'admin_init', 'mkl_pc_deactivate_plugin' );
+function mkl_pc_init() {
+	/**
+	 * Check Plugin requirements (Woocommerce, Woocommerce >= 3 , PHP >= 5.4)
+	 */
+	if ( function_exists( 'WC' ) ) {
+
+		if ( ! version_compare( PHP_VERSION, '5.4', '>=' ) ) {
+			add_action( 'admin_notices', 'mkl_pc_fail_php_version' );
+		} else {
+			mkl_pc()->init();
+		}
+
 	} else {
-		require( MKL_PC_INCLUDE_PATH . 'plugin.php' );
+		// If woocommerce is not active, show a notice
+		add_action( 'admin_notices', 'mkl_pc_fail_loading_woocommerce' );
 	}
-
-} else {
-
-	// If woocommerce is not active, show a notice
-	add_action( 'admin_notices', 'mkl_pc_fail_loading_woocommerce' );
-	// And deactivate the plugin
-	add_action( 'admin_init', 'mkl_pc_deactivate_plugin' );
-
 }
 
 function mkl_pc_fail_php_version() {
@@ -78,7 +85,6 @@ function mkl_pc_load_plugin_textdomain() {
 	load_plugin_textdomain( MKL_PC_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 
-function mkl_pc_deactivate_plugin() {
-	deactivate_plugins( plugin_basename( __FILE__ ) );	
+function mkl_pc() {
+	return MKL\PC\Plugin::instance();
 }
-

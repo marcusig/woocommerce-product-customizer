@@ -50,10 +50,16 @@ class Plugin {
 	 * @return Plugin
 	 */
 	public static function instance() {
-		if ( self::$_instance == null ) {
-			self::$_instance = new Plugin();
+		if ( null === self::$_instance ) {
+			error_log(print_r(self::$_instance, true));
+			error_log('creating instances');
+			self::$_instance = new self();
 		}
-		return static::$_instance;
+		return self::$_instance;
+	}
+
+	public function get_something() {
+		return 'something';
 	}
 
 	/**
@@ -62,25 +68,25 @@ class Plugin {
 	 * @return void
 	 */
 	private function _includes() {
-		include( MKL_PC_INCLUDE_PATH . 'utils.php' );
-		include( MKL_PC_INCLUDE_PATH . 'images.php' );
-		include( MKL_PC_INCLUDE_PATH . 'functions.php' );
+		include_once MKL_PC_INCLUDE_PATH . 'utils.php';
+		include_once MKL_PC_INCLUDE_PATH . 'images.php';
+		include_once MKL_PC_INCLUDE_PATH . 'functions.php';
 		
-		include( MKL_PC_INCLUDE_PATH . 'base/product.php' );
-		include( MKL_PC_INCLUDE_PATH . 'base/layer.php' );
-		include( MKL_PC_INCLUDE_PATH . 'base/angle.php' );
-		include( MKL_PC_INCLUDE_PATH . 'base/choice.php' );
-		include( MKL_PC_INCLUDE_PATH . 'base/configuration.php' );
+		include_once MKL_PC_INCLUDE_PATH . 'base/product.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/layer.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/angle.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/choice.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/configuration.php';
 
-		include( MKL_PC_INCLUDE_PATH . 'cache.php' );
-		include( MKL_PC_INCLUDE_PATH . 'db.php' );
-		include( MKL_PC_INCLUDE_PATH . 'ajax.php' );
-		include( MKL_PC_INCLUDE_PATH . 'update.php' );
+		include_once MKL_PC_INCLUDE_PATH . 'cache.php';
+		include_once MKL_PC_INCLUDE_PATH . 'db.php';
+		include_once MKL_PC_INCLUDE_PATH . 'ajax.php';
+		include_once MKL_PC_INCLUDE_PATH . 'update.php';
 
-		include( MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php' );
+		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 
 		if( is_admin() ) {
-			include ( MKL_PC_INCLUDE_PATH . 'admin/admin-woocommerce.php' );
+			include_once MKL_PC_INCLUDE_PATH . 'admin/admin-woocommerce.php';
 		}
 	}
 
@@ -123,7 +129,7 @@ class Plugin {
 	 * Construct and setup hooks
 	 */
 	protected function __construct() {
-		add_action('plugins_loaded', array( $this, 'init'), 10 );
+		error_log('constructing class');
 	}
 
 	/**
@@ -136,26 +142,21 @@ class Plugin {
 			add_action( 'admin_notices', 'mkl_pc_fail_woocommerce_version' );
 			return;
 		}
-
+		// return;
 		$this->_includes();
-
 		$this->frontend = new Frontend_Woocommerce();
-
+		
 		if( is_admin() ) {
 			$this->admin = new Admin_Woocommerce();
 		}
-
+		
 		$this->cache = new Cache();
 		$this->db = new DB();
 		$this->ajax = new Ajax();
+		return;
 
 		do_action( 'mkl_pc_is_loaded' );
 	}
 }
 
-Plugin::instance();
 // var_dump('$mkl_pl', $mkl_pl);
-
-function mkl_pc() {
-	return Plugin::instance();
-}

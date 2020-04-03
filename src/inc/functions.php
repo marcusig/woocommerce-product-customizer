@@ -14,14 +14,6 @@ function mkl_pc_is_configurable( $product_id = NULL ) {
 	return MKL\PC\Utils::is_configurable( $product_id );
 }
 
-/**
- * Get the main plugin instance
- *
- * @return object
- */
-function mkl_pc_get_plugin() {
-	return MKL\PC\Plugin::instance();
-}
 
 if( ! function_exists('request_is_frontend_ajax') ) {
 
