@@ -40,12 +40,10 @@ PC.views = PC.views || {};
 		},
 
 		remove_item: function( item ) {
-			console.log('removing item');
 			item.remove();
 		},
 
 		render: function() {
-			console.log('rrendering choices');
 			this.$el.empty();
 			this.$el.html( this.template({ input_placeholder: PC.lang.choice_new_placeholder }) );
 
@@ -57,14 +55,18 @@ PC.views = PC.views || {};
 			this.$form = this.state.$('.choice-details'); 
 			this.add_all( this.col ); 
 			this.listenTo( this.col, 'add', this.add_one);
+			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
 			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
-			console.log('rendering choices');
 			return this;
 		},
 
 		choices_changed: function(e,f) {
 			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
+			PC.app.is_modified[this.collectionName] = true;
+		},
+
+		mark_collection_as_modified: function() {
 			PC.app.is_modified[this.collectionName] = true;
 		},
 
@@ -75,7 +77,7 @@ PC.views = PC.views || {};
 		},
 
 		remove_one: function( model ) {
-			console.log('removing');
+			this.mark_collection_as_modified();
 			// var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
 			// this.items.push( new_choice );
 			// this.$list.append( new_choice.render().el );
@@ -88,7 +90,6 @@ PC.views = PC.views || {};
 			// .ui-sortable-handle 
 			var that = this;
 			if ( ! this.$list.sortable( 'instance' ) ) {
-				console.log( 'setting up sortable' );
 				this.$list.sortable({
 					containment:          'parent',
 					items:                '.mkl-list-item',
@@ -106,7 +107,6 @@ PC.views = PC.views || {};
 					}
 				});
 			} else {
-				console.log( 'rereshing' );
 				this.$list.sortable( 'refresh' );
 			}
 		},

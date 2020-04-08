@@ -60,13 +60,18 @@ TODO:
 			this.$new_input = this.$('.structure-toolbar input'); 
 			this.add_all( this.col ); 
 			this.listenTo( this.col, 'add', this.add_one);
+			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
 			this.listenTo( this.col, 'change', this.layers_changed);
 			this.listenTo( this.col, 'destroy', this.removed_model);
 			return this;
 		},
+		mark_collection_as_modified: function() {
+			PC.app.is_modified[this.collectionName] = true;
+		},
 		removed_model: function( m ){
 			// remove 
 			this.admin.remove_relationships( this.collectionName, m );
+			this.mark_collection_as_modified();
 		},
 		update_sort: function( event, changed_model, position ) {
 			

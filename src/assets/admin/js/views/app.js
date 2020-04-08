@@ -73,6 +73,7 @@ PC.views = PC.views || {};
 
 			if ( collectionName == 'angles' ) {
 				var content = this.current_product.get('content');
+				if (!content) return;
 				content.each( function( choices, index ){
 
 					choices.get('choices').each( function( choice ){
