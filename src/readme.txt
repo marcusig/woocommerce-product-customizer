@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Requires at least: 3.9
 Tested up to: 5.4
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 Requires PHP: 5.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -57,6 +57,9 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 
 == Changelog ==
 
+= 1.0.3 - 08/April/2020 =
+
+* FIX: Fix saving issue when just adding an item
 * TWEAK: Fix activation on multisite
 
 = 1.0.2 - 25/March/2020 =
@@ -66,3 +69,7 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 = 1.0.1 - 23/March/2020 =
 
 * FIX: Change path where product configuration cache is saved to avoid blocked access
+
+== Upgrade Notice ==
+
+* 1.0.3 fixes the activation failing on multisite, and a data saving issue
