@@ -65,6 +65,9 @@ class Frontend_Woocommerce {
 		);
 		foreach($scripts as $script) {
 			list( $key, $file ) = $script;
+			if (!defined('SCRIPT_DEBUG') || !SCRIPT_DEBUG) {
+				$file = str_replace('.js', '.min.js', $file);
+			}
 			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone', 'accounting'), MKL_PC_VERSION, true );
 		}
 		

@@ -2,6 +2,9 @@ const gulp = require('gulp')
 // const runSequence = require('run-sequence')
 const zip = require('gulp-zip')
 const sass = require('gulp-sass');
+const uglify = require('gulp-uglify');
+const rename = require('gulp-rename');
+const sourcemaps = require('gulp-sourcemaps');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
 var plumber = require('gulp-plumber');
@@ -43,16 +46,35 @@ gulp.task('vendor', function(done){
 
 gulp.task('scss', function(done) {
 	return gulp.src('src/assets/**/*.scss', { base: 'src', allowEmpty: true })
+		.pipe(sourcemaps.init())
 		.pipe(plumber(reportError))
 		.pipe(sass().on('error', sass.logError))
+		.pipe(sourcemaps.write('maps'))
 		.pipe(gulp.dest('dist'))
 		.on('end', done);
 
 });
 
 gulp.task('js', function(done) {
-	done();
+	return gulp.src('src/assets/**/*.js', { base: 'src', allowEmpty: true })
+		.pipe(gulp.dest('dist'))
+		.pipe(sourcemaps.init())
+		.pipe(uglify())
+		.pipe(sourcemaps.write('maps'))
+		.pipe(rename({suffix: '.min'}))
+		.pipe(gulp.dest('dist'))
+		.on('end', done);
 });
+
+// gulp.task('js_min', function() {
+// 	return gulp.src('src/assets/**/*.js', { base: 'src', allowEmpty: true })
+// 	.pipe(plumber(reportError))
+// 	.pipe(uglify())
+// 	.pipe(plumber(reportError))
+// 	.pipe(rename({suffix: '.min'}))
+// 	.pipe(plumber(reportError))
+// 	.pipe(gulp.dest('dist'));
+// });
 
 gulp.task('pot', function(done) {
 	done();

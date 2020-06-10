@@ -20,6 +20,17 @@ Instead, export your layers from Photoshop, a 3D render, or an other source, and
 
 <a href="http://demos.mklacroix.com/shop/custom-chair/">Try the demo</a>
 
+You can report bugs or suggestions on the <a href="https://github.com/marcusig/woocommerce-product-customizer/issues">github repository</a> or the <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">support forum</a>.
+
+**Premium addons**
+
+This premium comes without limitations. But if you need more functionalities, look at the available addons: 
+
+* <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
+* <a target="_blank" href="https://wc-product-configurator.com/product/save-your-design/">Save your design</a> - Get your customers engaged by enabling them to save the design they’ve made.
+* <a target="_blank" href="https://wc-product-configurator.com/product/variable-products/">Variable products</a> - Use the product configurator with variable products.
+* For custom needs, contact me <a href="https://wc-product-configurator.com/contact/">here</a>
+
 == Installation ==
 
 There are 3 different ways to install this plugin, as with any other wordpress.org plugin.
@@ -49,11 +60,23 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 
 == Frequently Asked Questions ==
 
+= How can I optimize the layers in the configurator? =
+We recommend using a plugin such as WP-Optimize for all-round performance improvements:
+[vimeo https://vimeo.com/333705073]
+
 == Screenshots ==
 
 1. WooCommerce product settings
-2. Editing a configuration
-3. Default front-end display
+2. Editing a configuration - home screen
+3. Editing a configuration - Layers screen
+4. Editing a configuration - Contents screen 
+5. Editing a configuration - Contents screen editing
+6. Frontend default: replaces the Add to cart button by a "Configure" button
+7. Frontend: configuring a product
+8. Frontend: configuring a product
+9. Frontend: configuration in the cart
+10. Backend: configuration in the order
+11. General plugin settings
 
 == Changelog ==
 

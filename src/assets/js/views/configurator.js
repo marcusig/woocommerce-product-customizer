@@ -43,9 +43,9 @@ PC.options = PC.options || {};
 		open: function() {
 			this.$el.show(); 
 			PC.fe.opened = true;
-			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
 			$('body').addClass('configurator_is_opened');
 			if( PC.fe.inline ) $('body').addClass('configurator_is_inline');
+			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
 			// Set focus on the first layer
 			setTimeout( function() {
 				this.$el.find('.layers .layer-item').first().focus();
@@ -510,13 +510,15 @@ PC.options = PC.options || {};
 				choice_id = this.choices.first().id; 
 			}
 			var img = this.choices.get( choice_id ).get_image(); 
+			// Default to a transparent image
+			if (!img) img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 			wp.hooks.doAction( 'PC.fe.viewer.layer.render', this );
 
 			this.parent.imagesLoading ++;
 
 			this.parent.$el.addClass('is-loading-image');
-			this.el.src = img; 
+			this.el.src = img;
 
 			this.$el.data( 'dimensions', this.choices.get( choice_id ).get_image( 'image', 'dimensions' ) );
 

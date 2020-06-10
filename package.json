@@ -18,6 +18,9 @@
     "run-sequence": "^2.2.1"
   },
   "devDependencies": {
+    "gulp-rename": "^2.0.0",
+    "gulp-sourcemaps": "^2.6.5",
+    "gulp-uglify": "^3.0.2",
     "gulp-wp-pot": "^2.3.6"
   }
 }

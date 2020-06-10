@@ -51,8 +51,6 @@ class Plugin {
 	 */
 	public static function instance() {
 		if ( null === self::$_instance ) {
-			error_log(print_r(self::$_instance, true));
-			error_log('creating instances');
 			self::$_instance = new self();
 		}
 		return self::$_instance;

@@ -29,7 +29,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			add_filter( 'woocommerce_product_supports', array( &$this, 'simple_product_supports' ), 10, 3 ); 
 			
 			// add button after form, as form will be moved.
-			add_action( 'woocommerce_after_add_to_cart_form', array( &$this, 'add_configure_button' ) ); 		
+			add_action( 'woocommerce_after_add_to_cart_form', array( &$this, 'add_configure_button' ) );
 			// add hidden input to store configurator data into form
 			add_action( 'woocommerce_after_add_to_cart_button', array( &$this, 'add_configure_hidden_field' ) ); 
 			add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_form' ), 20 ); 
