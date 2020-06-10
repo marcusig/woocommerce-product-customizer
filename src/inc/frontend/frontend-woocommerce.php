@@ -93,7 +93,7 @@ class Frontend_Woocommerce {
 
 		// $version = $product
 		$date_modified = wc_get_product($post->ID)->get_date_modified();
-		wp_enqueue_script( 'mkl_pc/js/fe_data', Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_configurator.css', array(), MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css' );
 
