@@ -16,7 +16,6 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 		public function __construct() {
 			$this->_hooks();
-			$this->init();
 		}
 
 		/**
@@ -32,6 +31,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
 			add_action( 'admin_footer', array($this, 'editor' ) ); 
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
+			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
 
 		}
 

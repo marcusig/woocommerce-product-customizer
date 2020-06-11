@@ -127,7 +127,6 @@ class Plugin {
 	 * Construct and setup hooks
 	 */
 	protected function __construct() {
-		error_log('constructing class');
 	}
 
 	/**
@@ -151,7 +150,6 @@ class Plugin {
 		$this->cache = new Cache();
 		$this->db = new DB();
 		$this->ajax = new Ajax();
-		return;
 
 		do_action( 'mkl_pc_is_loaded' );
 	}
