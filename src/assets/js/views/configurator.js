@@ -467,6 +467,7 @@ PC.options = PC.options || {};
 			var that = this;
 			this.parent = options.parent || PC.fe; 
 			this.choices = PC.fe.getLayerContent( this.model.id ); 
+			if ( ! this.choices ) return;
 
 			this.listenTo( this.choices, 'change active', this.change_layer );
 			this.listenTo( PC.fe.angles, 'change active', this.change_layer );
