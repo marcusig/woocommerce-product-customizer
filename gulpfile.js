@@ -187,7 +187,7 @@ gulp.task('zip', gulp.series(
 ));
 
 gulp.task('svn', function(done) {
-	return gulp.src('dist/**')
+	return gulp.src('dist/**/*')
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest('../../../repository/product-configurator-for-woocommerce/trunk'))
 	.on('end', done);	
