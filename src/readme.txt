@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Requires at least: 3.9
 Tested up to: 5.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 Requires PHP: 5.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -80,7 +80,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.0.4 - 10/June/2020 =
+= 1.0.5 - 10/June/2020 =
 
 * TWEAK: Each product now uses a unique key when enqueuing the data
 
@@ -99,4 +99,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.0.4 Small tweaks, and fix potential issue when using a minifying plugin
+* 1.0.5 Small tweaks, and fix potential issue when using a minifying plugin
