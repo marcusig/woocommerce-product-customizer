@@ -32,23 +32,6 @@ Backbone.Model.prototype.toJSON = function() {
 			$( 'body' ).addClass( 'is-mobile' );
 		}
 
-		// if ( typeof wc_add_to_cart_variation_params !== 'undefined' ) {
-		// 	variation = true;
-		// 	var $form = $( '.variations_form' );
-		// 		// var $form = this;
-		// 	$form.on( 'hide_variation', function( event ) {
-		// 		event.preventDefault();
-		// 		$( '.configure-product' ).attr( 'disabled', 'disabled' );
-		// 	} );
-
-		// 	$form.on( 'show_variation', function( event ) {
-		// 		event.preventDefault(); 
-		// 		var product_id = $('input[name="variation_id"]').val();
-		// 		PC.fe.open( product_id, true );
-		// 		$( '.configure-product' ).removeAttr( 'disabled' );
-		// 	} );
-		// }
-
 		PC.fe.product_type = PC.fe.product_type || 'simple';
 
 		$( '.configure-product-simple' ).on('click', function(event) {
