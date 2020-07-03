@@ -341,7 +341,7 @@ PC.options = PC.options || {};
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.model, 'change activate', this.activate );
-		}, 
+		},
 		events: {
 			'mousedown .choice-item': 'set_choice',
 			'keydown .choice-item': 'set_choice',
@@ -355,42 +355,13 @@ PC.options = PC.options || {};
 			this.activate();
 			return this.$el;
 		}, 
-		// key_down: function( event ) {
-		// },
 		set_choice: function( event ) {
-			//event.preventDefault(); 
-			if( event.type == 'keydown' ){
+			if ( event.type == 'keydown' ) {
 				if ( ! ( event.keyCode == 13 || event.keyCode == 32 ) ) {
 					return;
 				}
 			}
-
-			// If the choice was inactive
-			if( ! this.model.get('active') ) { 
-
-				// If it's a single choice, deactivate all the others
-				if ( ! this.options.multiple ) {
-					// Deactivate the active choices
-					this.model.collection.each(function(model) {
-						model.set('active' , false); 
-					});
-				}
-
-				// Set to active choice
-				this.model.set('active', true); 
-
-				$(PC.fe).trigger( 'choice_change', this.model );
-				wp.hooks.doAction( 'PC.fe.choice.change', this.model );
-
-				// this.activate();
-			} else if ( this.options.multiple ) {
-				// If multiple choice, pressing the choice will deselect it.
-				this.model.set('active', false); 
-
-				$(PC.fe).trigger( 'choice_change', this.model );
-				wp.hooks.doAction( 'PC.fe.choice.change', this.model );
-
-			}
+			this.model.collection.selectChoice( this.model.id );
 		},
 		preload_image: function() {
 			var src = this.model.get_image( 'thumbnail' );
@@ -475,7 +446,7 @@ PC.options = PC.options || {};
 	});
 
 	PC.fe.views.viewer_static_layer = Backbone.View.extend({
-		tagName: 'img', 
+		tagName: wp.hooks.applyFilters( 'PC.fe.viewer.item.tag', 'img' ),
 		initialize: function( options ) { 
 			this.listenTo( PC.fe.angles, 'change active', this.render );
 
@@ -535,6 +506,8 @@ PC.options = PC.options || {};
 			 
 			var is_active = this.model.get( 'active' );
 			var img = this.model.get_image();
+
+			this.$el.addClass( this.model.collection.getType() );
 
 			// Default to a transparent image
 			if (!img) img = this.empty_img;

@@ -18,7 +18,6 @@ PC.choice = Backbone.Model.extend({
 			var images = new PC.choice_pictures( attributes.images );
 			this.set('images', images); 
 		}
-
 	},
 	get_image: function( image, what ) { 
 		image = image || 'image'; 
@@ -29,7 +28,7 @@ PC.choice = Backbone.Model.extend({
 	},
 
 	parse: function( response ) {
-		console.log('choice model parse:', response);
+		// console.log('choice model parse:', response);
 	},
 	sync: function( method, model, options ) {
 	}

@@ -166,6 +166,7 @@ PC.views = PC.views || {};
 				name: name,
 				order: this.col.nextOrder(),
 				active: true,
+				layerId: this.model.id,
 				// completed: false
 			};
 		},

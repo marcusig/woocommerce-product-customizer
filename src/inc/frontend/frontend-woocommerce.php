@@ -75,8 +75,8 @@ class Frontend_Woocommerce {
 		do_action( 'mkl_pc_scripts_product_page_before' );
 
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
-		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
-		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', array('jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util', 'mkl_pc/js/wp.hooks' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', array('jquery', 'backbone', 'wp-util', 'mkl_pc/js/wp.hooks' ), MKL_PC_VERSION, true );
 
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
