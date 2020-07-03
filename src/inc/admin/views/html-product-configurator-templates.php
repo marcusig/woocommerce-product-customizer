@@ -106,7 +106,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <script type="text/html" id="tmpl-mkl-pc-structure-angle-form">
 	<div class="form-details">
 		<h2>
-			<?php _e('Details', MKL_PC_DOMAIN ) ?>
+			<?php _e('Details', MKL_PC_DOMAIN ); ?>
 		</h2>
 
 		<div class="form-info">
@@ -129,7 +129,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<span class="name"><?php _e('Description', MKL_PC_DOMAIN ) ?></span>
 			<textarea data-setting="description">{{data.description}}</textarea>
 		</label>
-		<?php do_action('mkl_pc_layer_settings') ?>
+		<?php do_action('mkl_pc_angle_settings') ?>
 	</div>
 	<div class="attachment-display-settings">
 		<h2><?php _e('Angles\'s picture', MKL_PC_DOMAIN ) ?></h2>
@@ -160,19 +160,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				</div>
 			</div>
 		</div>
-		<label class="setting">
-			<span class="name"><?php _e('Layer Name', MKL_PC_DOMAIN ) ?></span>
-			<input type="text" data-setting="name" value="{{data.name}}">
-		</label>
-		<label class="setting">
-			<span class="name"><?php _e('Description', MKL_PC_DOMAIN ) ?></span>
-			<textarea data-setting="description">{{data.description}}</textarea>
-		</label>
-		<label class="setting">
-			<span class="name"><?php _e('This layer does not have choices', MKL_PC_DOMAIN ) ?></span>
-			<input type="checkbox" data-setting="not_a_choice" <# if(data.not_a_choice == true || data.not_a_choice == 'true') { #> checked="checked" <# } #>>
-			<p class="help"><?php _e('For exemple if the layer is a shadow or a static element', MKL_PC_DOMAIN ) ?></p>
-		</label>
+
+		<?php do_action('mkl_pc_layer_fields') ?>
+
 		<?php do_action('mkl_pc_layer_settings') ?>
 	</div>
 	<div class="attachment-display-settings">

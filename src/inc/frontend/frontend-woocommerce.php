@@ -68,7 +68,7 @@ class Frontend_Woocommerce {
 			if (!defined('SCRIPT_DEBUG') || !SCRIPT_DEBUG) {
 				$file = str_replace('.js', '.min.js', $file);
 			}
-			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone', 'accounting'), MKL_PC_VERSION, true );
+			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone', 'accounting', 'mkl_pc/js/wp.hooks' ), MKL_PC_VERSION, true );
 		}
 		
 		// To include potential other scripts BEFORE the main configurator one

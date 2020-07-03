@@ -198,6 +198,7 @@ PC.views = PC.views || {};
 			'keyup .setting textarea': 'form_change',
 			'change .setting input': 'form_changed',
 			'change .setting textarea': 'form_changed',
+			'change .setting select': 'form_changed',
 
 			'click [type="checkbox"]': 'form_change',
 

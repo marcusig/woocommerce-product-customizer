@@ -24,6 +24,7 @@ class Admin_Woocommerce {
 		$this->product = new Admin_Product();
 		$this->settings = new Admin_Settings();
 		$this->choice_settings = new Choice_Settings();
+		$this->layer_settings = new Layer_Settings();
 	}
 
 	/**
@@ -32,8 +33,9 @@ class Admin_Woocommerce {
 	 * @return void
 	 */
 	private function _includes() {
-		include( MKL_PC_INCLUDE_PATH . 'admin/settings.php' );
-		include( MKL_PC_INCLUDE_PATH . 'admin/choice-settings.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/settings-page.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/settings/choice.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/settings/layer.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}

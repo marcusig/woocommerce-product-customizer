@@ -14,6 +14,7 @@ class Layer {
 	private $has_choices = true;
 	private $image = '';
 	private $order = 0;
+	private $type = 'simple';
 
 	public function __construct( $args = array() ) {
 		$defaults = array();

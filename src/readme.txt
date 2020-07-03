@@ -80,6 +80,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Refactor layer settings to be filterable
+* TWEAK: Refactor choices to allow multiple choices addon
+* TWEAK: Code cleanup
+
 = 1.0.5 - 10/June/2020 =
 
 * TWEAK: Each product now uses a unique key when enqueuing the data
