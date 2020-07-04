@@ -186,9 +186,25 @@ gulp.task('zip', gulp.series(
 	}
 ));
 
-gulp.task('svn', function(done) {
+
+gulp.task('clean_svn', function(done) {
+	return gulp.src('../../../repository/product-configurator-for-woocommerce/trunk', {read: false}).pipe(clean({force: true}))
+	.pipe(plumber(reportError))
+	.on('end', done);
+});
+
+gulp.task('copy_to_svn', function(done) {
 	return gulp.src('dist/**/*')
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest('../../../repository/product-configurator-for-woocommerce/trunk'))
 	.on('end', done);	
 });
+
+gulp.task('svn',
+	gulp.series(
+		'build', 'clean_svn', 'copy_to_svn',
+		function(done) {
+			done();
+		}
+	)
+);
