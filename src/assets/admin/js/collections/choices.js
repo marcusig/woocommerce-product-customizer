@@ -5,10 +5,13 @@ var PC = PC || {};
 PC.choices = Backbone.Collection.extend({
 	// url: function() { return ajaxurl + '?action='+PC.actionParameter+'&data=choices' },
 	model: PC.choice,
-	initialize: function() {
+	initialize: function( models, options ) {
+		this.layer = options.layer;
+		this.layer_type = this.layer.get( 'type' );
+
 	},
 	nextOrder: function() {
-		if ( !this.length ) {
+		if ( ! this.length ) {
 			return 1;
 		}
 		return this.last().get('order') + 1;
@@ -23,8 +26,28 @@ PC.choices = Backbone.Collection.extend({
     },
 	resetChoice: function() {
 		this.deactivateAll();
-		this.first().set( 'active', true );
+		if ( ! this.layer_type || 'simple' === this.layer_type ) this.first().set( 'active', true );
 	},
+	selectChoice: function ( choice_id, activate ) {
+		var choice = this.get( choice_id );
+		var is_active = choice.get('active');
+		// Simple layers
+		if ( 'simple' === this.layer_type || ! this.layer_type ) {
+			// Already active, do nothing
+			if ( is_active ) return;
+			// Deactivate every other choice
+			this.deactivateAll();
+			// Set this choice to active
+			choice.set( 'active', true );
+		} else if ( 'multiple' === this.layer_type ) {
+			// Multiple choice: toggle the current state
+			choice.set( 'active', ! is_active );
+		}
+		wp.hooks.doAction( 'PC.fe.choice.change', choice );
+	},
+	getType: function() {
+		return this.layer_type;
+	}
 });
 
 PC.content_list = Backbone.Collection.extend({
@@ -32,14 +55,14 @@ PC.content_list = Backbone.Collection.extend({
 	initialize: function() {
 	},
 	resetConfig: function() {
-		console.log(this);
 		this.each( function( layer ) {
-			if ( ! layer.get( 'not_a_choice' ) ) {
+			var layer_model = PC.fe.layers.get( layer.get( 'layerId' ) );
+			// console.log( 'type?', layer_model.get( 'type' ), layer_model.get( 'not_a_choice' ) );
+			if ( ! layer_model.get( 'not_a_choice' ) ) {
 				layer.get( 'choices' ).resetChoice();
 			}
 		}.bind( this ) );
 	},
-
 })
 
 PC.choice_pictures = Backbone.Collection.extend({

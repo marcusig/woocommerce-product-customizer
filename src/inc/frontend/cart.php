@@ -26,13 +26,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 		// Filter data that's saved in the cart, and add the configurator data
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
-			if( mkl_pc_is_configurable($product_id) ) {
+			if ( mkl_pc_is_configurable( $product_id ) ) {
 
-				if( isset($_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
-					if( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
+				if ( isset( $_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
+					if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
 						$data = Plugin::instance()->db->sanitize( $data );
+						$layers = array();
 						if( is_array( $data ) ) { 
-							$layers = array();
 							foreach( $data as $layer_data ) {
 								$layers[] = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id );
 								
@@ -47,11 +47,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 		public function wc_cart_get_item_data( $data, $cart_item ) { 
 
-			if( mkl_pc_is_configurable( $cart_item['product_id'] ) ) { 
-				$configurator_data = $cart_item['configurator_data'] ; 
-
+			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
+				$configurator_data = $cart_item['configurator_data'];
 				$choices = array(); 
-				foreach ($configurator_data as $layer) { 
+				foreach ($configurator_data as $layer) {
 					if ( $layer->is_choice ) { 
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
@@ -60,12 +59,12 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						}
 						$item_data = Product::set_layer_item_meta( $layer );
 						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
-						$choices[$layer_name] = $choice_image . $item_data['value'];//apply_filters( 'mkl_pc_cart_get_item_data_choice_name', $choice_image . ' ' . $layer->get_choice( 'name' ), $layer ); 
+						$choices[] = [ 'name' => $layer_name, 'value' => $choice_image . $item_data['value'] ];//apply_filters( 'mkl_pc_cart_get_item_data_choice_name', $choice_image . ' ' . $layer->get_choice( 'name' ), $layer ); 
 					}
 				}
 				$data[] = array( 
-					'key' => __('Configuration', MKL_PC_DOMAIN), 
-					'value' => $this->get_choices_html( $choices ), 
+					'key' => __( 'Configuration', MKL_PC_DOMAIN ),
+					'value' => $this->get_choices_html( $choices ),
 				);
 				
 
@@ -96,10 +95,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 		public function get_choices_html( $choices ) {
 			$output = '';
-			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' ); 
+			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' );
 			$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
-			foreach ( $choices as $layer => $choice ) {
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $layer .'</strong>: ' . $choice . $after, $layer, $choice, $before, $after );
+			foreach ( $choices as $choice ) {
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['name'] .'</strong>: ' . $choice['value'] . $after, $choice['name'], $choice['value'], $before, $after );
 			}
 
 			return $output;

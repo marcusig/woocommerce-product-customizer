@@ -283,8 +283,13 @@ $inner_space: 1em;
 				right: 0;
 				bottom: 0;
 				text-align: center;
+				user-select: none;
 
 				img {
+					transition: .2s all;
+					&:not(.active) {
+						opacity: 0;
+					}
 					position: absolute;
 					left: 50%;
 					top: 50%;

@@ -166,6 +166,7 @@ PC.views = PC.views || {};
 				name: name,
 				order: this.col.nextOrder(),
 				active: true,
+				layerId: this.model.id,
 				// completed: false
 			};
 		},
@@ -198,6 +199,7 @@ PC.views = PC.views || {};
 			'keyup .setting textarea': 'form_change',
 			'change .setting input': 'form_changed',
 			'change .setting textarea': 'form_changed',
+			'change .setting select': 'form_changed',
 
 			'click [type="checkbox"]': 'form_change',
 

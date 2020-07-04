@@ -1,9 +1,9 @@
 var PC = PC || {};
 PC.fe = PC.fe || {};
 PC.fe.views = PC.fe.views || {};
-PC.options = PC.options || {}; 
+PC.options = PC.options || {};
 
-!(function($){
+!( function( $ ) {
 	'use strict'; 
 	/*
 		PC.fe.views.configurator 
@@ -14,7 +14,6 @@ PC.options = PC.options || {};
 		className: 'mkl_pc',
 		template: wp.template( 'mkl-pc-configurator' ), 
 		initialize: function() {
-			var that = this;
 			this.options = PC.productData.product_info; 
 
 			try {
@@ -99,9 +98,9 @@ PC.options = PC.options || {};
 				});
 			});
 			*/
-			$(PC.fe).trigger( 'start', that );
-			wp.hooks.doAction( 'PC.fe.start', that ); 
-			that.open();
+			$( PC.fe ).trigger( 'start', this );
+			wp.hooks.doAction( 'PC.fe.start', this ); 
+			this.open();
 		},
 
 	});
@@ -159,10 +158,10 @@ PC.options = PC.options || {};
 		},
 
 		add_to_cart: function() { 
-			var $cart = $('form.cart');
+			var $cart = $( 'form.cart' );
 			var data = PC.fe.save_data.save();
-			$cart.find('input[name=pc_configurator_data]').val( data );
-			$cart.find( '.single_add_to_cart_button' ).trigger( 'click' ); 
+			$cart.find( 'input[name=pc_configurator_data]' ).val( data );
+			$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 		},
 
 		close_configurator: function( event ) {
@@ -232,6 +231,7 @@ PC.options = PC.options || {};
 		template: wp.template( 'mkl-pc-configurator-layer-item' ),
 		initialize: function( options ) {
 			this.options = options || {};
+			this.layer_type = this.model.get('type');
 			this.listenTo( this.options.model, 'change active', this.activate );
 		},
 
@@ -239,15 +239,26 @@ PC.options = PC.options || {};
 			'click > .layer-item': 'show_choices', 
 			// 'click a i.close': 'hide_choices', 
 		},
+
 		render: function() { 
 			this.$el.append( this.template( this.model.attributes ) ); 
+			wp.hooks.doAction( 'PC.fe.layer.beforeRenderChoices', this );
+			// Add the choices
 			this.add_choices(); 
 			wp.hooks.doAction( 'PC.fe.layer.render', this );
-			return this.$el; 
+			return this.$el;
 		},
 		add_choices: function() { 
 
-			this.choices = new PC.fe.views.choices({ content: PC.fe.getLayerContent( this.model.id ), model: this.model }); 
+			if ( ! this.layer_type || 'simple' == this.layer_type ) {
+				this.choices = new PC.fe.views.choices({ content: PC.fe.getLayerContent( this.model.id ), model: this.model }); 
+			}
+
+			if ( ! this.choices ) {
+				console.log( 'Product Configurator: No choice view was rendered.' );
+				return;
+			}
+
 			var where = wp.hooks.applyFilters( 'PC.fe.choices.where', 'out' );
 			if( 'out' == where ) {
 				this.options.parent.after( this.choices.$el ); 
@@ -271,11 +282,11 @@ PC.options = PC.options || {};
 		activate: function() {
 			if( this.model.get('active') ) {
 				this.$el.addClass('active'); 
-				this.choices.$el.addClass('active'); 
+				if ( this.choices ) this.choices.$el.addClass('active');
 				wp.hooks.doAction( 'PC.fe.layer.activate', this );
 			} else {
 				this.$el.removeClass('active');
-				this.choices.$el.removeClass('active');
+				if ( this.choices ) this.choices.$el.removeClass('active');
 				wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 			}
 
@@ -312,7 +323,7 @@ PC.options = PC.options || {};
 			collection.each( this.add_one, this );
 		},
 		add_one: function( model ){
-			var new_choice = new PC.fe.views.choice( { model: model } ); 
+			var new_choice = new PC.fe.views.choice( { model: model, multiple: false } ); 
 			this.$list.append( new_choice.render() ); 
 		},
 		close_choices: function( event ) {
@@ -330,7 +341,7 @@ PC.options = PC.options || {};
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.model, 'change activate', this.activate );
-		}, 
+		},
 		events: {
 			'mousedown .choice-item': 'set_choice',
 			'keydown .choice-item': 'set_choice',
@@ -344,28 +355,13 @@ PC.options = PC.options || {};
 			this.activate();
 			return this.$el;
 		}, 
-		// key_down: function( event ) {
-		// },
 		set_choice: function( event ) {
-			//event.preventDefault(); 
-			if( event.type == 'keydown' ){
+			if ( event.type == 'keydown' ) {
 				if ( ! ( event.keyCode == 13 || event.keyCode == 32 ) ) {
 					return;
 				}
 			}
-			if( this.model.get('active') != true ) { 
-
-				this.model.collection.each(function(model) {
-					model.set('active' , false); 
-				}); 
-
-				this.model.set('active', true); 
-
-				$(PC.fe).trigger( 'choice_change', this.model );
-				wp.hooks.doAction( 'PC.fe.choice.change', this.model );
-
-				this.activate(); 
-			}
+			this.model.collection.selectChoice( this.model.id );
 		},
 		preload_image: function() {
 			var src = this.model.get_image( 'thumbnail' );
@@ -404,10 +400,10 @@ PC.options = PC.options || {};
 
 		render: function( ) { 
 			this.$el.append( this.template() ); 
-			if( PC.fe.contents ) {
-				if( PC.fe.angles.length > 1 ) {
+			if ( PC.fe.contents ) {
+				if ( PC.fe.angles.length > 1 ) {
 					this.angles_selector = new PC.fe.views.angles({ parent: this }); 
-					this.$el.append( this.angles_selector.render() ); 
+					this.$el.append( this.angles_selector.render() );
 				} else {
 					PC.fe.angles.first().set( 'active', true );
 				}
@@ -423,105 +419,116 @@ PC.options = PC.options || {};
 			} else {
 				console.log('no content to show.');
 			}
-			// PC.fe.layers.first().set( 'active', true );
-
 
 			return this.$el; 
 
 		}, 
 
 		add_layers: function() {
-			PC.fe.layers.each( this.add_layer, this ); 
+			PC.fe.layers.each( this.add_choices, this );
 		}, 
 
-		add_layer: function( model ) { 
+		add_choices: function( model ) {
+			var choices = PC.fe.getLayerContent( model.id );
+			if ( model.get( 'not_a_choice') ) {
+				var layer = new PC.fe.views.viewer_static_layer( { model: choices.first(), parent: this } );
+				this.$layers.append( layer.$el );
+			} else {
+				choices.each( this.add_single_choice, this );
+			}
+		},
+
+		add_single_choice: function( model ) {
 			var layer = new PC.fe.views.viewer_layer( { model: model, parent: this } ); 
 			this.$layers.append( layer.$el );
-			this.layers[ model.id ] = layer; 
-		},
-
-		change_angle: function(args) {
-			
-		},
-
-		change_layer: function( layer_id, choice_id, view ) { 
-
-			// var layer = this.layers[ layer_id ];
-			/*
-				view
-					
-				activate {
-					collection.each.set('active', false); 
-					this.model.set('active', true); 
-				}
-
-
-			*/
+			this.layers[ model.id ] = layer;
 		}
+	});
 
-	}); 
+	PC.fe.views.viewer_static_layer = Backbone.View.extend({
+		tagName: wp.hooks.applyFilters( 'PC.fe.viewer.item.tag', 'img' ),
+		initialize: function( options ) { 
+			this.listenTo( PC.fe.angles, 'change active', this.render );
+
+			this.parent = options.parent || PC.fe;
+
+			this.render(); 
+
+			this.$el.on( 'load', function(event) {
+				wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
+				this.parent.imagesLoading --;
+				if( this.parent.imagesLoading == 0 ) {
+					this.parent.$el.removeClass('is-loading-image');
+					wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
+				}
+			}.bind( this ));
+
+			return this; 
+		},
+
+		render: function() {
+			var img = this.model.get_image();
+			// Default to a transparent image
+			if (!img) img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
+			wp.hooks.doAction( 'PC.fe.viewer.static_layer.render', this );
+
+			this.parent.imagesLoading ++;
+			this.parent.$el.addClass('is-loading-image');
+			this.el.src = img
+			this.$el.addClass( 'active static' );
+			this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
+
+			return this.$el; 
+		}		
+	});
 
 	PC.fe.views.viewer_layer = Backbone.View.extend({ 
 		tagName: 'img', 
+		events: {
+			'load': 'img_loaded'
+		},
 		initialize: function( options ) { 
 			var that = this;
-			this.parent = options.parent || PC.fe; 
-			this.choices = PC.fe.getLayerContent( this.model.id ); 
-			if ( ! this.choices ) return;
-
-			this.listenTo( this.choices, 'change active', this.change_layer );
+			this.empty_img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+			this.parent = options.parent || PC.fe;
+			this.is_loaded = false;
+			this.listenTo( this.model, 'change active', this.change_layer );
 			this.listenTo( PC.fe.angles, 'change active', this.change_layer );
 
-			var active_choice = this.choices.findWhere( {active: true} ); 
+			var is_active = this.model.get( 'active' );
 
-			if( ! active_choice ) {
-				// On load, we need to set the first choice active
-				this.choices.first().set( 'active', true );			
-			} else {
-				// When we change variation or reopen the configurator, 
-				// we need to render as the change event won't be triggered. 
-				this.render(); 
-			}
-
-			/*
-			if( this.model.get( 'not_a_choice' ) || this.choices.length < 2 ) {
-				console.log( 'Should not be a choice', this.model );
-			}
-			*/
-			//this.render();
-
-			this.$el.on('load', function(event) { 
-				wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
-				that.parent.imagesLoading --;
-				if( that.parent.imagesLoading == 0 ) {
-					that.parent.$el.removeClass('is-loading-image');
-					wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
-				}
-			});
-
+			this.render(); 
 
 			return this; 
 		},
  		render: function() {
-			var choice_id;
-			var active_choice = this.choices.findWhere({active: true}); 
-			if( active_choice ) {
-				choice_id = active_choice.id;
-			} else {
-				choice_id = this.choices.first().id; 
-			}
-			var img = this.choices.get( choice_id ).get_image(); 
+			 
+			var is_active = this.model.get( 'active' );
+			var img = this.model.get_image();
+
+			this.$el.addClass( this.model.collection.getType() );
+
 			// Default to a transparent image
-			if (!img) img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+			if (!img) img = this.empty_img;
 
 			wp.hooks.doAction( 'PC.fe.viewer.layer.render', this );
 
-			this.parent.imagesLoading ++;
+			if ( is_active ) {
+				if ( ! this.is_loaded ) {
+					this.parent.imagesLoading ++;
+					this.parent.$el.addClass('is-loading-image');
+					this.el.src = img
+				} 
+				this.$el.addClass( 'active' );
+			} else {
+				if ( ! this.is_loaded ) {
+					this.el.src = this.empty_img;
+				}
+				this.$el.removeClass( 'active' );
+			}
 
-			this.parent.$el.addClass('is-loading-image');
-			this.el.src = img;
-
-			this.$el.data( 'dimensions', this.choices.get( choice_id ).get_image( 'image', 'dimensions' ) );
+			this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
 
 			return this.$el; 
 		},
@@ -534,11 +541,23 @@ PC.options = PC.options || {};
 			return this.choices.get( choice_id ).attributes.images.get( angle_id ).attributes[image].url; 
 		},
 		change_layer: function( model ) {
-			if( model.get( 'active' ) == true ) {
-				this.render();
-			}
+			this.render();
 		},
+		img_loaded: function(e) {
 
+			if (this.empty_img == this.$el.prop('src')) return;
+
+			this.is_loaded = true;
+
+			wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
+
+			this.parent.imagesLoading --;
+			if( this.parent.imagesLoading == 0 ) {
+				this.parent.$el.removeClass('is-loading-image');
+				wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
+			}
+
+		}
 	}); 
 
 	PC.fe.views.angles = Backbone.View.extend({ 
@@ -631,32 +650,31 @@ PC.options = PC.options || {};
 		parse_choices: function( model ) {
 			var choices = PC.fe.getLayerContent( model.id ); 
 			var angle_id = PC.fe.angles.first().id; 
-			if( model.attributes.not_a_choice != 'true' ) { 
-				if( choices.length > 1 ) { 
+			if( model.attributes.not_a_choice != 'true' ) {
+				if( choices.length > 1 || 'multiple' == model.get( 'type' ) ) {
 
-					var choice = choices.findWhere( { 'active': true } ); 
-					var img_id = choice.get_image('image', 'id'); 
-					//choice.attributes.images.get(angle_id); 
+					var selected_choices = choices.where( { 'active': true } );
 
-					this.choices.push({ 
-						is_choice: true, 
-						layer_id: model.id, 
-						choice_id: choice.id, 
-						angle_id: angle_id,
-						layer_name: model.attributes.name, 
-						
-						image: img_id, 
-						name: choice.attributes.name, 
-					});
+					_.each( selected_choices, function( choice ) {
+						var img_id = choice.get_image( 'image', 'id' );
+	
+						console.log('parsing choice', choice);
+
+						this.choices.push( {
+							is_choice: true,
+							layer_id: model.id,
+							choice_id: choice.id,
+							angle_id: angle_id,
+							layer_name: model.attributes.name,
+							image: img_id,
+							name: choice.attributes.name,
+						} );
+					}, this );
 
 				} else {
-
-					var choice = choices.first(); 
-					// var choice = choices.first(); 
-
+					var choice = choices.first();
 					var img_id = choice.get_image('image', 'id'); 
-
-					this.choices.push({ 
+					this.choices.push({
 						is_choice: false,
 						layer_id: model.id, 
 						choice_id: choice.id, 
@@ -665,27 +683,16 @@ PC.options = PC.options || {};
 					});
 				}
 			} else {
-				var choice = choices.first(); 
-				var img_id = choice.get_image('image', 'id'); 
-				this.choices.push({ 
+				var choice = choices.first();
+				var img_id = choice.get_image('image', 'id');
+				this.choices.push({
 					is_choice: false,
-					layer_id: model.id, 
-					choice_id: choice.id, 
+					layer_id: model.id,
+					choice_id: choice.id,
 					angle_id: angle_id,
-					image: img_id, 
+					image: img_id,
 				});
 			}
-
 		},
 	};
-
-	// PC.fe.viewerImages = Backbone.Collection.extend({
-
-	// });
-	/*
-
-	init: 
-		set default choice to [0]
-		set default angle to [0]	
-	*/
 })(jQuery);

@@ -249,7 +249,8 @@ TODO:
 		template: wp.template('mkl-pc-structure-layer-form'),
 
 		initialize: function( options ) {
-			this.listenTo(this.model, 'destroy', this.remove); 
+			this.listenTo( this.model, 'destroy', this.remove ); 
+			this.listenTo( this.model, 'change:not_a_choice', this.render );
 		},
 		events: {
 			// 'click' : 'edit',
@@ -259,10 +260,9 @@ TODO:
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
-			'change .setting input': 'form_changed',
-			'change .setting textarea': 'form_changed',
-
+			'change .setting select': 'form_change',
 			'click [type="checkbox"]': 'form_change',
+			'click [type="checkbox"][data-setting="not_a_choice"]': 'on_change_not_a_choice',
 
 			'click .edit-attachment': 'edit_attachment',
 			'select-media': 'select_attachment',
@@ -275,6 +275,11 @@ TODO:
 				// cancel: this.$('.cancel-delete-layer'),
 			};
 			return this;
+		},
+		on_change_not_a_choice: function( event ) {
+			var input = $(event.currentTarget);
+			var new_val = input.prop('checked');
+			this.model.set( 'not_a_choice', new_val );
 		},
 		form_change: function( event ) {
 
@@ -289,14 +294,11 @@ TODO:
 				// text + textarea
 				var new_val = input.val().trim();
 			}
-			console.log( new_val );
+
 			if( this.model.get(setting) != new_val ) {
 				this.model.set(setting, new_val);
 			}
 
-		},
-		form_changed: function() {
-			// this.model.save();
 		},
 		delete_layer: function( event ) {
 			var bt = $(event.currentTarget);
