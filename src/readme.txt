@@ -84,6 +84,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 * TWEAK: Refactor layer settings to be filterable
 * TWEAK: Refactor choices to allow multiple choices addon
+* TWEAK: Display all the images to allow transitioning between two
 * TWEAK: Code cleanup
 
 = 1.0.5 - 10/June/2020 =
