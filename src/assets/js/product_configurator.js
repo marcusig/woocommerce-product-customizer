@@ -165,7 +165,7 @@ Backbone.Model.prototype.toJSON = function() {
 			return { content: content };
 			// this.set()
 		}
-	};	
+	}; 
 
 	PC.fe.getLayerContent = function( id ) {
 		if ( PC.fe.contents.content.get( id ) ) 

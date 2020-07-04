@@ -34,7 +34,7 @@ var PC = PC || {};
 			// content.add( response.content ); 
 			$.each( response.content, function(key, value) {
 				if( value.choices && value.choices.length > 0 ) {
-					value.choices = new PC.choices(value.choices);
+					value.choices = new PC.choices(value.choices, { layer: PC.app.get_product( value.layerId ) } );
 					content.add( value );
 				}
 			});

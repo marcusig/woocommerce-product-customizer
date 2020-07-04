@@ -25,7 +25,7 @@ PC.views = PC.views || {};
 			if ( this.content.get( this.model.id ) ) {
 				this.col = this.content.get( this.model.id ).get('choices');
 			} else {
-				this.content.add( { layerId: this.model.id, choices: new PC.choices() } );
+				this.content.add( { layerId: this.model.id, choices: new PC.choices([], { layer: PC.app.get_product( this.model.id ) } ) } );
 				this.col = this.content.get( this.model.id );
 			}
 			this.state = this.options.state; 
