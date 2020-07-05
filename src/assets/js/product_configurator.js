@@ -155,7 +155,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 			// content.add( response.content );
 			$.each( response.content, function(key, value) {
-				if( value.choices && value.choices.length > 0 ) {
+				if( value.choices && value.choices.length > 0 && PC.fe.layers.get( value.layerId ) ) {
 					value.choices = new PC.choices( value.choices, { layer: PC.fe.layers.get( value.layerId ) } );
 					content.add( value );
 				}
