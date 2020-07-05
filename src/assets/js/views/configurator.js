@@ -194,16 +194,13 @@ PC.options = PC.options || {};
 		},
 		add_one: function( model ){
 			// if layer is not a choice or has only one choice, we don't add it to the menu
-
-			if( model.attributes.not_a_choice != 'true' ) {
+			if ( ! model.attributes.not_a_choice ) {
 				var choices = PC.fe.getLayerContent( model.id ); 
 				if( choices.length > 1 ) {
 					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
 					this.$el.append( new_layer.render() );
 					this.items.push( new_layer );
-
 				}
-				
 			}
 
 			// add to a new collection to be used to render the viewer
@@ -390,7 +387,6 @@ PC.options = PC.options || {};
 		imagesLoading: 0,
 		initialize: function( options ) {
 			this.parent = options.parent || PC.fe; 
-			this.listenTo( PC.fe.angles, 'change active', this.change_angle ); 
 			return this; 
 		},
 
@@ -494,7 +490,7 @@ PC.options = PC.options || {};
 			this.parent = options.parent || PC.fe;
 			this.is_loaded = false;
 			this.listenTo( this.model, 'change active', this.change_layer );
-			this.listenTo( PC.fe.angles, 'change active', this.change_layer );
+			this.listenTo( PC.fe.angles, 'change active', this.change_angle );
 
 			var is_active = this.model.get( 'active' );
 
@@ -536,12 +532,17 @@ PC.options = PC.options || {};
 			image = image || 'image'; 
 			var active_angle = PC.fe.angles.findWhere( { active: true } );
 			var angle_id = active_angle.id; 
-			//console.log( this.choices.get( choice_id ).get_image( 'image', 'dimensions' ) ); 
 
 			return this.choices.get( choice_id ).attributes.images.get( angle_id ).attributes[image].url; 
 		},
 		change_layer: function( model ) {
 			this.render();
+		},
+		change_angle: function( model ) {
+			if ( model.get( 'active' ) ) {
+				this.is_loaded = false;
+				this.render();
+			}
 		},
 		img_loaded: function(e) {
 
@@ -650,7 +651,7 @@ PC.options = PC.options || {};
 		parse_choices: function( model ) {
 			var choices = PC.fe.getLayerContent( model.id ); 
 			var angle_id = PC.fe.angles.first().id; 
-			if( model.attributes.not_a_choice != 'true' ) {
+			if( ! model.attributes.not_a_choice ) {
 				if( choices.length > 1 || 'multiple' == model.get( 'type' ) ) {
 
 					var selected_choices = choices.where( { 'active': true } );
