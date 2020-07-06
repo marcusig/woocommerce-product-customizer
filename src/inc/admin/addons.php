@@ -18,5 +18,19 @@ return json_decode('[
 		"description": "Get your customers engaged by enabling them to save the design they’ve made.",
 		"img": "mkl-pc-save-your-design.png",
 		"product_url": "https://wc-product-configurator.com/product/save-your-design/"
+	},
+	{
+		"product_name": "variable-products",
+		"label": "Variable products support",
+		"description": "Adds compatibility for Variable products to the Product Configurator for WooCommerce.",
+		"img": "mkl-pc-variable-product.png",
+		"product_url": "https://wc-product-configurator.com/product/variable-products/"
+	},
+	{
+		"product_name": "multiple-choice",
+		"label": "Multiple choice",
+		"description": "Select several choices from one layer. Ideal for individual options.",
+		"img": "mkl-pc-multiple-choice.png",
+		"product_url": "https://wc-product-configurator.com/product/save-your-design/"
 	}
 ]');
