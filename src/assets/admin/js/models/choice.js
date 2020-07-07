@@ -11,9 +11,11 @@ PC.choice = Backbone.Model.extend({
 		images:null,
 		layerId: null,
 	},
-	initialize: function( attributes ) {
-		
-		if( ! ( attributes.images instanceof Backbone.Collection ) ) {
+	initialize: function( attributes, options ) {
+
+		if ( ! attributes.layerId ) this.set( 'layerId', options.layer.id );
+
+		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
 			
 			var images = new PC.choice_pictures( attributes.images );
 			this.set('images', images); 
