@@ -80,6 +80,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Ability to remove images
 * TWEAK: Add links to support and reviews
 
 = 1.0.8 - 05/July/2020 =

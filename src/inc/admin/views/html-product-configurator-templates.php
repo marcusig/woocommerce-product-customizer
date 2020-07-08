@@ -139,6 +139,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<# } #>
 		</div>
 		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', MKL_PC_DOMAIN ) ?></a>
+		<# if ( data.image.url != '' ) { #>
+			| <a class="remove-attachment" href="#"><?php _e('Remove picture', MKL_PC_DOMAIN ) ?></a>
+		<# } #>
 	</div>
 </script>
 
@@ -173,6 +176,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<# } #>
 		</div>
 		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', MKL_PC_DOMAIN ) ?></a>
+		<# if ( data.image.url != '' ) { #>
+			| <a class="remove-attachment" href="#"><?php _e('Remove picture', MKL_PC_DOMAIN ) ?></a>
+		<# } #>
 	</div>
 </script>
 <?php 
@@ -261,24 +267,46 @@ CONTENT TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-content-choice-pictures">
 	<div class="pictures">
 		<h4>{{data.angle_name}}</h4>
-		<div class="picture main-picture">
-			<a class="edit-attachment" data-edit="image" href="#"><span>Main Image</span> 
+		<div class="picture main-picture" data-edit="image">
+			<span><?php _e( 'Main Image', MKL_PC_DOMAIN ); ?></span>
 			<# if(data.image.url != '' ) { #>
-			<img src="{{data.image.url}}" alt="">
+			<img class="edit-attachment" src="{{data.image.url}}" alt="">
 			<# } else { #>
-			<img src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
-			<# } #>
-			</a>
-		</div>
-		<div class="picture thumbnail-picture">
-			<a class="edit-attachment" data-edit="thumbnail" href="#"><span>Thumbnail</span> 
-			<# if(data.thumbnail.url != '' ) { #>
-			<img src="{{data.thumbnail.url}}" alt="">
-			<# } else { #>
-			<img src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
+			<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
 			<# } #>
 
-			</a>			
+			<a class="edit-attachment" href="#">
+				<span class="screen-reader-text"><?php _e( 'Add / Edit image', MKL_PC_DOMAIN ); ?></span>
+				<# if ( data.image.url != '' ) { #>
+					<span class="dashicons dashicons-edit"></span>
+				<# } else { #>
+					<span class="dashicons dashicons-plus"></span>
+				<# } #>
+			</a>
+
+			<# if ( data.image.url != '' ) { #>
+				<a class="remove-attachment" href="#"><span class="dashicons dashicons-no"></span><span class="screen-reader-text"><?php _e('Remove picture', MKL_PC_DOMAIN ) ?></span></a>
+			<# } #>
+		</div>
+		<div class="picture thumbnail-picture" data-edit="thumbnail">
+			<span><?php _e( 'Thumbnail', MKL_PC_DOMAIN ); ?></span>
+			<# if(data.thumbnail.url != '' ) { #>
+			<img class="edit-attachment" src="{{data.thumbnail.url}}" alt="">
+			<# } else { #>
+			<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
+			<# } #>
+
+			<a class="edit-attachment" href="#">
+				<span class="screen-reader-text"><?php _e( 'Add / Edit image', MKL_PC_DOMAIN ); ?></span>
+				<# if ( data.thumbnail.url != '' ) { #>
+					<span class="dashicons dashicons-edit"></span>
+				<# } else { #>
+					<span class="dashicons dashicons-plus"></span>
+				<# } #>
+			</a>
+			<# if ( data.thumbnail.url != '' ) { #>
+				<a class="remove-attachment" href="#"><span class="dashicons dashicons-no"></span><span class="screen-reader-text"><?php _e('Remove picture', MKL_PC_DOMAIN ) ?></span></a>
+			<# } #>
 		</div>
 		<div class="clear"></div>
 	</div>

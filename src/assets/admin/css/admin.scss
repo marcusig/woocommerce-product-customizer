@@ -582,12 +582,18 @@ CONTENT
 						padding-right: $modal-spacing;
 					}
 				}
-				a {
+				.picture {
 					display: block;
 					float: left;
 					margin-right: 6px;
-					span {
+					position: relative;
+					
+					img, & > span {
 						display: block;
+					}
+
+					a {
+						text-decoration: none;
 					}
 				}			
 				img {
