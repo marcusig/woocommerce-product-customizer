@@ -265,6 +265,7 @@ TODO:
 			'click [type="checkbox"][data-setting="not_a_choice"]': 'on_change_not_a_choice',
 
 			'click .edit-attachment': 'edit_attachment',
+			'click .remove-attachment': 'select_attachment',
 			'select-media': 'select_attachment',
 		},
 		render: function() {
@@ -327,10 +328,15 @@ TODO:
 		},
 
 		select_attachment: function(e, attachment) {
-			
+			var url = '';
+			var id = null;
+			if ( attachment ) {
+				url = attachment.get('url');
+				id = attachment.id;
+			} 
 			this.model.set('image', {
-				url: attachment.get('url'),
-				id: attachment.id
+				url: url,
+				id: id
 			});
 			this.render();
 		},

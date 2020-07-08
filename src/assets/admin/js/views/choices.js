@@ -293,6 +293,7 @@ PC.views = PC.views || {};
 		},
 		events: {
 			'click .edit-attachment': 'edit_attachment',
+			'click .remove-attachment': 'remove_attachment',
 			'select-media': 'select_attachment',
 
 		},
@@ -301,7 +302,7 @@ PC.views = PC.views || {};
 		},
 		edit_attachment: function(e) {
 			e.preventDefault();
-			this.editing = $(e.currentTarget).data('edit'); 
+			this.editing = $(e.currentTarget).closest( '.picture' ).data( 'edit' ); 
 			var media_options = {};
 			media_options.el = this.$el;
 			if( this.model.get( this.editing ).id )
@@ -323,7 +324,18 @@ PC.views = PC.views || {};
 			});
 			this.render();
 		},	
-
+		remove_attachment: function( e ) {
+			var editing = $( e.currentTarget ).closest( '.picture' ).data( 'edit' );
+			this.model.set( editing, {
+				url: '',
+				id: null,
+				dimensions: {
+					height: 0,
+					width: 0,
+				}
+			});
+			this.render();
+		},
 		render: function() {
 			this.$el.empty();
 
