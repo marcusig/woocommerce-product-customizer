@@ -228,6 +228,32 @@ body.pc-modal-opened {
 			}
 		}
 	}
+	.state.home {
+		.tab_content {
+			@media ( min-width: 800px ) {
+				display: flex;
+			}
+			height: 100%;
+			padding: 0;
+			.instructions {
+				@media ( min-width: 800px ) {
+					width: calc( 100% - 400px );
+				}
+				padding: 20px;
+			}
+			.more {
+				padding: 20px;
+				@media ( max-width: 800px ) {
+					border-top: 1px solid $light-border-color;
+				}
+				@media ( min-width: 800px ) {
+					background: $very-light-bg-color;
+					border-left: 1px solid $light-border-color;
+				}
+			}	
+		}
+		
+	}
 }
 .mkl-list {
 
@@ -548,11 +574,13 @@ CONTENT
 		.view {
 			.pictures {
 				padding: 5px; 
-				> h4 {
-					width: 120px;
-					float: left;
-					text-align: right;
-					padding-right: $modal-spacing;
+				@media ( min-width: 750px ) {
+					> h4 {
+						width: 120px;
+						float: left;
+						text-align: right;
+						padding-right: $modal-spacing;
+					}
 				}
 				a {
 					display: block;

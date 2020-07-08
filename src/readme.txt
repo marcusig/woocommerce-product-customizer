@@ -80,6 +80,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Add links to support and reviews
+
 = 1.0.8 - 05/July/2020 =
 
 * TWEAK: Fix angles not changing

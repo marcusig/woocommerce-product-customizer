@@ -101,16 +101,24 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function home_tab() {
 			?>
-			<h2><?php _e( 'You are configuring', MKL_PC_DOMAIN ); echo ' "' . get_the_title( $this->ID ); ?>"</h2>
-			<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
-			<p><?php _e( 'To proceed, follow the instructions:', MKL_PC_DOMAIN ); ?></p>
-			<ol>
-			<li><?php printf( __( 'define the structure of the product in %sLayers%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
-			<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
-			<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
-			</ol>
-			<h2><?php _e( 'Do you need more functionality?', MKL_PC_DOMAIN) ; ?></h2>
-			<p><a href="<?php echo admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ); ?>"><?php _e( 'Check out the available addons and themes.', MKL_PC_DOMAIN ); ?></a></p>
+			<div class="instructions">
+				<h2><?php _e( 'You are configuring', MKL_PC_DOMAIN ); echo ' "' . get_the_title( $this->ID ); ?>"</h2>
+				<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
+				<p><?php _e( 'To proceed, follow the instructions:', MKL_PC_DOMAIN ); ?></p>
+				<ol>
+				<li><?php printf( __( 'define the structure of the product in %sLayers%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
+				<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
+				<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
+				</ol>
+			</div>
+			<div class="more">
+				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php _e( 'Do you need more functionality?', MKL_PC_DOMAIN) ; ?></h2>
+				<p><a href="<?php echo admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ); ?>"><?php _e( 'Check out the available addons and themes.', MKL_PC_DOMAIN ); ?></a></p>
+				<h2><span class="dashicons dashicons-star-filled"></span> <?php _e( 'Do you like the plugin?', MKL_PC_DOMAIN) ; ?></h2>
+				<p><?php printf( __( 'Give it a review on %swordpress.org%s', MKL_PC_DOMAIN ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/#new-post">', '</a>' ); ?></p>
+				<h2><span class="dashicons dashicons-admin-comments"></span> <?php _e( 'Do you think it could be improved?', MKL_PC_DOMAIN ); ?></h2>
+				<p><?php printf( __( 'Start a support topic on %swordpress.org%s', MKL_PC_DOMAIN ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/#new-topic-0">', '</a>' ); ?></p>
+			</div>
 			<?php 
 		}
 

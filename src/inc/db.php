@@ -49,7 +49,7 @@ class DB {
 				// 	),
 
 				// ),
-				'description' => __( 'Define the layers the product is composed of. ', MKL_PC_DOMAIN ),
+				'description' => '',
 			),
 			array(
 				'type' 	=> 'part',
