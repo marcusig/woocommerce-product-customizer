@@ -290,10 +290,11 @@ TODO:
 			if( event.type == 'click' ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
-			} else {
-
+			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();
+			} else {
+				return;
 			}
 
 			if( this.model.get(setting) != new_val ) {

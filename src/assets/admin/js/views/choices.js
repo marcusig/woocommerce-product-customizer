@@ -220,7 +220,7 @@ PC.views = PC.views || {};
 
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
-
+			
 			if( event.type == 'click' ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
