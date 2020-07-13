@@ -182,7 +182,8 @@ $inner_space: 1em;
 				bottom: $footer_height_small_screen;
 			}
 			@media( max-width: $small_screen_width ) {
-				left: $toolbar_width_small;
+				left: 0;
+				top: 50%;
 			}
 
 		}		
@@ -199,7 +200,8 @@ $inner_space: 1em;
 				bottom: $footer_height_small_screen;
 			}
 			@media( max-width: $small_screen_width ) {
-				left: $toolbar_width_small;
+				left: 0;
+				top: 50%;
 			}
 
 			.angles-select {
@@ -241,7 +243,9 @@ $inner_space: 1em;
 					opacity: 0;
 					transform: translateY(10px);
 				}
+
 				&:hover ul,
+				&:focus-within ul,
 				& > a:focus + ul {
 					visibility: visible; 
 					opacity: 1;
@@ -274,6 +278,23 @@ $inner_space: 1em;
 						border-bottom: none;
 					}
 
+				}
+				@media (max-width: $small_screen_width) {
+					> a span {
+						display: none;
+					}
+					> a::before {
+						margin-right: 0;
+					}
+					> a::before {
+						margin-right: 0;
+					}
+					&:hover > a span,
+					&:focus-within > a span,
+					& > a:focus span {
+						display: inline-block;
+						margin-left: 1em;
+					}
 				}
 			}
 			.mkl_pc_layers {
@@ -318,6 +339,7 @@ $inner_space: 1em;
 				h3 {
 					margin: 0;
 					padding: 0;
+					display: none;
 				}
 				// padding: $inner_space;
 				> .cancel {
@@ -359,17 +381,32 @@ $inner_space: 1em;
 
 				@media( max-width: $small_screen_width ) {
 					position: fixed;
+					left: 0;
 					top: 0;
 					width: 100%;
-					width: calc( 100% - $toolbar_width_small ); 
+					height: 40px;
+					background: #36383a;
+					padding-top: 8px;
+					color: #FFF;
+					font-size: 1rem;
+					box-sizing: border-box;
 
 					h3 {
-						display: none;
+						display: block;
+						color: #FFF;
+						font-size: 1rem;
+						margin: 0;
+						padding: 0;
+						text-align: center;
+						margin-right: 40px;
 					}
 					.cancel {
 						position: absolute;
 						top: 10px; 
 						right: 10px;
+						&::after, &::before {
+							background: #FFF;
+						}
 					}
 				}
 
@@ -490,17 +527,17 @@ $inner_space: 1em;
 						}
 					}
 					@media( max-width: $medium_screen_width ) {
-						button {
-							padding: 15px;
-							text-align: center;
-							i {
-								position: relative;
-								left: auto;
-								top: auto;
-								transform: none;
-								margin: 0 auto;
-							}
-						}
+						// button {
+						// 	padding: 15px;
+						// 	text-align: center;
+						// 	i {
+						// 		position: relative;
+						// 		left: auto;
+						// 		top: auto;
+						// 		transform: none;
+						// 		margin: 0 auto;
+						// 	}
+						// }
 					}
 
 				}
@@ -572,22 +609,6 @@ $inner_space: 1em;
 								width: 80px;
 								right: 5px;
 							}
-						}
-						@media( max-width: $medium_screen_width ) {
-							text-align: center;
-							padding: 15px;
-							i.mkl-pc-thumbnail {
-								position: relative;
-								display: inline-block;
-								right: auto;
-								top: auto;
-								transform: none;
-							}
-							span.text {
-								display: block;
-								text-align: center;
-							}
-	
 						}
 					}
 					&.active {
@@ -671,7 +692,16 @@ $inner_space: 1em;
 
 
 					}
-				} 
+				}
+				@media( max-width: $small_screen_width ) {
+					position: absolute;
+					top: 40px;
+					bottom: 0;
+					left: 0;
+					right: 0;
+					height: calc(100% - 40px);
+					box-shadow: 0 5px 11px rgba(0, 0, 0, 0.2);
+				}				
 			}
 
 			@media (max-width: $medium_screen_width) {
@@ -679,7 +709,9 @@ $inner_space: 1em;
 				bottom: $footer_height_small_screen;
 			}
 			@media( max-width: $small_screen_width ) {
-				width: $toolbar_width_small;
+				width: 100%;
+				top: 0;
+				bottom: 50%;
 			}
 
 		}
@@ -711,7 +743,10 @@ $inner_space: 1em;
 			.quantity {
 				display: inline-block;
 				input.qty {
-					background: #fff; 
+					background: #fff;
+					@media (max-width: $small_screen_width) {
+						border: 2px solid #36383a;
+					}
 				}
 			}
 			.extra-cost {
@@ -723,15 +758,64 @@ $inner_space: 1em;
 				visibility: visible;
 				position: relative;
 				padding-right: 10px;
-				display: inline-block !important; 
+				display: inline-block !important;
 			}
 			h3.product-name {
 				line-height: 1;
 				margin: 0;
+				@media (max-width: $small_screen_width) {
+					display: none;
+				}
+			}
+			button.configurator-add-to-cart {
+				@media (max-width: $small_screen_width) {
+					background: transparent !important;
+				}
+
+				svg {
+					@media (min-width: $small_screen_width) {
+						display: none;
+					}
+					@media (max-width: $small_screen_width) {
+						path {
+						   fill: #36383a;
+						}
+						max-width: 25px;
+					}
+				}
+				span {
+					@media (max-width: $small_screen_width) {
+						display: none;
+					}
+				}
 			}
 			@media (max-width: $medium_screen_width) {
 				text-align: center;
 				height: $footer_height_small_screen;
+			}
+			@media (max-width: $small_screen_width) {
+				box-shadow: 0 -10px 20px rgba(0,0,0,.2);
+				padding: 0;
+				.form {
+					display: flex;
+					align-items: center;
+					span.extra-cost-label {
+						font-size: 12px;
+						text-transform: uppercase;
+						line-height: 1;
+						display: block;
+						text-align: left;
+					}
+					span.pc-price {
+						text-align: left;
+						font-size: 1.2em;
+					}
+					.extra-cost.show {
+						padding: 0;
+						text-align: left;
+						line-height: 1;
+					}
+				}
 			}
 
 		}

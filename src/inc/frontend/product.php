@@ -84,10 +84,16 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				) );
 			}
 			?>
-				<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart"><?php _e( 'Add to cart', 'woocommerce' ) ?></button>
+				<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
+					<?php echo $this->get_cart_icon(); ?>
+					<span><?php _e( 'Add to cart', 'woocommerce' ) ?></span>
+				</button>
 			<?php
 		}
 
+		private function get_cart_icon() {
+			return apply_filters( 'mkl_pc/get_cart_icon', '<svg xmlns="http://www.w3.org/2000/svg" width="37.118" height="33" viewBox="0 0 37.118 33"><path id="Path_2" data-name="Path 2" d="M34.031-9.475a1.506,1.506,0,0,1-.548.9,1.5,1.5,0,0,1-.935.322H13.664l.387,2.062H31.389a1.406,1.406,0,0,1,1.16.58,1.56,1.56,0,0,1,.322,1.289l-.387,1.611A3.491,3.491,0,0,1,34-1.386a3.5,3.5,0,0,1,.548,1.9,3.474,3.474,0,0,1-1.063,2.546,3.579,3.579,0,0,1-5.092,0A3.511,3.511,0,0,1,27.328.483a3.357,3.357,0,0,1,1.1-2.546H14.889a3.357,3.357,0,0,1,1.1,2.546,3.511,3.511,0,0,1-1.063,2.578,3.579,3.579,0,0,1-5.092,0A3.474,3.474,0,0,1,8.766.516a3.551,3.551,0,0,1,.483-1.8A3.8,3.8,0,0,1,10.57-2.643L6.059-24.75H1.547a1.492,1.492,0,0,1-1.1-.451A1.492,1.492,0,0,1,0-26.3v-1.031a1.492,1.492,0,0,1,.451-1.1,1.492,1.492,0,0,1,1.1-.451H8.186a1.411,1.411,0,0,1,.935.354,1.637,1.637,0,0,1,.548.87l.58,2.9h25.33a1.469,1.469,0,0,1,1.225.58,1.4,1.4,0,0,1,.258,1.289Z" transform="translate(0 28.875)" fill="#707070"/></svg>' );
+		}
 		public function print_product_configuration(){
 			global $post, $product; 
 			if( !mkl_pc_is_configurable( get_the_id() ) )
