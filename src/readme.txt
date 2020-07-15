@@ -16,7 +16,7 @@ The Product Configurator for WooCommerce allows you to use layers to produce ins
 
 Give your customers a great experience, and make your life easy: no need to create many product variations with their images. 
 
-Instead, export your layers from Photoshop, a 3D render, or an other source, and allow the user to configure their product using those.
+Instead, export your layers from Photoshop, a 3D render, or any other source, and allow the user to configure their product using those.
 
 <a href="http://demos.mklacroix.com/shop/custom-chair/">Try the demo</a>
 
