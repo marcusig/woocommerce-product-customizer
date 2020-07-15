@@ -1,6 +1,6 @@
 <script type="text/html" id="tmpl-mkl-pc-configurator-toolbar">
 
-		<header><button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button></header>
+		<header><h3 class="product-name">{{data.name}}</h3><button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button></header>
 		<section class="choices">
 			
 		</section>
