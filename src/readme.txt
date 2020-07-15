@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Requires at least: 3.9
 Tested up to: 5.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 Requires PHP: 5.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -80,6 +80,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.0.9 - 15/July/2020 =
+
 * TWEAK: Tweak mobile design
 * TWEAK: Fix keyboard event on layer inputs
 * TWEAK: Ability to remove images
@@ -120,4 +122,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.0.8 Refactor to enable multiple choice addon, various tweaks.
+* 1.0.9 Fix mobile styles, enable deleting images and other tweaks.
