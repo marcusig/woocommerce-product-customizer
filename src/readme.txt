@@ -80,6 +80,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Tweak mobile design
 * TWEAK: Fix keyboard event on layer inputs
 * TWEAK: Ability to remove images
 * TWEAK: Add links to support and reviews
