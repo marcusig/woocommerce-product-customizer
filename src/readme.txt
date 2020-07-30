@@ -81,6 +81,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added a setting to customize the label of the "Configure" button
 * TWEAK: Prevent JS error when no choice is set for a layer
 
 = 1.0.9 - 15/July/2020 =
