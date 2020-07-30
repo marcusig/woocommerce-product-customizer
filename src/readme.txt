@@ -24,7 +24,7 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 
 **Premium addons**
 
-This premium comes without limitations. But if you need more functionalities, look at the available addons: 
+This plugin comes without limitations. But if you need more functionalities, look at the available addons: 
 
 * <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/save-your-design/">Save your design</a> - Get your customers engaged by enabling them to save the design they’ve made.

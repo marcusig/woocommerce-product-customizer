@@ -45,8 +45,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		public function display(){
 			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( $_REQUEST['tab'] ) : 'settings';
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
-				'settings' => __( 'Settings', MKL_PC_DOMAIN ),
-				'addons' => __( 'Addons', MKL_PC_DOMAIN )
+				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
+				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' )
 			], $active );
 			?>
 			<div class="wrap">
@@ -57,7 +57,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<span class="by">by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></span>
 					</h1>
 					<div class="links">
-						<a href="http://wc-product-configurator.com"><?php _e( 'Product Configurator website', MKL_PC_DOMAIN ); ?></a><!--  | <a href="http://wc-product-configurator.com"><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></a> | <a href="http://wc-product-configurator.com"><?php _e( 'Themes', MKL_PC_DOMAIN ); ?></a> -->
+						<a href="http://wc-product-configurator.com"><?php _e( 'Product Configurator website', 'product-configurator-for-woocommerce' ); ?></a><!--  | <a href="http://wc-product-configurator.com"><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></a> | <a href="http://wc-product-configurator.com"><?php _e( 'Themes', 'product-configurator-for-woocommerce' ); ?></a> -->
 					</div>
 				</header>
 				<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
@@ -77,7 +77,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					</form>
 				</div>
 				<div class="mkl-settings-content" data-content="addons">
-					<h2><?php _e( 'Addons', MKL_PC_DOMAIN ); ?></h2>
+					<h2><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></h2>
 					<?php $this->display_addons(); ?>
 				</div>
 
@@ -93,28 +93,45 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 			add_settings_section(
 				'mkl_pc__mlk_pc_settings_section', 
-				__( 'Styling options', MKL_PC_DOMAIN ), 
+				__( 'Styling options', 'product-configurator-for-woocommerce' ), 
 				[ $this, 'styling_section_callback' ],
 				'mlk_pc_settings'
 			);
 		
 			add_settings_field(
 				'mkl_pc__button_classes', 
-				__( 'Button classes', MKL_PC_DOMAIN ),
-				[ $this, 'field_callback' ],
+				__( 'Button classes', 'product-configurator-for-woocommerce' ),
+				[ $this, 'text_field_callback' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_settings_section' 
+				'mkl_pc__mlk_pc_settings_section',
+				[ 
+					'setting_name' => 'mkl_pc__button_classes',
+					'placeholder' => 'btn btn-primary'
+				]
+			);
+
+			add_settings_field(
+				'mkl_pc__button_label', 
+				__( 'Configure button label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'text_field_callback' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_settings_section',
+				[ 
+					'setting_name' => 'mkl_pc__button_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Configure', 'product-configurator-for-woocommerce' )
+				]
 			);
 		}
 
 		public function styling_section_callback() {
-			// echo __( 'This section description', MKL_PC_DOMAIN );
+			// echo __( 'This section description', 'product-configurator-for-woocommerce' );
 		}
 
-		public function field_callback() {
+		public function text_field_callback($field_options = []) {
 			$options = get_option( 'mkl_pc__settings' );
+			if ( !isset($field_options['setting_name'])) return;
 			?>
-			<input type='text' name='mkl_pc__settings[mkl_pc__button_classes]' value='<?php echo $options['mkl_pc__button_classes']; ?>'>
+			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='text' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options['setting_name']] ) ? $options[$field_options['setting_name']] : ''; ?>'>
 			<?php
 		}
 
@@ -136,11 +153,11 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<div class="mkl-pc-addon mkl-pc-theme">
 				<figure><img src="<?php echo MKL_PC_ASSETS_URL .'admin/images/' ?>mkl-theme-thumbnail.png" alt=""></figure>
 				<div class="content">
-					<h4><?php _e( 'Get the official Product Configurator themes', MKL_PC_DOMAIN ) ?></h4>
-					<p><?php _e( 'Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more...', MKL_PC_DOMAIN ) ?></p>
+					<h4><?php _e( 'Get the official Product Configurator themes', 'product-configurator-for-woocommerce' ) ?></h4>
+					<p><?php _e( 'Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more...', 'product-configurator-for-woocommerce' ) ?></p>
 					<em>Coming soon</em>
 					<?php
-					/*  <a href="<?php echo esc_url( $this->themes_url ); ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', MKL_PC_DOMAIN ) ?></a> */
+					/*  <a href="<?php echo esc_url( $this->themes_url ); ?>" target="_blank" class="button button-primary button-large"><?php _e( 'View available themes', 'product-configurator-for-woocommerce' ) ?></a> */
 					?>
 				</div>
 			</div>
