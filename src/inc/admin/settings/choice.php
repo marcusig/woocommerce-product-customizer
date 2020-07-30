@@ -30,21 +30,21 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 		public function get_default_settings() {
 			return apply_filters('mkl_pc_choice_default_settings', array(
 				'name' => array(
-					'label' => __('Choice label', MKL_PC_DOMAIN ),
+					'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
 					'priority' => 10,
 				),
 				'description' => array(
-					'label' => __('Description', MKL_PC_DOMAIN ),
+					'label' => __('Description', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
 					'priority' => 20,
 				),
 				'extra_price' => array(
-					'label' => __('Extra price', MKL_PC_DOMAIN ),
+					'label' => __('Extra price', 'product-configurator-for-woocommerce' ),
 					'type' => 'number',
 					'attributes' => array(
 						'disabled' => 'disabled',
-						'placeholder' => __('Extra Price is available as an addon', MKL_PC_DOMAIN),
+						'placeholder' => __('Extra Price is available as an addon', 'product-configurator-for-woocommerce'),
 					),
 					'priority' => 30,
 				),

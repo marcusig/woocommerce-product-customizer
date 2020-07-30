@@ -115,7 +115,7 @@ abstract class Configuration {
 			) );
 
 			if( count( $configurations ) > 0 ) {
-				return array( 'saved' => false, 'error' => __( 'You have already saved this configuration!', MKL_PC_DOMAIN ) );
+				return array( 'saved' => false, 'error' => __( 'You have already saved this configuration!', 'product-configurator-for-woocommerce' ) );
 			}
 		}
 
@@ -144,7 +144,7 @@ abstract class Configuration {
 
 		return array( 
 			'saved' => true, 
-			'message' => apply_filters( 'mkl_pc_configuration_saved_message_success', __( 'The configuration was saved successfully!', MKL_PC_DOMAIN ) ),
+			'message' => apply_filters( 'mkl_pc_configuration_saved_message_success', __( 'The configuration was saved successfully!', 'product-configurator-for-woocommerce' ) ),
 			'save_image_async' => $save_image,
 		);
 
@@ -153,7 +153,7 @@ abstract class Configuration {
 	public function update( $args ) {
 
 		if ( ! $args['configuration_id'] ) {
-			return new \WP_Error( __( 'Invalid configuration_id ID', MKL_PC_DOMAIN ) );
+			return new \WP_Error( __( 'Invalid configuration_id ID', 'product-configurator-for-woocommerce' ) );
 		}
 		return $this->save( $args );
 		

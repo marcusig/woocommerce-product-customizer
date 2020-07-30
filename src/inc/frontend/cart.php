@@ -63,7 +63,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					}
 				}
 				$data[] = array( 
-					'key' => __( 'Configuration', MKL_PC_DOMAIN ),
+					'key' => __( 'Configuration', 'product-configurator-for-woocommerce' ),
 					'value' => $this->get_choices_html( $choices ),
 				);
 				

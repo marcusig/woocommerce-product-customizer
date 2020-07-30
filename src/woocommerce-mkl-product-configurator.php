@@ -22,7 +22,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 define( 'MKL_PC_VERSION', '1.0.9' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
-define( 'MKL_PC_DOMAIN', 'product-configurator-for-woocommerce' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MKL_PC_INCLUDE_PATH', plugin_dir_path( __FILE__ ) . 'inc/' );
@@ -59,7 +58,7 @@ function mkl_pc_init() {
 }
 
 function mkl_pc_fail_php_version() {
-	$message = esc_html__( 'Product Configurator for WooCommerce  requires PHP version 5.4+, plugin is currently NOT ACTIVE.', MKL_PC_DOMAIN );
+	$message = esc_html__( 'Product Configurator for WooCommerce  requires PHP version 5.4+, plugin is currently NOT ACTIVE.', 'product-configurator-for-woocommerce' );
 	$html_message = sprintf( '<div class="error">%s</div>', wpautop( $message ) );
 	echo wp_kses_post( $html_message );
 }
@@ -67,7 +66,7 @@ function mkl_pc_fail_php_version() {
 function mkl_pc_fail_loading_woocommerce() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'WooCommerce has to be active for WooCommerce Product configurator to work.', MKL_PC_DOMAIN ) ?> </p>
+		<p><?php _e( 'WooCommerce has to be active for WooCommerce Product configurator to work.', 'product-configurator-for-woocommerce' ) ?> </p>
 	</div>
 	<?php
 }
@@ -75,14 +74,14 @@ function mkl_pc_fail_loading_woocommerce() {
 function mkl_pc_fail_woocommerce_version() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work.', MKL_PC_DOMAIN ); ?><br> <?php _e( 'WooCommerce Version 3+ required.', MKL_PC_DOMAIN ); ?> </p>
+		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work.', 'product-configurator-for-woocommerce' ); ?><br> <?php _e( 'WooCommerce Version 3+ required.', 'product-configurator-for-woocommerce' ); ?> </p>
 	</div>
 	<?php
 }
 
 function mkl_pc_load_plugin_textdomain() {
-	load_textdomain( MKL_PC_DOMAIN, WP_LANG_DIR . '/product-configurator-for-woocommerce/product-configurator-for-woocommerce' . '-' . get_locale() . '.mo' );
-	load_plugin_textdomain( MKL_PC_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+	load_textdomain( 'product-configurator-for-woocommerce', WP_LANG_DIR . '/product-configurator-for-woocommerce/product-configurator-for-woocommerce' . '-' . get_locale() . '.mo' );
+	load_plugin_textdomain( 'product-configurator-for-woocommerce', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 
 function mkl_pc() {

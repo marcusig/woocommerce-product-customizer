@@ -79,8 +79,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 						'id' => MKL_PC_PREFIX.'_is_configurable',
 						'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_configurable', 
 						'class' => 'is_configurable',
-						'label' => __( 'This product is configurable', MKL_PC_DOMAIN ), 
-						'description' => __( 'Select if you want this product to be configurable', MKL_PC_DOMAIN ) 
+						'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
+						'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ) 
 					) 
 				);
 
@@ -102,22 +102,22 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function home_tab() {
 			?>
 			<div class="instructions">
-				<h2><?php _e( 'You are configuring', MKL_PC_DOMAIN ); echo ' "' . get_the_title( $this->ID ); ?>"</h2>
+				<h2><?php _e( 'You are configuring', 'product-configurator-for-woocommerce' ); echo ' "' . get_the_title( $this->ID ); ?>"</h2>
 				<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
-				<p><?php _e( 'To proceed, follow the instructions:', MKL_PC_DOMAIN ); ?></p>
+				<p><?php _e( 'To proceed, follow the instructions:', 'product-configurator-for-woocommerce' ); ?></p>
 				<ol>
-				<li><?php printf( __( 'define the structure of the product in %sLayers%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
-				<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
-				<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', MKL_PC_DOMAIN ), '<strong>', '</strong>' ); ?></li>
+				<li><?php printf( __( 'define the structure of the product in %sLayers%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
+				<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
+				<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
 				</ol>
 			</div>
 			<div class="more">
-				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php _e( 'Do you need more functionality?', MKL_PC_DOMAIN) ; ?></h2>
-				<p><a href="<?php echo admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ); ?>"><?php _e( 'Check out the available addons and themes.', MKL_PC_DOMAIN ); ?></a></p>
-				<h2><span class="dashicons dashicons-star-filled"></span> <?php _e( 'Do you like the plugin?', MKL_PC_DOMAIN) ; ?></h2>
-				<p><?php printf( __( 'Give it a review on %swordpress.org%s', MKL_PC_DOMAIN ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/#new-post">', '</a>' ); ?></p>
-				<h2><span class="dashicons dashicons-admin-comments"></span> <?php _e( 'Do you think it could be improved?', MKL_PC_DOMAIN ); ?></h2>
-				<p><?php printf( __( 'Start a support topic on %swordpress.org%s', MKL_PC_DOMAIN ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/#new-topic-0">', '</a>' ); ?></p>
+				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php _e( 'Do you need more functionality?', 'product-configurator-for-woocommerce') ; ?></h2>
+				<p><a href="<?php echo admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ); ?>"><?php _e( 'Check out the available addons and themes.', 'product-configurator-for-woocommerce' ); ?></a></p>
+				<h2><span class="dashicons dashicons-star-filled"></span> <?php _e( 'Do you like the plugin?', 'product-configurator-for-woocommerce') ; ?></h2>
+				<p><?php printf( __( 'Give it a review on %swordpress.org%s', 'product-configurator-for-woocommerce' ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/#new-post">', '</a>' ); ?></p>
+				<h2><span class="dashicons dashicons-admin-comments"></span> <?php _e( 'Do you think it could be improved?', 'product-configurator-for-woocommerce' ); ?></h2>
+				<p><?php printf( __( 'Start a support topic on %swordpress.org%s', 'product-configurator-for-woocommerce' ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/#new-topic-0">', '</a>' ); ?></p>
 			</div>
 			<?php 
 		}
@@ -197,11 +197,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				}
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', array(
-					'media_title' => __('Select a picture', MKL_PC_DOMAIN ),
-					'media_select_button' => __('Choose', MKL_PC_DOMAIN ),
-					'layers_new_placeholder' => __('New Layer Name', MKL_PC_DOMAIN),
-					'angles_new_placeholder' => __('New Angle Name', MKL_PC_DOMAIN),
-					'choice_new_placeholder' => __('New Choice Name', MKL_PC_DOMAIN),
+					'media_title' => __('Select a picture', 'product-configurator-for-woocommerce' ),
+					'media_select_button' => __('Choose', 'product-configurator-for-woocommerce' ),
+					'layers_new_placeholder' => __('New Layer Name', 'product-configurator-for-woocommerce'),
+					'angles_new_placeholder' => __('New Angle Name', 'product-configurator-for-woocommerce'),
+					'choice_new_placeholder' => __('New Choice Name', 'product-configurator-for-woocommerce'),
 				));
 
 				do_action( 'mkl_pc_admin_scripts_product_page' );
@@ -240,7 +240,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function start_button($id, $parent_id = NULL) {
 			ob_start();
 			?>
-				<a href="#" class="button-primary start-configuration show_if_is_configurable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Start product's configurator", MKL_PC_DOMAIN) ?></a>
+				<a href="#" class="button-primary start-configuration show_if_is_configurable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Start product's configurator", 'product-configurator-for-woocommerce') ?></a>
 			<?php 
 			$return = ob_get_clean();
 			return $return;
@@ -255,7 +255,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function edit_button( $id = NULL, $type = NULL ) {
 			if( $id && $type ) {
-				return '<a href="#" class="button launch-configurator-editor" data-product-id="'.$id.'" data-product-type="'.$type.'">' . __('Edit configurator layers', MKL_PC_DOMAIN ) . '</a>';
+				return '<a href="#" class="button launch-configurator-editor" data-product-id="'.$id.'" data-product-type="'.$type.'">' . __('Edit configurator layers', 'product-configurator-for-woocommerce' ) . '</a>';
 			} else {
 				return '';
 			}

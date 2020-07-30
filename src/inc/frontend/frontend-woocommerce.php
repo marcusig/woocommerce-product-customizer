@@ -81,11 +81,11 @@ class Frontend_Woocommerce {
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 			'lang' => array(
-				'media_title' => __('Select a picture', MKL_PC_DOMAIN ),
-				'media_select_button' => __('Choose', MKL_PC_DOMAIN ),
-				'layers_new_placeholder' => __('New Layer Name', MKL_PC_DOMAIN),
-				'angles_new_placeholder' => __('New Angle Name', MKL_PC_DOMAIN),
-				'choice_new_placeholder' => __('New Choice Name', MKL_PC_DOMAIN),
+				'media_title' => __('Select a picture', 'product-configurator-for-woocommerce' ),
+				'media_select_button' => __('Choose', 'product-configurator-for-woocommerce' ),
+				'layers_new_placeholder' => __('New Layer Name', 'product-configurator-for-woocommerce'),
+				'angles_new_placeholder' => __('New Angle Name', 'product-configurator-for-woocommerce'),
+				'choice_new_placeholder' => __('New Choice Name', 'product-configurator-for-woocommerce'),
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array( 'inline' => false ) ),
 		);

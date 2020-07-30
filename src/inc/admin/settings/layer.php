@@ -30,19 +30,19 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 		public function get_default_settings() {
 			return apply_filters('mkl_pc_layer_default_settings', array(
 				'name' => array(
-					'label' => __('Layer name', MKL_PC_DOMAIN ),
+					'label' => __('Layer name', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
 					'priority' => 10,
 				),
 				'description' => array(
-					'label' => __('Description', MKL_PC_DOMAIN ),
+					'label' => __('Description', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
 					'priority' => 20,
 					'condition' => '3 > 1',
 				),
 				'not_a_choice' => array(
-					'label' => __('This layer does not have choices', MKL_PC_DOMAIN ),
-					'help' => __('For exemple if the layer is a shadow or a static element', MKL_PC_DOMAIN ),
+					'label' => __('This layer does not have choices', 'product-configurator-for-woocommerce' ),
+					'help' => __('For exemple if the layer is a shadow or a static element', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'priority' => 30,
 				),

@@ -1,5 +1,5 @@
 <div class="configurator-data">
-	<h4><?php _e('Configurator Data:', MKL_PC_DOMAIN) ?></h4>
+	<h4><?php _e('Configurator Data:', 'product-configurator-for-woocommerce') ?></h4>
 	<ul>
 	<?php 
 	foreach( $data as $layer ) { 

@@ -3,7 +3,7 @@
 	</div>
 </script>
 <script type="text/html" id="tmpl-mkl-pc-configurator-angles-list">
-	<a href="#"><span><?php _e( 'Change angle', MKL_PC_DOMAIN ) ?></span></a>
+	<a href="#"><span><?php _e( 'Change angle', 'product-configurator-for-woocommerce' ) ?></span></a>
 	<ul>
 		
 	</ul>

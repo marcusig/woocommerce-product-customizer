@@ -32,20 +32,20 @@ class DB {
 			array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'home',
-				'label' => __( 'Home', MKL_PC_DOMAIN ),
-				'title' => __( 'Welcome to the Product Configurator ', MKL_PC_DOMAIN ),
+				'label' => __( 'Home', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Welcome to the Product Configurator ', 'product-configurator-for-woocommerce' ),
 				// 'menu' => array(
 				// 	array(
 				// 		'class' => 'pc-main-cancel',
-				// 		'text' => __( 'Cancel' , MKL_PC_DOMAIN ),
+				// 		'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
 				// 	),
 				// 	array(
 				// 		'class' => 'button-primary pc-main-save-all',
-				// 		'text' => __( 'Save all' , MKL_PC_DOMAIN ),
+				// 		'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
 				// 	),
 				// 	array(
 				// 		'class' => 'button-primary pc-main-save',
-				// 		'text' => __( 'Save layers' , MKL_PC_DOMAIN ),
+				// 		'text' => __( 'Save layers' , 'product-configurator-for-woocommerce' ),
 				// 	),
 
 				// ),
@@ -54,68 +54,68 @@ class DB {
 			array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'layers',
-				'label' => __( 'Layers', MKL_PC_DOMAIN ),
-				'title' => __( 'Layers of the product ', MKL_PC_DOMAIN ),
+				'label' => __( 'Layers', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Layers of the product ', 'product-configurator-for-woocommerce' ),
 				'menu' => array(
 					array(
 						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , MKL_PC_DOMAIN ),
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save all' , MKL_PC_DOMAIN ),
+						'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
 						'class' => 'button-primary pc-main-save',
-						'text' => __( 'Save layers' , MKL_PC_DOMAIN ),
+						'text' => __( 'Save layers' , 'product-configurator-for-woocommerce' ),
 					),
 
 				),
-				'description' => __( 'Define the layers the product is composed of. ', MKL_PC_DOMAIN ),
+				'description' => __( 'Define the layers the product is composed of. ', 'product-configurator-for-woocommerce' ),
 			),
 			array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'angles',
-				'label' => __( 'Views', MKL_PC_DOMAIN ),
-				'title' => __( 'Angles of the product ', MKL_PC_DOMAIN ),
+				'label' => __( 'Views', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Angles of the product ', 'product-configurator-for-woocommerce' ),
 				'menu' => array(
 					array(
 						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , MKL_PC_DOMAIN ),
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save all' , MKL_PC_DOMAIN ),
+						'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
 						'class' => 'button-primary pc-main-save',
-						'text' => __( 'Save angles' , MKL_PC_DOMAIN ),
+						'text' => __( 'Save angles' , 'product-configurator-for-woocommerce' ),
 					),
 
 				),
-				'description' => __( 'Define the view angles, if you want the client to be able to switch between them. ', MKL_PC_DOMAIN ),
+				'description' => __( 'Define the view angles, if you want the client to be able to switch between them. ', 'product-configurator-for-woocommerce' ),
 			),
 			array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'content',
-				'label' => __( 'Content', MKL_PC_DOMAIN ),
-				'title' => __( 'Contents ', MKL_PC_DOMAIN ),
+				'label' => __( 'Content', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Contents ', 'product-configurator-for-woocommerce' ),
 				'menu' => array(
 					array(
 						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , MKL_PC_DOMAIN ),
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save all' , MKL_PC_DOMAIN ),
+						'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
 						'class' => 'button-primary pc-main-save',
-						'text' => __( 'Save contents' , MKL_PC_DOMAIN ),
+						'text' => __( 'Save contents' , 'product-configurator-for-woocommerce' ),
 					),
 
 				),
-				'description' => __( 'Define choices for each layer and assign them pictures', MKL_PC_DOMAIN ),
+				'description' => __( 'Define choices for each layer and assign them pictures', 'product-configurator-for-woocommerce' ),
 			), 
 			// array(
 			// 	'type' 	=> 'separator',
@@ -123,10 +123,10 @@ class DB {
 			// array(
 			// 	'type' 	=> 'part',
 			// 	'menu_id' 	=> 'import',
-			// 	'label' => __( 'Import / Export' , MKL_PC_DOMAIN ),
-			// 	'title' => __( 'Import / Export the product\'s data ', MKL_PC_DOMAIN ),
-			// 	'bt_save_text' => __( 'Export' , MKL_PC_DOMAIN ),
-			// 	'description' => __( 'Description for I/E of the product ', MKL_PC_DOMAIN ),
+			// 	'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
+			// 	'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
+			// 	'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
+			// 	'description' => __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
 			// ),
 
 		);

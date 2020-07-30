@@ -54,7 +54,7 @@ GENERAL TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-frame-title-buttons-notused">
 				<div class="button-group media-button-group">
 					<button type="button" class="button media-button button-large pc-main-cancel"><?php _e( 'Cancel' ); ?></button>
-					<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save all', MKL_PC_DOMAIN ); ?></button>
+					<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save all', 'product-configurator-for-woocommerce' ); ?></button>
 					<button type="button" class="button media-button button-primary button-large pc-main-save">{{data.bt_save_text}}</button>
 				</div>
 </script>
@@ -96,83 +96,83 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <script type="text/html" id="tmpl-mkl-pc-structure-angle-form">
 	<div class="form-details">
 		<h2>
-			<?php _e('Details', MKL_PC_DOMAIN ) ?>
+			<?php _e('Details', 'product-configurator-for-woocommerce' ) ?>
 		</h2>
 
 		<div class="form-info">
 			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', MKL_PC_DOMAIN ) ?></button>
+				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
 				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete this angle?', MKL_PC_DOMAIN ); ?></p>
+					<p><?php _e( 'Do you realy want to delete this angle?', 'product-configurator-for-woocommerce' ); ?></p>
 					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', MKL_PC_DOMAIN ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', MKL_PC_DOMAIN ) ?></button>
+						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
 					</p>
 				</div>
 			</div>
 		</div>
 		<label class="setting">
-			<span class="name"><?php _e('Angle Name', MKL_PC_DOMAIN ) ?></span>
+			<span class="name"><?php _e('Angle Name', 'product-configurator-for-woocommerce' ) ?></span>
 			<input type="text" data-setting="name" value="{{data.name}}">
 		</label>
 		<label class="setting">
-			<span class="name"><?php _e('Description', MKL_PC_DOMAIN ) ?></span>
+			<span class="name"><?php _e('Description', 'product-configurator-for-woocommerce' ) ?></span>
 			<textarea data-setting="description">{{data.description}}</textarea>
 		</label>
 		<?php do_action('mkl_pc_layer_settings') ?>
 	</div>
 	<div class="attachment-display-settings">
-		<h2><?php _e('Angles\'s picture', MKL_PC_DOMAIN ) ?></h2>
+		<h2><?php _e('Angles\'s picture', 'product-configurator-for-woocommerce' ) ?></h2>
 		<div class="thumbnail thumbnail-image">
 			<# if ( data.image.url != '' ) { #>
 				<img src="{{data.image.url}}" height="40" class="layer-img" />
 			<# } #>
 		</div>
-		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', MKL_PC_DOMAIN ) ?></a>
+		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', 'product-configurator-for-woocommerce' ) ?></a>
 	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-structure-layer-form">
 	<div class="form-details">
 		<h2>
-			<?php _e('Details', MKL_PC_DOMAIN ) ?>
+			<?php _e('Details', 'product-configurator-for-woocommerce' ) ?>
 		</h2>
 
 		<div class="form-info">
 			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', MKL_PC_DOMAIN ) ?></button>
+				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
 				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete this layer?', MKL_PC_DOMAIN ); ?></p>
+					<p><?php _e( 'Do you realy want to delete this layer?', 'product-configurator-for-woocommerce' ); ?></p>
 					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', MKL_PC_DOMAIN ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', MKL_PC_DOMAIN ) ?></button>
+						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
 					</p>
 				</div>
 			</div>
 		</div>
 		<label class="setting">
-			<span class="name"><?php _e('Layer Name', MKL_PC_DOMAIN ) ?></span>
+			<span class="name"><?php _e('Layer Name', 'product-configurator-for-woocommerce' ) ?></span>
 			<input type="text" data-setting="name" value="{{data.name}}">
 		</label>
 		<label class="setting">
-			<span class="name"><?php _e('Description', MKL_PC_DOMAIN ) ?></span>
+			<span class="name"><?php _e('Description', 'product-configurator-for-woocommerce' ) ?></span>
 			<textarea data-setting="description">{{data.description}}</textarea>
 		</label>
 		<label class="setting">
-			<span class="name"><?php _e('This layer does not have choices', MKL_PC_DOMAIN ) ?></span>
+			<span class="name"><?php _e('This layer does not have choices', 'product-configurator-for-woocommerce' ) ?></span>
 			<input type="checkbox" data-setting="not_a_choice" <# if(data.not_a_choice == true || data.not_a_choice == 'true') { #> checked="checked" <# } #>>
-			<p class="help"><?php _e('For exemple if the layer is a shadow or a static element', MKL_PC_DOMAIN ) ?></p>
+			<p class="help"><?php _e('For exemple if the layer is a shadow or a static element', 'product-configurator-for-woocommerce' ) ?></p>
 		</label>
 		<?php do_action('mkl_pc_layer_settings') ?>
 	</div>
 	<div class="attachment-display-settings">
-		<h2><?php _e('Layer\'s icon', MKL_PC_DOMAIN ) ?></h2>
+		<h2><?php _e('Layer\'s icon', 'product-configurator-for-woocommerce' ) ?></h2>
 		<div class="thumbnail thumbnail-image">
 			<# if ( data.image.url != '' ) { #>
 				<img src="{{data.image.url}}" height="40" class="layer-img" />
 			<# } #>
 		</div>
-		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', MKL_PC_DOMAIN ) ?></a>
+		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', 'product-configurator-for-woocommerce' ) ?></a>
 	</div>
 </script>
 <?php 
@@ -229,15 +229,15 @@ CONTENT TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-form">
 	<div class="form-details">
-		<h3><?php _e('Choice informations', MKL_PC_DOMAIN ) ?></h3>
+		<h3><?php _e('Choice informations', 'product-configurator-for-woocommerce' ) ?></h3>
 		<div class="form-info">
 			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', MKL_PC_DOMAIN ) ?></button>
+				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
 				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete this choice?', MKL_PC_DOMAIN ); ?></p>
+					<p><?php _e( 'Do you realy want to delete this choice?', 'product-configurator-for-woocommerce' ); ?></p>
 					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', MKL_PC_DOMAIN ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', MKL_PC_DOMAIN ) ?></button>
+						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
 					</p>
 				</div>
 			</div>
@@ -246,11 +246,11 @@ CONTENT TEMPLATES
 		<div class="options">
 			<h3>Informations</h3>
 			<label class="setting">
-				<span class="name"><?php _e('Choice label', MKL_PC_DOMAIN ) ?></span>
+				<span class="name"><?php _e('Choice label', 'product-configurator-for-woocommerce' ) ?></span>
 				<input type="text" data-setting="name" value="{{data.name}}">
 			</label>
 			<label class="setting">
-				<span class="name"><?php _e('Description', MKL_PC_DOMAIN ) ?></span>
+				<span class="name"><?php _e('Description', 'product-configurator-for-woocommerce' ) ?></span>
 				<textarea data-setting="description">{{data.description}}</textarea>
 			</label>
 
@@ -259,7 +259,7 @@ CONTENT TEMPLATES
 		</div>
 
 		<div class="options">
-			<h3><?php _e( 'Pictures', MKL_PC_DOMAIN ) ?></h3>
+			<h3><?php _e( 'Pictures', 'product-configurator-for-woocommerce' ) ?></h3>
 			<div class="views">
 				
 			</div>

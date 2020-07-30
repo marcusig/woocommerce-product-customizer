@@ -64,7 +64,13 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function add_configure_button() { 
 			global $product;
 			if ( mkl_pc_is_configurable( get_the_id() ) ) {
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button">'.__( 'Configure', MKL_PC_DOMAIN ) .'</button>' );
+				$options = get_option( 'mkl_pc__settings' );
+				if ( isset( $options['mkl_pc__button_label'] ) && $options['mkl_pc__button_label'] ) {
+					$label = $options['mkl_pc__button_label']; 
+				} else {
+					$label = __( 'Configure', 'product-configurator-for-woocommerce' );
+				}
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button">'. $label .'</button>' );
 			}
 		}
 
@@ -86,7 +92,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			?>
 				<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
 					<?php echo $this->get_cart_icon(); ?>
-					<span><?php _e( 'Add to cart', 'woocommerce' ) ?></span>
+					<span><?php echo apply_filters( 'mkl_pc/add_to_cart_button/label', __( 'Add to cart', 'woocommerce' ) ); ?></span>
 				</button>
 			<?php
 		}
@@ -103,7 +109,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		}
 
 		public function variable_empty_configurator_content() {
-			_e( 'Please select a variation to configure', MKL_PC_DOMAIN );
+			_e( 'Please select a variation to configure', 'product-configurator-for-woocommerce' );
 		}
 
 		public function body_class( $classes ) {
