@@ -196,7 +196,7 @@ PC.options = PC.options || {};
 			// if layer is not a choice or has only one choice, we don't add it to the menu
 			if ( ! model.attributes.not_a_choice ) {
 				var choices = PC.fe.getLayerContent( model.id ); 
-				if( choices.length > 1 ) {
+				if( choices.length ) {
 					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
 					this.$el.append( new_layer.render() );
 					this.items.push( new_layer );
@@ -426,6 +426,9 @@ PC.options = PC.options || {};
 
 		add_choices: function( model ) {
 			var choices = PC.fe.getLayerContent( model.id );
+			if ( ! choices ) {
+				return;
+			}
 			if ( model.get( 'not_a_choice') ) {
 				var layer = new PC.fe.views.viewer_static_layer( { model: choices.first(), parent: this } );
 				this.$layers.append( layer.$el );
@@ -649,7 +652,8 @@ PC.options = PC.options || {};
 
 		// get choices for one layer 
 		parse_choices: function( model ) {
-			var choices = PC.fe.getLayerContent( model.id ); 
+			var choices = PC.fe.getLayerContent( model.id );
+			if ( ! choices ) return;
 			var angle_id = PC.fe.angles.first().id; 
 			if( ! model.attributes.not_a_choice ) {
 				if( choices.length > 1 || 'multiple' == model.get( 'type' ) ) {
