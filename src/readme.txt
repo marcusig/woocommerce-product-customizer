@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Requires at least: 3.9
 Tested up to: 5.4
-Stable tag: 1.0.9
+Stable tag: 1.0.10
 Requires PHP: 5.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -81,6 +81,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.0.10 - 31/July/2020 =
+
 * TWEAK: Added a setting to customize the label of the "Configure" button
 * TWEAK: Prevent JS error when no choice is set for a layer
 
@@ -126,4 +128,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.0.9 Fix mobile styles, enable deleting images and other tweaks.
+* 1.0.10 Prevent JS error when no choice is set for a layer, and ability to easily change the "Configure" button label.
