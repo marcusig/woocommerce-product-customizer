@@ -19,11 +19,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			add_action( 'admin_menu', array( $this, 'register' ) );
 			add_action( 'admin_init', array( $this, 'init' ), 20 );
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts') );
-			add_action( 'woocommerce_settings_' . sanitize_title( $this->settings_id ) . '_after', array( $this, 'wc_settings_after' ), 20 );
+			// add_action( 'woocommerce_settings_' . sanitize_title( $this->settings_id ) . '_after', array( $this, 'wc_settings_after' ), 20 );
+			add_filter( 'plugin_action_links_' . MKL_PC_PLUGIN_BASE_NAME, array( $this, 'plugin_settings_link' ) );
 		}
 
-		public function wc_settings_after() {
-			// $this->display();
+		/**
+		 * Add the settings link in the plugins page
+		 *
+		 * @param array $links
+		 * @return array
+		 */
+		public function plugin_settings_link( $links ) {
+			$settings_link = '<a href="' . admin_url( 'options-general.php?page=mkl_pc_settings' ) . '">' . __( 'Settings' ) . '</a>';
+			array_unshift($links, $settings_link);
+			return $links;
 		}
 
 		public function register() {

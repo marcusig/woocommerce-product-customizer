@@ -27,12 +27,12 @@ define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MKL_PC_INCLUDE_PATH', plugin_dir_path( __FILE__ ) . 'inc/' );
 define( 'MKL_PC_ASSETS_PATH', plugin_dir_path( __FILE__ ) . 'assets/' );
 define( 'MKL_PC_ASSETS_URL', plugin_dir_url( __FILE__ ) . 'assets/' );
+define( 'MKL_PC_PLUGIN_BASE_NAME', plugin_basename( __FILE__ ) );
 
 require_once MKL_PC_INCLUDE_PATH . 'plugin.php';
 
 add_action( 'plugins_loaded', 'mkl_pc_load_plugin_textdomain', 30 );
 add_action( 'plugins_loaded', 'mkl_pc_init', 90 );
-
 
 /**
  * Initialize the plugin and check if the requirements are met (PHP version and WooCommerce install)
