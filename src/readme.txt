@@ -1,10 +1,10 @@
 === Product Configurator for WooCommerce ===
 Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
-Requires at least: 3.9
-Tested up to: 5.4
+Requires at least: 4.2
+Tested up to: 5.5
 Stable tag: 1.0.10
-Requires PHP: 5.4
+Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 

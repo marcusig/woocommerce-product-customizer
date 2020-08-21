@@ -6,7 +6,7 @@
 * Description: Allow customers to configure and customize their products using a live preview powered by a system of layers
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
-* Version: 1.0.9
+* Version: 1.0.10
 *
 * Text Domain: product-configurator-for-woocommerce
 * Domain Path: /languages/
