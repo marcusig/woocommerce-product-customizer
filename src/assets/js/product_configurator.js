@@ -37,7 +37,17 @@ Backbone.Model.prototype.toJSON = function() {
 		$( '.configure-product-simple' ).on('click', function(event) {
 			var product_id;
 			//get product ID
-			product_id = $('*[name="add-to-cart"]').val();
+			if ( $( this ).data( 'product_id' ) ) {
+				product_id = $( this ).data( 'product_id' );
+			} else if ( $('*[name="add-to-cart"]').length ) {
+				product_id = $('*[name="add-to-cart"]').val();
+			}
+			
+			if ( ! product_id ) {
+				console.log ( 'No product ID was found' );
+				return;
+			}
+
 			// Open configurator
 			try {
 				PC.fe.open( product_id ); 
