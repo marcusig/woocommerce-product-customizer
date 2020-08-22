@@ -29,6 +29,10 @@ PC.views = PC.views || {};
 				this.col = this.content.get( this.model.id );
 			}
 			this.state = this.options.state; 
+			this.listenTo( this.col, 'add', this.add_one);
+			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
+			this.listenTo( this.col, 'remove', this.remove_one);
+			this.listenTo( this.col, 'change', this.choices_changed);
 			this.render(); 
 		},
 
@@ -54,10 +58,6 @@ PC.views = PC.views || {};
 			this.$list = this.$('.choices'); 
 			this.$form = this.state.$('.choice-details'); 
 			this.add_all( this.col ); 
-			this.listenTo( this.col, 'add', this.add_one);
-			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
-			this.listenTo( this.col, 'remove', this.remove_one);
-			this.listenTo( this.col, 'change', this.choices_changed);
 			return this;
 		},
 
