@@ -84,6 +84,15 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 							submit_button();
 						?>
 					</form>
+					<hr>
+					<h2><?php _e( 'Configuration cache', 'product-configurator-for-woocommerce' ); ?></h2>
+					<p>
+						<?php _e( 'The product configurations are cached on the disk for better performance.', 'product-configurator-for-woocommerce' ); ?>
+						<br><?php _e( 'The cache is refreshed every time you save the product or the configuration.', 'product-configurator-for-woocommerce' ); ?>
+						<br><?php _e( 'Using the button bellow, you can purge all the configuration cache.', 'product-configurator-for-woocommerce' ); ?>
+						<br><em><?php _e( '(The cache will be rebuilt the next time the file is requested)', 'product-configurator-for-woocommerce' ); ?></em>
+					</p>
+					<button type="button" class="button mkl-settings-purge-config-cache"><?php _e( 'Purge configuration cache', 'product-configurator-for-woocommerce' ); ?></button>
 				</div>
 				<div class="mkl-settings-content" data-content="addons">
 					<h2><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></h2>

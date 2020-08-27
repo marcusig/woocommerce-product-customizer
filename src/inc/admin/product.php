@@ -26,6 +26,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		private function _hooks() {
 			// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
 			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 20, 1 );
+			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 20, 1 );
+			// woocommerce_ajax_save_product_variations
+			add_action( 'woocommerce_after_product_object_save', function( $obj ) {
+				$this->write_configuration_cache( $obj->get_id() );
+			}, 20, 1 );
+
 			// add the checkbox to activate configurator on the product
 			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
@@ -268,6 +274,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function write_configuration_cache( $id ) {
+			if ( ! mkl_pc_is_configurable( $id ) ) return;
 			Plugin::instance()->cache->save_config_file( $id );
 		}
 	}

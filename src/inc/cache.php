@@ -30,9 +30,14 @@ class Cache {
 		return apply_filters('mkl_pc_config_file_name', 'product_configuration_' . $product_id . '.js');
 	}
 
-	public function get_config_file( $product_id ) {
+	public function get_config_file( $product_id, $generate_file = true ) {
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id );
+		if ( file_exists( $location['path'] . '/' . $file_name ) ) {
+			return $location['url'].'/'.$file_name;
+		} elseif ( $generate_file ) {
+			$this->save_config_file( $product_id );
+		}
 		if (file_exists($location['path'].'/'.$file_name)) return $location['url'].'/'.$file_name;
 		return admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $product_id );
 	}
@@ -59,5 +64,25 @@ class Cache {
 				fclose( $file_handle );
 			}
 		}
+	}
+
+	public function purge() {
+		$location = $this->get_cache_location();
+		$src = $location[ 'path' ];
+		$handle = opendir($src);
+
+		if (false === $handle) return;
+
+		$file = readdir($handle);
+
+		while (false !== $file) {
+
+			if ('.' != $file && '..' != $file && is_file($src . '/' . $file)) {
+				unlink($src . '/' . $file);
+			}
+
+			$file = readdir($handle);
+
+		}		
 	}
 }

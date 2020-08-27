@@ -32,6 +32,7 @@ class Ajax {
 		add_action( 'wp_ajax_pc_get_data', array( $this, 'get_configurator_data' ) );
 		add_action( 'wp_ajax_nopriv_pc_get_data', array( $this, 'get_configurator_data' ) );
 		add_action( 'wp_ajax_pc_set_data', array( $this, 'set_configurator_data' ) );
+		add_action( 'wp_ajax_mkl_pc_purge_config_cache', array( $this, 'purge_config_cache' ) );
 	}
 
 	/**
@@ -151,5 +152,13 @@ class Ajax {
 		$result = $this->db->set( $id, $ref_id, $component, $data );
 		
 		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Purge the configurations cache
+	 */
+	public function purge_config_cache() {
+		Plugin::instance()->cache->purge();
+		wp_send_json_success();
 	}
 }

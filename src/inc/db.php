@@ -296,7 +296,8 @@ class DB {
 	 * @return boolean
 	 */
 	public function is_product( $id ) {
-		return in_array( get_post_type( $id ), apply_filters( 'mkl_pc_product_post_types', array( 'product', 'product_variation' ) ) );
+		return Utils::is_product( $id );
+		// return in_array( get_post_type( $id ), apply_filters( 'mkl_pc_product_post_types', array( 'product', 'product_variation' ) ) );
 	}
 
 	/**
@@ -369,7 +370,7 @@ class DB {
 				],
 				'url' => [ 
 					'sanitize' => 'esc_url_raw',
-					'escape' => 'esc_url',
+					'escape' => [ $this, 'esc_url' ],
 				],
 				'active' => [ 
 					'sanitize' => 'boolean',
@@ -385,11 +386,11 @@ class DB {
 				],
 				'image' => [ 
 					'sanitize' => 'esc_url_raw',
-					'escape' => 'esc_url',
+					'escape' => [ $this, 'esc_url' ],
 				],
 				'bg_image' => [
 					'sanitize' => 'esc_url_raw',
-					'escape' => 'esc_url',
+					'escape' => [ $this, 'esc_url' ],
 				],
 				'product_type' => [ 
 					'sanitize' => 'sanitize_key',
@@ -419,6 +420,12 @@ class DB {
 	 */
 	public function escape( $data, $the_key = '' ) {
 		return $this->_sanitize_or_escape( 'escape', $data, $the_key );
+	}
+
+	public function esc_url( $url ) {
+		if ( is_ssl() ) $url = str_ireplace( 'http://', 'https://', $url );
+		$url = esc_url( $url );
+		return $url;
 	}
 
 	/**
@@ -461,8 +468,8 @@ class DB {
 			return sanitize_text_field( $data );
 		}
 
-		if ( function_exists( $supported_fields[$the_key][$action] ) ) {
-			call_user_func( $supported_fields[$the_key][$action], $data );
+		if ( is_callable( $supported_fields[$the_key][$action] ) ) {
+			$data = call_user_func( $supported_fields[$the_key][$action], $data );
 			return $data;
 		}
 
