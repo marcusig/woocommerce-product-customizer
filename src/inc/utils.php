@@ -110,7 +110,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			// Check if the product type is registered
 //			global $product;
-			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array('simple') );
+			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array( 'simple' ) );
 
 			// if ( is_object( $product ) ) {
 
@@ -135,12 +135,13 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		 * @return boolean
 		 */
 		public static function is_product( $post_id = NULL ) {
+			$supported_post_types = apply_filters( 'mkl_pc_product_post_types', [ 'product_variation', 'product' ] );
 			if ( NULL !== $post_id ) {
-				if ( 'product' != get_post_type( $post_id ) ) return false;
+				$post_type = get_post_type( $post_id );
 			} else { //else we look for the current product
-				if ( 'product' != get_post_type() ) return false;
+				$post_type = get_post_type();
 			}
-			return true;
+			return in_array( $post_type, $supported_post_types );
 		}
 
 		/**

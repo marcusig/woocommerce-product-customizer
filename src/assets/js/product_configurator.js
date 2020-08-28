@@ -19,9 +19,8 @@ Backbone.Model.prototype.toJSON = function() {
 	'use strict';
 
 	PC.fe.config = PC.fe.config || PC_config.config;
-	PC.fe.config = _.extend( {
-		
-	}, PC.fe.config);
+	PC.fe.config = _.extend( {}, PC.fe.config);
+	PC.fe.products_content = PC.fe.products_content || [];
 
 	$(document).ready(function() {
 		// adds classes to body
@@ -39,7 +38,9 @@ Backbone.Model.prototype.toJSON = function() {
 			//get product ID
 			if ( $( this ).data( 'product_id' ) ) {
 				product_id = $( this ).data( 'product_id' );
+				PC.fe.is_using_shortcode = true;
 			} else if ( $('*[name="add-to-cart"]').length ) {
+				PC.fe.is_using_shortcode = false;
 				product_id = $('*[name="add-to-cart"]').val();
 			}
 			
@@ -87,24 +88,35 @@ Backbone.Model.prototype.toJSON = function() {
 		}
 	});
 
+	PC.fe.init = function( product_id, parent_id ) {
+		if ( PC.fe.is_using_shortcode ) {
+			this.options = {};
+		}
 
-	PC.fe.init = function( product_id ) {
-		this.layers = new PC.layers( PC.productData.layers ); 
-		this.angles = new PC.angles( PC.productData.angles ); 
-		if( PC.fe.product_type == 'simple' && PC.productData ) {
-			this.contents = PC.fe.setContent.parse( PC.productData ); 
-			this.modal.$el.trigger('content-is-loaded', 'an argument'); 
+		if ( parent_id ) {
+			this.currentProductData = PC.productData['prod_' + parent_id];
+			this.layers = new PC.layers( PC.productData['prod_' + parent_id].layers );
+			this.angles = new PC.angles( PC.productData['prod_' + parent_id].angles );
+		} else {
+			this.currentProductData = PC.productData['prod_' + product_id];
+			this.layers = new PC.layers( PC.productData['prod_' + product_id].layers ); 
+			this.angles = new PC.angles( PC.productData['prod_' + product_id].angles ); 
+		}
+
+		PC.fe.product_type = this.currentProductData.product_info.product_type;
+
+		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
+			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] ); 
+			// console.log('parsed', this.contents);
+			this.modal.$el.trigger( 'content-is-loaded' ); 
 		} 
-		this.product_id = product_id;
-		
-		$( document.body ).trigger( 'mkl-pc-init', product_id );
-		wp.hooks.doAction( 'PC.fe.init', product_id );
+
+		$( document.body ).trigger( 'mkl-pc-init', product_id, parent_id );
+		wp.hooks.doAction( 'PC.fe.init', product_id, parent_id );
 
 	};
 
-
-
-	PC.fe.open = function( product_id ) {
+	PC.fe.open = function( product_id, parent_id ) {
 
 		// variations: if product_id is different from active, we remove the modal to create a new one.
 		if( product_id == PC.fe.active_product ) {
@@ -115,13 +127,15 @@ Backbone.Model.prototype.toJSON = function() {
 		if( product_id != PC.fe.active_product && this.modal && PC.fe.inline != true ) {
 			this.modal.remove();
 			this.modal = null;
+			wp.hooks.doAction( 'PC.fe.reset_product' );
 		}
 
 		PC.fe.active_product = product_id; 
+		PC.fe.parent_product = parent_id ? parent_id : product_id;
 
-		this.modal = this.modal || new PC.fe.views.configurator( product_id ); 
+		this.modal = this.modal || new PC.fe.views.configurator( product_id, parent_id ); 
 
-		PC.fe.init( product_id ); 
+		PC.fe.init( product_id, parent_id ); 
 
 		// if( !this.layers && !variation ) {
 		// 	return;
@@ -164,10 +178,12 @@ Backbone.Model.prototype.toJSON = function() {
 			}
 
 			// content.add( response.content );
+			
 			$.each( response.content, function(key, value) {
-				if( value.choices && value.choices.length > 0 && PC.fe.layers.get( value.layerId ) ) {
-					value.choices = new PC.choices( value.choices, { layer: PC.fe.layers.get( value.layerId ) } );
-					content.add( value );
+				var ob = _.clone( value );
+				if ( ob.choices && ob.choices.length > 0 && PC.fe.layers.get( ob.layerId ) ) {
+					ob.choices = new PC.choices( ob.choices, { layer: PC.fe.layers.get( ob.layerId ) } );
+					content.add( ob );
 				}
 				// content.add({ key = new PC.choices(value);
 			});
@@ -182,6 +198,52 @@ Backbone.Model.prototype.toJSON = function() {
 			return PC.fe.contents.content.get( id ).attributes.choices; 
 		return false;
 	};
+
+	PC.fe.fetchContent = function( product_id ) {
+		if ( ! PC.fe.products_content[product_id] ) { 
+
+			this.modal.$el.show();
+			this.modal.$el.addClass( 'loading' );
+
+			$.ajax({
+				url:     wp.ajax.settings.url, 
+				type: 'POST',
+				dataType: 'json',
+				data:{
+					action: PC.actionParameter,
+					data: 'content', 
+					id: product_id,
+				},
+				context: this,
+			})
+			.done(function( response ) {
+				this.modal.$el.removeClass('loading');
+				if ( _.isObject( response ) && response.content ) {
+					this.contents = PC.fe.setContent.parse( response ); 
+					PC.fe.products_content[product_id] = this.contents;
+					this.modal.$el.trigger( 'content-is-loaded' );
+					$( PC.fe ).trigger( 'variation_content_loaded', { response: response, product_id: product_id } );
+					wp.hooks.doAction( 'variation_content_loaded', { response: response, product_id: product_id } );
+				} else {
+					alert( 'Couldn\'t load Data for this product.' );
+					if( PC.fe.inline != true ) {
+						this.modal.remove(); 
+					}
+				}
+			})
+			.fail(function() {
+				console.log("error");
+				this.modal.$el.addClass( 'loading' );
+			});
+		} else {
+			this.contents = PC.fe.products_content[product_id];
+			this.modal.$el.trigger('content-is-loaded', 'an argument');
+		}		
+	}
+	
+	PC.fe.fetchedContent = function( model, response, options ){
+		console.log('fetched content'); 
+	}
 
 	/*
 	// product is configurable == true

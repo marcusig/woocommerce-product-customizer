@@ -82,20 +82,26 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			woocommerce_wp_checkbox( 
 				array( 
-						'id' => MKL_PC_PREFIX.'_is_configurable',
-						'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_configurable', 
-						'class' => 'is_configurable',
-						'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
-						'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ) 
-					) 
-				);
+					'id' => MKL_PC_PREFIX.'_is_configurable',
+					'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_configurable', 
+					'class' => 'is_configurable',
+					'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
+					'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
+				) 
+			);
 
+			do_action( 'mkl_pc_admin_general_tab_before_start_button' );
+			
 			?>
-			<div class="toolbar show_if_simple">
-			<?php echo $this->start_button( $post->ID ) ?>
+
+			<div class="toolbar show_if_simple show_if_variable start_button_container">
+				<?php echo $this->start_button( $post->ID ) ?>
 			</div>
+
 			<?php
+
 			do_action( 'mkl_pc_admin_general_tab' );
+
 			echo '</div>';
 			
 		}

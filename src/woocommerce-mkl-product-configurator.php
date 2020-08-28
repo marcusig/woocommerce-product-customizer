@@ -84,6 +84,9 @@ function mkl_pc_load_plugin_textdomain() {
 	load_plugin_textdomain( 'product-configurator-for-woocommerce', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 }
 
-function mkl_pc() {
-	return MKL\PC\Plugin::instance();
+function mkl_pc( $what = false ) {
+	$plugin = MKL\PC\Plugin::instance();
+	if ( ! $what ) return $plugin;
+	if ( property_exists( $plugin, $what ) ) return $plugin->$what;
+	return false;
 }

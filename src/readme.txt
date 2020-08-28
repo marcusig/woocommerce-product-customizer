@@ -81,6 +81,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Better cache handling
+* FEATURE: Added shortcode, enabling to configure a product from anywhere.
+
 = 1.0.10 - 31/July/2020 =
 
 * TWEAK: Added a setting to customize the label of the "Configure" button

@@ -98,8 +98,9 @@ class Ajax {
 			wp_die();
 		} elseif ( isset($_REQUEST['view']) && 'js' === $_REQUEST['view'] ) {
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
-			echo 'var PC = PC || {};';
-			echo 'PC.productData = ' . json_encode( $data ) . ';';
+			echo 'var PC = PC || {};'."\n";
+			echo 'PC.productData = PC.productData || {};'."\n";
+			echo 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
 			wp_die();
 		} else { 
 			wp_send_json( $data );
@@ -131,7 +132,7 @@ class Ajax {
 			wp_send_json_error();
 		}
 
-		if( !isset( $_REQUEST['data'] ) ) {
+		if ( !isset( $_REQUEST['data'] ) ) {
 			wp_send_json_error( 'Expecting a data type' );
 		}
 

@@ -52,9 +52,10 @@ class Choice {
 	}
 
 	private function set_selected_choice(  ) {
-		
-		
-		if( $this->variation_id ) {
+		$product = wc_get_product( $this->product_id );
+		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+
+		if ( $this->variation_id && 'share_all_config' !== $mode ) {
 			$content = $this->db->get( 'content', $this->variation_id ); 
 		} else {
 			$content = $this->db->get( 'content', $this->product_id ); 

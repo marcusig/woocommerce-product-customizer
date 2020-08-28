@@ -13,8 +13,12 @@ PC.options = PC.options || {};
 		tagName: 'div',
 		className: 'mkl_pc',
 		template: wp.template( 'mkl-pc-configurator' ), 
-		initialize: function() {
-			this.options = PC.productData.product_info; 
+		initialize: function( product_id, parent_id ) {
+			if ( parent_id ) {
+				this.options = PC.productData['prod_' + parent_id].product_info; 
+			} else {
+				this.options = PC.productData['prod_' + product_id].product_info; 
+			}
 
 			try {
 				this.render();
@@ -25,7 +29,6 @@ PC.options = PC.options || {};
 		},
 		events: {
 			'content-is-loaded': 'start',
-
 		},
 		render: function() {
 			if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
@@ -34,7 +37,7 @@ PC.options = PC.options || {};
 				$('body').append(this.$el);
 				PC.fe.inline = false;
 			}
-			this.$el.append( this.template( { bg_image:this.options.bg_image }) ); 
+			this.$el.append( this.template( { bg_image: this.options.bg_image }) ); 
 			this.$main_window = this.$el.find( '.mkl_pc_container' ); 
 
 			return this.$el; 
@@ -153,7 +156,12 @@ PC.options = PC.options || {};
 		},
 
 		render: function() {
-			this.$el.append( this.template({name:this.parent.options.title}) );
+			this.$el.append( this.template( {
+				name: PC.fe.currentProductData.product_info.title,
+				show_form: PC.fe.is_using_shortcode,
+				product_id: PC.fe.active_product,
+				show_qty: PC.fe.currentProductData.product_info.show_qty
+			} ) );
 			return this.$el; 
 		},
 
@@ -161,7 +169,11 @@ PC.options = PC.options || {};
 			var $cart = $( 'form.cart' );
 			var data = PC.fe.save_data.save();
 			$cart.find( 'input[name=pc_configurator_data]' ).val( data );
-			$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
+			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
+				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
+			} else {
+				$cart.submit();
+			}
 		},
 
 		close_configurator: function( event ) {
@@ -196,7 +208,7 @@ PC.options = PC.options || {};
 			// if layer is not a choice or has only one choice, we don't add it to the menu
 			if ( ! model.attributes.not_a_choice ) {
 				var choices = PC.fe.getLayerContent( model.id ); 
-				if( choices.length ) {
+				if ( choices.length ) {
 					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
 					this.$el.append( new_layer.render() );
 					this.items.push( new_layer );

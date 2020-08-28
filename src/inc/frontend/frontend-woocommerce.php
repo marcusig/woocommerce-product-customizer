@@ -38,7 +38,43 @@ class Frontend_Woocommerce {
 		// add_filter( 'woocommerce_cart_item_product' , array( &$this, 'change_item_price' ), 10 , 3); 
 		// 		
 		// variation: include text when prod configurator is opened and no variation is selected
+		add_shortcode( 'mkl_configurator_button', array( $this, 'button_shortcode' ) );
+		
+	}
 
+	/**
+	 * Undocumented function
+	 *
+	 * @param [type] $atts
+	 * @param [type] $content
+	 * @return string
+	 */
+	public function button_shortcode( $atts, $content ) {
+
+		if ( ! isset( $atts[ 'product_id' ] ) ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
+		$product_id = intval( $atts[ 'product_id' ] );
+		$product = wc_get_product( $product_id );
+
+		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
+
+		$date_modified = $product->get_date_modified();
+		
+		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+
+		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
+
+		return '<button class="button alt configure-product-simple configure-product" data-product_id="'.$product_id.'">'.$content.'</button>';
+	}
+
+	/**
+	 * Whether the configurator should be loaded on the page
+	 *
+	 * @return boolean
+	 */
+	public function load_configurator_on_page() {
+		global $post;
+		$product = wc_get_product( $post->ID );
+		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || has_shortcode( $post->post_content, 'mkl_configurator_button' ) );
 	}
 
 	public function load_scripts() {
@@ -52,7 +88,14 @@ class Frontend_Woocommerce {
 		wp_enqueue_script( 'mkl_pc/js/wp.hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '0.1', true );
 
 		// Exit if the plugin is not configurable
-		if( !mkl_pc_is_configurable( $post->ID ) ) return;
+		$product = wc_get_product( $post->ID );
+		if ( $product ) {
+			$date_modified = $product->get_date_modified();
+		} else {
+			$date_modified = false;
+		}
+
+		if ( ! $this->load_configurator_on_page() ) return;
 
 		$scripts = array(
 			array('backbone/models/choice', 'models/choice.js'),
@@ -92,8 +135,9 @@ class Frontend_Woocommerce {
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
 		// $version = $product
-		$date_modified = wc_get_product($post->ID)->get_date_modified();
-		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		if ( $product ) {
+			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		}
 		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_configurator.css', array(), MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css' );
 

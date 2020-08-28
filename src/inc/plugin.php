@@ -56,10 +56,6 @@ class Plugin {
 		return self::$_instance;
 	}
 
-	public function get_something() {
-		return 'something';
-	}
-
 	/**
 	 * Include all the required dependencies
 	 *

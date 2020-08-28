@@ -170,7 +170,7 @@ class DB {
 
 		$product = wc_get_product($post_id);
 		$data = maybe_unserialize( $product->get_meta( '_mkl_product_configurator_' . $that ) );
-		if (is_string($data)) {
+		if ( is_string( $data) ) {
 			$data = json_decode($data);
 		}
 		if( '' == $data || false == $data ) {
@@ -243,10 +243,16 @@ class DB {
 	public function get_init_data( $id ) {
 
 		$product = wc_get_product( $id );
+		if ( 'variation' === $product->get_type() ) {
+			$parent_id = $product->get_parent_id();
+		} else {
+			$parent_id = $id;
+		}
+
 		$init_data = array(
 			// 'menu' => $this->get_menu(),
-			'layers' => $this->get('layers', $id),
-			'angles' => $this->get('angles', $id),
+			'layers' => $this->get('layers', $parent_id),
+			'angles' => $this->get('angles', $parent_id),
 			'nonces'      => array(
 				'update' => false,
 				'delete' => false,
@@ -274,9 +280,10 @@ class DB {
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
 			array(
-				'title' => apply_filters( 'the_title', $product->get_title(), $id ),
-				'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
+				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
+				'bg_image'     => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 				'product_type' => $product->get_type(),
+				'show_qty'     => ! $product->is_sold_individually(),
 			) 
 		);
 

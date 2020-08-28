@@ -51,9 +51,10 @@ class Cache {
 	}
 
 	public function save_config_file( $product_id ) {
-		$config_data = Plugin::instance()->db->get_front_end_data( $product_id );
+		$config_data = Plugin::instance()->db->escape( Plugin::instance()->db->get_front_end_data( $product_id ) );
 		$data =  'var PC = PC || {};'.PHP_EOL;
-		$data .= 'PC.productData = ' . json_encode( $config_data ) . ';'.PHP_EOL;
+		$data .=  'PC.productData = PC.productData || {};'.PHP_EOL;
+		$data .= 'PC.productData.prod_'.$product_id.' = ' . json_encode( $config_data ) . ';'.PHP_EOL;
 
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name($product_id);
