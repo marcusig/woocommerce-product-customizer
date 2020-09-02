@@ -51,6 +51,10 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);		
 		}
 
+		private function get_setting( $setting = '', $default = false ) {
+			return mkl_pc( 'settings' )->get( $setting, $default );
+		}
+
 		public function display(){
 			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( $_REQUEST['tab'] ) : 'settings';
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
@@ -112,14 +116,14 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			add_settings_section(
 				'mkl_pc__mlk_pc_settings_section', 
 				__( 'Styling options', 'product-configurator-for-woocommerce' ), 
-				[ $this, 'styling_section_callback' ],
+				function() {},
 				'mlk_pc_settings'
 			);
 		
 			add_settings_field(
 				'mkl_pc__button_classes', 
 				__( 'Button classes', 'product-configurator-for-woocommerce' ),
-				[ $this, 'text_field_callback' ],
+				[ $this, 'callback_text_field' ],
 				'mlk_pc_settings', 
 				'mkl_pc__mlk_pc_settings_section',
 				[ 
@@ -131,7 +135,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			add_settings_field(
 				'mkl_pc__button_label', 
 				__( 'Configure button label', 'product-configurator-for-woocommerce' ),
-				[ $this, 'text_field_callback' ],
+				[ $this, 'callback_text_field' ],
 				'mlk_pc_settings', 
 				'mkl_pc__mlk_pc_settings_section',
 				[ 
@@ -139,17 +143,92 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Configure', 'product-configurator-for-woocommerce' )
 				]
 			);
+
+			// add_settings_section(
+			// 	'mkl_pc__mlk_pc_general_settings', 
+			// 	__( 'General options', 'product-configurator-for-woocommerce' ), 
+			// 	function() { },
+			// 	'mlk_pc_settings'
+			// );
+
+			// add_settings_field(
+			// 	'show_image_in_cart',
+			// 	__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
+			// 	[ $this, 'callback_checkbox' ],
+			// 	'mlk_pc_settings', 
+			// 	'mkl_pc__mlk_pc_general_settings',
+			// 	[ 
+			// 		'setting_name' => 'show_image_in_cart',
+			// 	]
+			// );
+
+			// add_settings_field(
+			// 	'save_images', 
+			// 	__( 'Image mode', 'product-configurator-for-woocommerce' ),
+			// 	[ $this, 'callback_radio' ],
+			// 	'mlk_pc_settings', 
+			// 	'mkl_pc__mlk_pc_general_settings',
+			// 	[ 
+			// 		'setting_name' => 'save_images',
+			// 		'options' => [
+			// 			'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
+			// 			'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
+			// 		],
+			// 		'help' => [
+			// 			'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
+			// 			'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
+			// 		],
+			// 	]
+			// );
+			
+			do_action( 'mkl_pc/register_settings', $this );
 		}
 
 		public function styling_section_callback() {
 			// echo __( 'This section description', 'product-configurator-for-woocommerce' );
 		}
 
-		public function text_field_callback($field_options = []) {
+		public function callback_text_field( $field_options = [] ) {
 			$options = get_option( 'mkl_pc__settings' );
-			if ( !isset($field_options['setting_name'])) return;
+			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
 			?>
-			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='text' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options['setting_name']] ) ? $options[$field_options['setting_name']] : ''; ?>'>
+			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='text' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? $options[$field_options[ 'setting_name' ] ] : ''; ?>'>
+			<?php
+		}
+
+		public function callback_select( $field_options = [] ) {
+			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+
+			$value = $this->get_setting( $field_options[ 'setting_name' ] );
+
+			?>
+			<select name='mkl_pc__settings[<?php echo $field_options[ 'setting_name' ]; ?>]' id='mkl_pc__settings-<?php echo $field_options['setting_name']; ?>'>
+				<?php foreach ( $field_options[ 'options' ] as $key => $label ) {
+					printf( '<option value="%s"%s>%s</option>', $key, selected( $value, $key, false ), $label );
+				} ?>
+			</select>
+			<?php
+		}
+
+		public function callback_radio( $field_options = [] ) {
+			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+			$value = $this->get_setting( $field_options[ 'setting_name' ] );
+			?>
+			<fieldset>
+				<?php foreach ( $field_options['options'] as $key => $label ) {
+					printf( '<label for="wpuf-%1$s[%2$s][%3$s]">',  'mkl_pc__settings', $field_options['setting_name'], $key );
+					printf( '<input type="radio" class="radio" id="wpuf-%1$s[%2$s][%3$s]" name="%1$s[%2$s]" value="%3$s" %4$s />', 'mkl_pc__settings', $field_options['setting_name'], $key, checked( $value, $key, false ) );
+					printf( '%1$s</label><br>', $label );
+				} ?>
+			</fieldset>
+			<?php
+		}
+
+		public function callback_checkbox( $field_options = [] ) {
+			if ( ! isset( $field_options['setting_name'] ) ) return;
+			$value = $this->get_setting( $field_options[ 'setting_name' ] );
+			?>
+			<input type='checkbox' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' <?php checked( $value, 'on' ); ?>>
 			<?php
 		}
 

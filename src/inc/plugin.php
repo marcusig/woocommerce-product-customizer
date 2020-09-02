@@ -65,6 +65,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'utils.php';
 		include_once MKL_PC_INCLUDE_PATH . 'images.php';
 		include_once MKL_PC_INCLUDE_PATH . 'functions.php';
+		include_once MKL_PC_INCLUDE_PATH . 'settings.php';
 		
 		include_once MKL_PC_INCLUDE_PATH . 'base/product.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/layer.php';
@@ -143,6 +144,7 @@ class Plugin {
 			$this->admin = new Admin_Woocommerce();
 		}
 		
+		$this->settings = new Settings();
 		$this->cache = new Cache();
 		$this->db = new DB();
 		$this->ajax = new Ajax();

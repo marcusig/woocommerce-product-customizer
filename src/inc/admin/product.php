@@ -80,30 +80,38 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			echo '<div class="options_group wc-metaboxes-wrapper '. join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .'">';
 
-			woocommerce_wp_checkbox( 
-				array( 
-					'id' => MKL_PC_PREFIX.'_is_configurable',
-					'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_configurable', 
-					'class' => 'is_configurable',
-					'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
-					'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
-				) 
-			);
+				woocommerce_wp_checkbox( 
+					array( 
+						'id' => MKL_PC_PREFIX.'_is_configurable',
+						'wrapper_class' => join( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) .' is_configurable', 
+						'class' => 'is_configurable',
+						'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
+						'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
+					) 
+				);
 
-			do_action( 'mkl_pc_admin_general_tab_before_start_button' );
-			
-			?>
+				?>
+				<div class="show_if_is_configurable">
+				
+					<?php
 
-			<div class="toolbar show_if_simple show_if_variable start_button_container">
-				<?php echo $this->start_button( $post->ID ) ?>
+					do_action( 'mkl_pc_admin_general_tab_before_start_button' );
+					
+					?>
+
+					<div class="toolbar show_if_simple show_if_variable start_button_container">
+						<?php echo $this->start_button( $post->ID ) ?>
+					</div>
+
+					<?php
+
+					do_action( 'mkl_pc_admin_general_tab' );
+
+					?>
+				</div>
 			</div>
 
 			<?php
-
-			do_action( 'mkl_pc_admin_general_tab' );
-
-			echo '</div>';
-			
 		}
 
 		/**
@@ -252,7 +260,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function start_button($id, $parent_id = NULL) {
 			ob_start();
 			?>
-				<a href="#" class="button-primary start-configuration show_if_is_configurable" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Start product's configurator", 'product-configurator-for-woocommerce') ?></a>
+				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Start product's configurator", 'product-configurator-for-woocommerce') ?></a>
 			<?php 
 			$return = ob_get_clean();
 			return $return;

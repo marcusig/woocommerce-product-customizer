@@ -78,14 +78,19 @@ class Frontend_Woocommerce {
 	}
 
 	public function load_scripts() {
-		global $post; 
+		global $post, $wp_version; 
 
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
 
 		wp_enqueue_script( 'wp-api' );
-		//WP.hooks, until it's included in WP core.
-		wp_enqueue_script( 'mkl_pc/js/wp.hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '0.1', true );
+		$wp_scripts = wp_scripts();
+		if ( ! $wp_scripts->query( 'wp-hooks' ) ) {
+			//WP.hooks, if it's included in WP core.
+			wp_enqueue_script( 'wp-hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '1.1', true );
+		}
+
+		wp_register_script( 'mkl_pc/js/dom-to-image', MKL_PC_ASSETS_URL . 'js/vendor/dom-to-image.min.js', array(), '2.6', true );
 
 		// Exit if the plugin is not configurable
 		$product = wc_get_product( $post->ID );
@@ -111,15 +116,15 @@ class Frontend_Woocommerce {
 			if (!defined('SCRIPT_DEBUG') || !SCRIPT_DEBUG) {
 				$file = str_replace('.js', '.min.js', $file);
 			}
-			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone', 'accounting', 'mkl_pc/js/wp.hooks' ), MKL_PC_VERSION, true );
+			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone', 'accounting', 'wp-hooks' ), MKL_PC_VERSION, true );
 		}
 		
 		// To include potential other scripts BEFORE the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_before' );
 
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
-		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util', 'mkl_pc/js/wp.hooks' ), MKL_PC_VERSION, true );
-		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', array('jquery', 'backbone', 'wp-util', 'mkl_pc/js/wp.hooks' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ), MKL_PC_VERSION, true );
+		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ), MKL_PC_VERSION, true );
 
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),

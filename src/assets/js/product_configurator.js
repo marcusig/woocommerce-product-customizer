@@ -70,7 +70,7 @@ Backbone.Model.prototype.toJSON = function() {
 			});
 		});
 
-		wp.hooks.addAction( 'PC.fe.start', function( configurator ){
+		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ){
 
 			$('form.cart').find('button').removeAttr('disabled'); 
 

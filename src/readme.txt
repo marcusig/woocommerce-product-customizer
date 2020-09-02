@@ -81,8 +81,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Better cache handling
+= 1.1.0 - 02/Sep/2020 =
+
 * FEATURE: Added shortcode, enabling to configure a product from anywhere.
+* TWEAK: Compatibility with `wp.hooks` included in WP core
+* TWEAK: Better cache handling (added the ability to manually clear the cache from the settings, and regenerate when saving the product)
 
 = 1.0.10 - 31/July/2020 =
 
@@ -131,4 +134,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.0.10 Prevent JS error when no choice is set for a layer, and ability to easily change the "Configure" button label.
+* 1.1.0 Added a shortcode, improved the cache management, and various improvements / tweaks. Most add-ons will need to be updated for compatibility.
+

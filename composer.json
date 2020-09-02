@@ -1,12 +1,6 @@
 {
-	"repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/mklacroix/simba-plugin-manager-updater"
-        }
-	],
 	"require": {
-		"davidanderson684/simba-plugin-manager-updater": "1.5.*"
+		"intervention/image": "^2.5"
 	},
 	"prefer-stable" : true
 }

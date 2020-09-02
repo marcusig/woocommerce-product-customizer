@@ -1,6 +1,10 @@
 <?php 
 namespace MKL\PC;
 
+require MKL_PC_PLUGIN_PATH . 'vendor/autoload.php';
+
+use Intervention\Image\ImageManagerStatic as Image;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
@@ -11,49 +15,26 @@ class Images {
 	public $height = 0;
 	public $images = array();
 	public function __construct(  ) {
-
+		require MKL_PC_PLUGIN_PATH . 'vendor/autoload.php';
 	}
 
 	public function merge( $images, $output = '', $where = '', $file_name = '' ) {
-		if( file_exists($images[0]) ) {
-			$final_img = imagecreatefrompng( $images[0] );
-			imagealphablending($final_img, true);
-			imagesavealpha($final_img, true);
-
-			if( $this->width == 0 || $this->height == 0 ) {
-
-				$this->getSize( $images[0] );
-			}
-			unset($images[0]);
-		}
-
+		$the_image = null;
 		foreach($images as $image) {
-			if( file_exists( $image ) ) {
-				$new_image = imagecreatefrompng( $image );
-				imagecopy($final_img, $new_image, 0, 0, 0, 0, $this->width, $this->height);
-			}else {
-				// echo ' file '.$image.'does not exit';
+			if ( ! file_exists( $image ) ) continue;
+
+			if ( ! $the_image ) {
+				// The first image makes it
+				$the_image = Image::make( $image );
+			} else {
+				// Add the following images
+				$the_image->insert( $image );
 			}
 		}
-		if( $this->width == 0 || $this->height == 0 ) {
-			return 'widh n h are 0';
-		}
-
 
 		if( 'print' == $output || '' == $output ) {
 
-			ob_start();
-			imagepng($final_img);
-			$return_img = ob_get_contents(); // Capture the output
-			ob_end_clean(); // Clear the output buffer
-
-
-			header('Content-Type: image/png');
-			echo $return_img;
-			$this->clear(); 
-			imagedestroy( $final_img );
-			return true;
-
+			$the_image->response();
 
 		} elseif( 'file' === $output && is_dir($where) ) {
 
@@ -61,27 +42,14 @@ class Images {
 				return 'file already exists';
 			if( '' == $file_name )
 				return 'file name is empty';
-			imagepng($final_img, $where . '/' .$file_name);
-			$this->clear(); 
-			imagedestroy( $final_img );
+
+			$the_image->save($where . '/' .$file_name);
 			return $where . '/' .$file_name;
 
 		} else {
 			return ['else', false, is_dir($where), $where];
-		}
-
-		
-
-
-	} 
-
-	private function clear() {
-		foreach( $this->images as $image ) {
-			imagedestroy( $image );
-		}
+		}		
 	}
-
-	// public function pngs2png( $ )
 
 	public function getSize( $image ) {
 		$size = getimagesize($image);
