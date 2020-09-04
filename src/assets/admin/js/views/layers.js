@@ -287,14 +287,15 @@ TODO:
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
 
-			if( event.type == 'click' ) {
+			if ( event.type == 'click' ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
 			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();
 			} else {
-				return;
+				// Other cases (select...)
+				var new_val = input.val();
 			}
 
 			if( this.model.get(setting) != new_val ) {

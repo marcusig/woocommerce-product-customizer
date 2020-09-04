@@ -1,9 +1,10 @@
 === Product Configurator for WooCommerce ===
 Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
+Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.5
-Stable tag: 1.0.10
+Stable tag: 1.1.1
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -81,6 +82,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.1.1 - 04/Sep/2020 =
+
+* Fix multiple choice select in the admin
+
 = 1.1.0 - 02/Sep/2020 =
 
 * FEATURE: Added shortcode, enabling to configure a product from anywhere.
@@ -134,5 +139,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.1.0 Added a shortcode, improved the cache management, and various improvements / tweaks. Most add-ons will need to be updated for compatibility.
+* 1.1.1 Fixed a JS bug in the admin. 1.1.0 > Added a shortcode, improved the cache management, and various improvements / tweaks. Most add-ons will need to be updated for compatibility.
 
