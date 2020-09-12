@@ -1,10 +1,6 @@
+<?php if (!defined('ABSPATH')) exit; ?>
 <script type="text/html" id="tmpl-mkl-pc-configurator-toolbar">
-
-		<header><h3 class="product-name">{{data.name}}</h3><button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button></header>
-		<section class="choices">
-			
-		</section>
-
+	<?php do_action( 'mkl_pc_frontend_configurator_toolbar' ); ?>
 </script>
 <script type="text/html" id="tmpl-mkl-pc-configurator-footer">
 	<?php do_action( 'mkl_pc_frontend_configurator_footer_section_left_before' ); ?>

@@ -1,3 +1,4 @@
+<?php if (!defined('ABSPATH')) exit; ?>
 <script type="text/html" id="tmpl-mkl-pc-configurator-viewer">
 	<div class="mkl_pc_layers">
 	</div>

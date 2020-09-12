@@ -82,6 +82,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Use hooks in sidebar template
+
 = 1.1.1 - 04/Sep/2020 =
 
 * Fix multiple choice select in the admin
