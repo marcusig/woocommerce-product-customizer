@@ -43,17 +43,18 @@ class Frontend_Woocommerce {
 	}
 
 	/**
-	 * Undocumented function
+	 * Configure Button shortcode
 	 *
-	 * @param [type] $atts
-	 * @param [type] $content
+	 * @param array  $atts
+	 * @param string $content
 	 * @return string
 	 */
-	public function button_shortcode( $atts, $content ) {
+	public function button_shortcode( $atts, $content = '' ) {
 
 		if ( ! isset( $atts[ 'product_id' ] ) ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
 		$product_id = intval( $atts[ 'product_id' ] );
 		$product = wc_get_product( $product_id );
+		$shortcode_class = isset( $atts[ 'classes' ] ) ? Utils::sanitize_html_classes( $atts[ 'classes' ] ) : '';
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
 
@@ -63,7 +64,10 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		return '<button class="button alt configure-product-simple configure-product" data-product_id="'.$product_id.'">'.$content.'</button>';
+		$options = get_option( 'mkl_pc__settings' );
+		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'button alt';
+
+		return '<button class="'.$button_class.' configure-product-simple configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'">'.$content.'</button>';
 	}
 
 	/**
