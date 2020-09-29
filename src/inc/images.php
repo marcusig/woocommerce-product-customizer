@@ -17,7 +17,7 @@ class Images {
 	public function __construct(  ) {
 		require MKL_PC_PLUGIN_PATH . 'vendor/autoload.php';
 	}
-
+	
 	public function merge( $images, $output = '', $where = '', $file_name = '' ) {
 		$the_image = null;
 		foreach($images as $image) {
@@ -32,11 +32,14 @@ class Images {
 			}
 		}
 
-		if( 'print' == $output || '' == $output ) {
+		if ( ! $the_image ) return false;
 
-			$the_image->response();
+		if ( 'print' == $output || '' == $output ) {
 
-		} elseif( 'file' === $output && is_dir($where) ) {
+			echo $the_image->response();
+			exit;
+
+		} elseif ( 'file' === $output && is_dir( $where ) ) {
 
 			if( file_exists( $where . '/' .$file_name ) )
 				return 'file already exists';

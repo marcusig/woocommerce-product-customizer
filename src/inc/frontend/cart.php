@@ -20,6 +20,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
+			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'wc_add_cart_item'), 10, 2 ); 
 			// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
 		}
@@ -68,29 +69,38 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				);
 				
 
-			} else {
-
 			}
 
 			return $data; 
+		}
 
-			/* 
-			
-			Get layers, choices
-				foreach layers as layer
-
-					get choice with ID 
-
-					if( layer is not a choice ) { 
-						get choice img
-					} else {
-						get choice [
-							img 
-							name 
-						] (filter -> for extra price / other)
+		/**
+		 * Filter the cart item's image
+		 *
+		 * @param string $image
+		 * @param array  $cart_item
+		 * @param string $cart_item_key
+		 * @return string
+		 */
+		public function cart_item_thumbnail( $image, $cart_item, $cart_item_key ) {
+			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
+			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
+				$configurator_data = $cart_item['configurator_data'];
+				$choices = array(); 
+				foreach ($configurator_data as $layer) {
+					$choice_images = $layer->get_choice( 'images' );
+					if( $choice_images[0]["image"]['id'] ) {
+						$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
 					}
+				}
 
-			*/
+				$configuration = new Configuration( NULL, array( 'product_id' => $cart_item['product_id'], 'content' => json_encode( $choices ) ) );
+				$img = $configuration->get_image();
+
+				if ( $img ) return $img;
+			}
+
+			return $image;
 		}
 
 		public function get_choices_html( $choices ) {
