@@ -7,6 +7,7 @@ const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
+const gutil = require('gulp-util');
 var plumber = require('gulp-plumber');
 // var wpPot = require('gulp-wp-pot');
 
@@ -140,11 +141,11 @@ const reportError = function(error) {
 	const chalk = gutil.colors.white.bgRed
 
 	// Shows a pop when errors
-	notify({
-		title: 'Task Failed [' + error.plugin + ']',
-		message: lineNumber + 'See console.',
-		sound: 'Sosumi' // See: https://github.com/mikaelbr/node-notifier#all-notification-options-with-their-defaults
-	}).write(error)
+	// notify({
+	// 	title: 'Task Failed [' + error.plugin + ']',
+	// 	message: lineNumber + 'See console.',
+	// 	sound: 'Sosumi' // See: https://github.com/mikaelbr/node-notifier#all-notification-options-with-their-defaults
+	// }).write(error)
 
 	report += chalk('GULP TASK:') + ' [' + error.plugin + ']\n'
 	report += chalk('PROB:') + ' ' + error.message + '\n'
@@ -152,7 +153,7 @@ const reportError = function(error) {
 	if (error.fileName) { report += chalk('FILE:') + ' ' + error.fileName + '\n' }
 	console.error(report)
 	// console.log(error)
-	if (!isWatching) process.exit(1)
+	// if (!isWatching) process.exit(1)
 }
 
 //for normal build
