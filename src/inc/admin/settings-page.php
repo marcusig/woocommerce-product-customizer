@@ -144,42 +144,42 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
-			// add_settings_section(
-			// 	'mkl_pc__mlk_pc_general_settings', 
-			// 	__( 'General options', 'product-configurator-for-woocommerce' ), 
-			// 	function() { },
-			// 	'mlk_pc_settings'
-			// );
+			add_settings_section(
+				'mkl_pc__mlk_pc_general_settings', 
+				__( 'General options', 'product-configurator-for-woocommerce' ), 
+				function() { },
+				'mlk_pc_settings'
+			);
 
-			// add_settings_field(
-			// 	'show_image_in_cart',
-			// 	__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
-			// 	[ $this, 'callback_checkbox' ],
-			// 	'mlk_pc_settings', 
-			// 	'mkl_pc__mlk_pc_general_settings',
-			// 	[ 
-			// 		'setting_name' => 'show_image_in_cart',
-			// 	]
-			// );
+			add_settings_field(
+				'show_image_in_cart',
+				__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'show_image_in_cart',
+				]
+			);
 
-			// add_settings_field(
-			// 	'save_images', 
-			// 	__( 'Image mode', 'product-configurator-for-woocommerce' ),
-			// 	[ $this, 'callback_radio' ],
-			// 	'mlk_pc_settings', 
-			// 	'mkl_pc__mlk_pc_general_settings',
-			// 	[ 
-			// 		'setting_name' => 'save_images',
-			// 		'options' => [
-			// 			'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
-			// 			'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
-			// 		],
-			// 		'help' => [
-			// 			'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
-			// 			'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
-			// 		],
-			// 	]
-			// );
+			add_settings_field(
+				'save_images', 
+				__( 'Image mode', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_radio' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'save_images',
+					'options' => [
+						'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
+						'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
+					],
+					'help' => [
+						'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
+						'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
+					],
+				]
+			);
 			
 			do_action( 'mkl_pc/register_settings', $this );
 		}
