@@ -13,10 +13,9 @@ class Update {
 
 		$updates_list = [
 			'1.1.0' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
-			'1.1.2' => [ [ $this, 'update_wrong_layer_ids' ] ],
+			'1.1.2' => [ [ $this, 'update_wrong_layer_ids' ], [ mkl_pc( 'cache' ), 'purge' ] ],
 		];
 
-		// $this->update_wrong_layer_ids();
 		$saved_version = get_option( 'mkl_pc_version' );
 
 		// First install
@@ -58,7 +57,7 @@ class Update {
 				array( 
 					'meta_value' => serialize( $data )    // integer (number) 
 				), 
-				array( 'meta_id' => $meta->meta_id ), 
+				array( 'meta_id' => $meta->meta_id )
 			);
 		}
 	}
