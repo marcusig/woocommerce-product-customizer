@@ -97,7 +97,7 @@ class Choice {
 	}
 
 	public function is_choice() {
-		return null === $this->get_layer( 'not_a_choice' ) || false === $this->get_layer( 'not_a_choice' );
+		return is_null( $this->get_layer( 'not_a_choice' ) ) || ! $this->get_layer( 'not_a_choice' );
 	}
 
 }

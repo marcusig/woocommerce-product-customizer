@@ -236,7 +236,7 @@ class DB {
 	public function get_product_id_for_content( $product_id, $variation_id ) {
 		$product = wc_get_product( $product_id );
 		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
-		if ( 'share_layers_config' == $mode && $variation_id ) {
+		if ( ( ! $mode || 'share_layers_config' == $mode ) && $variation_id ) {
 			return $variation_id;
 		}
 		return $product_id;
