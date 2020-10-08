@@ -107,7 +107,6 @@ Backbone.Model.prototype.toJSON = function() {
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
 			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] ); 
-			// console.log('parsed', this.contents);
 			this.modal.$el.trigger( 'content-is-loaded' ); 
 		} 
 

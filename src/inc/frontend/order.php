@@ -28,11 +28,12 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					// stores each couple layer name + choice as a order_item_meta, for automatic extraction
 					foreach( $configurator_data as $layer ) {
 						if( is_object($layer) ) {
-							if( $layer->is_choice ) :
+							if( $layer->is_choice() ) :
 								$choice_meta = $this->set_order_item_meta( $layer );
 								$item->add_meta_data( $choice_meta[ 'label' ], $choice_meta['value'], false );
+								do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $item, $order );
 							?>
-							<?php		
+							<?php
 							endif;
 						} 
 					}

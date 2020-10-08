@@ -52,7 +52,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$configurator_data = $cart_item['configurator_data'];
 				$choices = array(); 
 				foreach ($configurator_data as $layer) {
-					if ( $layer->is_choice ) { 
+					if ( $layer->is_choice() ) { 
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
 						if( $choice_images[0]["thumbnail"]['id'] != '' ) {

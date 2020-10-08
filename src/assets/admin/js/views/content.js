@@ -90,7 +90,8 @@ PC.views = PC.views || {};
 			var product_choices = this.product.get('content'); 
 
 			if( !product_choices.get( this.model.id ) ) {
-				product_choices.add({layerId: this.model.id, choices: new PC.choices( [], { layer: PC.app.get_product( this.model.id ) } ) });
+				// product_choices.add({layerId: this.model.id, choices: new PC.choices( [], { layer: PC.app.get_product( this.model.id ) } ) });
+				product_choices.add({layerId: this.model.id, choices: new PC.choices( [], { layer: PC.app.admin.layers.get( this.model.id ) } ) });
 			}
 
 			this.choices = product_choices.get( this.model.id ).get( 'choices' );

@@ -7,8 +7,8 @@ PC.choices = Backbone.Collection.extend({
 	model: PC.choice,
 	initialize: function( models, options ) {
 		this.layer = options.layer;
+		if ( ! this.layer ) return;
 		this.layer_type = this.layer.get( 'type' );
-
 	},
 	nextOrder: function() {
 		if ( ! this.length ) {
@@ -26,7 +26,9 @@ PC.choices = Backbone.Collection.extend({
     },
 	resetChoice: function() {
 		this.deactivateAll();
-		if ( ! this.layer_type || 'simple' === this.layer_type ) this.first().set( 'active', true );
+		if ( ! this.layer_type || 'simple' === this.layer_type ) {
+			this.first().set( 'active', true );
+		}
 	},
 	selectChoice: function ( choice_id, activate ) {
 		var choice = this.get( choice_id );
@@ -57,7 +59,6 @@ PC.content_list = Backbone.Collection.extend({
 	resetConfig: function() {
 		this.each( function( layer ) {
 			var layer_model = PC.fe.layers.get( layer.get( 'layerId' ) );
-			// console.log( 'type?', layer_model.get( 'type' ), layer_model.get( 'not_a_choice' ) );
 			if ( ! layer_model.get( 'not_a_choice' ) ) {
 				layer.get( 'choices' ).resetChoice();
 			}

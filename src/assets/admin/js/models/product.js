@@ -14,16 +14,16 @@ var PC = PC || {};
 			product_type:'simple', 
 			modified: false, 
 		}, 
-		initialize: function( attributes ){
+		initialize: function( attributes ) {
 			this.admin = PC.app.get_admin();
 			this.layers = this.admin.layers;
+
 			// this.listenTo( this.layers, 'destroy', this.removed_model);
 		},
 		removed_model: function( model ) {
 			
 		},
 		parse: function( response ) {
-			// var response = null;
 			var content = new PC.content_list();
 			if( ! response instanceof Object ) {
 				return content;
@@ -34,7 +34,7 @@ var PC = PC || {};
 			// content.add( response.content ); 
 			$.each( response.content, function(key, value) {
 				if( value.choices && value.choices.length > 0 ) {
-					value.choices = new PC.choices(value.choices, { layer: PC.app.get_product( value.layerId ) } );
+					value.choices = new PC.choices(value.choices, { layer: PC.app.admin.layers.get( value.layerId ) } );
 					content.add( value );
 				}
 			});

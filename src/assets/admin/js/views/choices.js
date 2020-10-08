@@ -25,7 +25,7 @@ PC.views = PC.views || {};
 			if ( this.content.get( this.model.id ) ) {
 				this.col = this.content.get( this.model.id ).get('choices');
 			} else {
-				this.content.add( { layerId: this.model.id, choices: new PC.choices([], { layer: PC.app.get_product( this.model.id ) } ) } );
+				this.content.add( { layerId: this.model.id, choices: new PC.choices([], { layer: PC.app.admin.layers.get( this.model.id ) } ) } );
 				this.col = this.content.get( this.model.id );
 			}
 			this.state = this.options.state; 
@@ -152,6 +152,11 @@ PC.views = PC.views || {};
 			if( !this.$new_input.val().trim() ) {
 				return;
 			}
+
+			if ( this.model.get( 'not_a_choice' ) && this.col.length ) {
+				alert( 'The layer is set as Not a choice, so only one item can be added.' );
+				return;
+			}
 			// Add the new layer's model to the collection
 			this.col.add( this.new_attributes( this.$new_input.val().trim() ) ); 
 			
@@ -187,7 +192,9 @@ PC.views = PC.views || {};
 			this.admin = PC.app.get_admin(); 
 			this.angles = this.admin.angles; 
 
-			this.listenTo(this.model, 'destroy', this.remove); 
+			this.listenTo(this.model, 'destroy', this.remove);
+
+			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},
 		events: {
 			// 'click' : 'edit',
@@ -197,15 +204,20 @@ PC.views = PC.views || {};
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
-			'change .setting input': 'form_changed',
-			'change .setting textarea': 'form_changed',
-			'change .setting select': 'form_changed',
-
+			'change .setting select': 'form_change',
 			'click [type="checkbox"]': 'form_change',
-
+			'click .mkl-pc--action': 'trigger_custom_action',
 		},
 		render: function() {
-			this.$el.html( this.template( this.model.attributes ) );
+			var args,
+			    layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
+
+			if ( layer ) {
+				args = { not_a_choice: layer.get( 'not_a_choice' ) };
+			} else {
+				args = {};
+			}
+			this.$el.html( this.template( _.defaults( args, this.model.attributes ) ) );
 			this.$pictures = this.$('.views');
 
 			this.angles.each(this.add_angle, this);
@@ -214,6 +226,9 @@ PC.views = PC.views || {};
 				prompt: this.$('.delete-layer'),
 				confirm: this.$('.prompt-delete'),
 			};
+
+			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
+
 			return this;
 		},
 		form_change: function( event ) {
@@ -224,10 +239,12 @@ PC.views = PC.views || {};
 			if( event.type == 'click' ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
-			} else {
+			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();
-				
+			} else {
+				// Other cases (select...)
+				var new_val = input.val();
 			}
 
 			if( this.model.get(setting) != new_val ) {
@@ -279,6 +296,13 @@ PC.views = PC.views || {};
 			var part = new PC.views.choice_picture(data);
 
 			this.$pictures.append( part.render().el );
+		},
+		trigger_custom_action: function( event ) {
+			var el = $(event.currentTarget);
+			var action = el.data( 'action' );
+			if ( action in PC.actions ) {
+				PC.actions[action](el, this);
+			}
 		}
 
 	});

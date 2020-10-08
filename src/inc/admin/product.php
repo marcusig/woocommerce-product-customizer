@@ -196,6 +196,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/views/content', 'views/content.js'),
 				array('backbone/views/import', 'views/import.js'),
 				array('backbone/views/app', 'views/app.js'),
+				array('backbone/views/product_selector', 'views/product_selector.js'),
 				//APP
 				array('backbone/app', 'pc_app.js'), 
 				// array('backbone', 'admin.js'),

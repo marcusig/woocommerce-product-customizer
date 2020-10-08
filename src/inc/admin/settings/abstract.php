@@ -67,11 +67,22 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			if (empty($options['id']) || empty($options['label'])) throw new \Exception('Setting options must have and `id` and `label` fields');
 
-			$output = '
-				<label class="setting">
+			if ( 'html' === $options['type'] ) {
+				$output = '
+				<div class="setting html">
 					<span class="name '.esc_attr($options['id']).'">'.esc_html($options['label']).'</span>
 					';
+			} else {
+				$output = '
+					<label class="setting">
+						<span class="name '.esc_attr($options['id']).'">'.esc_html($options['label']).'</span>
+						';
+			}
 			switch ($options['type']) {
+				case 'html':
+				case 'custom':
+					$output .= $options['html'];
+					break;
 				case 'textarea':
 					$output .= '<textarea type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
 					break;
@@ -104,9 +115,15 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				$output .= '<p class="help">' . $options['help'] . '</p>';
 			}
 
-			$output .= '
-				</label>
-			';
+			if ( 'html' === $options['type'] ) {
+				$output .= '
+					</div>
+				';
+			} else {
+				$output .= '
+					</label>
+				';
+			}
 
 			if ( $options['condition'] ) {
 				$output = '<# if(' . $options['condition'] .') { #>' . $output . '<# } #>';

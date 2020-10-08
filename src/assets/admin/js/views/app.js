@@ -32,7 +32,6 @@ PC.views = PC.views || {};
 
 			// IF we haven't created this product, add it to collection
 			if( !this.products.get( options.product_id ) ) { 
-
 				this.products.add( options );
 			}
 
@@ -102,11 +101,29 @@ PC.views = PC.views || {};
 			this.product = options.current_product;
 			this.states = new PC.states();
 			this.admin = PC.app.get_admin();
-			if( ! this.admin.structure ) {
+			if ( ! this.admin.structure ) {
 				this.loading ++;
 
 				PC.app.admin_data.fetch({
-					success: _.bind(this.fetched, this),
+					success: _.bind(function( model, res, options ) {
+						
+						this.admin.set_data();
+
+						this.fetched( model, res, options );
+
+						if ( this.contentMissing ) {
+							this.contentMissing = false;
+							this.product.fetch({
+								success: _.bind(this.fetched, this),
+								error: function(model, res, options) {
+									console.log('error fecthing data');
+									console.log( model, res, options );
+								}
+							});
+						}
+
+		
+					}, this),
 					error: function(model, res, options) {
 						console.log('error fecthing data');
 						console.log( model, res, options );
@@ -115,17 +132,11 @@ PC.views = PC.views || {};
 
 			}
 
-			if( !this.product.get('content') ) {
-
+			if ( !this.product.get('content') ) {
 				this.loading ++;
-				this.product.fetch({
-					success: _.bind(this.fetchedContent, this),
-					error: function(model, res, options) {
-						console.log('error fecthing data');
-						console.log( model, res, options );
-					}
-				})
+				this.contentMissing = true;
 			}
+
 			this.open();
 
 			this.$el.addClass('loading'); 
@@ -140,28 +151,12 @@ PC.views = PC.views || {};
 			return this;
 
 		},
-		fetchedContent: function(model, response, options) {
-			 // = this.admin[this.collectionName] = new PC[this.collectionName]( loaded_data ); 
-			// this.parseData(response.content);
-			this.fetched( model, response, options);
-		},
-		// parseData: function( data ) {
-		// 	var content = [];
-		// 	console.log('data to parse:', data );
-		// 	// $.each(data, function(index, layer) {
-
-		// 	// 	console.log('parsing:', index, layer);
-		// 	// });
-		// 	return [];
-
-		// },
  		// States are fecthed
-		fetched: function(model, response, options ) {
+		fetched: function( model, response, options ) {
 			this.loading --;
 			if( this.loading == 0 ) {
 				this.refresh(); 
 				this.$el.removeClass('loading');
-				this.admin.set_data();
 			}
 		},
 

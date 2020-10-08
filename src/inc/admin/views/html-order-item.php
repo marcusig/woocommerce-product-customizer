@@ -5,7 +5,7 @@
 	foreach( $data as $layer ) { 
 		
 		if( is_object($layer) ){
-			if( $layer->is_choice ) :
+			if( $layer->is_choice() ) :
 			?>
 			<li><strong><?php echo $layer->get_layer('name') ?></strong>:
 				<?php echo $layer->get_choice('name') ?>

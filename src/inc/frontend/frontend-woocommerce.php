@@ -120,8 +120,6 @@ class Frontend_Woocommerce {
 			wp_enqueue_script( 'wp-hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '1.1', true );
 		}
 
-		wp_register_script( 'mkl_pc/js/dom-to-image', MKL_PC_ASSETS_URL . 'js/vendor/dom-to-image.min.js', array(), '2.6', true );
-
 		// Exit if the plugin is not configurable
 		$product = wc_get_product( $post->ID );
 		if ( $product ) {

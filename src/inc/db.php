@@ -4,7 +4,7 @@ namespace MKL\PC;
 
 
 /**
- * Product functions
+ * Data functions
  *
  *
  * @author   Marc Lacroix
@@ -13,7 +13,6 @@ namespace MKL\PC;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
-
 
 class DB { 
 
@@ -183,10 +182,10 @@ class DB {
 	/**
 	 * Set Data
 	 *
-	 * @param integer $id
-	 * @param integer $ref_id
-	 * @param string  $component
-	 * @param array   $raw_data
+	 * @param integer $id        - The product ID 
+	 * @param integer $ref_id    - The referring ID
+	 * @param string  $component - Which component to save (Layers, angles, content)
+	 * @param array   $raw_data  - The data
 	 * @return array
 	 */
 	public function set( $id, $ref_id, $component, $raw_data ) {
@@ -195,7 +194,7 @@ class DB {
 		if( $ref_id !== $id && !$this->is_product( $ref_id ) ) return false;
 
 		if( 'empty' === $raw_data ) {
-			$data = '';
+			$data = array();
 		} else {
 			// Remove active state. Defaults to first item
 			foreach ($raw_data as $key => $value) {
@@ -205,6 +204,7 @@ class DB {
 					foreach ( $value['choices'] as $choice_index => $choice) {
 						if( isset( $choice['active'] ) ) {
 							$raw_data[$key]['choices'][$choice_index]['active'] = false;
+							$raw_data[$key]['choices'][$choice_index] = apply_filters( 'mkl_product_configurator/data/set/choice', $raw_data[$key]['choices'][$choice_index], $id, $raw_data );
 						}
 					}
 				}
@@ -214,8 +214,9 @@ class DB {
 			$data = $raw_data;
 
 		}
-
+		$data = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
 		$product = wc_get_product( $id );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->update_meta_data( '_mkl_product_configurator_' . $component , $data );
 		$product->save();
 
@@ -223,6 +224,51 @@ class DB {
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 
 		return $data;
+	}
+
+	/**
+	 * Get the product ID for storing the content
+	 *
+	 * @param int $product_id
+	 * @param int $variation_id
+	 * @return int
+	 */
+	public function get_product_id_for_content( $product_id, $variation_id ) {
+		$product = wc_get_product( $product_id );
+		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+		if ( 'share_layers_config' == $mode && $variation_id ) {
+			return $variation_id;
+		}
+		return $product_id;
+	}
+	/**
+	 * Update a choice
+	 *
+	 * @param int   $product_id
+	 * @param int   $choice_id
+	 * @param array $data
+	 */
+	public function update_choice( $product_id, $variation_id, $layer_id, $choice_id, $data = array() ) {
+
+		if ( empty( $data ) ) return false;
+
+		$product_id = $this->get_product_id_for_content( $product_id, $variation_id );
+
+		$content = $this->get( 'content', $product_id );
+
+		if ( empty( $content ) ) return false;
+
+		foreach( $content as $index => $layer ) {
+			if ( $layer_id !== $layer[ 'layerId' ] ) continue;
+			foreach( $layer['choices'] as $choice_index => $choice ) {
+				if ( $choice_id !== $choice[ '_id' ] ) continue;
+				$choice = wp_parse_args( $data, $choice );
+				$content[$index]['choices'][$choice_index] = $choice;
+				$this->set( $product_id, $product_id, 'content', $content );
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -406,7 +452,7 @@ class DB {
 			]
 		);
 	}
-
+	
 	/**
 	 * Sanitize the data
 	 *
