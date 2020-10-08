@@ -39,7 +39,33 @@ class Frontend_Woocommerce {
 		// 		
 		// variation: include text when prod configurator is opened and no variation is selected
 		add_shortcode( 'mkl_configurator_button', array( $this, 'button_shortcode' ) );
+		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
 		
+	}
+
+	public function register_rest_route() {
+		register_rest_route( 'mkl_pc/v1', '/merge/(?P<id>\d+)/(?P<images>[a-zA-Z0-9-]+)', array(
+			'methods' => 'GET',
+			'callback' => array( $this, 'serve_image' ),
+			'permission_callback' => '__return_true'
+		) );
+	}
+
+	/**
+	 * Undocumented function
+	 *
+	 * @param [type] $data
+	 * @return void
+	 */
+	public function serve_image( $data ) {
+		$product_id = $data->get_param( 'id' );
+		$images = explode( '-', $data->get_param( 'images' ) );
+		$content = [];
+		foreach( $images as $image ) {
+			$content[] = [ 'image' => $image ];
+		}
+		$configuration = new Configuration( NULL, array( 'product_id' => $product_id, 'content' => json_encode( $content ) ) );
+		$configuration->serve_image();
 	}
 
 	/**

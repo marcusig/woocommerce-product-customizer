@@ -5,8 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-
-abstract class Configuration {
+class Configuration {
 
 	public $ID                 = 0;
 
@@ -28,31 +27,44 @@ abstract class Configuration {
 	// public $content               		= '';
 
 
-	public function __construct( $ID = NULL ) {
-		$wp_upload_dir = wp_upload_dir(); 
+	public function __construct( $ID = NULL, $args = array() ) {
+
+		$default_args = array(
+			'product_id'       => 0,
+			'content' => []
+		);
+
+		$args = wp_parse_args( $args, $default_args );
+
+		$this->product_id = $args['product_id'];
+
+		// if we have a new content, update it
+		if ( ! empty( $args['content'] ) ) {
+			$this->set_content( $args['content'] );
+		}
+
+		$wp_upload_dir = wp_upload_dir();
 		$this->upload_dir_path = $wp_upload_dir['basedir'] .'/mkl-pc-config-images'; 
 		$this->upload_dir_url = $wp_upload_dir['baseurl'] .'/mkl-pc-config-images'; 
 
-		if( ! is_dir( $this->upload_dir_path ) ) {
+		if ( ! is_dir( $this->upload_dir_path ) ) {
 			mkdir( $this->upload_dir_path ); 
 		}
 		
-		if( null != $ID && intval( $ID ) ) {
+		if ( null != $ID && intval( $ID ) ) {
 			$this->ID = absint( intval( $ID ) );
 			$this->post = get_post( $this->ID ); 
-			if ( !$this->post ) return false;
+			// if ( ! $this->post ) return false;
+		} else {
+			$this->ID = 0;
 		}
-		// $default_args = array(
-		// 	'customer_id' 	   => null,
-		// 	'configuration_id' => 0,
-		// 	'product'          => 0,
-		// );	
-		// $args = wp_parse_args( $args, $default_args );
 
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		$this->image_manager = new Images();
 	}
 
 	public function get_the_post() {
-		if( ! $this->post ) return false;
+		if ( ! $this->post ) return false;
 		return $this->post;
 	}
 
@@ -69,11 +81,10 @@ abstract class Configuration {
 			'customer_id' 	   => null,
 			'configuration_id' => 0,
 			'product_id'       => 0,
-		); 
-		$args       = wp_parse_args( $args, $default_args );
+		);
+		$args = wp_parse_args( $args, $default_args );
 		// if no product_id, exit early
-		if( $args['product_id'] == 0 )
-			return false;
+		if ( 0 == $args['product_id'] ) return false;
 
 		$this->product_id = $args['product_id'];
 
@@ -86,22 +97,22 @@ abstract class Configuration {
 			$configuration_data['post_type']    = $this->post_type;
 			$configuration_data['post_status']  = $this->configuration_type;
 			$configuration_data['post_parent']  = absint( $args['product_id'] );
-			if( $args['customer_id'] ) {
+			if ( $args['customer_id'] ) {
 				$configuration_data['post_author']  = absint( $args['customer_id'] );
 			}
 		}
 
 		// if we have a new content, update it
-		if( isset( $args['content'] ) ) {
+		if ( isset( $args['content'] ) ) {
 			$configuration_data['post_content'] = $args['content'];
-			$this->content = json_decode( stripcslashes( $args['content'] ) );
+			$this->set_content( $args['content'] );
 		}
 
-		if( isset( $args['title'] ) ) {
+		if ( isset( $args['title'] ) ) {
 			$configuration_data['post_title'] = sanitize_text_field( $args['title'] );
 		}
 		// Checks if user has already saved this configuration
-		if( $this->configuration_exists() ) {
+		if ( $this->configuration_exists() ) {
 
 			$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
 			
@@ -114,7 +125,7 @@ abstract class Configuration {
 				'meta_value'     => $attach_id,
 			) );
 
-			if( count( $configurations ) > 0 ) {
+			if ( count( $configurations ) > 0 ) {
 				return array( 'saved' => false, 'error' => __( 'You have already saved this configuration!', 'product-configurator-for-woocommerce' ) );
 			}
 		}
@@ -131,12 +142,10 @@ abstract class Configuration {
 
 		}
 
-		if( $this->should_save_image && isset( $this->content ) ) {
-
+		if ( $this->should_save_image && isset( $this->content ) ) {
 			$this->image_path = $this->save_image( $this->content );
-
 		}
-		if( is_array( $this->image_path ) ) {
+		if ( is_array( $this->image_path ) ) {
 			$save_image = $this->image_path;
 		} else {
 			$save_image = false;
@@ -147,7 +156,16 @@ abstract class Configuration {
 			'message' => apply_filters( 'mkl_pc_configuration_saved_message_success', __( 'The configuration was saved successfully!', 'product-configurator-for-woocommerce' ) ),
 			'save_image_async' => $save_image,
 		);
+	}
 
+	/**
+	 * Set the content
+	 *
+	 * @param string $content - A JSON object of the content
+	 */
+	public function set_content( $content ) {
+		if ( isset( $this->content ) ) return;
+		$this->content = json_decode( stripcslashes( $content ) );
 	}
 
 	public function update( $args ) {
@@ -160,13 +178,13 @@ abstract class Configuration {
 	}
 
 	public function delete() {
-		if( $this->ID && $this->post ) {
+		if ( $this->ID && $this->post ) {
 			$user_id = get_current_user_id();
-			if( $this->post->post_type != $this->post_type ) {
+			if ( $this->post->post_type != $this->post_type ) {
 				return false;
 			}
 			// $author_id = get_author
-			if( current_user_can( 'delete_posts' ) || $this->post->post_author ===  $user_id ) {
+			if ( current_user_can( 'delete_posts' ) || $this->post->post_author ===  $user_id ) {
 				wp_delete_post( $this->ID );
 				return true;
 			}
@@ -177,8 +195,9 @@ abstract class Configuration {
 	public function configuration_exists() {
 		return file_exists( $this->upload_dir_path .'/'. $this->get_configuration_image_name() );
 	}
+
 	public function get_configuration_image_name() {
-		if( $this->image_name != '' ) {
+		if ( $this->image_name != '' ) {
 			return $this->image_name;
 		}
 
@@ -192,23 +211,109 @@ abstract class Configuration {
 		return $image_file_name;
 	}
 
-	public function save_image( $content, $transient = null ) {
-		if( $content && is_null( $transient ) && $this->configuration_exists() ) {
-			$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
-			if ( $attach_id ) set_post_thumbnail( $this->ID, $attach_id );
-			return $attach_id;
+	/**
+	 * Get the image
+	 *
+	 * @param string $size - The image size
+	 * @param array  $attr - The image attributes
+	 */
+	public function get_image( $size = 'woocommerce_thumbnail', $attr = array() ) {
 
+		$url = $this->get_image_url();
+
+		$attachment_id = Utils::get_image_id( $url );
+
+		if ( $attachment_id ) {
+			return wp_get_attachment_image( $attachment_id, $size, false, $attr );
+		} else {
+
+			if ( ! $url ) return '';
+
+			$size_class = $size;
+
+			if ( is_array( $size_class ) ) {
+				$size_class = join( 'x', $size_class );
+			}
+
+			$default_attr = array(
+				'src'   => $url,
+				'class' => "attachment-$size_class size-$size_class",
+				'alt'   => "",
+			);
+
+			// Add `loading` attribute.
+			if ( function_exists( 'wp_lazy_loading_enabled' ) && wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' ) ) {
+				$default_attr['loading'] = 'lazy';
+			}
+
+			$attr = wp_parse_args( $attr, $default_attr );
+
+			// If the default value of `lazy` for the `loading` attribute is overridden
+			// to omit the attribute for this image, ensure it is not included.
+			if ( array_key_exists( 'loading', $attr ) && ! $attr['loading'] ) {
+				unset( $attr['loading'] );
+			}
+
+			$attr = array_map( 'esc_attr', $attr );
+			$html = rtrim( "<img" );
+	
+			foreach ( $attr as $name => $value ) {
+				$html .= " $name=" . '"' . $value . '"';
+			}
+	
+			$html .= ' />';
+
+			return $html;
+	
+		}
+	}
+
+	/**
+	 * 
+	 */
+	public function get_image_url() {
+		
+		if ( $this->configuration_exists() ) return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
+	
+		$mode = mkl_pc( 'settings' )->get( 'save_images' );
+		if ( 'save_to_disk' === $mode ) {
+			return $this->save_image( $this->content );
+		} else { // on_the_fly
+			
+			$images = array();
+			// collect images
+			foreach ($this->content as $layer) {
+				$images[] = $layer->image;
+			}
+
+			return get_rest_url() .'mkl_pc/v1/merge/'. $this->product_id . '/'. implode('-', $images) .'/';
+		}
+	}
+
+	/**
+	 * Save image to the disk
+	 *
+	 * @param 
+	 * @return integer - The image ID
+	 */
+	public function save_image( $content, $transient = null ) {
+
+		// The image already exists
+		if ( $content && is_null( $transient ) && $this->configuration_exists() ) {
+			$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
+			if ( $attach_id && $this->ID ) set_post_thumbnail( $this->ID, $attach_id );
+			return $attach_id;
 		} else {
 			// if is async and has no transient
-			if( $this->save_image_async && is_null( $transient ) ) {
+			if ( $this->save_image_async && is_null( $transient ) ) {
 				// file name
 				$image_file_name = $this->get_configuration_image_name();
 				$images = array();
 				// collect images
-				foreach ($this->content as $layer) {
+				foreach ($content as $layer) {
 					$images[] = get_attached_file( $layer->image );
 				}
-				if( count( $images ) > 1 ) {
+				if ( count( $images ) > 1 ) {
 					// if there are images to process
 					$store_data = array(
 						'image_file_name' => $image_file_name,
@@ -223,11 +328,11 @@ abstract class Configuration {
 
 					return $save_image;
 
-				} elseif( count( $images ) == 1 ) {
+				} elseif ( count( $images ) == 1 ) {
 					// if there is only 1 image, no need to process
 					$fimage = $images[0];
-					$this->save_attachment( $fimage, $this->ID );
-					return $fimage;
+					return $this->save_attachment( $fimage, $this->ID );
+					// return $fimage;
 
 				} else {
 					// if there is none
@@ -235,46 +340,50 @@ abstract class Configuration {
 				}
 				// 
 				
-			} elseif( absint( $transient ) ) {
+			} elseif ( absint( $transient ) ) {
 				// if we have a transient, get it
 				$config = get_transient( '_temp_image_data_conf_'.absint( $transient ) );
-				if( !isset( $config['image_file_name'] ) || !isset( $config['images'] ) )
+				if ( !isset( $config['image_file_name'] ) || !isset( $config['images'] ) )
 					return false;
 
 				$image_file_name = $config['image_file_name'];
 				$this->image_name = $image_file_name;
 				$images = $config['images'];
 				
-				if( $this->configuration_exists() ) return false;
+				if ( $this->configuration_exists() ) return Utils::get_image_id( $this->upload_dir_url . '/' . $image_file_name );
 
 			} else {
 				$image_file_name = $this->get_configuration_image_name();
 				$images = array();
 				// collect images
-				foreach ($this->content as $layer) {
+				foreach ($content as $layer) {
 					$images[] = get_attached_file( $layer->image );
 				}
 			}
 
-
-			$this->image_manager = new Images(); 
-
-			if( count( $images ) > 1 ) {
+			if ( count( $images ) > 1 ) {
 				$fimage = $this->image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
-			} elseif( count( $images ) == 1 ) {
+			} elseif ( count( $images ) == 1 ) {
 				$fimage = $images[0];
 			} else {
 				return false;
 			}
 
-			$this->save_attachment( $fimage, $this->ID );
-			// update_post_meta( $this->ID, $meta_key, $meta_value, $prev_value );
-			return $fimage;
+			return $this->save_attachment( $fimage, $this->ID );
 
 		}
+	}
 
-		
+	public function serve_image() {
+		$images = array();
+		// collect images
+		foreach ($this->content as $layer) {
+			$images[] = get_attached_file( $layer->image );
+		}
 
+		if ( count( $images ) ) {
+			$this->image_manager->merge( $images, 'print' );
+		}
 	}
 
 	public function save_attachment( $filename, $parent_post_id ) {
@@ -292,15 +401,12 @@ abstract class Configuration {
 		// Insert the attachment.
 		$attach_id = wp_insert_attachment( $attachment, $filename, $parent_post_id );
 
-		// Make sure that this file is included, as wp_generate_attachment_metadata() depends on it.
-		require_once ABSPATH . 'wp-admin/includes/image.php';
-
 		// Generate the metadata for the attachment, and update the database record.
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
 		wp_update_attachment_metadata( $attach_id, $attach_data );
 
-		set_post_thumbnail( $parent_post_id, $attach_id );
-		
+		if ( $parent_post_id ) set_post_thumbnail( $parent_post_id, $attach_id );
+		return $attach_id;
 	}
 
 
