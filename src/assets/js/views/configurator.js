@@ -277,8 +277,8 @@ PC.options = PC.options || {};
 				return;
 			}
 
-			var where = wp.hooks.applyFilters( 'PC.fe.choices.where', 'out' );
-			if( 'out' == where ) {
+			var where = wp.hooks.applyFilters( 'PC.fe.choices.where', PC.fe.config.where );
+			if( ! where || 'out' == where ) {
 				this.options.parent.after( this.choices.$el ); 
 			} else if( 'in' == where ) {
 				this.$el.append( this.choices.$el ); 

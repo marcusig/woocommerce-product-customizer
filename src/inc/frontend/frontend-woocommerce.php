@@ -163,7 +163,7 @@ class Frontend_Woocommerce {
 				'money_thousand' => esc_attr( wc_get_price_thousand_separator() ),
 				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) )
 			),
-			'config' => apply_filters( 'mkl_pc_js_config', array( 'inline' => false ) ),
+			'config' => apply_filters( 'mkl_pc_js_config', array( 'inline' => false, 'where' => 'out' ) ),
 		);
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
@@ -171,41 +171,12 @@ class Frontend_Woocommerce {
 		if ( $product ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 		}
-		wp_register_style( 'mlk_pc/css', MKL_PC_ASSETS_URL.'css/product_configurator.css', array(), MKL_PC_VERSION );
+
+		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', MKL_PC_ASSETS_URL.'css/product_configurator.css' ), array(), MKL_PC_VERSION );
+
 		wp_enqueue_style( 'mlk_pc/css' );
 
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );
-
 	}
-
-	// public function change_item_price( $data, $cart_item, $key  ) { 
-	// 	if( mkl_pc_is_configurable( $data->id ) ) {
-
-	// 		// $data->price = 2;
-	// 	}
-	// 	// die();
-	// 	return $data;
-
-	// }
-
-
-	// public function get_price( $price, $product ) {
-	// 	if( mkl_pc_is_configurable( $product->id ) ) {
-	// 		return $price;
-	// 	}
-	// 	return $price; 
-	// }
-
-
-
-	// Removes ajax_add_to_cart support for simple + configurable products 
-	// in archive view
-
-
-
-
-
 }
-
-
