@@ -33,6 +33,9 @@ PC.options = PC.options || {};
 		render: function() {
 			if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
 				$(PC.fe.inlineTarget).append(this.$el);
+			} else if ( PC.fe.config.inline == true && $(PC.fe.config.inlineTarget).length > 0 ) {
+				$(PC.fe.config.inlineTarget).append(this.$el);
+				PC.fe.inline = true;
 			} else {
 				$('body').append(this.$el);
 				PC.fe.inline = false;
@@ -52,6 +55,7 @@ PC.options = PC.options || {};
 			setTimeout( function() {
 				this.$el.find('.layers .layer-item').first().focus();
 			}.bind(this), 300);
+			
 			wp.hooks.doAction( 'PC.fe.open', this ); 
 		},
 		close: function() {
