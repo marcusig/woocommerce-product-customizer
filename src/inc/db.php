@@ -426,6 +426,10 @@ class DB {
 					'sanitize' => 'esc_url_raw',
 					'escape' => [ $this, 'esc_url' ],
 				],
+				'class_name' => [ 
+					'sanitize' => [ 'MKL\PC\Utils', 'sanitize_html_classes' ],
+					'escape' => 'esc_attr',
+				],
 				'active' => [ 
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',

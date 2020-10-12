@@ -62,9 +62,15 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 								'disabled' => 'disabled'
 							]
 						],
-					]
-				)
-
+					],
+					'priority' => 40,
+				),
+				'class_name' => array(
+					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 50,
+				),
+	
 			));
 		}
 	}

@@ -260,6 +260,9 @@ PC.options = PC.options || {};
 
 		render: function() { 
 			this.$el.append( this.template( this.model.attributes ) ); 
+
+			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
+			
 			wp.hooks.doAction( 'PC.fe.layer.beforeRenderChoices', this );
 			// Add the choices
 			this.add_choices(); 
@@ -328,6 +331,7 @@ PC.options = PC.options || {};
 		},
 		render: function() {
 			this.$el.append( this.template( this.model.attributes ) ); 
+			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 
 			
@@ -533,7 +537,8 @@ PC.options = PC.options || {};
 			var img = this.model.get_image();
 
 			this.$el.addClass( this.model.collection.getType() );
-
+			var layer_class = PC.fe.layers.get( this.model.get( 'layerId' ) ).get( 'class_name' );
+			if ( layer_class ) this.$el.addClass( layer_class );
 			// Default to a transparent image
 			if (!img) img = this.empty_img;
 
