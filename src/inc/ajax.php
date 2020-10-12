@@ -126,7 +126,9 @@ class Ajax {
 			$ref_id = absint( $_REQUEST['parent_id'] );
 		}
 
-		check_ajax_referer( 'update-pc-post_' . $ref_id, 'nonce' );
+		if ( ! check_ajax_referer( 'update-pc-post_' . $ref_id, 'nonce', false ) ) {
+			wp_send_json_error( __( 'Error saving the data:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) );
+		}
 
 		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) ) {
 			wp_send_json_error();
