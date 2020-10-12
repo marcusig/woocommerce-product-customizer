@@ -296,6 +296,16 @@ PC.utils = PC.utils || {
 	_isMobile: function() {
 		var isTouchDevice = navigator.userAgent.match(/(iPhone|iPod|iPad|Android|playbook|silk|BlackBerry|BB10|Windows Phone|Tizen|Bada|webOS|IEMobile|Opera Mini)/);
 		return isTouchDevice;
+	},
+	formatMoney: function ( amount ) {
+		if ( 'undefined' === typeof accounting ) return amount;
+		return accounting.formatMoney( amount, {
+			precision: PC_config.lang.money_precision,
+			symbol: PC_config.lang.money_symbol,
+			decimal: PC_config.lang.money_decimal,
+			thousand: PC_config.lang.money_thousand,
+			format: PC_config.lang.money_format
+		} );
 	}
 
 };

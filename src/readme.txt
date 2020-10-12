@@ -82,6 +82,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Better error handling when saving the product's data
+* TWEAK: Show the product's price in the modal
 * TWEAK: Use hooks in sidebar template
 
 = 1.1.1 - 04/Sep/2020 =

@@ -157,11 +157,11 @@ class Frontend_Woocommerce {
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 			'lang' => array(
-				'media_title' => __('Select a picture', 'product-configurator-for-woocommerce' ),
-				'media_select_button' => __('Choose', 'product-configurator-for-woocommerce' ),
-				'layers_new_placeholder' => __('New Layer Name', 'product-configurator-for-woocommerce'),
-				'angles_new_placeholder' => __('New Angle Name', 'product-configurator-for-woocommerce'),
-				'choice_new_placeholder' => __('New Choice Name', 'product-configurator-for-woocommerce'),
+				'money_precision' => wc_get_price_decimals(),
+				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
+				'money_decimal' => esc_attr( wc_get_price_decimal_separator() ),
+				'money_thousand' => esc_attr( wc_get_price_thousand_separator() ),
+				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) )
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array( 'inline' => false ) ),
 		);

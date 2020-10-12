@@ -794,6 +794,11 @@ $inner_space: 1em;
 				padding-right: 10px;
 				display: inline-block !important;
 			}
+			span.pc-total-price {
+				font-weight: bold;
+				display: inline-block; 
+				margin-right: .5em;
+			}
 			h3.product-name {
 				line-height: 1;
 				margin: 0;

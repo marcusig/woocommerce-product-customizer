@@ -160,7 +160,8 @@ PC.options = PC.options || {};
 				name: PC.fe.currentProductData.product_info.title,
 				show_form: PC.fe.is_using_shortcode,
 				product_id: PC.fe.active_product,
-				show_qty: PC.fe.currentProductData.product_info.show_qty
+				show_qty: PC.fe.currentProductData.product_info.show_qty,
+				formated_price: this.get_price()
 			} ) );
 			return this.$el; 
 		},
@@ -178,6 +179,10 @@ PC.options = PC.options || {};
 
 		close_configurator: function( event ) {
 			this.parent.close(); 
+		},
+		get_price: function() {
+			if ( ! PC.fe.currentProductData.product_info.price ) return false;
+			return PC.utils.formatMoney( parseFloat( PC.fe.currentProductData.product_info.price ) );
 		}
 	});
 	/*
