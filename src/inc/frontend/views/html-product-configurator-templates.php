@@ -34,6 +34,22 @@ function mkl_pc_frontend_configurator__main_view__loader() {
 }
 add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configurator__main_view__loader', 40 );
 
+function mkl_pc_frontend_configurator__choice_item_attrs() {
+	$attributes = apply_filters( 'mkl_pc_choice_items_attributes', array(
+		'class' => 'choice-item',
+	));
+
+	$attrs_string = '';
+	foreach( $attributes as $name => $value ) {
+		if ( $attrs_string ) $attrs_string .= ' ';
+		if ( is_string( $name ) ) {
+			$attrs_string .= $name . '="' . esc_attr( $value ) . '"';
+		}
+	}
+	echo ' ' . $attrs_string;
+}
+add_action( 'tmpl-pc-configurator-choice-item-attributes', 'mkl_pc_frontend_configurator__choice_item_attrs' );
+
 
 /**
  * Toolbar

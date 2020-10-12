@@ -43,10 +43,14 @@ class Cache {
 	}
 
 	public function get_cache_location() {
+		$dir = 'mkl_product_configurations';
+		if ( is_multisite() ) {
+			$dir .= '/' . get_current_blog_id();
+		}
 		$upload_dir = wp_upload_dir();
 		return apply_filters( 'mkl_pc_cache_dir', array(
-			'path' => $upload_dir['basedir'] . '/mkl_product_configurations',
-			'url' => $upload_dir['baseurl'] . '/mkl_product_configurations'
+			'path' => $upload_dir['basedir'] . '/',
+			'url' => $upload_dir['baseurl'] . '/'
 		));
 	}
 

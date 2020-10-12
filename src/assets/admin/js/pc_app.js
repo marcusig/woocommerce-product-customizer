@@ -83,7 +83,8 @@ Backbone.Model.prototype.toJSON = function() {
 					this.saving ++;
 					this.save( key, this.get_collection( key ), {
 						// success: 'successfuil'
-						success: _.bind(this.saved_all, this, key, state)
+						success: _.bind(this.saved_all, this, key, state),
+						error: _.bind(this.error_saving, this, key, state)
 					} );
 				}
 
@@ -91,6 +92,10 @@ Backbone.Model.prototype.toJSON = function() {
 			if ( this.saving == 0 ) this.admin.close();
 		},
 
+		error_saving: function( key, state, a ) {
+			this.saving--;
+			console.log(key, state, a);
+		},
 		saved_all: function( key, state ) {
 			this.saving--;
 			this.is_modified[ key ] = false;

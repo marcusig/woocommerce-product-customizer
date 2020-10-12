@@ -32,6 +32,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			add_action( 'woocommerce_after_add_to_cart_form', array( &$this, 'add_configure_button' ) );
 			// add hidden input to store configurator data into form
 			add_action( 'woocommerce_after_add_to_cart_button', array( &$this, 'add_configure_hidden_field' ) ); 
+			add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_price' ), 15 );
 			add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_form' ), 20 ); 
 			add_action( 'mkl_pc_templates_empty_viewer', array( &$this, 'variable_empty_configurator_content'), 20 );
 			add_action( 'wp_footer', array( &$this, 'print_product_configuration' ) );
@@ -80,6 +81,22 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			}
 		}
 
+		/**
+		 * Display the price
+		 *
+		 * @return void
+		 */
+		public function configurator_price() {
+			global $product;
+			if ( ! isset( $this->options['show_price_in_configurator'] ) || 'on' != $this->options['show_price_in_configurator'] ) return;
+		?>
+			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $product ? $product->get_price_html() : ''; ?><# } #></span>
+		<?php 
+		}
+
+		/**
+		 * Display the form
+		 */
 		public function configurator_form() {
 			global $product;
 			if ( $product && ! $product->is_sold_individually() ) {

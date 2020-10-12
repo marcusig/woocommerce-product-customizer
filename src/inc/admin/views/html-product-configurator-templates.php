@@ -321,4 +321,14 @@ CONTENT TEMPLATES
 		</div>	
 	</div>
 </script>
+
+<script type="text/html" id="tmpl-mkl-pc-product-selector">
+	<div class="mkl-pc-product-selector">
+		<h3><?php _e( 'Select a product:', 'product-configurator-for-woocommerce' ); ?></h3>
+		<select style="width: 100%;" class="wc-product-search" name="linked_woocommerce_products[]" data-placeholder="<?php _e( 'Search for a product&hellip;', 'woocommerce' ); ?>" data-action="woocommerce_json_search_products_and_variations">
+		</select>
+		<button class="button button-primary select" disabled><?php _e( 'Choose', 'product-configurator-for-woocommerce' ); ?></button>
+		<button class="button cancel"><?php _e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+	</div>
+</script>
 <?php do_action('mkl_pc_admin_templates_after') ?>

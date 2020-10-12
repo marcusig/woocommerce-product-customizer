@@ -8,18 +8,29 @@ PC.choice = Backbone.Model.extend({
 		_id:0,
 		name: '',
 		description: '',
-		images:null,
+		images: null,
 		layerId: null,
+		available: true,
 	},
 	initialize: function( attributes, options ) {
 
 		if ( ! attributes.layerId ) this.set( 'layerId', options.layer.id );
 
 		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
-			
 			var images = new PC.choice_pictures( attributes.images );
 			this.set('images', images); 
 		}
+
+		switch ( attributes.available ) {
+			case '1':
+				this.set( 'available', true);
+				break;
+			case '0':
+				this.set( 'available', false);
+				break;
+		}
+
+		wp.hooks.doAction( 'PC.fe.models.choice.init', this );
 	},
 	get_image: function( image, what ) { 
 		image = image || 'image'; 

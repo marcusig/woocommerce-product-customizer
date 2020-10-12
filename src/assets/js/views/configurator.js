@@ -160,7 +160,8 @@ PC.options = PC.options || {};
 				name: PC.fe.currentProductData.product_info.title,
 				show_form: PC.fe.is_using_shortcode,
 				product_id: PC.fe.active_product,
-				show_qty: PC.fe.currentProductData.product_info.show_qty
+				show_qty: PC.fe.currentProductData.product_info.show_qty,
+				formated_price: this.get_price()
 			} ) );
 			return this.$el; 
 		},
@@ -178,6 +179,10 @@ PC.options = PC.options || {};
 
 		close_configurator: function( event ) {
 			this.parent.close(); 
+		},
+		get_price: function() {
+			if ( ! PC.fe.currentProductData.product_info.price ) return false;
+			return PC.utils.formatMoney( parseFloat( PC.fe.currentProductData.product_info.price ) );
 		}
 	});
 	/*
@@ -323,7 +328,7 @@ PC.options = PC.options || {};
 			this.add_all( this.options.content ); 
 			
 			if( !this.options.content.findWhere( { 'active': true } ) ) {
-				this.options.content.first().set( 'active', true ); 
+				this.options.content.findWhere( { available: true } ).set( 'active', true );
 			}
 			return this.$el;
 		},
@@ -349,7 +354,7 @@ PC.options = PC.options || {};
 		template: wp.template( 'mkl-pc-configurator-choice-item' ),
 		initialize: function( options ) {
 			this.options = options || {};
-			this.listenTo( this.model, 'change activate', this.activate );
+			this.listenTo( this.model, 'change:active', this.activate );
 		},
 		events: {
 			'mousedown .choice-item': 'set_choice',
@@ -370,6 +375,11 @@ PC.options = PC.options || {};
 					return;
 				}
 			}
+			
+			// If the element is disabled, exit.
+			if ( $( event.currentTarget ).prop( 'disabled' ) ) return;
+			
+			// Activate the clicked item
 			this.model.collection.selectChoice( this.model.id );
 		},
 		preload_image: function() {
@@ -630,7 +640,6 @@ PC.options = PC.options || {};
 				model.set('active' , false); 
 			});
 			this.model.set('active', true); 
-
 		},
 		activate: function() {
 			if( this.model.get('active') )
@@ -675,8 +684,6 @@ PC.options = PC.options || {};
 					_.each( selected_choices, function( choice ) {
 						var img_id = choice.get_image( 'image', 'id' );
 	
-						console.log('parsing choice', choice);
-
 						this.choices.push( {
 							is_choice: true,
 							layer_id: model.id,

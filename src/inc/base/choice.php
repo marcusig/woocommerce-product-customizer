@@ -19,6 +19,19 @@ class Choice {
 	public $variation_id; 
 	private $db = null;
 
+	public function __wakeup() {
+		do_action( 'mkl_pc/choice/wakeup', $this );
+		// $this->set_selected_choice();
+	}
+
+	/**
+	 * Clone - Refresh data from database
+	 */
+	public function __clone() {
+		$this->set_layer(); 
+		$this->set_selected_choice();
+	}
+
 	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id ) { 
 
 		if( !intval( $product_id ) || !intval( $layer_id ) || !intval( $choice_id ) || !intval( $angle_id ) )
@@ -53,21 +66,13 @@ class Choice {
 
 	private function set_selected_choice(  ) {
 		$product = wc_get_product( $this->product_id );
-		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
 
-		if ( $this->variation_id && 'share_all_config' !== $mode ) {
-			$content = $this->db->get( 'content', $this->variation_id ); 
-		} else {
-			$content = $this->db->get( 'content', $this->product_id ); 
-		}
+		$product_id = $this->db->get_product_id_for_content( $this->product_id, $this->variation_id );
+		$content = $this->db->get( 'content', $product_id ); 
 
 		$this->choices = Utils::get_array_item( $content, 'layerId', $this->layer_id ); 
 		$this->choice = Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ); 
 		$this->images = Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ); 
-
-		if( count( $this->choices ) < 2 || $this->layer['not_a_choice'] === true || $this->layer['not_a_choice'] === 'true'  ) {
-			$this->is_choice = false;
-		}
 	}
 
 	public function get_layer( $item ) {
@@ -91,5 +96,8 @@ class Choice {
 		return $image ? $image['id'] : '';
 	}
 
+	public function is_choice() {
+		return is_null( $this->get_layer( 'not_a_choice' ) ) || ! $this->get_layer( 'not_a_choice' );
+	}
 
 }

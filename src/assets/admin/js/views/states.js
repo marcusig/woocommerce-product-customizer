@@ -166,11 +166,11 @@ PC.views.state = Backbone.View.extend({
 
 		PC.app.save( this.collectionName, this.col, {
 			// success: 'successfuil'
-			success: _.bind(this.state_saved, this)
+			success: _.bind(this.state_saved, this),
+			error: _.bind(this.error_saving, this),
 		} );
 		// this.layers.save();
 	},
-
 
 	state_saved: function() { 
 		// when the layers are succesfully saved,
@@ -186,7 +186,12 @@ PC.views.state = Backbone.View.extend({
 		// reset 'modified'
 		PC.app.is_modified[this.collectionName] = false;
 	},
-
+	error_saving: function(r, s) {
+		this.$save_button.removeClass('disabled'); 
+		this.$save_all_button.removeClass('disabled'); 
+		this.$toolbar.removeClass('saving'); 
+		alert(r);
+	},
 	save_all: function() {
 		PC.app.save_all( this );
 	},

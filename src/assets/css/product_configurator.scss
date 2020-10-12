@@ -469,6 +469,19 @@ $inner_space: 1em;
 								 
 						}
 
+						span.out-of-stock {
+							display: block;
+							position: absolute;
+							top: 10px;
+							right: 10px;
+							padding: 0.5em;
+							background: rgba(0, 0, 0, 0.85);
+							color: #fff;
+							font-size: .8em;
+							text-transform: uppercase;
+							line-height: 1;
+						}
+
 						&.active {
 							button {
 								background: $active_bg;
@@ -780,6 +793,11 @@ $inner_space: 1em;
 				position: relative;
 				padding-right: 10px;
 				display: inline-block !important;
+			}
+			span.pc-total-price {
+				font-weight: bold;
+				display: inline-block; 
+				margin-right: .5em;
 			}
 			h3.product-name {
 				line-height: 1;

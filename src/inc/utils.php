@@ -21,6 +21,8 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		public static function get_array_item( $array, $by = 'order', $search_value = NULL ) { 
 			// if there is several items in the array, we search for the one(s) we need
 
+			if ( ! is_array( $array )  ) return $array;
+			
 			if ( count($array) > 1 ) {
 
 				// get the first one, ordered by 'order'

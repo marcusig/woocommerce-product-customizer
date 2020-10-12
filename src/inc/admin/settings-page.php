@@ -152,6 +152,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'show_price_in_configurator',
+				__( 'Show the product\'s price in the configurator', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'show_price_in_configurator',
+				]
+			);
+
+			add_settings_field(
 				'show_image_in_cart',
 				__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
