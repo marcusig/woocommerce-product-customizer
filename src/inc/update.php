@@ -43,15 +43,19 @@ class Update {
 		global $wpdb;
 		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s ", '_mkl_product_configurator_content') );
 		foreach( $metas as $index => $meta ) {
-			
 			$data = unserialize( $meta->meta_value );
+			// Add a backup of the post data
+			add_post_meta( $meta->post_id, '_mkl_product_configurator_content__backup', $data );
+
+			// Iterate through each layer and choice
 			foreach( $data as $layer_index => $layer ) {
 				foreach( $layer['choices'] as $choice_index => $choice ) {
+					// Set the correct proprerty "layerId"
 					$data[$layer_index]['choices'][$choice_index]['layerId'] = $layer['layerId'];
-					// if ( isset( $data[$layer_index]['choices'][$choice_index]['not_a_choice'] ) ) unset( $data[$layer_index]['choices'][$choice_index]['not_a_choice'] );
 				} 
 			}
 
+			// Update the data.
 			$wpdb->update( 
 				$wpdb->postmeta,
 				array( 
