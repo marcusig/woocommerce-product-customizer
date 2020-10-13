@@ -82,6 +82,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Possibility to add a custom html class for each layer
 * TWEAK: Show configuration image in the cart / checkout
 * TWEAK: Better multisite support
 * TWEAK: Better error handling when saving the product's data
