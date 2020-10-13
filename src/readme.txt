@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.5
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -31,6 +31,7 @@ This plugin comes without limitations. But if you need more functionalities, loo
 * <a target="_blank" href="https://wc-product-configurator.com/product/save-your-design/">Save your design</a> - Get your customers engaged by enabling them to save the design they’ve made.
 * <a target="_blank" href="https://wc-product-configurator.com/product/variable-products/">Variable products</a> - Use the product configurator with variable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/multiple-choice/">Multiple choices</a> - Enables multiple choices per layer Ideal for a product’s options, or when having several individual options.
+* <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Stock management / Linked product</a> - Manage the stocks on a choice basis, or link a choice to a product in the shop. 
 * For custom needs, contact me <a href="https://wc-product-configurator.com/contact/">here</a>
 
 == Installation ==
@@ -82,6 +83,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.1.2 - 1/Oct/2020 =
+
+* FIX: Fixed data issue
 * TWEAK: Possibility to add a custom html class for each layer
 * TWEAK: Show configuration image in the cart / checkout
 * TWEAK: Better multisite support
@@ -146,5 +150,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.1.1 Fixed a JS bug in the admin. 1.1.0 > Added a shortcode, improved the cache management, and various improvements / tweaks. Most add-ons will need to be updated for compatibility.
+* 1.1.2 IMPORTANT: This version updates the configuratior's data, so it is recommended to backup the database first. It also adds the ability to show the configuration image instead of the default product image in the cart and checkout pages.
 
