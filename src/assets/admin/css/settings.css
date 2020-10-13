@@ -50,7 +50,7 @@
 	
 	padding: 1em;
 	margin: 0 1.9em 2em 0;
-	width: calc(33% - 1em);
+	width: calc(32.99% - 1em);
 	position: relative; 
 	border: 1px solid #ddd;
 	/* flex-wrap: wrap; */
@@ -65,7 +65,7 @@
 .mkl-pc-addon .button span.dashicons {
 	transform: translate(4px, 4px);
 }
-.mkl-pc-addon:nth-child(n+3) {
+.mkl-pc-addon:nth-child(3n) {
 	margin-right: 0;
 }
 
@@ -169,6 +169,20 @@
 	display: block;
 }
 
+@media only screen and (max-width: 860px) {
+	.mkl-pc-addon {
+		width: calc(50% - 1em);
+		margin-right: 1em;
+	}
+	.mkl-pc-addon:nth-child(3n) {
+		margin-right: 1em;
+	}
+	.mkl-pc-addon:nth-child(2n) {
+		margin-right: 1em;
+	}
+
+}
+
 @media only screen and (max-width: 600px) {
 	.mkl-pc-addons {
 		flex-direction: column;
@@ -179,3 +193,4 @@
 	}
 
 }
+
