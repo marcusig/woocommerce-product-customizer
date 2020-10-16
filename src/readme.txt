@@ -23,6 +23,11 @@ Instead, export your layers from Photoshop, a 3D render, or any other source, an
 
 You can report bugs or suggestions on the <a href="https://github.com/marcusig/woocommerce-product-customizer/issues">github repository</a> or the <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">support forum</a>.
 
+**Available shortcodes**
+
+* Configure button: `[mkl_configurator_button product_id=1 classes="button primary"]` or [mkl_configurator_button product_id=1 classes="button primary"]Button name[/mkl_configurator_button]
+* **[NEW]** Inline configurator: `[mkl_configurator product_id=1 classes="container-class something-else"]`
+
 **Premium addons**
 
 This plugin comes without limitations. But if you need more functionalities, look at the available addons: 
@@ -82,6 +87,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+* FEATURE: Added an "inline" configurator shortcode. 
 
 = 1.1.2 - 1/Oct/2020 =
 
