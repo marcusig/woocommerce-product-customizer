@@ -33,11 +33,12 @@ Backbone.Model.prototype.toJSON = function() {
 
 		PC.fe.product_type = PC.fe.product_type || 'simple';
 
-		$( '.configure-product-simple' ).on('click', function(event) {
+		function configurator_init( event ) {
+
 			var product_id;
 			//get product ID
-			if ( $( this ).data( 'product_id' ) ) {
-				product_id = $( this ).data( 'product_id' );
+			if ( $( event.target ).data( 'product_id' ) ) {
+				product_id = $( event.target ).data( 'product_id' );
 				PC.fe.is_using_shortcode = true;
 			} else if ( $('*[name="add-to-cart"]').length ) {
 				PC.fe.is_using_shortcode = false;
@@ -49,6 +50,11 @@ Backbone.Model.prototype.toJSON = function() {
 				return;
 			}
 
+			if ( 'mkl/pc/inline-init' == event.type ) {
+				PC.fe.inline = true;
+				PC.fe.inlineTarget = event.target;
+			}
+
 			// Open configurator
 			try {
 				PC.fe.open( product_id ); 
@@ -56,7 +62,10 @@ Backbone.Model.prototype.toJSON = function() {
 				console.log ('we had an error: ', err);
 				PC.fe.close();
 			}
-		});
+		}
+
+		$( '.configure-product-simple' ).on( 'click', configurator_init );
+		$( '.mkl-configurator-inline' ).on( 'mkl/pc/inline-init', configurator_init );
 
 		$('form.cart').each(function(index, form) { 
 
@@ -83,9 +92,17 @@ Backbone.Model.prototype.toJSON = function() {
 			
 		});
 
+		/**
+		 * Launch the configurator after click
+		 */
 		if( PC.fe.config.open_configurator && PC.fe.config.open_configurator == true ) {
 			$( '.configure-product-simple' ).trigger( 'click' );
 		}
+
+		/**
+		 * Launch the configurator inline
+		 */
+		$( '.mkl-configurator-inline' ).trigger( 'mkl/pc/inline-init' );
 	});
 
 	PC.fe.init = function( product_id, parent_id ) {

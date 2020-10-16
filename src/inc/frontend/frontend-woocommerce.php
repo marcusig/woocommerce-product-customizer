@@ -32,6 +32,7 @@ class Frontend_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'frontend/order.php' );
 		include( MKL_PC_INCLUDE_PATH . 'frontend/cart.php' );
 	}
+
 	private function _hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_scripts' ), 50 );
 		// add_filter( 'woocommerce_get_price', array( &$this, 'get_price' ), 10, 2 ); 
@@ -39,6 +40,7 @@ class Frontend_Woocommerce {
 		// 		
 		// variation: include text when prod configurator is opened and no variation is selected
 		add_shortcode( 'mkl_configurator_button', array( $this, 'button_shortcode' ) );
+		add_shortcode( 'mkl_configurator', array( $this, 'configurator_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
 		
 	}
@@ -97,6 +99,31 @@ class Frontend_Woocommerce {
 	}
 
 	/**
+	 * Configure Button shortcode
+	 *
+	 * @param array  $atts
+	 * @param string $content
+	 * @return string
+	 */
+	public function configurator_shortcode( $atts, $content = '' ) {
+
+		if ( ! isset( $atts[ 'product_id' ] ) ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
+		$product_id = intval( $atts[ 'product_id' ] );
+		$product = wc_get_product( $product_id );
+		$shortcode_class = isset( $atts[ 'classes' ] ) ? Utils::sanitize_html_classes( $atts[ 'classes' ] ) : '';
+
+		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
+
+		$date_modified = $product->get_date_modified();
+		
+		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+
+		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
+
+		return '<div class="mkl-configurator-inline configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'"></div>';
+	}
+
+	/**
 	 * Whether the configurator should be loaded on the page
 	 *
 	 * @return boolean
@@ -104,7 +131,7 @@ class Frontend_Woocommerce {
 	public function load_configurator_on_page() {
 		global $post;
 		$product = wc_get_product( $post->ID );
-		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || has_shortcode( $post->post_content, 'mkl_configurator_button' ) );
+		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || has_shortcode( $post->post_content, 'mkl_configurator_button' ) || has_shortcode( $post->post_content, 'mkl_configurator' ) );
 	}
 
 	public function load_scripts() {
