@@ -194,3 +194,114 @@
 
 }
 
+/*
+	Theme settings
+*/
+
+.theme_setting {
+    background: #FFF;
+    border-radius: 6px;
+    padding: 1em;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 15%);
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.theme_setting img {
+    max-width: 150px;
+    border-radius: 4px;
+}
+
+.theme_setting .img {
+    padding-right: 1em;
+}
+
+.theme_setting .content {
+	border-left: 1px solid #efefef;
+	padding-left: 1em;
+}
+
+.theme_setting .content h4 {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.mkl-pc__theme-selector {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: rgba(0,0,0,.6);
+    z-index: 20000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mkl-pc-themes {
+    position: absolute;
+    min-height: 60vh;
+    min-width: 60vw;
+    background: #eaeaea;
+}
+
+.themes-list {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 80px);
+    padding: 1em;
+	align-items: baseline;
+    box-sizing: border-box;	
+	overflow-y: auto;
+}
+
+.mkl-pc-themes footer {
+    display: flex;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+	border-top: 1px solid #CCC;
+    align-items: center;
+}
+
+.mkl-pc-themes .actions {
+    justify-self: right;
+	padding-right: 1.5em;
+    padding-left: 1em;
+}
+
+.mkl-pc-themes .selection {
+    flex: 1;
+}
+
+.mkl-pc__theme {
+    width: calc(33% - 1em);
+    box-sizing: border-box;
+    background: #FFF;
+    margin-right: 1em;
+    padding: 1em;
+    border-radius: 6px;
+	position: relative;
+}
+
+.mkl-pc__theme.selected {
+    box-shadow: 0 0 0 3px #eaeaea, 0 0 0 5px #009688;
+}
+
+.mkl-pc__theme .trigger {
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	appearance: none;
+	background: transparent;
+	border: none;
+}

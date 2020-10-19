@@ -344,7 +344,7 @@ PC.options = PC.options || {};
 			// this.$el.empty();
 			collection.each( this.add_one, this );
 		},
-		add_one: function( model ){
+		add_one: function( model ) {
 			var new_choice = new PC.fe.views.choice( { model: model, multiple: false } ); 
 			this.$list.append( new_choice.render() ); 
 		},

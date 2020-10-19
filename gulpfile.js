@@ -46,7 +46,7 @@ gulp.task('vendor', function(done){
 });
 
 gulp.task('scss', function(done) {
-	return gulp.src('src/assets/**/*.scss', { base: 'src', allowEmpty: true })
+	return gulp.src('src/**/*.scss', { base: 'src', allowEmpty: true })
 		.pipe(sourcemaps.init())
 		.pipe(plumber(reportError))
 		.pipe(sass().on('error', sass.logError))

@@ -75,6 +75,7 @@ class Plugin {
 
 		include_once MKL_PC_INCLUDE_PATH . 'cache.php';
 		include_once MKL_PC_INCLUDE_PATH . 'db.php';
+		include_once MKL_PC_INCLUDE_PATH . 'themes.php';
 		include_once MKL_PC_INCLUDE_PATH . 'ajax.php';
 		include_once MKL_PC_INCLUDE_PATH . 'update.php';
 
@@ -147,6 +148,7 @@ class Plugin {
 		$this->settings = new Settings();
 		$this->cache = new Cache();
 		$this->db = new DB();
+		$this->themes = new Themes();
 		$this->ajax = new Ajax();
 
 		do_action( 'mkl_pc_is_loaded' );
