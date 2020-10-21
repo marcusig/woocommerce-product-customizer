@@ -964,5 +964,8 @@ body.configurator_is_inline .mkl_pc {
 
 	.mkl_pc_container {
 		box-shadow: none;
+		.cancel {
+			display: none;
+		}
 	}	
 }

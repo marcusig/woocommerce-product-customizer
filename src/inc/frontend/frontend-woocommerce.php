@@ -137,6 +137,16 @@ class Frontend_Woocommerce {
 	public function load_scripts() {
 		global $post, $wp_version; 
 
+		if ( ! $this->load_configurator_on_page() ) return;
+
+		$theme_id = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
+
+		if ( $theme_id ) {
+			$theme = mkl_pc( 'themes' )->get( $theme_id );
+			logdebug(trailingslashit( $theme ) . 'theme.php');
+			logdebug(file_exists(trailingslashit( $theme ) . 'theme.php'));
+			if ( $theme && file_exists( trailingslashit( $theme ) . 'theme.php' ) ) include_once trailingslashit( $theme ) . 'theme.php';
+		}
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
 
@@ -144,7 +154,7 @@ class Frontend_Woocommerce {
 		$wp_scripts = wp_scripts();
 		if ( ! $wp_scripts->query( 'wp-hooks' ) ) {
 			//WP.hooks, if it's included in WP core.
-			wp_enqueue_script( 'wp-hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '1.1', true );
+			wp_register_script( 'wp-hooks', MKL_PC_ASSETS_URL . 'js/vendor/wp.event-manager.min.js', array( 'jquery' ), '1.1', true );
 		}
 
 		// Exit if the plugin is not configurable
@@ -154,8 +164,6 @@ class Frontend_Woocommerce {
 		} else {
 			$date_modified = false;
 		}
-
-		if ( ! $this->load_configurator_on_page() ) return;
 
 		$scripts = array(
 			array('backbone/models/choice', 'models/choice.js'),
@@ -199,7 +207,14 @@ class Frontend_Woocommerce {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 		}
 
-		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', MKL_PC_ASSETS_URL.'css/product_configurator.css' ), array(), MKL_PC_VERSION );
+		$stylesheet = MKL_PC_ASSETS_URL . 'css/product_configurator.css';
+		$version = filemtime( MKL_PC_ASSETS_PATH . 'css/product_configurator.css' );
+		if ( $theme_id && mkl_pc( 'themes' )->get( $theme_id ) ) {
+			$theme_info = mkl_pc( 'themes' )->get_theme_info( $theme_id );
+			$stylesheet = $theme_info['base_url'] . 'style.css';
+			$version = filemtime( trailingslashit( mkl_pc( 'themes' )->get( $theme_id ) ) . 'style.css' );
+		}
+		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
 
 		wp_enqueue_style( 'mlk_pc/css' );
 

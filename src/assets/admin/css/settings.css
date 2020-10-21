@@ -1,10 +1,10 @@
 .settings_page_mkl_pc_settings h1 {
-    position: relative;
-    background: #FFF;
-    margin-left: -20px;
-    margin-top: -9px;
-    margin-right: -20px;
-    padding: 20px;
+	position: relative;
+	background: #FFF;
+	margin-left: -20px;
+	margin-top: -9px;
+	margin-right: -20px;
+	padding: 20px;
 }
 .settings_page_mkl_pc_settings .wrap > header {
 	margin-bottom: 20px;
@@ -16,21 +16,21 @@
 }
 
 .settings_page_mkl_pc_settings h1 span.by {
-    position: absolute;
-    right: 20px;
-    top: 10px;
+	position: absolute;
+	right: 20px;
+	top: 10px;
 	font-size: 1rem;
 }
 
 .settings_page_mkl_pc_settings h1 span.version {
-    display: inline-block;
-    margin: 0;
-    padding: 0;
-    line-height: 1;
-    vertical-align: top;
-    transform: translate(4px, -6px);
-    color: #CCC;
-    font-size: 1rem;
+	display: inline-block;
+	margin: 0;
+	padding: 0;
+	line-height: 1;
+	vertical-align: top;
+	transform: translate(4px, -6px);
+	color: #CCC;
+	font-size: 1rem;
 }
 
 .mkl-settings-content {
@@ -78,18 +78,18 @@
 }
 
 .mkl-pc-addon h4 span.installed {
-    position: absolute;
-    right: 10px;
-    top: -35px;
-    background: #ace64f;
-    font-size: 12px;
-    color: #477300;
-    display: inline-block;
-    padding: 6px 16px;
-    line-height: 1;
-    border-radius: 40px;
-    box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5), 0 5px 12px rgba(72, 117, 0, 0.21);
-    text-transform: uppercase;
+	position: absolute;
+	right: 10px;
+	top: -35px;
+	background: #ace64f;
+	font-size: 12px;
+	color: #477300;
+	display: inline-block;
+	padding: 6px 16px;
+	line-height: 1;
+	border-radius: 40px;
+	box-shadow: 0 1px 1px rgba(255, 255, 255, 0.5), 0 5px 12px rgba(72, 117, 0, 0.21);
+	text-transform: uppercase;
 }
 
 .mkl-pc-addon figure {
@@ -199,21 +199,24 @@
 */
 
 .theme_setting {
-    background: #FFF;
-    border-radius: 6px;
-    padding: 1em;
-    box-shadow: 0 2px 5px rgb(0 0 0 / 15%);
+	background: #FFF;
+	border-radius: 6px;
+	padding: 1em;
+	box-shadow: 0 2px 5px rgb(0 0 0 / 15%);
+}
+
+.theme_setting .theme_setting_view {
 	display: flex;
 	flex-wrap: wrap;
 }
 
 .theme_setting img {
-    max-width: 150px;
-    border-radius: 4px;
+	max-width: 150px;
+	border-radius: 4px;
 }
 
 .theme_setting .img {
-    padding-right: 1em;
+	padding-right: 1em;
 }
 
 .theme_setting .content {
@@ -222,79 +225,81 @@
 }
 
 .theme_setting .content h4 {
-    margin-top: 0;
-    margin-bottom: 0;
+	margin-top: 0;
+	margin-bottom: 0;
 }
 
 .mkl-pc__theme-selector {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    background: rgba(0,0,0,.6);
-    z-index: 20000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 100%;
+	background: rgba(0,0,0,.6);
+	z-index: 20000;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 .mkl-pc-themes {
-    position: absolute;
-    min-height: 60vh;
-    min-width: 60vw;
-    background: #eaeaea;
+	position: absolute;
+	min-height: 60vh;
+	min-width: 60vw;
+	background: #eaeaea;
 }
 
 .themes-list {
-    display: flex;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: calc(100% - 80px);
-    padding: 1em;
-	align-items: baseline;
-    box-sizing: border-box;	
+	display: flex;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: calc(100% - 80px);
+	padding: 1em;
+	align-items: start;
+	box-sizing: border-box;	
 	overflow-y: auto;
+	flex-wrap: wrap;
 }
 
 .mkl-pc-themes footer {
-    display: flex;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 80px;
+	display: flex;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	height: 80px;
 	border-top: 1px solid #CCC;
-    align-items: center;
+	align-items: center;
 }
 
 .mkl-pc-themes .actions {
-    justify-self: right;
+	justify-self: right;
 	padding-right: 1.5em;
-    padding-left: 1em;
+	padding-left: 1em;
 }
 
 .mkl-pc-themes .selection {
-    flex: 1;
+	flex: 1;
 }
 
-.mkl-pc__theme {
-    width: calc(33% - 1em);
-    box-sizing: border-box;
-    background: #FFF;
-    margin-right: 1em;
-    padding: 1em;
-    border-radius: 6px;
+.themes-list .mkl-pc__theme {
+	width: calc(33% - 1em);
+	box-sizing: border-box;
+	background: #FFF;
+	margin-right: 1em;
+	padding: 1em;
+	border-radius: 6px;
 	position: relative;
+	overflow: hidden;
 }
 
-.mkl-pc__theme.selected {
-    box-shadow: 0 0 0 3px #eaeaea, 0 0 0 5px #009688;
+.themes-list .mkl-pc__theme.selected {
+	box-shadow: 0 0 0 3px #eaeaea, 0 0 0 5px #009688;
 }
 
-.mkl-pc__theme .trigger {
+.themes-list .mkl-pc__theme .trigger {
 	display: block;
 	position: absolute;
 	top: 0;
@@ -304,4 +309,98 @@
 	appearance: none;
 	background: transparent;
 	border: none;
+	z-index: 3;
+}
+
+.themes-list .mkl-pc__theme .theme-preview img {
+	display: block;
+	max-width: 100%;
+}
+
+.themes-list .mkl-pc__theme .text {
+	position: absolute;
+	visibility: hidden;
+	transition: .2s all ease-out;
+	top: 100%;
+	height: 100%;
+	width: 100%;
+	background: #fffffff2;
+	left: 0;
+	border-radius: 6px;
+	padding: 1.7em;
+	box-sizing: border-box;
+	opacity: 0;
+	z-index: 2;
+}
+
+.themes-list .mkl-pc__theme:hover .text {
+	top: 0;
+	visibility: visible;
+	opacity: 1;
+}
+
+.themes-list .mkl-pc__theme span.no-preview {
+	display: block;
+	height: 0;
+	padding-bottom: 65%;
+	align-items: center;
+	justify-content: center;
+	line-height: 7;
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: 500;
+	color: #CCC;
+	font-size: 1.4em;
+}
+
+.themes-list .mkl-pc__theme span.no-preview--label {
+	display: block;
+	position: absolute;
+	top: 50%;
+	left: 0;
+	width: 100%;
+	transform: translateY(-50%);
+	text-align: center;
+	text-transform: uppercase;
+	font-weight: 500;
+	font-size: 1.4em;
+	color: #CCC;
+	z-index: 1;
+}
+
+.mkl-pc-themes .selection .mkl-pc__theme img {
+	height: 60px;
+	display: block;
+	margin-left: 10px;
+   
+}
+
+.mkl-pc-themes .selection .mkl-pc__theme {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-self:start;
+	align-self: left;
+	float: left;
+	align-items: center;
+}
+
+.mkl-pc-themes .selection .mkl-pc__theme button.trigger {
+	display: none;
+}
+
+.mkl-pc-themes .selection .mkl-pc__theme .text {
+	margin-left: 1em;
+}
+
+.mkl-pc-themes .selection .mkl-pc__theme .text h4 {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+.mkl-pc-themes .mkl-pc__theme .text .tags {
+	color: #afafaf;
+}
+
+.mkl-pc-themes .selection .mkl-pc__theme span.no-preview {
+	display: none;
 }

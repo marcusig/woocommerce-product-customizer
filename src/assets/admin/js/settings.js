@@ -5,53 +5,85 @@
 		$(this).toggleClass( 'open' );
 	})
 
-	var themes = {
+	var Themes = {
 		init: function() {
 			this.$input = $( 'input[name="mkl_pc__settings[mkl_pc__theme]"]' );
 			this.selection = this.$input.val();
-			$( '.theme_setting button.mkl-pc--change-theme' ).on( 'click', this.show_selector.bind( this ) );
+			var themeData = JSON.parse($('script#mkl_pc_themes_data').text());
+
+			if ( ! themeData ) return;
+
+			this.data = new Backbone.Collection( themeData );
+			this.selected_theme = new Backbone.Model( { theme_id: this.selection } );
+
+			var settingView = new this.settingView( { el: $( '.theme_setting_view' ) } );
+
+			// Set the value
+			this.selected_theme.on( 'change:theme_id', function( m, value ) {
+				Themes.$input.val( value );
+			} );
+
+			if ( this.selection ) {
+				this.selected_model = this.data.get( this.selection );
+				
+				if ( this.selected_model ) this.selected_model.set( 'selected', true );
+			}
 		},
 		show_selector: function() {
 			if ( ! this.selector ) {
-				this.selector = new this.selectorView();
+				this.selector = new this.selectorView( { target: this.$input } );
 				this.selector.$el.appendTo( 'body' );
 			}
 			this.selector.show();
 		},
+		settingView: Backbone.View.extend({
+			template: wp.template( 'mkl-pc-themes-setting-view' ),
+			events: {
+				'click button.mkl-pc--change-theme': 'open_selector',
+				'click button.mkl-pc--reset-theme': 'reset_theme',
+			},
+			initialize: function() {
+				this.listenTo( Themes.selected_theme, 'change', this.render ); 
+				this.render( Themes.selected_theme );
+			},
+			render: function( model ) {
+				var selection = Themes.data.get( model.get( 'theme_id' ) );
+				if ( selection ) {
+					this.$el.html( this.template( selection.attributes ) );
+				} else {
+					this.$el.html( this.template( {} ) );
+				}
+			},
+			open_selector: function() {
+				Themes.show_selector();
+			},
+			reset_theme: function() {
+				Themes.selected_theme.set( 'theme_id', null );
+				Themes.data.get( Themes.selection ).set( 'selected', false );
+			}
+		}),
 		selectorView: Backbone.View.extend({
 			tagName: 'div',
 			className: 'mkl-pc__theme-selector',
 			template: wp.template( 'mkl-pc-themes' ),
 			events: {
 				'click button.cancel': 'hide',
-				'click button.select-theme': 'validate_theme_selection',
+				'click button.select-theme': 'choose_theme',
 			},
-			initialize: function() {
-				this.themes = new Backbone.Collection([
-					{
-						'name': 'the name',
-						'description': 'The description',
-						'img': 'illsd.png'
-					}
-					,{
-						'name': 'the other name',
-						'description': 'The asdescription',
-						'img': 'illsd2.png'
-					}
-				]);
-				console.log(this.themes);
+			initialize: function( options ) {
+				this.options = options;
+				this.listenTo( Themes.data, 'change:selected', this.selection_changed ); 
 				this.render();
 			},
 			render: function() {
 				this.$el.html( this.template() );
-				this.add_themes( this.themes );
+				this.add_themes( Themes.data );
 			},
 			add_themes: function( themes_list ) {
 				themes_list.each( this.add_one, this );
 			},
 			add_one: function( item ) {
-				console.log('addone', item);
-				var th = new themes.themeView({model: item});
+				var th = new Themes.themeView({model: item});
 				th.$el.appendTo( this.$el.find( '.themes-list' ) );
 			},
 			show: function() {
@@ -60,8 +92,18 @@
 			hide: function() {
 				this.$el.hide();
 			},
-			validate_theme_selection: function() {
-				console.log(this.themes.findWhere( 'selected', true ), 'validate_theme_selection');
+			choose_theme: function() {
+				if ( ! this.current_selection ) return;
+				Themes.selected_theme.set( 'theme_id', this.current_selection.id );
+				this.hide();
+			},
+			selection_changed: function( model ) {
+				if ( ! model.get( 'selected' ) ) return;
+				this.current_selection = model;
+				var th = new Themes.themeView( { model: model } );
+				if ( this.selection_preview ) this.selection_preview.remove();
+				this.selection_preview = th;
+				th.$el.appendTo( this.$el.find( 'footer .selection' ) );
 			}
 		}),
 		themeView: Backbone.View.extend({
@@ -74,19 +116,18 @@
 			initialize: function() {
 				this.listenTo( this.model, 'change:selected', this.set_selected ); 
 				this.render();
+				this.set_selected();
 			},
 			render: function() {
-				console.log(this.model);
 				this.$el.html( this.template( this.model.attributes ) );
 			},
 			select_theme: function( event ) {
-				console.log(this.model.collection, 'selecting theme');
 				var current = this.model.collection.findWhere( 'selected', true );
 				if ( current ) current.set( 'selected', false );
 				this.model.set( 'selected', true );
 			},
 			set_selected: function() {
-				this.$el.toggleClass( 'selected', this.model.get( 'selected' ) );
+				this.$el.toggleClass( 'selected', true === this.model.get( 'selected' ) );
 			}
 
 		}),
@@ -123,7 +164,7 @@
 
 	$(document).ready(function() {
 		settings.init();
-		themes.init();
+		Themes.init();
 	});
 
 })(jQuery);

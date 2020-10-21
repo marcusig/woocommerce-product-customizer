@@ -1,5 +1,4 @@
 <?php
-
-add_action( 'mkl_pc_register_themes', function( $themes ) {
-
-} );
+add_filter( 'mkl_pc_bg_image', function( $bg ) {
+	return '';
+}, 30 );

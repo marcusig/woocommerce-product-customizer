@@ -322,6 +322,7 @@ class DB {
 	public function get_front_end_data( $id ) {
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id ); 
+		logdebug('settin mkl_pc_bg_image');
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 

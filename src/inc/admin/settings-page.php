@@ -238,14 +238,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
 			?>
 			<div class="theme_setting">
-				<div class="img">
-					<img src="<?php echo plugin_dir_url( MKL_PC_INCLUDE_PATH ) . 'inc/themes/' . 'default'; ?>/preview.png" alt="">
-				</div>
-				<div class="content">
-					<h4>Theme name</h4>
-					<p>Description of the currently selected theme. This is the default one</p>
-					<button type="button" class="button mkl-pc--change-theme button-primary">Change</button>
-				</div>
+				<div class="theme_setting_view"></div>
 				<input type='hidden' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? $options[$field_options[ 'setting_name' ] ] : ''; ?>'>
 			</div>
 			<?php
@@ -360,21 +353,32 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			$themes = mkl_pc( 'themes' )->get_themes();
 			$data = [];
 			foreach( $themes as $theme_id => $theme_path ) {
-				$theme_data = mkl_pc( 'themes' )->get_theme_info( $theme_path );
-				$base_url = plugins_url('', trailingslashit( $theme_path ) . 'preview.png');
-				$data[] = array_merge(
-					$theme_data,
-					[
-						'id'       => $theme_id,
-						'base_url' => $base_url,
-						'img'      => file_exists( trailingslashit( $theme_path ) . 'preview.png' ) ? $base_url . '/preview.png' : '',
-					]
-				);
+				$data[] = mkl_pc( 'themes' )->get_theme_info( $theme_id );
 			}
 			?>
 
-			<script>
-				
+			<script type="application/json" id="mkl_pc_themes_data">
+				<?php echo json_encode( $data ); ?>	
+			</script>
+			<script type="template/html" id="tmpl-mkl-pc-themes-setting-view">
+				<# if ( data.id ) { #>
+					<div class="img">
+						<# if ( data.img ) { #>
+							<img src="{{data.img}}" alt="<?php _e( 'Theme preview', 'product-configurator-for-woocommerce' ); ?>">
+						<# } else { #>
+							<span class="no-preview"><span class="no-preview--label"><?php _e( 'No preview', 'product-configurator-for-woocommerce' ); ?></span></span>
+						<# } #>
+					</div>
+					<div class="content">
+						<h4>{{data.Name}}</h4>
+						<p>{{data.Description}}</p>
+						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change' ); ?></button>
+						<button type="button" class="button mkl-pc--reset-theme button-link"><?php _e( 'Reset' ); ?></button>
+					</div>
+				<# } else { #>
+						<p><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
+						<button type="button" class="button mkl-pc--change-theme button-primary"><?php _e( 'Select a theme', 'product-configurator-for-woocommerce' ); ?></button>
+				<# } #>
 			</script>
 			<script type="template/html" id="tmpl-mkl-pc-themes">
 				<div class="mkl-pc-themes">
@@ -382,7 +386,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					<footer>
 						<div class="selection"></div>
 						<div class="actions">
-							<button type="button" class="button button-primary select-theme"><?php _e( 'Select the theme', ''); ?></button>
+							<button type="button" class="button button-primary select-theme"><?php _e( 'Select the theme', 'product-configurator-for-woocommerce' ); ?></button>
 							<button type="button" class="button cancel"><?php _e( 'Cancel' ); ?></button>
 						</div>
 					</footer>
@@ -390,10 +394,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			</script>
 			<script type="template/html" id="tmpl-mkl-pc-theme-item">
 				<div class="text">
-					<h4>{{data.name}}</h4>
-					<div>{{data.description}}</div>
+					<h4>{{data.Name}}</h4>
+					<div class="desc">{{data.Description}}</div>
+					<div class="tags">{{data.Tags}}</div>
 				</div>
-				<div>{{data.img}}</div>
+				<div class="theme-preview">
+					<# if ( data.img ) { #>
+						<img src="{{data.img}}" alt="<?php _e( 'Theme preview', 'product-configurator-for-woocommerce' ); ?>">
+					<# } else { #>
+						<span class="no-preview"><span class="no-preview--label"><?php _e( 'No preview', 'product-configurator-for-woocommerce' ); ?></span></span>
+					<# } #>
+				</div>
 				<button class="trigger"></button>
 			</script>
 		<?php }

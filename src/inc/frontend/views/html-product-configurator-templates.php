@@ -18,7 +18,7 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__main_container() {
 ?>
 	<div class="mkl_pc_container">
-		<div class="mkl_pc_bg" style="background-image: url({{data.bg_image}}); "></div>
+		<div class="mkl_pc_bg"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 	</div>
 <?php
 }

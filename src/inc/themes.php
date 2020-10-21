@@ -57,8 +57,11 @@ class Themes {
 	 * @param string $theme_id
 	 * @return void
 	 */
-	public function get_theme( $theme_id ) {
-		return isset( $this->themes[$theme_id] ) ? $this->themes[$theme_id] : false;
+	public function get( $theme_id ) {
+		if ( empty( $this->themes ) ) $this->get_themes();
+		if ( ! isset( $this->themes[$theme_id] ) ) return false;
+		$verified = $this->verify_theme( $theme_id, $this->themes[$theme_id] );
+		return ! is_wp_error( $verified ) ? $this->themes[$theme_id] : false;
 	}
 
 	/**
@@ -79,14 +82,28 @@ class Themes {
 	/**
 	 * Get a theme's information, as stored in the css file
 	 *
-	 * @param string $theme_location
+	 * @param string $theme
 	 * @return array
 	 */
-	public function get_theme_info( $theme_location ) {
-		return get_file_data( trailingslashit( $theme_location ) . 'style.css', array(
-			'Name'        => 'Theme Name',
-			'Description' => 'Description',
-			'Tags'        => 'Tags'
-		), 'mkl_pc_theme' );
+	public function get_theme_info( $theme ) {
+		static $themes = array();
+
+		if ( isset( $themes[$theme] ) ) return $themes[$theme];
+
+		$theme_location = $this->get( $theme );
+		$base_url = plugins_url( '', trailingslashit( $theme_location ) . 'style.css' );
+		$themes[$theme] = array_merge(
+			array(
+				'id'       => $theme,
+				'base_url' => trailingslashit( $base_url ),
+				'img'      => file_exists( trailingslashit( $theme_location ) . 'preview.png' ) ? $base_url . '/preview.png' : '',
+			),
+			get_file_data( trailingslashit( $theme_location ) . 'style.css', array(
+				'Name'        => 'Theme Name',
+				'Description' => 'Description',
+				'Tags'        => 'Tags'
+			), 'mkl_pc_theme' )
+		);
+		return $themes[$theme];
 	}
 }
