@@ -419,7 +419,7 @@ class DB {
 					'escape' => 'esc_html',
 				],
 				'description' => [ 
-					'sanitize' => 'sanitize_textarea_field',
+					'sanitize' => 'wp_filter_post_kses',
 					'escape' => 'wp_kses_post',
 				],
 				'url' => [ 
