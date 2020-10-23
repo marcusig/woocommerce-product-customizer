@@ -70,6 +70,55 @@ function mkl_pc_frontend_configurator_toolbar__choices_section() {
 }
 add_action( 'mkl_pc_frontend_configurator_toolbar', 'mkl_pc_frontend_configurator_toolbar__choices_section', 30 );
 
+/*
+	LAYER CONTENT
+*/
+
+function mkl_pc_frontend_configurator_layer_icon() {
+	?>
+		<i class="img"><# if(data.image.url) { #><img src="{{data.image.url}}" alt="img_{{data.image.id}}" /><# } #></i>
+	<?php
+}
+add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_icon', 5 );
+
+function mkl_pc_frontend_configurator_layer_name() {
+	?>
+		<span class="text layer-name">{{data.name}}</span>
+	<?php
+}
+add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_name', 10 );
+
+function mkl_pc_frontend_configurator_layer_description() {
+	?>
+		<# if ( data.description ) { #><span class="description">{{{data.description}}}</span><# } #>
+	<?php
+}
+add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_description', 20 );
+
+/*
+	CHOICE CONTENT
+*/
+
+function mkl_pc_frontend_configurator_choice_thumbnail() {
+	?>
+		<# if(data.thumbnail) { #><i class="mkl-pc-thumbnail"><span><img src="{{data.thumbnail}}" alt="" /></span></i><# } #>
+	<?php
+}
+add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_thumbnail', 5 );
+
+function mkl_pc_frontend_configurator_choice_name() {
+	?>
+		<span class="text choice-name"><?php echo apply_filters( 'tmpl-pc-configurator-choice-item-label', '{{data.name}}' ) ?></span>
+	<?php
+}
+add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_name', 10 );
+
+function mkl_pc_frontend_configurator_choice_description() {
+	?>
+		<# if ( data.description ) { #><span class="description">{{{data.description}}}</span><# } #>
+	<?php
+}
+add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_description', 20 );
 
 $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 
