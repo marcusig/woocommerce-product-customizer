@@ -88,6 +88,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Added the possibility to display the description in the layer or choice buttons.
 * FEATURE: Added an "inline" configurator shortcode. 
 
 = 1.1.2 - 1/Oct/2020 =

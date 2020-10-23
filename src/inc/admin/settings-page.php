@@ -163,6 +163,28 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'show_choice_description',
+				__( 'Show choices\' description', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'show_choice_description',
+				]
+			);
+
+			add_settings_field(
+				'show_layer_description',
+				__( 'Show layers\' description', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'show_layer_description',
+				]
+			);
+
+			add_settings_field(
 				'show_image_in_cart',
 				__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

@@ -457,10 +457,23 @@ $inner_space: 1em;
  							line-height: 1.3; 
 							color: $primary;
 							font-weight: normal;
+
  							&:hover, &:focus {
  								color: $primary_hover;
 							}
 
+							span.text {
+								display: block;
+								font-weight: 500;
+							}
+							
+							span.description {
+								display: block;
+								font-weight: 300;
+								font-size: .9em;
+								margin-top: .5em;
+							}
+							
 							@media( max-width: $small_screen_width ) {
 								padding: 1em;
 								font-size: 1.2em;
