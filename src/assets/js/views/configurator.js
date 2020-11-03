@@ -142,6 +142,7 @@ PC.options = PC.options || {};
 			this.parent.close(); 
 		}
 	});
+
 	/*
 		PC.fe.views.footer 
 	*/
@@ -156,7 +157,6 @@ PC.options = PC.options || {};
 
 		events: {
 			'click .close-mkl-pc': 'close_configurator',
-			'click .configurator-add-to-cart': 'add_to_cart'
 		},
 
 		render: function() {
@@ -167,6 +167,34 @@ PC.options = PC.options || {};
 				show_qty: PC.fe.currentProductData.product_info.show_qty,
 				formated_price: this.get_price()
 			} ) );
+			this.form = new PC.fe.views.form( { el: this.$el.find( '.form' ) } );
+			return this.$el; 
+		},
+
+		close_configurator: function( event ) {
+			this.parent.close(); 
+		},
+
+		get_price: function() {
+			if ( ! PC.fe.currentProductData.product_info.price ) return false;
+			return PC.utils.formatMoney( parseFloat( PC.fe.currentProductData.product_info.price ) );
+		}
+	});
+
+	/*
+		PC.fe.views.form
+	*/
+	PC.fe.views.form = Backbone.View.extend({
+		initialize: function( options ) {
+			this.parent = options.parent || PC.fe;
+			this.render();
+			return this; 
+		},
+		events: {
+			'click .configurator-add-to-cart': 'add_to_cart'
+		},
+
+		render: function() {
 			return this.$el; 
 		},
 
@@ -179,16 +207,9 @@ PC.options = PC.options || {};
 			} else {
 				$cart.submit();
 			}
-		},
-
-		close_configurator: function( event ) {
-			this.parent.close(); 
-		},
-		get_price: function() {
-			if ( ! PC.fe.currentProductData.product_info.price ) return false;
-			return PC.utils.formatMoney( parseFloat( PC.fe.currentProductData.product_info.price ) );
 		}
 	});
+
 	/*
 		PC.fe.views.layers 
 	*/
@@ -285,7 +306,10 @@ PC.options = PC.options || {};
 				this.options.parent.after( this.choices.$el ); 
 			} else if( 'in' == where ) {
 				this.$el.append( this.choices.$el ); 
+			} else if ( $( where ).length ) {
+				this.choices.$el.appendTo( $( where ) )
 			}
+			wp.hooks.doAction( 'PC.fe.add.choices', this.choices.$el );
 		},
 		show_choices: function( event ) {
 			event.preventDefault(); 
@@ -373,7 +397,20 @@ PC.options = PC.options || {};
 			var data = _.extend({
 				thumbnail: this.model.get_image( 'thumbnail' )
 			} , this.options.model.attributes );
-			this.$el.append( this.template( data ) ); 
+			this.$el.append( this.template( data ) );
+			var $description = this.$el.find( '.description' );
+			if ( $description.length && window.tippy ) {
+				/**
+				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
+				 */
+				var tooltip_options = wp.hooks.applyFilters( 'PC.fe.tooltip.options', {
+					content: $description.html(),
+					allowHTML: true,
+					placement: 'top',
+					zIndex: 10001
+				} );
+				tippy( this.$el.find('.choice-item')[0], tooltip_options );
+			}
 			this.activate();
 			return this.$el;
 		}, 
