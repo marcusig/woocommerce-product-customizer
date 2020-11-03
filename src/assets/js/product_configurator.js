@@ -14,7 +14,6 @@ Backbone.Model.prototype.toJSON = function() {
 	return json;
 };
 
-
 !(function($){
 	'use strict';
 
@@ -27,9 +26,24 @@ Backbone.Model.prototype.toJSON = function() {
 		if( PC.utils._isTouch() ){
 			$( 'body' ).addClass( 'is-touch' );
 		}
+
 		if( PC.utils._isMobile() ){
 			$( 'body' ).addClass( 'is-mobile' );
 		}
+
+		// keyboard-navigation
+
+		$( 'body' ).on( 'keydown', function( e ) {
+			if ( $( this ).hasClass( 'keyboard-navigation' ) ) return;
+			if ( 'Tab' == e.key && ! e.ctrlKey ) {
+				$( this ).addClass( 'keyboard-navigation' );
+			}
+		} );
+
+		$( 'body' ).on( 'click', function( e ) {
+			if ( ! $( this ).hasClass( 'keyboard-navigation' ) ) return;
+			$( this ).removeClass( 'keyboard-navigation' );
+		} );
 
 		PC.fe.product_type = PC.fe.product_type || 'simple';
 

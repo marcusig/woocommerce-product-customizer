@@ -322,7 +322,6 @@ class DB {
 	public function get_front_end_data( $id ) {
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id ); 
-		logdebug('settin mkl_pc_bg_image');
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
@@ -421,7 +420,7 @@ class DB {
 				],
 				'description' => [ 
 					'sanitize' => 'wp_filter_post_kses',
-					'escape' => 'wp_kses_post',
+					'escape' => [ $this, 'escape_description' ],
 				],
 				'url' => [ 
 					'sanitize' => 'esc_url_raw',
@@ -485,6 +484,10 @@ class DB {
 		if ( is_ssl() ) $url = str_ireplace( 'http://', 'https://', $url );
 		$url = esc_url( $url );
 		return $url;
+	}
+
+	public function escape_description( $description ) {
+		return wp_kses_post( stripslashes( $description ) );
 	}
 
 	/**

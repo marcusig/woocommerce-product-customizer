@@ -35,14 +35,14 @@ class Frontend_Woocommerce {
 
 	private function _hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_scripts' ), 50 );
+		add_action( 'mkl_pc_is_loaded', array( $this, 'setup_themes' ), 50 );
 		// add_filter( 'woocommerce_get_price', array( &$this, 'get_price' ), 10, 2 ); 
 		// add_filter( 'woocommerce_cart_item_product' , array( &$this, 'change_item_price' ), 10 , 3); 
 		// 		
 		// variation: include text when prod configurator is opened and no variation is selected
 		add_shortcode( 'mkl_configurator_button', array( $this, 'button_shortcode' ) );
 		add_shortcode( 'mkl_configurator', array( $this, 'configurator_shortcode' ) );
-		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
-		
+		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );		
 	}
 
 	public function register_rest_route() {
@@ -51,6 +51,15 @@ class Frontend_Woocommerce {
 			'callback' => array( $this, 'serve_image' ),
 			'permission_callback' => '__return_true'
 		) );
+	}
+
+	public function setup_themes() {
+		$theme_id = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
+
+		if ( $theme_id ) {
+			$theme = mkl_pc( 'themes' )->get( $theme_id );
+			if ( $theme && file_exists( trailingslashit( $theme ) . 'theme.php' ) ) include_once trailingslashit( $theme ) . 'theme.php';
+		}
 	}
 
 	/**
@@ -137,18 +146,11 @@ class Frontend_Woocommerce {
 	public function load_scripts() {
 		global $post, $wp_version; 
 
-		if ( ! $this->load_configurator_on_page() ) return;
-
-		$theme_id = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
-
-		if ( $theme_id ) {
-			$theme = mkl_pc( 'themes' )->get( $theme_id );
-			logdebug(trailingslashit( $theme ) . 'theme.php');
-			logdebug(file_exists(trailingslashit( $theme ) . 'theme.php'));
-			if ( $theme && file_exists( trailingslashit( $theme ) . 'theme.php' ) ) include_once trailingslashit( $theme ) . 'theme.php';
-		}
+		
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
+		
+		if ( ! $this->load_configurator_on_page() ) return;
 
 		wp_enqueue_script( 'wp-api' );
 		$wp_scripts = wp_scripts();
@@ -185,9 +187,16 @@ class Frontend_Woocommerce {
 		// To include potential other scripts BEFORE the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_before' );
 
+		wp_register_script( 'mkl_pc/js/vendor/popper', 'https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js', [], '2', true );
+		wp_register_script( 'mkl_pc/js/vendor/tippy', 'https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js', [ 'mkl_pc/js/vendor/popper' ], '6', true );
+
+		$deps = array('jquery', 'backbone', 'wp-util', 'wp-hooks', 'mkl_pc/js/views/configurator' );
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
+		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) ) {
+			$deps[] = 'mkl_pc/js/vendor/tippy';
+		}
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ), filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator.js' ) , true );
-		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ), filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator.js' ) , true );
+		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator.js' ) , true );
 
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
@@ -209,6 +218,7 @@ class Frontend_Woocommerce {
 
 		$stylesheet = MKL_PC_ASSETS_URL . 'css/product_configurator.css';
 		$version = filemtime( MKL_PC_ASSETS_PATH . 'css/product_configurator.css' );
+		$theme_id = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
 		if ( $theme_id && mkl_pc( 'themes' )->get( $theme_id ) ) {
 			$theme_info = mkl_pc( 'themes' )->get_theme_info( $theme_id );
 			$stylesheet = $theme_info['base_url'] . 'style.css';

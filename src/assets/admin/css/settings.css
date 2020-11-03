@@ -229,6 +229,18 @@
 	margin-bottom: 0;
 }
 
+.theme_setting .content p {
+    margin-bottom: 0.7em;
+}
+
+.theme_setting .content p ~ button {
+    margin-right: .5em;
+}
+
+.theme_setting p.no-theme {
+    margin-right: .5em;
+}
+
 .mkl-pc__theme-selector {
 	position: fixed;
 	top: 0;

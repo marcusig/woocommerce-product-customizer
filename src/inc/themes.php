@@ -46,8 +46,8 @@ class Themes {
 	public function get_themes() {
 		if ( empty( $this->themes ) ) {
 			$dirs = glob( MKL_PC_INCLUDE_PATH . 'themes/*', GLOB_ONLYDIR );
+			$this->themes = array_combine( array_map( 'basename', $dirs ), $dirs );
 		}
-		$this->themes = array_combine( array_map( 'basename', $dirs ), $dirs );
 		return apply_filters( 'mkl_pc_installed_themes', $this->themes );
 	}
 

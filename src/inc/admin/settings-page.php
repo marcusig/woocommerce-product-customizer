@@ -22,6 +22,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts') );
 			// add_action( 'woocommerce_settings_' . sanitize_title( $this->settings_id ) . '_after', array( $this, 'wc_settings_after' ), 20 );
 			add_filter( 'plugin_action_links_' . MKL_PC_PLUGIN_BASE_NAME, array( $this, 'plugin_settings_link' ) );
+			add_action( 'update_option_mkl_pc__settings' , array( $this, 'updated_settings' ), 20 );
+		}
+
+		/**
+		 * Purge the cache when the settings were updated
+		 *
+		 * @return void
+		 */
+		public function updated_settings() {
+			if ( ! isset( $_REQUEST['option_page'] ) || 'mlk_pc_settings' != $_REQUEST['option_page'] ) return;
+			mkl_pc( 'cache' )->purge();
 		}
 
 		/**
@@ -376,7 +387,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<button type="button" class="button mkl-pc--reset-theme button-link"><?php _e( 'Reset' ); ?></button>
 					</div>
 				<# } else { #>
-						<p><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
+						<p class="no-theme"><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
 						<button type="button" class="button mkl-pc--change-theme button-primary"><?php _e( 'Select a theme', 'product-configurator-for-woocommerce' ); ?></button>
 				<# } #>
 			</script>

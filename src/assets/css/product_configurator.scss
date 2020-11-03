@@ -625,6 +625,11 @@ $inner_space: 1em;
 								transform: translate(-50%, -50%); 
 							}
 						}
+
+						span.description {
+							display: none;
+						}
+
 						&:hover {
 							i.mkl-pc-thumbnail {
 								opacity: 1;
@@ -811,6 +816,11 @@ $inner_space: 1em;
 				display: inline-block; 
 				margin-right: .5em;
 			}
+
+			.pc_configurator_form {
+				display: inline-block;
+			}
+
 			h3.product-name {
 				line-height: 1;
 				margin: 0;
