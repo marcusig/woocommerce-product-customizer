@@ -18,9 +18,21 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		function __construct() {
 			add_action( 'admin_menu', array( $this, 'register' ) );
 			add_action( 'admin_init', array( $this, 'init' ), 20 );
+			add_action( 'admin_footer', array( $this, 'add_backbone_templates' ), 20 );
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts') );
 			// add_action( 'woocommerce_settings_' . sanitize_title( $this->settings_id ) . '_after', array( $this, 'wc_settings_after' ), 20 );
 			add_filter( 'plugin_action_links_' . MKL_PC_PLUGIN_BASE_NAME, array( $this, 'plugin_settings_link' ) );
+			add_action( 'update_option_mkl_pc__settings' , array( $this, 'updated_settings' ), 20 );
+		}
+
+		/**
+		 * Purge the cache when the settings were updated
+		 *
+		 * @return void
+		 */
+		public function updated_settings() {
+			if ( ! isset( $_REQUEST['option_page'] ) || 'mlk_pc_settings' != $_REQUEST['option_page'] ) return;
+			mkl_pc( 'cache' )->purge();
 		}
 
 		/**
@@ -55,11 +67,11 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			return mkl_pc( 'settings' )->get( $setting, $default );
 		}
 
-		public function display(){
+		public function display() {
 			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( $_REQUEST['tab'] ) : 'settings';
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
-				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' )
+				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),
 			], $active );
 			?>
 			<div class="wrap">
@@ -144,6 +156,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'mkl_pc__theme', 
+				__( 'Configurator theme', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_theme_setting' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_settings_section',
+				[ 
+					'setting_name' => 'mkl_pc__theme'
+				]
+			);
+
 			add_settings_section(
 				'mkl_pc__mlk_pc_general_settings', 
 				__( 'General options', 'product-configurator-for-woocommerce' ), 
@@ -221,6 +244,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			// echo __( 'This section description', 'product-configurator-for-woocommerce' );
 		}
 
+		public function callback_theme_setting( $field_options = [] ) {
+			$options = get_option( 'mkl_pc__settings' );
+			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+			?>
+			<div class="theme_setting">
+				<div class="theme_setting_view"></div>
+				<input type='hidden' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? $options[$field_options[ 'setting_name' ] ] : ''; ?>'>
+			</div>
+			<?php
+		}
+
 		public function callback_text_field( $field_options = [] ) {
 			$options = get_option( 'mkl_pc__settings' );
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
@@ -277,7 +311,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			echo '</div>';
 		}
 
-		private function display_mkl_theme(){ 
+		private function display_mkl_theme() { 
 			
 			?>
 			<div class="mkl-pc-addon mkl-pc-theme">
@@ -321,16 +355,76 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		<?php
 		}
 
-		public function get_addons(){
+		public function get_addons() {
 			$this->addons = include 'addons.php';
 			$this->themes_url = get_transient( 'mkl_pc_themes_url' );
 		}
 
-		public function scripts(){
+		public function add_backbone_templates() { 
+			$themes = mkl_pc( 'themes' )->get_themes();
+			$data = [];
+			foreach( $themes as $theme_id => $theme_path ) {
+				$data[] = mkl_pc( 'themes' )->get_theme_info( $theme_id );
+			}
+			?>
+
+			<script type="application/json" id="mkl_pc_themes_data">
+				<?php echo json_encode( $data ); ?>	
+			</script>
+			<script type="template/html" id="tmpl-mkl-pc-themes-setting-view">
+				<# if ( data.id ) { #>
+					<div class="img">
+						<# if ( data.img ) { #>
+							<img src="{{data.img}}" alt="<?php _e( 'Theme preview', 'product-configurator-for-woocommerce' ); ?>">
+						<# } else { #>
+							<span class="no-preview"><span class="no-preview--label"><?php _e( 'No preview', 'product-configurator-for-woocommerce' ); ?></span></span>
+						<# } #>
+					</div>
+					<div class="content">
+						<h4>{{data.Name}}</h4>
+						<p>{{data.Description}}</p>
+						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change' ); ?></button>
+						<button type="button" class="button mkl-pc--reset-theme button-link"><?php _e( 'Reset' ); ?></button>
+					</div>
+				<# } else { #>
+						<p class="no-theme"><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
+						<button type="button" class="button mkl-pc--change-theme button-primary"><?php _e( 'Select a theme', 'product-configurator-for-woocommerce' ); ?></button>
+				<# } #>
+			</script>
+			<script type="template/html" id="tmpl-mkl-pc-themes">
+				<div class="mkl-pc-themes">
+					<div class="themes-list"></div>
+					<footer>
+						<div class="selection"></div>
+						<div class="actions">
+							<button type="button" class="button button-primary select-theme"><?php _e( 'Select the theme', 'product-configurator-for-woocommerce' ); ?></button>
+							<button type="button" class="button cancel"><?php _e( 'Cancel' ); ?></button>
+						</div>
+					</footer>
+				</div>
+			</script>
+			<script type="template/html" id="tmpl-mkl-pc-theme-item">
+				<div class="text">
+					<h4>{{data.Name}}</h4>
+					<div class="desc">{{data.Description}}</div>
+					<div class="tags">{{data.Tags}}</div>
+				</div>
+				<div class="theme-preview">
+					<# if ( data.img ) { #>
+						<img src="{{data.img}}" alt="<?php _e( 'Theme preview', 'product-configurator-for-woocommerce' ); ?>">
+					<# } else { #>
+						<span class="no-preview"><span class="no-preview--label"><?php _e( 'No preview', 'product-configurator-for-woocommerce' ); ?></span></span>
+					<# } #>
+				</div>
+				<button class="trigger"></button>
+			</script>
+		<?php }
+
+		public function scripts() {
 			$screen = get_current_screen();
-			if ( 'settings_page_mkl_pc_settings' == $screen->id ){
+			if ( 'settings_page_mkl_pc_settings' == $screen->id ) {
 				wp_enqueue_style( 'mlk_pc/settings', MKL_PC_ASSETS_URL.'admin/css/settings.css' , false, MKL_PC_VERSION );
-				wp_enqueue_script( 'mk_pc/settings', MKL_PC_ASSETS_URL.'admin/js/settings.js', array('jquery'), MKL_PC_VERSION, true );
+				wp_enqueue_script( 'mk_pc/settings', MKL_PC_ASSETS_URL.'admin/js/settings.js', array( 'jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
 			}
 		}
 	}

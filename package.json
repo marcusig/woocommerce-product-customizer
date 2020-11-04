@@ -10,10 +10,10 @@
   "license": "ISC",
   "dependencies": {
     "chalk": "^2.4.2",
-    "gulp": "^4.0.0",
+    "gulp": "^4.0.2",
     "gulp-clean": "^0.4.0",
     "gulp-plumber": "^1.2.1",
-    "gulp-sass": "^4.0.2",
+    "gulp-sass": "^4.1.0",
     "gulp-zip": "^4.2.0",
     "run-sequence": "^2.2.1"
   },
@@ -22,6 +22,6 @@
     "gulp-sourcemaps": "^2.6.5",
     "gulp-uglify": "^3.0.2",
     "gulp-util": "^3.0.8",
-    "gulp-wp-pot": "^2.3.6"
+    "gulp-wp-pot": "^2.5.0"
   }
 }

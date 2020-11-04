@@ -27,6 +27,7 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 
 * Configure button: `[mkl_configurator_button product_id=1 classes="button primary"]` or [mkl_configurator_button product_id=1 classes="button primary"]Button name[/mkl_configurator_button]
 * **[NEW]** Inline configurator: `[mkl_configurator product_id=1 classes="container-class something-else"]`
+* **[NEW]** Choose between different themes, or create your own (developer friendly)
 
 **Premium addons**
 
@@ -89,6 +90,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 * FEATURE: Added the possibility to display the description in the layer or choice buttons.
+* FEATURE: Added themes - you can now choose between 4 designs for your configurator (the default and 3 new themes)! 
 * FEATURE: Added an "inline" configurator shortcode. 
 
 = 1.1.2 - 1/Oct/2020 =

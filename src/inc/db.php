@@ -420,7 +420,7 @@ class DB {
 				],
 				'description' => [ 
 					'sanitize' => 'wp_filter_post_kses',
-					'escape' => 'wp_kses_post',
+					'escape' => [ $this, 'escape_description' ],
 				],
 				'url' => [ 
 					'sanitize' => 'esc_url_raw',
@@ -484,6 +484,10 @@ class DB {
 		if ( is_ssl() ) $url = str_ireplace( 'http://', 'https://', $url );
 		$url = esc_url( $url );
 		return $url;
+	}
+
+	public function escape_description( $description ) {
+		return wp_kses_post( stripslashes( $description ) );
 	}
 
 	/**

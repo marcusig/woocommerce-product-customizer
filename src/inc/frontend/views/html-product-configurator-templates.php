@@ -18,7 +18,7 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__main_container() {
 ?>
 	<div class="mkl_pc_container">
-		<div class="mkl_pc_bg" style="background-image: url({{data.bg_image}}); "></div>
+		<div class="mkl_pc_bg"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 	</div>
 <?php
 }
@@ -52,8 +52,22 @@ add_action( 'tmpl-pc-configurator-choice-item-attributes', 'mkl_pc_frontend_conf
 
 
 /**
- * Toolbar
+ * Footer
+*/
+/**
+ * Display the product's name
+ *
+ * @return void
  */
+function mkl_pc_frontend_configurator_footer_section_left_inner__product_name() {
+	echo '<h3 class="product-name">{{data.name}}</h3>';
+}
+
+add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_frontend_configurator_footer_section_left_inner__product_name', 30 );
+
+/**
+ * Toolbar
+*/
 
 function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
