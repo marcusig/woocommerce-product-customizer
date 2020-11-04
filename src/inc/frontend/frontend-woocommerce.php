@@ -218,7 +218,7 @@ class Frontend_Woocommerce {
 
 		$stylesheet = MKL_PC_ASSETS_URL . 'css/product_configurator.css';
 		$version = filemtime( MKL_PC_ASSETS_PATH . 'css/product_configurator.css' );
-		$theme_id = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
+		$theme_id = apply_filters( 'mkl/pc/theme_id', mkl_pc( 'settings' )->get( 'mkl_pc__theme' ) );
 		if ( $theme_id && mkl_pc( 'themes' )->get( $theme_id ) ) {
 			$theme_info = mkl_pc( 'themes' )->get_theme_info( $theme_id );
 			$stylesheet = $theme_info['base_url'] . 'style.css';
