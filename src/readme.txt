@@ -92,6 +92,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FEATURE: Added the possibility to display the description in the layer or choice buttons.
 * FEATURE: Added themes - you can now choose between 4 designs for your configurator (the default and 3 new themes)! 
 * FEATURE: Added an "inline" configurator shortcode. 
+* TWEAK: Possibility to add html classes to the choices
 
 = 1.1.2 - 1/Oct/2020 =
 

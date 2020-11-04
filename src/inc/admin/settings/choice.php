@@ -48,7 +48,11 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					),
 					'priority' => 30,
 				),
-
+				'class_name' => array(
+					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 150,
+				),
 			));
 		}
 	}

@@ -411,6 +411,7 @@ PC.options = PC.options || {};
 				} );
 				tippy( this.$el.find('.choice-item')[0], tooltip_options );
 			}
+			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.activate();
 			return this.$el;
 		}, 
@@ -572,10 +573,19 @@ PC.options = PC.options || {};
 			 
 			var is_active = this.model.get( 'active' );
 			var img = this.model.get_image();
-
-			this.$el.addClass( this.model.collection.getType() );
+			var classes = [];
+			
+			classes.push( this.model.collection.getType() );
+			
 			var layer_class = PC.fe.layers.get( this.model.get( 'layerId' ) ).get( 'class_name' );
-			if ( layer_class ) this.$el.addClass( layer_class );
+			if ( layer_class ) classes.push( layer_class );
+			if ( this.model.get( 'class_name' ) ) classes.push( this.model.get( 'class_name' ) );
+			/**
+			 * Filter the classes applied to the image
+			 */
+			classes = wp.hooks.applyFilters( 'PC.fe.viewer.layer.classes', classes, this );
+			// Add the classes
+			this.$el.addClass( classes.join( ' ' ) );
 			// Default to a transparent image
 			if (!img) img = this.empty_img;
 
