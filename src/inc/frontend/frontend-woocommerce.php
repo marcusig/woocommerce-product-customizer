@@ -35,7 +35,7 @@ class Frontend_Woocommerce {
 
 	private function _hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_scripts' ), 50 );
-		add_action( 'mkl_pc_is_loaded', array( $this, 'setup_themes' ), 50 );
+		add_action( 'template_redirect', array( $this, 'setup_themes' ), 50 );
 		// add_filter( 'woocommerce_get_price', array( &$this, 'get_price' ), 10, 2 ); 
 		// add_filter( 'woocommerce_cart_item_product' , array( &$this, 'change_item_price' ), 10 , 3); 
 		// 		
@@ -54,7 +54,7 @@ class Frontend_Woocommerce {
 	}
 
 	public function setup_themes() {
-		$theme_id = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
+		$theme_id = apply_filters( 'mkl/pc/theme_id', mkl_pc( 'settings' )->get( 'mkl_pc__theme' ) );
 
 		if ( $theme_id ) {
 			$theme = mkl_pc( 'themes' )->get( $theme_id );

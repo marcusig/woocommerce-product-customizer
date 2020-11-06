@@ -204,7 +204,7 @@ $inner_space: 1em;
 
 			.angles-select {
 				position: absolute;
-				left: 2em;
+				left: 4em;
 				top: 2em;
 				z-index: 2;
 				> a {
@@ -320,7 +320,7 @@ $inner_space: 1em;
 					box-shadow: none;
 					width: 20px; height: 20px;
 					padding: 0;
-					top: 30px;
+					top: 2.1em;
 					left: 30px;
 
 					span {
@@ -415,6 +415,7 @@ $inner_space: 1em;
 						height: 2px;
 					}
 				}
+
 				&.scrolled + .form {
 					&::after {
 						height: 60px;
@@ -982,7 +983,7 @@ $inner_space: 1em;
 			> header {
 				> .cancel {
 					@media (min-width: $small_screen_width) {
-						top: 62px;
+						top: calc(2.1em + 32px);
 					}
 				}
 			}
@@ -1013,7 +1014,12 @@ body.configurator_is_inline .mkl_pc {
 
 	.mkl_pc_container {
 		box-shadow: none;
+		.angles-select {
+
+		}
+
 		header .cancel {
+			
 			display: none;
 		}
 	}	
