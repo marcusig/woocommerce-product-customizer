@@ -3,11 +3,15 @@ function mkl_pc_wsb_theme_scripts() {
 	$data = "
 	(function($) {
 		wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/wsb', function( view ) {
-			view.footer.\$el.find( '.form' ).clone().appendTo( view.toolbar.\$el );
+			// duplicate the form to have a different one on mobile or desktop views
+			var clone = view.footer.form.\$el.clone().appendTo( view.toolbar.\$el );
+			view.footer.form_2 = new PC.fe.views.form( { el: clone } );
+
 			view.\$el.on( 'click', '.mkl-pc-show-form', function(e) {
 				view.\$el.toggleClass( 'mobile-show-form' );
 			});
-		}); 
+		});
+
 		wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/wsb', function( view ) {
 			view.\$el.removeClass( 'mobile-show-form' );
 		}); 

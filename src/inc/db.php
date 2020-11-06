@@ -193,6 +193,9 @@ class DB {
 
 		if( $ref_id !== $id && !$this->is_product( $ref_id ) ) return false;
 
+		do_action( 'mkl_pc_before_save_product_configuration_'.$component, $id, $raw_data );
+		do_action( 'mkl_pc_before_save_product_configuration', $id, $raw_data );
+
 		if( 'empty' === $raw_data ) {
 			$data = array();
 		} else {
@@ -320,6 +323,7 @@ class DB {
 	 * @return array
 	 */
 	public function get_front_end_data( $id ) {
+		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id ); 
 		// get the products 'title' attribute
