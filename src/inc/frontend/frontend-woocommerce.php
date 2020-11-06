@@ -212,7 +212,11 @@ class Frontend_Woocommerce {
 				'money_thousand' => esc_attr( wc_get_price_thousand_separator() ),
 				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) )
 			),
-			'config' => apply_filters( 'mkl_pc_js_config', array( 'inline' => false, 'where' => 'out' ) ),
+			'config' => apply_filters( 'mkl_pc_js_config', array(
+				'inline' => false,
+				'where' => 'out',
+				'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg')
+			) ),
 		);
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 

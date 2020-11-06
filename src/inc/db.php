@@ -331,7 +331,6 @@ class DB {
 			$init_data['product_info'], 
 			array(
 				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
-				'bg_image'     => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 				'product_type' => $product->get_type(),
 				'show_qty'     => ! $product->is_sold_individually(),
 				'price'        => wc_get_price_to_display( $product )

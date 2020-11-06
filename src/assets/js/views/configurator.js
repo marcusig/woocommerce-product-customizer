@@ -40,7 +40,7 @@ PC.options = PC.options || {};
 				$('body').append(this.$el);
 				PC.fe.inline = false;
 			}
-			this.$el.append( this.template( { bg_image: this.options.bg_image }) ); 
+			this.$el.append( this.template( { bg_image: wp.hooks.applyFilters( 'PC.fe.config.bg_image', PC.fe.config.bg_image, this ) } ) ); 
 			this.$main_window = this.$el.find( '.mkl_pc_container' ); 
 
 			return this.$el; 
