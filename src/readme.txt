@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.5
-Stable tag: 1.1.2
+Stable tag: 1.2.0
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -89,6 +89,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.0 - 6/Nov/2020 =
+
 * FEATURE: Added the possibility to display the description in the layer or choice buttons.
 * FEATURE: Added themes - you can now choose between 4 designs for your configurator (the default and 3 new themes)! 
 * FEATURE: Added an "inline" configurator shortcode. 
@@ -161,5 +163,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.1.2 IMPORTANT: This version updates the configuratior's data, so it is recommended to backup the database first. It also adds the ability to show the configuration image instead of the default product image in the cart and checkout pages.
+* 1.2.0 IMPORTANT: This version updates some of the html markup, which could affect the layout if you used custom CSS. Please check the frontend after updating. It also adds new features such as themes and inline shortcode!
 
