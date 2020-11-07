@@ -6,7 +6,7 @@
 * Description: Allow customers to configure and customize their products using a live preview powered by a system of layers
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
-* Version: 1.2.0
+* Version: 1.2.1
 *
 * Text Domain: product-configurator-for-woocommerce
 * Domain Path: /languages/
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-define( 'MKL_PC_VERSION', '1.2.0' );
+define( 'MKL_PC_VERSION', '1.2.1' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
