@@ -26,6 +26,7 @@ class Themes {
 	 * @return boolean|WP_Error
 	 */
 	public function register_theme( $theme_id, $location ) {
+		$this->get_themes();
 		if ( ! isset( $this->themes[$theme_id] ) && file_exists( $location ) ) {
 			$is_theme_valid = $this->verify_theme( $theme_id, $location );
 			if ( is_wp_error( $is_theme_valid ) ) return $is_theme_valid;

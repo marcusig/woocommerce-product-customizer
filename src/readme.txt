@@ -50,6 +50,7 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 2. Search for 'Product Configurator for WooCommerce'
 3. Click 'Install Now'
 4. Activate the plugin on the Plugin dashboard
+5. Go to the FAQs and watch the "getting started" video
 
 = Uploading in WordPress Dashboard =
 
@@ -68,6 +69,14 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 4. Activate the plugin in the Plugin dashboard
 
 == Frequently Asked Questions ==
+
+= I just found the plugin, how do I use the configurator? =
+Watch the get started video on Youtube:
+[youtube https://www.youtube.com/watch?v=qz8L-hMJnKs]
+Not enough? Ask your questions <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">on the support forum</a>
+
+= How can I create a custom theme for the configurator? =
+You can use the starter theme here: https://github.com/marcusig/product-configurator-custom-theme
 
 = How can I optimize the layers in the configurator? =
 We recommend using a plugin such as WP-Optimize for all-round performance improvements:

@@ -375,6 +375,7 @@ $inner_space: 1em;
 				height: 100%;
 				overflow-x: hidden;
 				overflow-y: auto;
+				padding: 0;
 				& + .form {
 					position: relative;
 					padding-top: 2em;
