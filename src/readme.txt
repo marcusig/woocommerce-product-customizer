@@ -72,11 +72,12 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 
 = I just found the plugin, how do I use the configurator? =
 Watch the get started video on Youtube:
+
 [youtube https://www.youtube.com/watch?v=qz8L-hMJnKs]
 Not enough? Ask your questions <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">on the support forum</a>
 
 = How can I create a custom theme for the configurator? =
-You can use the starter theme here: https://github.com/marcusig/product-configurator-custom-theme
+Use the starter theme, which you can find on <a href="https://github.com/marcusig/product-configurator-custom-theme">github</a> with simple instructions to get started.
 
 = How can I optimize the layers in the configurator? =
 We recommend using a plugin such as WP-Optimize for all-round performance improvements:
@@ -97,6 +98,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+* TWEAK: Fix custom theme registration system
+* TWEAK: Fix padding in WSB theme
 
 = 1.2.0 - 6/Nov/2020 =
 
