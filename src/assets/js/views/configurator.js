@@ -52,9 +52,11 @@ PC.options = PC.options || {};
 			if( PC.fe.inline ) $('body').addClass('configurator_is_inline');
 			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
 			// Set focus on the first layer
-			setTimeout( function() {
-				this.$el.find('.layers .layer-item').first().focus();
-			}.bind(this), 300);
+			if ( ! PC.fe.inline ) {
+				setTimeout( function() {
+					this.$el.find('.layers .layer-item').first().focus();
+				}.bind(this), 300);
+			}
 			
 			wp.hooks.doAction( 'PC.fe.open', this ); 
 		},
