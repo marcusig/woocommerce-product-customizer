@@ -381,7 +381,8 @@ PC.options = PC.options || {};
 	});
 
 	/*
-		PC.fe.views.choice 	
+		PC.fe.views.choice
+		View for a single choice in the side-bar
 	*/
 	PC.fe.views.choice = Backbone.View.extend({
 		tagName: 'li',
@@ -415,6 +416,11 @@ PC.options = PC.options || {};
 			}
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.activate();
+			/**
+			 * Called after rendering the choice item in the list
+			 */
+			wp.hooks.doAction( 'PC.fe.configurator.choice-item.render', this );
+
 			return this.$el;
 		}, 
 		set_choice: function( event ) {
