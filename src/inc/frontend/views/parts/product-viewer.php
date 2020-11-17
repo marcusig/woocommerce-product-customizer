@@ -4,7 +4,7 @@
 	</div>
 </script>
 <script type="text/html" id="tmpl-mkl-pc-configurator-angles-list">
-	<a href="#"><span><?php _e( 'Change angle', 'product-configurator-for-woocommerce' ) ?></span></a>
+	<a href="#" class="change-angle--trigger"><span><?php _e( 'Change angle', 'product-configurator-for-woocommerce' ) ?></span></a>
 	<ul>
 		
 	</ul>

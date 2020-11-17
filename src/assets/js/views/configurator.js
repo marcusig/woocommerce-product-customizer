@@ -651,9 +651,8 @@ PC.options = PC.options || {};
 			this.col = PC.fe.angles; 
 			return this; 
 		},
- 
 		events: {
-
+			'click .change-angle--trigger': 'on_selector_click'
 		},
 		render: function() { 
 			this.$el.append( this.template() );
@@ -669,7 +668,9 @@ PC.options = PC.options || {};
 			var new_angle = new PC.fe.views.angle( { model: model } ); 
 			this.$list.append( new_angle.$el ); 
 		},
-
+		on_selector_click: function(e) {
+			e.preventDefault();
+		}
 	});
 
 	PC.fe.views.angle = Backbone.View.extend({
