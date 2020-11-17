@@ -10,3 +10,22 @@
 	display: inline-block;
 	vertical-align: middle;
 }
+
+.woocommerce td.product-name dl.variation dt.variation-Configuration {
+    display: block;
+    float: none;
+}
+
+.woocommerce td.product-name dl.variation dd.variation-Configuration {
+    font-size: .8em;
+}
+
+.woocommerce td.product-name dl.variation dd.variation-Configuration div {
+    padding-bottom: .2em;
+}
+
+.woocommerce td.product-name dl.variation dd.variation-Configuration div strong {
+    display: inline-block;
+    width: 80px;
+    text-align: right;
+}
