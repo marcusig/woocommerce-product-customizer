@@ -209,6 +209,7 @@ PC.options = PC.options || {};
 			} else {
 				$cart.submit();
 			}
+			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 		}
 	});
 

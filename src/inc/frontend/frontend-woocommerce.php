@@ -215,7 +215,8 @@ class Frontend_Woocommerce {
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,
 				'where' => 'out',
-				'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg')
+				'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
+				'close_configurator_on_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'close_configurator_on_add_to_cart' )
 			) ),
 		);
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );

@@ -236,7 +236,19 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					],
 				]
 			);
-			
+
+			add_settings_field(
+				'close_configurator_on_add_to_cart',
+				__( 'Close the configurator when pressing "add to cart"', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'close_configurator_on_add_to_cart',
+					'description' => __( 'Helpful if submiting the form via ajax', 'product-configurator-for-woocommerce' )
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
@@ -297,6 +309,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			?>
 			<input type='checkbox' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' <?php checked( $value, 'on' ); ?>>
 			<?php
+			if ( isset( $field_options['description'] ) ) { ?>
+				<span class="field-description"><?php echo $field_options['description']; ?></span>
+			<? }
 		}
 
 		public function display_addons() {

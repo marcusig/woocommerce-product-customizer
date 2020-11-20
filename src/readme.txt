@@ -103,6 +103,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Add the possibility to close the configurator when pressing "add to cart". Useful when using ajax to submit the form.
+
 = 1.2.1 - 7/Nov/2020 =
 
 * TWEAK: Fix custom theme registration system
