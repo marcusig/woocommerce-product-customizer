@@ -1,6 +1,6 @@
 **/.sass-cache/
 **.sublime-**
 **/.DS_Store
-node_modules
-dist
-vendor
+/node_modules
+/dist
+/vendor
