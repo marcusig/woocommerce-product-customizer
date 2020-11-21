@@ -199,6 +199,9 @@ class Frontend_Woocommerce {
 
 		wp_register_script( 'mkl_pc/js/vendor/popper', 'https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js', [], '2', true );
 		wp_register_script( 'mkl_pc/js/vendor/tippy', 'https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js', [ 'mkl_pc/js/vendor/popper' ], '6', true );
+		wp_register_script( 'mkl_pc/js/vendor/pixijs', 'https://unpkg.com/pixi.js@5.3.3/dist/pixi.min.js', [], '5.3.3', true );
+		wp_register_script( 'mkl_pc/js/vendor/as', MKL_PC_ASSETS_URL . 'js/vendor/adaptive-scale.min.js', [], '1.0.0', true );
+		wp_register_script( 'mkl_pc/js/vendor/animejs', 'https://unpkg.com/animejs@3.2.1/lib/anime.min.js', [], '3.2.1', true );
 
 		$deps = array('jquery', 'backbone', 'wp-util', 'wp-hooks', 'mkl_pc/js/views/configurator' );
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
@@ -206,6 +209,9 @@ class Frontend_Woocommerce {
 			$deps[] = 'mkl_pc/js/vendor/tippy';
 		}
 		$deps = apply_filters( 'mkl_pc/js/product_configurator/dependencies', $deps );
+		$deps[] = 'mkl_pc/js/vendor/pixijs';
+		$deps[] = 'mkl_pc/js/vendor/as';
+		$deps[] = 'mkl_pc/js/vendor/animejs';
 		$configurator_deps = apply_filters( 'mkl_pc/js/configurator/dependencies', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ) );
 
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator.js' ) , true );

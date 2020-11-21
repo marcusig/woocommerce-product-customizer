@@ -88,7 +88,7 @@ Backbone.Model.prototype.toJSON = function() {
 				$('input[name=pc_configurator_data]').val( PC.fe.save_data.save() ); 
 				if( $('input[name=pc_configurator_data]').val() == '' ) {
 					event.preventDefault(); 
-					console.log('empty data'); 
+					console.log('empty data');
 				}
 			});
 		});

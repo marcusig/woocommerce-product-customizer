@@ -25,6 +25,7 @@ PC.options = PC.options || {};
 			} catch (err) {
 				console.log ('There was an error when rendering the configurator: ', err);
 			}
+			
 			return this; 
 		},
 		events: {
@@ -75,7 +76,8 @@ PC.options = PC.options || {};
 			if( this.viewer ) this.viewer.remove();
 			if( this.footer ) this.footer.remove();
 
-			this.viewer = new PC.fe.views.viewer( { parent: this } );
+			// this.viewer = new PC.fe.views.viewer( { parent: this } );
+			this.viewer = new PC.fe.views.cviewer( { parent: this } );
 			this.$main_window.append( this.viewer.render() ); 
 			if( arg == 'no-content' ) {
 				this.toolbar = new PC.fe.views.empty_viewer();
@@ -460,6 +462,7 @@ PC.options = PC.options || {};
 			img.src = src;
 		},
 		activate: function() {
+			wp.hooks.doAction( 'PC.fe.configurator.choice-item.activate', this );
 			if( this.model.get('active') === true ) {
 				this.$el.addClass('active');
 				wp.hooks.doAction( 'PC.fe.choice.activate', this );
@@ -690,7 +693,7 @@ PC.options = PC.options || {};
 		},
 		add_all: function() {
 			this.col.each( this.add_one, this ); 
-			this.col.first().set( 'active', true ); 
+			// this.col.first().set( 'active', true ); 
 		},
 		add_one: function( model ) {
 			var new_angle = new PC.fe.views.angle( { model: model } ); 
@@ -722,9 +725,9 @@ PC.options = PC.options || {};
 		change_angle: function( e ) {
 			e.preventDefault();
 			this.model.collection.each(function(model) {
-				model.set('active' , false); 
+				model.set('active' , false);
 			});
-			this.model.set('active', true); 
+			this.model.set('active', true);
 		},
 		activate: function() {
 			if( this.model.get('active') )
@@ -804,4 +807,269 @@ PC.options = PC.options || {};
 			}
 		},
 	};
+
+	PC.fe.views.cviewer = Backbone.View.extend({
+		tagName: 'div',
+		className: 'mkl_pc_viewer',
+		template: wp.template( 'mkl-pc-configurator-viewer' ), 
+		imagesLoading: 0,
+		initialize: function( options ) {
+			this.parent = options.parent || PC.fe; 
+			this.empty_img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+			this.choices = new Backbone.Collection();
+			this.containers = new Backbone.Collection();
+			this.mode = 'slide';
+			this.listenTo( PC.fe.angles, 'change active', this.change_angle );
+			window.addEventListener( 'resize', this.onResize.bind( this ) );
+			wp.hooks.addAction( 'PC.fe.configurator.choice-item.activate', 'mkl/pc', this.change_layer.bind( this ) );
+			wp.hooks.addAction( 'PC.fe.open', 'mkl/pc', function() {
+				PC.fe.angles.first().set( 'active', true );
+				this.onResize('cc');
+				setTimeout( function() {
+					// this.onResize();
+				}
+				.bind(this), 300
+				)
+			}.bind( this ) );
+			return this; 
+		},
+
+		events: {
+			// 'change_layer': 'change_layer' 
+		},
+
+		render: function( ) { 
+			this.$el.append( this.template() );
+			this.$layers = this.$el.find( '.mkl_pc_layers' ); 
+			
+			this.setup_pixi_app();
+
+			if ( PC.fe.contents ) {
+				if ( PC.fe.angles.length > 1 ) {
+					this.angles_selector = new PC.fe.views.angles({ parent: this }); 
+					this.$el.append( this.angles_selector.render() );
+				}
+				// this.add_sprites_to_container();
+			} else {
+				console.log('no content to show.');
+			}
+			return this.$el; 
+
+		}, 
+
+		setup_pixi_app: function() {
+			// Main application
+			var app = new PIXI.Application( {
+				transparent: true,
+				resolution: window.devicePixelRatio || 1,
+				width: 500,
+				height: 500,
+				// resizeTo: this.el,
+				// resizeThrottle: 50,
+			} );
+			this.pApp = app;
+			this.$layers.append(app.view);
+			// create a container per angle
+			PC.fe.angles.each( function( m, i ) {
+				var c = new PIXI.Container();
+				app.stage.addChild( c );
+				var newItem = this.containers.add({
+					angleId: m.id,
+					container: c,
+					maxWidth: 0,
+					maxHeight: 0,
+					number: i + 1
+				});
+				var graphics = new PIXI.Graphics();
+				graphics.lineStyle(0); // draw a circle, set the lineStyle to zero so the circle doesn't have an outline
+				graphics.beginFill(0xDE3249, 1);
+				graphics.drawCircle(c.x, c.y, 50);
+				graphics.endFill();
+				c.addChild(graphics);
+				
+				this.toggle_container( newItem, false );
+			}, this );
+
+			this.process_content();
+
+			return app;
+		},
+		process_content: function() {
+			PC.fe.layers.each( function( layer ) {
+				var choices = PC.fe.getLayerContent( layer.id );
+				if ( ! choices ) {
+					return;
+				}
+				choices.each( this.process_choice, this );
+			}, this );
+			
+		},
+		process_choice: function( model ) {
+			this.choices.add( model );
+			var sprites = new Backbone.Collection();
+			PC.fe.angles.each( function( m ) {
+				var sp = PIXI.Sprite.from( this.empty_img );
+				sp.anchor.set(0.5);
+				sprites.add(
+					{
+						sprite: sp,
+						angleId: m.id
+					}
+				)
+				var c = this.containers.findWhere( { angleId: m.id } ).get( 'container' );
+				c.addChild( sp );
+			}, this );
+
+			model.set( 'sprites', sprites );
+		},
+
+		change_angle: function( angle ) {
+			var c = this.containers.findWhere( { angleId: angle.id } );
+
+			if ( ! angle.get( 'active' ) ) {
+				this.toggle_container( c, false );
+				return;
+			}
+
+			this.currentAngle = angle.id;
+			this.toggle_container( c, true );
+
+			// If the images weren't loaded before, do it now.
+			this.choices.each( function( model ) {
+				var img = this.get_image( model );
+				if ( img.dimensions ) {
+					if ( img.dimensions.width > c.get( 'maxWidth' ) ) c.set( 'maxWidth', img.dimensions.width );
+					if ( img.dimensions.height > c.get( 'maxHeight' ) ) c.set( 'maxHeight', img.dimensions.width );
+				}
+
+				if ( ! angle.get( 'imagesLoaded' ) ) {
+					var src = img.url || this.empty_img;
+					var t = PIXI.Texture.from( src );
+					var sprite = model.get( 'sprites' ).findWhere( { angleId: angle.id } ).get( 'sprite' );
+					if ( img.dimensions ) {
+						sprite.width = img.dimensions.width;
+						sprite.height = img.dimensions.height;
+					}
+					sprite.texture = t;
+				} 
+			}, this );
+
+			angle.set( 'imagesLoaded', true );
+			// this.onResize();
+			// console.log('dims', c.get( 'container' ).width, c.get( 'container' ).height);
+		},
+
+		get_current_angle: function() {
+			return PC.fe.angles.findWhere( { active: true } ) || PC.fe.angles.first();
+		},
+		change_layer: function( v ) {
+			if ( ! v.model.get( 'sprites' ) ) return;
+			// Change the active item on all angles
+			v.model.get( 'sprites' ).each( function( spriteModel ) {
+				anime({
+					targets: spriteModel.get( 'sprite' ),
+					alpha: v.model.get( 'active' ) ? 1 : 0,
+					easing: 'linear',
+					duration: 200
+				});
+			}, this );
+		},
+		get_image: function( choice, image ) {
+			image = image || 'image';
+			var active_angle = this.get_current_angle();
+			var angle_id = active_angle.id;
+			return choice.get( 'images' ).get( angle_id ).get(image);
+		},
+		get_image_url: function( choice, image ) {
+			var img = this.get_image( choice, image );
+			if ( img ) {
+				return img.url;
+			}
+			return '';
+		},
+		take_screenshot: function() {
+			this.pApp.renderer.extract.canvas( this.pApp.stage ).toBlob( function( b ) {
+				var a = document.createElement('a');
+				document.body.append( a );
+				a.download = 'screenshot';
+				a.href = URL.createObjectURL( b );
+				a.click();
+				a.remove();
+			}, 'image/png');
+		},
+		onResize: function(e) {
+			var width = this.$layers.width();
+			var height = this.$layers.height();
+			this.pApp.view.width = width;
+			this.pApp.view.height = height;
+			this.pApp.screen.width = width;
+			this.pApp.screen.height = height;
+
+			if ( 'undefined' === typeof this.currentAngle ) return;
+
+			// var containerModel = this.containers.findWhere( { angleId: this.currentAngle } );
+			var padding = 10;
+			this.containers.each( function( c, i ) {
+				var container = c.get( 'container' )
+				if ( c.get( 'maxWidth' ) ) {
+
+					var options = {
+						container: new AS.Size(width, height),
+						target: new AS.Size(c.get( 'maxWidth' ), c.get( 'maxHeight' ) ),
+						policy: AS.POLICY.ShowAll,
+					};
+		
+					var rect = AS.getScaledRect( options );
+					var use_max = rect.height > c.get( 'maxHeight' );
+					var new_height = use_max ? c.get( 'maxHeight' ) : rect.height;
+					var new_width = use_max ? c.get( 'maxWidth' ) : rect.width;
+					console.log('sz', c.get( 'maxHeight' ), c.get( 'maxWidth' ), height, width, container.height, container.width, rect);
+
+					container.height = new_height;
+					container.width = new_width;
+				}
+
+				container.y = height / 2;
+				if ( 'slide' === this.mode ) {
+					container.x = ( width / 2 ) + ( i * width );
+				} else {
+					container.x = width / 2;
+				}
+			}, this );
+		},
+		toggle_container: function( container_model, toggle ) {
+			if ( 'undefined' === typeof toggle ) toggle = true;
+			var container = container_model.get( 'container' );
+			var mode = this.mode;
+			switch ( mode ) {
+				case 'hide':
+					container.visible = !!toggle;
+					break;
+				case 'fade':
+					anime({
+						targets: container,
+						alpha: toggle ? 1 : 0,
+						easing: 'linear',
+						duration: 200
+					});
+					break;
+				case 'slide':
+					if (toggle) {
+						var currentIndex = container_model.get( 'number' );
+						// this.containers
+						this.containers.each( function( c ) {
+							var posX = ( this.$layers.width() / 2 ) + this.$layers.width() * ( c.get( 'number' ) - currentIndex );
+							anime({ 
+								targets: c.get( 'container' ),
+								x: posX,
+								easing: 'easeInOutQuart',
+								duration: 400
+							});
+						}, this );
+					}
+
+					break;
+			}
+		},
+	});
 })(jQuery);
