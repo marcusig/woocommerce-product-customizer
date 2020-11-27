@@ -99,7 +99,7 @@ PC.views.state = Backbone.View.extend({
 
 		this.options = args.options || {};
 
-		if( State = PC.views[this.model.get('menu_id')] ) {
+		if ( State = PC.views[this.model.get( 'menu_id' )] ) {
 			// modal-frame-target //mkl-pc-frame-title
 			// Defines which is the target for the main frame .modal-frame-target
 			if( this.state ) this.state.remove();

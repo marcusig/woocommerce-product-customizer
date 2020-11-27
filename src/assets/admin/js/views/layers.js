@@ -200,7 +200,7 @@ TODO:
 		edit: function( event ) { 
 			var editView = this.edit_view();
 			if( !event ) {
-				if( !this.form ) {
+				if( ! this.form ) {
 					this.options.collection.each(function(model) {
 						model.set('active' , false);
 					});

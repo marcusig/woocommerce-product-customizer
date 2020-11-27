@@ -144,8 +144,8 @@ PC.views = PC.views || {};
 		},
 
 		create: function( e ) {
-			if( event.type == 'keypress' ) {
-				if ( event.which !== 13 ) {
+			if( e.type == 'keypress' ) {
+				if ( e.which !== 13 ) {
 					return;
 				}
 			}

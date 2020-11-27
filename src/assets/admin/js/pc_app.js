@@ -175,6 +175,13 @@ Backbone.Model.prototype.toJSON = function() {
 
 			return parseInt( maxw.id ) + 1;
 			
+		},
+
+		get_new_order: function( collection ){
+			if ( ! collection.length ) {
+				return 1;
+			}
+			return collection.last().get( 'order' ) + 1;
 		}
 
 

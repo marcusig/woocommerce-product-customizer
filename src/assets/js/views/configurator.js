@@ -207,7 +207,7 @@ PC.options = PC.options || {};
 			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
 				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 			} else {
-				$cart.submit();
+				$cart.trigger( 'submit' );
 			}
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 		}

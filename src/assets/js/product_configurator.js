@@ -95,7 +95,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ){
 
-			$('form.cart').find('button').removeAttr('disabled'); 
+			$('form.cart').find('button').prop( 'disabled', false ); 
 
 			$( 'input[name=quantity]' ).on( 'change',function(e) {
 				var q = $(this).val();
