@@ -33,12 +33,12 @@ class Cache {
 	public function get_config_file( $product_id, $generate_file = true ) {
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id );
-		if ( file_exists( $location['path'] . '/' . $file_name ) ) {
-			return $location['url'].'/'.$file_name;
+		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) {
+			return trailingslashit( $location['url'] ) . $file_name;
 		} elseif ( $generate_file ) {
 			$this->save_config_file( $product_id );
 		}
-		if (file_exists($location['path'].'/'.$file_name)) return $location['url'].'/'.$file_name;
+		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) return trailingslashit( $location['url'] ) . $file_name;
 		return admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $product_id );
 	}
 
@@ -49,15 +49,15 @@ class Cache {
 		}
 		$upload_dir = wp_upload_dir();
 		return apply_filters( 'mkl_pc_cache_dir', array(
-			'path' => $upload_dir['basedir'] . '/',
-			'url' => $upload_dir['baseurl'] . '/'
+			'path' => trailingslashit( $upload_dir['basedir'] ) . $dir,
+			'url' => trailingslashit( $upload_dir['baseurl'] ) . $dir
 		));
 	}
 
 	public function save_config_file( $product_id ) {
 		$config_data = Plugin::instance()->db->escape( Plugin::instance()->db->get_front_end_data( $product_id ) );
 		$data =  'var PC = PC || {};'.PHP_EOL;
-		$data .=  'PC.productData = PC.productData || {};'.PHP_EOL;
+		$data .= 'PC.productData = PC.productData || {};'.PHP_EOL;
 		$data .= 'PC.productData.prod_'.$product_id.' = ' . json_encode( $config_data ) . ';'.PHP_EOL;
 
 		$location = $this->get_cache_location();

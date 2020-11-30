@@ -203,6 +203,14 @@ PC.options = PC.options || {};
 		add_to_cart: function() { 
 			var $cart = $( 'form.cart' );
 			var data = PC.fe.save_data.save();
+
+			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', [] );
+			if ( errors.length ) {
+				// show errors and prevent adding to cart
+				console.log( errors );
+				return;
+			}
+
 			$cart.find( 'input[name=pc_configurator_data]' ).val( data );
 			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
 				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );

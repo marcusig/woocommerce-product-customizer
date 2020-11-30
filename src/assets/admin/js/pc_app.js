@@ -94,7 +94,6 @@ Backbone.Model.prototype.toJSON = function() {
 
 		error_saving: function( key, state, a ) {
 			this.saving--;
-			console.log(key, state, a);
 		},
 		saved_all: function( key, state ) {
 			this.saving--;
@@ -111,7 +110,7 @@ Backbone.Model.prototype.toJSON = function() {
 		},
 		save: function( what, collection, options ) {
 			var save_id = this.id;
-			if ( this.options.product_type == 'variation' && what == 'content' ) {
+			if ( this.options.product_type == 'variation' && ( 'content' == what || 'conditions' == what  ) ) {
 				save_id = this.options.product_id;
 			}
 			// If we do not have the necessary nonce, fail immeditately.

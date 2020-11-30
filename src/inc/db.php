@@ -196,7 +196,7 @@ class DB {
 		do_action( 'mkl_pc_before_save_product_configuration_'.$component, $id, $raw_data );
 		do_action( 'mkl_pc_before_save_product_configuration', $id, $raw_data );
 
-		if( 'empty' === $raw_data ) {
+		if ( 'empty' === $raw_data ) {
 			$data = array();
 		} else {
 			// Remove active state. Defaults to first item

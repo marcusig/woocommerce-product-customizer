@@ -8,7 +8,7 @@ PC.views = PC.views || {};
 		className: 'state content-state',
 		template: wp.template( 'mkl-pc-content' ),
 		events: {
-			'save-state': 'save_content',
+			// 'save-state': 'save_content',
 		},
 		collectionName: 'content',
 		initialize: function( options ) {
