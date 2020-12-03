@@ -205,7 +205,10 @@ class Frontend_Woocommerce {
 		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) ) {
 			$deps[] = 'mkl_pc/js/vendor/tippy';
 		}
-		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ), filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator.js' ) , true );
+		$deps = apply_filters( 'mkl_pc/js/product_configurator/dependencies', $deps );
+		$configurator_deps = apply_filters( 'mkl_pc/js/configurator/dependencies', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ) );
+
+		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator.js' ) , true );
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator.js' ) , true );
 
 		$args = array(

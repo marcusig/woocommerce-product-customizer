@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.6
-Stable tag: 1.2.1
+Stable tag: 1.2.3
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -103,6 +103,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.3 - 30/Nov/2020 =
+
+* FIX: Fixed cache purge function
 * TWEAK: Add the possibility to close the configurator when pressing "add to cart". Useful when using ajax to submit the form.
 
 = 1.2.1 - 7/Nov/2020 =
@@ -184,5 +187,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.1 IMPORTANT: This version updates some of the html markup, which could affect the layout if you used custom CSS. Please check the frontend after updating. It also adds new features such as themes and inline shortcode!
+* 1.2.3 IMPORTANT bug fix: Update to the latest version to prevent a bug from deleting the contents of wp-content/uploads
 

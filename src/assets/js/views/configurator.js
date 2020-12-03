@@ -200,7 +200,7 @@ PC.options = PC.options || {};
 			return this.$el; 
 		},
 
-		add_to_cart: function() { 
+		add_to_cart: function( e ) { 
 			var $cart = $( 'form.cart' );
 			var data = PC.fe.save_data.save();
 
@@ -208,6 +208,7 @@ PC.options = PC.options || {};
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
 				console.log( errors );
+				alert( errors.join( "\n" ) );
 				return;
 			}
 
@@ -450,11 +451,13 @@ PC.options = PC.options || {};
 			var img = new Image();
 			img.src = src;
 		},
-		activate: function() { 
+		activate: function() {
 			if( this.model.get('active') === true ) {
 				this.$el.addClass('active');
+				wp.hooks.doAction( 'PC.fe.choice.activate', this );
 			} else {
 				this.$el.removeClass('active');
+				wp.hooks.doAction( 'PC.fe.choice.deactivate', this );
 			}
 		},
 	});

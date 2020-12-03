@@ -118,8 +118,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				<?php do_action( 'mkl_pc_settings_content_after', $active ); ?>
 
 			</div>
-			<?php 
-		} 
+			<?php
+		}
 
 		public function init() {
 
@@ -311,7 +311,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
 				<span class="field-description"><?php echo $field_options['description']; ?></span>
-			<? }
+			<?php }
 		}
 
 		public function display_addons() {

@@ -21,7 +21,7 @@ Backbone.Model.prototype.toJSON = function() {
 	PC.fe.config = _.extend( {}, PC.fe.config);
 	PC.fe.products_content = PC.fe.products_content || [];
 
-	$(document).ready(function() {
+	$(function() {
 		// adds classes to body
 		if( PC.utils._isTouch() ){
 			$( 'body' ).addClass( 'is-touch' );

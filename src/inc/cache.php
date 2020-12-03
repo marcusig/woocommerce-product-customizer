@@ -88,6 +88,6 @@ class Cache {
 
 			$file = readdir($handle);
 
-		}		
+		}
 	}
 }

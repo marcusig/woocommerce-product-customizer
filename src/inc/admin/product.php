@@ -217,13 +217,13 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone'), MKL_PC_VERSION, true );
 				}
 
-				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', array(
+				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', array(
 					'media_title' => __('Select a picture', 'product-configurator-for-woocommerce' ),
 					'media_select_button' => __('Choose', 'product-configurator-for-woocommerce' ),
 					'layers_new_placeholder' => __('New Layer Name', 'product-configurator-for-woocommerce'),
 					'angles_new_placeholder' => __('New Angle Name', 'product-configurator-for-woocommerce'),
 					'choice_new_placeholder' => __('New Choice Name', 'product-configurator-for-woocommerce'),
-				));
+				) ) );
 
 				do_action( 'mkl_pc_admin_scripts_product_page' );
 			}

@@ -22,7 +22,7 @@ function mkl_pc_float_theme_scripts() {
 				},
 				500
 			);
-		} ); 
+		}, 20 ); 
 
 		wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/float', function( view ) {
 			view.\$el.removeClass( 'mobile-show-form' );
