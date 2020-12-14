@@ -326,7 +326,7 @@ PC.utils = PC.utils || {
 	},
 	_isMobile: function() {
 		var isTouchDevice = navigator.userAgent.match(/(iPhone|iPod|iPad|Android|playbook|silk|BlackBerry|BB10|Windows Phone|Tizen|Bada|webOS|IEMobile|Opera Mini)/);
-		return isTouchDevice;
+		return !! isTouchDevice;
 	},
 	formatMoney: function ( amount ) {
 		if ( 'undefined' === typeof accounting ) return amount;

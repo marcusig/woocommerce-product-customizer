@@ -284,6 +284,7 @@ PC.options = PC.options || {};
 			this.options = options || {};
 			this.layer_type = this.model.get('type');
 			this.listenTo( this.options.model, 'change active', this.activate );
+			wp.hooks.doAction( 'PC.fe.layers_list_item.init', this );
 		},
 
 		events: {
@@ -400,6 +401,7 @@ PC.options = PC.options || {};
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.model, 'change:active', this.activate );
+			wp.hooks.doAction( 'PC.fe.choice.init', this );
 		},
 		events: {
 			'mousedown .choice-item': 'set_choice',
@@ -442,9 +444,15 @@ PC.options = PC.options || {};
 			
 			// If the element is disabled, exit.
 			if ( $( event.currentTarget ).prop( 'disabled' ) ) return;
-			
 			// Activate the clicked item
 			this.model.collection.selectChoice( this.model.id );
+			
+			// Maybe close the choice list
+			if ( PC.fe.config.close_choices_when_selecting_choice && ( $( 'body' ).is('.is-mobile' ) || PC.utils._isMobile() ) ) {
+				var layer = PC.fe.layers.get( this.model.get( 'layerId' ) );
+				if ( layer ) layer.set('active', false);
+			}
+			wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 		},
 		preload_image: function() {
 			var src = this.model.get_image( 'thumbnail' );
@@ -538,6 +546,7 @@ PC.options = PC.options || {};
 			this.listenTo( PC.fe.angles, 'change active', this.render );
 
 			this.parent = options.parent || PC.fe;
+			wp.hooks.doAction( 'PC.fe.choice-img.init', this );
 
 			this.render(); 
 
@@ -549,7 +558,6 @@ PC.options = PC.options || {};
 					wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
 				}
 			}.bind( this ));
-
 			return this; 
 		},
 
@@ -582,7 +590,7 @@ PC.options = PC.options || {};
 			this.is_loaded = false;
 			this.listenTo( this.model, 'change active', this.change_layer );
 			this.listenTo( PC.fe.angles, 'change active', this.change_angle );
-
+			wp.hooks.doAction( 'PC.fe.choice-img.init', this );
 			var is_active = this.model.get( 'active' );
 
 			this.render(); 

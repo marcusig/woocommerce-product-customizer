@@ -5,7 +5,7 @@ function mkl_pc_dark_theme_scripts() {
 		wp.hooks.addFilter( 'PC.fe.tooltip.options', 'MKL/PC/Themes/dark-mode', function( options ) {
 			options.theme = 'invert';
 			return options;
-		});
+		}, 20);
 	})();
 	";
 	wp_add_inline_script( 'mkl_pc/js/views/configurator', $data, 'before' );

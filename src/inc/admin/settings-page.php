@@ -249,6 +249,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'close_choices_when_selecting_choice',
+				__( 'On mobile, close the choices when making a selection', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'close_choices_when_selecting_choice',
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
@@ -273,6 +284,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			?>
 			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='text' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? $options[$field_options[ 'setting_name' ] ] : ''; ?>'>
 			<?php
+			if ( isset( $field_options['description'] ) ) { ?>
+				<p class="field-description"><?php echo $field_options['description']; ?></p>
+			<?php }
 		}
 
 		public function callback_select( $field_options = [] ) {
@@ -287,6 +301,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				} ?>
 			</select>
 			<?php
+			if ( isset( $field_options['description'] ) ) { ?>
+				<span class="field-description"><?php echo $field_options['description']; ?></span>
+			<?php }
 		}
 
 		public function callback_radio( $field_options = [] ) {
@@ -301,6 +318,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				} ?>
 			</fieldset>
 			<?php
+			if ( isset( $field_options['description'] ) ) { ?>
+				<span class="field-description"><?php echo $field_options['description']; ?></span>
+			<?php }
 		}
 
 		public function callback_checkbox( $field_options = [] ) {

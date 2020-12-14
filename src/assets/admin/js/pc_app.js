@@ -59,14 +59,12 @@ Backbone.Model.prototype.toJSON = function() {
 
 			switch ( key ) {
 				case 'content':
-					return this.get_product().get('content');
-					break;
+				case 'conditions':
+					return this.get_product().get( key );
 				case 'layers':
 				case 'angles':
 				default :
 					return this.admin[ key ];
-					break;
-
 			}
 		},
 
@@ -109,6 +107,10 @@ Backbone.Model.prototype.toJSON = function() {
 
 		},
 		save: function( what, collection, options ) {
+			if ( ! what || ! collection ) {
+				console.log( 'A collection name and data must be set in order to save proprerly.' );
+				return;
+			}
 			var save_id = this.id;
 			if ( this.options.product_type == 'variation' && ( 'content' == what || 'conditions' == what  ) ) {
 				save_id = this.options.product_id;
