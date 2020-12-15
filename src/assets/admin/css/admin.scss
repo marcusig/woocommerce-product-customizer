@@ -333,7 +333,7 @@ body.pc-modal-opened {
 		color: #a0a5aa;
 
 		position: absolute;
-		top: calc(50% - 7px);
+		top: 18px;
 		left: 10px;
 		height: 16px;
 		font-size: 16px;
@@ -348,11 +348,25 @@ body.pc-modal-opened {
 			line-height: 1;
 		}
 	}
-	// }	
+
+	.group-list {
+		margin: 0.7em;
+		border: 1px solid #CCC;
+		&:empty {
+			padding: 14px;
+			border: 2px dashed #CCC;
+		}
+	}
+
 	&.active {
-		background-color: #0073aa;
 		position: relative;
-		color: #fff;
+		& > button {
+			background-color: #0073aa;
+			color: #fff;
+			h3 {
+				color: #fff;
+			}
+		}
 		
 		&::after {
 			right: 0;
@@ -365,9 +379,6 @@ body.pc-modal-opened {
 			border-right-color: #ffffff;
 			top: 50%;
 			margin-top: -8px;						
-		}
-		h3 {
-			color: #fff;
 		}
 	}
 

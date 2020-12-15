@@ -29,6 +29,12 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 		 */
 		public function get_default_settings() {
 			return apply_filters('mkl_pc_choice_default_settings', array(
+				'is_group' => array(
+					'label' => __('Use as group', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 5,
+					'condition' => '!data.not_a_choice'
+				),
 				'name' => array(
 					'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
@@ -47,6 +53,8 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 						'placeholder' => __('Extra Price is available as an addon', 'product-configurator-for-woocommerce'),
 					),
 					'priority' => 30,
+					'condition' => '!data.is_group'
+
 				),
 				'class_name' => array(
 					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),

@@ -225,10 +225,10 @@ CONTENT TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-choices">
 	<button class="active-layer"></button>
 	<div class="structure-toolbar">
-		<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
+		<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
 		<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
 	</div>
-	<div class="mkl-list choices ui-sortable">
+	<div class="mkl-list choices ui-sortable sortable-list">
 	</div>
 </script>
 
@@ -239,6 +239,9 @@ CONTENT TEMPLATES
 			{{data.name}}
 		</h3>
 	</button>
+	<# if ( data.is_group ) { #>
+		<div class="choices group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
+	<# } #>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-form">
@@ -256,15 +259,18 @@ CONTENT TEMPLATES
 				</div>
 			</div>
 		</div>
-
 		<div class="options">
-			<h3>Informations</h3>
+		<h3>Informations</h3>
 			<?php do_action('mkl_pc_choice_fields') ?>
 			<div class="clear"></div>
 		</div>
 
 		<div class="options">
+			<# if ( data.is_group ) { #>
+			<h3><?php _e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
+			<# } else { #>
 			<h3><?php _e( 'Pictures', 'product-configurator-for-woocommerce' ) ?></h3>
+			<# } #>
 			<div class="views">
 				
 			</div>
@@ -273,6 +279,7 @@ CONTENT TEMPLATES
 </script>
 <script type="text/html" id="tmpl-mkl-pc-content-choice-pictures">
 	<div class="pictures">
+		<# if ( ! data.is_group ) { #>
 		<h4>{{data.angle_name}}</h4>
 		<div class="picture main-picture" data-edit="image">
 			<span><?php _e( 'Main Image', 'product-configurator-for-woocommerce' ); ?></span>
@@ -295,8 +302,9 @@ CONTENT TEMPLATES
 				<a class="remove-attachment" href="#"><span class="dashicons dashicons-no"></span><span class="screen-reader-text"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></span></a>
 			<# } #>
 		</div>
+		<# } #>
 		<div class="picture thumbnail-picture" data-edit="thumbnail">
-			<span><?php _e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span>
+			<# if ( ! data.is_group ) { #><span><?php _e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span><# } #>
 			<# if(data.thumbnail.url != '' ) { #>
 			<img class="edit-attachment" src="{{data.thumbnail.url}}" alt="">
 			<# } else { #>

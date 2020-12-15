@@ -6,6 +6,7 @@ PC.views = PC.views || {};
 	// 	collectionName: 'choices', 
 	// });
 
+	PC.groups = ['A group', 'an other group', 'grouppy'];
 	PC.views.choices = Backbone.View.extend({
 		// className: 'choices-list',
 		tagName: 'div',
@@ -33,6 +34,7 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
 			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
+			this.listenTo( this.col, 'change:is_group', this.render);
 			this.render(); 
 		},
 
@@ -40,7 +42,6 @@ PC.views = PC.views || {};
 			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
 			'keypress .structure-toolbar input': 'create',
-			'update-sort': 'update_sort',
 		},
 
 		remove_item: function( item ) {
@@ -49,15 +50,16 @@ PC.views = PC.views || {};
 
 		render: function() {
 			this.$el.empty();
-			this.$el.html( this.template({ input_placeholder: PC.lang.choice_new_placeholder }) );
+			this.$el.html( this.template( this.model.attributes ) );
 
 			this.$active_layer = this.$('.active-layer');
 			var al_button = wp.template('mkl-pc-content-layer-back-link');
 			this.$active_layer.html( al_button( this.model.attributes ) );
 			this.$new_input = this.$('.structure-toolbar input'); 
-			this.$list = this.$('.choices'); 
+			this.$list = this.$('.choices');
 			this.$form = this.state.$('.choice-details'); 
-			this.add_all( this.col ); 
+			this.add_all( this.col );
+			this.setup_sortable();
 			return this;
 		},
 
@@ -73,7 +75,16 @@ PC.views = PC.views || {};
 		add_one: function( model ) {
 			var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
 			this.items.push( new_choice );
-			this.$list.append( new_choice.render().el );
+			if ( model.get( 'parent' ) ) {
+				var target = this.$( '.choices[data-item-id=' + model.get( 'parent' ) + ']');
+				if ( target.length ) {
+					target.append( new_choice.render().el );
+				} else {
+					this.$list.append( new_choice.render().el );
+				}
+			} else {
+				this.$list.append( new_choice.render().el );
+			}
 		},
 
 		remove_one: function( model ) {
@@ -84,52 +95,39 @@ PC.views = PC.views || {};
 		},
 
 		add_all: function( collection ){
-			// this.$list.empty();
-
 			collection.each( this.add_one, this );
-			// .ui-sortable-handle 
-			var that = this;
-			if ( ! this.$list.sortable( 'instance' ) ) {
-				this.$list.sortable({
-					containment:          'parent',
-					items:                '.mkl-list-item',
-					placeholder:          'mkl-list-item__placeholder',
-					tolerance:            'pointer',
-					cursor:               'move',
-					axis:                 'y',
-					handle:               '.sort',
-					scrollSensitivity:    40,
-					forcePlaceholderSize: true,
-					helper:               'clone',
-					opacity:              0.65,
-					stop: 				  function(event, s) {
-						s.item.trigger( 'drop', s.item.index() );
-					}
-				});
-			} else {
-				this.$list.sortable( 'refresh' );
-			}
 		},
 
-		update_sort: function( event, changed_model, position ) {
-
-			// this.col.remove(changed_model);
-
-			this.col.each(function (model, index) {
-				var ordinal = index; 
-				if (index >= position) { 
-					ordinal += 1;
+		setup_sortable: function() {
+			this.$('.choices').sortable({
+				// containment:          'parent',
+				items:                '.mkl-list-item',
+				placeholder:          'mkl-list-item__placeholder',
+				// tolerance:            'pointer',
+				cursor:               'move',
+				axis:                 'y',
+				handle:               '.sort',
+				// scrollSensitivity:    40,
+				forcePlaceholderSize: true,
+				helper:               'clone',
+				opacity:              0.65,
+				connectWith: '.sortable-list',
+				stop: function(event, s) {
+					this.update_sorting();
+				}.bind( this ),
+			});
+		},
+		update_sorting: function() {
+			this.$( '.choices .mkl-list-item' ).each( function( i, listItem ) {
+				var parent = false;
+				if ( $( listItem ).closest( '.group-list' ).length ) {
+					parent = $( listItem ).closest( '.group-list' ).data( 'itemId' );
 				}
+				$( listItem ).trigger( 'sort', [i, parent] );
+			} );
 
-				model.set('order', ordinal); 
-	        });
-			changed_model.set('order', position);
-			
-			// this.col.add( changed_model, { at: position } );
 			this.col.sort( { silent: true } );
 			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
-			// this.render();
-			// this.add_all( this.col );
 		},
 
 		hide_choices: function( e ) {
@@ -179,9 +177,39 @@ PC.views = PC.views || {};
 
 	PC.views.choice = PC.views.layer.extend( {
 		edit_view: function(){ return PC.views.choiceDetails; },
+		events: {
+			'click > button' : 'edit',
+			'drop': 'drop',
+			'sort': 'sort',
+		},
 		template: wp.template('mkl-pc-content-choice-list-item'),
-	} );
+		sort: function( event, index, parent ) {
+			if ( parent && this.model.get( 'is_group' ) ) return;
+			this.model.set( { order: index, parent: parent } );
+		},
+		drop: function( event, index, a ) {
+			// prevent this from happening twice
+			if ( this.dropped && this.dropped == event.timeStamp ) return;
+			this.dropped = event.timeStamp;
 
+			// Remove the active state after drop
+			if( this.model.get('active') === true ) {
+				this.model.set('active', false);
+			}
+
+			var has_group = this.$el.closest( '.group-list' ).length;
+
+			if ( ! has_group && event.target == this.el ) {
+				// triggers the re-order event
+				$( event.target ).trigger( 'update-sort', [this.model, index, 0] );
+			} else if ( event.target == this.el ) {
+				$( event.target ).trigger( 'update-sort', [this.model, index, 1] );
+			}
+
+			// Remove the form view
+			if( this.form ) this.form.remove();
+		},
+	} );
 
 	PC.views.choiceDetails = Backbone.View.extend({ 
 		tagName: 'div', 
@@ -193,6 +221,7 @@ PC.views = PC.views || {};
 			this.angles = this.admin.angles; 
 
 			this.listenTo(this.model, 'destroy', this.remove);
+			this.listenTo(this.model, 'change:is_group', this.render);
 
 			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},
@@ -223,13 +252,20 @@ PC.views = PC.views || {};
 			this.$el.html( this.template( _.defaults( args, this.model.attributes ) ) );
 			this.$pictures = this.$('.views');
 
-			this.angles.each(this.add_angle, this);
+			if ( this.model.get( 'is_group' ) )  {
+				this.add_angle( this.angles.first() );
+			} else {
+				this.angles.each(this.add_angle, this);
+			}
 
 			this.delete_btns = {
 				prompt: this.$('.delete-layer'),
 				confirm: this.$('.prompt-delete'),
 			};
 
+			this.$( 'select[data-setting=group]').select2({
+				data: PC.groups
+			});
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;
@@ -367,6 +403,7 @@ PC.views = PC.views || {};
 			this.$el.empty();
 
 			var data = _.defaults(this.model.attributes);
+			data.is_group = this.options.choice.get( 'is_group' );
 			data.angle_name = this.options.angle.get('name');
 			this.$el.append( this.template( data ) );
 			return this;
