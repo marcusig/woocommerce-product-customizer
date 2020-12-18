@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.6
-Stable tag: 1.2.3
+Stable tag: 1.2.4
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -103,6 +103,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.4 - 18/Dec/2020 =
+
 * TWEAK: Improve Dark Mode theme mobile styling
 * TWEAK: Add a new setting, to close the choices when selecting one on mobile
 * TWEAK: Add more hooks
@@ -191,5 +193,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.3 IMPORTANT bug fix: Update to the latest version to prevent a bug from deleting the contents of wp-content/uploads
+* 1.2.4 Dark theme mobile improvements, added more hooks in back and frontend.
 
