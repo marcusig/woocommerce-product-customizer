@@ -59,9 +59,9 @@ gulp.task('scss', function(done) {
 gulp.task('js', function(done) {
 	return gulp.src('src/assets/**/*.js', { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
-		.pipe(sourcemaps.init())
+		// .pipe(sourcemaps.init())
 		.pipe(uglify())
-		.pipe(sourcemaps.write('maps'))
+		// .pipe(sourcemaps.write('maps'))
 		.pipe(rename({suffix: '.min'}))
 		.pipe(gulp.dest('dist'))
 		.on('end', done);
