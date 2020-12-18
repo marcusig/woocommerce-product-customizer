@@ -20,6 +20,7 @@ class Cache {
 	}
 
 	private function _hooks() {
+		add_action( 'woocommerce_settings_saved', array( $this, 'purge' ) );
 	}
 
 	public function cache( $key, $data, $options = [] ) {
