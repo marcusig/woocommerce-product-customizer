@@ -103,6 +103,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Improve Dark Mode theme mobile styling
+* TWEAK: Add a new setting, to close the choices when selecting one on mobile
+* TWEAK: Add more hooks
+
 = 1.2.3 - 30/Nov/2020 =
 
 * FIX: Fixed cache purge function
