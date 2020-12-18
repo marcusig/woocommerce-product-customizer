@@ -81,9 +81,11 @@ class Cache {
 
 		$file = readdir($handle);
 
+		$allowed_file_extensions = [ 'js', 'css', 'map' ];
+
 		while (false !== $file) {
 
-			if ('.' != $file && '..' != $file && is_file($src . '/' . $file)) {
+			if ('.' != $file && '..' != $file && is_file($src . '/' . $file) && in_array( pathinfo( $file, PATHINFO_EXTENSION ), $allowed_file_extensions ) ) {
 				unlink($src . '/' . $file);
 			}
 
