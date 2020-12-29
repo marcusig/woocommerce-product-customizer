@@ -372,7 +372,7 @@ PC.options = PC.options || {};
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 
 			
-			if( !this.options.content.findWhere( { 'active': true } ) ) {
+			if( !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
 				this.options.content.findWhere( { available: true } ).set( 'active', true );
 			}
 			return this.$el;
