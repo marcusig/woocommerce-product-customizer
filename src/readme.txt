@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.6
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -103,6 +103,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.5 - 29/Dec/2020 =
+
+* TWEAK: Prevent error when no choice is available
+
 = 1.2.4 - 18/Dec/2020 =
 
 * TWEAK: Improve Dark Mode theme mobile styling
@@ -193,5 +197,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.4 Dark theme mobile improvements, added more hooks in back and frontend.
+* 1.2.5 Fix a potential issue when using the stock management add-on 
 
