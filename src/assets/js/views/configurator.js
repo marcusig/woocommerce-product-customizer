@@ -775,7 +775,7 @@ PC.options = PC.options || {};
 							choice_id: choice.id,
 							angle_id: angle_id,
 							layer_name: model.attributes.name,
-							image: img_id,
+							image_id: img_id,
 							name: choice.attributes.name,
 						} );
 					}, this );

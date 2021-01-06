@@ -103,6 +103,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Load configuration when pressing on the cart link
+
 = 1.2.5 - 29/Dec/2020 =
 
 * TWEAK: Prevent error when no choice is available
