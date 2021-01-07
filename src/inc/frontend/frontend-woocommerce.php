@@ -218,7 +218,8 @@ class Frontend_Woocommerce {
 				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
 				'money_decimal' => esc_attr( wc_get_price_decimal_separator() ),
 				'money_thousand' => esc_attr( wc_get_price_thousand_separator() ),
-				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) )
+				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) ),
+				'max_items_reached' => __( 'You have reached the maximum number of selectable items', 'product-configurator-for-woocommerce' ),
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,

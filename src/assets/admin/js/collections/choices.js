@@ -43,7 +43,18 @@ PC.choices = Backbone.Collection.extend({
 			choice.set( 'active', true );
 		} else if ( 'multiple' === this.layer_type ) {
 			// Multiple choice: toggle the current state
-			choice.set( 'active', ! is_active );
+			if ( ! is_active && this.layer.get( 'max_selection' ) ) {
+				var items = this.where( { active: true } );
+				if ( ! items || ! items.length || items.length < this.layer.get( 'max_selection' ) ) {
+					choice.set( 'active', true );
+				} else {
+					alert( PC_config.lang.max_items_reached );
+				}
+			} else {
+				choice.set( 'active', ! is_active );
+			}
+
+
 		}
 		wp.hooks.doAction( 'PC.fe.choice.change', choice );
 	},

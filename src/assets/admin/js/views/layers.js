@@ -250,7 +250,7 @@ TODO:
 
 		initialize: function( options ) {
 			this.listenTo( this.model, 'destroy', this.remove ); 
-			this.listenTo( this.model, 'change:not_a_choice', this.render );
+			this.listenTo( this.model, 'change:not_a_choice change:type', this.render );
 		},
 		events: {
 			// 'click' : 'edit',
