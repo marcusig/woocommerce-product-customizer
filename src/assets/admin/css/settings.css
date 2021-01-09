@@ -41,6 +41,18 @@
 	display: block;
 }
 
+.mkl-settings-content table.form-table {
+    background: #f7f5f5;
+    border: 10px solid #f7f5f5;
+    box-shadow: 0 0 0 1px #eaeaea;
+    margin-bottom: 2em;
+}
+
+.mkl-settings-content table.form-table tr.section-heading th, 
+.mkl-settings-content table.form-table tr.section-heading td {
+    border-bottom: 1px solid #CCC;
+}
+
 .mkl-pc-addons {
 	display: flex;
 	flex-wrap: wrap;

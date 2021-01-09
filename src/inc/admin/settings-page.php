@@ -281,8 +281,13 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		public function callback_text_field( $field_options = [] ) {
 			$options = get_option( 'mkl_pc__settings' );
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+			if ( isset( $field_options[ 'type' ] ) && in_array( $field_options[ 'type' ], [ 'text', 'number', 'password', 'email' ] ) ) {
+				$type = $field_options[ 'type' ];
+			} else {
+				$type = 'text';
+			}
 			?>
-			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='text' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? $options[$field_options[ 'setting_name' ] ] : ''; ?>'>
+			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='<?php echo esc_attr( $type ); ?>' name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? esc_attr( $options[$field_options[ 'setting_name' ] ] ) : ''; ?>'>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
 				<p class="field-description"><?php echo $field_options['description']; ?></p>
