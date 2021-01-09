@@ -827,7 +827,8 @@ $inner_space: 1em;
 					flex-direction: column;
 					width: 100%;
 					.quantity,
-					.quantity input {
+					.quantity input[type="number"],
+					.quantity input[type="text"] {
 						width: 100%;
 					}
 					

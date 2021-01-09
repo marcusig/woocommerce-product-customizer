@@ -536,6 +536,9 @@ $inner_space: 1em;
 								@media( max-width: $small_screen_width ) {
 									width: 30px;
 								}
+								img {
+									max-width: 100%;
+								}
 							}
 
 							transition: .2s all;
@@ -871,7 +874,8 @@ $inner_space: 1em;
 					flex-direction: column;
 					width: 100%;
 					.quantity,
-					.quantity input {
+					.quantity input[type="number"],
+					.quantity input[type="text"] {
 						width: 100%;
 					}
 					
