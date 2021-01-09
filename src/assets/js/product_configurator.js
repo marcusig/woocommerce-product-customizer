@@ -103,7 +103,10 @@ Backbone.Model.prototype.toJSON = function() {
 					$(el).val(q);
 				});
 			} );
-			
+
+			if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
+				PC.fe.setConfig( PC_config.config.load_config_content );
+			}
 		});
 
 		/**
@@ -274,6 +277,23 @@ Backbone.Model.prototype.toJSON = function() {
 	PC.fe.fetchedContent = function( model, response, options ){
 		console.log('fetched content'); 
 	}
+
+	PC.fe.setConfig = function( config_items ) {
+		// First reset all to the default choice,
+		// in case some of the layers in the saved config are missing / extra
+		PC.fe.contents.content.resetConfig();
+
+		$.each( config_items, function(index, config_item) {
+			// layerContents is a Backbone.Collection
+			try {
+				PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id );
+			} catch ( err ) {
+				console.log('Product configurator - setConfig: Could not set this layer:', config_item.layer_id, err);
+			}
+		});
+
+		wp.hooks.doAction( 'pc.fe.setConfig', config_items );
+	};
 
 	/*
 	// product is configurable == true

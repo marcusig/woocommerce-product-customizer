@@ -213,7 +213,10 @@ PC.views = PC.views || {};
 			    layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
 
 			if ( layer ) {
-				args = { not_a_choice: layer.get( 'not_a_choice' ) };
+				args = { 
+					not_a_choice: layer.get( 'not_a_choice' ),
+					layer_type: layer.get( 'type' ),
+				};
 			} else {
 				args = {};
 			}

@@ -21,6 +21,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
 			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
+			add_filter( 'woocommerce_cart_item_permalink', array( $this, 'cart_item_permalink' ), 30, 3 );
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'wc_add_cart_item'), 10, 2 ); 
 			// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
 		}
@@ -40,6 +41,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 							}
 						}
 						$cart_item_data['configurator_data'] = $layers; 
+						$cart_item_data['configurator_data_raw'] = $data;
 					}
 				} 
 			} 
@@ -72,6 +74,22 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			return $data; 
+		}
+
+		/**
+		 * Filter the cart item's permalink
+		 *
+		 * @param string $permalink
+		 * @param array  $cart_item
+		 * @param string $cart_item_key
+		 * @return string
+		 */
+		public function cart_item_permalink( $permalink, $cart_item, $cart_item_key ) {
+			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
+				return $permalink ? add_query_arg( [ 'load_config_from_cart' => $cart_item_key, 'open_configurator' => 1 ], $permalink ) : $permalink;
+			} else {
+				return $permalink;
+			}
 		}
 
 		/**

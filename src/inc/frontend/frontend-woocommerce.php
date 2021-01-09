@@ -218,7 +218,7 @@ class Frontend_Woocommerce {
 				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
 				'money_decimal' => esc_attr( wc_get_price_decimal_separator() ),
 				'money_thousand' => esc_attr( wc_get_price_thousand_separator() ),
-				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) )
+				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s' ), array( '%s', '%v' ), get_woocommerce_price_format() ) ),
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,
@@ -228,6 +228,11 @@ class Frontend_Woocommerce {
 				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' )
 			) ),
 		);
+
+		if ( $saved_configuration_content = $this->get_saved_configuration_content() ) {
+			$args['config']['load_config_content'] = $saved_configuration_content;
+		}
+
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
 		// $version = $product
@@ -249,5 +254,31 @@ class Frontend_Woocommerce {
 
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );
+	}
+
+	/**
+	 * Undocumented function
+	 *
+	 * @return void
+	 */
+	private function get_saved_configuration_content() {
+		if ( isset( $_REQUEST['load_config_from_cart'] ) ) {
+			
+			$wc_cart = WC()->cart;
+			$cart_item = $wc_cart->get_cart_item($_REQUEST['load_config_from_cart']);
+
+			// Check for removed items
+			if ( empty( $cart_item ) ) {
+				$removed_items = $wc_cart->get_removed_cart_contents();
+				if ( isset( $removed_items[$_REQUEST['load_config_from_cart']] ) ) {
+					$cart_item = $removed_items[$_REQUEST['load_config_from_cart']];
+				}
+			}
+
+			if ( $cart_item && isset( $cart_item['configurator_data_raw'] ) ) {
+				return $cart_item['configurator_data_raw'];
+			}
+		}
+		return false;
 	}
 }
