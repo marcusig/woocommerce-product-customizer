@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.6
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -103,8 +103,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Add compatibility for multiple choice limits
+= 1.2.6 - 12/Jan/2021 =
+
+* FEATURE: Added controls to the theme customizer to change selected colors and background image
 * FEATURE: Load configuration when pressing on the cart link
+* TWEAK: Add compatibility for multiple choice limits
 
 = 1.2.5 - 29/Dec/2020 =
 
@@ -200,5 +203,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.5 Fix a potential issue when using the stock management add-on 
+* 1.2.6 Added customizer controls (to change colors), added the ability to view a configuration from the cart.
 

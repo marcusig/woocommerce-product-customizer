@@ -20,7 +20,6 @@ function mkl_pc_wsb_theme_scripts() {
 			return 'in';
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/wsb', function( view ) {
-			console.log(view.\$el.find( '.layer_choices' ));
 			view.\$el.find( '.layer_choices' ).slideDown(200);
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/wsb', function( view ) {
