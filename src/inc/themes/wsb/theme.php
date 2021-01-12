@@ -52,3 +52,17 @@ function mkl_pc_wsb_theme_remove_title() {
 	remove_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_frontend_configurator_footer_section_left_inner__product_name', 30 );
 }
 add_action( 'mkl_pc_frontend_templates_before', 'mkl_pc_wsb_theme_remove_title', 20 );
+
+function mkl_pc_wsb_theme_filter_colors( $colors ) {
+	$remove = [ 'active_layer_button_bg_color', 'active_layer_button_text_color', 'active_choice_button_bg_color', 'active_choice_button_text_color' ];
+	foreach( $remove as  $r ) {
+		if ( isset( $colors[ $r ] ) ) unset( $colors[ $r ] );
+	}
+	$colors['toolbar_bg'] = [
+		'default' => '#FFF',
+		'label' => __( 'Sidebar background', 'product-configurator-for-woocommerce' )
+	];
+
+	return $colors;
+}
+add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_wsb_theme_filter_colors' );

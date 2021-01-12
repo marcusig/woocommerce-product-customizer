@@ -76,3 +76,20 @@ function mkl_pc_float_theme_add_mobile_form_button() {
 	echo '<button class="mkl-pc-show-form">' . mkl_pc( 'frontend' )->product->get_cart_icon() .'<span class="screen-reader-text">' . __( 'Add to cart', 'woocommerce' ) . '</span></button>';
 }
 add_action( 'mkl_pc_frontend_configurator_footer_form_before', 'mkl_pc_float_theme_add_mobile_form_button', 20 );
+
+/**
+ * Remove unused colors from the customizer
+ *
+ * @param array $colors
+ * @return array
+ */
+function mkl_pc_float_theme_filter_colors( $colors ) {
+	$remove = [ 'active_layer_button_bg_color', 'active_layer_button_text_color', 'active_choice_button_bg_color', 'active_choice_button_text_color' ];
+	foreach( $remove as  $r ) {
+		if ( isset( $colors[ $r ] ) ) {
+			unset( $colors[ $r ] );
+		} 
+	}
+	return $colors;
+}
+add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_float_theme_filter_colors' );

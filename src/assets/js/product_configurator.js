@@ -78,8 +78,8 @@ Backbone.Model.prototype.toJSON = function() {
 			}
 		}
 
-		$( '.configure-product-simple' ).on( 'click', configurator_init );
-		$( '.mkl-configurator-inline' ).on( 'mkl/pc/inline-init', configurator_init );
+		$( 'body' ).on( 'click', '.configure-product-simple', configurator_init );
+		$( 'body' ).on( 'mkl/pc/inline-init', '.mkl-configurator-inline', configurator_init );
 
 		$('form.cart').each(function(index, form) { 
 

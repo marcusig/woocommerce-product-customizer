@@ -20,6 +20,7 @@ class Admin_Woocommerce {
 	public $admin = NULL;
 	public function __construct() {
 		$this->_includes();
+		$this->customizer = new Customizer();
 		$this->order = new Admin_Order();
 		$this->product = new Admin_Product();
 		$this->settings = new Admin_Settings();
@@ -33,6 +34,7 @@ class Admin_Woocommerce {
 	 * @return void
 	 */
 	private function _includes() {
+		include( MKL_PC_INCLUDE_PATH . 'admin/customizer.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings-page.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/choice.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/layer.php' );

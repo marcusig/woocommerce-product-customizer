@@ -10,11 +10,11 @@ $colors: (
 	primary: rgb(0, 213, 209),
 	primary_rgb: unquote("0, 213, 209"),
 	primary_hover: #00626d,
+	layers_button_text_color: #000000,
+	choices_button_text_color: #000000,
 	overlay_bg: #000000,
 	active_bg: #FFF
 );
-
-@debug unquote("rgb(0, 213, 209)");
 
 @function color($color-name) {
 	@return var(--mkl_pc_color-#{$color-name});
@@ -453,6 +453,7 @@ $inner_space: 1em;
 							position: relative; 
  							line-height: 1.3; 
 							font-weight: normal;
+							color: color(layers_button_text_color);
  							&:hover, &:focus {
 								outline: none;
  								color: color(primary_hover);
@@ -638,6 +639,7 @@ $inner_space: 1em;
 								background: transparent;
 								transition: 0.2s all;
 								height: 100%;
+								color: color(choices_button_text_color);
 
 								span.text.choice-name {
 									display: block;
@@ -754,6 +756,12 @@ $inner_space: 1em;
 			padding: 1em 2em;
 			padding-bottom: 2em;
 			text-align: right;
+			.pc_configurator_form {
+				> * {
+					vertical-align: middle;
+				}
+			}
+
 			p {
 				margin-bottom: .5em;
 				text-align: right;
@@ -1146,4 +1154,9 @@ body.configurator_is_inline .mkl_pc {
 		}
 		
 	}	
+}
+
+/* Elementor fix */
+.woocommerce div.product.elementor .mkl_pc .mkl_pc_container .pc_configurator_form form.cart {
+	display: inline-flex;
 }

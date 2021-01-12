@@ -4,23 +4,32 @@ Description:  A default DM theme
 Tags:         dark mode, left selector, drawers, accordion, left sidebar
 */
 
-// COLORS
-$dark:#2e2e32;
-$darkest: #202125;
-$ll1: #f2f3f5;
-$ll2: #b0b5c0;
-$ll3: #6b6f7a;
-$ll4: #565b64;
+$colors: (
+	dark: #2e2e32,
+	darkest: #202125,
+	ll1: #f2f3f5,
+	ll2: #b0b5c0,
+	ll3: #6b6f7a,
+	ll4: #565b64,
+	layers_button_text_color: #b0b5c0,
+	active_layer_button_bg_color: #14151F,
+	active_layer_button_text_color: #f2f3f5,
 
-$light-gray: #b5c2bd;
-$primary: $ll1;
-$primary_hover: $ll2;
+	choices_button_text_color: #b0b5c0,
+	active_choice_button_bg_color: #14151F,
+	active_choice_button_text_color: #f2f3f5
+);
+
+@function color($color-name) {
+	@return var(--mkl_pc_color-#{$color-name});
+}
+
+// COLORS
 $overlay_bg: #000000;
-$active_bg: $darkest;
-$footer_bg_color: $dark;
-$layer_choices_bg: $dark;
-$button_border_color: $darkest;
-$secondary_options_text_color: $ll3;
+$footer_bg_color: color(dark);
+$layer_choices_bg: color(dark);
+$button_border_color: color(darkest);
+$secondary_options_text_color: color(ll3);
 
 
 // DIMENSIONS / DISTANCES / SPACE
@@ -37,6 +46,12 @@ $footer_height: 5em;
 $footer_height_small_screen: 4em;
 $inner_space: 1em;
 
+:root {
+	// each item in color map
+	@each $name, $color in $colors {
+		--mkl_pc_color-#{$name}: #{$color};
+	}
+}
 
 @-webkit-keyframes sk-scaleout {
 	0% { -webkit-transform: scale(0) }
@@ -111,7 +126,7 @@ $inner_space: 1em;
 	bottom: 0;
 	width: 100%; 
 	z-index: 10000;
-	color: $ll2;
+	color: color(ll2);
 	.loader {
 		display: none;
 		position: absolute;
@@ -193,7 +208,7 @@ $inner_space: 1em;
 			bottom: $footer_height;
 			background-position: 50%;
 			background-size: cover;
-			background-color: $darkest;
+			background-color: color(darkest);
 			@media( max-width: $medium_screen_width ) {
 				left: $toolbar_width_medium;
 				bottom: $footer_height_small_screen;
@@ -231,11 +246,11 @@ $inner_space: 1em;
 				z-index: 2;
 				box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 				border-radius: 3px;
-				background: $dark;
+				background: color(dark);
 				> a {
 					display: block;
 					padding: 4px 10px;
-					color: $ll3;
+					color: color(ll3);
 					&::before{
 						content: '\f01e';
 						font-family: 'FontAwesome';
@@ -272,13 +287,13 @@ $inner_space: 1em;
 					transform: translateY(0);
 				}
 				li {
-					background: $dark;
+					background: color(dark);
 					a {
 						display: block;						
 						padding: 3px 11px; 
-						border-bottom: 1px solid $darkest;
+						border-bottom: 1px solid color(darkest);
 						text-align: center;
-						color: $ll3;
+						color: color(ll3);
 						&::before{
 							content: '\f06e';
 							font-family: 'FontAwesome';
@@ -346,7 +361,7 @@ $inner_space: 1em;
 			position: absolute;
 			z-index: 2;
 			width: $toolbar_width;
-			background: $dark;
+			background: color(dark);
 			left: 0;
 			top: 0;
 			bottom: $footer_height;
@@ -356,7 +371,7 @@ $inner_space: 1em;
 			flex-direction: column;
 
 			> header {
-				border-bottom: 1px solid $light-gray; 
+				border-bottom: 1px solid color(ll2); 
 				h3 {
 					margin: 0;
 					padding: 0;
@@ -381,7 +396,7 @@ $inner_space: 1em;
 						content:' ';
 						width:20px;
 						height:2px;
-						background: $ll1;
+						background: color(ll1);
 						position: absolute;
 						top: 50%; 
 						left: 0;
@@ -477,10 +492,10 @@ $inner_space: 1em;
 							background-color: transparent;
 							position: relative; 
  							line-height: 1.3; 
-							color: $primary;
+							color: color(layers_button_text_color);
 							font-weight: normal;
  							&:hover, &:focus {
- 								color: $primary_hover;
+ 								color: color(active_layer_button_text_color);
 							}
 
 							@media( max-width: $small_screen_width ) {
@@ -504,7 +519,7 @@ $inner_space: 1em;
 
 						&.active {
 							button {
-								background: $active_bg;
+								background: color(active_layer_button_bg_color);
 							}
 						}
 						ul {
@@ -520,7 +535,7 @@ $inner_space: 1em;
 							
 							li.active {
 								button {
-									background: darken($active_bg, 5%); 
+									background: color(active_choice_button_bg_color); 
 								}
 							}
 						}
@@ -578,85 +593,94 @@ $inner_space: 1em;
 					transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
 					background: $layer_choices_bg;
 					transform: translateX(100%);
-					// border-left: 1px solid $light-gray;
+					// border-left: 1px solid color(light-gray);
 					@media( max-width: $medium_screen_width ) {
 						left: 0;
 					}
-					li > button {
-						padding-right: 85px;
-						background: transparent;
-						transition: 0.2s all;
-						span.choice-price {
-							display: inline-block;
-							padding: 0 6px;
-							//background: #fff;
-							border-radius: 6px;
-							color: $secondary_options_text_color;
-							margin-left: 5px;
-						}
-						i.mkl-pc-thumbnail {
-							height: 58px; 
-							width: 58px;
-							border: 3px solid transparent; 
-							display: block; 
-							position: absolute; 
-							right: 15px; 
-							top: 50%;
-							transform: translateY(-50%); 
-							border-radius: 50%; 
+					li {
+						> button {
+							padding-right: 85px;
 							background: transparent;
-							box-shadow: none;
-							transition: all 0.2s;
-							@media( max-width: $small_screen_width ) {
-								height: 30px; 
-								width: 30px;
+							transition: 0.2s all;
+							color: color(choices_button_text_color);
+							span.choice-price {
+								display: inline-block;
+								padding: 0 6px;
+								//background: #fff;
+								border-radius: 6px;
+								color: $secondary_options_text_color;
+								margin-left: 5px;
 							}
-
-							span {
-								display: block; 
-								overflow: hidden;
-								position: absolute;
-								top: 3px;
-								left: 3px;
-								right: 3px;
-								bottom: 3px;
-								border-radius: 50%;
-								box-shadow: 0 0 8px rgba(0,0,0,0.2);
-							}
-							img {
-								position: absolute;
-								max-width: 100%;
-								width: auto; 
-								height: auto; 
-								top: 50%;
-								left: 50%;
-								transform: translate(-50%, -50%); 
-							}
-						}
-						&:hover {
 							i.mkl-pc-thumbnail {
-								opacity: 1;
-								height: 80px; 
-								width: 80px;
-								right: 5px;
+								height: 58px; 
+								width: 58px;
+								border: 3px solid transparent; 
+								display: block; 
+								position: absolute; 
+								right: 15px; 
+								top: 50%;
+								transform: translateY(-50%); 
+								border-radius: 50%; 
+								background: transparent;
+								box-shadow: none;
+								transition: all 0.2s;
 								@media( max-width: $small_screen_width ) {
-									right: 15px;
 									height: 30px; 
 									width: 30px;
 								}
+
+								span {
+									display: block; 
+									overflow: hidden;
+									position: absolute;
+									top: 3px;
+									left: 3px;
+									right: 3px;
+									bottom: 3px;
+									border-radius: 50%;
+									box-shadow: 0 0 8px rgba(0,0,0,0.2);
+								}
+								img {
+									position: absolute;
+									max-width: 100%;
+									width: auto; 
+									height: auto; 
+									top: 50%;
+									left: 50%;
+									transform: translate(-50%, -50%); 
+								}
+							}
+							&:hover {
+								i.mkl-pc-thumbnail {
+									opacity: 1;
+									height: 80px; 
+									width: 80px;
+									right: 5px;
+									@media( max-width: $small_screen_width ) {
+										right: 15px;
+										height: 30px; 
+										width: 30px;
+									}
+								}
+							}
+							.description {
+								display: none;
 							}
 						}
-						.description {
-							display: none;
+						&.active {
+							button {
+								color: color(active_choice_button_text_color);
+							}
 						}
 					}
+
 					&.active {
 						// background: red;
 						transform: translateX(0);
 						visibility: visible;
 						box-shadow: -12px 0 40px -10px rgba(0, 0, 0, 0.15);
 						li.active i.mkl-pc-thumbnail {
-							border-color: $ll2;
+							border-color: color(ll2);
 							opacity: 1;
 							height: 78px; 
 							width: 78px;
@@ -676,7 +700,7 @@ $inner_space: 1em;
 						text-transform: uppercase;
 
 						@media( max-width: $small_screen_width ) {
-							background: $darkest;
+							background: color(darkest);
 						}
 
 						> span { 
@@ -685,7 +709,7 @@ $inner_space: 1em;
 							padding: 10px 8px;
 							padding-left: 14px;
 
-							border-bottom: 1px solid $ll4;
+							border-bottom: 1px solid color(ll4);
 							position: relative;
 							a.close {
 								position: absolute;
@@ -712,7 +736,7 @@ $inner_space: 1em;
 									content:' ';
 									width:20px;
 									height:2px;
-									background: $ll1;;
+									background: color(ll1);
 									position: absolute;
 									top: 50%; 
 									left: 0;
@@ -728,7 +752,7 @@ $inner_space: 1em;
 								&:hover::before,
 								&:focus::after,
 								&:hover::after {
-									background: $primary;
+									background: color(ll1);
 									width: 15px;
 									transform-origin: 100%;
 								} 
@@ -789,7 +813,7 @@ $inner_space: 1em;
 			justify-content: space-between;
 			align-items: center;
 			box-sizing: border-box;
-			border-top: 1px solid $darkest;
+			border-top: 1px solid color(darkest);
 
 			.single_add_to_cart_button {
 				visibility: visible; 
@@ -799,7 +823,7 @@ $inner_space: 1em;
 			.quantity {
 				display: inline-block;
 				input.qty {
-					background: $ll2;
+					background: color(ll2);
 					@media (max-width: $small_screen_width) {
 						border: 2px solid #36383a;
 					}
@@ -837,7 +861,7 @@ $inner_space: 1em;
 			h3.product-name {
 				line-height: 1;
 				margin: 0;
-				color: $ll2;
+				color: color(ll2);
 				font-size: 1.2em;
 				@media (max-width: $small_screen_width) {
 					display: none;
@@ -990,19 +1014,19 @@ $inner_space: 1em;
 }
 
 .tippy-box[data-theme~="invert"] {
-	background-color: $ll2;
-	color: $darkest;
+	background-color: color(ll2);
+	color: color(darkest);
 	&[data-placement^='top'] > .tippy-arrow::before {
-		border-top-color: $ll2;
+		border-top-color: color(ll2);
 	}
 	&[data-placement^='bottom'] > .tippy-arrow::before {
-		border-bottom-color: $ll2;
+		border-bottom-color: color(ll2);
 	}
 	&[data-placement^='left'] > .tippy-arrow::before {
-		border-left-color: $ll2;
+		border-left-color: color(ll2);
 	}
 	&[data-placement^='right'] > .tippy-arrow::before {
-		border-right-color: $ll2;
+		border-right-color: color(ll2);
 	}
 }
 

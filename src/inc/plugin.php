@@ -80,6 +80,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'update.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
+		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
 
 		if( is_admin() ) {
 			include_once MKL_PC_INCLUDE_PATH . 'admin/admin-woocommerce.php';
@@ -140,6 +141,7 @@ class Plugin {
 		// return;
 		$this->_includes();
 		$this->frontend = new Frontend_Woocommerce();
+		$this->customizer = new Customizer();
 		
 		if( is_admin() ) {
 			$this->admin = new Admin_Woocommerce();

@@ -37,6 +37,7 @@ class Frontend_Woocommerce {
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_scripts' ), 50 );
 		add_action( 'template_redirect', array( $this, 'setup_themes' ), 50 );
 		add_action( 'admin_init', array( $this, 'setup_themes' ), 50 );
+		add_action( 'customize_register', array( $this, 'setup_themes' ), 9 );
 		// add_filter( 'woocommerce_get_price', array( &$this, 'get_price' ), 10, 2 ); 
 		// add_filter( 'woocommerce_cart_item_product' , array( &$this, 'change_item_price' ), 10 , 3); 
 		// 		
@@ -211,6 +212,7 @@ class Frontend_Woocommerce {
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator.js' ) , true );
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator.js' ) , true );
 
+		$bg_image = get_option( 'mkl_pc_theme_viewer_bg', false );
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 			'lang' => array(
@@ -223,7 +225,7 @@ class Frontend_Woocommerce {
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,
 				'where' => 'out',
-				'bg_image' => apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
+				'bg_image' => $bg_image ? $bg_image : apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 				'close_configurator_on_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'close_configurator_on_add_to_cart' ),
 				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' )
 			) ),

@@ -1,9 +1,25 @@
 // COLORS
+$colors: (
+	light-gray: #efefef,
+	primary_hover: #000,
+	layers_button_text_color: rgba(0, 0, 0, 0.7),
+	choices_button_text_color: rgba(0, 0, 0, 0.7),
+	overlay_bg: #000000,
+	active_layer_button_bg_color: #eaeaea,
+	active_layer_button_text_color: #000000,
+	active_choice_button_bg_color: #eaeaea,
+	active_choice_button_text_color: #000000
+);
+
+@function color($color-name) {
+	@return var(--mkl_pc_color-#{$color-name});
+}
+
+// COLORS
 $light-gray: #efefef;
-$primary: #949494;
-$primary_hover: #000000;
 $overlay_bg: #000000;
 $active_bg: #f7f7f7;
+$choice_list_bg: #f7f7f7;
 $footer_bg_color: $active_bg;
 
 
@@ -21,6 +37,12 @@ $footer_height: 5em;
 $footer_height_small_screen: 4em;
 $inner_space: 1em;
 
+:root {
+	// each item in color map
+	@each $name, $color in $colors {
+		--mkl_pc_color-#{$name}: #{$color};
+	}
+}
 
 @-webkit-keyframes sk-scaleout {
 	0% { -webkit-transform: scale(0) }
@@ -456,11 +478,11 @@ $inner_space: 1em;
 							background-color: transparent;
 							position: relative; 
  							line-height: 1.3; 
-							color: $primary;
+							color: color(layers_button_text_color);
 							font-weight: normal;
 
  							&:hover, &:focus {
- 								color: $primary_hover;
+ 								color: color(primary_hover);
 							}
 
 							span.text {
@@ -497,7 +519,7 @@ $inner_space: 1em;
 
 						&.active {
 							button {
-								background: $active_bg;
+								background: color(active_choice_button_bg_color);
 							}
 						}
 						ul {
@@ -558,6 +580,8 @@ $inner_space: 1em;
 						// 	display: none;
 						// }
 						button {
+							background-color: color(active_layer_button_bg_color);
+							color: color(active_layer_button_text_color);
 							i {
 								opacity: 1;
 							}
@@ -572,7 +596,7 @@ $inner_space: 1em;
 					left: 60px; 
 					right: 0; 
 					transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
-					background: $active_bg;
+					background: $choice_list_bg;
 					transform: translateX(100%);
 					// border-left: 1px solid $light-gray;
 					@media( max-width: $medium_screen_width ) {
@@ -653,16 +677,22 @@ $inner_space: 1em;
 						transform: translateX(0);
 						visibility: visible;
 						box-shadow: -12px 0 40px -10px rgba(0, 0, 0, 0.15);
-						li.active i.mkl-pc-thumbnail {
-							border-color: white;
-							opacity: 1;
-							height: 78px; 
-							width: 78px;
-							right: 5px;
-							@media( max-width: $small_screen_width ) {
-								height: 35px; 
-								width: 35px;
-								right: 12px;
+						li.active {
+							button {
+								background-color: color(active_choice_button_bg_color);
+								color: color(active_choice_button_text_color);
+							}
+							i.mkl-pc-thumbnail {
+								border-color: white;
+								opacity: 1;
+								height: 78px; 
+								width: 78px;
+								right: 5px;
+								@media( max-width: $small_screen_width ) {
+									height: 35px; 
+									width: 35px;
+									right: 12px;
+								}
 							}
 						}
 					}
@@ -725,7 +755,7 @@ $inner_space: 1em;
 								&:hover::before,
 								&:focus::after,
 								&:hover::after {
-									background: $primary;
+									background: #000;
 									width: 15px;
 									transform-origin: 100%;
 								} 
