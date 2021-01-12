@@ -151,6 +151,10 @@ Backbone.Model.prototype.toJSON = function() {
 
 	PC.fe.open = function( product_id, parent_id ) {
 
+		PC.fe.opened = true;
+		$('body').addClass('configurator_is_opened');
+		if( PC.fe.inline ) $('body').addClass('configurator_is_inline');
+
 		// variations: if product_id is different from active, we remove the modal to create a new one.
 		if( product_id == PC.fe.active_product ) {
 			this.modal.open(); 

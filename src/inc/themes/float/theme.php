@@ -2,6 +2,7 @@
 function mkl_pc_float_theme_scripts() {
 	$data = "
 	(function($) {
+		if ( ! wp || ! wp.hooks ) return;
 		var scrollStartPost;
 		wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/float', function( view ) {
 			// duplicate the form to have a different one on mobile or desktop views
@@ -12,6 +13,7 @@ function mkl_pc_float_theme_scripts() {
 				view.\$el.toggleClass( 'mobile-show-form' );
 			} );
 
+			// view.\$('.layer-item').first().trigger('click');
 			view.toolbar.\$el.find('section.choices').on('scroll', function(e) {
 				var section = $( this );
 				section.toggleClass( 'scrolled', ! ( e.target.scrollHeight - section.outerHeight() == section.scrollTop() ) );

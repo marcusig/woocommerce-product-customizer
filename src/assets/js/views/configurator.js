@@ -47,10 +47,9 @@ PC.options = PC.options || {};
 		},
 		open: function() {
 			this.$el.show(); 
-			PC.fe.opened = true;
-			$('body').addClass('configurator_is_opened');
-			if( PC.fe.inline ) $('body').addClass('configurator_is_inline');
+
 			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
+
 			// Set focus on the first layer
 			if ( ! PC.fe.inline ) {
 				setTimeout( function() {
