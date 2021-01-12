@@ -47,10 +47,11 @@ PC.choices = Backbone.Collection.extend({
 				if ( wp.hooks.applyFilters( 'PC.choices.canSelectChoice', true, choice, this ) ) {
 					choice.set( 'active', true );
 				} else {
+					console.log('Collections > choices > selectChoice - The choice (multiple) can not be selected');
 					return;
 				}
 			} else {
-				choice.set( 'active', false );
+				if ( ! activate ) choice.set( 'active', false );
 			}
 
 

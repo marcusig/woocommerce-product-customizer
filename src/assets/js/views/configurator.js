@@ -427,6 +427,7 @@ PC.options = PC.options || {};
 			}
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.activate();
+			this.$el.data( 'view', this );
 			/**
 			 * Called after rendering the choice item in the list
 			 */
@@ -752,6 +753,7 @@ PC.options = PC.options || {};
 		save: function() {
 			this.choices = [];
 			PC.fe.layers.each( this.parse_choices, this ); 
+			this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
 			return JSON.stringify( this.choices );
 		},
 
@@ -767,8 +769,7 @@ PC.options = PC.options || {};
 
 					_.each( selected_choices, function( choice ) {
 						var img_id = choice.get_image( 'image', 'id' );
-	
-						this.choices.push( {
+						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push( {
 							is_choice: true,
 							layer_id: model.id,
 							choice_id: choice.id,
@@ -782,7 +783,7 @@ PC.options = PC.options || {};
 				} else {
 					var choice = choices.first();
 					var img_id = choice.get_image('image', 'id'); 
-					this.choices.push({
+					if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push({
 						is_choice: false,
 						layer_id: model.id, 
 						choice_id: choice.id, 
@@ -793,7 +794,7 @@ PC.options = PC.options || {};
 			} else {
 				var choice = choices.first();
 				var img_id = choice.get_image('image', 'id');
-				this.choices.push({
+				if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push({
 					is_choice: false,
 					layer_id: model.id,
 					choice_id: choice.id,

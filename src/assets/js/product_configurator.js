@@ -296,7 +296,7 @@ Backbone.Model.prototype.toJSON = function() {
 			}
 		});
 
-		wp.hooks.doAction( 'pc.fe.setConfig', config_items );
+		wp.hooks.doAction( 'PC.fe.setConfig', config_items );
 	};
 
 	/*
