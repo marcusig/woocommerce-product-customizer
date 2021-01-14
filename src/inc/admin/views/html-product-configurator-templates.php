@@ -95,7 +95,11 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<div class="tips sort ui-sortable-handle"></div>
 	<button type="button">
 		<h3>
-			{{data.name}}
+			<# if ( data.admin_label && data.admin_label != '' ) { #>
+				{{data.admin_label}}
+			<# } else { #>
+				{{data.name}}
+			<# } #>
 			<# if ( data.image.url != '' ) { #>
 				<img src="{{data.image.url}}" class="layer-img" />
 			<# } #>
@@ -199,7 +203,13 @@ CONTENT TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer">
 	<a href="#" class="layer mkl-list-item">
-		<span class="name">{{data.name}}</span>
+		<span class="name">
+			<# if ( data.admin_label && data.admin_label != '' ) { #>
+				{{data.admin_label}}
+			<# } else { #>
+				{{data.name}}
+			<# } #>
+		</span>
 		<# if ( data.image.url != '' ) { #>
 			<span class="icon"><img src="{{data.image.url}}" class="layer-img" /></span>
 		<# } #>
@@ -208,7 +218,11 @@ CONTENT TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer-back-link">
-	<span class="name<# if ( data.image.url != '' ) { #> picture<# } #>">{{data.name}}</span>
+	<span class="name<# if ( data.image.url != '' ) { #> picture<# } #>"><# if ( data.admin_label && data.admin_label != '' ) { #>
+				{{data.admin_label}}
+			<# } else { #>
+				{{data.name}}
+			<# } #></span>
 	<# if ( data.image.url != '' ) { #>
 		<span class="icon"><img src="{{data.image.url}}" class="layer-img" /></span>
 	<# } #>

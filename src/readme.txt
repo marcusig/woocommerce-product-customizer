@@ -30,8 +30,12 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 **Available shortcodes**
 
 * Configure button: `[mkl_configurator_button product_id=1 classes="button primary"]` or [mkl_configurator_button product_id=1 classes="button primary"]Button name[/mkl_configurator_button]
-* **[NEW]** Inline configurator: `[mkl_configurator product_id=1 classes="container-class something-else"]`
-* **[NEW]** Choose between different themes, or create your own (developer friendly)
+* Inline configurator: `[mkl_configurator product_id=1 classes="container-class something-else"]`
+
+**Themes**
+
+* Choose between different themes, or create your own (developer friendly)
+* **[NEW]** Change selected colors using the theme Customizer (Appearance > Customize)
 
 **Premium addons**
 
@@ -102,6 +106,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+* TWEAK: Added layer admin label, to facilitate conditional logic usage
 
 = 1.2.6 - 12/Jan/2021 =
 

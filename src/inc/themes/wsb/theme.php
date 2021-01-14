@@ -26,6 +26,11 @@ function mkl_pc_wsb_theme_scripts() {
 			view.\$el.find( '.layer_choices' ).slideUp(200);
 		} );
 
+		// Conditional logic: do not show / hide choices list visibility
+		wp.hooks.addFilter( 'mkl_pc_conditionals/toggle_choices', 'MKL/PC/Themes/wsb', function( where ) {
+			return false;
+		} );
+
 	})( jQuery );
 	";
 	wp_add_inline_script( 'mkl_pc/js/views/configurator', $data, 'before' );

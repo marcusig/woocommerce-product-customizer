@@ -185,7 +185,7 @@ TODO:
 			this.options = options || {}; 
 			this.form_target = options.form_target; 
 			this.listenTo( this.model, 'change:active', this.activate ); 
-			this.listenTo( this.model, 'change:name change:image', this.render); 
+			this.listenTo( this.model, 'change:name change:admin_label change:image', this.render); 
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},
 		events: {
