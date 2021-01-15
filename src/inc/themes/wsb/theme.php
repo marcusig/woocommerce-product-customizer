@@ -27,7 +27,7 @@ function mkl_pc_wsb_theme_scripts() {
 		} );
 
 		// Conditional logic: do not show / hide choices list visibility
-		wp.hooks.addFilter( 'mkl_pc_conditionals/toggle_choices', 'MKL/PC/Themes/wsb', function( where ) {
+		wp.hooks.addFilter( 'mkl_pc_conditionals.toggle_choices', 'MKL/PC/Themes/wsb', function( where ) {
 			return false;
 		} );
 

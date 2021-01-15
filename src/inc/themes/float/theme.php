@@ -52,7 +52,7 @@ function mkl_pc_float_theme_scripts() {
 		} );
 
 		// Conditional logic: do not show / hide choices list visibility
-		wp.hooks.addFilter( 'mkl_pc_conditionals/toggle_choices', 'MKL/PC/Themes/float', function( where ) {
+		wp.hooks.addFilter( 'mkl_pc_conditionals.toggle_choices', 'MKL/PC/Themes/float', function( where ) {
 			return false;
 		} );
 	})( jQuery );
