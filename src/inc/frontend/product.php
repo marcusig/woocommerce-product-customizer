@@ -71,7 +71,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				} else {
 					$label = __( 'Configure', 'product-configurator-for-woocommerce' );
 				}
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button">'. $label .'</button>' );
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button" data-product_id="'.get_the_id().'">'. $label .'</button>' );
 			}
 		}
 
@@ -99,7 +99,6 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product;
-			
 			echo '<div class="pc_configurator_form">';
 
 			if ( $product && ! $product->is_sold_individually() ) {

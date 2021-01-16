@@ -110,7 +110,7 @@ class Frontend_Woocommerce {
 		$options = get_option( 'mkl_pc__settings' );
 		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
 
-		return '<button class="'.$button_class.' configure-product-simple configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'">'.$content.'</button>';
+		return '<button class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'">'.$content.'</button>';
 	}
 
 	/**
@@ -140,7 +140,7 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		return '<div class="mkl-configurator-inline configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'"></div>';
+		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'"></div>';
 	}
 
 	/**

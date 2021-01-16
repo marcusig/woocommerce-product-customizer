@@ -53,7 +53,11 @@ Backbone.Model.prototype.toJSON = function() {
 			//get product ID
 			if ( $( event.target ).data( 'product_id' ) ) {
 				product_id = $( event.target ).data( 'product_id' );
-				PC.fe.is_using_shortcode = true;
+				if ( $( event.target ).is( '.is-shortcode' ) ) {
+					PC.fe.is_using_shortcode = true;
+				} else {
+					PC.fe.is_using_shortcode = false;
+				}
 			} else if ( $('*[name="add-to-cart"]').length ) {
 				PC.fe.is_using_shortcode = false;
 				product_id = $('*[name="add-to-cart"]').val();
