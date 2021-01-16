@@ -108,6 +108,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Added compatibility with [WooCommerce Currency Selector (WOOCS)](https://wordpress.org/plugins/woocommerce-currency-switcher/)
 * TWEAK: Added layer admin label, to facilitate conditional logic usage
 
 = 1.2.6 - 12/Jan/2021 =
