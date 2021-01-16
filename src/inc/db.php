@@ -326,6 +326,13 @@ class DB {
 		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id ); 
+		$price = wc_get_price_to_display( $product );
+		global $WOOCS;
+		if ( $WOOCS && ! isset( $_REQUEST['woocs_block_price_hook'] ) ) {
+			$_REQUEST['woocs_block_price_hook'] = 1;
+			$price = wc_get_price_to_display( $product );
+			unset( $_REQUEST['woocs_block_price_hook'] );
+		}
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
@@ -333,7 +340,7 @@ class DB {
 				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
 				'product_type' => $product->get_type(),
 				'show_qty'     => ! $product->is_sold_individually(),
-				'price'        => wc_get_price_to_display( $product )
+				'price'        => $price
 			) 
 		);
 

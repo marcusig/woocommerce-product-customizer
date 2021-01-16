@@ -357,6 +357,7 @@ PC.utils = PC.utils || {
 		return !! isTouchDevice;
 	},
 	formatMoney: function ( amount ) {
+		amount = this.maybeConvertAmountToCurrency( amount );
 		if ( 'undefined' === typeof accounting ) return amount;
 		return accounting.formatMoney( amount, {
 			precision: PC_config.lang.money_precision,
@@ -365,6 +366,13 @@ PC.utils = PC.utils || {
 			thousand: PC_config.lang.money_thousand,
 			format: PC_config.lang.money_format
 		} );
+	},
+	maybeConvertAmountToCurrency: function( amount ) {
+		// WOOCS
+		if ( 'undefined' != typeof woocs_current_currency && 'undefined' != woocs_current_currency['rate'] ) {
+			return amount * woocs_current_currency['rate'];
+		}
+		return amount;
 	}
 
 };
