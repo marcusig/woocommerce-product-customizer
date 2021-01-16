@@ -63,6 +63,7 @@ class Plugin {
 	 */
 	private function _includes() {
 		include_once MKL_PC_INCLUDE_PATH . 'utils.php';
+		include_once MKL_PC_INCLUDE_PATH . 'languages.php';
 		include_once MKL_PC_INCLUDE_PATH . 'images.php';
 		include_once MKL_PC_INCLUDE_PATH . 'functions.php';
 		include_once MKL_PC_INCLUDE_PATH . 'settings.php';
@@ -140,6 +141,7 @@ class Plugin {
 		}
 		// return;
 		$this->_includes();
+		$this->languages = new Languages();
 		$this->frontend = new Frontend_Woocommerce();
 		$this->customizer = new Customizer();
 		
