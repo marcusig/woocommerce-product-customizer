@@ -104,6 +104,11 @@ class Languages {
 			global $polylang;
 			return $polylang->model->get_language( $language )->get_display_flag_url();
 		}
+
+		if ( $this->website_is_multilingual() && 'wpml' === $this->ml_plugin ) {
+			global $sitepress;
+			return $sitepress->get_flag_url();
+		}
 		return '';
 	}
 
