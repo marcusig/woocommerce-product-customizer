@@ -395,6 +395,14 @@ PC.utils = PC.utils || {
 		if ( 'undefined' != typeof woocs_current_currency && 'undefined' != woocs_current_currency['rate'] ) {
 			return amount * woocs_current_currency['rate'];
 		}
+
+		// WCML
+		if ( 'undefined' != typeof PC.fe.config.wcml_rate && parseFloat( PC.fe.config.wcml_rate ) ) {
+			return amount * parseFloat( PC.fe.config.wcml_rate );
+		}
+
+		// Aelia CS
+
 		return amount;
 	}
 

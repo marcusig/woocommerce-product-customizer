@@ -147,6 +147,18 @@ class Languages {
 	 */
 	public function add_current_language_to_js( $config ) {
 		if ( $current_language = $this->get_current_language() ) $config['current_language'] = $current_language;
+
+		// WCML
+		global $woocommerce_wpml;
+		if ( $woocommerce_wpml && function_exists( 'wcml_is_multi_currency_on' ) && wcml_is_multi_currency_on() ) {
+			// get_currency_rate
+			$cc = $woocommerce_wpml->get_multi_currency()->get_client_currency();
+			$currency_details = $woocommerce_wpml->get_multi_currency()->get_currency_details_by_code( $cc );
+			if ( isset( $currency_details['rate'] ) && $currency_details['rate'] ) {
+				$config['wcml_rate'] = $currency_details['rate'];
+			}
+		}
+
 		return $config;
 	}
 }
