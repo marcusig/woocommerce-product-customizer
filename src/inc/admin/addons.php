@@ -32,5 +32,19 @@ return json_decode('[
 		"description": "Select several choices from one layer. Ideal for individual options.",
 		"img": "mkl-pc-multiple-choice.png",
 		"product_url": "https://wc-product-configurator.com/product/save-your-design/"
+	},
+	{
+		"product_name": "stock-management",
+		"label": "Stock management and linked products",
+		"description": "Manage the stocks on a choice basis, or link a choice to a product in the shop.",
+		"img": "mkl-pc-stock-management.png",
+		"product_url": "https://wc-product-configurator.com/product/stock-management-and-linked-product/"
+	},
+	{
+		"product_name": "conditional-logic",
+		"label": "Conditional logic",
+		"description": "Make complex product configurations using this add-on. Add conditional logic to hide, show or select choices and layers depending on other choices.",
+		"img": "mkl-pc-conditional-logic.png",
+		"product_url": "https://wc-product-configurator.com/product/conditional-logic/"
 	}
 ]');

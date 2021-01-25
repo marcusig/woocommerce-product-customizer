@@ -46,6 +46,7 @@ This plugin comes without limitations. But if you need more functionalities, loo
 * <a target="_blank" href="https://wc-product-configurator.com/product/variable-products/">Variable products</a> - Use the product configurator with variable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/multiple-choice/">Multiple choices</a> - Enables multiple choices per layer Ideal for a product’s options, or when having several individual options.
 * <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Stock management / Linked product</a> - Manage the stocks on a choice basis, or link a choice to a product in the shop. 
+* <a target="_blank" href="https://wc-product-configurator.com/product/conditional-logic/">Conditional logic</a> - Manage the stocks on a choice basis, or link a choice to a product in the shop. 
 * For custom needs, contact me <a href="https://wc-product-configurator.com/contact/">here</a>
 
 == Installation ==
