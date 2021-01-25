@@ -125,14 +125,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				</div>
 			</div>
 		</div>
-		<label class="setting">
-			<span class="name"><?php _e('Angle Name', 'product-configurator-for-woocommerce' ) ?></span>
-			<input type="text" data-setting="name" value="{{data.name}}">
-		</label>
-		<label class="setting">
-			<span class="name"><?php _e('Description', 'product-configurator-for-woocommerce' ) ?></span>
-			<textarea data-setting="description">{{data.description}}</textarea>
-		</label>
+		<?php do_action('mkl_pc_angle_fields') ?>
 		<?php do_action('mkl_pc_angle_settings') ?>
 	</div>
 	<div class="attachment-display-settings">

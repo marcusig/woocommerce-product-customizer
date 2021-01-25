@@ -292,7 +292,7 @@ PC.options = PC.options || {};
 		},
 
 		render: function() { 
-			this.$el.append( this.template( this.model.attributes ) ); 
+			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 
 
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			
@@ -366,7 +366,7 @@ PC.options = PC.options || {};
 			'click .layer-choices-title a.close': 'close_choices'
 		},
 		render: function() {
-			this.$el.append( this.template( this.model.attributes ) ); 
+			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 
@@ -410,8 +410,8 @@ PC.options = PC.options || {};
 		render: function() {
 			var data = _.extend({
 				thumbnail: this.model.get_image( 'thumbnail' )
-			} , this.options.model.attributes );
-			this.$el.append( this.template( data ) );
+			}, this.options.model.attributes );
+			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
 			var $description = this.$el.find( '.description' );
 			if ( $description.length && window.tippy ) {
 				/**
@@ -704,6 +704,7 @@ PC.options = PC.options || {};
 	PC.fe.views.angle = Backbone.View.extend({
 		tagName: 'li',
 		className: 'angle',
+		template: wp.template( 'mkl-pc-configurator-angle-item' ), 
 		initialize: function( options ) {
 			// this.parent = options.parent || PC.fe; 
 			this.options = options || {};
@@ -716,7 +717,7 @@ PC.options = PC.options || {};
 			'click a': 'change_angle'
 		},
 		render: function() {
-			this.$el.append( $('<a href="#">').text( this.model.get( 'name' ) ) ); 
+			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.angle_data', this.model.attributes ) ) ); 
 			return this.$el; 
 		},
 		change_angle: function( e ) {

@@ -26,6 +26,7 @@ class Admin_Woocommerce {
 		$this->settings = new Admin_Settings();
 		$this->choice_settings = new Choice_Settings();
 		$this->layer_settings = new Layer_Settings();
+		$this->angle_settings = new Angle_Settings();
 	}
 
 	/**
@@ -38,6 +39,7 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings-page.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/choice.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/layer.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/settings/angle.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}
