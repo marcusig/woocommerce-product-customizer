@@ -107,7 +107,7 @@ class Languages {
 
 		if ( $this->website_is_multilingual() && 'wpml' === $this->ml_plugin ) {
 			global $sitepress;
-			return $sitepress->get_flag_url();
+			return $sitepress->get_flag_url( $language );
 		}
 		return '';
 	}
