@@ -402,6 +402,9 @@ PC.utils = PC.utils || {
 		}
 
 		// Aelia CS
+		if ( 'undefined' != typeof wc_aelia_currency_switcher_params && 'undefined' != wc_aelia_currency_switcher_params.current_exchange_rate_from_base && 0 < parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base ) ) {
+			return amount * parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base );
+		}
 
 		return amount;
 	}
