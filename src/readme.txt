@@ -88,6 +88,9 @@ Not enough? Ask your questions <a href="https://wordpress.org/support/plugin/pro
 = How can I create a custom theme for the configurator? =
 Use the starter theme, which you can find on <a href="https://github.com/marcusig/product-configurator-custom-theme">github</a> with simple instructions to get started.
 
+= Is the product configurator compatible with WPML or Polylang? =
+Yes, the plugin is compatible with both, and will add localization for the layer and choice fields.
+
 = How can I optimize the layers in the configurator? =
 We recommend using a plugin such as WP-Optimize for all-round performance improvements:
 [vimeo https://vimeo.com/333705073]
@@ -108,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: The plugin is now multilingual: added compatibility with WPML and Polylang 
+* FEATURE: Added compatibility with [WooCommerce Currency Selector (WOOCS)](https://wordpress.org/plugins/woocommerce-currency-switcher/)
 * TWEAK: Added layer admin label, to facilitate conditional logic usage
 
 = 1.2.6 - 12/Jan/2021 =

@@ -49,6 +49,10 @@ Backbone.Model.prototype.toJSON = function() {
 
 		function configurator_init( event ) {
 
+			if ( PC.fe.config.current_language ) {
+				PC.fe.lang = PC.fe.config.current_language;
+				add_language_filters( PC.fe.lang );
+			}
 			var product_id;
 			//get product ID
 			if ( $( event.target ).data( 'product_id' ) ) {
@@ -125,6 +129,24 @@ Backbone.Model.prototype.toJSON = function() {
 		 */
 		$( '.mkl-configurator-inline' ).trigger( 'mkl/pc/inline-init' );
 	});
+
+	/**
+	 * Add the language filters
+	 *
+	 * @param {string} lang 
+	 */
+	function add_language_filters( lang ) {
+		var maybe_change_name_and_description = function( attributes ) {
+			if ( attributes['name_' + lang] && '' != attributes['name_' + lang].trim() ) attributes.name = attributes['name_' + lang];
+			if ( attributes['description_' + lang] && '' != attributes['description_' + lang].trim() ) attributes.description = attributes['description_' + lang];
+			return attributes;
+		}
+
+		wp.hooks.addFilter( 'PC.fe.configurator.layer_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
+		wp.hooks.addFilter( 'PC.fe.configurator.choice_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
+		wp.hooks.addFilter( 'PC.fe.configurator.angle_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
+	}
+
 
 	PC.fe.init = function( product_id, parent_id ) {
 		if ( PC.fe.is_using_shortcode ) {
@@ -344,6 +366,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 	*/
 
+
 })(jQuery);
 
 PC.utils = PC.utils || {
@@ -372,6 +395,17 @@ PC.utils = PC.utils || {
 		if ( 'undefined' != typeof woocs_current_currency && 'undefined' != woocs_current_currency['rate'] ) {
 			return amount * woocs_current_currency['rate'];
 		}
+
+		// WCML
+		if ( 'undefined' != typeof PC.fe.config.wcml_rate && parseFloat( PC.fe.config.wcml_rate ) ) {
+			return amount * parseFloat( PC.fe.config.wcml_rate );
+		}
+
+		// Aelia CS
+		if ( 'undefined' != typeof wc_aelia_currency_switcher_params && 'undefined' != wc_aelia_currency_switcher_params.current_exchange_rate_from_base && 0 < parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base ) ) {
+			return amount * parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base );
+		}
+
 		return amount;
 	}
 

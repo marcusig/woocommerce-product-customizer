@@ -1,0 +1,9 @@
+<wpml-config>
+	<custom-fields>
+		<custom-field action="copy">_mkl_product_configurator_layers</custom-field>
+		<custom-field action="copy">_mkl_product_configurator_content</custom-field>
+		<custom-field action="copy">_mkl_product_configurator_angles</custom-field>
+		<custom-field action="copy">_mkl_pc__is_configurable</custom-field>
+		<custom-field action="copy">_mkl_product_configurator_last_updated</custom-field>
+	</custom-fields>
+</wpml-config>
