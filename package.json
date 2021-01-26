@@ -1,6 +1,6 @@
 {
   "name": "woocommerce-mkl-pc-extra-price",
-  "version": "1.0.0",
+  "version": "1.2.7",
   "description": "Product Configurator",
   "main": "index.js",
   "scripts": {
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "gulp-rename": "^2.0.0",
+    "gulp-replace": "^1.0.0",
     "gulp-sourcemaps": "^2.6.5",
     "gulp-uglify": "^3.0.2",
     "gulp-util": "^3.0.8",

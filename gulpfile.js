@@ -8,6 +8,7 @@ const sourcemaps = require('gulp-sourcemaps');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
 const gutil = require('gulp-util');
+// const replace = require('gulp-replace');
 var plumber = require('gulp-plumber');
 // var wpPot = require('gulp-wp-pot');
 
