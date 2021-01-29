@@ -150,7 +150,11 @@ class Frontend_Woocommerce {
 	 */
 	public function load_configurator_on_page() {
 		global $post;
-		$product = wc_get_product( $post->ID );
+		if ( $post && $post->ID ) {
+			$product = wc_get_product( $post->ID );
+		} else {
+			$product = false;
+		}
 		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || has_shortcode( $post->post_content, 'mkl_configurator_button' ) || has_shortcode( $post->post_content, 'mkl_configurator' ) );
 	}
 
