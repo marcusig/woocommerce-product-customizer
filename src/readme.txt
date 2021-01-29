@@ -218,5 +218,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.7 Added customizer controls (to change colors), added the ability to view a configuration from the cart.
+* 1.2.7 The configurator is now compatible with the major multilingual plugins (WPML, Polylang) and multi currency plugins.
 
