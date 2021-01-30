@@ -118,16 +118,16 @@ Backbone.Model.prototype.toJSON = function() {
 		});
 
 		/**
-		 * Launch the configurator after click
-		 */
-		if( PC.fe.config.open_configurator && PC.fe.config.open_configurator == true ) {
-			$( '.configure-product-simple' ).trigger( 'click' );
-		}
-
-		/**
 		 * Launch the configurator inline
 		 */
 		$( '.mkl-configurator-inline' ).trigger( 'mkl/pc/inline-init' );
+
+		/**
+		 * Launch the configurator after click
+		 */
+		if( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
+			$( '.configure-product-simple' ).trigger( 'click' );
+		}
 	});
 
 	/**
@@ -241,7 +241,6 @@ Backbone.Model.prototype.toJSON = function() {
 			}
 
 			// content.add( response.content );
-			
 			$.each( response.content, function(key, value) {
 				var ob = _.clone( value );
 				if ( ob.choices && ob.choices.length > 0 && PC.fe.layers.get( ob.layerId ) ) {
