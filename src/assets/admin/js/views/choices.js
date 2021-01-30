@@ -6,7 +6,6 @@ PC.views = PC.views || {};
 	// 	collectionName: 'choices', 
 	// });
 
-	PC.groups = ['A group', 'an other group', 'grouppy'];
 	PC.views.choices = Backbone.View.extend({
 		// className: 'choices-list',
 		tagName: 'div',
@@ -34,7 +33,7 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
 			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
-			this.listenTo( this.col, 'change:is_group', this.render);
+			this.listenTo( this.col, 'change:is_group', this.on_change_is_group);
 			this.render(); 
 		},
 
@@ -263,9 +262,6 @@ PC.views = PC.views || {};
 				confirm: this.$('.prompt-delete'),
 			};
 
-			this.$( 'select[data-setting=group]').select2({
-				data: PC.groups
-			});
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;

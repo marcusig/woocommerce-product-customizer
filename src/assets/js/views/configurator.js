@@ -372,7 +372,8 @@ PC.options = PC.options || {};
 			this.add_all( this.options.content ); 
 			
 			if( !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
-				this.options.content.findWhere( { available: true } ).set( 'active', true );
+				var av = this.options.content.findWhere( { available: true } );
+				if ( av ) av.set( 'active', true );
 			}
 			return this.$el;
 		},
@@ -434,6 +435,7 @@ PC.options = PC.options || {};
 				} );
 				tippy( this.$el.find('.choice-item')[0], tooltip_options );
 			}
+			if ( this.model.get( 'is_group' ) ) this.$el.addClass( 'is-group' );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.activate();
 			this.$el.data( 'view', this );
@@ -445,7 +447,7 @@ PC.options = PC.options || {};
 			return this.$el;
 		}, 
 		set_choice: function( event ) {
-			if ( this.model.get( 'group' ) ) return;
+			if ( this.model.get( 'is_group' ) ) return;
 
 			if ( event.type == 'keydown' ) {
 				if ( ! ( event.keyCode == 13 || event.keyCode == 32 ) ) {
