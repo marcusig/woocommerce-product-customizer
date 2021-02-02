@@ -111,8 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.2.7 - 26/Jan/2021 =
+= 1.2.7 - 02/Feb/2021 =
 
+* FEATURE: Added the possibility to group choices
 * FEATURE: The plugin is now multilingual: added compatibility with WPML and Polylang 
 * FEATURE: Multi currency: Added compatibility with [WooCommerce Currency Selector (WOOCS)](https://wordpress.org/plugins/woocommerce-currency-switcher/), WCML, Aelia currency switcher
 * TWEAK: Added the missing add-ons in the settings
