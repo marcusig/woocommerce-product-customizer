@@ -372,7 +372,8 @@ PC.options = PC.options || {};
 			this.add_all( this.options.content ); 
 			
 			if( !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
-				this.options.content.findWhere( { available: true } ).set( 'active', true );
+				var av = this.options.content.findWhere( { available: true } );
+				if ( av ) av.set( 'active', true );
 			}
 			return this.$el;
 		},
@@ -381,8 +382,17 @@ PC.options = PC.options || {};
 			collection.each( this.add_one, this );
 		},
 		add_one: function( model ) {
-			var new_choice = new PC.fe.views.choice( { model: model, multiple: false } ); 
-			this.$list.append( new_choice.render() ); 
+			if ( model.get( 'is_group' ) )  {
+				var new_choice = new PC.fe.views.choiceGroup( { model: model, multiple: false } ); 
+			} else {
+				var new_choice = new PC.fe.views.choice( { model: model, multiple: false } ); 
+			}
+
+			if ( model.get( 'parent' ) && this.$( 'ul[data-item-id=' + model.get( 'parent' ) + ']' ).length ) {
+				this.$( 'ul[data-item-id=' + model.get( 'parent' ) + ']' ).append( new_choice.render() ); 
+			} else {
+				this.$list.append( new_choice.render() ); 
+			}
 		},
 		close_choices: function( event ) {
 			event.preventDefault(); 
@@ -403,9 +413,9 @@ PC.options = PC.options || {};
 			wp.hooks.doAction( 'PC.fe.choice.init', this );
 		},
 		events: {
-			'mousedown .choice-item': 'set_choice',
-			'keydown .choice-item': 'set_choice',
-			'mouseenter .choice-item': 'preload_image',
+			'mousedown > .choice-item': 'set_choice',
+			'keydown > .choice-item': 'set_choice',
+			'mouseenter > .choice-item': 'preload_image',
 		},
 		render: function() {
 			var data = _.extend({
@@ -425,6 +435,7 @@ PC.options = PC.options || {};
 				} );
 				tippy( this.$el.find('.choice-item')[0], tooltip_options );
 			}
+			if ( this.model.get( 'is_group' ) ) this.$el.addClass( 'is-group' );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.activate();
 			this.$el.data( 'view', this );
@@ -436,6 +447,8 @@ PC.options = PC.options || {};
 			return this.$el;
 		}, 
 		set_choice: function( event ) {
+			if ( this.model.get( 'is_group' ) ) return;
+
 			if ( event.type == 'keydown' ) {
 				if ( ! ( event.keyCode == 13 || event.keyCode == 32 ) ) {
 					return;
@@ -470,6 +483,9 @@ PC.options = PC.options || {};
 		},
 	});
 
+	PC.fe.views.choiceGroup = PC.fe.views.choice.extend({
+		template: wp.template( 'mkl-pc-configurator-choice-group' ),
+	});
 
 	/*
 		PC.fe.views.viewer

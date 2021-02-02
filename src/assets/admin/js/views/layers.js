@@ -189,7 +189,7 @@ TODO:
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},
 		events: {
-			'click' : 'edit',
+			'click > button' : 'edit',
 			'drop': 'drop',
 		},
 		render: function() {

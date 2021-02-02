@@ -30,6 +30,9 @@ PC.choice = Backbone.Model.extend({
 				break;
 		}
 
+		if ( 'undefined' != attributes.is_group && 1 == parseInt( attributes.is_group ) ) {
+			this.set( 'available', false);
+		}
 		wp.hooks.doAction( 'PC.fe.models.choice.init', this );
 	},
 	get_image: function( image, what ) { 
@@ -45,7 +48,8 @@ PC.choice = Backbone.Model.extend({
 		// console.log('choice model parse:', response);
 	},
 	sync: function( method, model, options ) {
-	}
+	},
+	
 });
 
 PC.content = Backbone.Model.extend({ 
