@@ -202,7 +202,6 @@ PC.options = PC.options || {};
 		add_to_cart: function( e ) { 
 			var $cart = $( 'form.cart' );
 			var data = PC.fe.save_data.save();
-
 			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', [] );
 			if ( errors.length ) {
 				// show errors and prevent adding to cart

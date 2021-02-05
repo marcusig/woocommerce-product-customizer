@@ -345,9 +345,9 @@ class DB {
 		);
 
 		// Allows to load the Contents on the init data to avoid having to use AJAX. 
-		if( $product->get_type() == 'simple' ) {
+		if( 'simple' == $product->get_type() ) {
 			// the configurator content
-			$init_data['content'] = $this->get( 'content', $id ); 
+			$init_data['content'] = $this->get( 'content', $id );
 		}
 
 		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );

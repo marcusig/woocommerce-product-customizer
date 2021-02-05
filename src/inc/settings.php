@@ -19,6 +19,8 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 				'save_images' => 'save_to_disk',
 				'show_choice_description' => false,
 				'show_layer_description' => false,
+				'preview_image_size' => 'full',
+				'thumbnail_size' => 'thumbnail',
 			) );
 		}
 

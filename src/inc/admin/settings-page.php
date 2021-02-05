@@ -174,6 +174,34 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'mlk_pc_settings'
 			);
 
+			$sizes = array_merge( [ 'full' ], get_intermediate_image_sizes() );
+			add_settings_field(
+				'preview_image_size',
+				__( 'Preview Image size', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'options' => $sizes,
+					'setting_name' => 'preview_image_size',
+					'no_value' => true,
+				]
+			);
+
+			add_settings_field(
+				'thumbnail_size',
+				__( 'Thumbnail size', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'options' => $sizes,
+					'setting_name' => 'thumbnail_size',
+					'no_value' => true,
+					'description' => __( 'Size of the thumbnails in the sidebar size', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
 			add_settings_field(
 				'show_price_in_configurator',
 				__( 'Show the product\'s price in the configurator', 'product-configurator-for-woocommerce' ),
@@ -297,6 +325,14 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 		public function callback_select( $field_options = [] ) {
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+			if ( ! isset( $field_options[ 'options' ] ) ) {
+				echo 'Options are missing for the this select field: ' . $field_options[ 'setting_name' ];
+				return;
+			}
+
+			if ( isset( $field_options[ 'no_value' ] ) && $field_options[ 'no_value' ] ) {
+				$field_options[ 'options' ] = array_combine( $field_options[ 'options' ], $field_options[ 'options' ] );
+			}
 
 			$value = $this->get_setting( $field_options[ 'setting_name' ] );
 

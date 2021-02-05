@@ -44,7 +44,8 @@ class Frontend_Woocommerce {
 		// variation: include text when prod configurator is opened and no variation is selected
 		add_shortcode( 'mkl_configurator_button', array( $this, 'button_shortcode' ) );
 		add_shortcode( 'mkl_configurator', array( $this, 'configurator_shortcode' ) );
-		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );		
+		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
+		add_filter( 'mkl_product_configurator_get_front_end_data', array( $this, 'set_thumbnail_url' ) );
 	}
 
 	public function register_rest_route() {
@@ -155,7 +156,7 @@ class Frontend_Woocommerce {
 		} else {
 			$product = false;
 		}
-		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || has_shortcode( $post->post_content, 'mkl_configurator_button' ) || has_shortcode( $post->post_content, 'mkl_configurator' ) );
+		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || is_a( $post, 'WP_Post' ) && ( has_shortcode( $post->post_content, 'mkl_configurator_button' ) || has_shortcode( $post->post_content, 'mkl_configurator' ) ) );
 	}
 
 	public function load_scripts() {
@@ -286,5 +287,35 @@ class Frontend_Woocommerce {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Set the image sizes
+	 * This could be done when selecting the image in the media modal, but then could not be changed later.
+	 * 
+	 * @param array $data
+	 * @return array
+	 */
+	public function set_thumbnail_url( $data ) {
+		if ( ! isset( $data['content'] ) || ! is_array( $data['content'] ) ) return $data;
+		$img_size = 'full';
+		$thumbnail_size = 'medium';
+		foreach( $data['content'] as $lin => $layer ) {
+			foreach( $layer['choices'] as $cin => $choice ) {
+				foreach( $choice['images'] as $imin => $image ) {
+					if ( $image['image']['id'] ) {
+						if ( $new_image_url = wp_get_attachment_image_url( $image['image']['id'], $img_size ) ) {
+							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url'] = $new_image_url;
+						}
+					}
+					if ( $image['thumbnail']['id'] ) {
+						if ( $new_thumbnail_url = wp_get_attachment_image_url( $image['thumbnail']['id'], $thumbnail_size ) ) {
+							$data['content'][$lin]['choices'][$cin]['images'][$imin]['thumbnail']['url'] = $new_thumbnail_url;
+						}
+					}
+				}
+			}
+		}
+		return $data;
 	}
 }
