@@ -196,5 +196,17 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			$classes_array = explode( ' ', $classes );
 			return implode( ' ', array_map( 'sanitize_html_class', $classes_array ) );
 		}
+
+		/**
+		 * Check if all requirements are available for the image compilation
+		 *
+		 * @return void
+		 */
+		public static function check_image_requirements() {
+			if ( ! function_exists( 'finfo_buffer' ) ) {
+				return false;
+			}
+			return true;
+		}
 	}
 }

@@ -76,6 +76,12 @@ class Frontend_Woocommerce {
 	 * @return void
 	 */
 	public function serve_image( $data ) {
+		if ( ! Utils::check_image_requirements() ) {
+			header("Content-type: image/png");
+			readfile( MKL_PC_ASSETS_PATH . 'images/image-error.png' );
+			return;
+		}
+
 		$product_id = $data->get_param( 'id' );
 		$images = explode( '-', $data->get_param( 'images' ) );
 		$content = [];

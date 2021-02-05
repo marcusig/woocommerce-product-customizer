@@ -361,7 +361,7 @@ class Configuration {
 				}
 			}
 
-			if ( count( $images ) > 1 ) {
+			if ( count( $images ) > 1 && Utils::check_image_requirements() ) {
 				$fimage = $this->image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
 			} elseif ( count( $images ) == 1 ) {
 				$fimage = $images[0];

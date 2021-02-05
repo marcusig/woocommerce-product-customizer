@@ -121,6 +121,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<?php
 		}
 
+		
 		public function init() {
 
 			register_setting( 'mlk_pc_settings', 'mkl_pc__settings' );
@@ -234,6 +235,24 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'setting_name' => 'show_layer_description',
 				]
 			);
+
+			if ( ! Utils::check_image_requirements() ) {
+				add_settings_field(
+					'image_warning',
+					__( 'Configuration image generation', 'product-configurator-for-woocommerce' ),
+					function() {
+						echo '<div class="notice error below-h2">
+							<p>PHP Fileinfo extension must be installed/enabled for the plugin to be able to generate the images.</p>
+						</div>';
+					},
+					'mlk_pc_settings', 
+					'mkl_pc__mlk_pc_general_settings',
+					[ 
+						'setting_name' => 'image_warning',
+					]
+				);
+				// "PHP Fileinfo extension must be installed/enabled to use Intervention Image."
+			}
 
 			add_settings_field(
 				'show_image_in_cart',
