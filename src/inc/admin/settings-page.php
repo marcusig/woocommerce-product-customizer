@@ -226,6 +226,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'choice_description_no_tooltip',
+				__( 'Always show the description (no tooltip)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'choice_description_no_tooltip',
+				]
+			);
+
+			add_settings_field(
 				'show_layer_description',
 				__( 'Show layers\' description', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

@@ -214,7 +214,7 @@ class Frontend_Woocommerce {
 
 		$deps = array('jquery', 'backbone', 'wp-util', 'wp-hooks', 'mkl_pc/js/views/configurator' );
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
-		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) ) {
+		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
 			$deps[] = 'mkl_pc/js/vendor/tippy';
 		}
 		$deps = apply_filters( 'mkl_pc/js/product_configurator/dependencies', $deps );
@@ -238,7 +238,8 @@ class Frontend_Woocommerce {
 				'where' => 'out',
 				'bg_image' => $bg_image ? $bg_image : apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 				'close_configurator_on_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'close_configurator_on_add_to_cart' ),
-				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' )
+				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' ),
+				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 			) ),
 		);
 

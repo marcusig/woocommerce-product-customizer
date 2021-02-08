@@ -184,7 +184,7 @@ $inner_space: 1em;
 		left: $distance;
 		right: $distance;
 		bottom: $distance;
-		background: #fff;
+		background: color(darkest);
 		box-shadow: 0px 2px 15px rgba(0,0,0,0.8);
 
 		visibility: hidden;
@@ -667,9 +667,13 @@ $inner_space: 1em;
 									}
 								}
 							}
-							.description {
-								display: none;
+							span.description {
+								display: block;
+								font-weight: 300;
+								font-size: .9em;
+								margin-top: .5em;
 							}
+
 						}
 						&.active {
 							button {
@@ -1070,6 +1074,10 @@ $inner_space: 1em;
 		}		
 	}
 
+}
+
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description {
+	display: none;
 }
 
 .tippy-box[data-theme~="invert"] {
