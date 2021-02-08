@@ -70,10 +70,22 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'priority' => 40,
 				),
+				'angle_switch' => array(
+					'label' => __( 'Autonatic angle switch', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'condition' => '!data.not_a_choice',
+					'choices' => [
+						[
+							'label' => 'No',
+							'value' => 'no'
+						],
+					],
+					'priority' => 50,
+				),
 				'class_name' => array(
 					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
-					'priority' => 50,
+					'priority' => 500,
 				),
 	
 			));

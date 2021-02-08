@@ -14,14 +14,14 @@ Backbone.Model.prototype.toJSON = function() {
 	return json;
 };
 
-!(function($){
+!( function( $ ) {
 	'use strict';
 
 	PC.fe.config = PC.fe.config || PC_config.config;
 	PC.fe.config = _.extend( {}, PC.fe.config);
 	PC.fe.products_content = PC.fe.products_content || [];
 
-	$(function() {
+	$( function() {
 		// adds classes to body
 		if( PC.utils._isTouch() ){
 			$( 'body' ).addClass( 'is-touch' );
@@ -100,6 +100,24 @@ Backbone.Model.prototype.toJSON = function() {
 				}
 			});
 		});
+
+		/**
+		 * Automaticly switch angles
+		 */
+		function auto_angle_switch( view ) {
+			if ( view.model.get( 'angle_switch' ) && 'no' != view.model.get( 'angle_switch' ) )  {
+				var new_angle = PC.fe.angles.get( view.model.get( 'angle_switch' ) );
+				if ( new_angle ) {
+					new_angle.collection.each(function(model) {
+						model.set('active' , false); 
+					});		
+					new_angle.set( 'active', true );
+				}
+		 	}
+		}
+
+		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch );
+		wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch );
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ){
 

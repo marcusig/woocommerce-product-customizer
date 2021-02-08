@@ -330,9 +330,8 @@ PC.options = PC.options || {};
 		show_choices: function( event ) {
 			event.preventDefault(); 
 			if( this.model.get( 'active' ) == true) {
-				this.model.set('active', false); 
-
-			} else {				
+				this.model.set('active', false);
+			} else {
 				this.model.collection.each(function(model) {
 					model.set('active' , false);
 				});

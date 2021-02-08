@@ -275,6 +275,7 @@ TODO:
 				confirm: this.$('.prompt-delete'),
 				// cancel: this.$('.cancel-delete-layer'),
 			};
+			this.populate_angles_list();
 			return this;
 		},
 		on_change_not_a_choice: function( event ) {
@@ -342,6 +343,15 @@ TODO:
 			});
 			this.render();
 		},
+		populate_angles_list: function() {
+			var selected = this.model.get( 'angle_switch' ) || 'no';
+			var angles = PC.app.get_collection( 'angles' );
+			if ( angles && angles.length ) {
+				angles.each( function( model ) {
+					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
+				}, this );
+			}
+		}
 	});
 
 	PC.views.layer_img = Backbone.View.extend({
