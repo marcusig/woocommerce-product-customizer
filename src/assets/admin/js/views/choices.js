@@ -262,6 +262,8 @@ PC.views = PC.views || {};
 				confirm: this.$('.prompt-delete'),
 			};
 
+			this.populate_angles_list();
+
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;
@@ -338,8 +340,16 @@ PC.views = PC.views || {};
 			if ( action in PC.actions ) {
 				PC.actions[action](el, this);
 			}
+		},
+		populate_angles_list: function() {
+			var selected = this.model.get( 'angle_switch' ) || 'no';
+			var angles = PC.app.get_collection( 'angles' );
+			if ( angles && angles.length ) {
+				angles.each( function( model ) {
+					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
+				}, this );
+			}
 		}
-
 	});
 		
 	PC.views.choice_picture = Backbone.View.extend({

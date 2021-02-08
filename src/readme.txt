@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 * TWEAK: Add the ability to not use the tooltip for the description, but instead always show it.
+* TWEAK: Added the possibility to change angle depending on the active layer / choice
 
 = 1.2.7 - 02/Feb/2021 =
 
