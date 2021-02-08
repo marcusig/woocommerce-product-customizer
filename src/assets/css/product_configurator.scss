@@ -662,7 +662,10 @@ $inner_space: 1em;
 							}
 
 							span.description {
-								display: none;
+								display: block;
+								font-weight: 300;
+								font-size: .9em;
+								margin-top: .5em;
 							}
 
 							&:hover {
@@ -1058,6 +1061,10 @@ $inner_space: 1em;
 		}		
 	}
 
+}
+
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description {
+	display: none;
 }
 
 body.configurator_is_inline .mkl_pc {

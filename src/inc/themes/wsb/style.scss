@@ -627,9 +627,13 @@ $inner_space: 1em;
 									transform: translate(-50%, -50%); 
 								}
 							}
+
 							span.description {
-								display: none;
+								display: block;
+								font-size: .8em;
+								color: color(light-gray);
 							}
+
 							> button {
 								padding: .5em;
 								margin: 0;
@@ -1107,6 +1111,10 @@ body.configurator_is_inline .mkl_pc {
 		}
 	
 	}
+}
+
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description {
+	display: none;
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.choices-fullwidth {
