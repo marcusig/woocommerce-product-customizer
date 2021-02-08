@@ -57,7 +57,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 
 				),
 				'angle_switch' => array(
-					'label' => __( 'Autonatic angle switch', 'product-configurator-for-woocommerce' ),
+					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
 					'condition' => '!data.not_a_choice',
 					'choices' => [
