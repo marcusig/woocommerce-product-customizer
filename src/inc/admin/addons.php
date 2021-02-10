@@ -31,7 +31,7 @@ return json_decode('[
 		"label": "Multiple choice",
 		"description": "Select several choices from one layer. Ideal for individual options.",
 		"img": "mkl-pc-multiple-choice.png",
-		"product_url": "https://wc-product-configurator.com/product/save-your-design/"
+		"product_url": "https://wc-product-configurator.com/product/multiple-choice/"
 	},
 	{
 		"product_name": "stock-management",

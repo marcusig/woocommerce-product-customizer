@@ -39,6 +39,11 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 					'type' => 'textarea',
 					'priority' => 20,
 				),
+				'class_name' => array(
+					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 150,
+				),
 			));
 		}
 	}

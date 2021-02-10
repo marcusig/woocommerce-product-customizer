@@ -607,8 +607,9 @@ PC.options = PC.options || {};
 			this.empty_img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 			this.parent = options.parent || PC.fe;
 			this.is_loaded = false;
-			this.listenTo( this.model, 'change active', this.change_layer );
-			this.listenTo( PC.fe.angles, 'change active', this.change_angle );
+			this.listenTo( this.model, 'change:active', this.change_layer );
+			this.listenTo( PC.fe.layers, 'change:active', this.toggle_current_layer_class );
+			this.listenTo( PC.fe.angles, 'change:active', this.change_angle );
 			wp.hooks.doAction( 'PC.fe.choice-img.init', this );
 			var is_active = this.model.get( 'active' );
 
@@ -686,6 +687,9 @@ PC.options = PC.options || {};
 				wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
 			}
 
+		},
+		toggle_current_layer_class: function( layer, new_val ) {
+			this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) );
 		}
 	}); 
 
@@ -729,7 +733,7 @@ PC.options = PC.options || {};
 			this.options = options || {};
 			this.render(); 
 			this.listenTo( this.model, 'change active', this.activate ); 
-			return this; 
+			return this;
 		},
  
 		events: {
@@ -751,6 +755,10 @@ PC.options = PC.options || {};
 				this.$el.addClass('active');
 			else
 				this.$el.removeClass('active');
+
+			if ( this.model.get( 'class_name' ) ) {
+				PC.fe.modal.$el.toggleClass( this.model.get( 'class_name' ), this.model.get( 'active' ) );
+			}
 		}
 
 	});
