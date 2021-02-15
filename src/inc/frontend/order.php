@@ -29,7 +29,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					foreach( $configurator_data as $layer ) {
 						if( is_object($layer) ) {
 							if( $layer->is_choice() ) :
-								$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer ), $layer, $item, $values );
+								$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values );
 								$item->add_meta_data( $choice_meta[ 'label' ], $choice_meta['value'], false );
 								do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $item, $order );
 							?>
@@ -44,12 +44,12 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			}		
 		}
 
-		private function set_order_item_meta( $layer ) {
+		private function set_order_item_meta( $layer, $product ) {
 			$meta = array(
 				'label' => $layer->get_layer('name'),
 				'value' => $layer->get_choice('name'),
 			);
-			return apply_filters( 'mkl_pc_order_item_meta', $meta, $layer ); 
+			return apply_filters( 'mkl_pc_order_item_meta', $meta, $layer, $product ); 
 		}
 	}
 }

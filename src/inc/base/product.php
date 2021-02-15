@@ -7,11 +7,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 class Product {
-	public static function set_layer_item_meta( $layer ) {
+	public static function set_layer_item_meta( $layer, $product ) {
 		$meta = array(
 			'label' => $layer->get_layer( 'name' ),
 			'value' => $layer->get_choice( 'name' ),
 		);
-		return apply_filters( 'mkl_pc_item_meta', $meta, $layer ); 
+		return apply_filters( 'mkl_pc_item_meta', $meta, $layer, $product ); 
 	}
 }
