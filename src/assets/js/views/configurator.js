@@ -502,6 +502,7 @@ PC.options = PC.options || {};
 		imagesLoading: 0,
 		initialize: function( options ) {
 			this.parent = options.parent || PC.fe; 
+			this.imagesLoading = 0;
 			return this; 
 		},
 
@@ -561,6 +562,9 @@ PC.options = PC.options || {};
 
 	PC.fe.views.viewer_static_layer = Backbone.View.extend({
 		tagName: wp.hooks.applyFilters( 'PC.fe.viewer.item.tag', 'img' ),
+		events: {
+			'load': 'loaded'
+		},
 		initialize: function( options ) { 
 			this.listenTo( PC.fe.angles, 'change active', this.render );
 
@@ -569,17 +573,17 @@ PC.options = PC.options || {};
 
 			this.render(); 
 
-			this.$el.on( 'load', function(event) {
-				wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
-				this.parent.imagesLoading --;
-				if( this.parent.imagesLoading == 0 ) {
-					this.parent.$el.removeClass('is-loading-image');
-					wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
-				}
-			}.bind( this ));
 			return this; 
 		},
-
+		loaded: function(event) {
+			this.$el.removeClass( 'loading' );
+			wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
+			this.parent.imagesLoading --;
+			if( this.parent.imagesLoading == 0 ) {
+				this.parent.$el.removeClass('is-loading-image');
+				wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
+			}
+		},
 		render: function() {
 			var img = this.model.get_image();
 			// Default to a transparent image
@@ -589,8 +593,8 @@ PC.options = PC.options || {};
 
 			this.parent.imagesLoading ++;
 			this.parent.$el.addClass('is-loading-image');
+			this.$el.addClass( 'active static loading' );
 			this.el.src = img
-			this.$el.addClass( 'active static' );
 			this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
 
 			return this.$el; 
@@ -643,11 +647,13 @@ PC.options = PC.options || {};
 				if ( ! this.is_loaded ) {
 					this.parent.imagesLoading ++;
 					this.parent.$el.addClass('is-loading-image');
+					this.$el.addClass( 'loading' );
 					this.el.src = img
 				} 
 				this.$el.addClass( 'active' );
 			} else {
 				if ( ! this.is_loaded ) {
+					this.$el.addClass( 'loading' );
 					this.el.src = this.empty_img;
 				}
 				this.$el.removeClass( 'active' );
@@ -675,8 +681,8 @@ PC.options = PC.options || {};
 		},
 		img_loaded: function(e) {
 
+			this.$el.removeClass( 'loading' );
 			if (this.empty_img == this.$el.prop('src')) return;
-
 			this.is_loaded = true;
 
 			wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );

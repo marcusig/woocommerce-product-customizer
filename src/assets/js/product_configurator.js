@@ -107,7 +107,7 @@ Backbone.Model.prototype.toJSON = function() {
 		function auto_angle_switch( view ) {
 			if ( view.model.get( 'angle_switch' ) && 'no' != view.model.get( 'angle_switch' ) )  {
 				var new_angle = PC.fe.angles.get( view.model.get( 'angle_switch' ) );
-				if ( new_angle ) {
+				if ( new_angle && ! new_angle.get( 'active' ) ) {
 					new_angle.collection.each(function(model) {
 						model.set('active' , false); 
 					});		
