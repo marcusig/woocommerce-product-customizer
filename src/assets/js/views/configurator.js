@@ -524,17 +524,22 @@ PC.options = PC.options || {};
 				this.layers = [];
 
 				this.add_layers();
-				// wp.hooks.addAction( 'PC.fe.viewer.layer.render', function( layer ) {
-					
-				// } );
+				this.add_loader();
+		
 
 			} else {
 				console.log('no content to show.');
 			}
+			
+			wp.hooks.doAction( 'PC.fe.viewer.render', this );
 
 			return this.$el; 
 
-		}, 
+		},
+
+		add_loader: function() {
+			this.$layers.append( $( '<div class="images-loading" />' ) );
+		},
 
 		add_layers: function() {
 			PC.fe.layers.each( this.add_choices, this );

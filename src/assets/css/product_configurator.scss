@@ -227,7 +227,7 @@ $inner_space: 1em;
 			}
 
 			&.is-loading-image {
-				
+
 			}
 
 			.angles-select {
@@ -343,6 +343,25 @@ $inner_space: 1em;
 					transform: translateX(-50%) translateY(-50%);
 					max-height: 100%;
 				}
+		
+				.images-loading {
+					display: block;
+					width: 30px;
+					height: 30px;
+					background: color(primary_hover);
+					position: absolute;
+					left: 2em;
+					bottom: 2em;
+					opacity: 0;
+					transition: all .2s;
+					border-radius: 50%;
+					-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+					animation: sk-scaleout 1.0s infinite ease-in-out;
+				}
+
+				img.loading ~ .images-loading {
+					opacity: 1;
+				}		
 			}
 		} 
 

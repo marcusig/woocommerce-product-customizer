@@ -344,7 +344,7 @@ $inner_space: 1em;
 
 				img {
 					transition: .2s all;
-					&:not(.active) {
+					&:not(.active), &.loading {
 						opacity: 0;
 					}
 					position: absolute;
@@ -353,6 +353,25 @@ $inner_space: 1em;
 					transform: translateX(-50%) translateY(-50%);
 					max-height: 100%;
 				}
+
+				.images-loading {
+					display: block;
+					width: 30px;
+					height: 30px;
+					background: color(ll4);
+					position: absolute;
+					left: 2em;
+					bottom: 2em;
+					opacity: 0;
+					transition: all .2s;
+					border-radius: 50%;
+					-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+					animation: sk-scaleout 1.0s infinite ease-in-out;
+				}
+
+				img.loading ~ .images-loading {
+					opacity: 1;
+				}				
 			}
 		} 
 
@@ -758,7 +777,8 @@ $inner_space: 1em;
 
 					li.layer-choices-title {
 						box-shadow: 0 0 5px rgba(6, 6, 6, 0.25);
-						position: relative;
+						position: sticky;
+						top: 0;
 						z-index: 2;
 						text-transform: uppercase;
 
