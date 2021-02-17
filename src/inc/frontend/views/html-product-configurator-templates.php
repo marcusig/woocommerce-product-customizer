@@ -62,7 +62,7 @@ add_action( 'tmpl-pc-configurator-choice-item-attributes', 'mkl_pc_frontend_conf
  * @return void
  */
 function mkl_pc_frontend_configurator_footer_section_left_inner__product_name() {
-	echo '<h3 class="product-name">{{data.name}}</h3>';
+	echo '<h3 class="product-name">{{{data.name}}}</h3>';
 }
 
 add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_frontend_configurator_footer_section_left_inner__product_name', 30 );
@@ -73,7 +73,7 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_fr
 
 function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
-	<header><h3 class="product-name">{{data.name}}</h3><button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button></header>
+	<header><h3 class="product-name">{{{data.name}}}</h3><button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button></header>
 <?php
 }
 add_action( 'mkl_pc_frontend_configurator_toolbar', 'mkl_pc_frontend_configurator_toolbar__header', 20 );
