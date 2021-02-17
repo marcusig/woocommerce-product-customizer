@@ -323,6 +323,13 @@ class DB {
 	 * @return array
 	 */
 	public function get_front_end_data( $id ) {
+		global $product;
+		if ( $product ) {
+			$g_product = $product;
+		} else {
+			$g_product = false;
+		}
+
 		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id ); 
@@ -340,7 +347,9 @@ class DB {
 				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
 				'product_type' => $product->get_type(),
 				'show_qty'     => ! $product->is_sold_individually(),
-				'price'        => $price
+				'show_form'    => ! $g_product,
+				'is_in_stock'  => $product->is_in_stock() || $product->backorders_allowed(), 
+				'price'        => $price,
 			) 
 		);
 

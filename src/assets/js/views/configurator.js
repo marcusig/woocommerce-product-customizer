@@ -168,9 +168,10 @@ PC.options = PC.options || {};
 		render: function() {
 			this.$el.append( this.template( {
 				name: PC.fe.currentProductData.product_info.title,
-				show_form: PC.fe.is_using_shortcode,
-				product_id: PC.fe.active_product,
-				show_qty: PC.fe.currentProductData.product_info.show_qty,
+				show_form: parseInt( PC.fe.currentProductData.product_info.show_form ),
+				is_in_stock: parseInt( PC.fe.currentProductData.product_info.is_in_stock ),
+				product_id: parseInt( PC.fe.active_product ),
+				show_qty: parseInt( PC.fe.currentProductData.product_info.show_qty ),
 				formated_price: this.get_price()
 			} ) );
 			this.form = new PC.fe.views.form( { el: this.$el.find( '.form' ) } );

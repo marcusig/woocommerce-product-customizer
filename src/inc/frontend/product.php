@@ -101,30 +101,33 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			global $product;
 			echo '<div class="pc_configurator_form">';
 
-			if ( $product && ! $product->is_sold_individually() ) {
-				woocommerce_quantity_input( array(
-					'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
-					'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
-					'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( intval( $_POST['quantity'] ) ) : 1 )
-				) );
-			}
-			?>
-				<# if ( data.show_form ) { #>
-					<form class="cart" method="post" enctype='multipart/form-data'>
-						<input type="hidden" name="pc_configurator_data">
-						<input type="hidden" name="add-to-cart" value="{{data.product_id}}">
-						<# if ( data.show_qty ) { #>
-							<?php woocommerce_quantity_input(); ?>
-						<# } #>
-					</form>
-				<# } #>
+			echo '<# if ( data.is_in_stock ) { #>';
+				if ( $product && ! $product->is_sold_individually() ) {
+					woocommerce_quantity_input( array(
+						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
+						'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
+						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( intval( $_POST['quantity'] ) ) : 1 )
+					) );
+				}
+				?>
+					<# if ( data.show_form ) { #>
+						<form class="cart" method="post" enctype='multipart/form-data'>
+							<input type="hidden" name="pc_configurator_data">
+							<input type="hidden" name="add-to-cart" value="{{data.product_id}}">
+							<# if ( data.show_qty ) { #>
+								<?php woocommerce_quantity_input(); ?>
+							<# } #>
+						</form>
+					<# } #>
 
-				<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
-					<?php echo $this->get_cart_icon(); ?>
-					<span><?php echo apply_filters( 'mkl_pc/add_to_cart_button/label', __( 'Add to cart', 'woocommerce' ) ); ?></span>
-				</button>
-			<?php
-
+					<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
+						<?php echo $this->get_cart_icon(); ?>
+						<span><?php echo apply_filters( 'mkl_pc/add_to_cart_button/label', __( 'Add to cart', 'woocommerce' ) ); ?></span>
+					</button>
+				<?php
+			echo '<# } else { #>';
+				echo '<div class="out-of-stock"></div>';
+			echo '<# } #>';
 			echo '</div>';
 		}
 
