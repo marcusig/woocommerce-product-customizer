@@ -230,18 +230,27 @@ body.pc-modal-opened {
 		}				
 	}
 	
-	
-		.order-toolbar {
-			position: absolute;
-			bottom: 0;
-			width: calc(100% - 20px);
-			height: 30px;
-			background: #eae9e9;
-			padding: 10px;
-			border-top: 1px solid #cccccc;
-			box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.11);
-			text-align: center;
+	.order-toolbar {
+		position: absolute;
+		bottom: 0;
+		width: calc(100% - 20px);
+		height: 30px;
+		background: #eae9e9;
+		padding: 10px;
+		border-top: 1px solid #cccccc;
+		box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.11);
+		text-align: center;
+	}
+
+	p.help {
+		clear: both;
+		font-size: .8em;
+		font-style: italic;
+		@media (min-width: 900px) {
+			margin-left: 34%;
+			padding: 1em;
 		}
+	}
 }
 
 .pc-modal-container {
@@ -308,6 +317,7 @@ body.pc-modal-opened {
 		}
 		
 	}
+
 }
 .mkl-list {
 

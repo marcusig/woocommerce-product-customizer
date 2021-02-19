@@ -62,7 +62,8 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				'attributes' => array(),
 				'help' => '',
 				'choices' => null,
-				'condition' => ''
+				'condition' => '',
+				'classes' => '',
 			));
 
 			if (empty($options['id']) || empty($options['label'])) throw new \Exception('Setting options must have and `id` and `label` fields');
@@ -84,7 +85,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 					$output .= $options['html'];
 					break;
 				case 'textarea':
-					$output .= '<textarea type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
+					$output .= '<textarea class="'.esc_attr( $options[ 'classes' ] ).'" type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
 					break;
 				case 'checkbox':
 					$output .= '<input '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" <# if(data.'.esc_attr($options['id']).' == true || data.'.esc_attr($options['id']).' == "true") { #> checked="checked" <# } #>>';

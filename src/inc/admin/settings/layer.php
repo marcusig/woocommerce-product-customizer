@@ -43,13 +43,21 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'label' => __('Description', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
 					'priority' => 20,
-					'condition' => '3 > 1',
+					'condition' => '!data.not_a_choice',
 				),
 				'not_a_choice' => array(
 					'label' => __('This layer does not have choices', 'product-configurator-for-woocommerce' ),
-					'help' => __('For exemple if the layer is a shadow or a static element', 'product-configurator-for-woocommerce' ),
+					'help' => __('For exemple if the layer is a shadow, a static element or custom HTML', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'priority' => 30,
+				),
+				'custom_html' => array(
+					'label' => __('Custom HTML', 'product-configurator-for-woocommerce' ),
+					'type' => 'textarea',
+					'priority' => 31,
+					'condition' => 'data.not_a_choice',
+					'classes' => 'code',
+					'help' => __('Content entered here will be rendered in the configurator menu.', 'product-configurator-for-woocommerce' ) . ' ' . __('To add HTML to the viewer, add it to the custom HTML field in the content section.', 'product-configurator-for-woocommerce' ),
 				),
 				'type' => array(
 					'label' => 'Layer type',

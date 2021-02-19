@@ -132,6 +132,7 @@ class Languages {
 						'label' => '<img src="' . $this->get_flag( $l ) . '" alt="' . __( 'Description', 'mkl-pc-extra-price' ) . ' ' . $l . '">',
 						'type' => 'textarea',
 						'priority' => 21,
+						'condition' => '!data.not_a_choice',
 					);
 				}
 			}
