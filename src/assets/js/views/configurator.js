@@ -261,6 +261,12 @@ PC.options = PC.options || {};
 					this.$el.append( new_layer.render() );
 					this.items.push( new_layer );
 				}
+			} else {
+				if ( model.get( 'custom_html' ) ) {
+					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } );
+					this.$el.append( new_layer.render() );
+					this.items.push( new_layer );
+				}
 			}
 
 			// add to a new collection to be used to render the viewer
@@ -298,7 +304,14 @@ PC.options = PC.options || {};
 			// 'click a i.close': 'hide_choices', 
 		},
 
-		render: function() { 
+		render: function() {
+			if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
+				this.$el.append( $( this.model.get( 'custom_html' ) ) );
+				wp.hooks.doAction( 'PC.fe.layer.render', this );
+				wp.hooks.doAction( 'PC.fe.html_layer.render', this );
+				return this.$el;
+			}
+
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 
 
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
@@ -559,8 +572,12 @@ PC.options = PC.options || {};
 				return;
 			}
 			if ( model.get( 'not_a_choice') ) {
-				var layer = new PC.fe.views.viewer_static_layer( { model: choices.first(), parent: this } );
+				var choice = choices.first();
+				var layer = new PC.fe.views.viewer_static_layer( { model: choice, parent: this } );
 				this.$layers.append( layer.$el );
+				if ( choice.get( 'custom_html' ) ) {
+					this.$layers.append( $( choice.get( 'custom_html' ) ) );
+				}
 			} else {
 				choices.each( this.add_single_choice, this );
 			}
