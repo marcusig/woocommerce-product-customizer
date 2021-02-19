@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Indicate when images are loading
 * TWEAK: Add the ability to not use the tooltip for the description, but instead always show it.
 * TWEAK: Added the possibility to change angle depending on the active layer / choice
 
