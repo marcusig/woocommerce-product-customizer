@@ -247,7 +247,9 @@ PC.options = PC.options || {};
 		}, 
 		add_all: function( collection ) { 
 			this.$el.empty(); 
-			this.items = []; 
+			this.items = [];
+			collection.orderBy = 'order';
+			collection.sort();
 			collection.each( this.add_one, this ); 
 		},
 		add_one: function( model ){
@@ -543,6 +545,11 @@ PC.options = PC.options || {};
 		},
 
 		add_layers: function() {
+			var orders = PC.fe.layers.pluck( 'image_order' );
+			if ( orders.length && _.max( orders ) ) {
+				PC.fe.layers.orderBy = 'image_order';
+				PC.fe.layers.sort();
+			}
 			PC.fe.layers.each( this.add_choices, this );
 		}, 
 

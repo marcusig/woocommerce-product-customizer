@@ -72,13 +72,21 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure">
 	<div class="media-frame-content structure">
-		<div class="structure-content has-toolbar">
+		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 				<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
 			</div>
 			<div class="mkl-list layers ui-sortable">
 			</div>
+			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
+				<div class="order-toolbar">
+					<div class="button-group media-button-group">
+						<button data-order_type="order" type="button" class="button button-primary order-layers"><span><?php _e( 'Reorder the menu' ); ?></span></button>
+						<button data-order_type="image_order" type="button" class="button order-layers"><span><?php _e( 'Reorder the images' ); ?></span></button>
+					</div>
+				</div>
+			<# } #>
 		</div>
 		<div class="media-sidebar visible">
 		</div>
