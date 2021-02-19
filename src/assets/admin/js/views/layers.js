@@ -44,8 +44,8 @@ TODO:
 		single_view: function() { return PC.views.layer; },
 		events: {
 			'click .add-layer': 'create',
+			'click .order-toolbar button': 'change_order_type',
 			'keypress .structure-toolbar input': 'create',
-			'update-sort': 'update_sort',
 			// 'remove': 'is_being_removed', 
 			'save-state': 'save_layers',
 
@@ -53,8 +53,9 @@ TODO:
 		is_being_removed: function() {
 		},
 		render: function( ) {
-
-			this.$el.append( this.template({ input_placeholder: PC.lang[this.collectionName +'_new_placeholder'] }) ); 
+			this.col.orderBy = 'order';
+			this.col.sort();
+			this.$el.append( this.template({ input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.media-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
@@ -73,25 +74,30 @@ TODO:
 			this.admin.remove_relationships( this.collectionName, m );
 			this.mark_collection_as_modified();
 		},
-		update_sort: function( event, changed_model, position ) {
-			
-			this.col.each(function (model, index) {
-				var ordinal = index; 
-				if (index >= position) { 
-					ordinal += 1;
+		change_order_type: function( e ) {
+			var $e = $( e.currentTarget );
+			var selection = $e.data( 'order_type' );
+
+			// check if it's the first time
+			if ( 'image_order' == selection ) {
+				var orders = this.col.pluck( 'image_order' );
+				if ( orders.length && ! _.max( orders ) ) {
+					this.col.each( function( m ) {
+						m.set( 'image_order', m.get( 'order' ) );
+					} );
 				}
+			}
 
-				model.set('order', ordinal); 
-	        });
-			changed_model.set('order', position); 
-			
-			this.col.sort({silent: true});
+			if ( selection && this.orderAttr != selection ) {
+				$e.closest( '.button-group' ).find( 'button' ).removeClass( 'button-primary' );
+				$e.addClass( 'button-primary' );
+				this.orderAttr = selection;
+				this.col.orderBy = selection;
 
-			// to update ordinals on server:
-			// var ids = this.col.pluck('id');
-			// $('#post-data').html('post ids to server: ' + ids.join(', '));
+				this.col.sort({silent: true});
+				this.add_all( this.col );
+			}
 		},
-
 		add_one: function( layer ) {
 			var singleView = this.single_view();
 			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col });
@@ -103,7 +109,8 @@ TODO:
 			item.remove();
 		},
 
-		add_all: function( collection ){
+		add_all: function( collection ) {
+			this.$list.empty();
 			_.each( this.items, this.remove_item );
 			this.items = [];
 			// this.$list.empty();
@@ -161,6 +168,7 @@ TODO:
 				_id: PC.app.get_new_id( this.col ),
 				name: name,
 				order: this.col.nextOrder(),
+				image_order: this.col.nextOrder(),
 				active: true,
 				// completed: false
 			};
@@ -191,6 +199,7 @@ TODO:
 		events: {
 			'click > button' : 'edit',
 			'drop': 'drop',
+			'update-sort': 'update_sort',
 		},
 		render: function() {
 			this.$el.html( this.template( this.model.attributes ) );
@@ -235,10 +244,15 @@ TODO:
 				this.model.set('active', false);
 			}
 
-			// triggers the re-order event
-			this.$el.trigger( 'update-sort', [this.model, index] );
+			// Update the order for all elements in the list
+			this.$el.siblings().addBack().trigger( 'update-sort' );
+
 			// Remove the form view
 			if( this.form ) this.form.remove();
+		},
+		update_sort: function( e ) {
+			e.stopPropagation();
+			this.model.set( this.model.collection.orderBy, $( e.currentTarget ).index() );
 		}
 	});
 

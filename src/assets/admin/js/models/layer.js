@@ -9,6 +9,7 @@ PC.layer = Backbone.Model.extend({
 		name: '',
 		description: '',
 		order:0,
+		image_order:0,
 		image: {
 			url:'',
 			id: null,
