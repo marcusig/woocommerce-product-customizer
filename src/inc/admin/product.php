@@ -204,7 +204,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			if( $this->_current_screen_is( 'product' ) ) {
 
-				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , false, MKL_PC_VERSION );
+				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
 				
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
 				// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
@@ -214,7 +214,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// LOAD BACKBONE SCRIPTS
 				foreach($scripts as $script) {
 					list( $key, $file ) = $script;
-					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array('jquery', 'backbone'), MKL_PC_VERSION, true );
+					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), MKL_PC_VERSION, true );
 				}
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', array(

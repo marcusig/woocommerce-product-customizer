@@ -448,6 +448,10 @@ class DB {
 					'sanitize' => 'wp_filter_post_kses',
 					'escape' => [ $this, 'escape_description' ],
 				],
+				'custom_html' => [ 
+					'sanitize' => [ $this, 'sanitize_custom_html_description' ],
+					'escape' => [ $this, 'escape_custom_html_description' ],
+				],
 				'url' => [ 
 					'sanitize' => 'esc_url_raw',
 					'escape' => [ $this, 'esc_url' ],
@@ -514,6 +518,35 @@ class DB {
 
 	public function escape_description( $description ) {
 		return wp_kses_post( stripslashes( $description ) );
+	}
+
+	public function sanitize_custom_html_description( $html ) {
+		$tags = wp_kses_allowed_html( 'post' );
+		if ( ! isset( $tags[ 'svg' ] ) ) {
+			$tags['svg'] = array(
+				'xmlns' => array(),
+				'fill' => array(),
+				'viewbox' => array(),
+				'role' => array(),
+				'aria-hidden' => array(),
+				'focusable' => array(),
+			);
+			$tags['path'] = array(
+				'd' => array(),
+				'fill' => array(),
+			);
+		}
+
+		/**
+		 * Filters the allowed tags in the custom html fields.
+		 * @default - tags allowed in Post content + svg
+		 */
+		$allowed_tags = apply_filters( 'mkl_pc/custom_html/allowed_tags', $tags );
+		return wp_kses( $html, $allowed_tags );
+	}
+
+	public function escape_custom_html_description( $html ) {
+		return $this->sanitize_custom_html_description( stripslashes( $html ) );
 	}
 
 	/**
