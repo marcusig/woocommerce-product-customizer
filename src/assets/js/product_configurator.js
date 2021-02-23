@@ -49,6 +49,8 @@ Backbone.Model.prototype.toJSON = function() {
 
 		function configurator_init( event ) {
 
+			event.preventDefault();
+
 			if ( PC.fe.config.current_language ) {
 				PC.fe.lang = PC.fe.config.current_language;
 				add_language_filters( PC.fe.lang );

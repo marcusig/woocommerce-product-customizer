@@ -318,6 +318,23 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'configure_button_location',
+				__( 'Where should the "configure" button be placed', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'options' => [
+						'woocommerce_after_add_to_cart_form:20' => __( 'After the add to cart form', 'product-configurator-for-woocommerce' ),
+						'woocommerce_before_add_to_cart_form:20' => __( 'Before the add to cart button', 'product-configurator-for-woocommerce' ),
+						'woocommerce_single_product_summary:19' => __( 'Before the product excerpt', 'product-configurator-for-woocommerce' ),
+					],
+					'setting_name' => 'configure_button_location',
+				]
+			);
+
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 

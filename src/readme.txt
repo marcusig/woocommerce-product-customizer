@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added a setting to change the location of the Configure button
 * FEATURE: Added the possibility to enter custom HTML for layers defined as "not a choice"
 * FEATURE: Added the possibility to order the images and menu items separately
 * TWEAK: Indicate when images are loading
