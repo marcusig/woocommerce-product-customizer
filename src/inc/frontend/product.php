@@ -137,7 +137,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 		public function print_product_configuration(){
 			if ( ! mkl_pc()->frontend->load_configurator_on_page() ) return;
-			include( 'views/html-product-configurator-templates.php' );
+			include_once 'views/html-product-configurator-templates.php';
 		}
 
 		public function variable_empty_configurator_content() {

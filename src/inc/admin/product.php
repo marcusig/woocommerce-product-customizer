@@ -163,7 +163,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			$data = json_encode( $structure );
 			$product_type = $this->_product->get_type(); 
 			
-			include 'views/html-product-configurator-templates.php';
+			include_once 'views/html-product-configurator-templates.php';
 
 		}
 
