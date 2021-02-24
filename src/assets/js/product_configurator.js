@@ -109,15 +109,15 @@ Backbone.Model.prototype.toJSON = function() {
 				var new_angle = PC.fe.angles.get( view.model.get( 'angle_switch' ) );
 				if ( new_angle && ! new_angle.get( 'active' ) ) {
 					new_angle.collection.each(function(model) {
-						model.set('active' , false); 
+						model.set('active', false); 
 					});		
 					new_angle.set( 'active', true );
 				}
 		 	}
 		}
 
-		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch );
-		wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch );
+		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
+		wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ){
 

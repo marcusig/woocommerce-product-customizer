@@ -273,15 +273,19 @@ PC.options = PC.options || {};
 
 		},
 		activate: function( model ) {
-			if( model.get( 'active' ) == false ) {
-				if( model.collection.findWhere( { 'active': true } ) ) {
+			if ( model.get( 'active' ) == false ) {
+				if ( model.collection.findWhere( { 'active': true } ) ) {
 					this.$el.addClass('opened');
+					wp.hooks.doAction( 'PC.fe.layers_list.open', this, model );
 				} else {
 					this.$el.removeClass('opened');
+					wp.hooks.doAction( 'PC.fe.layers_list.close', this, model );
 				}
 			} else {
 				this.$el.addClass('opened');
+				wp.hooks.doAction( 'PC.fe.layers_list.open', this, model );
 			}
+
 		},	
 
 	});
@@ -346,6 +350,7 @@ PC.options = PC.options || {};
 		show_choices: function( event ) {
 			event.preventDefault(); 
 			if( this.model.get( 'active' ) == true) {
+				wp.hooks.doAction( 'PC.fe.layer.hide', this );
 				this.model.set('active', false);
 			} else {
 				this.model.collection.each(function(model) {
@@ -353,6 +358,7 @@ PC.options = PC.options || {};
 				});
 
 				this.model.set('active', true); 
+				wp.hooks.doAction( 'PC.fe.layer.show', this );
 			}
 		},
 		activate: function() {
