@@ -248,6 +248,10 @@ class Frontend_Woocommerce {
 			$args['config']['load_config_content'] = $saved_configuration_content;
 		}
 
+		if ( isset( $_REQUEST['open_configurator'] ) ) {
+			$args['config']['open_configurator'] = true;
+		}
+
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
 		// $version = $product
