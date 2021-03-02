@@ -156,8 +156,10 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function body_class( $classes ) {
 			// global $post;
 			if ( is_product() ) {
-				
 				if ( mkl_pc_is_configurable() ) {
+					if ( mkl_pc( 'settings')->get( 'enable_default_add_to_cart', false ) || get_post_meta( get_the_ID(), 'enable_default_add_to_cart', true ) ) {
+						$classes[] = 'enable-add-to-cart';
+					}
 					$classes[] = 'is_configurable';
 				}
 			}
