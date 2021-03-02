@@ -104,11 +104,16 @@ $inner_space: 1em;
 	// display: none;
 	div.product form.cart {
 		border: none;
-		// .variations_button
-		.quantity, .single_add_to_cart_button {
-			display: none;
+	}
+	&:not(.enable-add-to-cart) {
+		div.product form.cart {
+			// .variations_button
+			.quantity, .single_add_to_cart_button {
+				display: none;
+			}
 		}
 	}
+
 	@media( max-width: $small_screen_width ) {
 		button.configure-product {
 			font-size: 1.4em;

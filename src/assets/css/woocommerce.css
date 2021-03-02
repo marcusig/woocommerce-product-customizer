@@ -29,3 +29,7 @@
     width: 80px;
     text-align: right;
 }
+
+button.configure-product + .woocommerce-product-details__short-description {
+    margin-top: 1.5em;
+}

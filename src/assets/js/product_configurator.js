@@ -49,6 +49,8 @@ Backbone.Model.prototype.toJSON = function() {
 
 		function configurator_init( event ) {
 
+			event.preventDefault();
+
 			if ( PC.fe.config.current_language ) {
 				PC.fe.lang = PC.fe.config.current_language;
 				add_language_filters( PC.fe.lang );
@@ -91,7 +93,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		$('form.cart').each(function(index, form) { 
 
-			$(form).find('button').attr('disabled', 'disabled'); 
+			if ( ! $( 'body' ).is('.enable-add-to-cart' ) ) $(form).find('button').attr('disabled', 'disabled'); 
 			$(form).on('submit', function( event ){ 
 				$('input[name=pc_configurator_data]').val( PC.fe.save_data.save() ); 
 				if( $('input[name=pc_configurator_data]').val() == '' ) {

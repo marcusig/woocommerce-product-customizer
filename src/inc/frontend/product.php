@@ -17,8 +17,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 	class Frontend_Product {
 		
 		public function __construct() {
-			$this->_hooks();
 			$this->options = get_option( 'mkl_pc__settings' );
+			$this->_hooks();
 			$this->button_class = isset( $this->options['mkl_pc__button_classes'] ) && ! empty( $this->options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $this->options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
 		}
 
@@ -29,7 +29,16 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			add_filter( 'woocommerce_product_supports', array( &$this, 'simple_product_supports' ), 10, 3 ); 
 			
 			// add button after form, as form will be moved.
-			add_action( 'woocommerce_after_add_to_cart_form', array( &$this, 'add_configure_button' ) );
+			$location = 'woocommerce_after_add_to_cart_form';
+			$priority = 20;
+			if ( isset( $this->options['configure_button_location'] ) ) {
+				$pr = explode( ':', $this->options['configure_button_location'] );
+				if ( isset( $pr[0] ) ) $location = $pr[0];
+				if ( isset( $pr[1] ) ) $priority = intVal( $pr[1] );
+			}
+
+			add_action( $location, array( &$this, 'add_configure_button' ), $priority );
+
 			// add hidden input to store configurator data into form
 			add_action( 'woocommerce_after_add_to_cart_button', array( &$this, 'add_configure_hidden_field' ) ); 
 			add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_price' ), 15 );
@@ -99,6 +108,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product;
+			$add_to_cart = $this->get_add_to_cart_label();
+
 			echo '<div class="pc_configurator_form">';
 
 			echo '<# if ( data.is_in_stock ) { #>';
@@ -122,13 +133,28 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 					<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
-						<span><?php echo apply_filters( 'mkl_pc/add_to_cart_button/label', __( 'Add to cart', 'woocommerce' ) ); ?></span>
+						<span><?php echo $add_to_cart; ?></span>
 					</button>
 				<?php
 			echo '<# } else { #>';
 				echo '<div class="out-of-stock"></div>';
 			echo '<# } #>';
 			echo '</div>';
+		}
+
+		public function get_add_to_cart_label() {
+			global $post;
+			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'woocommerce' ) );
+			if ( $post  ) {
+				// Quotes for WooCommerce
+				if ( function_exists( 'product_quote_enabled' ) ) {
+					global $quotes_wc;
+					if ( $quotes_wc && is_callable( [ $quotes_wc, 'qwc_change_button_text' ] ) ) {
+						$label = $quotes_wc->qwc_change_button_text( $label );
+					}
+				}
+			}
+			return apply_filters( 'mkl_pc/add_to_cart_button/label', $label );
 		}
 
 		public function get_cart_icon() {
@@ -147,8 +173,10 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function body_class( $classes ) {
 			// global $post;
 			if ( is_product() ) {
-				
 				if ( mkl_pc_is_configurable() ) {
+					if ( mkl_pc( 'settings')->get( 'enable_default_add_to_cart', false ) || get_post_meta( get_the_ID(), 'enable_default_add_to_cart', true ) ) {
+						$classes[] = 'enable-add-to-cart';
+					}
 					$classes[] = 'is_configurable';
 				}
 			}

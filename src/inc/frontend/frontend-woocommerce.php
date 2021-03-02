@@ -100,10 +100,15 @@ class Frontend_Woocommerce {
 	 * @return string
 	 */
 	public function button_shortcode( $atts, $content = '' ) {
+		if ( ! isset( $atts[ 'product_id' ] ) ) {
+			global $product;
+			if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
+			$product_id = $product->get_id();
+		} else {
 
-		if ( ! isset( $atts[ 'product_id' ] ) ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
-		$product_id = intval( $atts[ 'product_id' ] );
-		$product = wc_get_product( $product_id );
+			$product_id = intval( $atts[ 'product_id' ] );
+			$product = wc_get_product( $product_id );
+		}
 		$shortcode_class = isset( $atts[ 'classes' ] ) ? Utils::sanitize_html_classes( $atts[ 'classes' ] ) : '';
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );

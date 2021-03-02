@@ -318,6 +318,36 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'configure_button_location',
+				__( 'Where should the "configure" button be placed', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'options' => [
+						'woocommerce_single_product_summary:19' => __( 'Before the product excerpt', 'product-configurator-for-woocommerce' ),
+						'woocommerce_before_add_to_cart_form:20' => __( 'Before the add to cart form', 'product-configurator-for-woocommerce' ),
+						'woocommerce_before_add_to_cart_quantity:20' => __( 'Before the quantity input', 'product-configurator-for-woocommerce' ),
+						'woocommerce_after_add_to_cart_button:20' => __( 'After the add to cart button', 'product-configurator-for-woocommerce' ),
+						'woocommerce_after_add_to_cart_form:20' => __( 'After the add to cart form', 'product-configurator-for-woocommerce' ),
+					],
+					'default' => 'woocommerce_after_add_to_cart_form:20',
+					'setting_name' => 'configure_button_location',
+				]
+			);
+
+			add_settings_field(
+				'enable_default_add_to_cart',
+				__( 'Allow adding the product to cart without configuring', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'enable_default_add_to_cart',
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
@@ -364,7 +394,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				$field_options[ 'options' ] = array_combine( $field_options[ 'options' ], $field_options[ 'options' ] );
 			}
 
-			$value = $this->get_setting( $field_options[ 'setting_name' ] );
+			$default = false;
+			if ( isset( $field_options[ 'default' ] ) ) {
+				$default = $field_options[ 'default' ];
+			}
+
+			$value = $this->get_setting( $field_options[ 'setting_name' ], $default );
 
 			?>
 			<select name='mkl_pc__settings[<?php echo $field_options[ 'setting_name' ]; ?>]' id='mkl_pc__settings-<?php echo $field_options['setting_name']; ?>'>
@@ -467,7 +502,10 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			$this->themes_url = get_transient( 'mkl_pc_themes_url' );
 		}
 
-		public function add_backbone_templates() { 
+		public function add_backbone_templates() {
+			global $pagenow;
+			if ( 'options-general.php' != $pagenow || ! isset( $_GET['page'] ) || 'mkl_pc_settings' != $_GET['page'] ) return;
+			
 			$themes = mkl_pc( 'themes' )->get_themes();
 			$data = [];
 			foreach( $themes as $theme_id => $theme_path ) {
