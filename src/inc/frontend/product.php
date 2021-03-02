@@ -108,6 +108,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product;
+			$add_to_cart = $this->get_add_to_cart_label();
+
 			echo '<div class="pc_configurator_form">';
 
 			echo '<# if ( data.is_in_stock ) { #>';
@@ -131,13 +133,28 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 					<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
-						<span><?php echo apply_filters( 'mkl_pc/add_to_cart_button/label', __( 'Add to cart', 'woocommerce' ) ); ?></span>
+						<span><?php echo $add_to_cart; ?></span>
 					</button>
 				<?php
 			echo '<# } else { #>';
 				echo '<div class="out-of-stock"></div>';
 			echo '<# } #>';
 			echo '</div>';
+		}
+
+		public function get_add_to_cart_label() {
+			global $post;
+			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'woocommerce' ) );
+			if ( $post  ) {
+				// Quotes for WooCommerce
+				if ( function_exists( 'product_quote_enabled' ) ) {
+					global $quotes_wc;
+					if ( $quotes_wc && is_callable( [ $quotes_wc, 'qwc_change_button_text' ] ) ) {
+						$label = $quotes_wc->qwc_change_button_text( $label );
+					}
+				}
+			}
+			return apply_filters( 'mkl_pc/add_to_cart_button/label', $label );
 		}
 
 		public function get_cart_icon() {
