@@ -530,10 +530,19 @@ class DB {
 				'role' => array(),
 				'aria-hidden' => array(),
 				'focusable' => array(),
+				'width' => array(),
+				'height' => array(),
+				'class' => array(),
 			);
 			$tags['path'] = array(
 				'd' => array(),
 				'fill' => array(),
+				'text' => array(),
+			);
+			$tags['text'] = array(
+				'transform' => array(),
+				'style' => array('fill', 'font-size'),
+				'class' => array(),
 			);
 		}
 
@@ -542,7 +551,8 @@ class DB {
 		 * @default - tags allowed in Post content + svg
 		 */
 		$allowed_tags = apply_filters( 'mkl_pc/custom_html/allowed_tags', $tags );
-		return wp_kses( $html, $allowed_tags );
+		$r = wp_kses( $html, $allowed_tags );
+		return $r;
 	}
 
 	public function escape_custom_html_description( $html ) {
