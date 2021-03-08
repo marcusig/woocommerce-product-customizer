@@ -354,7 +354,7 @@ class DB {
 				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
 				'product_type' => $product->get_type(),
 				'show_qty'     => ! $product->is_sold_individually(),
-				'show_form'    => ! $g_product,
+				'show_form'    => apply_filters( 'mkl_pc_show_form', ! $g_product, $id ),
 				'is_in_stock'  => $product->is_in_stock() || $product->backorders_allowed(), 
 				'price'        => $price,
 			) 

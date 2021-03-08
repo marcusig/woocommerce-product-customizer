@@ -113,6 +113,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			echo '<div class="pc_configurator_form">';
 
 			echo '<# if ( data.is_in_stock ) { #>';
+				echo '<# if ( ! data.show_form ) { #>';
 				if ( $product && ! $product->is_sold_individually() ) {
 					woocommerce_quantity_input( array(
 						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
@@ -120,6 +121,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( intval( $_POST['quantity'] ) ) : 1 )
 					) );
 				}
+				echo '<# } #>';
 				?>
 					<# if ( data.show_form ) { #>
 						<form class="cart" method="post" enctype='multipart/form-data'>

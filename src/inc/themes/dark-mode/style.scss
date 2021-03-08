@@ -945,6 +945,10 @@ $inner_space: 1em;
 			.pc_configurator_form {
 				display: inline-flex;
 				align-items: center;
+				form.cart {
+					margin: 0;
+				}
+
 			}
 			h3.product-name {
 				line-height: 1;

@@ -92,6 +92,7 @@ class Themes {
 		if ( isset( $themes[$theme] ) ) return $themes[$theme];
 
 		$theme_location = $this->get( $theme );
+		if ( ! file_exists( trailingslashit( $theme_location ) . 'style.css' ) ) return false;
 		$base_url = plugins_url( '', trailingslashit( $theme_location ) . 'style.css' );
 		$themes[$theme] = array_merge(
 			array(
