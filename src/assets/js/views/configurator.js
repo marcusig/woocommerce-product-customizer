@@ -255,6 +255,7 @@ PC.options = PC.options || {};
 			collection.orderBy = 'order';
 			collection.sort();
 			collection.each( this.add_one, this ); 
+			wp.hooks.doAction( 'PC.fe.layers_list.layers.added', this );
 		},
 		add_one: function( model ){
 			// if layer is not a choice or has only one choice, we don't add it to the menu
@@ -594,7 +595,8 @@ PC.options = PC.options || {};
 		},
 
 		add_single_choice: function( model ) {
-			var layer = new PC.fe.views.viewer_layer( { model: model, parent: this } ); 
+			var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, model, this );
+			var layer = new View( { model: model, parent: this } ); 
 			this.$layers.append( layer.$el );
 			this.layers[ model.id ] = layer;
 		}
