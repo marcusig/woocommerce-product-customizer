@@ -204,6 +204,22 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'image_loading_mode',
+				__( 'Image mode', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'options' => [
+						'lazy' => __( 'Lazy load (default) - use an empty placeholder until the user selects a choice.', 'product-configurator-for-woocommerce' ),
+						'eager' => __( 'Load everything from the beginning.', 'product-configurator-for-woocommerce' ),
+					],
+					'default' => 'lazy',
+					'setting_name' => 'image_loading_mode'
+				]
+			);
+
+			add_settings_field(
 				'show_price_in_configurator',
 				__( 'Show the product\'s price in the configurator', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

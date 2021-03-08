@@ -696,7 +696,11 @@ PC.options = PC.options || {};
 			} else {
 				if ( ! this.is_loaded ) {
 					this.$el.addClass( 'loading' );
-					this.el.src = this.empty_img;
+					if ( 'lazy' == PC.fe.config.image_loading_mode ) {
+						this.el.src = this.empty_img;
+					} else {
+						this.el.src = img;	
+					}
 				}
 				this.$el.removeClass( 'active' );
 			}
