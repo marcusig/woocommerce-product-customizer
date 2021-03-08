@@ -40,6 +40,11 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type' => 'text',
 					'priority' => 10,
 				),
+				'admin_label' => array(
+					'label' => __('Admin label', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 15,
+				),
 				'description' => array(
 					'label' => __('Description', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
