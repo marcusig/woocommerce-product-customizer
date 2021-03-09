@@ -221,6 +221,11 @@ PC.options = PC.options || {};
 			var $cart = $input.closest( 'form.cart' );
 
 			$input.val( data );
+
+			if ( PC.fe.debug_configurator_data ) {
+				console.log( 'debug_configurator_data', data );
+				return;
+			}
 			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
 				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 			} else {
@@ -849,38 +854,55 @@ PC.options = PC.options || {};
 
 					_.each( selected_choices, function( choice ) {
 						var img_id = choice.get_image( 'image', 'id' );
-						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push( {
-							is_choice: true,
-							layer_id: model.id,
-							choice_id: choice.id,
-							angle_id: angle_id,
-							layer_name: model.attributes.name,
-							image_id: img_id,
-							name: choice.attributes.name,
-						} );
+						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push( 
+							wp.hooks.applyFilters(
+								'PC.fe.save_data.parse_choices.added_choice',
+								{
+									is_choice: true,
+									layer_id: model.id,
+									choice_id: choice.id,
+									angle_id: angle_id,
+									layer_name: model.attributes.name,
+									image_id: img_id,
+									name: choice.attributes.name,
+								},
+								choice
+							)
+						);
 					}, this );
 
 				} else {
 					var choice = choices.first();
 					var img_id = choice.get_image('image', 'id'); 
-					if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push({
-						is_choice: false,
-						layer_id: model.id, 
-						choice_id: choice.id, 
-						angle_id: angle_id,
-						image: img_id, 
-					});
+					if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
+						wp.hooks.applyFilters(
+							'PC.fe.save_data.parse_choices.added_choice',
+							{
+								is_choice: false,
+								layer_id: model.id, 
+								choice_id: choice.id, 
+								angle_id: angle_id,
+								image: img_id, 
+							},
+							choice
+						)
+					);
 				}
 			} else {
 				var choice = choices.first();
 				var img_id = choice.get_image('image', 'id');
-				if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push({
-					is_choice: false,
-					layer_id: model.id,
-					choice_id: choice.id,
-					angle_id: angle_id,
-					image: img_id,
-				});
+				if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
+					wp.hooks.applyFilters(
+						'PC.fe.save_data.parse_choices.added_choice',
+						{
+							is_choice: false,
+							layer_id: model.id,
+							choice_id: choice.id,
+							angle_id: angle_id,
+							image: img_id,
+						}
+					)
+				);
 			}
 		},
 	};

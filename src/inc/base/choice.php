@@ -32,7 +32,7 @@ class Choice {
 		$this->set_selected_choice();
 	}
 
-	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id ) { 
+	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id, $layer_data = false ) { 
 
 		if( !intval( $product_id ) || !intval( $layer_id ) || !intval( $choice_id ) || !intval( $angle_id ) )
 			return false;
@@ -46,11 +46,13 @@ class Choice {
 		$this->set_layer(); 
 		
 		$this->set_selected_choice();
+
+		do_action( 'mkl_pc/choice/init', $this, $layer_data );
 	}
 
 
 	public function get( $val ) {
-		return $this->$val;
+		return isset( $this->$val ) ? $this->$val : false;
 	}
 
 	private function set_layer() {

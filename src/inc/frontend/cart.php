@@ -36,8 +36,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$layers = array();
 						if( is_array( $data ) ) { 
 							foreach( $data as $layer_data ) {
-								$layers[] = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id );
-								
+								$layers[] = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
 							}
 						}
 						$cart_item_data['configurator_data'] = $layers; 

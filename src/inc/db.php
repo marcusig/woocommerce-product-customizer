@@ -473,12 +473,12 @@ class DB {
 					'escape' => 'esc_attr',
 				],
 				'image' => [ 
-					'sanitize' => 'esc_url_raw',
-					'escape' => [ $this, 'esc_url' ],
+					'sanitize' => [ $this, 'sanitize_image' ],
+					'escape' => [ $this, 'esc_image' ],
 				],
 				'bg_image' => [
-					'sanitize' => 'esc_url_raw',
-					'escape' => [ $this, 'esc_url' ],
+					'sanitize' => [ $this, 'sanitize_image' ],
+					'escape' => [ $this, 'esc_image' ],
 				],
 				'product_type' => [ 
 					'sanitize' => 'sanitize_key',
@@ -514,6 +514,16 @@ class DB {
 		if ( is_ssl() ) $url = str_ireplace( 'http://', 'https://', $url );
 		$url = esc_url( $url );
 		return $url;
+	}
+
+	public function sanitize_image( $image ) {
+		if ( is_int( $image ) ) return intval( $image );
+		return esc_url_raw( $image );
+	}
+
+	public function esc_image( $image ) {
+		if ( is_int( $image ) ) return intval( $image );
+		return $this->esc_url( $image );
 	}
 
 	public function escape_description( $description ) {
