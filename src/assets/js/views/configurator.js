@@ -355,7 +355,7 @@ PC.options = PC.options || {};
 			} else if ( $( where ).length ) {
 				this.choices.$el.appendTo( $( where ) )
 			}
-			wp.hooks.doAction( 'PC.fe.add.choices', this.choices.$el );
+			wp.hooks.doAction( 'PC.fe.add.choices', this.choices.$el, this );
 		},
 		show_choices: function( event ) {
 			event.preventDefault(); 

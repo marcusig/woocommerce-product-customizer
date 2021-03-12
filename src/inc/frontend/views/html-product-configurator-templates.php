@@ -106,7 +106,7 @@ add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_confi
 
 function mkl_pc_frontend_configurator_layer_description() {
 	?>
-		<# if ( data.description ) { #><span class="description">{{{data.description}}}</span><# } #>
+		<# if ( data.description && PC.fe.config.show_layer_description ) { #><span class="description">{{{data.description}}}</span><# } #>
 	<?php
 }
 add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_description', 20 );

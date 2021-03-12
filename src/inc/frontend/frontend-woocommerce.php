@@ -247,6 +247,8 @@ class Frontend_Woocommerce {
 				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' ),
 				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
+				'show_choice_description' => mkl_pc( 'settings')->get( 'show_choice_description' ),
+				'show_layer_description' => mkl_pc( 'settings')->get( 'show_layer_description' ),
 			) ),
 		);
 
