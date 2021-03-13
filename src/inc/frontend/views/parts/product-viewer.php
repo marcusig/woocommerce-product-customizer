@@ -1,6 +1,6 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 <script type="text/html" id="tmpl-mkl-pc-configurator-viewer">
-	<div class="mkl_pc_layers" data-parallax="{translateY: [-100, 150]}">
+	<div class="mkl_pc_layers">
 	</div>
 </script>
 
