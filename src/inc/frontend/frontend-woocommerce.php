@@ -249,6 +249,10 @@ class Frontend_Woocommerce {
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
 				'show_choice_description' => mkl_pc( 'settings')->get( 'show_choice_description' ),
 				'show_layer_description' => mkl_pc( 'settings')->get( 'show_layer_description' ),
+				'angles' => [
+					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
+					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
+				]
 			) ),
 		);
 

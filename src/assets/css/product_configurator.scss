@@ -297,6 +297,19 @@ $inner_space: 1em;
 							padding-right: 0;
 							opacity: 0;
 						}
+						span.angle-image {
+							width: 25px;
+							height: 25px;
+							display: inline-block;
+							vertical-align: middle;
+							transform: translateY(-2px);
+							img {
+								width: auto;
+								max-width: 100%;
+								height: auto;
+								display: block;
+							}
+						}						
 					}
 					
 					&.active a {

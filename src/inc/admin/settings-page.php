@@ -96,8 +96,32 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					<form method="post" action="options.php">
 						<?php
 							settings_fields( 'mlk_pc_settings' );
-							do_settings_sections( 'mlk_pc_settings' );
-							submit_button();
+							
+							global $wp_settings_sections, $wp_settings_fields;
+
+							if ( isset( $wp_settings_sections[ 'mlk_pc_settings' ] ) ) {
+														
+								foreach ( (array) $wp_settings_sections[ 'mlk_pc_settings' ] as $section ) {
+									echo '<section id="' . $section['id'] .'">';
+										if ( $section['title'] ) {
+											echo "<h2>{$section['title']}</h2>\n";
+										}
+								
+										if ( $section['callback'] ) {
+											call_user_func( $section['callback'], $section );
+										}
+								
+										if ( ! isset( $wp_settings_fields ) || ! isset( $wp_settings_fields[ 'mlk_pc_settings' ] ) || ! isset( $wp_settings_fields[ 'mlk_pc_settings' ][ $section['id'] ] ) ) {
+											continue;
+										}
+										echo '<table class="form-table" role="presentation">';
+										do_settings_fields( 'mlk_pc_settings', $section['id'] );
+										echo '</table>';
+									echo '</section>';
+								}
+								submit_button();
+							}
+
 						?>
 					</form>
 					<hr>
@@ -127,7 +151,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			register_setting( 'mlk_pc_settings', 'mkl_pc__settings' );
 
 			add_settings_section(
-				'mkl_pc__mlk_pc_settings_section', 
+				'settings_section', 
 				__( 'Styling options', 'product-configurator-for-woocommerce' ), 
 				function() {},
 				'mlk_pc_settings'
@@ -138,7 +162,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Button classes', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_text_field' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_settings_section',
+				'settings_section',
 				[ 
 					'setting_name' => 'mkl_pc__button_classes',
 					'placeholder' => 'btn btn-primary'
@@ -150,7 +174,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Configure button label', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_text_field' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_settings_section',
+				'settings_section',
 				[ 
 					'setting_name' => 'mkl_pc__button_label',
 					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Configure', 'product-configurator-for-woocommerce' )
@@ -162,14 +186,14 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Configurator theme', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_theme_setting' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_settings_section',
+				'settings_section',
 				[ 
 					'setting_name' => 'mkl_pc__theme'
 				]
 			);
 
 			add_settings_section(
-				'mkl_pc__mlk_pc_general_settings', 
+				'general_settings', 
 				__( 'General options', 'product-configurator-for-woocommerce' ), 
 				function() { },
 				'mlk_pc_settings'
@@ -181,7 +205,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Preview Image size', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'options' => $sizes,
 					'setting_name' => 'preview_image_size',
@@ -194,7 +218,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Thumbnail size', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'options' => $sizes,
 					'setting_name' => 'thumbnail_size',
@@ -208,7 +232,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Image mode', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'options' => [
 						'lazy' => __( 'Lazy load (default) - use an empty placeholder until the user selects a choice.', 'product-configurator-for-woocommerce' ),
@@ -224,7 +248,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Show the product\'s price in the configurator', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'show_price_in_configurator',
 				]
@@ -235,7 +259,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Show choices\' description', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'show_choice_description',
 				]
@@ -246,7 +270,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Always show the description (no tooltip)', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'choice_description_no_tooltip',
 				]
@@ -257,9 +281,31 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Show layers\' description', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'show_layer_description',
+				]
+			);
+
+			add_settings_field(
+				'show_angle_image',
+				__( 'Show angle/view image', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_angle_image',
+				]
+			);
+
+			add_settings_field(
+				'show_angle_name',
+				__( 'Show angle/view name', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_angle_name',
 				]
 			);
 
@@ -273,7 +319,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						</div>';
 					},
 					'mlk_pc_settings', 
-					'mkl_pc__mlk_pc_general_settings',
+					'general_settings',
 					[ 
 						'setting_name' => 'image_warning',
 					]
@@ -286,7 +332,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'show_image_in_cart',
 				]
@@ -297,7 +343,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Image mode', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_radio' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'save_images',
 					'options' => [
@@ -316,7 +362,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Close the configurator when pressing "add to cart"', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'close_configurator_on_add_to_cart',
 					'description' => __( 'Helpful if submiting the form via ajax', 'product-configurator-for-woocommerce' )
@@ -328,7 +374,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'On mobile, close the choices when making a selection', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'close_choices_when_selecting_choice',
 				]
@@ -339,7 +385,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Where should the "configure" button be placed', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'options' => [
 						'woocommerce_single_product_summary:19' => __( 'Before the product excerpt', 'product-configurator-for-woocommerce' ),
@@ -358,7 +404,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				__( 'Allow adding the product to cart without configuring', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
-				'mkl_pc__mlk_pc_general_settings',
+				'general_settings',
 				[ 
 					'setting_name' => 'enable_default_add_to_cart',
 				]

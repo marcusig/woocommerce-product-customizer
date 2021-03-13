@@ -1,6 +1,6 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 <script type="text/html" id="tmpl-mkl-pc-configurator-viewer">
-	<div class="mkl_pc_layers">
+	<div class="mkl_pc_layers" data-parallax="{translateY: [-100, 150]}">
 	</div>
 </script>
 
@@ -12,7 +12,7 @@
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-angle-item">
-	<a href="#">{{data.name}}</a>
+	<a href="#"><# if ( PC.fe.config.angles.show_image && data.image && data.image.url ) { #><span class="angle-image"><img src="{{data.image.url}}" alt=""></span><# } #> <# if ( PC.fe.config.angles.show_name ) { #>{{data.name}}<# } #></a>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-empty-viewer">
