@@ -40,11 +40,7 @@ class DB {
 				// 	),
 				// 	array(
 				// 		'class' => 'button-primary pc-main-save-all',
-				// 		'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
-				// 	),
-				// 	array(
-				// 		'class' => 'button-primary pc-main-save',
-				// 		'text' => __( 'Save layers' , 'product-configurator-for-woocommerce' ),
+				// 		'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
 				// 	),
 
 				// ),
@@ -62,11 +58,7 @@ class DB {
 					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
-					),
-					array(
-						'class' => 'button-primary pc-main-save',
-						'text' => __( 'Save layers' , 'product-configurator-for-woocommerce' ),
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
 					),
 
 				),
@@ -84,11 +76,7 @@ class DB {
 					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
-					),
-					array(
-						'class' => 'button-primary pc-main-save',
-						'text' => __( 'Save angles' , 'product-configurator-for-woocommerce' ),
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
 					),
 
 				),
@@ -106,11 +94,7 @@ class DB {
 					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save all' , 'product-configurator-for-woocommerce' ),
-					),
-					array(
-						'class' => 'button-primary pc-main-save',
-						'text' => __( 'Save contents' , 'product-configurator-for-woocommerce' ),
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
 					),
 
 				),

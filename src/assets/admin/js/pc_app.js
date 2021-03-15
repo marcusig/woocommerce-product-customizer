@@ -87,7 +87,7 @@ Backbone.Model.prototype.toJSON = function() {
 				}
 
 			}.bind( this ) );
-			if ( this.saving == 0 ) this.admin.close();
+			// if ( this.saving == 0 ) this.admin.close();
 		},
 
 		error_saving: function( key, state, a ) {

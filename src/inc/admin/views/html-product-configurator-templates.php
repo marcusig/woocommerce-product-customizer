@@ -58,8 +58,7 @@ GENERAL TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-frame-title-buttons-notused">
 	<div class="button-group media-button-group">
 		<button type="button" class="button media-button button-large pc-main-cancel"><?php _e( 'Cancel' ); ?></button>
-		<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save all', 'product-configurator-for-woocommerce' ); ?></button>
-		<button type="button" class="button media-button button-primary button-large pc-main-save">{{data.bt_save_text}}</button>
+		<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 </script>
 <?php 
