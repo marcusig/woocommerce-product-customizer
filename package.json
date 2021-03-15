@@ -1,7 +1,7 @@
 {
-  "name": "woocommerce-mkl-pc-extra-price",
+  "name": "product-configurator-for-woocommerce",
   "version": "1.2.7",
-  "description": "Product Configurator",
+  "description": "Product Configurator for WooCommerce",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
