@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.7
-Stable tag: 1.2.7
+Stable tag: 1.2.8
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,10 +111,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* COMPAT: Added compatibility with [Quotes for WooCommerce](https://wordpress.org/plugins/quotes-for-woocommerce/)
-* TWEAK: Added a setting to change the location of the Configure button
+= 1.2.8 - 15/Mar/2021 =
+
 * FEATURE: Added the possibility to enter custom HTML for layers defined as "not a choice"
 * FEATURE: Added the possibility to order the images and menu items separately
+* COMPAT: Added compatibility with [Quotes for WooCommerce](https://wordpress.org/plugins/quotes-for-woocommerce/)
+* TWEAK: Added a setting to change the location of the Configure button
 * TWEAK: Indicate when images are loading
 * TWEAK: Add the ability to not use the tooltip for the description, but instead always show it.
 * TWEAK: Added the possibility to change angle depending on the active layer / choice
