@@ -172,7 +172,7 @@ PC.views.state = Backbone.View.extend({
 		// this.layers.save();
 	},
 
-	state_saved: function() { 
+	state_saved: function( has_errors ) { 
 		// when the layers are succesfully saved,
 		this.$save_button.removeClass('disabled'); 
 		this.$save_all_button.removeClass('disabled'); 
@@ -184,7 +184,7 @@ PC.views.state = Backbone.View.extend({
 			that.$toolbar.removeClass('saved'); 
 		}, 2500);
 		// reset 'modified'
-		PC.app.is_modified[this.collectionName] = false;
+		if ( ! has_errors ) PC.app.is_modified[this.collectionName] = false;
 	},
 	error_saving: function(r, s) {
 		this.$save_button.removeClass('disabled'); 

@@ -70,6 +70,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		save_all: function( state ) {
 			this.saving = 0;
+			this.errors = [];
 			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
 
 				state.$save_button.addClass('disabled');
@@ -91,7 +92,12 @@ Backbone.Model.prototype.toJSON = function() {
 		},
 
 		error_saving: function( key, state, a ) {
+			this.errors.push( a );
 			this.saving--;
+			if ( this.saving == 0 ) {
+				state.state_saved( 1 );
+			}
+			alert( this.errors.join( "/n" ) );
 		},
 		saved_all: function( key, state ) {
 			this.saving--;
