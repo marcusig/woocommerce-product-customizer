@@ -33,7 +33,7 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
 			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
-			this.listenTo( this.col, 'change:is_group', this.on_change_is_group);
+			this.listenTo( this.col, 'change:is_group', this.render);
 			this.render(); 
 		},
 
