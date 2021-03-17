@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.7
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,7 +111,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.2.8 - 15/Mar/2021 =
+= 1.2.9 - 17/Mar/2021 =
+
+* FIX: Enabling groups in a choice re-renders the choices list in the admin
+* TWEAK: Cache purge required after update
+
+= 1.2.8 - 17/Mar/2021 =
 
 * FEATURE: Added the possibility to enter custom HTML for layers defined as "not a choice"
 * FEATURE: Added the possibility to order the images and menu items separately
@@ -229,5 +234,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.7 The configurator is now compatible with the major multilingual plugins (WPML, Polylang) and multi currency plugins.
+* 1.2.9 Among other things, this version added the ability to re-order the inages separately from the layers, as well as the possibility to add HTML in the layers. 
+
+
 
