@@ -93,7 +93,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		$('form.cart').each(function(index, form) { 
 
-			if ( ! $( 'body' ).is('.enable-add-to-cart' ) ) $(form).find('button').attr('disabled', 'disabled'); 
+			if ( ! $( 'body' ).is('.enable-add-to-cart' ) ) $(form).find('button[name="add-to-cart"]').attr('disabled', 'disabled'); 
 			$(form).on('submit', function( event ){ 
 				$('input[name=pc_configurator_data]').val( PC.fe.save_data.save() ); 
 				if( $('input[name=pc_configurator_data]').val() == '' ) {
