@@ -1,0 +1,26 @@
+// COLORS
+$colors: (
+	light-gray: #b5c2bd,
+	primary: rgb(0, 213, 209),
+	primary_rgb: unquote("0, 213, 209"),
+	primary_hover: #00626d,
+	layers_button_text_color: #000000,
+	choices_button_text_color: #000000,
+	overlay_bg: #000000,
+	active_bg: #FFF,
+	layers_bg: #FFF,
+	layer_choices_bg: #F8F8F8,
+	active_choice_button_bg_color: #FFF
+);
+
+@function color($color-name) {
+	@return var(--mkl_pc_color-#{$color-name});
+}
+
+:root {
+	--toolbar_height: 92px;
+	// each item in color map
+	@each $name, $color in $colors {
+		--mkl_pc_color-#{$name}: #{$color};
+	}
+}

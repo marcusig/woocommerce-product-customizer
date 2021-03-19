@@ -154,6 +154,8 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 				)
 			);
 
+			do_action( 'mkl_pc_customizer_settings', $wp_customize, $this );
+
 		}
 
 		public function output_css( $css, $stylesheet ) {
