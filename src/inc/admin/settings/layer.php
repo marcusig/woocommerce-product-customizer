@@ -78,6 +78,30 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'priority' => 40,
 				),
+				'default_selection' => array(
+					'label' => 'Default selection',
+					'type' => 'select',
+					'condition' => '!data.not_a_choice && "simple" == data.type',
+					'choices' => [
+						[
+							'label' => __( 'Select the first choice by default', 'product-configurator-for-woocommerce' ),
+							'value' => 'select_first'
+						],
+						[
+							'label' => __( 'Select nothing', 'product-configurator-for-woocommerce' ),
+							'value' => 'select_nothing'
+						]
+					],
+					'priority' => 40,
+					'help' => __( 'Choose whether a choice should be selected by default', 'product-configurator-for-woocommerce' ),
+				),
+				'required' => array(
+					'label' => __( 'Require a choice', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'condition' => '!data.not_a_choice',
+					'priority' => 40,
+					'help' => __( 'If Default selection is set to firtst choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
+				),
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',

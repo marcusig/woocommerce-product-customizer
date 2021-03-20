@@ -207,7 +207,7 @@ PC.options = PC.options || {};
 
 		add_to_cart: function( e ) { 
 			var data = PC.fe.save_data.save();
-			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', [] );
+			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
 				console.log( errors );
@@ -406,7 +406,7 @@ PC.options = PC.options || {};
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 
 			
-			if( !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
+			if ( ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
 				var av = this.options.content.findWhere( { available: true } );
 				if ( av ) av.set( 'active', true );
 			}
@@ -833,9 +833,12 @@ PC.options = PC.options || {};
 		},
 	});
 
+	PC.fe.errors = [];
+
 	PC.fe.save_data = {
 		choices: [],
 		save: function() {
+			PC.fe.errors = [];
 			this.choices = [];
 			PC.fe.layers.each( this.parse_choices, this ); 
 			this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
@@ -844,15 +847,34 @@ PC.options = PC.options || {};
 
 		// get choices for one layer 
 		parse_choices: function( model ) {
+			var is_required = parseInt( model.get( 'required' ) );
+			var default_selection = model.get( 'default_selection' ) || 'select_first';
+			var type = model.get( 'type' );
+			var require_error = false;
 			var choices = PC.fe.getLayerContent( model.id );
 			if ( ! choices ) return;
+			var first_choice = choices.first().id;
 			var angle_id = PC.fe.angles.first().id; 
 			if( ! model.attributes.not_a_choice ) {
-				if( choices.length > 1 || 'multiple' == model.get( 'type' ) ) {
+				if( choices.length > 1 || 'multiple' == type ) {
 
 					var selected_choices = choices.where( { 'active': true } );
 
+					if ( is_required && ! selected_choices.length ) {
+						require_error = true;
+					}
+
 					_.each( selected_choices, function( choice ) {
+						// Check for a required item
+						if ( 
+							'select_first' == default_selection
+							&& is_required 
+							&& 'simple' == type
+							&& first_choice == choice.id
+						) {
+							require_error = true;
+						}
+
 						var img_id = choice.get_image( 'image', 'id' );
 						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push( 
 							wp.hooks.applyFilters(
@@ -873,22 +895,28 @@ PC.options = PC.options || {};
 
 				} else {
 					var choice = choices.first();
-					var img_id = choice.get_image('image', 'id'); 
-					if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
-						wp.hooks.applyFilters(
-							'PC.fe.save_data.parse_choices.added_choice',
-							{
-								is_choice: false,
-								layer_id: model.id, 
-								choice_id: choice.id, 
-								angle_id: angle_id,
-								image: img_id, 
-							},
-							choice
-						)
-					);
+					var is_active = choice.get( 'active' );
+					if ( is_active ) {
+						var img_id = choice.get_image('image', 'id'); 
+						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
+							wp.hooks.applyFilters(
+								'PC.fe.save_data.parse_choices.added_choice',
+								{
+									is_choice: false,
+									layer_id: model.id, 
+									choice_id: choice.id, 
+									angle_id: angle_id,
+									image: img_id, 
+								},
+								choice
+							)
+						);
+					} else if ( is_required ) {
+						require_error = true;
+					}
 				}
 			} else {
+				// Not a choice
 				var choice = choices.first();
 				var img_id = choice.get_image('image', 'id');
 				if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
@@ -903,6 +931,10 @@ PC.options = PC.options || {};
 						}
 					)
 				);
+			}
+
+			if ( require_error ) {	
+				PC.fe.errors.push( PC_config.lang.required_error_message.replace( '%s', model.get( 'name' ) ) );
 			}
 		},
 	};
