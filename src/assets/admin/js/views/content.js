@@ -103,9 +103,8 @@ PC.views = PC.views || {};
 		render: function() {
 			var n_choices = this.choices.length;
 			var data = _.defaults(this.model.attributes);
-			this.$el.empty();
 			data.choices_number = n_choices;
-
+			this.$el.empty();
 			this.$el.append( this.template( data ) );
 		},
 		toggleLayer: function(e) {
