@@ -95,7 +95,8 @@ PC.views = PC.views || {};
 			}
 
 			this.choices = product_choices.get( this.model.id ).get( 'choices' );
-
+			this.listenTo( this.choices, 'add', this.render );
+			this.listenTo( this.choices, 'remove', this.render );
 			this.render();
 			
 		},
@@ -106,8 +107,6 @@ PC.views = PC.views || {};
 			data.choices_number = n_choices;
 
 			this.$el.append( this.template( data ) );
-			this.listenTo( this.choices, 'add', this.render );
-			this.listenTo( this.choices, 'remove', this.render );
 		},
 		toggleLayer: function(e) {
 			e.preventDefault();

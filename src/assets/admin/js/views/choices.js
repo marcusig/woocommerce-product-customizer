@@ -2,6 +2,7 @@ var PC = PC || {};
 PC.views = PC.views || {};
 
 (function($){
+	'use strict';
 	// PC.views.choices = PC.views.layers.extend({
 	// 	collectionName: 'choices', 
 	// });
