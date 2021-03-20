@@ -52,24 +52,24 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 30,
 				),
 				'custom_html' => array(
-					'label' => __('Custom HTML', 'product-configurator-for-woocommerce' ),
+					'label' => __( 'Custom HTML', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
 					'priority' => 31,
 					'condition' => 'data.not_a_choice',
 					'classes' => 'code',
-					'help' => __('Content entered here will be rendered in the configurator menu.', 'product-configurator-for-woocommerce' ) . ' ' . __('To add HTML to the viewer, add it to the custom HTML field in the content section.', 'product-configurator-for-woocommerce' ),
+					'help' => __( 'Content entered here will be rendered in the configurator menu.', 'product-configurator-for-woocommerce' ) . ' ' . __('To add HTML to the viewer, add it to the custom HTML field in the content section.', 'product-configurator-for-woocommerce' ),
 				),
 				'type' => array(
-					'label' => 'Layer type',
+					'label' => __( 'Layer type', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
 					'condition' => '!data.not_a_choice',
 					'choices' => [
 						[
-							'label' => 'Simple',
+							'label' => __( 'Simple', 'product-configurator-for-woocommerce' ),
 							'value' => 'simple'
 						],
 						[
-							'label' => 'Multiple choice',
+							'label' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ),
 							'value' => 'multiple',
 							'attributes' => [
 								'disabled' => 'disabled'
@@ -79,7 +79,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 40,
 				),
 				'default_selection' => array(
-					'label' => 'Default selection',
+					'label' => __( 'Default selection', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
 					'condition' => '!data.not_a_choice && "simple" == data.type',
 					'choices' => [
