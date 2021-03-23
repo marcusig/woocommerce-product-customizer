@@ -229,14 +229,14 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 			add_settings_field(
 				'image_loading_mode',
-				__( 'Image mode', 'product-configurator-for-woocommerce' ),
+				__( 'Lazy load images', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
 					'options' => [
-						'lazy' => __( 'Lazy load (default) - use an empty placeholder until the user selects a choice.', 'product-configurator-for-woocommerce' ),
-						'eager' => __( 'Load everything from the beginning.', 'product-configurator-for-woocommerce' ),
+						'lazy' => __( 'Yes (default) - use an empty placeholder until the user selects a choice.', 'product-configurator-for-woocommerce' ),
+						'eager' => __( 'No - load everything from the beginning.', 'product-configurator-for-woocommerce' ),
 					],
 					'default' => 'lazy',
 					'setting_name' => 'image_loading_mode'

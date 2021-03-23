@@ -321,6 +321,7 @@ PC.options = PC.options || {};
 		render: function() {
 			if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
 				this.$el.append( $( this.model.get( 'custom_html' ) ) );
+				if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 				wp.hooks.doAction( 'PC.fe.layer.render', this );
 				wp.hooks.doAction( 'PC.fe.html_layer.render', this );
 				return this.$el;
