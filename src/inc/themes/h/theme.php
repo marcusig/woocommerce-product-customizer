@@ -1,5 +1,7 @@
 <?php
 function mkl_pc_float_theme_scripts() {
+	wp_enqueue_style( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.css" );
+	wp_enqueue_script( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.min.js" );
 	wp_enqueue_script( 'mkl/pc/themes/h', plugin_dir_url( __FILE__ ) . 'h-scripts.js', [ 'flexslider' ], MKL_PC_VERSION, true );
 }
 

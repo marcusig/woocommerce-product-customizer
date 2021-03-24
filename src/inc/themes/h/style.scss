@@ -82,6 +82,11 @@ $inner_space: 1em;
 				display: none;
 			}
 		}
+		div.product .mkl_pc form.cart {
+			.quantity, .single_add_to_cart_button {
+				display: block;
+			}
+		}		
 	}
 
 	@media( max-width: $small_screen_width ) {
@@ -182,14 +187,61 @@ $inner_space: 1em;
 		}
 
 		.form.form-cart {
-			padding: 1em 2em;
-			padding-bottom: 2em;
+			padding: 1em 1.3em;
 			text-align: right;
 			.pc_configurator_form {
 				> * {
 					vertical-align: middle;
 				}
+				.configurator-add-to-cart {
+					border-radius: 4px;
+					font-size: 16px;
+					text-align: left;
+					padding: 1em;
+					background-color: color(add_to_cart_bg_color);
+					color: color(add_to_cart_text_color);
+					border: 2px solid color(add_to_cart_border_color);
+					box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+
+					.pc-total-price {
+						font-weight: 400;
+						display: block; 
+						font-size: .9em;
+						line-height: 1;
+						text-align: left;
+						margin: 0;
+						color: color(add_to_cart_text_color);
+						opacity: .8;
+					}
+
+					&:hover {
+						background-color: color(add_to_cart_bg_color_hover);
+						color: color(add_to_cart_text_color_hover);
+						border-color: color(add_to_cart_border_color_hover);
+						.pc-total-price {
+							color: color(add_to_cart_text_color_hover);
+						}
+					}
+				}
+
+				&.has-qty {
+					display: flex;
+
+					.quantity {
+						input.qty {
+							margin-right: 0;
+							height: 100%;
+							border: none;
+							background: transparent;
+							font-size: 1.3em;
+							padding: 0;
+							width: 60px;							
+						}
+					}
+				}
+
 			}
+
 
 			p {
 				margin-bottom: .5em;
@@ -242,13 +294,13 @@ $inner_space: 1em;
 			height: auto;
 			display: block !important;
 		}
-		span.pc-total-price {
-			font-weight: bold;
-			display: block; 
-			font-size: 1.6em;
-			line-height: 1;
-			margin-bottom: .5em;
-		}
+		// span.pc-total-price {
+		// 	font-weight: bold;
+		// 	display: block; 
+		// 	font-size: 1.6em;
+		// 	line-height: 1;
+		// 	margin-bottom: .5em;
+		// }
 
 		button.configurator-add-to-cart {
 			svg {
@@ -444,7 +496,7 @@ $inner_space: 1em;
 
 body.configurator_is_inline .mkl_pc {
     position: relative;
-	height: 95vh;
+	height: 90vh;
 	min-height: 500px;
 	z-index: 1;
 

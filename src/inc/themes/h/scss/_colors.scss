@@ -10,7 +10,15 @@ $colors: (
 	active_bg: #FFF,
 	layers_bg: #FFF,
 	layer_choices_bg: #F8F8F8,
-	active_choice_button_bg_color: #FFF
+	active_choice_button_bg_color: #FFF,
+	
+	add_to_cart_bg_color: #FFF,
+	add_to_cart_border_color: rgb(0, 213, 209),
+	add_to_cart_text_color: rgb(0, 213, 209),
+
+	add_to_cart_bg_color_hover: #00626d,
+	add_to_cart_border_color_hover: #00626d,
+	add_to_cart_text_color_hover: #FFF,
 );
 
 @function color($color-name) {
@@ -19,6 +27,7 @@ $colors: (
 
 :root {
 	--toolbar_height: 92px;
+	--cart-form-width: 300px;
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
