@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Possibility to make a layer selection mendatory
 * TWEAK: Show configuration image in order email and admin
 
 = 1.2.9 - 17/Mar/2021 =
