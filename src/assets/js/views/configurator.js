@@ -886,7 +886,7 @@ PC.options = PC.options || {};
 									choice_id: choice.id,
 									angle_id: angle_id,
 									layer_name: model.attributes.name,
-									image_id: img_id,
+									image: img_id,
 									name: choice.attributes.name,
 								},
 								choice
@@ -907,7 +907,7 @@ PC.options = PC.options || {};
 									layer_id: model.id, 
 									choice_id: choice.id, 
 									angle_id: angle_id,
-									image: img_id, 
+									image: img_id,
 								},
 								choice
 							)
@@ -929,6 +929,7 @@ PC.options = PC.options || {};
 							choice_id: choice.id,
 							angle_id: angle_id,
 							image: img_id,
+							name: choice.attributes.name,
 						}
 					)
 				);
