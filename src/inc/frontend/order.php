@@ -18,6 +18,8 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		}
 		private function _hooks() {
 			add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'save_data' ), 20, 4 );
+			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
+			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
 		}
 
 		public function save_data( $item, $cart_item_key, $values, $order ) {
@@ -50,6 +52,61 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				'value' => $layer->get_choice('name'),
 			);
 			return apply_filters( 'mkl_pc_order_item_meta', $meta, $layer, $product ); 
+		}
+
+		/**
+		 * Filter the admin order item's image
+		 *
+		 * @param string $image
+		 * @param int    $item_id
+		 * @param object $order_item
+		 * @return string
+		 */
+		public function order_admin_item_thumbnail( $image, $item_id, $order_item ) {
+			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
+			
+			if ( $config_image = $this->_get_order_item_image( $order_item ) ) return $config_image;
+
+			return $image;
+		}
+
+		/**
+		 * Filter the order email item's image
+		 *
+		 * @param string $image
+		 * @param object $order_item
+		 * @return string
+		 */
+		public function order_item_thumbnail( $image, $order_item ) {
+			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
+			
+			if ( $config_image = $this->_get_order_item_image( $order_item ) ) return $config_image;
+
+			return $image;
+		}
+
+		private function _get_order_item_image( $order_item ) {
+
+			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
+
+			$configurator_data = $order_item->get_meta( '_configurator_data' );
+
+			if ( ! $configurator_data ) return false;
+
+			$choices = array(); 
+			foreach ($configurator_data as $layer) {
+				$choice_images = $layer->get_choice( 'images' );
+				if( $choice_images[0]["image"]['id'] ) {
+					$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
+				}
+			}
+
+			$configuration = new Configuration( NULL, array( 'product_id' => $order_item['product_id'], 'content' => json_encode( $choices ) ) );
+			$img = $configuration->get_image();
+
+			if ( $img ) return $img;
+
+			return false;
 		}
 	}
 }

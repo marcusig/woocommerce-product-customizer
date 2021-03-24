@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Show configuration image in order email and admin
+
 = 1.2.9 - 17/Mar/2021 =
 
 * FIX: Enabling groups in a choice re-renders the choices list in the admin
