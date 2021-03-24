@@ -223,7 +223,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'options' => $sizes,
 					'setting_name' => 'thumbnail_size',
 					'no_value' => true,
-					'description' => __( 'Size of the thumbnails in the sidebar size', 'product-configurator-for-woocommerce' ),
+					'description' => __( 'Size of the thumbnails in the sidebar', 'product-configurator-for-woocommerce' ),
 				]
 			);
 
@@ -337,6 +337,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'setting_name' => 'show_image_in_cart',
 				]
 			);
+
+			add_settings_field(
+				'cart_thumbnail_size',
+				__( 'Image size in the cart / checkout / order', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => $sizes,
+					'default' => 'woocommerce_thumbnail',
+					'setting_name' => 'cart_thumbnail_size',
+					'no_value' => true,
+				]
+			);			
 
 			add_settings_field(
 				'save_images', 

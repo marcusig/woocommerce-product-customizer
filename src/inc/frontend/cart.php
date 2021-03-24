@@ -114,7 +114,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				}
 
 				$configuration = new Configuration( NULL, array( 'product_id' => $cart_item['product_id'], 'content' => json_encode( $choices ) ) );
-				$img = $configuration->get_image();
+				$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
+				$img = $configuration->get_image( $size );
 
 				if ( $img ) return $img;
 			}
