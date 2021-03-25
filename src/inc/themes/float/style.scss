@@ -205,7 +205,8 @@ $inner_space: 1em;
 			}
 			@media( max-width: $small_screen_width ) {
 				right: 0;
-				top: 50%;
+				top: 0;
+				bottom: 50%;
 			}
 
 			.angles-select {
@@ -390,9 +391,6 @@ $inner_space: 1em;
 				}
 
 				@media( max-width: $small_screen_width ) {
-					position: fixed;
-					left: 0;
-					top: 0;
 					width: 100%;
 					height: 40px;
 					background: #36383a;
@@ -794,7 +792,7 @@ $inner_space: 1em;
 					left: 0;
 					right: 0;
 					height: calc(100% - 40px);
-					box-shadow: inset 0 -45px 31px -40px rgba(0, 0, 0, 0.2);
+					box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
 				}				
 			}
 
@@ -804,8 +802,8 @@ $inner_space: 1em;
 
 			@media( max-width: $small_screen_width ) {
 				width: 100%;
-				top: 0;
-				bottom: 50%;
+				top: 50%;
+				bottom: $footer_height_small_screen;
 				.form.form-cart {
 					display: none;
 				}
@@ -1011,6 +1009,7 @@ $inner_space: 1em;
 				height: $footer_height_small_screen;
 			}
 			@media (max-width: $small_screen_width) {
+				border-top: 1px solid rgba(0,0,0,.2);
 				padding: 0;
 				right: 0;
 			}
@@ -1063,6 +1062,12 @@ $inner_space: 1em;
 
 		.mkl_pc_toolbar {
 			> header {
+				@media( max-width: $small_screen_width ) {
+					position: fixed;
+					left: 0;
+					top: 0;
+				}
+
 				> .cancel {
 					@media (min-width: $small_screen_width) {
 						top: calc(2.1em + 32px);
@@ -1103,6 +1108,25 @@ body.configurator_is_inline .mkl_pc {
 		header .cancel {
 			
 			display: none;
+		}
+
+		.mkl_pc_toolbar {
+			> header {
+				display: none;
+			}
+			@media (max-width: $small_screen_width) {
+				section.choices {
+					top: 0;
+					height: 100%;
+				}
+			
+				.mkl-pc-show-form {
+					&::before {
+						height: 100vh;
+					}
+				}
+			}
+
 		}
 	}	
 }
