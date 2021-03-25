@@ -257,6 +257,9 @@ $inner_space: 1em;
 
 				}
 				@media (max-width: $small_screen_width) {
+					left: 1.5em;
+					top: 1.5em;
+	
 					> a span {
 						display: none;
 					}
@@ -787,11 +790,11 @@ $inner_space: 1em;
 				}
 				@media( max-width: $small_screen_width ) {
 					position: absolute;
-					top: 40px;
+					top: 0;
 					bottom: 0;
 					left: 0;
 					right: 0;
-					height: calc(100% - 40px);
+					height: 100%;
 					box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
 				}				
 			}
@@ -912,7 +915,7 @@ $inner_space: 1em;
 				&::before {
 					content: '';
 					width: 100vw;
-					height: calc(100vh - #{$footer_height_small_screen});
+					height: 100vh;
 					position: fixed;
 					background: #dcdcdc;
 					top: 0;
@@ -1028,7 +1031,7 @@ $inner_space: 1em;
 		footer {
 			background: #FFF;
 			.form.form-cart {
-				bottom: calc(#{$footer_height_small_screen} + 1em);
+				bottom: 1em;
 			}
 		}
 		.mkl-pc-show-form {
@@ -1074,7 +1077,12 @@ $inner_space: 1em;
 					}
 				}
 			}
-		}		
+		}
+		.mkl_pc_viewer {
+			@media( max-width: $small_screen_width ) {
+				top: 40px;
+			}
+		}
 	}
 
 	form.save-my-design__login_form {padding: 1em;}
