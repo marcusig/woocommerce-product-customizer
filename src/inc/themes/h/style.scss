@@ -202,6 +202,7 @@ $inner_space: 1em;
 					color: color(add_to_cart_text_color);
 					border: 2px solid color(add_to_cart_border_color);
 					box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+					transition: .2s all;
 
 					.pc-total-price {
 						font-weight: 400;
@@ -212,6 +213,7 @@ $inner_space: 1em;
 						margin: 0;
 						color: color(add_to_cart_text_color);
 						opacity: .8;
+						transition: .2s all;
 					}
 
 					&:hover {
@@ -644,3 +646,5 @@ body.configurator_is_inline .mkl_pc {
 .woocommerce div.product.elementor .mkl_pc .mkl_pc_container .pc_configurator_form form.cart {
 	display: inline-flex;
 }
+
+@import 'scss/dark_mode';
