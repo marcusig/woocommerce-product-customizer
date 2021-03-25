@@ -282,6 +282,7 @@
 	height: calc(100% - 80px);
 	padding: 1em;
 	align-items: start;
+    align-content: flex-start;
 	box-sizing: border-box;	
 	overflow-y: auto;
 	flex-wrap: wrap;
@@ -313,6 +314,7 @@
 	box-sizing: border-box;
 	background: #FFF;
 	margin-right: 1em;
+	margin-bottom: 1em;
 	padding: 1em;
 	border-radius: 6px;
 	position: relative;
@@ -427,4 +429,43 @@
 
 .mkl-pc-themes .selection .mkl-pc__theme span.no-preview {
 	display: none;
+}
+
+@media (max-width: 1100px) {
+	.mkl-pc-themes {
+		min-height: 90vh;
+		min-width: 90vw;
+	}
+	.themes-list .mkl-pc__theme {
+		width: calc(50% - 1em);
+	}
+
+}
+
+@media (max-width: 500px) {
+	.mkl-pc-themes {
+		min-height: 98vh;
+		min-width: 98vw;
+	}
+	.themes-list .mkl-pc__theme {
+		width: 100%;
+		margin-right: 0;
+	}
+	.mkl-pc-themes footer {
+		flex-direction: column;
+		height: auto;
+		max-height: 30vh;
+		background: #eaeaea;
+		padding: .5em;
+		z-index: 3;
+	}
+	.mkl-pc-themes footer .selection,
+	.mkl-pc-themes footer .actions {
+		flex: auto;
+		width: 100%;
+	}
+	.mkl-pc-themes footer .actions {
+		text-align: center;
+		padding-top: 10px;
+	}
 }
