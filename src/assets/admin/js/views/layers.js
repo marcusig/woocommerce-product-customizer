@@ -271,6 +271,7 @@ TODO:
 			'click .delete-layer': 'delete_layer',
 			'click .confirm-delete-layer': 'delete_layer',
 			'click .cancel-delete-layer': 'delete_layer',
+			'click .duplicate-layer': 'duplicate_layer',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
@@ -335,6 +336,30 @@ TODO:
 					// this.delete_btns.cancel.addClass('hidden');
 					break;
 
+			}
+		},
+		duplicate_layer: function( event ) {
+			// Duplicate the layer
+			var cl = this.model.clone();
+			cl.set( 'name', cl.get( 'name' ) + ' (Copy)' );
+			var new_layer = this.model.collection.create( this.model.collection.create_layer( cl.attributes ) );
+			if ( cl.get( 'admin_label' ) ) {
+				new_layer.set( 'admin_label', cl.get( 'admin_label' ) + ' (Copy)' );
+			}
+			
+			// Duplicate the layer content
+			var product = PC.app.get_product();
+			var content = product.get( 'content' );
+			if ( content.get( this.model.id ) ) {
+				var col = content.get( this.model.id ).get( 'choices' );
+				var new_choices = new PC.choices([], { layer: new_layer } );
+				content.add( { layerId: new_layer.id, choices: new_choices } );
+				col.each( function( model ) {
+					var new_choice = model.clone();
+					new_choice.set( 'layerId', new_layer.id );
+					new_choices.add( new_choice );
+				} );
+				PC.app.is_modified['content'] = true;
 			}
 		},
 		edit_attachment: function(e) {
