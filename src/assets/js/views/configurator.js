@@ -897,7 +897,7 @@ PC.options = PC.options || {};
 				} else {
 					var choice = choices.first();
 					var is_active = choice.get( 'active' );
-					if ( is_active ) {
+					if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) ) ) {
 						var img_id = choice.get_image('image', 'id'); 
 						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
 							wp.hooks.applyFilters(
