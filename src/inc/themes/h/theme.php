@@ -164,7 +164,7 @@ function mkl_pc_float_theme_filter_colors( $colors ) {
 			'label' => __( 'Active choice background color', 'product-configurator-for-woocommerce' )
 		);
 		$colors['active_choice_button_text_color'] = array(
-			'default' => '#FFF',
+			'default' => '#000',
 			'label' => __( 'Active choice text color', 'product-configurator-for-woocommerce' )
 		);
 
@@ -258,4 +258,4 @@ function mkl_pc_float_theme_add_customizer_settings( $wp_customize, $mkl_pc_cust
 		)
 	);
 }
-add_filter( 'mkl_pc_customizer_settings', 'mkl_pc_float_theme_add_customizer_settings', 20, 2 );
+add_filter( 'mkl_pc_customizer_settings_before', 'mkl_pc_float_theme_add_customizer_settings', 20, 2 );

@@ -8,14 +8,14 @@
 	background: color(viewer-bg);
 
 	@media( max-width: $small_screen_width ) {
-		right: 0;
-		bottom: 50%;
-		top: 0;
+		// right: 0;
+		bottom: calc( var(--toolbar_height) - var(--footer-height-small-screen) );
+		// top: 0;
 	}
 
 	.angles-select {
 		position: absolute;
-		left: 4em;
+		left: 2em;
 		top: 2em;
 		z-index: 2;
 		> a {

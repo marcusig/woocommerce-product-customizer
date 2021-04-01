@@ -26,11 +26,21 @@ $colors: (
 	@return var(--mkl_pc_color-#{$color-name});
 }
 
+$footer_height_small_screen: 80px;
+
 :root {
 	--toolbar_height: 92px;
 	--cart-form-width: 300px;
+	--footer-height-small-screen: #{$footer_height_small_screen};
+	--mkl_pc_color-default-bg: #FFF;
+
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
 	}
+}
+
+
+.mkl_pc.dark  {
+	--mkl_pc_color-default-bg: #000;
 }

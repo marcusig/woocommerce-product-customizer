@@ -72,6 +72,8 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 		 */
 		public function customize_register( $wp_customize ) {
 
+			do_action( 'mkl_pc_customizer_settings_before', $wp_customize, $this );
+
 			$color_settings = $this->get_colors();
 
 			// add the section to contain the settings
