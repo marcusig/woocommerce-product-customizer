@@ -230,6 +230,7 @@ PC.views = PC.views || {};
 			'click .delete-layer': 'delete_choice',
 			'click .confirm-delete-layer': 'delete_choice',
 			'click .cancel-delete-layer': 'delete_choice',
+			'click .duplicate-choice': 'duplicate_choice',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
@@ -311,6 +312,15 @@ PC.views = PC.views || {};
 					break;
 
 			}
+		},
+		duplicate_choice: function() {
+			var new_choice = this.model.clone();
+			new_choice.set( '_id', PC.app.get_new_id( this.model.collection ) );
+			new_choice.set( 'name', new_choice.get( 'name' ) + ' (Copy)' );
+			if ( new_choice.get( 'admin_label' ) ) {
+				new_choice.set( 'admin_label', new_choice.get( 'admin_label' ) + ' (Copy)' );
+			}			
+			this.model.collection.add( new_choice );
 		},
 		add_angle: function( angle ) {
 			// this.model

@@ -158,6 +158,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="form-info">
 			<div class="details">
 				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+				<button type="button" class="button-link duplicate duplicate-layer"><?php _e('Duplicate', 'product-configurator-for-woocommerce' ) ?></button>
 				<div class="prompt-delete hidden notice">
 					<p><?php _e( 'Do you realy want to delete this layer?', 'product-configurator-for-woocommerce' ); ?></p>
 					<p>
@@ -257,6 +258,7 @@ CONTENT TEMPLATES
 		<div class="form-info">
 			<div class="details">
 				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+				<button type="button" class="button-link duplicate duplicate-choice"><?php _e('Duplicate', 'product-configurator-for-woocommerce' ) ?></button>
 				<div class="prompt-delete hidden notice">
 					<p><?php _e( 'Do you realy want to delete this choice?', 'product-configurator-for-woocommerce' ); ?></p>
 					<p>
