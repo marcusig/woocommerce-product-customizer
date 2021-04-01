@@ -35,6 +35,11 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'priority' => 5,
 					'condition' => '!data.not_a_choice'
 				),
+				'sku' => array(
+					'label' => __('SKU', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 9,
+				),
 				'name' => array(
 					'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
