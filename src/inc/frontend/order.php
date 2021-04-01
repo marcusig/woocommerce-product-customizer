@@ -39,6 +39,8 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 							endif;
 						} 
 					}
+
+					do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 				}
 				
 				// stores the whole _configurator_data object
