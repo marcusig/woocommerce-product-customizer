@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.7
-Stable tag: 1.2.10.beta
+Stable tag: 1.2.10
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -35,7 +35,7 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 **Themes**
 
 * Choose between different themes, or create your own (developer friendly)
-* **[NEW]** Change selected colors using the theme Customizer (Appearance > Customize)
+* Change selected colors using the theme Customizer (Appearance > Customize)
 
 **Premium addons**
 
@@ -111,9 +111,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.10 - 5/Apr/2021 =
+
 * FEATURE: Possibility to duplicate layers and content
 * FEATURE: Possibility to make a layer selection mendatory
 * TWEAK: Show configuration image in order email and admin
+* FIX: Fix memory leak when adding choices in the admin
 
 = 1.2.9 - 17/Mar/2021 =
 
@@ -238,7 +241,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.9 Among other things, this version added the ability to re-order the inages separately from the layers, as well as the possibility to add HTML in the layers. 
+* 1.2.10 You can now make choices mendatory, and duplicate layers and content.
 
 
 
