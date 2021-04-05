@@ -109,6 +109,7 @@ class Frontend_Woocommerce {
 			$product_id = intval( $atts[ 'product_id' ] );
 			$product = wc_get_product( $product_id );
 		}
+
 		$shortcode_class = isset( $atts[ 'classes' ] ) ? Utils::sanitize_html_classes( $atts[ 'classes' ] ) : '';
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
@@ -122,7 +123,15 @@ class Frontend_Woocommerce {
 		$options = get_option( 'mkl_pc__settings' );
 		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
 
-		return '<button class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'">'.$content.'</button>';
+		if ( isset( $atts['tag'] ) && ( 'a' === $atts['tag'] || 'link' === $atts['tag'] ) ) {
+			$tag_name = 'a href="#" ';
+			$tag_name_close = 'a';
+		} else {
+			$tag_name = 'button type="button"';
+			$tag_name_close = 'button';
+		}
+
+		return '<' . $tag_name . ' class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'">'.$content.'</' . $tag_name_close . '>';
 	}
 
 	/**

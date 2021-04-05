@@ -116,6 +116,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FEATURE: Possibility to duplicate layers and content
 * FEATURE: Possibility to make a layer selection mendatory
 * TWEAK: Show configuration image in order email and admin
+* TWEAK: Added the possibility to specify the tag of the "Configure" button when using the shortcode: use `tag="link"` or `tag="a"` to use a link instead of a button.
 * FIX: Fix memory leak when adding choices in the admin
 
 = 1.2.9 - 17/Mar/2021 =
