@@ -416,6 +416,10 @@ class DB {
 					'sanitize' => 'intval',
 					'escape' => 'intval',
 				],
+				'image_order' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
 				'extra_price' => [ 
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',

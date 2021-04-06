@@ -357,7 +357,7 @@ TODO:
 				col.each( function( model ) {
 					var new_choice = model.clone();
 					new_choice.set( 'layerId', new_layer.id );
-					new_choices.add( new_choice );
+					new_choices.create( new_choice.toJSON() );
 				} );
 				PC.app.is_modified['content'] = true;
 			}
