@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.7
-Stable tag: 1.2.10
+Stable tag: 1.2.11
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,6 +110,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.11 - 7/Apr/2021 =
+
+* FIX: Duplicating layers kept the link between the images
+* FIX: Reordering images didn't always work as expected
 
 = 1.2.10 - 5/Apr/2021 =
 
