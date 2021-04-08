@@ -34,13 +34,17 @@ class Cache {
 	public function get_config_file( $product_id, $generate_file = true ) {
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id );
+		$default_url = admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $product_id );
+		if ( current_user_can( 'edit_posts' ) || mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
+			return $default_url;
+		}
 		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) {
 			return trailingslashit( $location['url'] ) . $file_name;
 		} elseif ( $generate_file ) {
 			$this->save_config_file( $product_id );
 		}
 		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) return trailingslashit( $location['url'] ) . $file_name;
-		return admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $product_id );
+		return $default_url;
 	}
 
 	public function get_cache_location() {
