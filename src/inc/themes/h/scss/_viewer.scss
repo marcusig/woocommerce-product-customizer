@@ -8,9 +8,7 @@
 	background: color(viewer-bg);
 
 	@media( max-width: $small_screen_width ) {
-		// right: 0;
-		bottom: calc( var(--toolbar_height) - var(--footer-height-small-screen) );
-		// top: 0;
+		bottom: calc( var(--toolbar_height) + var(--footer-height-small-screen) );
 	}
 
 	.angles-select {

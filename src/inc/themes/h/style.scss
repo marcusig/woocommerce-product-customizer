@@ -320,8 +320,14 @@ $inner_space: 1em;
 			display: none;
 			background: transparent;
 			border: none;
+			margin-right: 10px;
+			border-radius: 4px;
+					
 			svg {
-				width: 1.4em;
+				height: 25px;
+				width: 25px;
+				line-height: 1;
+				display: block;
 				path {
 					fill: var(color(primary));
 				}
@@ -440,6 +446,7 @@ $inner_space: 1em;
 				padding: 0;
 				right: 0;
 				display: flex;
+				background-color: color(layers_bg);
 			}
 
 			@media (min-width: $small_screen_width) {
@@ -467,6 +474,47 @@ $inner_space: 1em;
 		}
 		.mkl_pc_toolbar, .mkl_pc_viewer {
 			filter: blur(.3em);
+		}
+	}
+
+	&.no-cart-modal {
+		.mkl-pc-show-form {
+			display: none;
+		}
+		@media( max-width: $small_screen_width ) {
+			footer .form.form-cart {
+				position: relative;
+				bottom: auto;
+				left: auto;
+				right: auto;
+				padding: 0;
+				display: flex;
+				background: transparent;
+    			border-radius: 0;
+				width: auto;
+				.pc_configurator_form {
+					flex-direction: row;
+					width: auto;
+					padding-right: 10px;
+					.configurator-add-to-cart {
+						margin-top: 0;
+						line-height: 1;
+						padding: 6px;
+						width: auto;
+					}
+					&.has-qty .quantity {
+						width: 80px;
+						input[type="number"] {
+							text-align: right;
+							background: transparent;
+							padding-right: 17px;
+						}
+					}
+				}
+				.pc-total-price {
+					display: none;
+				}
+			}
 		}
 	}
 
@@ -505,8 +553,12 @@ $inner_space: 1em;
 		margin-left: -1em;
 		margin-right: -1em;
 	}
-
-	.cancel {
+	
+	a.save-your-design svg {
+		transform: translateY(20px);
+	}
+	
+	.close-mkl-pc {
 		position: absolute; 
 		background: transparent;
 		border: none;
