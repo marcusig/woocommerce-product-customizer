@@ -38,7 +38,7 @@
 
 		@media( max-width: $medium_screen_width ) {
 			left: $toolbar_width_medium;
-			width: calc( 100% - $toolbar_width_medium );
+			width: calc( 100% - #{$toolbar_width_medium} );
 		}
 
 		@media( max-width: $small_screen_width ) {
