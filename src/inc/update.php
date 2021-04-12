@@ -15,6 +15,7 @@ class Update {
 			'1.1.0' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.1.2' => [ [ $this, 'update_wrong_layer_ids' ], [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.2.9' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
+			'1.2.12' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );

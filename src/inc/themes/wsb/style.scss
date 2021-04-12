@@ -381,7 +381,7 @@ $inner_space: 1em;
 				}
 				@media( max-width: $medium_screen_width ) {
 					left: $toolbar_width_medium;
-					width: calc( 100% - $toolbar_width_medium );
+					width: calc( 100% - #{$toolbar_width_medium} );
 				}
 
 				@media( max-width: $small_screen_width ) {
@@ -1018,32 +1018,53 @@ $inner_space: 1em;
 			transform: none;
 		}
 	}
-
-	body.admin-bar:not(.configurator_is_inline) & {
-		@media (min-width: $small_screen_width) {
-			top: 32px;
-		}
-
-		.mkl_pc_toolbar {
-			> header {
-				@media( max-width: $small_screen_width ) {
-					position: fixed;
-					left: 0;
-					top: 0;
-				}
-				> .cancel {
-					@media (min-width: $small_screen_width) {
-						top: 62px;
+	@at-root {
+		body.admin-bar:not(.configurator_is_inline) & {
+			top: 45px;
+			.mkl_pc_toolbar {
+				> header {
+					@media( min-width: 600px ) and ( max-width: $small_screen_width ) {
+						position: fixed;
+						left: 0;
+						top: 45px;
+					}
+					@media ( max-width: 600px ) {
+						position: fixed;
+						left: 0;
+						top: 0;
 					}
 				}
 			}
-		}
-		.mkl_pc_viewer {
-			@media( max-width: $small_screen_width ) {
-				top: 40px;
+			@media (max-width: 600px) {
+				top: 0;
+				z-index: 100000;
+			}
+			@media (min-width: $small_screen_width) {
+				top: 32px;
 			}
 		}
+		body:not(.configurator_is_inline) & {
+			.mkl_pc_toolbar {
+				> header {
+					@media( max-width: $small_screen_width ) {
+						position: fixed;
+						left: 0;
+						top: 0;
+					}
+					> .cancel {
+						@media (min-width: $small_screen_width) {
+							top: 62px;
+						}
+					}
+				}
+			}
+			.mkl_pc_viewer {
+				@media( max-width: $small_screen_width ) {
+					top: 40px;
+				}
+			}
 
+		}
 	}
 
 	form.save-my-design__login_form {padding: 1em;}
