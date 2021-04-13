@@ -425,8 +425,8 @@ class DB {
 					'escape' => 'floatval',
 				],
 				'name' => [ 
-					'sanitize' => 'sanitize_text_field',
-					'escape' => 'esc_html',
+					'sanitize' => 'wp_filter_post_kses',
+					'escape' => [ $this, 'escape_description' ],
 				],
 				'angle_name' => [ 
 					'sanitize' => 'sanitize_text_field',
