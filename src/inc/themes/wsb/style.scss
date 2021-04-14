@@ -191,6 +191,9 @@ $inner_space: 1em;
 			bottom: 0;
 			background-position: 50%;
 			background-size: cover;
+			@media( max-width: $small_screen_width ) {
+				bottom: 50%;
+			}
 		}		
 		.mkl_pc_viewer {
 			position: absolute;
@@ -198,7 +201,7 @@ $inner_space: 1em;
 			left: 0; 
 			top: 0;
 			right: $toolbar_width;
-			right: var(--toolbar_width);;
+			right: var(--toolbar_width);
 			bottom: 0;
 
 			@media( max-width: $medium_screen_width ) {
