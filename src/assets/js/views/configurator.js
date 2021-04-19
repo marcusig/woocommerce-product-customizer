@@ -226,6 +226,12 @@ PC.options = PC.options || {};
 				console.log( 'debug_configurator_data', data );
 				return;
 			}
+
+			wp.hooks.doAction( 'PC.fe.add_to_cart.before', this );
+			// console.log( $cart.find( '[name="add-to-cart"]' ).val( PC.fe.active_product ) );
+			
+			// return;
+
 			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
 				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 			} else {
