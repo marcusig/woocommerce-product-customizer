@@ -67,7 +67,13 @@ Backbone.Model.prototype.toJSON = function() {
 					return this.admin[ key ];
 			}
 		},
-
+		get_layer_content: function( layerId ) {
+			var content = PC.app.get_collection( 'content' );
+			if ( ! content ) return false;
+			var layer_content = content.get( layerId );
+			if ( ! layer_content ) return false;
+			return layer_content.get( 'choices' );
+		},
 		save_all: function( state ) {
 			this.saving = 0;
 			this.errors = [];
