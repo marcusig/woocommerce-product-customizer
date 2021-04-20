@@ -106,7 +106,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
 				$configurator_data = $cart_item['configurator_data'];
 				$choices = array(); 
-				foreach ($configurator_data as $layer) {
+				usort( $configurator_data, [ $this, '_order_images' ] );
+				foreach ( $configurator_data as $layer ) {
 					$choice_images = $layer->get_choice( 'images' );
 					if( $choice_images[0]["image"]['id'] ) {
 						$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
@@ -121,6 +122,24 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			return $image;
+		}
+
+		/**
+		 * Order images
+		 *
+		 * @param object $choice_a
+		 * @param object $choice_b
+		 * @return integer
+		 */
+		private function _order_images( $choice_a, $choice_b ) {
+			$a = $choice_a->get_layer( 'image_order' );
+			$b = $choice_b->get_layer( 'image_order' );
+			// fallback to normal sort
+			if ( false === $a ) {
+				$a = $choice_a->get_layer( 'order' );
+				$b = $choice_b->get_layer( 'order' );
+			}
+			return ($a > $b) ? +1 : -1;
 		}
 
 		public function get_choices_html( $choices ) {
