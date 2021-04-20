@@ -22,13 +22,14 @@ PC.choice = Backbone.Model.extend({
 		}
 
 		switch ( attributes.available ) {
-			case '1':
-				this.set( 'available', true);
-				break;
 			case '0':
 				this.set( 'available', false);
 				break;
-		}
+			case '1':
+			default:
+				this.set( 'available', true);
+				break;
+			}
 
 		if ( 'undefined' != attributes.is_group && 1 == parseInt( attributes.is_group ) ) {
 			this.set( 'available', false);
