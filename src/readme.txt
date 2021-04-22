@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix image order in the cart
+
 = 1.2.12 - 7/Apr/2021 =
 
 * TWEAK: Layer and choice names to support basic HTML

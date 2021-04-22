@@ -246,6 +246,7 @@ PC.views = PC.views || {};
 				args = { 
 					not_a_choice: layer.get( 'not_a_choice' ),
 					layer_type: layer.get( 'type' ),
+					layer: layer.attributes,
 				};
 			} else {
 				args = {};
