@@ -64,37 +64,38 @@ PC.views = PC.views || {};
 		remove_relationships: function( collectionName, model ) {
 
 			if( collectionName == 'layers' ) {
-				var content = this.current_product.get('content');
+				var content = this.current_product.get( 'content' );
 				if ( content.get( model.id ) ) {
 					content.remove( model.id );
+					PC.app.is_modified[ 'content' ] = true;
 				}
 			}
 
 			if ( collectionName == 'angles' ) {
-				var content = this.current_product.get('content');
+				var content = this.current_product.get( 'content' );
 				if (!content) return;
-				content.each( function( choices, index ){
-
-					choices.get('choices').each( function( choice ){
-						var images = choice.get('images').where({ angleId: model.id });
-						choice.get('images').remove(images);
+				content.each( function( choices, index ) {
+					choices.get( 'choices' ).each( function( choice ) {
+						var images = choice.get( 'images' ).where( { angleId: model.id } );
+						choice.get( 'images' ).remove( images );
 					} );
-
+					
 				}, this );
+				PC.app.is_modified[ 'content' ] = true;
 			}
 		},
 		get_current_product: function() { return this.current_product; },
 		get_current_modal: function() { 
 			return this.current_product.editor;
 		}, 
-	});
+	} );
 
 	// PC.views.editor is the main modal window view.
 	PC.views.editor = Backbone.View.extend({
 
 		tagName: 'div',
 		className: 'pc-modal-container',
-		template : wp.media.template('mkl-modal'),
+		template : wp.media.template( 'mkl-modal' ),
 		loading: 0,
 		initialize: function( options ){ 
 
