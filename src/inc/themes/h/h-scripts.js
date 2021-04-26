@@ -67,18 +67,16 @@
 	} );
 
 	var resize_layer_choices = function() {
-		// console.log('OW',  $( '.mkl_pc.opened .mkl_pc_container' ).outerWidth() );
 		var cow = $( '.mkl_pc.opened .mkl_pc_container' ).outerWidth();
 		var choice_el_width = 220;
 		var layer_el_width = 190;
-		console.log('cow', cow);
+
 		if ( 330 > cow ) {
 			choice_el_width = cow;
 			layer_el_width = cow;
 		}
 		$( '.layer_choices' ).css( 'width', cow );
 		$( '.choices-list > ul' ).each( function( ind, el ) {
-			console.log($( el ).find( '.choice-item:visible' ).length);
 			// $( el ).css( 'width', choice_el_width * $( el ).find( '.choice-item:visible' ).length );
 		} );
 
