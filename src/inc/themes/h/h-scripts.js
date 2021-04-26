@@ -85,6 +85,7 @@
 			'--choice-item-width': choice_el_width + 'px',
 			'--layer-item-width': layer_el_width + 'px',
 		} );
+		if ( $( '.layers' )[0] ) $( '.layers' )[0].scrollTo( 0, 0 );
 		// $( '.layers' ).css( 'width', layer_el_width * $( '.layers > li' ).length );
 
 	}
