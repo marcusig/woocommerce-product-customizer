@@ -226,6 +226,12 @@ PC.options = PC.options || {};
 				console.log( 'debug_configurator_data', data );
 				return;
 			}
+
+			wp.hooks.doAction( 'PC.fe.add_to_cart.before', this );
+			// console.log( $cart.find( '[name="add-to-cart"]' ).val( PC.fe.active_product ) );
+			
+			// return;
+
 			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
 				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 			} else {
@@ -309,7 +315,7 @@ PC.options = PC.options || {};
 		initialize: function( options ) {
 			this.options = options || {};
 			this.layer_type = this.model.get('type');
-			this.listenTo( this.options.model, 'change active', this.activate );
+			this.listenTo( this.options.model, 'change:active', this.activate );
 			wp.hooks.doAction( 'PC.fe.layers_list_item.init', this );
 		},
 
@@ -327,7 +333,13 @@ PC.options = PC.options || {};
 				return this.$el;
 			}
 
-			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 
+			var data = this.model.attributes;
+			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', data ) ) ); 
+
+			if ( PC.fe.config.show_active_choice_in_layer ) {
+				var selection = new PC.fe.views.layers_list_item_selection( { model: this.options.model } );
+				this.$( 'button' ).append( selection.$el );
+			}
 
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			
@@ -385,6 +397,26 @@ PC.options = PC.options || {};
 
 		}
 	});
+
+	PC.fe.views.layers_list_item_selection = Backbone.View.extend({
+		tagName: 'span',
+		className: 'selected-choice',
+		initialize: function() {
+			this.choices = PC.fe.getLayerContent( this.model.id );
+			if ( ! this.choices ) return;
+			this.listenTo( this.choices, 'change:active', this.render );
+			this.render();
+		},
+		render: function( params ) {
+			var choices_names = [];
+			var active_choices = this.choices.where( { active: true } );
+			// var active_choices = 
+			_.each( active_choices, function( item ) {
+				choices_names.push( item.get( 'name' ) );
+			} );
+			this.$el.html( choices_names.join( ', ' ) );
+		}
+	} );
 
 	/*
 		PC.fe.views.choices 

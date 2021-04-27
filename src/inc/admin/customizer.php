@@ -17,7 +17,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 		const PREFIX = 'mkl_pc_theme_';
 		public function __construct() {
 			add_action( 'customize_register', array( $this, 'customize_register' ), 10 );
-			add_filter( 'wp_get_custom_css', array( $this, 'output_css' ), 30, 2 );
+			add_filter( 'wp_get_custom_css', array( $this, 'output_css' ), 130, 2 );
 		}
 
 		/**
@@ -71,6 +71,8 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 		 * @return void
 		 */
 		public function customize_register( $wp_customize ) {
+
+			do_action( 'mkl_pc_customizer_settings_before', $wp_customize, $this );
 
 			$color_settings = $this->get_colors();
 
@@ -154,15 +156,16 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 				)
 			);
 
+			do_action( 'mkl_pc_customizer_settings', $wp_customize, $this );
+
 		}
 
 		public function output_css( $css, $stylesheet ) {
-			
 			$colors = $this->get_colors();
 			$rules = [];
 			foreach( $colors as $slug => $color ) {
 				$color_name = str_replace( self::PREFIX, '', $slug );
-				if ( $c = get_option( $slug = self::PREFIX . $slug, false ) ) {
+				if ( $c = get_option( $slug = self::PREFIX . $slug, $color['default'] ) ) {
 					$rules[] = '--mkl_pc_color-' . $color_name . ': ' .  $c . ';';
 					if ( 'primary' == $color_name ) {
 						$rules[] = '--mkl_pc_color-' . $color_name . '_rgb: ' . implode(', ', $this->hex2rgb( $c ) ) . ';';
@@ -177,6 +180,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 				. '}
 				';
 			}
+
 			return $css;
 		}
 

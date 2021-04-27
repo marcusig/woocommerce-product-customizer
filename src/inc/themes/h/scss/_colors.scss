@@ -1,0 +1,46 @@
+// COLORS
+$colors: (
+	light-gray: #b5c2bd,
+	viewer-bg: #EDEDED,
+	primary: rgb(0, 213, 209),
+	primary_rgb: unquote("0, 213, 209"),
+	primary_hover: #00626d,
+	layers_button_text_color: #000000,
+	choices_button_text_color: #000000,
+	active_bg: #FFF,
+	layers_bg: #FFF,
+	layer_choices_bg: #F8F8F8,
+	active_choice_button_bg_color: #FFF,
+	active_choice_button_text_color: #000,
+	
+	add_to_cart_bg_color: #FFF,
+	add_to_cart_border_color: rgb(0, 213, 209),
+	add_to_cart_text_color: rgb(0, 213, 209),
+
+	add_to_cart_bg_color_hover: #00626d,
+	add_to_cart_border_color_hover: #00626d,
+	add_to_cart_text_color_hover: #FFF,
+);
+
+@function color($color-name) {
+	@return var(--mkl_pc_color-#{$color-name});
+}
+
+$footer_height_small_screen: 80px;
+
+:root {
+	--toolbar_height: 92px;
+	--cart-form-width: 300px;
+	--footer-height-small-screen: #{$footer_height_small_screen};
+	--mkl_pc_color-default-bg: #FFF;
+
+	// each item in color map
+	@each $name, $color in $colors {
+		--mkl_pc_color-#{$name}: #{$color};
+	}
+}
+
+
+.mkl_pc.dark  {
+	--mkl_pc_color-default-bg: #000;
+}

@@ -214,7 +214,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// LOAD BACKBONE SCRIPTS
 				foreach($scripts as $script) {
 					list( $key, $file ) = $script;
-					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), MKL_PC_VERSION, true );
+					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), filemtime( MKL_PC_ASSETS_PATH . 'admin/js/'. $file ), true );
 				}
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', array(
