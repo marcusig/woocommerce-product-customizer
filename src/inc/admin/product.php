@@ -173,6 +173,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function load_scripts() {
+			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
+			
 			$scripts = array(
 				array('admin', 'admin.js'),
 				//MODELS
