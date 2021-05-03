@@ -36,7 +36,7 @@ function mkl_pc_float_theme_scripts() {
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/float', function( view ) {
 			if ( PC.fe.inline ) {
 				view.\$el.find( '.layer_choices' ).show();
-				$(document).scrollTop(scrollStartPost);
+				// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 			} else {
 				view.\$el.find( '.layer_choices' ).delay(40).slideDown(200);
 			}
