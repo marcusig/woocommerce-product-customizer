@@ -333,8 +333,8 @@ class Frontend_Woocommerce {
 	 */
 	public function set_thumbnail_url( $data ) {
 		if ( ! isset( $data['content'] ) || ! is_array( $data['content'] ) ) return $data;
-		$img_size = 'full';
-		$thumbnail_size = 'medium';
+		$img_size =  mkl_pc( 'settings' )->get( 'preview_image_size', 'full' );;
+		$thumbnail_size = mkl_pc( 'settings' )->get( 'thumbnail_size', 'medium' );
 		foreach( $data['content'] as $lin => $layer ) {
 			foreach( $layer['choices'] as $cin => $choice ) {
 				foreach( $choice['images'] as $imin => $image ) {
