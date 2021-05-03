@@ -56,10 +56,14 @@ Backbone.Model.prototype.toJSON = function() {
 				add_language_filters( PC.fe.lang );
 			}
 			var product_id;
-			//get product ID
-			if ( $( event.target ).data( 'product_id' ) ) {
-				product_id = $( event.target ).data( 'product_id' );
-				if ( $( event.target ).is( '.is-shortcode' ) ) {
+			var $target = $( event.target );
+			if ( ! $target.is( '.configure-product' ) ) {
+				$target = $target.closest( '.configure-product' );
+			}
+
+			if ( $target.data( 'product_id' ) ) {
+				product_id = $target.data( 'product_id' );
+				if ( $target.is( '.is-shortcode' ) ) {
 					PC.fe.is_using_shortcode = true;
 				} else {
 					PC.fe.is_using_shortcode = false;
@@ -93,7 +97,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		$('form.cart').each(function(index, form) { 
 
-			if ( ! $( 'body' ).is('.enable-add-to-cart' ) ) $(form).find('button[name="add-to-cart"]').attr('disabled', 'disabled'); 
+			if ( ! $( 'body' ).is('.enable-add-to-cart' ) ) $(form).find('button[name="add-to-cart"]').prop('disabled', 'disabled'); 
 			$(form).on('submit', function( event ){ 
 				$('input[name=pc_configurator_data]').val( PC.fe.save_data.save() ); 
 				if( $('input[name=pc_configurator_data]').val() == '' ) {
