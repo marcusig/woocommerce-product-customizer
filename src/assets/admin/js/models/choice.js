@@ -39,7 +39,11 @@ PC.choice = Backbone.Model.extend({
 	get_image: function( image, what ) { 
 		image = image || 'image'; 
 		what = what || 'url'; 
-		var active_angle = PC.fe.angles.findWhere( { active: true } ) || PC.fe.angles.first(); 
+		if ( 'thumbnail' == image ) {
+			var active_angle = PC.fe.angles.first(); 
+		} else {
+			var active_angle = PC.fe.angles.findWhere( { active: true } ) || PC.fe.angles.first(); 
+		}
 		var angle_id = active_angle.id; 
 		var m = this.attributes.images.get( angle_id );
 		return m ? m.attributes[image][what] : ''; 
