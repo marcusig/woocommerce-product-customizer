@@ -357,7 +357,7 @@ $inner_space: 1em;
 					box-shadow: none;
 					width: 20px; height: 20px;
 					padding: 0;
-					top: 30px;
+					top: 1.8em;
 					right: 1.4em;
 
 					span {
@@ -1036,6 +1036,11 @@ $inner_space: 1em;
 						left: 0;
 						top: 0;
 					}
+					> .cancel {
+						@media (min-width: $small_screen_width) {
+							top: 62px;
+						}
+					}					
 				}
 			}
 			@media (max-width: 600px) {
@@ -1053,11 +1058,6 @@ $inner_space: 1em;
 						position: fixed;
 						left: 0;
 						top: 0;
-					}
-					> .cancel {
-						@media (min-width: $small_screen_width) {
-							top: 62px;
-						}
 					}
 				}
 			}

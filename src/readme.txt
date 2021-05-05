@@ -111,6 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* NEW THEME: Introducing the new H theme
+* TWEAK: Make sure the existing thumbnail is fetched
+* TWEAK: Fix close button position on some themes
 * TWEAK: Fix image order in the cart
 
 = 1.2.12 - 7/Apr/2021 =

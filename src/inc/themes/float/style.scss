@@ -433,18 +433,18 @@ $inner_space: 1em;
 				& + .form {
 					position: relative;
 					padding-top: 2em;
-					&::after {
-						content: '';
-						transition: .2s all;
-						display: block;
-						height: 0;
-						width: 100%;
-						position: absolute;
-						z-index: 4;
-						bottom: 100%;
-						left: 0;
-						background: linear-gradient(to top, #ededed, #ededed00);
-					}
+					// &::after {
+					// 	content: '';
+					// 	transition: .2s all;
+					// 	display: block;
+					// 	height: 0;
+					// 	width: 100%;
+					// 	position: absolute;
+					// 	z-index: 4;
+					// 	bottom: 100%;
+					// 	left: 0;
+					// 	background: linear-gradient(to top, #ededed, #ededed00);
+					// }
 					&::before {
 						content: '';
 						display: block;
@@ -457,11 +457,11 @@ $inner_space: 1em;
 					}
 				}
 
-				&.scrolled + .form {
-					&::after {
-						height: 60px;
-					}
-				}
+				// &.scrolled + .form {
+				// 	&::after {
+				// 		height: 60px;
+				// 	}
+				// }
 				> ul{
 					list-style-type: none;
 					display: block;
@@ -1077,6 +1077,11 @@ $inner_space: 1em;
 						left: 0;
 						top: 0;
 					}
+					> .cancel {
+						@media (min-width: $small_screen_width) {
+							top: 62px;
+						}
+					}					
 				}
 			}
 			@media (max-width: 600px) {
@@ -1095,11 +1100,6 @@ $inner_space: 1em;
 						left: 0;
 						top: 0;
 					}
-					> .cancel {
-						@media (min-width: $small_screen_width) {
-							top: 62px;
-						}
-					}
 				}
 			}
 			.mkl_pc_viewer {
@@ -1117,6 +1117,23 @@ $inner_space: 1em;
 		margin-left: -1em;
 		margin-right: -1em;
 	}	
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_bg.default-bg ~ .mkl_pc_toolbar section.choices + .form::after {
+	content: '';
+    transition: .2s all;
+    display: block;
+    height: 0;
+    width: 100%;
+    position: absolute;
+    z-index: 4;
+    bottom: 100%;
+    left: 0;
+    background: linear-gradient(to top, #ededed, #ededed00);
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_bg.default-bg ~ .mkl_pc_toolbar section.choices.scrolled + .form::after {
+	height: 60px;
 }
 
 .keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layers button.layer-item:focus {
