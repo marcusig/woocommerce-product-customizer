@@ -45,7 +45,7 @@ class Frontend_Woocommerce {
 		add_shortcode( 'mkl_configurator_button', array( $this, 'button_shortcode' ) );
 		add_shortcode( 'mkl_configurator', array( $this, 'configurator_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
-		add_filter( 'mkl_product_configurator_get_front_end_data', array( $this, 'set_thumbnail_url' ) );
+		add_filter( 'mkl_product_configurator_get_front_end_data', array( $this, 'set_thumbnail_url' ), 20 );
 	}
 
 	public function register_rest_route() {
