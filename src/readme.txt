@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 * NEW THEME: Introducing the new H theme
+* TWEAK: Compatibility with GTranslate Premium
 * TWEAK: Make sure the existing thumbnail is fetched
 * TWEAK: Fix close button position on some themes
 * TWEAK: Fix image order in the cart
