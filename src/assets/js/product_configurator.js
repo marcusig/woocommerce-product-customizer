@@ -423,10 +423,15 @@ PC.utils = PC.utils || {
 		if ( 'undefined' != typeof PC.fe.config.wcml_rate && parseFloat( PC.fe.config.wcml_rate ) ) {
 			return amount * parseFloat( PC.fe.config.wcml_rate );
 		}
-
+		
 		// Aelia CS
 		if ( 'undefined' != typeof wc_aelia_currency_switcher_params && 'undefined' != wc_aelia_currency_switcher_params.current_exchange_rate_from_base && 0 < parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base ) ) {
 			return amount * parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base );
+		}
+
+		// Price Based on Country
+		if ( 'undefined' != typeof PC.fe.config.wcpbc_rate && parseFloat( PC.fe.config.wcpbc_rate ) ) {
+			return amount * parseFloat( PC.fe.config.wcpbc_rate );
 		}
 
 		return amount;

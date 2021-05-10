@@ -331,6 +331,15 @@ class DB {
 			$price = wc_get_price_to_display( $product );
 			unset( $_REQUEST['woocs_block_price_hook'] );
 		}
+
+		// Price Based on Country
+		if ( function_exists( 'wcpbc_the_zone' ) ) {
+			$zone = wcpbc_the_zone();
+			$rate = $zone->get_exchange_rate();
+			$price = $price / $rate;
+		}
+
+		
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 

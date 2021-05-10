@@ -160,6 +160,12 @@ class Languages {
 			}
 		}
 
+		// Price Based on Country exchange rate
+		if ( function_exists( 'wcpbc_the_zone' ) ) {
+			$zone = wcpbc_the_zone();
+			$config['wcpbc_rate'] = $zone->get_exchange_rate();
+		}
+
 		return $config;
 	}
 }
