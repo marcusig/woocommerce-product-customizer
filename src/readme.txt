@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.7
-Stable tag: 1.2.12
+Stable tag: 1.2.13
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,6 +110,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.13 - 10/May/2021 =
 
 * NEW THEME: Introducing the new H theme
 * TWEAK: Compatibility with Price Based on Country
@@ -260,7 +262,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.12 Mobile styles fixes
+* 1.2.13 New theme and various improvements
 
 
 
