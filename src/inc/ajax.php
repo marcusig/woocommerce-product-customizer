@@ -98,17 +98,17 @@ class Ajax {
 			wp_die();
 		} elseif ( isset($_REQUEST['view']) && 'js' === $_REQUEST['view'] ) {
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
-			header( 'Content-Encoding: gzip' );
+			// header( 'Content-Encoding: gzip' );
 			
 			$output = 'var PC = PC || {};'."\n";
 			$output .= 'PC.productData = PC.productData || {};'."\n";
-			if ( class_exists( 'GTranslate' ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+			// if ( class_exists( 'GTranslate' ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
 				// Add compatibility with GTranslate premium, enabling users to manually update translations.
-				$output .= "fetch('/wp-admin/admin-ajax.php?action=pc_get_data&data=init&fe=".$_REQUEST['fe']."&id={$id}&ver=1618927876').then(r => r.json()).then(data => {PC.productData.prod_$id = data;});";
-			} else {
-				$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
-			}
-			echo gzencode( $output );
+				// $output .= "fetch('/wp-admin/admin-ajax.php?action=pc_get_data&data=init&fe=".$_REQUEST['fe']."&id={$id}&ver=1618927876').then(r => r.json()).then(data => {PC.productData.prod_$id = data;});";
+			// } else {
+			// }
+			$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
+			// echo gzencode( $output );
 			wp_die();
 		} else { 
 			wp_send_json( $data );
