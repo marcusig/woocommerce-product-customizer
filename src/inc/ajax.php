@@ -109,6 +109,7 @@ class Ajax {
 			// }
 			$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
 			// echo gzencode( $output );
+			echo $output;
 			wp_die();
 		} else { 
 			wp_send_json( $data );
