@@ -65,6 +65,11 @@ class Cache {
 		$data .= 'PC.productData = PC.productData || {};'.PHP_EOL;
 		$data .= 'PC.productData.prod_'.$product_id.' = ' . json_encode( $config_data ) . ';'.PHP_EOL;
 
+		/**
+		 * Filter the product's configuration JavaScript object which will be used in the frontend
+		 */
+		apply_filters( 'mkl_pc_get_configurator_data_js_output', $data, $product_id );
+
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name($product_id);
 		if ( wp_mkdir_p( $location['path'] ) ) {
