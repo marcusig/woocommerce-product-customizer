@@ -335,8 +335,10 @@ class DB {
 		// Price Based on Country
 		if ( function_exists( 'wcpbc_the_zone' ) ) {
 			$zone = wcpbc_the_zone();
-			$rate = $zone->get_exchange_rate();
-			$price = $price / $rate;
+			if ( is_callable( [ $zone, 'get_exchange_rate' ] ) ) {
+				$rate = $zone->get_exchange_rate();
+				$price = $price / $rate;
+			}
 		}
 
 		
