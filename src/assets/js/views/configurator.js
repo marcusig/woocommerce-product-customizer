@@ -643,7 +643,10 @@ PC.options = PC.options || {};
 	PC.fe.views.viewer_static_layer = Backbone.View.extend({
 		tagName: wp.hooks.applyFilters( 'PC.fe.viewer.item.tag', 'img' ),
 		events: {
-			'load': 'loaded'
+			'load': 'loaded',
+			'error': 'loaded',
+			'abort': 'loaded',
+			'stalled': 'loaded',
 		},
 		initialize: function( options ) { 
 			this.listenTo( PC.fe.angles, 'change active', this.render );

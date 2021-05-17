@@ -62,7 +62,11 @@ class Ajax {
 			case 'init' :
 				// fe parameter, to use in front end.
 				if( isset($_REQUEST['fe']) && $_REQUEST['fe'] == 1 ) {
-					$data = $this->db->get_front_end_data( $id );
+					$data = get_transient( 'mkl_pc_data_init_' . $id );
+					if ( ! $data ) {
+						$data = $this->db->get_front_end_data( $id );
+						set_transient( 'mkl_pc_data_init_' . $id, $data );
+					}
 				} else {
 					$data = $this->db->get_init_data( $id );
 				}
@@ -98,17 +102,30 @@ class Ajax {
 			wp_die();
 		} elseif ( isset($_REQUEST['view']) && 'js' === $_REQUEST['view'] ) {
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
-			header( 'Content-Encoding: gzip' );
+			$gzip = false;
+			if ( $this->gzip_accepted() && function_exists( 'gzencode' ) ) {
+				header( 'Content-Encoding: gzip' );
+				$gzip = true;
+			}
 			
 			$output = 'var PC = PC || {};'."\n";
 			$output .= 'PC.productData = PC.productData || {};'."\n";
-			if ( class_exists( 'GTranslate' ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+			// if ( class_exists( 'GTranslate' ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
 				// Add compatibility with GTranslate premium, enabling users to manually update translations.
-				$output .= "fetch('/wp-admin/admin-ajax.php?action=pc_get_data&data=init&fe=".$_REQUEST['fe']."&id={$id}&ver=1618927876').then(r => r.json()).then(data => {PC.productData.prod_$id = data;});";
+				// $output .= "fetch('/wp-admin/admin-ajax.php?action=pc_get_data&data=init&fe=".$_REQUEST['fe']."&id={$id}&ver=1618927876').then(r => r.json()).then(data => {PC.productData.prod_$id = data;});";
+			// } else {
+			// }
+			$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
+
+			/**
+			 * Filter the product's configuration JavaScript object which will be used in the frontend
+			 */
+			$output = apply_filters( 'mkl_pc_get_configurator_data_js_output', $output, $id );
+			if ( $gzip ) {
+				echo gzencode( $output );
 			} else {
-				$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
+				echo $output;
 			}
-			echo gzencode( $output );
 			wp_die();
 		} else { 
 			wp_send_json( $data );
@@ -162,6 +179,9 @@ class Ajax {
 
 		$result = $this->db->set( $id, $ref_id, $component, $data );
 		
+		// Delete the data transient if it exists, to make sure we don't serve stale data.
+		delete_transient( 'mkl_pc_data_init_' . $id );
+
 		wp_send_json_success( $result );
 	}
 
@@ -172,4 +192,46 @@ class Ajax {
 		Plugin::instance()->cache->purge();
 		wp_send_json_success();
 	}
+
+	/**
+	 * Get the current request http headers
+	 *
+	 * @return array
+	 */
+	private function get_http_headers() {
+		static $headers;
+	
+		if (!empty($headers)) return $headers;
+	
+		$headers = array();
+	
+		// if is apache server then use get allheaders() function.
+		if (function_exists('getallheaders')) {
+			$headers = getallheaders();
+		} else {
+			// https://www.php.net/manual/en/function.getallheaders.php
+			foreach ($_SERVER as $key => $value) {
+	
+				$key = strtolower($key);
+	
+				if ('HTTP_' == substr($key, 0, 5)) {
+					$headers[str_replace(' ', '-', ucwords(str_replace('_', ' ', substr($key, 5))))] = $value;
+				} elseif ('content_type' == $key) {
+					$headers["Content-Type"] = $value;
+				} elseif ('content_length' == $key) {
+					$headers["Content-Length"] = $value;
+				}
+			}
+		}
+	
+		return $headers;
+	}
+
+	/**
+	 * Check if GZIP is accepted by the request
+	 */
+	private function gzip_accepted() {
+		$headers = $this->get_http_headers();
+		return isset($headers['Accept-Encoding']) && preg_match('/gzip/i', $headers['Accept-Encoding']);
+	}	
 }
