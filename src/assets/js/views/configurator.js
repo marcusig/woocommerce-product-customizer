@@ -687,7 +687,10 @@ PC.options = PC.options || {};
 	PC.fe.views.viewer_layer = Backbone.View.extend({ 
 		tagName: 'img', 
 		events: {
-			'load': 'img_loaded'
+			'load': 'img_loaded',
+			'error': 'img_loaded',
+			'abort': 'img_loaded',
+			'stalled': 'img_loaded',
 		},
 		initialize: function( options ) { 
 			var that = this;
@@ -766,13 +769,12 @@ PC.options = PC.options || {};
 				this.render();
 			}
 		},
-		img_loaded: function(e) {
-
+		img_loaded: function( e ) {
 			this.$el.removeClass( 'loading' );
 			if (this.empty_img == this.$el.prop('src')) return;
 			this.is_loaded = true;
 
-			wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
+			if ( 'load' == e.type ) wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
 
 			this.parent.imagesLoading --;
 			if( this.parent.imagesLoading == 0 ) {

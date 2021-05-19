@@ -590,6 +590,14 @@ $inner_space: 1em;
 								color: color(light-gray);
 								text-transform: uppercase;
 							}
+
+							span.selected-choice {
+								display: block;
+								font-size: 0.6rem;
+								text-transform: uppercase;
+								opacity: 0.5;
+							}
+							
 							&::after {
 								transition: .2s all;
 								content: ' ';

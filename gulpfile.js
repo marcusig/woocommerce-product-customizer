@@ -58,7 +58,7 @@ gulp.task('scss', function(done) {
 });
 
 gulp.task('js', function(done) {
-	return gulp.src(['src/assets/**/*.js', '!src/assets/w**/*.min.js'], { base: 'src', allowEmpty: true })
+	return gulp.src(['src/assets/**/*.js', '!src/assets/**/*.min.js'], { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
 		// .pipe(sourcemaps.init())
 		.pipe(uglify())

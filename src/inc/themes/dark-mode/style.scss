@@ -543,6 +543,13 @@ $inner_space: 1em;
 								margin-top: .5em;
 							}
 
+							span.selected-choice {
+								display: block;
+								font-size: 0.6rem;
+								text-transform: uppercase;
+								opacity: 0.5;
+							}
+
 							@media( max-width: $small_screen_width ) {
 								padding: 1.3em;
 							}
