@@ -891,6 +891,7 @@ PC.options = PC.options || {};
 			var require_error = false;
 			var choices = PC.fe.getLayerContent( model.id );
 			if ( ! choices ) return;
+			if ( false === model.get( 'cshow' ) ) return;
 			var first_choice = choices.first().id;
 			var angle_id = PC.fe.angles.first().id; 
 			if( ! model.attributes.not_a_choice ) {
@@ -903,6 +904,7 @@ PC.options = PC.options || {};
 					}
 
 					_.each( selected_choices, function( choice ) {
+						if ( false === choice.get( 'cshow' ) ) return;
 						// Check for a required item
 						if ( 
 							'select_first' == default_selection
