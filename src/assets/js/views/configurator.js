@@ -58,7 +58,7 @@ PC.options = PC.options || {};
 			// Set focus on the first layer
 			if ( ! PC.fe.inline ) {
 				setTimeout( function() {
-					this.$el.find('.layers .layer-item').first().focus();
+					this.$el.find('.layers .layer-item').first().trigger( 'focus' );
 				}.bind(this), 300);
 			}
 			

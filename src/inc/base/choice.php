@@ -72,9 +72,9 @@ class Choice {
 		$product_id = $this->db->get_product_id_for_content( $this->product_id, $this->variation_id );
 		$content = $this->db->get( 'content', $product_id ); 
 
-		$this->choices = Utils::get_array_item( $content, 'layerId', $this->layer_id ); 
-		$this->choice = Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ); 
-		$this->images = Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ); 
+		$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
+		$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ), $this ); 
+		$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ), $this ); 
 	}
 
 	public function get_layer( $item ) {

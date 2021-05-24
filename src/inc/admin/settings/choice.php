@@ -85,6 +85,9 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'value' => 'no'
 						],
 					],
+					'attributes' => array(
+						'data-label_prefix' => __('Switch to', 'product-configurator-for-woocommerce'),
+					),
 					'priority' => 50,
 				),
 				'class_name' => array(

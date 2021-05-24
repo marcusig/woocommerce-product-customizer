@@ -311,7 +311,9 @@ class Configuration {
 				$images = array();
 				// collect images
 				foreach ($content as $layer) {
-					$images[] = get_attached_file( $layer->image );
+					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+					$images[] = $image;
+					
 				}
 				if ( count( $images ) > 1 ) {
 					// if there are images to process
@@ -357,7 +359,8 @@ class Configuration {
 				$images = array();
 				// collect images
 				foreach ($content as $layer) {
-					$images[] = get_attached_file( $layer->image );
+					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+					$images[] = $image;
 				}
 			}
 
@@ -378,7 +381,8 @@ class Configuration {
 		$images = array();
 		// collect images
 		foreach ($this->content as $layer) {
-			$images[] = get_attached_file( $layer->image );
+			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+			$images[] = $image;
 		}
 
 		if ( count( $images ) ) {

@@ -354,12 +354,18 @@ PC.views = PC.views || {};
 			}
 		},
 		populate_angles_list: function() {
-			var selected = this.model.get( 'angle_switch' ) || 'no';
 			var angles = PC.app.get_collection( 'angles' );
 			if ( angles && angles.length ) {
-				angles.each( function( model ) {
-					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
-				}, this );
+				this.$( 'select[data-setting="angle_switch"], .angle-list' ).each( function( ind, el ) {
+					var setting = $( el ).data( 'setting' );
+					var prefix = $( el ).data( 'label_prefix' );
+
+					var def = $( el ).val();
+					var selected = this.model.get( setting ) || def;
+					angles.each( function( model ) {
+						$( el ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">' + ( prefix ? prefix + ' ' : '' ) + model.get( 'name' ) + '</option>' );
+					}, this );
+				}.bind( this ) )
 			}
 		}
 	});

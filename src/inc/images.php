@@ -22,7 +22,7 @@ class Images {
 		$the_image = null;
 		foreach($images as $image) {
 			if ( ! file_exists( $image ) ) continue;
-
+			$image = apply_filters( 'mkl_pc_images_merge__single_image_src', $image );
 			if ( ! $the_image ) {
 				// The first image makes it
 				$the_image = Image::make( $image );
