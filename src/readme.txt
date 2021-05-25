@@ -111,6 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Do not Gzip content on LiteSpeed servers
+* TWEAK: Prevent Required field error to be shown when a layer is hidden by conditional logic action
+
 = 1.2.14 - 17/May/2021 =
 
 * FIX: Error in compatibility with Price Based on Country
