@@ -372,9 +372,11 @@ PC.options = PC.options || {};
 		},
 		show_choices: function( event ) {
 			event.preventDefault(); 
-			if( this.model.get( 'active' ) == true) {
+			if ( this.model.get( 'active' ) == true ) {
 				wp.hooks.doAction( 'PC.fe.layer.hide', this );
-				this.model.set('active', false);
+				if ( wp.hooks.applyFilters( 'PC.fe.layer.self_hide', true, this ) ) {
+					this.model.set('active', false);
+				}
 			} else {
 				this.model.collection.each(function(model) {
 					model.set('active' , false);
@@ -500,7 +502,8 @@ PC.options = PC.options || {};
 					allowHTML: true,
 					placement: 'top',
 					zIndex: 10001
-				} );
+				},
+				this );
 				tippy( this.$el.find('.choice-item')[0], tooltip_options );
 			}
 			if ( this.model.get( 'is_group' ) ) this.$el.addClass( 'is-group' );
