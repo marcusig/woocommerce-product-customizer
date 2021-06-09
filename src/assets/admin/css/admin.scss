@@ -132,7 +132,7 @@ body.pc-modal-opened {
 .pc-modal-backdrop {
 	z-index: 149000;
 }
-.pc-modal { 
+html .media-modal.pc-modal { 
 	z-index: 150000;
 	.media-frame-title { 
 		.description { 
@@ -721,7 +721,7 @@ CONTENT
 
 .mkl-pc-product-selector--container {
     position: fixed;
-    z-index: 1600002; /* Fix issue in Divi */
+    z-index: 160001;
     top: 0;
     left: 0;
     width: 100%;

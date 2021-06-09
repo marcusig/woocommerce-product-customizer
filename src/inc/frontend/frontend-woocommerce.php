@@ -171,12 +171,18 @@ class Frontend_Woocommerce {
 	 */
 	public function load_configurator_on_page() {
 		global $post;
+		static $load_it;
+		if ( $load_it ) return $load_it;
+
 		if ( $post && $post->ID ) {
 			$product = wc_get_product( $post->ID );
 		} else {
 			$product = false;
 		}
-		return apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || is_a( $post, 'WP_Post' ) && ( has_shortcode( $post->post_content, 'mkl_configurator_button' ) || has_shortcode( $post->post_content, 'mkl_configurator' ) ) );
+		$maybe_load_it = apply_filters( 'load_configurator_on_page', ( $product && mkl_pc_is_configurable( $post->ID ) ) || is_a( $post, 'WP_Post' ) && ( has_shortcode( $post->post_content, 'mkl_configurator_button' ) || has_shortcode( $post->post_content, 'mkl_configurator' ) || is_a( $post, 'WP_Post' ) && get_post_meta( $post->ID, 'mkl_load_configurator_on_page', true ) ) );
+		// If true, save the value
+		if ( $maybe_load_it ) $load_it = $maybe_load_it;
+		return $maybe_load_it;
 	}
 
 	public function load_scripts() {
