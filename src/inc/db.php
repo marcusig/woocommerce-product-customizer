@@ -152,10 +152,15 @@ class DB {
 		if( ! $this->is_product( $post_id ) ) return false;
 
 		$product = wc_get_product($post_id);
-		$data = maybe_unserialize( $product->get_meta( '_mkl_product_configurator_' . $that ) );
+
+		$data = $product->get_meta( '_mkl_product_configurator_' . $that );
+
+		$data = maybe_unserialize( $data );
+
 		if ( is_string( $data) ) {
-			$data = json_decode($data);
+			$data = json_decode( stripslashes( $data ), 1 );
 		}
+
 		if( '' == $data || false == $data ) {
 			return false; 
 		} else {
@@ -189,7 +194,7 @@ class DB {
 
 		if ( 'empty' === $raw_data ) {
 			$data = array();
-		} else {
+		} elseif ( is_array( $raw_data ) ) {
 			// Remove active state. Defaults to first item
 			foreach ($raw_data as $key => $value) {
 				if( isset( $value['active'] ) ) {
@@ -202,12 +207,12 @@ class DB {
 						}
 					}
 				}
-
 			}
-
 			$data = $raw_data;
-
+		} else {
+			$data = $raw_data;
 		}
+
 		$data = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
 		$product = wc_get_product( $id );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
@@ -621,4 +626,3 @@ class DB {
 		return '';
 	}
 }
-

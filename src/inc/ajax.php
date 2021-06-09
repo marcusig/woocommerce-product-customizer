@@ -170,12 +170,16 @@ class Ajax {
 			wp_send_json_error( 'No data was received' );
 		}
 
-		$data = json_decode(stripslashes($_REQUEST[$component]), true);
+		if ( apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
+			$data = json_decode(stripslashes($_REQUEST[$component]), true);
+		}
 
 		if (!$data) $data = $_REQUEST[$component];
 
 		// Sanitize the incoming data
-		$data = $this->db->sanitize( $data );
+		if ( apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
+			$data = $this->db->sanitize( $data );
+		}
 
 		$result = $this->db->set( $id, $ref_id, $component, $data );
 		
