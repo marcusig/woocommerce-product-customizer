@@ -721,7 +721,7 @@ CONTENT
 
 .mkl-pc-product-selector--container {
     position: fixed;
-    z-index: 160001;
+    z-index: 1600002; /* Fix issue in Divi */
     top: 0;
     left: 0;
     width: 100%;
