@@ -161,7 +161,7 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'"></div>';
+		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'" data-loading="'.esc_attr__( 'Loading the configurator...', 'product-configurator-for-woocommerce' ).'"></div>';
 	}
 
 	/**

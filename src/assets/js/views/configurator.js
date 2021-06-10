@@ -32,7 +32,7 @@ PC.options = PC.options || {};
 		},
 		render: function() {
 			if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
-				$(PC.fe.inlineTarget).append(this.$el);
+				$(PC.fe.inlineTarget).empty().append(this.$el);
 			} else if ( PC.fe.config.inline == true && $(PC.fe.config.inlineTarget).length > 0 ) {
 				$(PC.fe.config.inlineTarget).append(this.$el);
 				PC.fe.inline = true;

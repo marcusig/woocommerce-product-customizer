@@ -244,7 +244,11 @@ CONTENT TEMPLATES
 	<div class="tips sort ui-sortable-handle"></div>
 	<button type="button">
 		<h3>
-			{{data.name}}
+			<# if ( data.admin_label && data.admin_label != '' ) { #>
+				{{data.admin_label}}
+			<# } else { #>
+				{{data.name}}
+			<# } #>
 		</h3>
 	</button>
 	<# if ( data.is_group ) { #>
