@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Admin - Possibility to select and delete several items at a time, using ctrl or shift + click
 * TWEAK: Do not Gzip content on LiteSpeed servers
 * TWEAK: Prevent Required field error to be shown when a layer is hidden by conditional logic action
 
