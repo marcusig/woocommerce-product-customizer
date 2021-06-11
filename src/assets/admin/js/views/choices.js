@@ -35,6 +35,9 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
 			this.listenTo( this.col, 'change:is_group', this.render);
+			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
+			this.listenTo( this.col, 'simple-selection', this.edit_simple );
+
 			this.render(); 
 		},
 
@@ -173,6 +176,19 @@ PC.views = PC.views || {};
 				// completed: false
 			};
 		},
+
+		edit_multiple: function() {
+			this.edit_multiple_items = true;
+			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form.remove();
+			if ( this.col.where( { active: true } ).length ) {
+				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col } );
+				this.$form.append( this.edit_multiple_items_form.$el );
+			}
+		},
+		edit_simple: function() {
+			this.edit_multiple_items = false;
+			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
+		}		
 	});
 
 	PC.views.choice = PC.views.layer.extend( {

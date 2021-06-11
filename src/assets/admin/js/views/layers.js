@@ -60,10 +60,12 @@ TODO:
 			this.$form = this.$('.media-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
 			this.add_all( this.col ); 
-			this.listenTo( this.col, 'add', this.add_one);
-			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
-			this.listenTo( this.col, 'change', this.layers_changed);
-			this.listenTo( this.col, 'destroy', this.removed_model);
+			this.listenTo( this.col, 'add', this.add_one );
+			this.listenTo( this.col, 'add', this.mark_collection_as_modified );
+			this.listenTo( this.col, 'change', this.layers_changed );
+			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
+			this.listenTo( this.col, 'simple-selection', this.edit_simple );
+			this.listenTo( this.col, 'destroy', this.removed_model );
 			return this;
 		},
 		mark_collection_as_modified: function() {
@@ -176,8 +178,19 @@ TODO:
 		get_col: function() {
 			return this.col;
 		},
-
-	});
+		edit_multiple: function() {
+			this.edit_multiple_items = true;
+			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form.remove();
+			if ( this.col.where( { active: true } ).length ) {
+				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col } );
+				this.$form.append( this.edit_multiple_items_form.$el );
+			}
+		},
+		edit_simple: function() {
+			this.edit_multiple_items = false;
+			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
+		}
+	} );
 
 	
 
@@ -207,6 +220,20 @@ TODO:
 			return this;
 		},
 		edit: function( event ) { 
+			if ( event && ( event.shiftKey || event.metaKey || event.ctrlKey ) ) {
+				// Multiple select
+				if ( this.model.get( 'active' ) ) {
+					this.model.set( 'active' , false );
+				} else {
+					this.model.set( 'active' , true );
+				}
+				this.activate();
+				this.form_target.empty();
+				this.model.collection.trigger( 'multiple-selection' );
+
+				return;
+			}
+			this.model.collection.trigger( 'simple-selection' );
 			var editView = this.edit_view();
 			if( !event ) {
 				if( ! this.form ) {
@@ -395,6 +422,60 @@ TODO:
 
 	PC.views.layer_img = Backbone.View.extend({
 
+	});
+
+	// MULTIPLE EDITING VIEW
+	PC.views.multiple_edit_form = Backbone.View.extend({
+		tagName: 'div',
+		className: 'layer-form',
+		template: wp.template('mkl-pc-multiple-edit-form'),
+
+		initialize: function( options ) {
+			this.collection = options.collection;
+			this.render();
+			this.listenTo( this.collection, 'simple-selection', this.remove );
+			// this.listenTo( this.model, 'destroy', this.remove ); 
+			// this.listenTo( this.model, 'change:not_a_choice change:type', this.render );
+		},
+		events: {
+			// 'click' : 'edit',
+			'click .delete-layer': 'delete_items',
+			'click .confirm-delete-layer': 'delete_items',
+			'click .cancel-delete-layer': 'delete_items',
+		},
+		render: function() {
+			this.$el.html( this.template() );
+			this.delete_btns = {
+				prompt: this.$('.delete-layer'),
+				confirm: this.$('.prompt-delete'),
+				// cancel: this.$('.cancel-delete-layer'),
+			};
+			// this.populate_angles_list();
+			return this;
+		},
+		delete_items: function( event ) {
+			var bt = $(event.currentTarget);
+			var action = bt.data('delete');
+			switch (action) {
+				case 'prompt':
+					bt.addClass('hidden');
+					this.delete_btns.confirm.removeClass('hidden');
+					break;
+				case 'confirm':
+					// this.model.destroy();
+					_.each( this.collection.where( { active: true } ), function( model ) {
+						model.destroy();
+					} );
+					this.collection.trigger( 'simple-selection' );
+					break;
+				case 'cancel':
+					this.delete_btns.prompt.removeClass('hidden');
+					this.delete_btns.confirm.addClass('hidden');
+					// this.delete_btns.cancel.addClass('hidden');
+					break;
+
+			}
+		},
 	});
 
 })(jQuery);

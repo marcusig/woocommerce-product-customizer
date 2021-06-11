@@ -290,6 +290,25 @@ CONTENT TEMPLATES
 		</div>
 	</div>
 </script>
+
+<script type="text/html" id="tmpl-mkl-pc-multiple-edit-form">
+	<div class="form-details">
+		<h3><?php _e('Multiple selection', 'product-configurator-for-woocommerce' ) ?></h3>
+		<div class="form-info">
+			<div class="details">
+				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete the selected items', 'product-configurator-for-woocommerce' ) ?></button>
+				<div class="prompt-delete hidden notice">
+					<p><?php _e( 'Do you realy want to delete the selected items?', 'product-configurator-for-woocommerce' ); ?></p>
+					<p>
+						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</script>
+
 <script type="text/html" id="tmpl-mkl-pc-content-choice-pictures">
 	<div class="pictures">
 		<# if ( ! data.is_group ) { #>
