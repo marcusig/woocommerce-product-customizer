@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.7
-Stable tag: 1.2.14
+Stable tag: 1.2.15
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,7 +111,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.15 - 09/Jun/2021 =
+
 * TWEAK: Admin - Possibility to select and delete several items at a time, using ctrl or shift + click
+* TWEAK: Tweak admin z-index for compatibility with Divi
 * TWEAK: Do not Gzip content on LiteSpeed servers
 * TWEAK: Prevent Required field error to be shown when a layer is hidden by conditional logic action
 
@@ -271,7 +274,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.13 New theme and various improvements
+* 1.2.15 adds new hooks and various tweaks. Added the possibility to select and delete several items at a time in the admin.
 
 
 
