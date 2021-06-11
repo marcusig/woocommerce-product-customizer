@@ -180,8 +180,10 @@ PC.views = PC.views || {};
 		edit_multiple: function() {
 			this.edit_multiple_items = true;
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form.remove();
-			this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col } );
-			this.$form.append( this.edit_multiple_items_form.$el );
+			if ( this.col.where( { active: true } ).length ) {
+				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col } );
+				this.$form.append( this.edit_multiple_items_form.$el );
+			}
 		},
 		edit_simple: function() {
 			this.edit_multiple_items = false;
