@@ -23,21 +23,26 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		}
 
 		public function save_data( $item, $cart_item_key, $values, $order ) {
-			if( isset( $values['configurator_data'] ) ) {
+			if ( isset( $values['configurator_data'] ) ) {
 				$configurator_data = $values['configurator_data'];
 				
-				if( is_array( $configurator_data ) ) {
+				if ( is_array( $configurator_data ) ) {
+					$order_meta_for_configuration = [];
 					// stores each couple layer name + choice as a order_item_meta, for automatic extraction
-					foreach( $configurator_data as $layer ) {
-						if( is_object($layer) ) {
-							if( $layer->is_choice() ) :
+					foreach ( $configurator_data as $layer ) {
+						if ( is_object($layer) ) {
+							if ( $layer->is_choice() ) :
 								$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values );
-								$item->add_meta_data( $choice_meta[ 'label' ], $choice_meta['value'], false );
+								$order_meta_for_configuration[] = $choice_meta;
 								do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $item, $order );
 							?>
 							<?php
 							endif;
 						} 
+					}
+
+					if ( ! empty( $order_meta_for_configuration ) ) {
+						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', __( 'Configuration', 'product-configurator-for-woocommerce' ), $item, $cart_item_key, $values, $order ), $this->get_choices_html( $order_meta_for_configuration ), false );
 					}
 
 					do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
@@ -72,6 +77,18 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			return $image;
 		}
 
+		public function get_choices_html( $choices ) {
+			$output = '';
+			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' );
+			$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
+			foreach ( $choices as $choice ) {
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['label'] .'</strong><span class="semicol">:</span> ' . $choice['value'] . $after, $choice['label'], $choice['value'], $before, $after );
+			}
+
+			return '<div class="order-configuration-details">' . $output . '</div>';
+
+		}
+
 		/**
 		 * Filter the order email item's image
 		 *
@@ -96,9 +113,9 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			if ( ! $configurator_data ) return false;
 
 			$choices = array(); 
-			foreach ($configurator_data as $layer) {
+			foreach ( $configurator_data as $layer ) {
 				$choice_images = $layer->get_choice( 'images' );
-				if( $choice_images[0]["image"]['id'] ) {
+				if ( $choice_images[0]["image"]['id'] ) {
 					$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
 				}
 			}
