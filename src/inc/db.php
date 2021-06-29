@@ -346,6 +346,10 @@ class DB {
 			}
 		}
 
+		// Woo Multi Currency
+		if ( function_exists( 'wmc_revert_price' ) ) {
+			$price = wmc_revert_price( $price );
+		}
 		
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(

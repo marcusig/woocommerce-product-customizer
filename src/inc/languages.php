@@ -168,6 +168,20 @@ class Languages {
 			}
 		}
 
+		if ( function_exists( 'alg_get_current_currency_code' ) && alg_get_current_currency_code() ) {
+			$config['wcpbc_rate'] = alg_wc_cs_get_currency_exchange_rate( alg_get_current_currency_code() );
+		}
+
+		if ( function_exists( 'wmc_get_exchange_rate' ) ) {
+			if ( class_exists( '\WOOMULTI_CURRENCY_F_Data' ) && is_callable( '\WOOMULTI_CURRENCY_F_Data::get_ins' ) ) {
+				$currency_data = \WOOMULTI_CURRENCY_F_Data::get_ins();
+			} elseif ( class_exists( '\WOOMULTI_CURRENCY_Data' ) && is_callable( '\WOOMULTI_CURRENCY_Data::get_ins' ) ) {
+				$currency_data = \WOOMULTI_CURRENCY_Data::get_ins();
+			}
+			if ( $currency_data ) $config['wcpbc_rate'] = wmc_get_exchange_rate( $currency_data->get_current_currency() );
+		}
+		
+
 		return $config;
 	}
 }

@@ -246,6 +246,12 @@ class Frontend_Woocommerce {
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator.js' ) , true );
 
 		$bg_image = get_option( 'mkl_pc_theme_viewer_bg', false );
+		$money_format = get_woocommerce_price_format();
+
+		if ( function_exists( 'alg_wc_currency_switcher_plugin' ) && get_option( 'alg_wc_currency_switcher_price_formats_currency_position_' . get_woocommerce_currency() ) ) {
+			$money_format = alg_wc_currency_switcher_plugin()->core->get_woocommerce_price_format( get_option( 'alg_wc_currency_switcher_price_formats_currency_position_' . get_woocommerce_currency() ) );
+		}
+
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 			'lang' => array(
