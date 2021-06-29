@@ -278,16 +278,18 @@ CONTENT TEMPLATES
 			<div class="clear"></div>
 		</div>
 
-		<div class="options">
-			<# if ( data.is_group ) { #>
-			<h3><?php _e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
-			<# } else { #>
-			<h3><?php _e( 'Pictures', 'product-configurator-for-woocommerce' ) ?></h3>
-			<# } #>
-			<div class="views">
-				
+		<# if ( wp.hooks.applyFilters( 'PC.admin.show_choice_images', true, data ) ) { #>
+			<div class="options">
+				<# if ( data.is_group ) { #>
+				<h3><?php _e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
+				<# } else { #>
+				<h3><?php _e( 'Pictures', 'product-configurator-for-woocommerce' ) ?></h3>
+				<# } #>
+				<div class="views">
+					
+				</div>
 			</div>
-		</div>
+		<# } #>
 	</div>
 </script>
 

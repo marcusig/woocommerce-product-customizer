@@ -39,7 +39,7 @@ class Plugin {
 	 * @since 1.0.0
 	 * @return void
 	 */
-	private function __wakeup() {
+	public function __wakeup() {
 		// Unserializing instances of the class is forbidden
 		_doing_it_wrong( __FUNCTION__, __( 'No serializing... Cheatin&#8217; huh?', 'product-configurator-for-woocommerce' ), '1.0.0' );
 	}

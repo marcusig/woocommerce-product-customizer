@@ -147,7 +147,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' );
 			$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
 			foreach ( $choices as $choice ) {
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['name'] .'</strong>: ' . $choice['value'] . $after, $choice['name'], $choice['value'], $before, $after );
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['name'] .'</strong><span class="semicol">:</span> ' . $choice['value'] . $after, $choice['name'], $choice['value'], $before, $after );
 			}
 
 			return $output;

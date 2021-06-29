@@ -392,6 +392,10 @@ class DB {
 					'sanitize' => 'intval',
 					'escape' => 'intval',
 				],
+				'choiceId' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
 				'_id' => [ 
 					'sanitize' => 'intval',
 					'escape' => 'intval',

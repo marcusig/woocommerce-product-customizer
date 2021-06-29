@@ -224,10 +224,15 @@ PC.options = PC.options || {};
 
 			if ( PC.fe.debug_configurator_data ) {
 				console.log( 'debug_configurator_data', data );
-				return;
 			}
 
 			wp.hooks.doAction( 'PC.fe.add_to_cart.before', this );
+
+			if ( PC.fe.debug_configurator_data ) {
+				console.log( 'debug_configurator_data after', data );
+				return;
+			}
+
 			// console.log( $cart.find( '[name="add-to-cart"]' ).val( PC.fe.active_product ) );
 			
 			// return;
@@ -980,6 +985,8 @@ PC.options = PC.options || {};
 			if ( require_error ) {	
 				PC.fe.errors.push( PC_config.lang.required_error_message.replace( '%s', model.get( 'name' ) ) );
 			}
+
+			wp.hooks.doAction( 'PC.fe.save_data.parse_choices.after', model, this );
 		},
 	};
 })(jQuery);

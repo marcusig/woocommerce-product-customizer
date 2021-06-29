@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added various filters and tweaks
 * TWEAK: Add compatibility with "Yith Added to cart popup"
 * TWEAK: Refactor configuration display in the order
 
