@@ -389,6 +389,18 @@ Backbone.Model.prototype.toJSON = function() {
 
 	*/
 
+	// Compatibility with Yith Added to cart popup (Premium)
+	$( document ).on( 'yith_wacp_adding_cart_single', function() {
+		if ( PC && PC.fe && PC.fe.modal ) {
+			PC.fe.modal.$el.addClass( 'adding-to-cart' );
+		}
+	} );
+	// 
+	$( document ).on( 'yith_wacp_popup_after_opening', function() {
+		if ( PC && PC.fe && PC.fe.modal ) {
+			PC.fe.modal.$el.removeClass( 'adding-to-cart' );
+		}
+	} );
 
 })(jQuery);
 

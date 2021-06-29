@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Add compatibility with "Yith Added to cart popup"
 = 1.2.15 - 09/Jun/2021 =
 
 * TWEAK: Admin - Possibility to select and delete several items at a time, using ctrl or shift + click

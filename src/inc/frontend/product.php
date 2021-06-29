@@ -27,7 +27,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			add_filter( 'woocommerce_product_add_to_cart_text', array( &$this, 'add_to_cart_text' ), 30, 2 ); 
 			add_filter( 'woocommerce_product_add_to_cart_url',array( &$this, 'add_to_cart_link' ), 30, 2 ); 
 			add_filter( 'woocommerce_product_supports', array( &$this, 'simple_product_supports' ), 10, 3 ); 
-			
+			add_filter( 'yith_wacp_form_selectors_filter', array( $this, 'yith_wacp_compat' ) );
+						
 			// add button after form, as form will be moved.
 			$location = 'woocommerce_after_add_to_cart_form';
 			$priority = 20;
@@ -66,7 +67,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 		public function simple_product_supports( $value, $feature, $product ) {
 			if ( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
-				if ( $feature == 'ajax_add_to_cart' ) $value = false;
+				// if ( $feature == 'ajax_add_to_cart' ) $value = false;
 			}
 			return $value;
 		}
@@ -189,7 +190,17 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			add_filter('body_class', array($this, 'body_class') ) ;			
 		}
 
-
+		/**
+		 * Compatibility with Yith Added to cart popup (Premium)
+		 *
+		 * @param string $selectors - The Form selectors
+		 * @return string
+		 */
+		public function yith_wacp_compat( $selectors ) {
+			if ( function_exists( 'is_product' ) && is_product() ) return $selectors;
+			$selectors .= ',.mkl_pc form.cart';
+			return $selectors;
+		}
 
 	}
 }

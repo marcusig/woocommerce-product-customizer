@@ -1141,3 +1141,19 @@ body.configurator_is_inline .mkl_pc {
 		}
 	}	
 }
+
+/* YITH Added to cart popup compat */
+.mkl_pc.opened.adding-to-cart .mkl_pc_container {
+    opacity: .4;
+}
+
+.mkl_pc.opened.adding-to-cart::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+}

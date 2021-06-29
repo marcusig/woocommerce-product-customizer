@@ -1317,3 +1317,27 @@ body.configurator_is_inline .mkl_pc {
 .woocommerce div.product.elementor .mkl_pc .mkl_pc_container .pc_configurator_form form.cart {
 	display: inline-flex;
 }
+
+/* YITH Added to cart popup compat */
+
+.mkl_pc.opened.adding-to-cart::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+	background: rgba(255, 255, 255, 0.79);
+}
+
+#yith-wacp-popup .yith-wacp-overlay {
+	z-index: 10001;
+}
+
+.configurator_is_inline {
+	.mkl_pc.opened.adding-to-cart .mkl_pc_container {
+		opacity: .4;
+	}	
+}
