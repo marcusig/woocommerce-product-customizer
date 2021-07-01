@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Translate the Selected choice
 * TWEAK: Various multi-currency tweaks
 * TWEAK: Added various filters and tweaks
 * TWEAK: Add compatibility with "Yith Added to cart popup"

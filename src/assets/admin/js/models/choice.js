@@ -54,6 +54,10 @@ PC.choice = Backbone.Model.extend({
 	},
 	sync: function( method, model, options ) {
 	},
+	get_name: function () {
+		var attrs = wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.attributes );
+		return attrs.name;
+	},
 	
 });
 

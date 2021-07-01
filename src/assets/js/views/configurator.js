@@ -419,7 +419,7 @@ PC.options = PC.options || {};
 			var active_choices = this.choices.where( { active: true } );
 			// var active_choices = 
 			_.each( active_choices, function( item ) {
-				choices_names.push( item.get( 'name' ) );
+				choices_names.push( item.get_name() );
 			} );
 			this.$el.html( choices_names.join( ', ' ) );
 		}
