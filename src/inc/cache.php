@@ -84,6 +84,9 @@ class Cache {
 	public function purge() {
 		$location = $this->get_cache_location();
 		$src = $location[ 'path' ];
+		
+		if ( ! file_exists( $src ) ) return;
+
 		$handle = opendir($src);
 
 		if (false === $handle) return;
