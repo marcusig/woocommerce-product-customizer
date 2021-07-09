@@ -192,6 +192,10 @@ class Frontend_Woocommerce {
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
 		wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
+		wp_enqueue_script( 'mkl_pc/general', MKL_PC_ASSETS_URL . 'js/general.js', [ 'jquery' ], filemtime( MKL_PC_ASSETS_PATH . 'js/general.js' ) );
+		wp_localize_script( 'mkl_pc/general', 'mkl_pc_general', [
+			'ajaxurl' => admin_url( 'admin-ajax.php' ),
+		] );
 		
 		if ( ! $this->load_configurator_on_page() ) return;
 

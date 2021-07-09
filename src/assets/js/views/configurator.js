@@ -843,6 +843,9 @@ PC.options = PC.options || {};
 			'click a': 'change_angle'
 		},
 		render: function() {
+			if ( this.model.get( 'class_name' ) ) {
+				this.$el.addClass( this.model.get( 'class_name' ) );
+			}
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.angle_data', this.model.attributes ) ) ); 
 			return this.$el; 
 		},

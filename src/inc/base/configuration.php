@@ -219,15 +219,22 @@ class Configuration {
 	 */
 	public function get_image( $size = 'woocommerce_thumbnail', $attr = array() ) {
 
-		$url = $this->get_image_url();
+		$url = $this->get_image_url( true );
 
-		$attachment_id = Utils::get_image_id( $url );
+		$attachment_id = false;
+
+		if ( is_string( $url ) ) $attachment_id = Utils::get_image_id( $url );
 
 		if ( $attachment_id ) {
 			return wp_get_attachment_image( $attachment_id, $size, false, $attr );
 		} else {
 
 			if ( ! $url ) return '';
+
+			if ( is_array( $url ) ) {
+				$lazy_url = $url['lazy'];
+				$url = $url['url'];
+			}
 
 			$size_class = $size;
 
@@ -244,6 +251,10 @@ class Configuration {
 			// Add `loading` attribute.
 			if ( function_exists( 'wp_lazy_loading_enabled' ) && wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' ) ) {
 				$default_attr['loading'] = 'lazy';
+			}
+
+			if ( ! empty( $lazy_url ) ) {
+				$default_attr['data-generate_image'] = $lazy_url;
 			}
 
 			$attr = wp_parse_args( $attr, $default_attr );
@@ -269,15 +280,29 @@ class Configuration {
 	}
 
 	/**
-	 * 
+	 * @return array|string
 	 */
-	public function get_image_url() {
+	public function get_image_url( $lazy = false ) {
 		
 		if ( $this->configuration_exists() ) return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
 	
 		$mode = mkl_pc( 'settings' )->get( 'save_images' );
 		if ( 'save_to_disk' === $mode ) {
-			return $this->save_image( $this->content );
+			if ( $lazy ) {
+				$tempfile = $this->get_configuration_image_name() . '-temp';
+				$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . $tempfile, 'w' );
+				if ( $file_handle ) {
+					fwrite( $file_handle, json_encode( $this->content ) );
+					fclose( $file_handle );
+				}				
+				return [
+					'lazy' => $tempfile,
+					'url'  => apply_filters( 'mkl_pc_get_image_url_default_empty_image', includes_url( 'images/blank.gif' ) ),
+				];
+			} else {
+				return $this->save_image( $this->content );
+			}
+				
 		} else { // on_the_fly
 			
 			$images = array();
@@ -297,6 +322,14 @@ class Configuration {
 	 * @return integer - The image ID
 	 */
 	public function save_image( $content, $transient = null ) {
+
+		if ( is_string( $content ) ) {
+			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
+			if ( ! file_exists( $tempfile ) ) return 0;
+			$content = file_get_contents( $tempfile );
+			if ( $content ) $content = json_decode( $content );
+			unlink( $tempfile );
+		}
 
 		// The image already exists
 		if ( $content && is_null( $transient ) && $this->configuration_exists() ) {

@@ -33,6 +33,8 @@ class Ajax {
 		add_action( 'wp_ajax_nopriv_pc_get_data', array( $this, 'get_configurator_data' ) );
 		add_action( 'wp_ajax_pc_set_data', array( $this, 'set_configurator_data' ) );
 		add_action( 'wp_ajax_mkl_pc_purge_config_cache', array( $this, 'purge_config_cache' ) );
+		add_action( 'wp_ajax_nopriv_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
+		add_action( 'wp_ajax_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 	}
 
 	/**
@@ -199,6 +201,19 @@ class Ajax {
 		wp_send_json_success();
 	}
 
+	public function generate_config_image() {
+		if ( empty( $_POST['data'] ) ) wp_send_json_error( 'No data to process' );
+
+		$config = new Configuration();
+		$config->image_name = rtrim( $_POST['data'] , '-temp' );
+		$image_id = $config->save_image( $_POST['data'] );
+		if ( $image_id ) {
+			$image = wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' );
+			if ( $image ) wp_send_json_success( [ 'url' => $image ] );
+		}
+		wp_send_json_error( 'Image generation failed.' );
+	}
+	
 	/**
 	 * Get the current request http headers
 	 *
