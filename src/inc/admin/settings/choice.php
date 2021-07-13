@@ -57,10 +57,10 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'condition' => '!data.not_a_choice'
 				),
 				'custom_html' => array(
-					'label' => __('Custom html', 'product-configurator-for-woocommerce' ),
+					'label' => __( 'Custom html', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
 					'priority' => 20,
-					'condition' => 'data.not_a_choice',
+					'condition' => 'data.not_a_choice || PC_lang.enable_html_layers',
 					'help' => __( 'Any content / HTML entered here will be added in the configurator viewer.', 'product-configurator-for-woocommerce' ),
 					'classes' => 'code',
 				),
