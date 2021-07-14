@@ -297,6 +297,17 @@ $inner_space: 1em;
 					transform: translateX(-50%) translateY(-50%);
 					max-height: 100%;
 				}
+				.custom-html {
+					position: absolute;
+					width: 100%;
+					top: 0;
+					left: 0;
+					height: 100%;
+
+					&:not(.active) {
+						display: none;
+					}
+				}
 				.images-loading {
 					display: none;
 					width: 30px;

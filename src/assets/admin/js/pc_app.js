@@ -31,7 +31,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 			var id = this.id = ( options.product_type == 'simple' ) ? options.product_id : options.parent_id;
 
-			if ( !this.admin ) {
+			if ( ! this.admin ) {
 
 				this.admin_data = new PC.admin({
 					id: id

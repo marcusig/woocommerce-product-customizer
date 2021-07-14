@@ -225,6 +225,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'layers_new_placeholder' => __('New Layer Name', 'product-configurator-for-woocommerce'),
 					'angles_new_placeholder' => __('New Angle Name', 'product-configurator-for-woocommerce'),
 					'choice_new_placeholder' => __('New Choice Name', 'product-configurator-for-woocommerce'),
+					'enable_html_layers' => true,
 				) ) );
 
 				do_action( 'mkl_pc_admin_scripts_product_page' );
