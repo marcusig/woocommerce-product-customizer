@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
-Tested up to: 5.7
+Tested up to: 5.8
 Stable tag: 1.2.15
 Requires PHP: 5.6
 License: GPLv2+
@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Possibility to use HTML instead or with images
+* TWEAK: Load generated images asynchronously
 * TWEAK: Translate the Selected choice
 * TWEAK: Various multi-currency tweaks
 * TWEAK: Added various filters and tweaks

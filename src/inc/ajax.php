@@ -65,7 +65,7 @@ class Ajax {
 				// fe parameter, to use in front end.
 				if( isset($_REQUEST['fe']) && $_REQUEST['fe'] == 1 ) {
 					if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
-						// $data = get_transient( 'mkl_pc_data_init_' . $id );
+						$data = get_transient( 'mkl_pc_data_init_' . $id );
 					}
 					if ( ! $data ) {
 						$data = $this->db->get_front_end_data( $id );
