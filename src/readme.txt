@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.15
+Stable tag: 1.2.16
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,7 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* FEATURE: Possibility to use HTML instead or with images
+= 1.2.16 - 27/Jul/2021 =
+
+* FEATURE: Possibility to use HTML [instead of / with] images
 * TWEAK: Load generated images asynchronously
 * TWEAK: Translate the Selected choice
 * TWEAK: Various multi-currency tweaks
@@ -282,7 +284,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.15 adds new hooks and various tweaks. Added the possibility to select and delete several items at a time in the admin.
+* 1.2.16 adds new hooks and various tweaks as well as the possibility to use custom HTML instead of regular image content. Added the possibility to select and delete several items at a time in the admin.
 
 
 
