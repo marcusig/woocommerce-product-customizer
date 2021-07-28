@@ -67,7 +67,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 		public function simple_product_supports( $value, $feature, $product ) {
 			if ( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
-				// if ( $feature == 'ajax_add_to_cart' ) $value = false;
+				if ( $feature == 'ajax_add_to_cart' ) $value = false;
 			}
 			return $value;
 		}
