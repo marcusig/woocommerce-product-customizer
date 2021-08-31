@@ -21,6 +21,9 @@ PC.choice = Backbone.Model.extend({
 			this.set('images', images); 
 		}
 
+		// Reset choice selection to false by default
+		if ( PC.fe ) this.set( 'active', false );
+
 		switch ( attributes.available ) {
 			case '0':
 				this.set( 'available', false);
