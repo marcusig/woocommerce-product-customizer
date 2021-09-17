@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.16
+Stable tag: 1.2.17
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,6 +110,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.17 - 17/Sep/2021 =
+
+* FIX: Re-disable `ajax_add_to_cart` feature, which was commented by mistake in the previous release
+* FIX: Reset the default active choice in JS as well as PHP
 
 = 1.2.16 - 27/Jul/2021 =
 
@@ -284,7 +289,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.16 adds new hooks and various tweaks as well as the possibility to use custom HTML instead of regular image content. Added the possibility to select and delete several items at a time in the admin.
+* 1.2.17 fixes a couple of small issues
 
 
 
