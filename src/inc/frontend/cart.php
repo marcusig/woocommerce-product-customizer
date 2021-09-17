@@ -57,7 +57,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					if ( $layer->is_choice() ) { 
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
-						if( $choice_images[0]["thumbnail"]['id'] != '' ) {
+						if ( ! empty( $choice_images ) && $choice_images[0]["thumbnail"]['id'] != '' ) {
 							$choice_image = '<span class="choice-thumb"><img src="' . wp_get_attachment_url( $choice_images[0]["thumbnail"]['id'] ) . '" alt=""></span> ';
 						}
 						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'] );
