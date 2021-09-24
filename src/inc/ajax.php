@@ -64,6 +64,8 @@ class Ajax {
 			case 'init' :
 				// fe parameter, to use in front end.
 				if( isset($_REQUEST['fe']) && $_REQUEST['fe'] == 1 ) {
+					// Translatepress: Do not translate
+					add_filter( 'trp_stop_translating_page', '__return_true' );
 					if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
 						$data = get_transient( 'mkl_pc_data_init_' . $id );
 					}

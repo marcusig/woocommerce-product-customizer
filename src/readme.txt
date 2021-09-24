@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Improve TranslatePress compatibility
+
 = 1.2.17 - 17/Sep/2021 =
 
 * FIX: Re-disable `ajax_add_to_cart` feature, which was commented by mistake in the previous release
