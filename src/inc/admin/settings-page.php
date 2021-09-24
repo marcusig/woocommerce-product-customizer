@@ -424,6 +424,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'disable_caching',
+				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'disable_caching',
+					'description'  => __( 'Can be usefull when using CDNs such as CloudFlare', 'mkl-pc-stock-management' ),
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
