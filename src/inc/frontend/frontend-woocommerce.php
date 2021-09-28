@@ -350,7 +350,13 @@ class Frontend_Woocommerce {
 	 */
 	public function set_thumbnail_url( $data ) {
 		if ( ! isset( $data['content'] ) || ! is_array( $data['content'] ) ) return $data;
-		$img_size =  mkl_pc( 'settings' )->get( 'preview_image_size', 'full' );;
+		/**
+		 * Filters whether or not to override the images using the ID and the image size specified in the settings.
+		 *
+		 * @return boolean
+		 */
+		if ( apply_filters( 'mkl_pc_do_not_override_images', false ) ) return $data;
+		$img_size =  mkl_pc( 'settings' )->get( 'preview_image_size', 'full' );
 		$thumbnail_size = mkl_pc( 'settings' )->get( 'thumbnail_size', 'medium' );
 		foreach( $data['content'] as $lin => $layer ) {
 			foreach( $layer['choices'] as $cin => $choice ) {
