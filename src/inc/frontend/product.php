@@ -108,7 +108,10 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 * Display the form
 		 */
 		public function configurator_form() {
-			global $product;
+			global $product, $mkl_product;
+			if ( ! $product && $mkl_product ) {
+				$product = $mkl_product;
+			}
 			$add_to_cart = $this->get_add_to_cart_label();
 
 			echo '<div class="pc_configurator_form">';
@@ -120,7 +123,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
 						'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
 						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( intval( $_POST['quantity'] ) ) : 1 )
-					) );
+					), $product );
 				}
 				echo '<# } #>';
 				?>
@@ -129,7 +132,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 							<input type="hidden" name="pc_configurator_data">
 							<input type="hidden" name="add-to-cart" value="{{data.product_id}}">
 							<# if ( data.show_qty ) { #>
-								<?php woocommerce_quantity_input(); ?>
+								<?php woocommerce_quantity_input( [], $product ); ?>
 							<# } #>
 						</form>
 					<# } #>
