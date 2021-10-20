@@ -29,6 +29,24 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 		 */
 		public function get_default_settings() {
 			return apply_filters('mkl_pc_layer_default_settings', array(
+				'type' => array(
+					'label' => __( 'Layer type', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'choices' => [
+						[
+							'label' => __( 'Simple', 'product-configurator-for-woocommerce' ),
+							'value' => 'simple'
+						],
+						[
+							'label' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ),
+							'value' => 'multiple',
+							'attributes' => [
+								'disabled' => 'disabled'
+							]
+						],
+					],
+					'priority' => 5,
+				),				
 				'name' => array(
 					'label' => __('Layer name', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
@@ -58,25 +76,6 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'condition' => 'data.not_a_choice',
 					'classes' => 'code',
 					'help' => __( 'Content entered here will be rendered in the configurator menu.', 'product-configurator-for-woocommerce' ) . ' ' . __('To add HTML to the viewer, add it to the custom HTML field in the content section.', 'product-configurator-for-woocommerce' ),
-				),
-				'type' => array(
-					'label' => __( 'Layer type', 'product-configurator-for-woocommerce' ),
-					'type' => 'select',
-					'condition' => '!data.not_a_choice',
-					'choices' => [
-						[
-							'label' => __( 'Simple', 'product-configurator-for-woocommerce' ),
-							'value' => 'simple'
-						],
-						[
-							'label' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ),
-							'value' => 'multiple',
-							'attributes' => [
-								'disabled' => 'disabled'
-							]
-						],
-					],
-					'priority' => 40,
 				),
 				'default_selection' => array(
 					'label' => __( 'Default selection', 'product-configurator-for-woocommerce' ),
