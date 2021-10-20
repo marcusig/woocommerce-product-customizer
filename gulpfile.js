@@ -10,7 +10,7 @@ const clean = require('gulp-clean');
 const gutil = require('gulp-util');
 // const replace = require('gulp-replace');
 var plumber = require('gulp-plumber');
-// var wpPot = require('gulp-wp-pot');
+var wpPot = require('gulp-wp-pot');
 
 const cleanPaths = [
 	'dist/*',
@@ -78,8 +78,25 @@ gulp.task('js', function(done) {
 // 	.pipe(gulp.dest('dist'));
 // });
 
+
 gulp.task('pot', function(done) {
-	done();
+	return gulp.src('src/**/*.php')
+		.pipe(plumber(reportError))
+	// // .pipe(sort())
+		.pipe(wpPot({
+		domain: 'product-configurator-for-woocommerce',
+		destFile:'product-configurator-for-woocommerce.pot',
+		package: 'product-configurator-for-woocommerce',
+		bugReport: 'https://github.com/marcusig/woocommerce-product-customizer/issues',
+		lastTranslator: '@marcusig',
+		team: '@Mklacroix'
+	}))
+	.pipe(gulp.dest('src/languages/product-configurator-for-woocommerce.pot'))
+	.on('end', done);
+});
+
+// gulp.task('pot', function(done) {
+// 	done();
 	// return gulp.src('src/**/*.php')
 	// .pipe(plumber(reportError))
 	// // .pipe(sort())
@@ -93,7 +110,7 @@ gulp.task('pot', function(done) {
 	// }))
 	// .pipe(gulp.dest('dist/languages'))
 	// .on('end', done);
-});
+// });
 
 gulp.task('build', 
 	gulp.series(
