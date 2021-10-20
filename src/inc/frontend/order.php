@@ -115,7 +115,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$choices = array(); 
 			foreach ( $configurator_data as $layer ) {
 				$choice_images = $layer->get_choice( 'images' );
-				if ( $choice_images[0]["image"]['id'] ) {
+				if ( $choice_images && isset( $choice_images[0] ) && $choice_images[0]["image"]['id'] ) {
 					$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
 				}
 			}
