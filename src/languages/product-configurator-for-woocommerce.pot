@@ -1,11 +1,14 @@
-# Copyright (C) 2020 Product configurator for WooCommerce
-# This file is distributed under the same license as the Product configurator for WooCommerce package.
+# Copyright (C) 2021 product-configurator-for-woocommerce
+# This file is distributed under the same license as the product-configurator-for-woocommerce package.
 msgid ""
 msgstr ""
-"Project-Id-Version: Product configurator for WooCommerce\n"
+"Project-Id-Version: product-configurator-for-woocommerce\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language-Team: @Mklacroix\n"
+"Last-Translator: @marcusig\n"
+"Report-Msgid-Bugs-To: https://github.com/marcusig/woocommerce-product-customizer/issues\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
 "X-Poedit-SearchPath-0: .\n"
@@ -13,350 +16,770 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: inc/db.php:35
-msgid "Home"
-msgstr ""
-
-#: inc/db.php:36
-msgid "Welcome to the Product Configurator "
-msgstr ""
-
-#: inc/db.php:52, inc/db.php:74
-msgid "Define the layers the product is composed of. "
-msgstr ""
-
-#: inc/db.php:57
-msgid "Layers"
-msgstr ""
-
-#: inc/db.php:58
-msgid "Layers of the product "
-msgstr ""
-
-#: inc/db.php:62, inc/db.php:84, inc/db.php:106, inc/admin/views/html-product-configurator-templates.php:60, inc/admin/views/html-product-configurator-templates.php:119, inc/admin/views/html-product-configurator-templates.php:158, inc/admin/views/html-product-configurator-templates.php:251, inc/frontend/views/parts/toolbar.php:3
-msgid "Cancel"
-msgstr ""
-
-#: inc/db.php:66, inc/db.php:88, inc/db.php:110, inc/admin/views/html-product-configurator-templates.php:61
-msgid "Save all"
-msgstr ""
-
-#: inc/db.php:70
-msgid "Save layers"
-msgstr ""
-
-#: inc/db.php:79
-msgid "Views"
-msgstr ""
-
-#: inc/db.php:80
-msgid "Angles of the product "
-msgstr ""
-
-#: inc/db.php:92
-msgid "Save angles"
-msgstr ""
-
-#: inc/db.php:96
-msgid "Define the view angles, if you want the client to be able to switch between them. "
-msgstr ""
-
-#: inc/db.php:101
-msgid "Content"
-msgstr ""
-
-#: inc/db.php:102
-msgid "Contents "
-msgstr ""
-
-#: inc/db.php:114
-msgid "Save contents"
-msgstr ""
-
-#: inc/db.php:118
-msgid "Define choices for each layer and assign them pictures"
-msgstr ""
-
-#: inc/plugin.php:33
-msgid "No new class... Cheatin&#8217; huh?"
-msgstr ""
-
-#: inc/plugin.php:44
-msgid "No serializing... Cheatin&#8217; huh?"
-msgstr ""
-
-#: inc/utils.php:175
-msgid "Error:"
-msgstr ""
-
-#: inc/utils.php:175
-msgid "template not found"
-msgstr ""
-
-#: inc/admin/admin-woocommerce.php:66
-msgid "Choose an image for "
-msgstr ""
-
-#: inc/admin/admin-woocommerce.php:67
-msgid "Choose a thumbnail"
-msgstr ""
-
-#: inc/admin/choice-settings.php:89
-msgid "Choice label"
-msgstr ""
-
-#: inc/admin/choice-settings.php:94, inc/admin/views/html-product-configurator-templates.php:129, inc/admin/views/html-product-configurator-templates.php:168
-msgid "Description"
-msgstr ""
-
-#: inc/admin/choice-settings.php:99
-msgid "Extra price"
-msgstr ""
-
-#: inc/admin/choice-settings.php:103
-msgid "Extra Price is available as an addon"
-msgstr ""
-
-#: inc/admin/product.php:81
-msgid "This product is configurable"
-msgstr ""
-
-#: inc/admin/product.php:82
-msgid "Select if you want this product to be configurable"
-msgstr ""
-
-#: inc/admin/product.php:103
-msgid "You are configuring"
-msgstr ""
-
-#: inc/admin/product.php:105
-msgid "To proceed, follow the instructions:"
-msgstr ""
-
-#: inc/admin/product.php:107
-msgid "define the structure of the product in %sLayers%s"
-msgstr ""
-
-#: inc/admin/product.php:108
-msgid "define the views / angles in which your product will be visible in %sViews%s"
-msgstr ""
-
-#: inc/admin/product.php:109
-msgid "add the Images for each of your choices in %sContent%s"
-msgstr ""
-
-#: inc/admin/product.php:111
-msgid "Do you need more functionality?"
-msgstr ""
-
-#: inc/admin/product.php:112
-msgid "Check out the available addons and themes."
-msgstr ""
-
-#: inc/admin/product.php:191, inc/frontend/frontend-woocommerce.php:81
-msgid "Select a picture"
-msgstr ""
-
-#: inc/admin/product.php:192, inc/frontend/frontend-woocommerce.php:82
-msgid "Choose"
-msgstr ""
-
-#: inc/admin/product.php:193, inc/frontend/frontend-woocommerce.php:83
-msgid "New Layer Name"
-msgstr ""
-
-#: inc/admin/product.php:194, inc/frontend/frontend-woocommerce.php:84
-msgid "New Angle Name"
-msgstr ""
-
-#: inc/admin/product.php:195, inc/frontend/frontend-woocommerce.php:85
-msgid "New Choice Name"
-msgstr ""
-
-#: inc/admin/product.php:234
-msgid "Configure product's configurator"
-msgstr ""
-
-#: inc/admin/product.php:249
-msgid "Edit configurator layers"
-msgstr ""
-
-#: inc/admin/settings.php:48
-msgid "Settings"
-msgstr ""
-
-#: inc/admin/settings.php:49, inc/admin/settings.php:60, inc/admin/settings.php:80
-msgid "Addons"
-msgstr ""
-
-#: inc/admin/settings.php:60
-msgid "Product Configurator website"
-msgstr ""
-
-#: inc/admin/settings.php:60
-msgid "Themes"
-msgstr ""
-
-#: inc/admin/settings.php:97
-msgid "Styling options"
-msgstr ""
-
-#: inc/admin/settings.php:104
-msgid "Button classes"
-msgstr ""
-
-#: inc/admin/settings.php:140
-msgid "Get the official Live Product Configurator themes"
-msgstr ""
-
-#: inc/admin/settings.php:141
-msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
-msgstr ""
-
-#: inc/admin/settings.php:142
-msgid "View available themes"
-msgstr ""
-
-#: inc/admin/settings.php:169
-msgid "Get the addon now"
-msgstr ""
-
-#: inc/base/configuration.php:118
-msgid "You have already saved this configuration!"
-msgstr ""
-
-#: inc/base/configuration.php:147
-msgid "The configuration was saved successfully!"
-msgstr ""
-
-#: inc/base/configuration.php:156
-msgid "Invalid configuration_id ID"
-msgstr ""
-
-#: inc/frontend/cart.php:66
-msgid "Configuration"
-msgstr ""
-
-#: inc/frontend/product.php:40
-msgid "Select options"
-msgstr ""
-
-#: inc/frontend/product.php:65
-msgid "Configure"
-msgstr ""
-
-#: inc/frontend/product.php:85
-msgid "Add to cart"
-msgstr ""
-
-#: inc/frontend/product.php:98
-msgid "Please select a variation to configure"
-msgstr ""
-
-#: inc/admin/views/html-order-item.php:2
-msgid "Configurator Data:"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:17
-msgid "Close media panel"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:31
-msgid "Actions"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:42
-msgid "Menu"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:52
-msgid "Saved"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:78, inc/admin/views/html-product-configurator-templates.php:226
-msgid "Add"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:109, inc/admin/views/html-product-configurator-templates.php:148
-msgid "Details"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:114, inc/admin/views/html-product-configurator-templates.php:118, inc/admin/views/html-product-configurator-templates.php:153, inc/admin/views/html-product-configurator-templates.php:157, inc/admin/views/html-product-configurator-templates.php:246, inc/admin/views/html-product-configurator-templates.php:250
-msgid "Delete"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:116
-msgid "Do you realy want to delete this angle?"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:125
-msgid "Angle Name"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:135
-msgid "Angles's picture"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:141, inc/admin/views/html-product-configurator-templates.php:185
-msgid "Add / Change picture"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:155
-msgid "Do you realy want to delete this layer?"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:164
-msgid "Layer Name"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:172
-msgid "This layer does not have choices"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:174
-msgid "For exemple if the layer is a shadow or a static element"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:179
-msgid "Layer's icon"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:243
-msgid "Choice informations"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:248
-msgid "Do you realy want to delete this choice?"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:264
-msgid "Pictures"
-msgstr ""
-
-#: inc/admin/views/html-product-configurator-templates.php:301
-msgid "You need to have Layers and Angles set before entering any content."
-msgstr ""
-
-#: inc/frontend/views/parts/choices.php:2
-msgid "Close"
-msgstr ""
-
-#: inc/frontend/views/parts/main-view.php:7
-msgid "Loading Data"
-msgstr ""
-
-#: inc/frontend/views/parts/product-viewer.php:6
-msgid "Change angle"
-msgstr ""
-
-#: woocommerce-mkl-product-configurator.php:56
+#: src/woocommerce-mkl-product-configurator.php:63
 msgid "Product Configurator for WooCommerce  requires PHP version 5.4+, plugin is currently NOT ACTIVE."
 msgstr ""
 
-#: woocommerce-mkl-product-configurator.php:64
+#: src/woocommerce-mkl-product-configurator.php:71
 msgid "WooCommerce has to be active for WooCommerce Product configurator to work."
 msgstr ""
 
-#: woocommerce-mkl-product-configurator.php:72
-msgid "Your WooCommerce version is too old for WooCommerce Product Configurator to work. <br>WooCommerce Version 3+ required."
+#: src/woocommerce-mkl-product-configurator.php:79
+msgid "Your WooCommerce version is too old for WooCommerce Product Configurator to work."
+msgstr ""
+
+#: src/woocommerce-mkl-product-configurator.php:79
+msgid "WooCommerce Version 3+ required."
+msgstr ""
+
+#: src/inc/ajax.php:161
+msgid "Error saving the data:"
+msgstr ""
+
+#: src/inc/ajax.php:161
+msgid "The session seems to have expired."
+msgstr ""
+
+#: src/inc/db.php:34
+msgid "Home"
+msgstr ""
+
+#: src/inc/db.php:35
+msgid "Welcome to the Product Configurator "
+msgstr ""
+
+#: src/inc/db.php:52
+msgid "Layers"
+msgstr ""
+
+#: src/inc/db.php:53
+msgid "Layers of the product "
+msgstr ""
+
+#: src/inc/db.php:57, src/inc/db.php:75, src/inc/db.php:93, src/inc/admin/views/html-product-configurator-templates.php:130, src/inc/admin/views/html-product-configurator-templates.php:166, src/inc/admin/views/html-product-configurator-templates.php:270, src/inc/admin/views/html-product-configurator-templates.php:306, src/inc/admin/views/html-product-configurator-templates.php:380
+msgid "Cancel"
+msgstr ""
+
+#: src/inc/db.php:61, src/inc/db.php:79, src/inc/db.php:97, src/inc/admin/views/html-product-configurator-templates.php:61
+msgid "Save"
+msgstr ""
+
+#: src/inc/db.php:65
+msgid "Define the layers the product is composed of. "
+msgstr ""
+
+#: src/inc/db.php:70
+msgid "Views"
+msgstr ""
+
+#: src/inc/db.php:71
+msgid "Angles of the product "
+msgstr ""
+
+#: src/inc/db.php:83
+msgid "Define the view angles, if you want the client to be able to switch between them. "
+msgstr ""
+
+#: src/inc/db.php:88
+msgid "Content"
+msgstr ""
+
+#: src/inc/db.php:89
+msgid "Contents "
+msgstr ""
+
+#: src/inc/db.php:101
+msgid "Define choices for each layer and assign them pictures"
+msgstr ""
+
+#: src/inc/plugin.php:33
+msgid "No new class... Cheatin&#8217; huh?"
+msgstr ""
+
+#: src/inc/plugin.php:44
+msgid "No serializing... Cheatin&#8217; huh?"
+msgstr ""
+
+#: src/inc/utils.php:178
+msgid "Error:"
+msgstr ""
+
+#: src/inc/utils.php:178
+msgid "template not found"
+msgstr ""
+
+#: src/inc/admin/customizer.php:33
+msgid "Accent color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:41, src/inc/themes/h/theme.php:143, src/inc/themes/h/theme.php:71
+msgid "Layers text color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:45, src/inc/themes/h/theme.php:151, src/inc/themes/h/theme.php:79
+msgid "Choices text color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:49
+msgid "Active layer background color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:53
+msgid "Active layer text color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:57, src/inc/themes/h/theme.php:164, src/inc/themes/h/theme.php:92
+msgid "Active choice background color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:61, src/inc/themes/h/theme.php:168, src/inc/themes/h/theme.php:96
+msgid "Active choice text color"
+msgstr ""
+
+#: src/inc/admin/customizer.php:81
+msgid "Product Configurator"
+msgstr ""
+
+#: src/inc/admin/customizer.php:130
+msgid "Use a background image for the viewer"
+msgstr ""
+
+#: src/inc/admin/customizer.php:152
+msgid "Custom background image"
+msgstr ""
+
+#: src/inc/admin/product.php:88
+msgid "This product is configurable"
+msgstr ""
+
+#: src/inc/admin/product.php:89
+msgid "Select if you want this product to be configurable"
+msgstr ""
+
+#: src/inc/admin/product.php:125
+msgid "You are configuring"
+msgstr ""
+
+#: src/inc/admin/product.php:127
+msgid "To proceed, follow the instructions:"
+msgstr ""
+
+#: src/inc/admin/product.php:129
+msgid "define the structure of the product in %sLayers%s"
+msgstr ""
+
+#: src/inc/admin/product.php:130
+msgid "define the views / angles in which your product will be visible in %sViews%s"
+msgstr ""
+
+#: src/inc/admin/product.php:131
+msgid "add the Images for each of your choices in %sContent%s"
+msgstr ""
+
+#: src/inc/admin/product.php:135
+msgid "Do you need more functionality?"
+msgstr ""
+
+#: src/inc/admin/product.php:136
+msgid "Check out the available addons and themes."
+msgstr ""
+
+#: src/inc/admin/product.php:137
+msgid "Do you like the plugin?"
+msgstr ""
+
+#: src/inc/admin/product.php:138
+msgid "Give it a review on %swordpress.org%s"
+msgstr ""
+
+#: src/inc/admin/product.php:139
+msgid "Do you think it could be improved?"
+msgstr ""
+
+#: src/inc/admin/product.php:140
+msgid "Start a support topic on %swordpress.org%s"
+msgstr ""
+
+#: src/inc/admin/product.php:223
+msgid "Select a picture"
+msgstr ""
+
+#: src/inc/admin/product.php:224, src/inc/admin/views/html-product-configurator-templates.php:379
+msgid "Choose"
+msgstr ""
+
+#: src/inc/admin/product.php:225
+msgid "New Layer Name"
+msgstr ""
+
+#: src/inc/admin/product.php:226
+msgid "New Angle Name"
+msgstr ""
+
+#: src/inc/admin/product.php:227
+msgid "New Choice Name"
+msgstr ""
+
+#: src/inc/admin/product.php:267
+msgid "Start product's configurator"
+msgstr ""
+
+#: src/inc/admin/product.php:282
+msgid "Edit configurator layers"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:73
+msgid "Settings"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:74, src/inc/admin/settings-page.php:85, src/inc/admin/settings-page.php:138
+msgid "Addons"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:85
+msgid "Product Configurator website"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:85
+msgid "Themes"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:128
+msgid "Configuration cache"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:130
+msgid "The product configurations are cached on the disk for better performance."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:131
+msgid "The cache is refreshed every time you save the product or the configuration."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:132
+msgid "Using the button bellow, you can purge all the configuration cache."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:133
+msgid "(The cache will be rebuilt the next time the file is requested)"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:135
+msgid "Purge configuration cache"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:155
+msgid "Styling options"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:162
+msgid "Button classes"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:174
+msgid "Configure button label"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:180
+msgid "Default:"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:180, src/inc/frontend/frontend-woocommerce.php:121, src/inc/frontend/frontend-woocommerce.php:163, src/inc/frontend/product.php:82
+msgid "Configure"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:186
+msgid "Configurator theme"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:197
+msgid "General options"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:205
+msgid "Preview Image size"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:218
+msgid "Thumbnail size"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:226
+msgid "Size of the thumbnails in the sidebar"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:232
+msgid "Lazy load images"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:238
+msgid "Yes (default) - use an empty placeholder until the user selects a choice."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:239
+msgid "No - load everything from the beginning."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:248
+msgid "Show the product's price in the configurator"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:259
+msgid "Show choices' description"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:270
+msgid "Always show the description (no tooltip)"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:281
+msgid "Show layers' description"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:292
+msgid "Show angle/view image"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:303
+msgid "Show angle/view name"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:315
+msgid "Configuration image generation"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:332
+msgid "Show configuration image in cart and checkout"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:343
+msgid "Image size in the cart / checkout / order"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:357
+msgid "Image mode"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:364
+msgid "Add images to the library"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:365
+msgid "Generate images on the fly"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:368
+msgid "(can take a lot of space on the disk if you have many possible configurations)"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:369
+msgid "(save disk space, but uses more server resource)"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:376
+msgid "Close the configurator when pressing \"add to cart\""
+msgstr ""
+
+#: src/inc/admin/settings-page.php:382
+msgid "Helpful if submiting the form via ajax"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:388
+msgid "On mobile, close the choices when making a selection"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:399
+msgid "Where should the \"configure\" button be placed"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:405
+msgid "Before the product excerpt"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:406
+msgid "Before the add to cart form"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:407
+msgid "Before the quantity input"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:408
+msgid "After the add to cart button"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:409
+msgid "After the add to cart form"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:418
+msgid "Allow adding the product to cart without configuring"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:429
+msgid "Disable caching of configurations"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:454
+msgid "Edit the theme settings in the customizer"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:550
+msgid "Get the official Product Configurator themes"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:551
+msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:611, src/inc/admin/settings-page.php:647
+msgid "Theme preview"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:613, src/inc/admin/settings-page.php:649
+msgid "No preview"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:623
+msgid "No theme is in use."
+msgstr ""
+
+#: src/inc/admin/settings-page.php:624
+msgid "Select a theme"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:633
+msgid "Select the theme"
+msgstr ""
+
+#: src/inc/base/configuration.php:129
+msgid "You have already saved this configuration!"
+msgstr ""
+
+#: src/inc/base/configuration.php:156
+msgid "The configuration was saved successfully!"
+msgstr ""
+
+#: src/inc/base/configuration.php:174
+msgid "Invalid configuration_id ID"
+msgstr ""
+
+#: src/inc/frontend/cart.php:70, src/inc/frontend/order.php:45
+msgid "Configuration"
+msgstr ""
+
+#: src/inc/frontend/frontend-woocommerce.php:105, src/inc/frontend/frontend-woocommerce.php:148
+msgid "A product id must be set in order for this shortcode to work."
+msgstr ""
+
+#: src/inc/frontend/frontend-woocommerce.php:115, src/inc/frontend/frontend-woocommerce.php:157
+msgid "The provided ID is not a valid product."
+msgstr ""
+
+#: src/inc/frontend/frontend-woocommerce.php:165
+msgid "Loading the configurator..."
+msgstr ""
+
+#: src/inc/frontend/frontend-woocommerce.php:268
+msgid "%s is required"
+msgstr ""
+
+#: src/inc/frontend/product.php:176
+msgid "Please select a variation to configure"
+msgstr ""
+
+#: src/inc/admin/settings/angle.php:33
+msgid "Angle Name"
+msgstr ""
+
+#: src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:54, src/inc/admin/settings/layer.php:61
+msgid "Description"
+msgstr ""
+
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:94, src/inc/admin/settings/layer.php:117
+msgid "CSS Class"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:33
+msgid "Use as group"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:39
+msgid "SKU"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:44
+msgid "Choice label"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:49, src/inc/admin/settings/layer.php:56
+msgid "Admin label"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:60
+msgid "Custom html"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:64
+msgid "Any content / HTML entered here will be added in the configurator viewer."
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:68
+msgid "Extra price"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:72
+msgid "Extra Price is available as an addon"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:79, src/inc/admin/settings/layer.php:105
+msgid "Automatic angle switch"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:89
+msgid "Switch to"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:33
+msgid "Layer type"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:37
+msgid "Simple"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:41
+msgid "Multiple choice"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:51
+msgid "Layer name"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:67
+msgid "This layer does not have choices"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:68
+msgid "For exemple if the layer is a shadow, a static element or custom HTML"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:73
+msgid "Custom HTML"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:78
+msgid "Content entered here will be rendered in the configurator menu."
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:78
+msgid "To add HTML to the viewer, add it to the custom HTML field in the content section."
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:81
+msgid "Default selection"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:86
+msgid "Select the first choice by default"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:90
+msgid "Select nothing"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:95
+msgid "Choose whether a choice should be selected by default"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:98
+msgid "Require a choice"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:102
+msgid "If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)"
+msgstr ""
+
+#: src/inc/admin/views/html-order-item.php:2
+msgid "Configurator Data:"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:120, src/inc/admin/views/html-product-configurator-templates.php:155
+msgid "Details"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:125, src/inc/admin/views/html-product-configurator-templates.php:129, src/inc/admin/views/html-product-configurator-templates.php:160, src/inc/admin/views/html-product-configurator-templates.php:165, src/inc/admin/views/html-product-configurator-templates.php:264, src/inc/admin/views/html-product-configurator-templates.php:269, src/inc/admin/views/html-product-configurator-templates.php:305
+msgid "Delete"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:127
+msgid "Do you realy want to delete this angle?"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:139
+msgid "Angles's picture"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:145, src/inc/admin/views/html-product-configurator-templates.php:183
+msgid "Add / Change picture"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:147, src/inc/admin/views/html-product-configurator-templates.php:185, src/inc/admin/views/html-product-configurator-templates.php:336, src/inc/admin/views/html-product-configurator-templates.php:357
+msgid "Remove picture"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:161, src/inc/admin/views/html-product-configurator-templates.php:265
+msgid "Duplicate"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:163
+msgid "Do you realy want to delete this layer?"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:177
+msgid "Layer's icon"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:261
+msgid "Choice informations"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:267
+msgid "Do you realy want to delete this choice?"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:284
+msgid "Group thumbnail"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:286
+msgid "Pictures"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:298
+msgid "Multiple selection"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:301
+msgid "Delete the selected items"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:303
+msgid "Do you realy want to delete the selected items?"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:319
+msgid "Main Image"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:327, src/inc/admin/views/html-product-configurator-templates.php:349
+msgid "Add / Edit image"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:341
+msgid "Thumbnail"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:376
+msgid "Select a product:"
+msgstr ""
+
+#: src/inc/frontend/views/html-product-configurator-templates.php:32
+msgid "Loading Data"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:28
+msgid "Dark gray (Layers background)"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:32
+msgid "Darker gray (Preview background, borders)"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:36
+msgid "Light gray 1"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:40
+msgid "Light gray 2"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:44
+msgid "Medium gray 3"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:48
+msgid "Medium gray 4"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:135, src/inc/themes/h/theme.php:63
+msgid "Primary color"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:139, src/inc/themes/h/theme.php:67
+msgid "Primary hover"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:147, src/inc/themes/h/theme.php:75
+msgid "Layers text color - hover"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:155, src/inc/themes/h/theme.php:83
+msgid "Layers section background"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:159, src/inc/themes/h/theme.php:87
+msgid "Choices section background"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:173, src/inc/themes/h/theme.php:101
+msgid "Add to cart button background color"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:177, src/inc/themes/h/theme.php:105
+msgid "Add to cart button border color"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:181, src/inc/themes/h/theme.php:109
+msgid "Add to cart button text color"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:185, src/inc/themes/h/theme.php:113
+msgid "Add to cart button background color - Hover"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:189, src/inc/themes/h/theme.php:117
+msgid "Add to cart button border color - Hover"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:193, src/inc/themes/h/theme.php:121
+msgid "Add to cart button text color - Hover"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:198, src/inc/themes/h/theme.php:202, src/inc/themes/h/theme.php:126, src/inc/themes/h/theme.php:130
+msgid "Dimmed label"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:230
+msgid "Color mode"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:235
+msgid "Light"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:236
+msgid "Dark"
+msgstr ""
+
+#: src/inc/themes/h/theme.php:254
+msgid "Choice width"
+msgstr ""
+
+#: src/inc/themes/wsb/theme.php:67
+msgid "Sidebar background"
+msgstr ""
+
+#: src/inc/frontend/views/parts/product-viewer.php:8
+msgid "Change angle"
 msgstr ""
