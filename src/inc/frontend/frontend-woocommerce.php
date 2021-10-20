@@ -105,9 +105,9 @@ class Frontend_Woocommerce {
 			if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
 			$product_id = $product->get_id();
 		} else {
-
+			global $mkl_product;
 			$product_id = intval( $atts[ 'product_id' ] );
-			$product = wc_get_product( $product_id );
+			$product = $mkl_product = wc_get_product( $product_id );
 		}
 
 		$shortcode_class = isset( $atts[ 'classes' ] ) ? Utils::sanitize_html_classes( $atts[ 'classes' ] ) : '';
