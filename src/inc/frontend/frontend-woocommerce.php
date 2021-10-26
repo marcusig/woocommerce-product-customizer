@@ -278,6 +278,7 @@ class Frontend_Woocommerce {
 				'show_choice_description' => mkl_pc( 'settings')->get( 'show_choice_description' ),
 				'show_layer_description' => mkl_pc( 'settings')->get( 'show_layer_description' ),
 				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
+				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),

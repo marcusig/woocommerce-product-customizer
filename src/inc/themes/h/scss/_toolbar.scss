@@ -79,6 +79,8 @@
 		flex: 1;
 		max-width: 100%;
 		border-top: 1px solid color(layers_bg);
+		padding: 0;
+		
 		::-webkit-scrollbar {
 			width: 8px;
 			height: 6px;

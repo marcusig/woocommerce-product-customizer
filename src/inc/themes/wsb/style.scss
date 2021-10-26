@@ -557,6 +557,14 @@ $inner_space: 1em;
 								@media( max-width: $small_screen_width ) {
 									width: 30px;
 								}
+								&.selected-choice-image {
+									&:not(:empty) + i {
+										display: none;
+									}									
+									img ~ img {
+										display: none;
+									}
+								}								
 							}
 
 							transition: .2s all;

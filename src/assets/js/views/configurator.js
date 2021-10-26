@@ -346,6 +346,11 @@ PC.options = PC.options || {};
 				this.$( 'button' ).append( selection.$el );
 			}
 
+			if ( PC.fe.config.show_active_choice_image_in_layer ) {
+				var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model } );
+				this.$( 'button' ).prepend( selection.$el );
+			}
+
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			
 			wp.hooks.doAction( 'PC.fe.layer.beforeRenderChoices', this );
@@ -423,6 +428,28 @@ PC.options = PC.options || {};
 			} );
 			this.$el.html( choices_names.join( ', ' ) );
 		}
+	} );
+
+	PC.fe.views.layers_list_item_selection_image = Backbone.View.extend({
+		tagName: 'i',
+		className: 'selected-choice-image',
+		initialize: function() {
+			this.choices = PC.fe.getLayerContent( this.model.id );
+			if ( ! this.choices ) return;
+			this.listenTo( this.choices, 'change:active', this.render );
+			this.render();
+		},
+		render: function( choice_model, activated ) {
+			var active_choices = this.choices.where( { active: true } );
+			var html_content = '';
+			_.each( active_choices, function( item ) {
+				var image = item.get_image( 'thumbnail' );
+				if ( image ) {
+					html_content += '<img src="' + image + '">';
+				}
+			} );
+			this.$el.html( html_content );
+		}		
 	} );
 
 	/*

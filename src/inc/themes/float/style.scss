@@ -592,6 +592,15 @@ $inner_space: 1em;
 								img {
 									max-width: 100%;
 								}
+								&.selected-choice-image {
+									img ~ img {
+										display: none;
+									}
+									&:not(:empty) + i {
+										display: none;
+									}									
+
+								}								
 							}
 
 							transition: .2s all;
@@ -819,6 +828,7 @@ $inner_space: 1em;
 					right: 0;
 					height: 100%;
 					box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
+					padding: 1em;
 				}				
 			}
 
