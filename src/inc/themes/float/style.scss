@@ -1108,7 +1108,7 @@ $inner_space: 1em;
 					}
 					> .cancel {
 						@media (min-width: $small_screen_width) {
-							top: 62px;
+							top: 65px;
 						}
 					}					
 				}
@@ -1140,12 +1140,12 @@ $inner_space: 1em;
 		}
 	}
 
-	form.save-my-design__login_form {padding: 1em;}
+	form.save-my-design__login_form { padding: 1em; }
 	form.save-my-design__login_form > .message{ 
 		margin-top: -1em;
 		margin-left: -1em;
 		margin-right: -1em;
-	}	
+	}
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_bg.default-bg ~ .mkl_pc_toolbar section.choices + .form::after {
