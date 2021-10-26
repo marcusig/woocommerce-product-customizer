@@ -521,7 +521,8 @@ PC.options = PC.options || {};
 		},
 		render: function() {
 			var data = _.extend({
-				thumbnail: this.model.get_image( 'thumbnail' )
+				thumbnail: this.model.get_image( 'thumbnail' ),
+				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
 			}, this.options.model.attributes );
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
 			var $description = this.$el.find( '.description' );
@@ -999,7 +1000,7 @@ PC.options = PC.options || {};
 			if ( false === model.get( 'cshow' ) ) return;
 			var first_choice = choices.first().id;
 			var angle_id = PC.fe.angles.first().id; 
-			if( ! model.attributes.not_a_choice ) {
+			if ( ! model.attributes.not_a_choice ) {
 				if( choices.length > 1 || 'multiple' == type ) {
 
 					var selected_choices = choices.where( { 'active': true } );
@@ -1018,6 +1019,11 @@ PC.options = PC.options || {};
 							&& first_choice == choice.id
 						) {
 							require_error = true;
+						}
+
+						// The item is out of stock, so throw an error
+						if ( false === choice.get( 'available' ) ) {
+							PC.fe.errors.push( PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) ) );
 						}
 
 						var img_id = choice.get_image( 'image', 'id' );
@@ -1056,6 +1062,11 @@ PC.options = PC.options || {};
 								choice
 							)
 						);
+
+						// The item is out of stock, so throw an error
+						if ( false === choice.get( 'available' ) ) {
+							PC.fe.errors.push( PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) ) );
+						}
 					} else if ( is_required ) {
 						require_error = true;
 					}
