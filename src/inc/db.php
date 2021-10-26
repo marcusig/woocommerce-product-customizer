@@ -501,6 +501,10 @@ class DB {
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_html',
 				],
+				'parent' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
 			]
 		);
 	}

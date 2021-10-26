@@ -432,7 +432,7 @@ class Configuration {
 			'post_mime_type' => $filetype['type'],
 			'post_title'     => preg_replace( '/\.[^.]+$/', '', basename( $filename ) ),
 			'post_content'   => '',
-			'post_status'    => 'inherit'
+			'post_status'    => 'configuration' // Changing the post status prevents the image being listed in the library
 		);
 
 		// Insert the attachment.

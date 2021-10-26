@@ -389,66 +389,78 @@ msgid "On mobile, close the choices when making a selection"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:399
+msgid "On desktop, close the choices when making a selection"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:410
+msgid "Show the selected label in the layer header"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:421
+msgid "Show the selected image in the layer header"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:432
 msgid "Where should the \"configure\" button be placed"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:405
+#: src/inc/admin/settings-page.php:438
 msgid "Before the product excerpt"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:406
+#: src/inc/admin/settings-page.php:439
 msgid "Before the add to cart form"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:407
+#: src/inc/admin/settings-page.php:440
 msgid "Before the quantity input"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:408
+#: src/inc/admin/settings-page.php:441
 msgid "After the add to cart button"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:409
+#: src/inc/admin/settings-page.php:442
 msgid "After the add to cart form"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:418
+#: src/inc/admin/settings-page.php:451
 msgid "Allow adding the product to cart without configuring"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:429
+#: src/inc/admin/settings-page.php:462
 msgid "Disable caching of configurations"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:454
+#: src/inc/admin/settings-page.php:487
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:550
+#: src/inc/admin/settings-page.php:583
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:551
+#: src/inc/admin/settings-page.php:584
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:611, src/inc/admin/settings-page.php:647
+#: src/inc/admin/settings-page.php:644, src/inc/admin/settings-page.php:680
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:613, src/inc/admin/settings-page.php:649
+#: src/inc/admin/settings-page.php:646, src/inc/admin/settings-page.php:682
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:623
+#: src/inc/admin/settings-page.php:656
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:624
+#: src/inc/admin/settings-page.php:657
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:633
+#: src/inc/admin/settings-page.php:666
 msgid "Select the theme"
 msgstr ""
 
