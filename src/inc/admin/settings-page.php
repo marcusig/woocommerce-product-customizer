@@ -395,6 +395,39 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'close_choices_when_selecting_choice_desktop',
+				__( 'On desktop, close the choices when making a selection', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'close_choices_when_selecting_choice_desktop',
+				]
+			);
+
+			add_settings_field(
+				'show_active_choice_in_layer',
+				__( 'Show the selected label in the layer header', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_active_choice_in_layer',
+				]
+			);
+
+			add_settings_field(
+				'show_active_choice_image_in_layer',
+				__( 'Show the selected image in the layer header', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_active_choice_image_in_layer',
+				]
+			);
+
+			add_settings_field(
 				'configure_button_location',
 				__( 'Where should the "configure" button be placed', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
