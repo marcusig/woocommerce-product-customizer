@@ -273,6 +273,7 @@ class Frontend_Woocommerce {
 				'bg_image' => $bg_image ? $bg_image : apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 				'close_configurator_on_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'close_configurator_on_add_to_cart' ),
 				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' ),
+				'close_choices_when_selecting_choice_desktop' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice_desktop' ),
 				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
 				'show_choice_description' => mkl_pc( 'settings')->get( 'show_choice_description' ),

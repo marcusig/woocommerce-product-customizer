@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Possibility to close the layers on desktop as well as mobile
 * TWEAK: Added filter mkl_pc_do_not_override_images - Filters whether or not to override the images using the ID and the image size specified in the settings. Returning True will use the URL saved in the database, allowing for example to bulk edit URLs without worrying about the attachment ID. 
 * TWEAK: Improve TranslatePress compatibility
 
