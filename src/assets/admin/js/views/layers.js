@@ -318,6 +318,7 @@ TODO:
 				// cancel: this.$('.cancel-delete-layer'),
 			};
 			this.populate_angles_list();
+			PC.currentEditedItem = this.model;
 			return this;
 		},
 		on_change_not_a_choice: function( event ) {

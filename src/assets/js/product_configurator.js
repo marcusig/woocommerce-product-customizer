@@ -87,7 +87,7 @@ Backbone.Model.prototype.toJSON = function() {
 			try {
 				PC.fe.open( product_id ); 
 			} catch (err) {
-				console.log ('we had an error: ', err);
+				console.error('we had an error: ', err);
 				PC.fe.close();
 			}
 		}

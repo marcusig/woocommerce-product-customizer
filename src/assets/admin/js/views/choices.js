@@ -238,6 +238,8 @@ PC.views = PC.views || {};
 
 			this.listenTo(this.model, 'destroy', this.remove);
 			this.listenTo(this.model, 'change:is_group', this.render);
+			
+			PC.currentEditedItem = this.model;
 
 			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},
