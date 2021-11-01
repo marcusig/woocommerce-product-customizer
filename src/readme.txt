@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.17
+Stable tag: 1.2.18
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.18 - 01/Oct/2021 =
+
+* FEATURE: Possibility to display the thumbnail of the selected item instead of the layer icon
 * TWEAK: Possibility to close the layers on desktop as well as mobile
 * TWEAK: Added filter mkl_pc_do_not_override_images - Filters whether or not to override the images using the ID and the image size specified in the settings. Returning True will use the URL saved in the database, allowing for example to bulk edit URLs without worrying about the attachment ID. 
 * TWEAK: Improve TranslatePress compatibility
@@ -293,7 +296,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.17 fixes a couple of small issues
-
-
+* 1.2.18 The main additions are the **possibility to display the thumbnail of the selected item instead of the layer icon** and **possibility to close the layers on desktop as well as mobile**. 
 
