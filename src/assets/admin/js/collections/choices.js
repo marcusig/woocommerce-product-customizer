@@ -43,7 +43,7 @@ PC.choices = Backbone.Collection.extend({
 			choice.set( 'active', true );
 		} else if ( 'multiple' === this.layer_type ) {
 			// Multiple choice: toggle the current state
-			if ( ! is_active ) {
+			if ( ! is_active && ( activate || 'undefined' == typeof activate ) ) {
 				if ( wp.hooks.applyFilters( 'PC.choices.canSelectChoice', true, choice, this ) ) {
 					choice.set( 'active', true );
 				} else {

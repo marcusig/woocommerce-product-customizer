@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FIX: Fix multiple choice and conditional logic compatibility
+
 = 1.2.18 - 01/Oct/2021 =
 
 * FEATURE: Possibility to display the thumbnail of the selected item instead of the layer icon
