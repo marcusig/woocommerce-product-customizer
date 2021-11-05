@@ -508,7 +508,7 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:94, src/inc/admin/settings/layer.php:117
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:100, src/inc/admin/settings/layer.php:117
 msgid "CSS Class"
 msgstr ""
 
@@ -537,18 +537,22 @@ msgid "Any content / HTML entered here will be added in the configurator viewer.
 msgstr ""
 
 #: src/inc/admin/settings/choice.php:68
+msgid "Set as default choice"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:74
 msgid "Extra price"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:72
+#: src/inc/admin/settings/choice.php:78
 msgid "Extra Price is available as an addon"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:79, src/inc/admin/settings/layer.php:105
+#: src/inc/admin/settings/choice.php:85, src/inc/admin/settings/layer.php:105
 msgid "Automatic angle switch"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:89
+#: src/inc/admin/settings/choice.php:95
 msgid "Switch to"
 msgstr ""
 
@@ -593,7 +597,7 @@ msgid "Default selection"
 msgstr ""
 
 #: src/inc/admin/settings/layer.php:86
-msgid "Select the first choice by default"
+msgid "Select the first choice by default, or the one set to default"
 msgstr ""
 
 #: src/inc/admin/settings/layer.php:90

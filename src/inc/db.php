@@ -481,6 +481,10 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				'is_default' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'update' => [ 
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_attr',
