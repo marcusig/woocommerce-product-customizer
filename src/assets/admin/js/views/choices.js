@@ -235,7 +235,7 @@ PC.views = PC.views || {};
 		initialize: function( options ) {
 			this.admin = PC.app.get_admin(); 
 			this.angles = this.admin.angles; 
-
+			this.layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
 			this.listenTo(this.model, 'destroy', this.remove);
 			this.listenTo(this.model, 'change:is_group', this.render);
 			
@@ -257,14 +257,14 @@ PC.views = PC.views || {};
 			'click .mkl-pc--action': 'trigger_custom_action',
 		},
 		render: function() {
-			var args,
-			    layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
+			var args;
+			    
 
-			if ( layer ) {
+			if ( this.layer ) {
 				args = { 
-					not_a_choice: layer.get( 'not_a_choice' ),
-					layer_type: layer.get( 'type' ),
-					layer: layer.attributes,
+					not_a_choice: this.layer.get( 'not_a_choice' ),
+					layer_type: this.layer.get( 'type' ),
+					layer: this.layer.attributes,
 				};
 			} else {
 				args = {};
@@ -297,6 +297,11 @@ PC.views = PC.views || {};
 			if( event.type == 'click' ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
+
+				// Reset is_default in the other choices
+				if ( 'is_default' == setting && new_val && 'simple' == this.layer.get( 'type' ) ) {
+					this.model.collection.invoke( 'set', { is_default: false } );
+				}
 			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();
