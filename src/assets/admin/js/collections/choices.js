@@ -27,7 +27,19 @@ PC.choices = Backbone.Collection.extend({
 	resetChoice: function() {
 		this.deactivateAll();
 		if ( ! this.layer_type || 'simple' === this.layer_type ) {
-			this.first().set( 'active', true );
+			if ( ! this.layer.get( 'default_selection' ) || 'select_first' == this.layer.get( 'default_selection' ) ) {
+				var default_selection = this.findWhere( { is_default: true } );
+				if ( default_selection ) { 
+					default_selection.set( 'active', true );
+				} else {
+					this.first().set( 'active', true );
+				}
+			}
+		} else if ( 'multiple' === this.layer_type ) {
+			var default_selection = this.where( { is_default: true } );
+			_.each( default_selection, function( item ) {
+				item.set( 'active', true );
+			} );
 		}
 	},
 	selectChoice: function ( choice_id, activate ) {

@@ -136,6 +136,9 @@ Backbone.Model.prototype.toJSON = function() {
 				});
 			} );
 
+			// Reset config
+			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
+
 			if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
 				PC.fe.setConfig( PC_config.config.load_config_content );
 			}

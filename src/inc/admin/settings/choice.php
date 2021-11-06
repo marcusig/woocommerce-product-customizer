@@ -64,6 +64,12 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'help' => __( 'Any content / HTML entered here will be added in the configurator viewer.', 'product-configurator-for-woocommerce' ),
 					'classes' => 'code',
 				),
+				'is_default' => array(
+					'label' => __('Set as default choice', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 20,
+					'condition' => '!data.not_a_choice && !data.is_group'
+				),				
 				'extra_price' => array(
 					'label' => __('Extra price', 'product-configurator-for-woocommerce' ),
 					'type' => 'number',

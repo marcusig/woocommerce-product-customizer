@@ -83,7 +83,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'condition' => '!data.not_a_choice && "simple" == data.type',
 					'choices' => [
 						[
-							'label' => __( 'Select the first choice by default', 'product-configurator-for-woocommerce' ),
+							'label' => __( 'Select the first choice by default, or the one set to default', 'product-configurator-for-woocommerce' ),
 							'value' => 'select_first'
 						],
 						[

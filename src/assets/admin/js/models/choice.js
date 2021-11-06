@@ -32,7 +32,7 @@ PC.choice = Backbone.Model.extend({
 			default:
 				this.set( 'available', true);
 				break;
-			}
+		}
 
 		if ( 'undefined' != attributes.is_group && 1 == parseInt( attributes.is_group ) ) {
 			this.set( 'available', false);
