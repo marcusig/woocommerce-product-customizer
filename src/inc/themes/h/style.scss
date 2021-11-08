@@ -402,6 +402,9 @@ $inner_space: 1em;
 
 			position: absolute;
 			bottom: 0;
+			@media (min-width: $small_screen_width) {
+				bottom: var(--toolbar_height);
+			}
 			left: 0;
 			@media (max-width: $small_screen_width) {
 				height: $footer_height;
@@ -411,7 +414,7 @@ $inner_space: 1em;
 			background: transparent;
 			z-index: 2;
 
-			display: none;
+			// display: none;
 			justify-content: space-between;
 			align-items: center;
 			box-sizing: border-box;
@@ -432,6 +435,19 @@ $inner_space: 1em;
 				left: 0;
 				&::after {
 					left: 40px;
+				}
+			}
+
+			button.reset-configuration {
+				margin: 0;
+				padding: 0;
+				background: transparent;
+				color: inherit;
+				appearance: none;
+				box-shadow: none;
+				border:  none;
+				&:hover, &:focus {
+					opacity: .5;
 				}
 			}
 

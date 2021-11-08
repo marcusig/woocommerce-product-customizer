@@ -1020,6 +1020,19 @@ $inner_space: 1em;
 			justify-content: space-between;
 			align-items: center;
 			box-sizing: border-box;
+			
+			button.reset-configuration {
+				margin: 0;
+				padding: 0;
+				background: transparent;
+				color: inherit;
+				appearance: none;
+				box-shadow: none;
+				border:  none;
+				&:hover, &:focus {
+					opacity: .5;
+				}
+			}
 
 			h3.product-name {
 				line-height: 1;

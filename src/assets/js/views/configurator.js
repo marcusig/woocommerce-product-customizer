@@ -163,6 +163,7 @@ PC.options = PC.options || {};
 
 		events: {
 			'click .close-mkl-pc': 'close_configurator',
+			'click .reset-configuration': 'reset_configurator',
 		},
 
 		render: function() {
@@ -180,6 +181,10 @@ PC.options = PC.options || {};
 
 		close_configurator: function( event ) {
 			this.parent.close(); 
+		},
+
+		reset_configurator: function( event ) {
+			PC.fe.contents.content.resetConfig()
 		},
 
 		get_price: function() {
