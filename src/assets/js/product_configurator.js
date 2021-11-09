@@ -127,12 +127,12 @@ Backbone.Model.prototype.toJSON = function() {
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ){
 
-			$('form.cart').find('button').prop( 'disabled', false ); 
+			$( 'form.cart' ).find('button').prop( 'disabled', false ); 
 
-			$( 'input[name=quantity]' ).on( 'change',function(e) {
+			$( 'document' ).on( 'change', 'form.cart input[name=quantity]', function(e) {
 				var q = $(this).val();
-				$( 'input[name=quantity]' ).each(function(index, el) {
-					$(el).val(q);
+				$( 'form.cart input[name=quantity]' ).each( function( index, el ) {
+					$( el ).val( q );
 				});
 			} );
 
