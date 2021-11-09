@@ -32,11 +32,12 @@ PC.choices = Backbone.Collection.extend({
 				if ( default_selection ) { 
 					default_selection.set( 'active', true );
 				} else {
-					this.first().set( 'active', true );
+					var first_available_choice = this.findWhere( { available: true } );
+					if ( first_available_choice ) first_available_choice.set( 'active', true );
 				}
 			}
 		} else if ( 'multiple' === this.layer_type ) {
-			var default_selection = this.where( { is_default: true } );
+			var default_selection = this.where( { is_default: true, available: true } );
 			_.each( default_selection, function( item ) {
 				item.set( 'active', true );
 			} );
