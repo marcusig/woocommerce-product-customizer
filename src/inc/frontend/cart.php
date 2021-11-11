@@ -34,7 +34,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
 						$data = Plugin::instance()->db->sanitize( $data );
 						$layers = array();
-						if( is_array( $data ) ) { 
+						if ( is_array( $data ) ) { 
 							foreach( $data as $layer_data ) {
 								$layers[] = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
 							}
