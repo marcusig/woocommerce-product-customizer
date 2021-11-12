@@ -28,12 +28,18 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				
 				if ( is_array( $configurator_data ) ) {
 					$order_meta_for_configuration = [];
+					$compound_sku = 'compound' == mkl_pc( 'settings')->get( 'sku_mode' ) && wc_product_sku_enabled();
+					$sku = [];
+	
 					// stores each couple layer name + choice as a order_item_meta, for automatic extraction
 					foreach ( $configurator_data as $layer ) {
 						if ( is_object($layer) ) {
 							if ( $layer->is_choice() ) :
 								$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values );
 								$order_meta_for_configuration[] = $choice_meta;
+								if ( $compound_sku && $layer->get_choice( 'sku' ) ) {
+									$sku[] = $layer->get_choice( 'sku' );
+								}								
 								do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $item, $order );
 							?>
 							<?php
@@ -41,6 +47,13 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 						} 
 					}
 
+					if ( $compound_sku && count( $sku ) ) {
+						$item->add_meta_data( 
+							mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
+							implode( mkl_pc( 'settings')->get( 'sku_glue', '' ), $sku )
+						);
+					}
+	
 					if ( ! empty( $order_meta_for_configuration ) ) {
 						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', __( 'Configuration', 'product-configurator-for-woocommerce' ), $item, $cart_item_key, $values, $order ), $this->get_choices_html( $order_meta_for_configuration ), false );
 					}

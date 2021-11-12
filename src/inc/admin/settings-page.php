@@ -469,6 +469,57 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'sku_mode',
+				__( 'SKU mode', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => [
+						'individual' => __( 'Each choice can have its own SKU', 'product-configurator-for-woocommerce' ),
+						'compound' => __( 'Generate a single SKU by compounding the SKU set in each selected choice', 'product-configurator-for-woocommerce' ),
+					],
+					'default' => 'individual',
+					'setting_name' => 'sku_mode'
+				]
+			);
+
+			add_settings_field(
+				'sku_glue', 
+				__( 'SKU devider (character used between the parts when compounding the SKU)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'sku_glue',
+					'placeholder' => 'Default to nothing'
+				]
+			);
+
+			add_settings_field(
+				'sku_label', 
+				__( 'SKU label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'sku_label',
+					'placeholder' => 'Eg. SKU, Reference... (Default: SKU)'
+				]
+			);
+
+			add_settings_field(
+				'show_sku_in_cart',
+				__( 'Show SKU in the cart and checkout', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_sku_in_cart',
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 

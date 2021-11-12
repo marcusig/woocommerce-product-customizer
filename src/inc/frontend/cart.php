@@ -53,6 +53,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				$configurator_data = $cart_item['configurator_data'];
 				$choices = array(); 
+				$compound_sku = 'compound' == mkl_pc( 'settings')->get( 'sku_mode' ) && wc_product_sku_enabled() && mkl_pc( 'settings')->get( 'show_sku_in_cart' );
+				$sku = [];
+
 				foreach ($configurator_data as $layer) {
 					if ( $layer->is_choice() ) { 
 						$choice_images = $layer->get_choice( 'images' );
@@ -63,14 +66,25 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'] );
 						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
 						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => $choice_image . $item_data['value'] ], $layer, $cart_item );
+
+						if ( $compound_sku && $layer->get_choice( 'sku' ) ) {
+							$sku[] = $layer->get_choice( 'sku' );
+						}
 						//apply_filters( 'mkl_pc_cart_get_item_data_choice_name', $choice_image . ' ' . $layer->get_choice( 'name' ), $layer ); 
 					}
 				}
+
+				if ( $compound_sku && count( $sku ) ) {
+					$data[] = array(
+						'key' => mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
+						'value' => implode( mkl_pc( 'settings')->get( 'sku_glue', '' ), $sku )
+					);
+				}
+
 				$data[] = array( 
 					'key' => __( 'Configuration', 'product-configurator-for-woocommerce' ),
 					'value' => $this->get_choices_html( $choices ),
-				);
-				
+				);				
 
 			}
 

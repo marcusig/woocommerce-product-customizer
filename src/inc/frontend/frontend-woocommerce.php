@@ -46,6 +46,9 @@ class Frontend_Woocommerce {
 		add_shortcode( 'mkl_configurator', array( $this, 'configurator_shortcode' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_route' ) );
 		add_filter( 'mkl_product_configurator_get_front_end_data', array( $this, 'set_thumbnail_url' ), 20 );
+
+		add_filter( 'mkl_pc_order_item_meta', array($this, 'add_sku_to_meta' ), 20, 5 );
+		add_filter( 'mkl_pc_item_meta', array($this, 'add_sku_to_meta' ), 20, 5 );
 	}
 
 	public function register_rest_route() {
@@ -286,6 +289,7 @@ class Frontend_Woocommerce {
 				'show_layer_description' => mkl_pc( 'settings')->get( 'show_layer_description' ),
 				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
+				'sku_mode' => mkl_pc( 'settings')->get( 'sku_mode', 'individual' ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
@@ -385,4 +389,13 @@ class Frontend_Woocommerce {
 		}
 		return $data;
 	}
+
+	public function add_sku_to_meta( $meta, $layer, $product ) {
+		$sku_mode = mkl_pc( 'settings')->get( 'sku_mode', 'individual' );
+		if ( 'individual' == $sku_mode && $layer->get_choice( 'sku' ) ) {
+			$meta[ 'value' ] .= '<span class="sku">' . $layer->get_choice( 'sku' ) . '</span>';
+		}
+		return $meta;
+	}
+
 }
