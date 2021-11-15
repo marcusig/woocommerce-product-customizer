@@ -370,7 +370,7 @@ TODO:
 			// Duplicate the layer
 			var cl = this.model.clone();
 			cl.set( 'name', cl.get( 'name' ) + ' (Copy)' );
-			var new_layer = this.model.collection.create( this.model.collection.create_layer( cl.attributes ) );
+			var new_layer = this.model.collection.create( this.model.collection.create_layer( cl.toJSON() ) );
 			if ( cl.get( 'admin_label' ) ) {
 				new_layer.set( 'admin_label', cl.get( 'admin_label' ) + ' (Copy)' );
 			}
