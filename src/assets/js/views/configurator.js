@@ -997,11 +997,13 @@ PC.options = PC.options || {};
 			var require_error = false;
 			var choices = PC.fe.getLayerContent( model.id );
 			if ( ! choices ) return;
+			// Check if the layer is hidden:
 			if ( false === model.get( 'cshow' ) ) return;
 			var first_choice = choices.first().id;
-			var angle_id = PC.fe.angles.first().id; 
+			var angle_id = PC.fe.angles.first().id;
 			if ( ! model.attributes.not_a_choice ) {
-				if( choices.length > 1 || 'multiple' == type ) {
+				// Simple with at least 2 items, and multiple choices
+				if ( choices.length > 1 || 'multiple' == type ) {
 
 					var selected_choices = choices.where( { 'active': true } );
 
@@ -1011,6 +1013,7 @@ PC.options = PC.options || {};
 
 					_.each( selected_choices, function( choice ) {
 						if ( false === choice.get( 'cshow' ) ) return;
+						if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.parent_is_hidden && PC.conditionalLogic.parent_is_hidden( choice ) ) return;
 						// Check for a required item
 						if ( 
 							'select_first' == default_selection
@@ -1045,9 +1048,11 @@ PC.options = PC.options || {};
 					}, this );
 
 				} else {
+					// Only one choice
 					var choice = choices.first();
 					var is_active = choice.get( 'active' );
 					if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) ) ) {
+						if ( false === choice.get( 'cshow' ) ) return;
 						var img_id = choice.get_image('image', 'id'); 
 						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
 							wp.hooks.applyFilters(
@@ -1095,6 +1100,7 @@ PC.options = PC.options || {};
 			}
 
 			wp.hooks.doAction( 'PC.fe.save_data.parse_choices.after', model, this );
-		},
+		}
+
 	};
 })(jQuery);
