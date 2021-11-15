@@ -142,7 +142,7 @@ Backbone.Model.prototype.toJSON = function() {
 			if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
 				PC.fe.setConfig( PC_config.config.load_config_content );
 			}
-		});
+		}, 20 );
 
 		/**
 		 * Launch the configurator inline
