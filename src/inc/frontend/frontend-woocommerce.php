@@ -224,10 +224,10 @@ class Frontend_Woocommerce {
 			array('backbone/collections/choices', 'collections/choices.js'),
 
 		);
-		foreach($scripts as $script) {
+		foreach( $scripts as $script ) {
 			list( $key, $file ) = $script;
-			if (!defined('SCRIPT_DEBUG') || !SCRIPT_DEBUG) {
-				$file = str_replace('.js', '.min.js', $file);
+			if ( ! defined( 'SCRIPT_DEBUG' ) || !SCRIPT_DEBUG ) {
+				$file = str_replace( '.js', '.min.js', $file );
 			}
 			wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone', 'accounting', 'wp-hooks' ), MKL_PC_VERSION, true );
 		}
@@ -244,6 +244,12 @@ class Frontend_Woocommerce {
 		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
 			$deps[] = 'mkl_pc/js/vendor/tippy';
 		}
+
+		// Porto compatibility
+		if ( defined( 'PORTO_VERSION' ) ) {
+			$deps[] = 'porto-woocommerce-theme';
+		}
+
 		$deps = apply_filters( 'mkl_pc/js/product_configurator/dependencies', $deps );
 		$configurator_deps = apply_filters( 'mkl_pc/js/configurator/dependencies', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ) );
 

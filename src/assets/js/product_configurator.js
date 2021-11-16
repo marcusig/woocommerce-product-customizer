@@ -129,7 +129,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 			$( 'form.cart' ).find('button').prop( 'disabled', false ); 
 
-			$( 'document' ).on( 'change', 'form.cart input[name=quantity]', function(e) {
+			$( document ).on( 'change', 'form.cart input[name=quantity]', function(e) {
 				var q = $(this).val();
 				$( 'form.cart input[name=quantity]' ).each( function( index, el ) {
 					$( el ).val( q );

@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Add compatibility with Porto's quantity input
 * FEATURE: Possibility to select any choice by default
 * FIX: Conditional logic compatibility: ignore selected items if they are in a hidden group when adding them to the cart
 * FIX: Fix multiple choice and conditional logic compatibility
