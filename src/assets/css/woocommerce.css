@@ -27,13 +27,22 @@
 .woocommerce td.product-name dl.variation dd.variation-Configuration div strong,
 .wc-item-meta .order-configuration-details strong {
     display: inline-block;
-    width: 110px;
-    text-align: right;
 }
 
 .woocommerce td.product-name dl.variation dd.variation-Configuration div strong:empty + span.semicol,
 .wc-item-meta .order-configuration-details strong:empty + span.semicol {
     opacity: 0;
+}
+
+.woocommerce td.product-name dl.variation dd.variation-Configuration span.sku,
+.order-configuration-details span.sku {
+    font-size: .8em;
+    text-transform: uppercase;
+    display: inline-block;
+    background: #00000014;
+    margin-left: 5px;
+    padding: 3px;
+    line-height: 1;
 }
 
 .wc-item-meta .order-configuration-details div {
