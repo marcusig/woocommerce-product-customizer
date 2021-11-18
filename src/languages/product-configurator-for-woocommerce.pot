@@ -284,7 +284,7 @@ msgstr ""
 msgid "Default:"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:180, src/inc/frontend/frontend-woocommerce.php:121, src/inc/frontend/frontend-woocommerce.php:163, src/inc/frontend/product.php:82
+#: src/inc/admin/settings-page.php:180, src/inc/frontend/frontend-woocommerce.php:124, src/inc/frontend/frontend-woocommerce.php:166, src/inc/frontend/product.php:82
 msgid "Configure"
 msgstr ""
 
@@ -432,35 +432,59 @@ msgstr ""
 msgid "Disable caching of configurations"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:487
+#: src/inc/admin/settings-page.php:474
+msgid "SKU mode"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:480
+msgid "Each choice can have its own SKU"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:481
+msgid "Generate a single SKU by compounding the SKU set in each selected choice"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:490
+msgid "SKU devider (character used between the parts when compounding the SKU)"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:502
+msgid "SKU label"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:514
+msgid "Show SKU in the cart and checkout"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:538
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:583
+#: src/inc/admin/settings-page.php:634
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:584
+#: src/inc/admin/settings-page.php:635
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:644, src/inc/admin/settings-page.php:680
+#: src/inc/admin/settings-page.php:695, src/inc/admin/settings-page.php:731
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:646, src/inc/admin/settings-page.php:682
+#: src/inc/admin/settings-page.php:697, src/inc/admin/settings-page.php:733
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:656
+#: src/inc/admin/settings-page.php:707
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:657
+#: src/inc/admin/settings-page.php:708
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:666
+#: src/inc/admin/settings-page.php:717
 msgid "Select the theme"
 msgstr ""
 
@@ -476,23 +500,27 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:70, src/inc/frontend/order.php:45
+#: src/inc/frontend/cart.php:79, src/inc/frontend/order.php:52, src/inc/admin/settings/choice.php:39
+msgid "SKU"
+msgstr ""
+
+#: src/inc/frontend/cart.php:85, src/inc/frontend/order.php:58
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:105, src/inc/frontend/frontend-woocommerce.php:148
+#: src/inc/frontend/frontend-woocommerce.php:108, src/inc/frontend/frontend-woocommerce.php:151
 msgid "A product id must be set in order for this shortcode to work."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:115, src/inc/frontend/frontend-woocommerce.php:157
+#: src/inc/frontend/frontend-woocommerce.php:118, src/inc/frontend/frontend-woocommerce.php:160
 msgid "The provided ID is not a valid product."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:165
+#: src/inc/frontend/frontend-woocommerce.php:168
 msgid "Loading the configurator..."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:268
+#: src/inc/frontend/frontend-woocommerce.php:281
 msgid "%s is required"
 msgstr ""
 
@@ -514,10 +542,6 @@ msgstr ""
 
 #: src/inc/admin/settings/choice.php:33
 msgid "Use as group"
-msgstr ""
-
-#: src/inc/admin/settings/choice.php:39
-msgid "SKU"
 msgstr ""
 
 #: src/inc/admin/settings/choice.php:44
