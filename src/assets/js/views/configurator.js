@@ -168,7 +168,7 @@ PC.options = PC.options || {};
 		render: function() {
 			this.$el.append( this.template( {
 				name: PC.fe.currentProductData.product_info.title,
-				show_form: parseInt( PC.fe.currentProductData.product_info.show_form ) || ! $( 'form.cart' ).length,
+				show_form: parseInt( PC.fe.config.show_form ) || ! $( 'form.cart' ).length,
 				is_in_stock: parseInt( PC.fe.currentProductData.product_info.is_in_stock ),
 				product_id: parseInt( PC.fe.active_product ),
 				show_qty: parseInt( PC.fe.currentProductData.product_info.show_qty ),
@@ -239,6 +239,8 @@ PC.options = PC.options || {};
 
 			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
 				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
+			} else if ( $cart.find( 'button[name=add-to-cart]' ).length ) {
+				$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
 			} else {
 				$cart.trigger( 'submit' );
 			}

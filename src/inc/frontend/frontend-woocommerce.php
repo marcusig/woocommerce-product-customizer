@@ -190,8 +190,12 @@ class Frontend_Woocommerce {
 	}
 
 	public function load_scripts() {
-		global $post, $wp_version; 
-
+		global $post, $wp_version, $product;
+		if ( $product ) {
+			$g_product = $product;
+		} else {
+			$g_product = false;
+		}
 		
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
@@ -211,9 +215,9 @@ class Frontend_Woocommerce {
 		}
 
 		// Exit if the plugin is not configurable
-		$product = wc_get_product( $post->ID );
-		if ( $product ) {
-			$date_modified = $product->get_date_modified();
+		$prod = wc_get_product( $post->ID );
+		if ( $prod ) {
+			$date_modified = $prod->get_date_modified();
 		} else {
 			$date_modified = false;
 		}
@@ -290,6 +294,7 @@ class Frontend_Woocommerce {
 				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
 				'sku_mode' => mkl_pc( 'settings')->get( 'sku_mode', 'individual' ),
+				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post->ID ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
@@ -308,7 +313,7 @@ class Frontend_Woocommerce {
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
 		// $version = $product
-		if ( $product ) {
+		if ( $prod ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 		}
 
