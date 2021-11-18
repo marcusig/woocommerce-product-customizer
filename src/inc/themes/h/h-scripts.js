@@ -23,7 +23,7 @@
 
 		view.$( '.layers' ).wrap( '<div class="layers-wrapper"></div>' );
 		view.$el.addClass( pc_h_config.color_mode );
-		// view.$el.addClass( 'no-cart-modal' );
+		view.$el.addClass( 'h' );
 
 	}, 20 ); 
 

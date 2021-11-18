@@ -8,7 +8,7 @@ function mkl_pc_float_theme_scripts() {
 			// duplicate the form to have a different one on mobile or desktop views
 			var clone = view.footer.form.\$el.clone().appendTo( view.toolbar.\$el );
 			view.footer.form_2 = new PC.fe.views.form( { el: clone } );
-
+			view.\$el.addClass( 'float' );
 			view.\$el.on( 'click', '.mkl-pc-show-form', function(e) {
 				view.\$el.toggleClass( 'mobile-show-form' );
 			} );

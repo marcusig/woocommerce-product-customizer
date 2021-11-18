@@ -471,6 +471,7 @@ PC.options = PC.options || {};
 		},
 		render: function() {
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 
+			this.$el.addClass( this.model.get( 'type' ) );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 

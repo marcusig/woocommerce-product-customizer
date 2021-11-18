@@ -250,11 +250,7 @@ $inner_space: 1em;
 			}
 
 
-			p {
-				margin-bottom: .5em;
-				text-align: right;
-				width: 100%;
-			}
+			
 			.pc-total-price {
 				width: 100%;
 				text-align: right;
@@ -407,8 +403,9 @@ $inner_space: 1em;
 			position: absolute;
 			bottom: 0;
 			left: 0;
-			height: $footer_height;
-			z-index: 2; 
+			@media (max-width: $small_screen_width) {
+				height: $footer_height;
+			}
 			padding: $inner_space; 
 			
 			background: transparent;
@@ -554,8 +551,10 @@ $inner_space: 1em;
 		margin-right: -1em;
 	}
 	
-	a.save-your-design svg {
-		transform: translateY(20px);
+	@media (max-width: $small_screen_width) {		
+		a.save-your-design svg {
+			transform: translateY(20px);
+		}
 	}
 	
 	.close-mkl-pc {
