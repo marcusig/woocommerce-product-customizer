@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.18
+Stable tag: 1.2.19
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,10 +111,14 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Add compatibility with Porto's quantity input
+= 1.2.19 - 18/Nov/2021 =
+
 * FEATURE: Possibility to select any choice by default
+* FEATURE: Added 2 SKU modes: individual (one SKU per selected choice) and compound (One SKU made of all the choices)
+* TWEAK: Add compatibility with Porto's quantity input
 * FIX: Conditional logic compatibility: ignore selected items if they are in a hidden group when adding them to the cart
 * FIX: Fix multiple choice and conditional logic compatibility
+* FIX: Add to cart issue on some themes missing the class 'single_add_to_cart_button'
 
 = 1.2.18 - 01/Oct/2021 =
 
@@ -301,5 +305,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.18 The main additions are the **possibility to display the thumbnail of the selected item instead of the layer icon** and **possibility to close the layers on desktop as well as mobile**. 
-
+* 1.2.19 The main additions are the **Possibility to select any choice by default**, and the **handling of SKUs** as well as several bug fixes. 
