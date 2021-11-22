@@ -728,27 +728,27 @@ msgstr ""
 msgid "Loading Data"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:28
+#: src/inc/themes/dark-mode/theme.php:31
 msgid "Dark gray (Layers background)"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:32
+#: src/inc/themes/dark-mode/theme.php:35
 msgid "Darker gray (Preview background, borders)"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:36
+#: src/inc/themes/dark-mode/theme.php:39
 msgid "Light gray 1"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:40
+#: src/inc/themes/dark-mode/theme.php:43
 msgid "Light gray 2"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:44
+#: src/inc/themes/dark-mode/theme.php:47
 msgid "Medium gray 3"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:48
+#: src/inc/themes/dark-mode/theme.php:51
 msgid "Medium gray 4"
 msgstr ""
 

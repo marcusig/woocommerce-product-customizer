@@ -86,9 +86,9 @@ Backbone.Model.prototype.toJSON = function() {
 			// Open configurator
 			try {
 				PC.fe.open( product_id ); 
-			} catch (err) {
-				console.error('we had an error: ', err);
-				PC.fe.close();
+			} catch ( err ) {
+				console.error( 'we had an error: ', err );
+				// PC.fe.close();
 			}
 		}
 
