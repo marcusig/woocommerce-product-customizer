@@ -72,6 +72,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
 				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),
+				'tools' => __( 'Tools', 'product-configurator-for-woocommerce' ),
 			], $active );
 			?>
 			<div class="wrap">
@@ -124,8 +125,15 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 						?>
 					</form>
+				</div>
+				<div class="mkl-settings-content" data-content="addons">
+					<h2><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></h2>
+					<?php $this->display_addons(); ?>
+				</div>
+				<div class="mkl-settings-content" data-content="tools">
+					<h2><?php _e( 'Tools', 'product-configurator-for-woocommerce' ); ?></h2>
 					<hr>
-					<h2><?php _e( 'Configuration cache', 'product-configurator-for-woocommerce' ); ?></h2>
+					<h3><?php _e( 'Configuration cache', 'product-configurator-for-woocommerce' ); ?></h3>
 					<p>
 						<?php _e( 'The product configurations are cached on the disk for better performance.', 'product-configurator-for-woocommerce' ); ?>
 						<br><?php _e( 'The cache is refreshed every time you save the product or the configuration.', 'product-configurator-for-woocommerce' ); ?>
@@ -133,10 +141,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<br><em><?php _e( '(The cache will be rebuilt the next time the file is requested)', 'product-configurator-for-woocommerce' ); ?></em>
 					</p>
 					<button type="button" class="button mkl-settings-purge-config-cache"><?php _e( 'Purge configuration cache', 'product-configurator-for-woocommerce' ); ?></button>
-				</div>
-				<div class="mkl-settings-content" data-content="addons">
-					<h2><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></h2>
-					<?php $this->display_addons(); ?>
+
+					<h3><?php _e( 'Fix images', 'product-configurator-for-woocommerce' ); ?></h3>
+					<div class="configurable-products-list">
+						<p>
+							<?php _e( 'If you imported a configurable product and the images do not match, you can try fixing the relationships with this tool.', 'product-configurator-for-woocommerce' ); ?>
+						</p>
+						<p>
+							<select id="configurable-products" style="width: 300px;"></select>
+						</p>
+						<button type="button" class="button mkl-settings-scan-images"><?php _e( 'Scan images', 'product-configurator-for-woocommerce' ); ?></button>
+					</div>					
 				</div>
 
 				<?php do_action( 'mkl_pc_settings_content_after', $active ); ?>
@@ -751,8 +766,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		public function scripts() {
 			$screen = get_current_screen();
 			if ( 'settings_page_mkl_pc_settings' == $screen->id ) {
-				wp_enqueue_style( 'mlk_pc/settings', MKL_PC_ASSETS_URL.'admin/css/settings.css' , false, MKL_PC_VERSION );
-				wp_enqueue_script( 'mk_pc/settings', MKL_PC_ASSETS_URL.'admin/js/settings.js', array( 'jquery', 'backbone', 'wp-util' ), MKL_PC_VERSION, true );
+				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
+				wp_enqueue_style( 'mlk_pc/settings', MKL_PC_ASSETS_URL.'admin/css/settings.css' , [ 'woocommerce_admin_styles' ], MKL_PC_VERSION );
+				wp_enqueue_script( 'mk_pc/settings', MKL_PC_ASSETS_URL.'admin/js/settings.js', array( 'jquery', 'backbone', 'wp-util', 'select2', 'selectWoo', 'wc-enhanced-select' ), MKL_PC_VERSION, true );
 			}
 		}
 	}

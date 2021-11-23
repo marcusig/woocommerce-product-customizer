@@ -35,6 +35,8 @@ class Ajax {
 		add_action( 'wp_ajax_mkl_pc_purge_config_cache', array( $this, 'purge_config_cache' ) );
 		add_action( 'wp_ajax_nopriv_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 		add_action( 'wp_ajax_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
+		add_action( 'wp_ajax_mkl_pc_fix_image_ids', array( $this, 'fix_image_ids' ) );
+		add_action( 'wp_ajax_mkl_pc_get_configurable_products', array( $this, 'get_configurable_products' ) );
 	}
 
 	/**
@@ -199,8 +201,18 @@ class Ajax {
 	 * Purge the configurations cache
 	 */
 	public function purge_config_cache() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
 		Plugin::instance()->cache->purge();
 		wp_send_json_success();
+	}
+
+	/**
+	 * Fix image ids after a transfer
+	 */
+	public function fix_image_ids() {
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
+		if ( ! $id = absint( $_REQUEST['id'] ) ) wp_send_json_error();
+		wp_send_json_success( [ 'changed_items' => $this->db->scan_product_images( $id ) ] );
 	}
 
 	public function generate_config_image() {
@@ -256,5 +268,34 @@ class Ajax {
 	private function gzip_accepted() {
 		$headers = $this->get_http_headers();
 		return isset($headers['Accept-Encoding']) && preg_match('/gzip/i', $headers['Accept-Encoding']) && false === strpos( $_SERVER['SERVER_SOFTWARE'], 'LiteSpeed' );
+	}
+
+	public function get_configurable_products() {
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
+		if ( $data = get_transient( 'mkl_get_configurable_products' ) ) wp_send_json_success( $data );
+		$args = array(
+			'meta_query' => array(
+				array(
+					'key' => MKL_PC_PREFIX.'_is_configurable',
+					'value' => 'yes',
+					'compare' => '=',
+				)
+			)
+		 );
+		 
+		$products = wc_get_products( $args );
+		if ( $products ) {
+			$data = [];
+			foreach( $products as $product ) {
+				$data[] = [
+					'id' => $product->get_id(),
+					'name' => $product->get_name(),
+				];
+			}
+		}
+
+		// Cache the data for 5 min
+		set_transient( 'mkl_get_configurable_products', $data, 300 );
+		wp_send_json_success( $data );
 	}
 }

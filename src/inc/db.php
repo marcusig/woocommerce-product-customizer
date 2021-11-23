@@ -22,6 +22,7 @@ class DB {
 	 */
 	private $menu = array();
 	private $layers = array();
+	private $changed_items = 0;
 
 	/**
 	 * Initialize the class
@@ -565,6 +566,113 @@ class DB {
 
 	public function escape_custom_html_description( $html ) {
 		return $this->sanitize_custom_html_description( stripslashes( $html ) );
+	}
+
+	/**
+	 * Scan and fix images
+	 */
+	public function scan_product_images( $product_id ) {
+		$content = $this->get( 'content', $product_id );
+		if ( is_array( $content ) ) {
+			foreach( $content as $key => $item ) {
+				if ( is_array( $item[ 'choices' ] ) ) {
+					foreach( $item[ 'choices' ] as $choice_key => $choice ) {
+						if ( isset( $choice[ 'images' ] ) && is_array( $choice[ 'images' ] ) ) {
+							foreach( $choice[ 'images' ] as $ik => $image ) {								
+								if ( isset( $image[ 'image' ] ) && $image[ 'image' ]['url'] ) {
+									$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'id' ] = $this->_find_image_id( $image[ 'image' ]['url'], $image[ 'image' ]['id'] );
+								}
+								if ( isset( $image[ 'thumbnail' ] ) && $image[ 'thumbnail' ]['url'] ) { 
+									$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'thumbnail' ][ 'id' ] = $this->_find_image_id( $image[ 'thumbnail' ]['url'], $image[ 'thumbnail' ]['id'] );
+								}
+							}
+							
+						}
+					}
+				}
+			}
+		}
+		$this->set( $product_id, $product_id, 'content', $content );
+
+		// Update the angles
+		$angles = $this->get( 'angles', $product_id );
+		if ( is_array( $angles ) ) {
+			foreach( $angles as $key => $angle ) {
+				if ( isset( $angle[ 'image' ] ) && $angle[ 'image' ]['url'] ) $angles[ $key ][ 'image' ][ 'id' ] = $this->_find_image_id( $angle[ 'image' ]['url'], $angle[ 'image' ]['id'] );
+			}
+		}
+		$this->set( $product_id, $product_id, 'angles', $angles );
+		
+		// Update the layers
+		$layers = $this->get( 'layers', $product_id );
+		if ( is_array( $layers ) ) {
+			foreach( $layers as $key => $layer ) {
+				if ( isset( $layer[ 'image' ] ) && $layer[ 'image' ]['url'] ) $layers[ $key ][ 'image' ][ 'id' ] = $this->_find_image_id( $layer[ 'image' ]['url'], $layer[ 'image' ]['id'] );
+			}
+		}
+		$this->set( $product_id, $product_id, 'layers', $layers );
+
+		return $this->changed_items;
+	}
+
+	/**
+	 * Find a matching ID for a specific URL
+	 *
+	 * @param [type] $url
+	 * @param [type] $original_id
+	 * @return void
+	 */
+	private function _find_image_id( $url, $original_id, $exact_match = false ) {
+		// Check if original ID matches
+		if ( wp_get_attachment_url( $original_id ) == $url ) return $original_id;
+
+		// Search for the URL
+		if ( $exact_match ) {
+			// Search for an item with the exact url (e.g. 2021/10/image.png)
+			$matching_image = attachment_url_to_postid( $url );
+		} else {
+			// Search for an item with the exact name only (e.g. /image.png)
+			$matching_image = $this->_attachment_filename_to_postid( $url );
+		}
+		if ( $matching_image ) {
+			$this->changed_items++;
+			return $matching_image;
+		}
+		return $original_id;
+	}
+
+	/**
+	 * Similar to attachment_url_to_postid, but using the file name only, ignoring the folder structure.
+	 * Useful after migrating a configuration later in time
+	 */
+	private function _attachment_filename_to_postid( $url ) {
+		global $wpdb;
+
+		$image_path = pathinfo( $url );
+	
+		// Force the protocols to match if needed.
+		if ( ! isset( $image_path['basename'] ) ) return false;
+		
+		$sql = $wpdb->prepare(
+			"SELECT post_id, meta_value FROM $wpdb->postmeta WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s",
+			'%/'.$image_path['basename']
+		);
+	
+		$results = $wpdb->get_results( $sql );
+		$post_id = null;
+	
+		if ( $results ) {
+			// Use the first available result, but prefer a case-sensitive match, if exists.
+			$post_id = reset( $results )->post_id;
+
+			if ( count( $results ) > 1 ) {
+				// Look for exact match
+				$exact_id = attachment_url_to_postid( $url );
+				if ( $exact_id ) $post_id = $exact_id;
+			}
+		}
+
+		return $post_id ? $post_id : false;
 	}
 
 	/**
