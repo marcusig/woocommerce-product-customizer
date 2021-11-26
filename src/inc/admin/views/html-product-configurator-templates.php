@@ -273,7 +273,7 @@ CONTENT TEMPLATES
 			</div>
 		</div>
 		<div class="options">
-		<h3>Informations</h3>
+			<h3>Informations</h3>
 			<?php do_action('mkl_pc_choice_fields') ?>
 			<div class="clear"></div>
 		</div>

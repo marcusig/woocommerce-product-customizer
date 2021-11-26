@@ -284,6 +284,8 @@ PC.views = PC.views || {};
 
 			this.populate_angles_list();
 
+			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
+			
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;

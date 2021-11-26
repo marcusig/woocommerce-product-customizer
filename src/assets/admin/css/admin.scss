@@ -231,7 +231,19 @@ html .media-modal.pc-modal {
 				}
 			}
 
-		}				
+			&.setting-section {
+				> h4 {
+					margin: 0;
+					margin-left: -16px;
+					margin-right: -16px;
+					margin-bottom: 10px;
+					padding: 1em;
+					border-bottom: 1px solid #CCC;
+					border-top: 1px solid #CCC;
+					background: #FFF;
+				}
+			}
+		}
 	}
 	
 	.order-toolbar {

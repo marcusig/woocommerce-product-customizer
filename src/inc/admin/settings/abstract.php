@@ -14,7 +14,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 	abstract class Abstract_Settings {
 
 		public function __construct() {
-			add_action('mkl_pc_'.$this->type.'_fields', array($this, 'output_settings'), 10);
+			add_action( 'mkl_pc_'.$this->type.'_fields', array( $this, 'output_settings' ), 10 );
 		}
 
 		/**
@@ -26,11 +26,25 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			$settings = $this->get_default_settings();
 
-			uasort($settings, array($this, 'sort_settings'));
+			uasort( $settings, array( $this, 'sort_settings' ) );
 
-			foreach($settings as $id => $options) {
-				$options['id'] = $id;
-				$this->output_setting($options);
+			foreach( $settings as $id => $options ) {
+				// Setting sections
+				if ( '_' == substr( $id, 0, 1 ) && isset( $options[ 'fields' ] ) ) {
+					echo '<div class="setting setting-section" data-section="'.$options[ 'id' ].'">';
+					echo '<h4>' . $options[ 'label' ] . '</h4>';
+					echo '<div class="section-fields">';
+					uasort( $options[ 'fields' ], array( $this, 'sort_settings' ) );
+					foreach( $options['fields'] as $_id => $item ) {
+						$item['id'] = $_id; 
+						$this->output_setting( $item );
+					}
+					echo '</div>';
+					echo '</div>';
+				} else {
+					$options['id'] = $id;
+					$this->output_setting($options);
+				}
 			}
 		}
 
