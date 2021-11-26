@@ -196,6 +196,10 @@ class Configuration {
 		return file_exists( $this->upload_dir_path .'/'. $this->get_configuration_image_name() );
 	}
 
+	public function configuration_image_exists() {
+		return file_exists( $this->upload_dir_path .'/'. $this->get_configuration_image_name() );
+	}
+
 	public function get_configuration_image_name() {
 		if ( $this->image_name != '' ) {
 			return $this->image_name;
@@ -284,7 +288,7 @@ class Configuration {
 	 */
 	public function get_image_url( $lazy = false ) {
 		
-		if ( $this->configuration_exists() ) return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
+		if ( $this->configuration_image_exists() ) return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
 	
 		$mode = mkl_pc( 'settings' )->get( 'save_images' );
 		if ( 'save_to_disk' === $mode ) {
