@@ -81,8 +81,39 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				} else {
 					$label = __( 'Configure', 'product-configurator-for-woocommerce' );
 				}
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button" data-product_id="'.get_the_id().'">'. $label .'</button>' );
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button" data-price="'.esc_attr( $this->get_product_price( get_the_id() ) ).'" data-product_id="'.get_the_id().'">'. $label .'</button>' );
 			}
+		}
+
+		public function get_product_price( $product_id ) {
+			$product = wc_get_product( $product_id ); 
+			$base_currency = get_option( 'woocommerce_currency' );
+			$price = wc_get_price_to_display( $product );
+
+			global $WOOCS;
+			if ( $WOOCS && ! isset( $_REQUEST['woocs_block_price_hook'] ) ) {
+				$_REQUEST['woocs_block_price_hook'] = 1;
+				$price = wc_get_price_to_display( $product );
+				unset( $_REQUEST['woocs_block_price_hook'] );
+			}
+
+			// Price Based on Country
+			if ( function_exists( 'wcpbc_the_zone' ) ) {
+				$zone = wcpbc_the_zone();
+				if ( is_callable( [ $zone, 'get_exchange_rate' ] ) ) {
+					$rate = $zone->get_exchange_rate();
+					$price = $price / $rate;
+				}
+			}
+			
+			// Aelia
+			$price = apply_filters( 'wc_aelia_cs_get_product_price', $price, $product_id, $base_currency );
+
+			// Woo Multi Currency
+			if ( function_exists( 'wmc_revert_price' ) ) {
+				$price = wmc_revert_price( $price );
+			}			
+			return $price;
 		}
 
 		public function add_configure_hidden_field() {

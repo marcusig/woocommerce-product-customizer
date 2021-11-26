@@ -134,7 +134,7 @@ class Frontend_Woocommerce {
 			$tag_name_close = 'button';
 		}
 
-		return '<' . $tag_name . ' class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'">'.$content.'</' . $tag_name_close . '>';
+		return '<' . $tag_name . ' class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" data-price="' . esc_attr( $this->product->get_product_price( $product_id ) ) . '" data-product_id="'.$product_id.'">'.$content.'</' . $tag_name_close . '>';
 	}
 
 	/**
@@ -165,7 +165,7 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" data-product_id="'.$product_id.'" data-loading="'.esc_attr__( 'Loading the configurator...', 'product-configurator-for-woocommerce' ).'"></div>';
+		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" data-price="' . esc_attr( $this->product->get_product_price( $product_id ) ) . '" data-product_id="'.$product_id.'" data-loading="'.esc_attr__( 'Loading the configurator...', 'product-configurator-for-woocommerce' ).'"></div>';
 	}
 
 	/**

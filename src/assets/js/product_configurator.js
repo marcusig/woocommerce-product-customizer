@@ -55,7 +55,7 @@ Backbone.Model.prototype.toJSON = function() {
 				PC.fe.lang = PC.fe.config.current_language;
 				add_language_filters( PC.fe.lang );
 			}
-			var product_id;
+			var product_id, price;
 			var $target = $( event.target );
 			if ( ! $target.is( '.configure-product' ) ) {
 				$target = $target.closest( '.configure-product' );
@@ -85,7 +85,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 			// Open configurator
 			try {
-				PC.fe.open( product_id ); 
+				PC.fe.open( $target, product_id );
 			} catch ( err ) {
 				console.error( 'we had an error: ', err );
 				// PC.fe.close();
@@ -175,7 +175,7 @@ Backbone.Model.prototype.toJSON = function() {
 	}
 
 
-	PC.fe.init = function( product_id, parent_id ) {
+	PC.fe.init = function( product_id, parent_id, $element ) {
 		if ( PC.fe.is_using_shortcode ) {
 			this.options = {};
 		}
@@ -191,6 +191,9 @@ Backbone.Model.prototype.toJSON = function() {
 		}
 
 		PC.fe.product_type = this.currentProductData.product_info.product_type;
+		if ( $element && $element.data( 'price' ) ) {
+			this.currentProductData.product_info.price = $element.data( 'price' );
+		}
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
 			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] ); 
@@ -202,7 +205,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 	};
 
-	PC.fe.open = function( product_id, parent_id ) {
+	PC.fe.open = function( $element, product_id, parent_id ) {
 
 		PC.fe.opened = true;
 		$('body').addClass('configurator_is_opened');
@@ -225,7 +228,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 		this.modal = this.modal || new PC.fe.views.configurator( product_id, parent_id ); 
 
-		PC.fe.init( product_id, parent_id ); 
+		PC.fe.init( product_id, parent_id, $element ); 
 
 		// if( !this.layers && !variation ) {
 		// 	return;

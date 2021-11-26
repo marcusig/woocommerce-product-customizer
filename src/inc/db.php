@@ -330,32 +330,7 @@ class DB {
 		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id ); 
-		$base_currency = get_option( 'woocommerce_currency' );
-		$price = wc_get_price_to_display( $product );
-		global $WOOCS;
-		if ( $WOOCS && ! isset( $_REQUEST['woocs_block_price_hook'] ) ) {
-			$_REQUEST['woocs_block_price_hook'] = 1;
-			$price = wc_get_price_to_display( $product );
-			unset( $_REQUEST['woocs_block_price_hook'] );
-		}
-		
-		// Price Based on Country
-		if ( function_exists( 'wcpbc_the_zone' ) ) {
-			$zone = wcpbc_the_zone();
-			if ( is_callable( [ $zone, 'get_exchange_rate' ] ) ) {
-				$rate = $zone->get_exchange_rate();
-				$price = $price / $rate;
-			}
-		}
-		
-		// Aelia
-		$price = apply_filters( 'wc_aelia_cs_get_product_price', $price, $id, $base_currency );
 
-		// Woo Multi Currency
-		if ( function_exists( 'wmc_revert_price' ) ) {
-			$price = wmc_revert_price( $price );
-		}
-		
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
@@ -364,7 +339,6 @@ class DB {
 				'product_type' => $product->get_type(),
 				'show_qty'     => ! $product->is_sold_individually(),
 				'is_in_stock'  => $product->is_in_stock() || $product->backorders_allowed(), 
-				'price'        => $price,
 			) 
 		);
 
