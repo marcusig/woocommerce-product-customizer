@@ -112,7 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 * FEATURE: Added a reset button (go to Settings > Product configurator to enable it)
-
+* FEATURE: Added a tool to find missing images after a product import.
+* TWEAK: Moved the price in the HTML instead of the JSON data, to improve compatibility with multi currency shops
 
 = 1.2.19 - 18/Nov/2021 =
 
