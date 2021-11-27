@@ -150,7 +150,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function editor() {
 			global $post;
 			
-			if ( !$this->_current_screen_is( 'product' ) ) return false;
+			if ( ! $this->_current_screen_is( 'product' ) ) return false;
 
 			// exit early if we don't have a post (Problem found using Yith Product addons plugin)
 			if( ! $post ) return;
@@ -158,7 +158,10 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			$this->ID = $post->ID;
 			$this->_product = wc_get_product( $this->ID ); 
 
+			if ( ! $this->_product ) return;
+
 			$structure = get_post_meta( $this->ID, MKL_PC_PREFIX.'structure', true );
+			// Make variables available to the included template
 			// $menu = $this->get_editor_menu( $structure );
 			$data = json_encode( $structure );
 			$product_type = $this->_product->get_type(); 
