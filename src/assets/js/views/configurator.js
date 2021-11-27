@@ -184,7 +184,8 @@ PC.options = PC.options || {};
 		},
 
 		reset_configurator: function( event ) {
-			PC.fe.contents.content.resetConfig()
+			PC.fe.contents.content.resetConfig();
+			wp.hooks.doAction( 'PC.fe.reset_configurator' );
 		},
 
 		get_price: function() {
