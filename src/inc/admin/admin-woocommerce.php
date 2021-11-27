@@ -105,6 +105,4 @@ class Admin_Woocommerce {
 
 		return $template;			
 	}
-
-
 } // END CLASS

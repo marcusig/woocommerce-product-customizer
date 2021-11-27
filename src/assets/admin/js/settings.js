@@ -129,18 +129,20 @@
 			set_selected: function() {
 				this.$el.toggleClass( 'selected', true === this.model.get( 'selected' ) );
 			}
-
 		}),
 	};
 
 	var settings = {
+		fetched_products: false,
 		init: function() {
 			$( '.mkl-nav-tab-wrapper a' ).on( 'click', function( e ) {
 				e.preventDefault();
 				$( '.mkl-nav-tab-wrapper a' ).removeClass( 'nav-tab-active' );
 				$( '.mkl-settings-content.active' ).removeClass( 'active' );
 				$(this).addClass( 'nav-tab-active' );
-				$( '.mkl-settings-content[data-content=' + $( this ).data( 'content' ) + ']' ).addClass( 'active' );
+				var content = $( this ).data( 'content' );
+				$( '.mkl-settings-content[data-content=' + content + ']' ).addClass( 'active' );
+				if ( 'tools' == content && ! settings.fetched_products ) settings.get_configurable_products();
 			});
 
 			if ( $( '.mkl-nav-tab-wrapper a.nav-tab-active' ).length ) {
@@ -160,6 +162,24 @@
 				} );
 			} );
 
+			$('.mkl-settings-scan-images').on( 'click', function( e ) {
+				var btn = $( this );
+				$id = $( '#configurable-products' ).val();
+				if ( ! $id ) {
+					alert( 'No valid product selected' );
+					return;
+				}
+				btn.prop( 'disabled', 'disabled' );
+				wp.ajax.post({
+					action: 'mkl_pc_fix_image_ids',
+					security: $( '#_wpnonce' ).val(),
+					id: $id
+				}).done( function( response ) {
+					alert( response.changed_items + ' images where found and replaced.' );
+					btn.prop( 'disabled', false );
+				} );
+			} );
+
 			this.init_stock_management();
 		},
 		init_stock_management: function() {
@@ -170,6 +190,26 @@
 	
 				$( 'input[name="mkl_pc__settings[extra_price_overrides_product_price]"]' ).closest( 'tr' ).toggle( 'add_to_cart' == $( '#mkl_pc__settings-stock_link_type' ).val() );
 			}
+		},
+		get_configurable_products: function() {
+			this.fetched_products = true;
+			var $container = $( '.configurable-products-list' );
+			$container.addClass( 'loading' );
+			wp.ajax.post({
+				action: 'mkl_pc_get_configurable_products',
+				security: $( '#_wpnonce' ).val(),
+			}).done( function( response ) {
+				console.log( response );
+				if ( response && response.length ) {
+					var options = $( '#configurable-products' ).select2();
+					_.each( response, function( item, i ) {
+						var newOption = new Option(item.name, item.id, i == 0, i == 0);
+						options.append( newOption );
+					} );
+				}
+				$container.removeClass( 'loading' );
+
+			} );
 		}
 	};
 
