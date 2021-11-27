@@ -144,11 +144,23 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 					<h3><?php _e( 'Fix images', 'product-configurator-for-woocommerce' ); ?></h3>
 					<div class="configurable-products-list">
+						<div class="notice notice-warning below-h2">
+							<p>
+								<?php _e( 'This feature is experimental, please backup your database before using it!', 'product-configurator-for-woocommerce' ); ?>
+								<br><small><a href="https://wordpress.org/plugins/updraftplus/"><?php _e( 'I recommend UpdraftPlus for your backups.', 'product-configurator-for-woocommerce' ); ?></a></small>
+							</p>
+						</div>
 						<p>
 							<?php _e( 'If you imported a configurable product and the images do not match, you can try fixing the relationships with this tool.', 'product-configurator-for-woocommerce' ); ?>
 						</p>
 						<p>
-							<select id="configurable-products" style="width: 300px;"></select>
+							<?php _e( 'How it works:', 'product-configurator-for-woocommerce' ); ?>
+							<br><?php _e( 'This tool looks for the pictures present in the configurator, and check whether they are in the media library.', 'product-configurator-for-woocommerce' ); ?>
+							<br><?php _e( 'If no exact match is found, it looks for an image with the same file name, and updates the attachment ID in the configurator data.', 'product-configurator-for-woocommerce' ); ?>
+						</p>
+						<p>
+							<label for="configurable-products"><?php _e( 'Select a configurable product:', 'product-configurator-for-woocommerce' ); ?></label>
+							<br><select id="configurable-products" style="width: 300px;"></select>
 						</p>
 						<button type="button" class="button mkl-settings-scan-images"><?php _e( 'Scan images', 'product-configurator-for-woocommerce' ); ?></button>
 					</div>					
