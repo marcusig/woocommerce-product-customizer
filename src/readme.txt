@@ -111,6 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Added a reset button (go to Settings > Product configurator to enable it)
+
+
 = 1.2.19 - 18/Nov/2021 =
 
 * FEATURE: Possibility to select any choice by default
