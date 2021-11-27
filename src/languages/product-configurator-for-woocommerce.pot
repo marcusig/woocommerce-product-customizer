@@ -457,34 +457,46 @@ msgid "Show SKU in the cart and checkout"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:538
+#: src/inc/admin/settings-page.php:474
+msgid "Show a reset button in the configurator"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:498
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:634
+#: src/inc/admin/settings-page.php:594
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:635
+#: src/inc/admin/settings-page.php:595
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
 #: src/inc/admin/settings-page.php:695, src/inc/admin/settings-page.php:731
+#: src/inc/admin/settings-page.php:655, src/inc/admin/settings-page.php:691
 msgid "Theme preview"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:697, src/inc/admin/settings-page.php:733
+#: src/inc/admin/settings-page.php:657, src/inc/admin/settings-page.php:693
 msgid "No preview"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:707
+#: src/inc/admin/settings-page.php:667
 msgid "No theme is in use."
 msgstr ""
 
 #: src/inc/admin/settings-page.php:708
+#: src/inc/admin/settings-page.php:668
 msgid "Select a theme"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:717
+#: src/inc/admin/settings-page.php:677
 msgid "Select the theme"
 msgstr ""
 
@@ -729,6 +741,11 @@ msgid "Loading Data"
 msgstr ""
 
 #: src/inc/themes/dark-mode/theme.php:31
+#: src/inc/frontend/views/html-product-configurator-templates.php:78
+msgid "Reset configuration"
+msgstr ""
+
+#: src/inc/themes/dark-mode/theme.php:28
 msgid "Dark gray (Layers background)"
 msgstr ""
 

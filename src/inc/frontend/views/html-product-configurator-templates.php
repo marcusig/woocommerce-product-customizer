@@ -68,6 +68,39 @@ function mkl_pc_frontend_configurator_footer_section_left_inner__product_name() 
 add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_frontend_configurator_footer_section_left_inner__product_name', 30 );
 
 /**
+ * Reset button
+ *
+ * @return void
+ */
+function mkl_pc_frontend_configurator_footer_add_reset_button() {
+	if ( ! ( bool ) mkl_pc( 'settings')->get( 'show_reset_button' ) ) return;
+	$classes = apply_filters( 'mkl_pc_reset_button_classes' , [ 'reset-configuration' ] );
+	echo '<button type="button" class="' . esc_attr( implode( ' ', $classes ) ) . '">' . __( 'Reset configuration', 'product-configurator-for-woocommerce' ) . '</button>';
+}
+
+add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_frontend_configurator_footer_add_reset_button', 30 );
+
+/**
+ * Footer Center wrapper
+ *
+ * @return void
+ */
+function mkl_pc_frontend_configurator_footer_add_center_wrapper_open() {
+	echo '<div class="footer__section-center">';
+}
+add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_frontend_configurator_footer_add_center_wrapper_open', 5 );
+
+/**
+ * Footer Center wrapper END
+ *
+ * @return void
+ */
+function mkl_pc_frontend_configurator_footer_add_center_wrapper_close() {
+	echo '</div>';
+}
+add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_frontend_configurator_footer_add_center_wrapper_close', 150 );
+
+/**
  * Toolbar
 */
 

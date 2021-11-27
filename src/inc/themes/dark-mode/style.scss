@@ -1030,6 +1030,20 @@ $inner_space: 1em;
 					}
 				}
 			}
+
+			button.reset-configuration {
+				margin: 0;
+				padding: 0;
+				background: transparent;
+				color: inherit;
+				appearance: none;
+				box-shadow: none;
+				border:  none;
+				&:hover, &:focus {
+					opacity: .5;
+				}
+			}
+
 			@media (max-width: $medium_screen_width) {
 				text-align: center;
 				height: $footer_height_small_screen;

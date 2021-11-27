@@ -520,6 +520,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'show_reset_button',
+				__( 'Show a reset button in the configurator', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_reset_button',
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
