@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.19
+Stable tag: 1.2.20
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,9 +111,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.20 - 29/Nov/2021 =
+
 * FEATURE: Added a reset button (go to Settings > Product configurator to enable it)
 * FEATURE: Added a tool to find missing images after a product import.
 * TWEAK: Moved the price in the HTML instead of the JSON data, to improve compatibility with multi currency shops
+* TWEAK: UI tweak: add sections in the choice settings
 
 = 1.2.19 - 18/Nov/2021 =
 
@@ -309,4 +312,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.19 The main additions are the **Possibility to select any choice by default**, and the **handling of SKUs** as well as several bug fixes. 
+* 1.2.20 The main additions are **the addition of a reset button** and **a tool to find missing images after a product import**.
