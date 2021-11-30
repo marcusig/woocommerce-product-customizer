@@ -85,7 +85,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 			// Open configurator
 			try {
-				PC.fe.open( $target, product_id );
+				PC.fe.open( product_id, product_id, $target );
 			} catch ( err ) {
 				console.error( 'we had an error: ', err );
 				// PC.fe.close();
@@ -205,7 +205,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 	};
 
-	PC.fe.open = function( $element, product_id, parent_id ) {
+	PC.fe.open = function( product_id, parent_id, $element ) {
 
 		PC.fe.opened = true;
 		$('body').addClass('configurator_is_opened');
