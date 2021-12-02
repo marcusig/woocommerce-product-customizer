@@ -572,6 +572,7 @@ class DB {
 	 * Scan and fix images
 	 */
 	public function scan_product_images( $product_id ) {
+		// UPDATE the content
 		$content = $this->get( 'content', $product_id );
 		if ( is_array( $content ) ) {
 			foreach( $content as $key => $item ) {
@@ -580,10 +581,19 @@ class DB {
 						if ( isset( $choice[ 'images' ] ) && is_array( $choice[ 'images' ] ) ) {
 							foreach( $choice[ 'images' ] as $ik => $image ) {								
 								if ( isset( $image[ 'image' ] ) && $image[ 'image' ]['url'] ) {
-									$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'id' ] = $this->_find_image_id( $image[ 'image' ]['url'], $image[ 'image' ]['id'] );
+									$new_image_id = $this->_find_image_id( $image[ 'image' ]['url'], $image[ 'image' ]['id'] );
+									if ( $new_image_id && $new_image_id != $image[ 'image' ]['id'] ) {
+										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'id' ] = $new_image_id;
+										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_image_id );
+									}
 								}
-								if ( isset( $image[ 'thumbnail' ] ) && $image[ 'thumbnail' ]['url'] ) { 
-									$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'thumbnail' ][ 'id' ] = $this->_find_image_id( $image[ 'thumbnail' ]['url'], $image[ 'thumbnail' ]['id'] );
+								if ( isset( $image[ 'thumbnail' ] ) && $image[ 'thumbnail' ]['url'] ) { 									
+									$new_thumbnail_id = $this->_find_image_id( $image[ 'thumbnail' ]['url'], $image[ 'thumbnail' ]['id'] );
+									if ( $new_thumbnail_id && $new_thumbnail_id != $image[ 'thumbnail' ]['id'] ) {
+										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'thumbnail' ][ 'id' ] = $new_thumbnail_id;
+										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'thumbnail' ][ 'url' ] = wp_get_attachment_url( $new_thumbnail_id );
+									}
+
 								}
 							}
 							
@@ -598,16 +608,29 @@ class DB {
 		$angles = $this->get( 'angles', $product_id );
 		if ( is_array( $angles ) ) {
 			foreach( $angles as $key => $angle ) {
-				if ( isset( $angle[ 'image' ] ) && $angle[ 'image' ]['url'] ) $angles[ $key ][ 'image' ][ 'id' ] = $this->_find_image_id( $angle[ 'image' ]['url'], $angle[ 'image' ]['id'] );
+				if ( isset( $angle[ 'image' ] ) && $angle[ 'image' ]['url'] ) {
+					$new_angle_id = $this->_find_image_id( $angle[ 'image' ]['url'], $angle[ 'image' ]['id'] );
+					if ( $new_angle_id && $new_angle_id != $angle[ 'image' ]['id'] ) {
+						$angles[ $key ][ 'image' ][ 'id' ] = $new_angle_id;
+						$angles[ $key ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_angle_id );
+					}
+				}
 			}
 		}
+
 		$this->set( $product_id, $product_id, 'angles', $angles );
 		
 		// Update the layers
 		$layers = $this->get( 'layers', $product_id );
 		if ( is_array( $layers ) ) {
 			foreach( $layers as $key => $layer ) {
-				if ( isset( $layer[ 'image' ] ) && $layer[ 'image' ]['url'] ) $layers[ $key ][ 'image' ][ 'id' ] = $this->_find_image_id( $layer[ 'image' ]['url'], $layer[ 'image' ]['id'] );
+				if ( isset( $layer[ 'image' ] ) && $layer[ 'image' ]['url'] ) {
+					$new_layer_id = $this->_find_image_id( $layer[ 'image' ]['url'], $layer[ 'image' ]['id'] );
+					if ( $new_layer_id && $new_layer_id != $layer[ 'image' ]['id'] ) {
+						$layers[ $key ][ 'image' ][ 'id' ] = $new_layer_id;
+						$layers[ $key ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_layer_id );
+					}
+				}
 			}
 		}
 		$this->set( $product_id, $product_id, 'layers', $layers );
