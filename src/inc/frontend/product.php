@@ -118,7 +118,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 		public function add_configure_hidden_field() {
 			if ( mkl_pc_is_configurable( get_the_id() ) ) {
-				echo '<input type="hidden" name="pc_configurator_data">'; 
+				echo '<input type="hidden" name="pc_configurator_data">';
+				echo '<input type="hidden" name="pc_cart_item_key">';
 			}
 		}
 
@@ -161,6 +162,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<# if ( data.show_form ) { #>
 						<form class="cart" method="post" enctype='multipart/form-data'>
 							<input type="hidden" name="pc_configurator_data">
+							<input type="hidden" name="pc_cart_item_key">
 							<input type="hidden" name="add-to-cart" value="{{data.product_id}}">
 							<# if ( data.show_qty ) { #>
 								<?php woocommerce_quantity_input( [], $product ); ?>
@@ -171,6 +173,9 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
 						<span><?php echo $add_to_cart; ?></span>
+					</button>
+					<button type="button" class="<?php echo $this->button_class ?> edit-cart-item configurator-add-to-cart">
+						<span><?php _e( 'Edit item in cart', 'product-configurator-for-woocommerce' ); ?></span>
 					</button>
 				<?php
 			echo '<# } else { #>';

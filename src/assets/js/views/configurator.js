@@ -175,7 +175,7 @@ PC.options = PC.options || {};
 				show_qty: parseInt( PC.fe.currentProductData.product_info.show_qty ),
 				formated_price: this.get_price()
 			} ) );
-			this.form = new PC.fe.views.form( { el: this.$el.find( '.form' ) } );
+			this.form = new PC.fe.views.form( { el: this.$( '.form' ) } );
 			return this.$el; 
 		},
 
@@ -208,6 +208,9 @@ PC.options = PC.options || {};
 		},
 
 		render: function() {
+			if ( ! PC.fe.config.cart_item_key ) {
+				this.$( '.edit-cart-item' ).hide();
+			}
 			return this.$el; 
 		},
 
@@ -225,6 +228,11 @@ PC.options = PC.options || {};
 			var $input = $( 'input[name=pc_configurator_data]' );
 			// The cart must be the one containing the input
 			var $cart = $input.closest( 'form.cart' );
+
+			if ( PC.fe.config.cart_item_key && $( e.currentTarget ).is( '.edit-cart-item' ) ) {
+				var $cart_item_field = $cart.find( 'input[name=pc_cart_item_key]' );
+				if ( $cart_item_field ) $cart_item_field.val( PC.fe.config.cart_item_key );
+			}
 
 			$input.val( data );
 

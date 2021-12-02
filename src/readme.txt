@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Possibility to edit the configuration from the cart
+
 = 1.2.20 - 29/Nov/2021 =
 
 * FEATURE: Added a reset button (go to Settings > Product configurator to enable it)
