@@ -304,7 +304,11 @@ class Frontend_Woocommerce {
 
 		if ( $saved_configuration_content = $this->get_saved_configuration_content() ) {
 			$args['config']['load_config_content'] = $saved_configuration_content;
-		}
+
+			if ( isset( $_REQUEST['edit_config_from_cart'] ) ) {
+				$args['config']['cart_item_key'] = esc_attr( $_REQUEST['load_config_from_cart'] );
+			}
+		} 
 
 		if ( isset( $_REQUEST['open_configurator'] ) ) {
 			$args['config']['open_configurator'] = true;

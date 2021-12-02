@@ -22,6 +22,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
 			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_cart_item_permalink', array( $this, 'cart_item_permalink' ), 30, 3 );
+			// add_action( 'woocommerce_after_cart_item_name', array( $this, 'add_edit_link' ), 20, 2 );
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'wc_add_cart_item'), 10, 2 ); 
 			// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
 		}
@@ -31,6 +32,16 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
 
 				if ( isset( $_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
+
+					/**
+					 * Editing the cart: Delete and replace the item from the cart
+					 */
+					if ( isset( $_POST['pc_cart_item_key'] ) ) {
+						$cart = WC()->cart;
+						if ( $cart->get_cart_item( $_POST['pc_cart_item_key'] ) );
+						$cart->remove_cart_item( $_POST['pc_cart_item_key'] );
+					}
+
 					if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
 						$data = Plugin::instance()->db->sanitize( $data );
 						$layers = array();
@@ -81,9 +92,19 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					);
 				}
 
+				$value = $this->get_choices_html( $choices );
+
+				/**
+				 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
+				 * @return boolean
+				 */
+				if ( apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link = $this->get_edit_link( $cart_item ) ) {
+					$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
+				}
+
 				$data[] = array( 
 					'key' => __( 'Configuration', 'product-configurator-for-woocommerce' ),
-					'value' => $this->get_choices_html( $choices ),
+					'value' => $value
 				);				
 
 			}
@@ -166,6 +187,30 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 			return $output;
 
+		}
+
+		/**
+		 * Add edit link to the cart item
+		 *
+		 * @param array  $cart_item
+		 * @param string $cart_item_key
+		 * @return void
+		 */
+		public function get_edit_link( $cart_item ) {
+			$cart_item_key = isset( $cart_item['key'] ) ? $cart_item['key'] : '';
+			$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
+			$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
+
+			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $cart_item['configurator_data'] ) ) return '';
+
+			if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
+				$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
+				if ( ! $product_permalink ) return;
+				$product_permalink = add_query_arg( [ 'edit_config_from_cart' => 1 ], $product_permalink );
+				return '<a href="' . esc_url( $product_permalink ) . '" class="mkl-pc--edit-configuration">' . apply_filters( 'mkl_pc_edit_configuration_label', __( 'Edit configuration', '' ) ) . '</a>';
+			}
+
+			return '';
 		}
 
 		// public function wc_add_cart_item( $data, $cart_item_key ) {

@@ -342,14 +342,15 @@ Backbone.Model.prototype.toJSON = function() {
 		// in case some of the layers in the saved config are missing / extra
 		PC.fe.contents.content.resetConfig();
 
-		$.each( config_items, function(index, config_item) {
+		$.each( config_items, function( index, config_item ) {
 			// layerContents is a Backbone.Collection
 			try {
 				PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id );
+				wp.hooks.doAction( 'PC.fe.setConfig.setItem', config_item, PC.fe.getLayerContent( config_item.layer_id ) );
 			} catch ( err ) {
 				console.log('Product configurator - setConfig: Could not set this layer:', config_item.layer_id, err);
 			}
-		});
+		} );
 
 		wp.hooks.doAction( 'PC.fe.setConfig', config_items );
 	};
