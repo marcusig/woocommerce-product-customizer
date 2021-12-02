@@ -618,9 +618,9 @@ class DB {
 	/**
 	 * Find a matching ID for a specific URL
 	 *
-	 * @param [type] $url
-	 * @param [type] $original_id
-	 * @return void
+	 * @param string  $url
+	 * @param integer $original_id
+	 * @return integer
 	 */
 	private function _find_image_id( $url, $original_id, $exact_match = false ) {
 		// Check if original ID matches
