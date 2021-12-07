@@ -177,6 +177,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<button type="button" class="<?php echo $this->button_class ?> edit-cart-item configurator-add-to-cart">
 						<span><?php _e( 'Edit item in cart', 'product-configurator-for-woocommerce' ); ?></span>
 					</button>
+					<?php do_action( 'mkl_pc_frontend_configurator_after_add_to_cart' ); ?>
 				<?php
 			echo '<# } else { #>';
 				echo '<div class="out-of-stock"></div>';
