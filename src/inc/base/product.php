@@ -12,6 +12,6 @@ class Product {
 			'label' => $layer->get_layer( 'name' ),
 			'value' => $layer->get_choice( 'name' ),
 		);
-		return apply_filters( 'mkl_pc_item_meta', $meta, $layer, $product ); 
+		return apply_filters( 'mkl_pc_item_meta', (array) $meta, $layer, $product ); 
 	}
 }
