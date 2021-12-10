@@ -221,9 +221,9 @@ class Configuration {
 	 * @param string $size - The image size
 	 * @param array  $attr - The image attributes
 	 */
-	public function get_image( $size = 'woocommerce_thumbnail', $attr = array() ) {
+	public function get_image( $size = 'woocommerce_thumbnail', $attr = array(), $lazy = true ) {
 
-		$url = $this->get_image_url( true );
+		$url = $this->get_image_url( $lazy );
 
 		$attachment_id = false;
 

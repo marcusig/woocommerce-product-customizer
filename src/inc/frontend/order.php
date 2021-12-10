@@ -135,7 +135,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 			$configuration = new Configuration( NULL, array( 'product_id' => $order_item['product_id'], 'content' => json_encode( $choices ) ) );
 			$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
-			$img = $configuration->get_image( $size );
+			$img = $configuration->get_image( $size, [], false );
 
 			if ( $img ) return $img;
 
