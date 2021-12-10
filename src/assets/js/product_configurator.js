@@ -313,9 +313,14 @@ Backbone.Model.prototype.toJSON = function() {
 				if ( _.isObject( response ) && response.content ) {
 					this.contents = PC.fe.setContent.parse( response ); 
 					PC.fe.products_content[product_id] = this.contents;
-					this.modal.$el.trigger( 'content-is-loaded' );
+					// Add conditions to the data
+					if ( response.conditions ) {
+						PC.productData['prod_' + product_id] = PC.productData['prod_' + product_id] || {};
+						PC.productData['prod_' + product_id].conditions = response.conditions;
+					}
 					$( PC.fe ).trigger( 'variation_content_loaded', { response: response, product_id: product_id } );
 					wp.hooks.doAction( 'variation_content_loaded', { response: response, product_id: product_id } );
+					this.modal.$el.trigger( 'content-is-loaded' );
 				} else {
 					alert( 'Couldn\'t load Data for this product.' );
 					if( PC.fe.inline != true ) {
@@ -437,7 +442,7 @@ PC.utils = PC.utils || {
 		if ( 'undefined' != typeof woocs_current_currency && 'undefined' != woocs_current_currency['rate'] ) {
 			return amount * woocs_current_currency['rate'];
 		}
-
+		
 		// WCML
 		if ( 'undefined' != typeof PC.fe.config.wcml_rate && parseFloat( PC.fe.config.wcml_rate ) ) {
 			return amount * parseFloat( PC.fe.config.wcml_rate );
