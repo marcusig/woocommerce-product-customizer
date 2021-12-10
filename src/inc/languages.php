@@ -39,6 +39,12 @@ class Languages {
 			$this->ml_plugin = 'polylang';
 			return true;	
 		}
+
+		// Check for Weglot
+		if ( function_exists( 'weglot_get_destination_languages' ) ) {
+			$this->ml_plugin = 'weglot';
+			return true;
+		}
 		return false;
 	}
 
@@ -55,6 +61,13 @@ class Languages {
 
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
 			return pll_languages_list();
+		}
+
+		if ( $this->website_is_multilingual() && 'weglot' === $this->ml_plugin ) {
+			$languages = weglot_get_destination_languages();
+			return array_map( function( $a ) {
+				return $a[ 'language_to' ];
+			}, $languages );
 		}
 		return [];
 	}
@@ -73,6 +86,10 @@ class Languages {
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
 			return pll_default_language();
 		}
+
+		if ( $this->website_is_multilingual() && 'weglot' === $this->ml_plugin ) {
+			return weglot_get_original_language();
+		}
 		return false;
 	}
 
@@ -89,6 +106,10 @@ class Languages {
 
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
 			return pll_current_language();
+		}
+
+		if ( $this->website_is_multilingual() && 'weglot' === $this->ml_plugin ) {
+			return weglot_get_current_language();
 		}
 		return false;
 	}
@@ -122,18 +143,34 @@ class Languages {
 		if ( ! empty($this->get_languages() ) ) {
 			$default = $this->get_default_language();
 			foreach( $this->get_languages() as $l ) {
+				$flag_url = $this->get_flag( $l );
 				if ( $default != $l ) {
-					$settings['name_'.$l] = array(
-						'label' => '<img src="' . $this->get_flag( $l ) . '" alt="' . __( 'Choice label', 'mkl-pc-extra-price' ) . ' ' . $l . '">',
-						'type' => 'text',
-						'priority' => 11,
-					);
-					$settings['description_'.$l] = array(
-						'label' => '<img src="' . $this->get_flag( $l ) . '" alt="' . __( 'Description', 'mkl-pc-extra-price' ) . ' ' . $l . '">',
-						'type' => 'textarea',
-						'priority' => 21,
-						'condition' => '!data.not_a_choice',
-					);
+					if ( isset( $settings[ '_general' ] ) && isset( $settings[ '_general' ][ 'fields' ] ) ) {
+						$settings[ '_general' ][ 'fields' ]['name_'.$l] = array(
+							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l,
+							'type' => 'text',
+							'priority' => 11,
+						);
+						$settings[ '_general' ][ 'fields' ]['description_'.$l] = array(
+							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l,
+							'type' => 'textarea',
+							'priority' => 21,
+							'condition' => '!data.not_a_choice',
+						);
+	
+					} else {
+						$settings['name_'.$l] = array(
+							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">': __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l,
+							'type' => 'text',
+							'priority' => 11,
+						);
+						$settings['description_'.$l] = array(
+							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">': __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l,
+							'type' => 'textarea',
+							'priority' => 21,
+							'condition' => '!data.not_a_choice',
+						);
+					}
 				}
 			}
 		}
