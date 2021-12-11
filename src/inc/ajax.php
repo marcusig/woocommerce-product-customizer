@@ -118,11 +118,6 @@ class Ajax {
 			
 			$output = 'var PC = PC || {};'."\n";
 			$output .= 'PC.productData = PC.productData || {};'."\n";
-			// if ( class_exists( 'GTranslate' ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
-				// Add compatibility with GTranslate premium, enabling users to manually update translations.
-			// 	$output .= "fetch('/wp-admin/admin-ajax.php?action=pc_get_data&data=init&fe=".$_REQUEST['fe']."&id={$id}&ver=1618927876').then(r => r.json()).then(data => {PC.productData.prod_$id = data;});";
-			// } else {
-			// }
 			$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
 
 			/**

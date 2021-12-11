@@ -319,6 +319,11 @@ class Frontend_Woocommerce {
 		// $version = $product
 		if ( $prod ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+			// Add JSON for Weglot compatibility
+			if ( current_user_can( 'edit_posts' ) && defined( 'WEGLOT_DIRURL' ) ) {
+				wp_enqueue_script( 'mkl_pc/js/fe_data_weglot_'.$post->ID, admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=json&fe=1&id=' . $post->ID ), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+			}
+
 		}
 
 		$stylesheet = MKL_PC_ASSETS_URL . 'css/product_configurator.css';
