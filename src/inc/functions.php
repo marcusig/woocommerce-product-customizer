@@ -15,26 +15,34 @@ function mkl_pc_is_configurable( $product_id = NULL ) {
 }
 
 
-if( ! function_exists('request_is_frontend_ajax') ) {
+if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 
 	function request_is_frontend_ajax() {
 		$script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';
-
-		//Try to figure out if frontend AJAX request... If we are DOING_AJAX; let's look closer
-		if( (defined('DOING_AJAX') && DOING_AJAX) ) {
+		// Try to figure out if frontend AJAX request... If we are DOING_AJAX; let's look closer
+		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$ref = '';
-			if ( ! empty( $_REQUEST['_wp_http_referer'] ) )
+			if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) {
 				$ref = wp_unslash( $_REQUEST['_wp_http_referer'] );
-			elseif ( ! empty( $_SERVER['HTTP_REFERER'] ) )
+			} elseif ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
 				$ref = wp_unslash( $_SERVER['HTTP_REFERER'] );
+			}
 
+			// Include specific POST variables which indicate the request being from the admin, in case the next check fails
+			$checK_variables = [ '_mkl_pc__is_configurable', 'variation_menu_order' ];
+			foreach( $checK_variables as $check ) {
+				if ( in_array( $check, $_POST ) ) {
+					return false;
+				}
+			}
+			
 			//If referer does not contain admin URL and we are using the admin-ajax.php endpoint, this is likely a frontend AJAX request
-			if(((strpos($ref, admin_url()) === false) && (basename($script_filename) === 'admin-ajax.php')))
+			if ( ( ( strpos( $ref, admin_url() ) === false ) && ( basename( $script_filename ) === 'admin-ajax.php' ) ) ) {
 				return true;
+			}
 		}
 
 		//If no checks triggered, we end up here - not an AJAX request.
 		return false;
 	}
 }
-
