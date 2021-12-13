@@ -580,9 +580,13 @@ PC.options = PC.options || {};
 			if ( $( event.currentTarget ).prop( 'disabled' ) ) return;
 			// Activate the clicked item
 			this.model.collection.selectChoice( this.model.id );
-			
+			var close_choices = 
+				PC.fe.config.close_choices_when_selecting_choice 
+				&& ( $( 'body' ).is('.is-mobile' ) || PC.utils._isMobile() ) 
+				|| PC.fe.config.close_choices_when_selecting_choice_desktop;
+
 			// Maybe close the choice list
-			if ( PC.fe.config.close_choices_when_selecting_choice && ( $( 'body' ).is('.is-mobile' ) || PC.utils._isMobile() ) || PC.fe.config.close_choices_when_selecting_choice_desktop ) {
+			if ( wp.hooks.applyFilters( 'PC.fe.close_choices_after_selection', close_choices, this.model ) ) {
 				var layer = PC.fe.layers.get( this.model.get( 'layerId' ) );
 				if ( layer ) layer.set('active', false);
 			}

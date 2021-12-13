@@ -29,13 +29,13 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 			}
 
 			// Include specific POST variables which indicate the request being from the admin, in case the next check fails
-			$checK_variables = [ '_mkl_pc__is_configurable', 'variation_menu_order' ];
-			foreach( $checK_variables as $check ) {
-				if ( in_array( $check, $_POST ) ) {
+			$check_variables = [ '_mkl_pc__is_configurable', 'variation_menu_order' ];
+			foreach( $check_variables as $check ) {
+				if ( in_array( $check, array_keys( $_POST ) ) ) {
 					return false;
 				}
 			}
-			
+
 			//If referer does not contain admin URL and we are using the admin-ajax.php endpoint, this is likely a frontend AJAX request
 			if ( ( ( strpos( $ref, admin_url() ) === false ) && ( basename( $script_filename ) === 'admin-ajax.php' ) ) ) {
 				return true;
