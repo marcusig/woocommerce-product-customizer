@@ -37,6 +37,29 @@ class Ajax {
 		add_action( 'wp_ajax_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids', array( $this, 'fix_image_ids' ) );
 		add_action( 'wp_ajax_mkl_pc_get_configurable_products', array( $this, 'get_configurable_products' ) );
+		add_filter( 'weglot_js-data_treat_page', array( $this, 'weglot_compat' ), 20, 4 );
+	}
+
+	/**
+	 * Weglot compatibility: translate the script on the fly
+	 *
+	 * @return string
+	 */
+	public function weglot_compat( $content, $parser, $original_language, $current_language ) {
+		if ( function_exists( 'gzdecode' ) && $c = gzdecode($content) ) {
+			// Get the JSON part
+			$jsondata = preg_match('/(var PC = .*PC\.productData\.prod_[A-Za-z0-9]* = )(.*);/s', $c, $matches );
+
+			if ( isset( $matches[2] ) ) {
+				$translated_content = $parser->translate( $matches[2], $original_language, $current_language, [] );
+				$replace_url_services = weglot_get_service( 'Replace_Url_Service_Weglot' );
+				$translated_content = wp_json_encode( $replace_url_services->replace_link_in_json( json_decode( $translated_content, true ) ) );
+				$output = $matches[1] . $translated_content . ';';
+				return gzencode( $output );
+				
+			}
+		}
+		return $content;
 	}
 
 	/**
@@ -115,14 +138,14 @@ class Ajax {
 				header( 'Content-Encoding: gzip' );
 				$gzip = true;
 			}
-			
+
+			// Weglot: set a custom page type to treat it
+			add_filter( 'weglot_type_treat_page',  function() {
+				return 'js-data';
+			} );
+
 			$output = 'var PC = PC || {};'."\n";
 			$output .= 'PC.productData = PC.productData || {};'."\n";
-			// if ( class_exists( 'GTranslate' ) && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
-				// Add compatibility with GTranslate premium, enabling users to manually update translations.
-			// 	$output .= "fetch('/wp-admin/admin-ajax.php?action=pc_get_data&data=init&fe=".$_REQUEST['fe']."&id={$id}&ver=1618927876').then(r => r.json()).then(data => {PC.productData.prod_$id = data;});";
-			// } else {
-			// }
 			$output .= 'PC.productData.prod_' . $id . ' = ' . json_encode( $data ) . ';';
 
 			/**
