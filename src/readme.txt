@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.20
+Stable tag: 1.2.21
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,7 +111,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.21 - 15/Dec/2021 =
+
 * FEATURE: Possibility to edit the configuration from the cart
+* TWEAK: Compatibility with Weglot
+* TWEAK: Prevent lazy loading on the generated images in the order
+* TWEAK: Better compatibility between variable products and the conditional logic add-on
 
 = 1.2.20 - 29/Nov/2021 =
 
@@ -314,4 +319,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.20 The main additions are **the addition of a reset button** and **a tool to find missing images after a product import**.
+* 1.2.21 The main additions is **the possibility to edit a configuration from the admin scren**, as well as several compatibility tweaks.
