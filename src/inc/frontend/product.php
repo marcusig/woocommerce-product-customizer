@@ -112,7 +112,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			// Woo Multi Currency
 			if ( function_exists( 'wmc_revert_price' ) ) {
 				$price = wmc_revert_price( $price );
-			}			
+			}
 			return $price;
 		}
 

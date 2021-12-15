@@ -193,6 +193,8 @@ Backbone.Model.prototype.toJSON = function() {
 		PC.fe.product_type = this.currentProductData.product_info.product_type;
 		if ( $element && $element.data( 'price' ) ) {
 			this.currentProductData.product_info.price = $element.data( 'price' );
+		} else {
+			this.currentProductData.product_info.price = 0;
 		}
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {

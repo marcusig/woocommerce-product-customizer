@@ -32,11 +32,11 @@ msgstr ""
 msgid "WooCommerce Version 3+ required."
 msgstr ""
 
-#: src/inc/ajax.php:163
+#: src/inc/ajax.php:186
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:163
+#: src/inc/ajax.php:186
 msgid "The session seems to have expired."
 msgstr ""
 
@@ -90,6 +90,14 @@ msgstr ""
 
 #: src/inc/db.php:102
 msgid "Define choices for each layer and assign them pictures"
+msgstr ""
+
+#: src/inc/languages.php:146, src/inc/languages.php:146, src/inc/languages.php:133, src/inc/languages.php:133
+msgid "Name"
+msgstr ""
+
+#: src/inc/languages.php:151, src/inc/languages.php:151, src/inc/languages.php:138, src/inc/languages.php:138, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:59, src/inc/admin/settings/layer.php:61
+msgid "Description"
 msgstr ""
 
 #: src/inc/plugin.php:33
@@ -578,10 +586,6 @@ msgstr ""
 
 #: src/inc/admin/settings/angle.php:33
 msgid "Angle Name"
-msgstr ""
-
-#: src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:59, src/inc/admin/settings/layer.php:61
-msgid "Description"
 msgstr ""
 
 #: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:112, src/inc/admin/settings/layer.php:117
