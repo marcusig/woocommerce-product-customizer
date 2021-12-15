@@ -40,11 +40,6 @@ class Languages {
 			return true;	
 		}
 
-		// Check for Weglot
-		if ( function_exists( 'weglot_get_destination_languages' ) ) {
-			$this->ml_plugin = 'weglot';
-			return true;
-		}
 		return false;
 	}
 
@@ -63,12 +58,6 @@ class Languages {
 			return pll_languages_list();
 		}
 
-		if ( $this->website_is_multilingual() && 'weglot' === $this->ml_plugin ) {
-			$languages = weglot_get_destination_languages();
-			return array_map( function( $a ) {
-				return $a[ 'language_to' ];
-			}, $languages );
-		}
 		return [];
 	}
 
@@ -87,9 +76,6 @@ class Languages {
 			return pll_default_language();
 		}
 
-		if ( $this->website_is_multilingual() && 'weglot' === $this->ml_plugin ) {
-			return weglot_get_original_language();
-		}
 		return false;
 	}
 
@@ -108,9 +94,6 @@ class Languages {
 			return pll_current_language();
 		}
 
-		if ( $this->website_is_multilingual() && 'weglot' === $this->ml_plugin ) {
-			return weglot_get_current_language();
-		}
 		return false;
 	}
 
