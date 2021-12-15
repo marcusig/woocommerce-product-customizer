@@ -46,5 +46,12 @@ return json_decode('[
 		"description": "Make complex product configurations using this add-on. Add conditional logic to hide, show or select choices and layers depending on other choices.",
 		"img": "mkl-pc-conditional-logic.png",
 		"product_url": "https://wc-product-configurator.com/product/conditional-logic/"
+	},
+	{
+		"product_name": "form-builder",
+		"label": "Conditional logic",
+		"description": "Collect data (text) directly from the product confifurator.",
+		"img": "mkl-pc-form-fields.png",
+		"product_url": "https://wc-product-configurator.com/product/form-fields/"
 	}
 ]');

@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.21
+Stable tag: 1.2.20
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 = 1.2.21 - 15/Dec/2021 =
 
 * FEATURE: Possibility to edit the configuration from the cart
+* TWEAK: Set price to 0 if was not found
 * TWEAK: Compatibility with Weglot
 * TWEAK: Prevent lazy loading on the generated images in the order
 * TWEAK: Better compatibility between variable products and the conditional logic add-on

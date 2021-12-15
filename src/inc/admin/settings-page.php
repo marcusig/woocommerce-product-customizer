@@ -659,7 +659,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			foreach( $this->addons as $addon ) {
 				$this->display_addon( $addon, in_array( $addon->product_name, array_keys( $installed_addons ) ) );
 			}
-			$this->display_mkl_theme();
+			// $this->display_mkl_theme();
 			echo '</div>';
 		}
 
