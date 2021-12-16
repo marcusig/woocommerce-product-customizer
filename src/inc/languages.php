@@ -185,6 +185,7 @@ class Languages {
 			$zone = wcpbc_the_zone();
 			if ( is_callable( [ $zone, 'get_exchange_rate' ] ) ) {
 				$config['wcpbc_rate'] = $zone->get_exchange_rate();
+				$config['wcpbc_round_nearest'] = $zone->get_round_nearest();
 			}
 		}
 

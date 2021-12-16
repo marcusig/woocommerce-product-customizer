@@ -457,8 +457,13 @@ PC.utils = PC.utils || {
 
 		// Price Based on Country
 		if ( 'undefined' != typeof PC.fe.config.wcpbc_rate && parseFloat( PC.fe.config.wcpbc_rate ) ) {
-			return amount * parseFloat( PC.fe.config.wcpbc_rate );
+			var converted = amount * parseFloat( PC.fe.config.wcpbc_rate );
+			if ( PC.fe.config.wcpbc_round_nearest ) {
+				converted = Math.ceil( converted / PC.fe.config.wcpbc_round_nearest ) * PC.fe.config.wcpbc_round_nearest;
+			}
+			return converted;
 		}
+
 
 		return amount;
 	}
