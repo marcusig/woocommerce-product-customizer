@@ -81,6 +81,10 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				} else {
 					$label = __( 'Configure', 'product-configurator-for-woocommerce' );
 				}
+				if ( ! $product->is_purchasable() || ( 'variable' === $product->get_type() && empty( $product->get_available_variations() ) ) ) {
+					echo '<!-- Product configurator - The current product is not purchasable or has no available variations -->';
+					return;
+				}
 				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" type="button" data-price="'.esc_attr( $this->get_product_price( get_the_id() ) ).'" data-product_id="'.get_the_id().'">'. $label .'</button>' );
 			}
 		}
