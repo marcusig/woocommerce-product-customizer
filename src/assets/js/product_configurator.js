@@ -31,6 +31,12 @@ Backbone.Model.prototype.toJSON = function() {
 			$( 'body' ).addClass( 'is-mobile' );
 		}
 
+		// Check if the open_configurator is in the URL
+		if ( ! PC.fe.config.open_configurator ) {
+			var urlParams = new URLSearchParams( location.search );
+			if ( urlParams.has( 'open_configurator' ) ) PC.fe.config.open_configurator = true;
+		}
+
 		// keyboard-navigation
 
 		$( 'body' ).on( 'keydown', function( e ) {
@@ -152,7 +158,7 @@ Backbone.Model.prototype.toJSON = function() {
 		/**
 		 * Launch the configurator after click
 		 */
-		if( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
+		if ( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
 			$( '.configure-product-simple' ).trigger( 'click' );
 		}
 	});
