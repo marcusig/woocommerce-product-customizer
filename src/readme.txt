@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.20
+Stable tag: 1.2.21
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -110,6 +110,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+* TWEAK: Added Price Based on Country round to nearest for extra prices
+* TWEAK: Don't show the configure button if the product isn't purchasable
 
 = 1.2.21 - 15/Dec/2021 =
 
