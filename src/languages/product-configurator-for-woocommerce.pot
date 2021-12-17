@@ -92,6 +92,22 @@ msgstr ""
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
+#: src/inc/db.php:110
+msgid "Import / Export"
+msgstr ""
+
+#: src/inc/db.php:111
+msgid "Import / Export the product's data "
+msgstr ""
+
+#: src/inc/db.php:112, src/inc/admin/views/html-product-configurator-templates.php:401
+msgid "Export"
+msgstr ""
+
+#: src/inc/db.php:113
+msgid "Description for I/E of the product "
+msgstr ""
+
 #: src/inc/languages.php:146, src/inc/languages.php:146, src/inc/languages.php:133, src/inc/languages.php:133
 msgid "Name"
 msgstr ""
@@ -576,11 +592,11 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/product.php:178
+#: src/inc/frontend/product.php:182
 msgid "Edit item in cart"
 msgstr ""
 
-#: src/inc/frontend/product.php:213
+#: src/inc/frontend/product.php:217
 msgid "Please select a variation to configure"
 msgstr ""
 
@@ -774,6 +790,62 @@ msgstr ""
 
 #: src/inc/admin/views/html-product-configurator-templates.php:376
 msgid "Select a product:"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:395
+msgid "Import"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:396
+msgid "Import configuration"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:398
+msgid "Import an other product"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:402
+msgid "Export configuration data"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:406
+msgid "Return to import / export home"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:423
+msgid "Choose a product"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:430
+msgid "Select a file"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:431
+msgid "Select the JSON file you exported previously."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:437
+msgid "Preview"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:438
+msgid "Review the data and press Import data to import it to this product."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:439
+msgid "Note that any existing configuration will be overriden."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:440
+msgid "Import data"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:492
+msgid "The import process is complete."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:493
+msgid "Please check the different elements (Layers, angles, content...), and save if you are happy with it"
 msgstr ""
 
 #: src/inc/frontend/views/html-product-configurator-templates.php:32

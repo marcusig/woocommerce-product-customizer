@@ -380,4 +380,195 @@ CONTENT TEMPLATES
 		<button class="button cancel"><?php _e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 </script>
+
+<?php 
+/*
+
+IMPORT / EXPORT
+
+*/
+ ?>
+<script type="text/html" id="tmpl-mkl-pc-import-export">
+	<div class="media-frame-content import-export">
+		<div class="import-export-content">
+			<div class="import">
+				<h3><?php _e( 'Import', 'product-configurator-for-woocommerce' ); ?></h3>
+				<p><button class="button" data-action="import-from-file"><?php _e( 'Import configuration', 'product-configurator-for-woocommerce' ); ?></button></p>
+				<!-- <p><?php _e( 'Or' ); ?></p>
+				<p><button class="button" data-action="import-from-product"><?php _e( 'Import an other product', 'product-configurator-for-woocommerce' ); ?></button></p> -->
+			</div>
+			<div class="export">
+				<h3><?php _e( 'Export', 'product-configurator-for-woocommerce' ); ?></h3>
+				<p><button class="button" data-action="export-data"><?php _e( 'Export configuration data', 'product-configurator-for-woocommerce' ); ?></button></p>
+			</div>
+		</div>
+		<div class="importer-action-content">
+			<button class="return" data-action="return"><span class="dashicons dashicons-arrow-left-alt"></span> <?php _e( 'Return to import / export home', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer">
+	<div class="importer-header">
+		<ol>
+			<# _.each( data.menu_items, function( item, index ) { #>
+				<li>{{item.label}}</li>
+			<# }); #>
+		</ol>
+	</div>
+	<div class="importer-container"></div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--product">
+	<h3><?php _e( 'Choose a product', 'product-configurator-for-woocommerce' ); ?></h3>
+	<select style="width: 50%;" class="wc-product-search" name="linked_woocommerce_products[]" data-placeholder="<?php _e( 'Search for a product&hellip;', 'woocommerce' ); ?>" data-action="woocommerce_json_search_products_and_variations">
+	</select>
+	<button class="button next" disabled>Next</button>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--file-upload">
+	<h3><?php _e( 'Select a file', 'product-configurator-for-woocommerce' ); ?></h3>
+	<p><?php _e( 'Select the JSON file you exported previously.', 'product-configurator-for-woocommerce' ); ?></p>
+	<input type="file" id="jsonfileinput" />
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--configuration-preview">
+	<div class="preview-action">
+		<h3><?php _e( 'Preview', 'product-configurator-for-woocommerce' ); ?></h3>
+		<p><?php _e( 'Review the data and press Import data to import it to this product.', 'product-configurator-for-woocommerce' ); ?></p>
+		<p><strong><?php _e( 'Note that any existing configuration will be overriden.', 'product-configurator-for-woocommerce' ); ?></strong></p>
+		<button class="import-selected button button-primary" type="button"><?php _e( 'Import data', 'product-configurator-for-woocommerce' ); ?></button>
+	</div>
+	<div class="preview-content">
+		<# if ( data.layers ) { #>
+			<div class="preview-content--collection">
+				<h4>Layers</h4>
+				<ul class="ul-disc">
+					<# _.each( data.layers, function( layer ) { #>
+						<li>{{layer.name}}
+							<#
+								var content = data.content && _.findWhere( data.content, { layerId: layer._id } );
+								if ( content && content.choices && content.choices.length ) {
+							#>
+								<ul class="ul-square">
+									<# _.each( content.choices, function( choice ) { #>
+										<li>{{choice.name}}</li>
+									<# }); #>
+								</ul>
+							<# } #>
+						</li>
+					<# }); #>
+				</ul>
+			</div>
+		<# } #>
+
+		<# if ( data.angles ) { #>
+			<div class="preview-content--collection">
+				<h4>Angles</h4>
+				<ul class="ul-disc">
+					<# _.each( data.angles, function( angle ) { #>
+						<li>{{angle.name}}</li>
+					<# }); #>
+				</ul>
+			</div>
+		<# } #>
+
+		<# if ( data.conditions ) { #>
+			<div class="preview-content--collection">
+				<h4>Conditions</h4>
+				<ul class="ul-disc">
+					<# _.each( data.conditions, function( condition ) { #>
+						<li>{{condition.name}}</li>
+					<# }); #>
+				</ul>
+			</div>
+		<# } #>
+	</div>
+
+</script>
+
+
+<script type="text/html" id="tmpl-mkl-pc-importer--configuration-imported">
+	<h3><?php _e( 'The import process is complete.', 'product-configurator-for-woocommerce' ); ?></h3>
+	<p><?php _e( 'Please check the different elements (Layers, views, content...), and save if you are happy with it.', 'product-configurator-for-woocommerce' ); ?></p>
+	<button type="button" class="button primary save"><?php _e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
+	<button type="button" class="button primary save-and-fix-images"><?php _e( 'Save and fix images', 'product-configurator-for-woocommerce' ); ?></button>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--layers">
+	<# if ( ! data ) { #>
+		<h3>No product selected</h3>
+	<# } else { #>
+		<# if ( data.product_name ) { #><h3>{{data.product_name}}</h3><# } #>
+		<div class="form">
+			<h4>New layers</h4>
+			<label><input type="radio" required name="which-layers" value="everything"> Import all layers</label>
+			<label><input type="radio" required name="which-layers" value="selected"> Import selected layers</label>
+			
+			<h4>Existing layers</h4>
+			<label><input type="radio" required name="existing-layers" value="append"> Add to existing layers</label>
+			<label><input type="radio" required name="existing-layers" value="append-no-duplicate"> Add to existing with no duplicates</label>
+			<label><input type="radio" required name="existing-layers" value="replace"> Replace existing layers</label>
+
+			<h4>Layers thumbnails</h4>
+			<label><input type="checkbox" name="layer-thumbnails" value="1"> Import thumbnails</label>
+
+			<button class="button next">Next</button>
+		</div>
+		<div class="selector-container">
+		</div>
+	<# } #>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--angles">
+	<# if ( ! data ) { #>
+		<h3>No product selected</h3>
+	<# } else { #>
+		<# if ( data.product_name ) { #><h3>{{data.product_name}}</h3><# } #>
+		<div class="form">
+			<h4>New angles</h4>
+			<label><input type="radio" required name="which-angles" value="everything"> Import all angles</label>
+			<label><input type="radio" required name="which-angles" value="selected"> Import selected angles</label>
+			
+			<h4>Existing angles</h4>
+			<label><input type="radio" required name="existing-angles" value="append"> Add to existing angles</label>
+			<label><input type="radio" required name="existing-angles" value="append-no-duplicate"> Add to existing with no duplicates</label>
+			<label><input type="radio" required name="existing-angles" value="replace"> Replace existing angles</label>
+
+			<h4>Angles thumbnails</h4>
+			<label><input type="checkbox" name="angle-thumbnails" value="1"> Import thumbnails</label>
+
+			<button class="button next">Next</button>
+		</div>
+		<div class="selector-container">
+		</div>
+	<# } #>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--file">
+Importing 2
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--selector">
+	<ul class="available">
+	</ul>
+	<ul class="selected">
+	</ul>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-importer--selector-item">
+	<a href="#">
+		<# if ( data.selected ) { #>
+			<span class="dashicons dashicons-minus"></span>
+		<# } else { #>
+			<span class="dashicons dashicons-plus"></span>
+		<# } #>
+		{{data.name}} <# if ( data.image.urls ) { #><img src="{{data.image.url}}" alt=""><# } #>
+	</a>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-exporter">
+Exportin
+</script>
+
 <?php do_action('mkl_pc_admin_templates_after') ?>

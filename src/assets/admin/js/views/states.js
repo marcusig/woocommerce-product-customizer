@@ -177,11 +177,14 @@ PC.views.state = Backbone.View.extend({
 		this.$save_button.removeClass('disabled'); 
 		this.$save_all_button.removeClass('disabled'); 
 		this.$toolbar.removeClass('saving'); 
+		this.$el.removeClass('saving'); 
 		this.$toolbar.addClass('saved'); 
+		this.$el.addClass('saved'); 
 		var that = this;
 		// show "saved" for 2.5s
 		_.delay(function() {
 			that.$toolbar.removeClass('saved'); 
+			that.$el.removeClass('saved'); 
 		}, 2500);
 		// reset 'modified'
 		if ( ! has_errors ) PC.app.is_modified[this.collectionName] = false;
