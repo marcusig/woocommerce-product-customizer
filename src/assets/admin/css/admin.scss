@@ -800,12 +800,12 @@ CONTENT
 				display: block;
 				list-style-type: none;
 				text-align: center;
-				padding: 1em;
+				padding: 10px;
 				margin: 0;
 
 				&.active {
-					background: #0173aa;
-					color: #FFF;
+					border-bottom: 4px solid #2171b1;
+					background: #EFEFEF;
 				}
 			}
 		}

@@ -64,7 +64,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/inc/db.php:62, src/inc/db.php:80, src/inc/db.php:98, src/inc/admin/views/html-product-configurator-templates.php:61, src/inc/admin/views/html-product-configurator-templates.php:494
+#: src/inc/db.php:62, src/inc/db.php:80, src/inc/db.php:98, src/inc/admin/views/html-product-configurator-templates.php:61, src/inc/admin/views/html-product-configurator-templates.php:495
 msgid "Save"
 msgstr ""
 
@@ -96,19 +96,19 @@ msgstr ""
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
-#: src/inc/db.php:110
+#: src/inc/db.php:288
 msgid "Import / Export"
 msgstr ""
 
-#: src/inc/db.php:111
+#: src/inc/db.php:289
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:112, src/inc/admin/views/html-product-configurator-templates.php:401
+#: src/inc/db.php:290, src/inc/admin/views/html-product-configurator-templates.php:401
 msgid "Export"
 msgstr ""
 
-#: src/inc/db.php:113
+#: src/inc/db.php:291
 msgid "Description for I/E of the product "
 msgstr ""
 
@@ -812,10 +812,6 @@ msgstr ""
 msgid "Export configuration data"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:413
-msgid "Return to import / export home"
-msgstr ""
-
 #: src/inc/admin/views/html-product-configurator-templates.php:423
 msgid "Choose a product"
 msgstr ""
@@ -844,6 +840,18 @@ msgstr ""
 msgid "Import data"
 msgstr ""
 
+#: src/inc/admin/views/html-product-configurator-templates.php:445
+msgid "Layers and content:"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:467
+msgid "Angles:"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:478
+msgid "Conditions"
+msgstr ""
+
 #: src/inc/admin/views/html-product-configurator-templates.php:492
 msgid "The import process is complete."
 msgstr ""
@@ -852,7 +860,23 @@ msgstr ""
 msgid "Please check the different elements (Layers, views, content...), and save if you are happy with it."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:495
+#: src/inc/admin/views/html-product-configurator-templates.php:494
+msgid "Alternatively you can save here."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:496
+msgid "Importing from a different site?"
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:497
+msgid "When importing from a different site, the images need to be added to the library separately."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:498
+msgid "If you already imported the matching images to the library, you can use the following tool to try to match the images."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:499
 msgid "Save and fix images"
 msgstr ""
 
