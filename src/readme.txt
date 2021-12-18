@@ -111,6 +111,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added weglot no-translate attribute on JS templates
 * TWEAK: Check if the `open_configurator` is in the URL using JS
 * TWEAK: Added Price Based on Country round to nearest for extra prices
 * TWEAK: Don't show the configure button if the product isn't purchasable

@@ -1,8 +1,8 @@
 <?php if (!defined('ABSPATH')) exit; ?>
-<script type="text/html" id="tmpl-mkl-pc-configurator-toolbar">
+<script type="text/html" id="tmpl-mkl-pc-configurator-toolbar" data-wg-notranslate>
 	<?php do_action( 'mkl_pc_frontend_configurator_toolbar' ); ?>
 </script>
-<script type="text/html" id="tmpl-mkl-pc-configurator-footer">
+<script type="text/html" id="tmpl-mkl-pc-configurator-footer" data-wg-notranslate>
 	<?php do_action( 'mkl_pc_frontend_configurator_footer_section_left_before' ); ?>
 	<div class="footer__section-left"><?php 
 		do_action( 'mkl_pc_frontend_configurator_footer_section_left_inner_before' );

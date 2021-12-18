@@ -1,5 +1,5 @@
 <?php if (!defined('ABSPATH')) exit; ?>
-<script type="text/html" id="tmpl-mkl-pc-configurator-choice-item"> 
+<script type="text/html" id="tmpl-mkl-pc-configurator-choice-item" data-wg-notranslate> 
 	<button
 		type="button"
 		<# if ( data.disable_selection ) { #>disabled<# } #>
@@ -10,7 +10,7 @@
 	<?php do_action( 'tmpl-pc-configurator-choice-item--after' ); ?>
 </script>
 
-<script type="text/html" id="tmpl-mkl-pc-configurator-choice-group">
+<script type="text/html" id="tmpl-mkl-pc-configurator-choice-group" data-wg-notranslate>
 	<div class="choice-group-label">
 	<?php do_action( 'tmpl-pc-configurator-choice-item' ); ?>
 	<?php do_action( 'tmpl-pc-configurator-choice-item--after' ); ?>
