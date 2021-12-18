@@ -788,11 +788,13 @@ CONTENT
 
 	.importer-header {
 		border-bottom: 1px solid $light-border-color;
+		display: flex;
 		ol {
 			display: flex;
 			width: 100%;
 			margin: 0;
 			padding: 0;
+			border-left: 2px solid #fff;
 			li {
 				flex: 1;
 				display: block;
@@ -844,12 +846,14 @@ CONTENT
 
 	// -------
 
-	.importer--upload {
+	.importer--upload,
+	.importer--complete {
 		padding: 10px 20px;
 	}
+	
 	.preview-content {
 		position: absolute;
-		top: 69px;
+		top: 43px;
 		width: calc(100% - 250px);
 		left: 250px;
 		display: flex;

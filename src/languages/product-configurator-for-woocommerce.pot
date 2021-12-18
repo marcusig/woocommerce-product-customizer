@@ -36,8 +36,12 @@ msgstr ""
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:186
+#: src/inc/ajax.php:186, src/inc/ajax.php:249
 msgid "The session seems to have expired."
+msgstr ""
+
+#: src/inc/ajax.php:249
+msgid "Error processing the request:"
 msgstr ""
 
 #: src/inc/db.php:35
@@ -60,7 +64,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: src/inc/db.php:62, src/inc/db.php:80, src/inc/db.php:98, src/inc/admin/views/html-product-configurator-templates.php:61
+#: src/inc/db.php:62, src/inc/db.php:80, src/inc/db.php:98, src/inc/admin/views/html-product-configurator-templates.php:61, src/inc/admin/views/html-product-configurator-templates.php:494
 msgid "Save"
 msgstr ""
 
@@ -808,7 +812,7 @@ msgstr ""
 msgid "Export configuration data"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:406
+#: src/inc/admin/views/html-product-configurator-templates.php:413
 msgid "Return to import / export home"
 msgstr ""
 
@@ -845,7 +849,11 @@ msgid "The import process is complete."
 msgstr ""
 
 #: src/inc/admin/views/html-product-configurator-templates.php:493
-msgid "Please check the different elements (Layers, angles, content...), and save if you are happy with it"
+msgid "Please check the different elements (Layers, views, content...), and save if you are happy with it."
+msgstr ""
+
+#: src/inc/admin/views/html-product-configurator-templates.php:495
+msgid "Save and fix images"
 msgstr ""
 
 #: src/inc/frontend/views/html-product-configurator-templates.php:32

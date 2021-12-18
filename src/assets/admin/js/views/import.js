@@ -387,7 +387,7 @@ PC.import.views = PC.import.views || {};
 
 	Import.views.importerViews.configuration_imported = Backbone.View.extend({
 		tagName: 'div',
-		className: 'importer',
+		className: 'importer--complete',
 		template: wp.template('mkl-pc-importer--configuration-imported'),
 		events: {
 			'click .save': 'save',

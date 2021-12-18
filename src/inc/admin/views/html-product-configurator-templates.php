@@ -339,7 +339,7 @@ CONTENT TEMPLATES
 		<# } #>
 		<div class="picture thumbnail-picture" data-edit="thumbnail">
 			<# if ( ! data.is_group ) { #><span><?php _e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span><# } #>
-			<# if(data.thumbnail.url != '' ) { #>
+			<# if ( data.thumbnail.url != '' ) { #>
 			<img class="edit-attachment" src="{{data.thumbnail.url}}" alt="">
 			<# } else { #>
 			<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
@@ -403,13 +403,13 @@ IMPORT / EXPORT
 			</div>
 		</div>
 		<div class="importer-action-content">
-			<button class="return" data-action="return"><span class="dashicons dashicons-arrow-left-alt"></span> <?php _e( 'Return to import / export home', 'product-configurator-for-woocommerce' ); ?></button>
 		</div>
 	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-importer">
 	<div class="importer-header">
+		<button class="button button-group button-primary return" type="button" data-action="return"><span class="dashicons dashicons-arrow-left-alt"></span></button>
 		<ol>
 			<# _.each( data.menu_items, function( item, index ) { #>
 				<li>{{item.label}}</li>
@@ -442,7 +442,7 @@ IMPORT / EXPORT
 	<div class="preview-content">
 		<# if ( data.layers ) { #>
 			<div class="preview-content--collection">
-				<h4>Layers</h4>
+				<h4><?php _e( 'Layers and content:', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc">
 					<# _.each( data.layers, function( layer ) { #>
 						<li>{{layer.name}}
@@ -464,7 +464,7 @@ IMPORT / EXPORT
 
 		<# if ( data.angles ) { #>
 			<div class="preview-content--collection">
-				<h4>Angles</h4>
+				<h4><?php _e( 'Angles:', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc">
 					<# _.each( data.angles, function( angle ) { #>
 						<li>{{angle.name}}</li>
@@ -475,7 +475,7 @@ IMPORT / EXPORT
 
 		<# if ( data.conditions ) { #>
 			<div class="preview-content--collection">
-				<h4>Conditions</h4>
+				<h4><?php _e( 'Conditions', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc">
 					<# _.each( data.conditions, function( condition ) { #>
 						<li>{{condition.name}}</li>
@@ -491,7 +491,11 @@ IMPORT / EXPORT
 <script type="text/html" id="tmpl-mkl-pc-importer--configuration-imported">
 	<h3><?php _e( 'The import process is complete.', 'product-configurator-for-woocommerce' ); ?></h3>
 	<p><?php _e( 'Please check the different elements (Layers, views, content...), and save if you are happy with it.', 'product-configurator-for-woocommerce' ); ?></p>
+	<p><?php _e( 'Alternatively you can save here.', 'product-configurator-for-woocommerce' ); ?></p>
 	<button type="button" class="button primary save"><?php _e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
+	<h4><?php _e( 'Importing from a different site?', 'product-configurator-for-woocommerce' ); ?></h4>
+	<p><?php _e( 'When importing from a different site, the images need to be added to the library separately.', 'product-configurator-for-woocommerce' ); ?></p>
+	<p><?php _e( 'If you already imported the matching images to the library, you can use the following tool to try to match the images.', 'product-configurator-for-woocommerce' ); ?></p>
 	<button type="button" class="button primary save-and-fix-images"><?php _e( 'Save and fix images', 'product-configurator-for-woocommerce' ); ?></button>
 </script>
 
