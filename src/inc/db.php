@@ -100,22 +100,13 @@ class DB {
 
 				),
 				'description' => __( 'Define choices for each layer and assign them pictures', 'product-configurator-for-woocommerce' ),
-			), 
-			array(
-				'type' 	=> 'separator',
 			),
-			array(
-				'type' 	=> 'part',
-				'menu_id' 	=> 'import',
-				'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
-				'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
-				'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
-				'description' => __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
-			),
-
 		);
 
 		$this->menu = $default_menu;
+
+		// Add tne import section at the end of the menu
+		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 120 );
 
 	}
 
@@ -279,6 +270,28 @@ class DB {
 	 */
 	public function get_menu(){
 		return apply_filters( 'mkl_product_configurator_admin_menu', $this->menu ); 
+	}
+
+	/**
+	 * Add tne import section to the menu
+	 */
+	public function add_import_section( $menu ) {
+		return array_merge(
+			$menu, 
+			array(
+				array(
+					'type' 	=> 'separator',
+				),
+				array(
+					'type' 	=> 'part',
+					'menu_id' 	=> 'import',
+					'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
+					'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
+					'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
+					'description' => __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
+				),
+			)
+		);
 	}
 
 	/**
