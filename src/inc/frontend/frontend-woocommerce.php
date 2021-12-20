@@ -287,6 +287,7 @@ class Frontend_Woocommerce {
 				'close_configurator_on_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'close_configurator_on_add_to_cart' ),
 				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' ),
 				'close_choices_when_selecting_choice_desktop' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice_desktop' ),
+				'always_close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'always_close_choices_when_selecting_choice' ),
 				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
 				'show_choice_description' => mkl_pc( 'settings')->get( 'show_choice_description' ),

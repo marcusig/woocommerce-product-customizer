@@ -18,6 +18,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 		public function __construct() {
 			add_action( 'customize_register', array( $this, 'customize_register' ), 10 );
 			add_filter( 'wp_get_custom_css', array( $this, 'output_css' ), 130, 2 );
+			add_action( 'customize_controls_print_styles', array( $this, 'customizer_custom_control_css' ) );
 		}
 
 		/**
@@ -174,8 +175,9 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 			}
 
 			if ( ! empty ( apply_filters( 'mkl_pc_them_color_variables', $rules ) ) ) {
+				$mode = $this->theme_supports( 'color_mode' ) ? get_option( self::PREFIX . 'color_mode', '' ) : '';
 				$css .= '
-				.mkl_pc {' .
+				.mkl_pc' . ( $mode ? '.'.$mode : '' ) . ' {' .
 					implode( "\n", $rules )
 				. '}
 				';
@@ -205,6 +207,62 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 				'blue'  => $b,
 			);
 		}
-	}
 
+		/**
+		 * Add CSS for custom controls
+		 *
+		 * This function incorporates CSS from the Kirki Customizer Framework
+		 *
+		 * The Kirki Customizer Framework, Copyright Aristeides Stathopoulos (@aristath),
+		 * is licensed under the terms of the GNU GPL, Version 2 (or later)
+		 *
+		 * @link https://github.com/reduxframework/kirki/
+		 * @since  1.5.0
+		 */
+		public function customizer_custom_control_css() {
+			?>
+			<style>
+			.customize-control-radio-image input[type=radio] {
+				display: none;
+			}
+
+			.customize-control-radio-image label {
+				display: block;
+				width: 48%;
+				float: left;
+				margin-right: 4%;
+			}
+
+			.customize-control-radio-image label:nth-of-type(2n) {
+				margin-right: 0;
+			}
+
+			.customize-control-radio-image img {
+				opacity: .5;
+			}
+
+			.customize-control-radio-image input[type=radio]:checked + label img,
+			.customize-control-radio-image img:hover {
+				opacity: 1;
+			}
+
+			</style>
+			<?php
+		}
+
+		/**
+		 * Theme support
+		 *
+		 * @param string $feature
+		 * @return boolean
+		 */
+		public function theme_supports( $feature ) {
+			/**
+			 * The list of supported features
+			 */
+			$supports = apply_filters( 'mkl_pc/theme_supports', [] );
+			return isset( $supports[$feature] ) && $supports[$feature];
+		}
+
+	}
 }

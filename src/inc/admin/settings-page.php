@@ -411,6 +411,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'always_close_choices_when_selecting_choice',
+				__( 'Close the choices when making a selection', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'mkl_pc__mlk_pc_general_settings',
+				[ 
+					'setting_name' => 'always_close_choices_when_selecting_choice',
+				]
+			);
+
+			add_settings_field(
 				'close_choices_when_selecting_choice',
 				__( 'On mobile, close the choices when making a selection', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
