@@ -38,9 +38,7 @@ var PC = PC || {};
 					content.add( value );
 				}
 			});
-			// this.set('content', content);
 			return { content: content };
-			// this.set()
 		}
 	});
 

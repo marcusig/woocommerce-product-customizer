@@ -36,6 +36,7 @@ class Ajax {
 		add_action( 'wp_ajax_nopriv_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 		add_action( 'wp_ajax_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids', array( $this, 'fix_image_ids' ) );
+		add_action( 'wp_ajax_mkl_pc_fix_image_ids_config', array( $this, 'fix_image_ids_from_configurator' ) );
 		add_action( 'wp_ajax_mkl_pc_get_configurable_products', array( $this, 'get_configurable_products' ) );
 		add_filter( 'weglot_js-data_treat_page', array( $this, 'weglot_compat' ), 20, 4 );
 	}
@@ -121,8 +122,7 @@ class Ajax {
 				break;
 		}
 
-		$data = apply_filters('mkl_pc_get_configurator_data', $data, $id);
-
+		$data = apply_filters( 'mkl_pc_get_configurator_data', $data, $id );
 
 		if ( isset($_REQUEST['view']) && $_REQUEST['view'] === 'dump' && defined('WP_DEBUG') && WP_DEBUG === true ) {
 			echo 'get_configurator_data was executed in ' . (microtime(true) - $start) *1000 . 'ms and we are about to dump';
@@ -235,7 +235,31 @@ class Ajax {
 	public function fix_image_ids() {
 		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
 		if ( ! $id = absint( $_REQUEST['id'] ) ) wp_send_json_error();
+		delete_transient( 'mkl_pc_data_init_' . $id );
 		wp_send_json_success( [ 'changed_items' => $this->db->scan_product_images( $id ) ] );
+	}
+
+	/**
+	 * Fix image ids after a transfer
+	 */
+	public function fix_image_ids_from_configurator() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+		if ( ! $id = absint( $_REQUEST['id'] ) ) wp_send_json_error();
+		if ( ! check_ajax_referer( 'update-pc-post_' . $id, 'security', false ) ) {
+			wp_send_json_error( __( 'Error processing the request:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ), 403 );
+		}
+		delete_transient( 'mkl_pc_data_init_' . $id );
+		$changed_items = $this->db->scan_product_images( $id );
+		$layers = $this->db->get( 'layers', $id );
+		$layers = $this->db->escape( $layers );
+
+		$angles = $this->db->get( 'angles', $id );
+		$angles = $this->db->escape( $angles );
+
+		$content = $this->db->get( 'content', $id );
+		$content = $this->db->escape( $content );
+
+		wp_send_json_success( [ 'layers' => $layers, 'angles' => $angles, 'content' => $content, 'changed_items' => $changed_items ] );
 	}
 
 	public function generate_config_image() {

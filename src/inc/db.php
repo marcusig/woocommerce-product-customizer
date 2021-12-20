@@ -22,7 +22,7 @@ class DB {
 	 */
 	private $menu = array();
 	private $layers = array();
-	private $changed_items = 0;
+	private $changed_items_count = 0;
 
 	/**
 	 * Initialize the class
@@ -100,22 +100,13 @@ class DB {
 
 				),
 				'description' => __( 'Define choices for each layer and assign them pictures', 'product-configurator-for-woocommerce' ),
-			), 
-			// array(
-			// 	'type' 	=> 'separator',
-			// ),
-			// array(
-			// 	'type' 	=> 'part',
-			// 	'menu_id' 	=> 'import',
-			// 	'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
-			// 	'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
-			// 	'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
-			// 	'description' => __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
-			// ),
-
+			),
 		);
 
 		$this->menu = $default_menu;
+
+		// Add tne import section at the end of the menu
+		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 120 );
 
 	}
 
@@ -279,6 +270,28 @@ class DB {
 	 */
 	public function get_menu(){
 		return apply_filters( 'mkl_product_configurator_admin_menu', $this->menu ); 
+	}
+
+	/**
+	 * Add tne import section to the menu
+	 */
+	public function add_import_section( $menu ) {
+		return array_merge(
+			$menu, 
+			array(
+				array(
+					'type' 	=> 'separator',
+				),
+				array(
+					'type' 	=> 'part',
+					'menu_id' 	=> 'import',
+					'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
+					'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
+					'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
+					'description' => __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -639,7 +652,7 @@ class DB {
 		}
 		$this->set( $product_id, $product_id, 'layers', $layers );
 
-		return $this->changed_items;
+		return $this->changed_items_count;
 	}
 
 	/**
@@ -662,7 +675,7 @@ class DB {
 			$matching_image = $this->_attachment_filename_to_postid( $url );
 		}
 		if ( $matching_image ) {
-			$this->changed_items++;
+			$this->changed_items_count++;
 			return $matching_image;
 		}
 		return $original_id;

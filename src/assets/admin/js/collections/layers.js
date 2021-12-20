@@ -3,8 +3,17 @@ var PC = PC || {};
 
 
 PC.layers = Backbone.Collection.extend({
-	url: function() { return ajaxurl + '?action='+PC.actionParameter+'&data=layers' },
+	url: function() { 
+		var url = ajaxurl + '?action='+PC.actionParameter+'&data=layers';
+		if ( this.product_id ) url += '&id='+this.product_id;
+		return url;
+	},
 	model: PC.layer, 
+	initialize: function( data, options ) {
+		if ( options && options.product_id ) {
+			this.product_id = options.product_id;
+		} 
+	},
 	nextOrder: function( order_name ) {
 		if ( ! order_name ) order_name = 'order';
 		if ( ! this.length ) {

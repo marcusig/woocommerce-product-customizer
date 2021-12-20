@@ -74,26 +74,32 @@ Backbone.Model.prototype.toJSON = function() {
 			if ( ! layer_content ) return false;
 			return layer_content.get( 'choices' );
 		},
-		save_all: function( state ) {
+		save_all: function( state, options ) {
 			this.saving = 0;
 			this.errors = [];
 			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
 
-				state.$save_button.addClass('disabled');
-				state.$save_all_button.addClass('disabled');
-				state.$toolbar.addClass('saving'); 
-			}
-			$.each( this.is_modified, function( key, val ) {
-				if ( val == true ) {
-					this.saving ++;
-					this.save( key, this.get_collection( key ), {
-						// success: 'successfuil'
-						success: _.bind(this.saved_all, this, key, state),
-						error: _.bind(this.error_saving, this, key, state)
-					} );
+				if ( state ) {
+					state.$save_button.addClass('disabled');
+					state.$save_all_button.addClass('disabled');
+					state.$toolbar.addClass('saving');
+					state.$el.addClass('saving');
 				}
+				$.each( this.is_modified, function( key, val ) {
+					if ( val == true ) {
+						this.saving ++;
+						this.save( key, this.get_collection( key ), {
+							// success: 'successfuil'
+							success: _.bind( this.saved_all, this, key, state, options ),
+							error: _.bind( this.error_saving, this, key, state, options )
+						} );
+					}
 
-			}.bind( this ) );
+				}.bind( this ) );
+			} else {
+				if ( options.saved_all ) options.saved_all();
+			}
+
 			// if ( this.saving == 0 ) this.admin.close();
 		},
 
@@ -105,12 +111,14 @@ Backbone.Model.prototype.toJSON = function() {
 			}
 			alert( this.errors.join( "/n" ) );
 		},
-		saved_all: function( key, state ) {
+		saved_all: function( key, state, options ) {
 			this.saving--;
 			this.is_modified[ key ] = false;
+			if ( options.saved_one ) options.saved_one( key );
 			if ( this.saving == 0 ) {
 
-				state.state_saved();
+				if ( state && state.state_saved ) state.state_saved();
+				if ( options.saved_all ) options.saved_all();
 				// _.delay(function() {
 				// 	that.admin.close();
 				// }, 1500);
