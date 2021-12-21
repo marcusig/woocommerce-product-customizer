@@ -59,7 +59,7 @@ Backbone.Model.prototype.toJSON = function() {
 
 			if ( PC.fe.config.current_language ) {
 				PC.fe.lang = PC.fe.config.current_language;
-				add_language_filters( PC.fe.lang );
+				PC.utils.add_language_filters( PC.fe.lang );
 			}
 			var product_id, price;
 			var $target = $( event.target );
@@ -162,24 +162,6 @@ Backbone.Model.prototype.toJSON = function() {
 			$( '.configure-product-simple' ).trigger( 'click' );
 		}
 	});
-
-	/**
-	 * Add the language filters
-	 *
-	 * @param {string} lang 
-	 */
-	function add_language_filters( lang ) {
-		var maybe_change_name_and_description = function( attributes ) {
-			if ( attributes['name_' + lang] && '' != attributes['name_' + lang].trim() ) attributes.name = attributes['name_' + lang];
-			if ( attributes['description_' + lang] && '' != attributes['description_' + lang].trim() ) attributes.description = attributes['description_' + lang];
-			return attributes;
-		}
-
-		wp.hooks.addFilter( 'PC.fe.configurator.layer_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
-		wp.hooks.addFilter( 'PC.fe.configurator.choice_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
-		wp.hooks.addFilter( 'PC.fe.configurator.angle_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
-	}
-
 
 	PC.fe.init = function( product_id, parent_id, $element ) {
 		if ( PC.fe.is_using_shortcode ) {
@@ -472,6 +454,22 @@ PC.utils = PC.utils || {
 
 
 		return amount;
-	}
+	},
+	/**
+	 * Add the language filters
+	 *
+	 * @param {string} lang 
+	 */
+	 add_language_filters: function( lang ) {
+		var maybe_change_name_and_description = function( attributes ) {
+			if ( attributes['name_' + lang] && '' != attributes['name_' + lang].trim() ) attributes.name = attributes['name_' + lang];
+			if ( attributes['description_' + lang] && '' != attributes['description_' + lang].trim() ) attributes.description = attributes['description_' + lang];
+			return attributes;
+		}
+
+		wp.hooks.addFilter( 'PC.fe.configurator.layer_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
+		wp.hooks.addFilter( 'PC.fe.configurator.choice_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
+		wp.hooks.addFilter( 'PC.fe.configurator.angle_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
+	}	
 
 };
