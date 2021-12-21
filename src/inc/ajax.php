@@ -216,6 +216,9 @@ class Ajax {
 		
 		// Delete the data transient if it exists, to make sure we don't serve stale data.
 		delete_transient( 'mkl_pc_data_init_' . $id );
+		if ( $ref_id && $ref_id != $id) {
+			delete_transient( 'mkl_pc_data_init_' . $ref_id );
+		}
 
 		wp_send_json_success( $result );
 	}
