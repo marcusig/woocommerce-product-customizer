@@ -17,7 +17,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 		const PREFIX = 'mkl_pc_theme_';
 		public function __construct() {
 			add_action( 'customize_register', array( $this, 'customize_register' ), 10 );
-			add_filter( 'wp_get_custom_css', array( $this, 'output_css' ), 130, 2 );
+			add_action( 'mkl_pc_scripts_product_page_after', array( $this, 'output_css' ), 40 );
 		}
 
 		/**
@@ -160,9 +160,13 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 
 		}
 
-		public function output_css( $css, $stylesheet ) {
+		/**
+		 * Output CSS variables
+		 */
+		public function output_css() {
 			$colors = $this->get_colors();
 			$rules = [];
+			$css = '';
 			foreach( $colors as $slug => $color ) {
 				$color_name = str_replace( self::PREFIX, '', $slug );
 				if ( $c = get_option( $slug = self::PREFIX . $slug, $color['default'] ) ) {
@@ -181,7 +185,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 				';
 			}
 
-			return $css;
+			wp_add_inline_style( 'mlk_pc/css', $css );
 		}
 
 		private function hex2rgb( $color ) {
