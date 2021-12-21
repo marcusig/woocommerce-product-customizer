@@ -114,11 +114,11 @@ Backbone.Model.prototype.toJSON = function() {
 		saved_all: function( key, state, options ) {
 			this.saving--;
 			this.is_modified[ key ] = false;
-			if ( options.saved_one ) options.saved_one( key );
+			if ( options && options.saved_one ) options.saved_one( key );
 			if ( this.saving == 0 ) {
 
 				if ( state && state.state_saved ) state.state_saved();
-				if ( options.saved_all ) options.saved_all();
+				if ( options && options.saved_all ) options.saved_all();
 				// _.delay(function() {
 				// 	that.admin.close();
 				// }, 1500);
