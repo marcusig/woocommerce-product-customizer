@@ -113,6 +113,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 = 1.2.22 - 23/Dec/2021 =
 
+* FEATURE: Added an import/export feature
 * TWEAK: Better compatibility with WPML
 * TWEAK: Added weglot no-translate attribute on JS templates
 * TWEAK: Check if the `open_configurator` is in the URL using JS
