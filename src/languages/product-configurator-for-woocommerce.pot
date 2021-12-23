@@ -36,11 +36,11 @@ msgstr ""
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:186, src/inc/ajax.php:249
+#: src/inc/ajax.php:186, src/inc/ajax.php:252
 msgid "The session seems to have expired."
 msgstr ""
 
-#: src/inc/ajax.php:249
+#: src/inc/ajax.php:252
 msgid "Error processing the request:"
 msgstr ""
 

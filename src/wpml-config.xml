@@ -6,5 +6,6 @@
 		<custom-field action="copy">_mkl_pc__is_configurable</custom-field>
 		<custom-field action="copy">_mkl_product_configurator_last_updated</custom-field>
 		<custom-field action="copy">_mkl_product_configurator_conditions</custom-field>
+		<custom-field action="copy">_mkl_pc__variable_configuration_mode</custom-field>
 	</custom-fields>
 </wpml-config>
