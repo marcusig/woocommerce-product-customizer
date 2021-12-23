@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.8
-Stable tag: 1.2.21
+Stable tag: 1.2.22
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.22 - 23/Dec/2021 =
+
+* TWEAK: Better compatibility with WPML
 * TWEAK: Added weglot no-translate attribute on JS templates
 * TWEAK: Check if the `open_configurator` is in the URL using JS
 * TWEAK: Added Price Based on Country round to nearest for extra prices
@@ -325,4 +328,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.21 The main additions is **the possibility to edit a configuration from the admin scren**, as well as several compatibility tweaks.
+* 1.2.22 Various tweaks and improvements
