@@ -103,15 +103,15 @@ Backbone.Model.prototype.toJSON = function() {
 
 		$('form.cart').each(function(index, form) { 
 
-			if ( ! $( 'body' ).is('.enable-add-to-cart' ) ) $(form).find('button[name="add-to-cart"]').prop('disabled', 'disabled'); 
-			$(form).on('submit', function( event ){ 
-				$('input[name=pc_configurator_data]').val( PC.fe.save_data.save() ); 
-				if( $('input[name=pc_configurator_data]').val() == '' ) {
+			if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( form ).find( 'button[name="add-to-cart"]' ).prop( 'disabled', 'disabled' ); 
+			$( form ).on( 'submit', function( event ) {
+				$( 'input[name=pc_configurator_data]' ).val( PC.fe.save_data.save() ); 
+				if( $( 'input[name=pc_configurator_data]' ).val() == '' ) {
 					event.preventDefault(); 
 					console.log('empty data'); 
 				}
-			});
-		});
+			} );
+		} );
 
 		/**
 		 * Automaticly switch angles
@@ -120,8 +120,8 @@ Backbone.Model.prototype.toJSON = function() {
 			if ( view.model.get( 'angle_switch' ) && 'no' != view.model.get( 'angle_switch' ) )  {
 				var new_angle = PC.fe.angles.get( view.model.get( 'angle_switch' ) );
 				if ( new_angle && ! new_angle.get( 'active' ) ) {
-					new_angle.collection.each(function(model) {
-						model.set('active', false); 
+					new_angle.collection.each( function( model ) {
+						model.set( 'active', false ); 
 					});		
 					new_angle.set( 'active', true );
 				}

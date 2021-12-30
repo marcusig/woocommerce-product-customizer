@@ -404,22 +404,22 @@ PC.options = PC.options || {};
 					this.model.set('active', false);
 				}
 			} else {
-				this.model.collection.each(function(model) {
-					model.set('active' , false);
+				this.model.collection.each( function( model ) {
+					model.set( 'active' , false );
 				});
 
-				this.model.set('active', true); 
+				this.model.set( 'active', true ); 
 				wp.hooks.doAction( 'PC.fe.layer.show', this );
 			}
 		},
 		activate: function() {
-			if( this.model.get('active') ) {
-				this.$el.addClass('active'); 
-				if ( this.choices ) this.choices.$el.addClass('active');
+			if( this.model.get( 'active' ) ) {
+				this.$el.addClass( 'active' ); 
+				if ( this.choices ) this.choices.$el.addClass( 'active' );
 				wp.hooks.doAction( 'PC.fe.layer.activate', this );
 			} else {
-				this.$el.removeClass('active');
-				if ( this.choices ) this.choices.$el.removeClass('active');
+				this.$el.removeClass( 'active' );
+				if ( this.choices ) this.choices.$el.removeClass( 'active' );
 				wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 			}
 
