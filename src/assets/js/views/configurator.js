@@ -251,17 +251,22 @@ PC.options = PC.options || {};
 				return;
 			}
 
-			// console.log( $cart.find( '[name="add-to-cart"]' ).val( PC.fe.active_product ) );
-			
-			// return;
-
-			if ( $cart.find( '.single_add_to_cart_button' ).length ) {
-				$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
-			} else if ( $cart.find( 'button[name=add-to-cart]' ).length ) {
-				$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
-			} else {
-				$cart.trigger( 'submit' );
+			/**
+			 * Filter PC.fe.trigger_add_to_cart: Will submit the form only returns true
+			 *
+			 * @param boolean should_submit
+			 * @param object  $cart - The jQuery object
+			 */
+			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, $cart ) ) {
+				if ( $cart.find( '.single_add_to_cart_button' ).length ) {
+					$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
+				} else if ( $cart.find( 'button[name=add-to-cart]' ).length ) {
+					$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
+				} else {
+					$cart.trigger( 'submit' );
+				}
 			}
+
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 		}
 	});
