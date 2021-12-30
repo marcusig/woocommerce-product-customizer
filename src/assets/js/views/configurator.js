@@ -406,7 +406,11 @@ PC.options = PC.options || {};
 			wp.hooks.doAction( 'PC.fe.add.choices', this.choices.$el, this );
 		},
 		show_choices: function( event ) {
-			event.preventDefault(); 
+			// Allow clicking on link tags
+			if ( event.target.tagName && 'A' == event.target.tagName ) {
+				return;
+			}
+			event.preventDefault();
 			if ( this.model.get( 'active' ) == true ) {
 				wp.hooks.doAction( 'PC.fe.layer.hide', this );
 				if ( wp.hooks.applyFilters( 'PC.fe.layer.self_hide', true, this ) ) {
