@@ -47,6 +47,7 @@ This plugin comes without limitations. But if you need more functionalities, loo
 * <a target="_blank" href="https://wc-product-configurator.com/product/multiple-choice/">Multiple choices</a> - Enables multiple choices per layer Ideal for a product’s options, or when having several individual options.
 * <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Stock management / Linked product</a> - Manage the stocks on a choice basis, or link a choice to a product in the shop. 
 * <a target="_blank" href="https://wc-product-configurator.com/product/conditional-logic/">Conditional logic</a> - Manage the stocks on a choice basis, or link a choice to a product in the shop. 
+* <a target="_blank" href="https://wc-product-configurator.com/product/form-fields/">Form fields</a> - Create forms to collect data associated to your configurable products.
 * For custom needs, contact me <a href="https://wc-product-configurator.com/contact/">here</a>
 
 == Installation ==
@@ -110,6 +111,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+* TWEAK: Prevent potential error when using Price Based on Country Lite
+* TWEAK: Allow clicking on links in the layer header description
+* TWEAK: Add an error when no choice is selectable for a layer. E.g. when all the choices in a layer are out of stock
 
 = 1.2.22 - 23/Dec/2021 =
 
