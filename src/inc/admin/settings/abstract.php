@@ -122,7 +122,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				case 'text':
 				case 'number':
 				default:
-					$output .= '<input '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" value="<# if( data.'.esc_attr($options['id']).' ) { #>{{data.'.esc_attr($options['id']).'}}<# } #>">';
+					$output .= '<input '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" value="<# if ( "undefined" != typeof data.'.esc_attr($options['id']).' ) { #>{{data.'.esc_attr($options['id']).'}}<# } #>">';
 					break;
 			}
 
