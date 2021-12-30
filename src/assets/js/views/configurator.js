@@ -1041,6 +1041,11 @@ PC.options = PC.options || {};
 						require_error = true;
 					}
 
+					// Simple layer without a selection (e.g. all items are out of stock)
+					if ( ! is_required && ! selected_choices.length && 'simple' == type && 'select_first' == default_selection ) {
+						require_error = true;
+					}
+
 					_.each( selected_choices, function( choice ) {
 						if ( false === choice.get( 'cshow' ) ) return;
 						if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.parent_is_hidden && PC.conditionalLogic.parent_is_hidden( choice ) ) return;
