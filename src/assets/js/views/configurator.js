@@ -66,8 +66,12 @@ PC.options = PC.options || {};
 		},
 		close: function() {
 			PC.fe.opened = false; 
+			// Remove classes
 			this.$el.removeClass( 'opened' ); 
 			$('body').removeClass('configurator_is_opened');
+
+			// Empty the form fields to prevent adding the configuration to the cart by mistake
+			$('input[name=pc_configurator_data]').val( '' );
 
 			wp.hooks.doAction( 'PC.fe.close', this ); 
 
