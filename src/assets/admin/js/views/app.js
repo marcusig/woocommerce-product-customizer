@@ -163,7 +163,7 @@ PC.views = PC.views || {};
 
 		events: {
 			'click .media-modal-close': 'close',
-			'click .pc-modal-backdrop': 'close',
+			// 'click .pc-modal-backdrop': 'close',
 		},
 
 		open: function() {
