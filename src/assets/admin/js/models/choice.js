@@ -34,7 +34,7 @@ PC.choice = Backbone.Model.extend({
 				break;
 		}
 
-		if ( 'undefined' != attributes.is_group && 1 == parseInt( attributes.is_group ) ) {
+		if ( 'undefined' != attributes.is_group && attributes.is_group ) {
 			this.set( 'available', false);
 		}
 		wp.hooks.doAction( 'PC.fe.models.choice.init', this );
