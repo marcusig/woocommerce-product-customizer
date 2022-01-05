@@ -198,6 +198,7 @@ Backbone.Model.prototype.toJSON = function() {
 	PC.fe.open = function( product_id, parent_id, $element ) {
 
 		PC.fe.opened = true;
+		wp.hooks.doAction( 'PC.fe.before_open' );
 		$('body').addClass('configurator_is_opened');
 		if( PC.fe.inline ) $('body').addClass('configurator_is_inline');
 
