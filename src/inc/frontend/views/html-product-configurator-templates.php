@@ -18,7 +18,7 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__main_container() {
 ?>
 	<div class="mkl_pc_container">
-		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg', true ) )  : ?>
+		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg' ) )  : ?>
 			<div class="mkl_pc_bg<# if ( data.bg_image && '<?php echo MKL_PC_ASSETS_URL.'images/default-bg.jpg'; ?>' == data.bg_image ) { #> default-bg<# } #>"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 		<?php endif; ?>
 	</div>
@@ -75,7 +75,12 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_fr
 function mkl_pc_frontend_configurator_footer_add_reset_button() {
 	if ( ! ( bool ) mkl_pc( 'settings')->get( 'show_reset_button' ) ) return;
 	$classes = apply_filters( 'mkl_pc_reset_button_classes' , [ 'reset-configuration' ] );
-	echo '<button type="button" class="' . esc_attr( implode( ' ', $classes ) ) . '">' . __( 'Reset configuration', 'product-configurator-for-woocommerce' ) . '</button>';
+	?>
+		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
+			<?php do_action( 'mkl_pc/reset_button/before_label' ); ?>
+			<span><?php _e( 'Reset configuration', 'product-configurator-for-woocommerce' ); ?></span>
+		</button>
+	<?php
 }
 
 add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_frontend_configurator_footer_add_reset_button', 30 );
