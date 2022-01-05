@@ -14,6 +14,7 @@ PC.options = PC.options || {};
 		className: 'mkl_pc',
 		template: wp.template( 'mkl-pc-configurator' ), 
 		initialize: function( product_id, parent_id ) {
+			wp.hooks.doAction( 'PC.fe.init.modal', this ); 
 			if ( parent_id ) {
 				this.options = PC.productData['prod_' + parent_id].product_info; 
 			} else {
@@ -525,6 +526,11 @@ PC.options = PC.options || {};
 			} else {
 				this.$list.append( new_choice.render() ); 
 			}
+
+			/**
+			 * 
+			 */
+			wp.hooks.doAction( 'PC.fe.choices.add_one.after', this, new_choice );
 		},
 		close_choices: function( event ) {
 			event.preventDefault(); 
