@@ -115,11 +115,11 @@ gulp.task('pot', function(done) {
 gulp.task('build', 
 	gulp.series(
 		'clean',
+		'pot',
 		'move_src',
 		'vendor',
 		'scss',
-		'js',
-		'pot'
+		'js'
 	)
 );
 
