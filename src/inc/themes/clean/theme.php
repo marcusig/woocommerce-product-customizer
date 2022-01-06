@@ -22,3 +22,32 @@ function mkl_pc_clean_add_reset_icon() {
 	echo file_get_contents( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/reset.svg' );
 }
 add_action( 'mkl_pc/reset_button/before_label', 'mkl_pc_clean_add_reset_icon' );
+
+/**
+ * Filter the customizer's colors
+ *
+ * @param array $colors
+ * @return array
+ */
+function mkl_pc_clean_theme_filter_colors( $colors ) {
+	$colors['primary_hover'] = [
+		'default' => '#3c9871',
+		'label' => __( 'Accent color hover', 'product-configurator-for-woocommerce' )
+	];
+	$colors['container-bg'] = [
+		'default' => '#F2F2F2',
+		'label' => __( 'Main background color', 'product-configurator-for-woocommerce' )
+	];
+	$colors['viewer-bg'] = [
+		'default' => '#FFFFFF',
+		'label' => __( 'Viewer background color', 'product-configurator-for-woocommerce' )
+	];
+	$colors['border-color'] = [
+		'default' => '#e5e5e5',
+		'label' => __( 'Viewer background color', 'product-configurator-for-woocommerce' )
+	];
+	if ( isset( $colors['active_choice_button_bg_color'] ) ) $colors['active_choice_button_bg_color']['default'] = '#F8F7F7';
+
+	return $colors;
+}
+add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_clean_theme_filter_colors' );
