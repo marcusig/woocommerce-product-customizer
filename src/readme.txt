@@ -112,6 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix language namespace on missing string
+* TWEAK: Add action in the reset button
 * TWEAK: Prevent potential error when using Price Based on Country Lite
 * TWEAK: Allow clicking on links in the layer header description
 * TWEAK: Add an error when no choice is selectable for a layer. E.g. when all the choices in a layer are out of stock
