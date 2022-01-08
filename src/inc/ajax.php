@@ -97,7 +97,9 @@ class Ajax {
 					}
 					if ( ! $data ) {
 						$data = $this->db->get_front_end_data( $id );
-						set_transient( 'mkl_pc_data_init_' . $id, $data, 600 );
+						if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+							set_transient( 'mkl_pc_data_init_' . $id, $data, 600 );
+						}
 					}
 				} else {
 					$data = $this->db->get_init_data( $id );

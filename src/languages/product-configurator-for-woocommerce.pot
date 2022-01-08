@@ -44,71 +44,71 @@ msgstr ""
 msgid "Error processing the request:"
 msgstr ""
 
-#: src/inc/db.php:35
+#: src/inc/db.php:36
 msgid "Home"
 msgstr ""
 
-#: src/inc/db.php:36
+#: src/inc/db.php:37
 msgid "Welcome to the Product Configurator "
 msgstr ""
 
-#: src/inc/db.php:53
+#: src/inc/db.php:54
 msgid "Layers"
 msgstr ""
 
-#: src/inc/db.php:54
+#: src/inc/db.php:55
 msgid "Layers of the product "
 msgstr ""
 
-#: src/inc/db.php:58, src/inc/db.php:76, src/inc/db.php:94, src/inc/admin/views/html-product-configurator-templates.php:130, src/inc/admin/views/html-product-configurator-templates.php:166, src/inc/admin/views/html-product-configurator-templates.php:270, src/inc/admin/views/html-product-configurator-templates.php:306, src/inc/admin/views/html-product-configurator-templates.php:380
+#: src/inc/db.php:59, src/inc/db.php:77, src/inc/db.php:95, src/inc/admin/views/html-product-configurator-templates.php:130, src/inc/admin/views/html-product-configurator-templates.php:166, src/inc/admin/views/html-product-configurator-templates.php:270, src/inc/admin/views/html-product-configurator-templates.php:306, src/inc/admin/views/html-product-configurator-templates.php:380
 msgid "Cancel"
 msgstr ""
 
-#: src/inc/db.php:62, src/inc/db.php:80, src/inc/db.php:98, src/inc/admin/views/html-product-configurator-templates.php:61, src/inc/admin/views/html-product-configurator-templates.php:495
+#: src/inc/db.php:63, src/inc/db.php:81, src/inc/db.php:99, src/inc/admin/views/html-product-configurator-templates.php:61, src/inc/admin/views/html-product-configurator-templates.php:495
 msgid "Save"
 msgstr ""
 
-#: src/inc/db.php:66
+#: src/inc/db.php:67
 msgid "Define the layers the product is composed of. "
 msgstr ""
 
-#: src/inc/db.php:71
+#: src/inc/db.php:72
 msgid "Views"
 msgstr ""
 
-#: src/inc/db.php:72
+#: src/inc/db.php:73
 msgid "Angles of the product "
 msgstr ""
 
-#: src/inc/db.php:84
+#: src/inc/db.php:85
 msgid "Define the view angles, if you want the client to be able to switch between them. "
 msgstr ""
 
-#: src/inc/db.php:89
+#: src/inc/db.php:90
 msgid "Content"
 msgstr ""
 
-#: src/inc/db.php:90
+#: src/inc/db.php:91
 msgid "Contents "
 msgstr ""
 
-#: src/inc/db.php:102
+#: src/inc/db.php:103
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
-#: src/inc/db.php:288
+#: src/inc/db.php:289
 msgid "Import / Export"
 msgstr ""
 
-#: src/inc/db.php:289
+#: src/inc/db.php:290
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:290, src/inc/admin/views/html-product-configurator-templates.php:401
+#: src/inc/db.php:291, src/inc/admin/views/html-product-configurator-templates.php:401
 msgid "Export"
 msgstr ""
 
-#: src/inc/db.php:291
+#: src/inc/db.php:292
 msgid "Description for I/E of the product "
 msgstr ""
 
@@ -982,6 +982,10 @@ msgstr ""
 
 #: src/inc/themes/wsb/theme.php:67
 msgid "Sidebar background"
+msgstr ""
+
+#: src/inc/frontend/views/parts/admin-bar.php:21
+msgid "Configuration name"
 msgstr ""
 
 #: src/inc/frontend/views/parts/product-viewer.php:8

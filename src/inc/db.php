@@ -23,6 +23,7 @@ class DB {
 	private $menu = array();
 	private $layers = array();
 	private $changed_items_count = 0;
+	public $context = 'admin';
 
 	/**
 	 * Initialize the class
@@ -334,16 +335,18 @@ class DB {
 	 * @return array
 	 */
 	public function get_front_end_data( $id ) {
-		global $product;
-		if ( $product ) {
-			$g_product = $product;
-		} else {
-			$g_product = false;
-		}
-
+		// global $product;
+		// if ( $product ) {
+		// 	$g_product = $product;
+		// } else {
+		// 	$g_product = false;
+		// }
+		$this->context = 'frontend';
 		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
-		$product = wc_get_product( $id ); 
+		$product = wc_get_product( $id );
+		
+		if ( ! $product ) return [];
 
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
