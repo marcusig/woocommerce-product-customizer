@@ -95,6 +95,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' );
 			$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
 			foreach ( $choices as $choice ) {
+				if ( empty( $choice ) ) continue;
 				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['label'] .'</strong><span class="semicol">:</span> ' . $choice['value'] . $after, $choice['label'], $choice['value'], $before, $after );
 			}
 

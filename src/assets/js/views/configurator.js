@@ -612,7 +612,7 @@ PC.options = PC.options || {};
 			wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 		},
 		preload_image: function() {
-			var src = this.model.get_image( 'thumbnail' );
+			var src = this.model.get_image();
 			var img = new Image();
 			img.src = src;
 		},

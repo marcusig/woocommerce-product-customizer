@@ -227,6 +227,9 @@ PC.views = PC.views || {};
 		},
 	} );
 
+	/**
+	 * Edit view
+	 */
 	PC.views.choiceDetails = Backbone.View.extend({ 
 		tagName: 'div', 
 		className: 'choice-form', 
