@@ -50,6 +50,15 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'type' => 'text',
 							'priority' => 10,
 						),
+						'color' => array(
+							'label' => __('Color hex code', 'product-configurator-for-woocommerce' ),
+							'type' => 'text',
+							'attributes' => array(
+								'placeholder' => __('E.g. #EEFF00', 'product-configurator-for-woocommerce'),
+							),
+							'condition' => '!data.not_a_choice && !data.is_group && "colors" == data.layer.display_mode',
+							'priority' => 10,
+						),
 						'admin_label' => array(
 							'label' => __('Admin label', 'product-configurator-for-woocommerce' ),
 							'type' => 'text',

@@ -46,7 +46,27 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 						],
 					],
 					'priority' => 5,
-				),				
+				),
+				'display_mode' => array(
+					'label' => __( 'Display mode', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'choices' => [
+						[
+							'label' => __( 'Default', 'product-configurator-for-woocommerce' ),
+							'value' => 'default'
+						],
+						[
+							'label' => __( 'Drop down', 'product-configurator-for-woocommerce' ),
+							'value' => 'dropdown',
+						],
+						[
+							'label' => __( 'Small color choices', 'product-configurator-for-woocommerce' ),
+							'value' => 'colors',
+						],
+					],
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
+					'priority' => 7,
+				),
 				'name' => array(
 					'label' => __('Layer name', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',

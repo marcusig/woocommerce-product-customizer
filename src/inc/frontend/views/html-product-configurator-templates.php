@@ -111,7 +111,10 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_
 
 function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
-	<header><h3 class="product-name">{{{data.name}}}</h3><button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button></header>
+	<header>
+		<h3 class="product-name">{{{data.name}}}</h3>
+		<button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button>
+	</header>
 <?php
 }
 add_action( 'mkl_pc_frontend_configurator_toolbar', 'mkl_pc_frontend_configurator_toolbar__header', 20 );
@@ -155,7 +158,11 @@ add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_confi
 
 function mkl_pc_frontend_configurator_choice_thumbnail() {
 	?>
-		<# if(data.thumbnail) { #><i class="mkl-pc-thumbnail"><span><img src="{{data.thumbnail}}" alt="" /></span></i><# } #>
+		<# if ( data.thumbnail ) { #>
+			<i class="mkl-pc-thumbnail"><span><img src="{{data.thumbnail}}" alt="" /></span></i>
+		<# } else if ( data.color ) { #>
+			<i class="mkl-pc-thumbnail"><span style="background-color: {{data.color}};"></span></i>
+		<# } #>
 	<?php
 }
 add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_thumbnail', 5 );
@@ -196,4 +203,4 @@ foreach( $parts as $part ) {
 	}
 }
 
-do_action('mkl_pc_frontend_templates_after');
+do_action( 'mkl_pc_frontend_templates_after' );
