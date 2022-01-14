@@ -1194,3 +1194,121 @@ body.configurator_is_inline .mkl_pc {
     height: 100%;
     z-index: 3;
 }
+
+/* Color mode */
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul {
+    display: flex;
+    flex-wrap: wrap;
+
+	li.is-group {
+		width: 100%;
+	}
+
+	li:not(.is-group) {
+		padding: 5px;
+
+		button {
+			padding: 0;
+		}
+
+		i.mkl-pc-thumbnail {
+			width: 44px;
+			height: 44px;
+			position: relative;
+			top: auto;
+			transform: none;
+			right: auto;
+			overflow: visible;
+		}
+		
+		i.mkl-pc-thumbnail span {
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			box-shadow: none;
+			overflow: visible;
+			border-radius: 50%;
+			img {
+				border-radius: 50%;
+			}
+		}
+
+		&.active button {
+			background: transparent;
+			i.mkl-pc-thumbnail {
+				border-color: color( active_choice_button_bg_color );
+			}
+			i.mkl-pc-thumbnail span {
+				img {
+					box-shadow: 0 6px 15px -4px #00000091;
+				}
+				&::before {
+					content: ' ';
+					display: block;
+					width: 20px;
+					height: 20px;
+					background: #FFF;
+					position: absolute;
+					top: -5px;
+					right: -5px;
+					z-index: 1;
+					border-radius: 3px;
+					box-shadow: 0 3px 8px #0000004a;
+				}
+				&::after {
+					content: ' ';
+					/* color: green; */
+					position: absolute;
+					top: 0;
+					right: -1px;
+					display: block;
+					width: 10px;
+					height: 4px;
+					border-bottom: 2px solid #179608;
+					border-left: 2px solid #179608;
+					transform: rotate(-45deg);
+					z-index: 2;
+					box-sizing: content-box;
+				}
+			}			
+			
+		}
+
+		&.out-of-stock {
+			i.mkl-pc-thumbnail svg {
+				display: block;
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				top: 0;
+				left: 0;
+				z-index: 2;
+			
+				line.cls-1 {
+					stroke: #FFF;
+					stroke-width: 4px;
+				}
+			}
+		}		
+	}	
+
+}
+
+
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li:not(.is-group) span.text,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li span.description,
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li span.out-of-stock {
+    display: none;
+}
+
+.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
+    display: block;
+	text-transform: uppercase;
+	font-size: 80%;
+}
+
+.tippy-content span.choice-price {
+    font-size: .8em;
+    opacity: .6;
+}

@@ -255,10 +255,12 @@ $inner_space: 1em;
 				width: 100%;
 				text-align: right;
 			}
-			span[class*="-label"] {
+			span[class*="-label"],
+			.pc-price {
 				text-transform: uppercase;
 				font-size: .7em;
 				color: color(light-gray);
+				display: block;
 			}
 			.mkl_pc_toolbar & {
 				@media (max-width: $small_screen_width ) {
@@ -723,10 +725,24 @@ body.configurator_is_inline .mkl_pc {
 	}
 }
 
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description {
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description,
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices ul.layer_choices.display-mode-colors li > button span.text.choice-name,
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices ul.layer_choices.display-mode-colors li > span.out-of-stock {
 	display: none;
 }
-
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices ul.layer_choices.display-mode-colors {
+	--layer-item-width: 0;
+}
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices.form {
+	.form-item {
+		label {
+			color: color( light-gray );
+		}
+	}
+	li.choices-list > ul {
+		padding: 1em;
+	}
+}
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.choices-fullwidth {
 	.choices-list li {
@@ -755,6 +771,147 @@ body.configurator_is_inline .mkl_pc {
 /* Elementor fix */
 .woocommerce div.product.elementor .mkl_pc .mkl_pc_container .pc_configurator_form form.cart {
 	display: inline-flex;
+}
+
+/*
+	Display mode Color
+*/
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors {
+	.choices-list li {
+		box-shadow: none;
+		width: auto;
+		&:not(.is-group) {
+			margin: 3px;
+		}
+		&.is-group {
+			flex-direction: column;
+			.choices-list--children {
+				border-radius: 2px;
+			}
+			.choice-group-label {
+				padding-left: 1em;
+				i.mkl-pc-thumbnail {
+					display: none;
+				}
+			}
+		}
+
+		button {
+			padding: 0;
+			text-align: left;
+			height: auto;
+			&:hover, &:focus {
+				box-shadow: none;
+			}
+
+			span.text.choice-name {
+				padding: 0;
+				text-align: left;
+			} 
+			i.mkl-pc-thumbnail {
+				margin-left: 0;
+				margin-bottom: 0;
+				width: var( --mkl_pc_color_thumnail_size, 32px );
+				height: var( --mkl_pc_color_thumnail_size, 32px );
+			}
+			
+			i.mkl-pc-thumbnail span {
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				overflow: visible;
+			}			
+		}
+
+		button:hover, button:focus {
+			span img {
+				box-shadow: 0 0 0 2px #FFF, 0 0 0 4px #9E9E9E;
+			}
+		}
+		
+		&.active,
+		&.active:hover,
+		&.active:focus {
+			box-shadow: none;
+			button:hover, button:focus {
+				box-shadow: none;
+			}
+		}
+
+		&.active i.mkl-pc-thumbnail span {
+			img {
+				box-shadow: 0 6px 15px -4px #00000091;
+			}
+			&::before {
+				content: ' ';
+				display: block;
+				width: 20px;
+				height: 20px;
+				background: #FFF;
+				position: absolute;
+				top: -5px;
+				right: -5px;
+				z-index: 1;
+				border-radius: 3px;
+				box-shadow: 0 3px 8px #0000004a;
+			}
+			&::after {
+				content: ' ';
+				/* color: green; */
+				position: absolute;
+				top: 0;
+    			right: -1px;
+				display: block;
+				width: 10px;
+				height: 4px;
+				border-bottom: 2px solid #179608;
+				border-left: 2px solid #179608;
+				transform: rotate(-45deg);
+				z-index: 2;
+				box-sizing: content-box;
+			}
+		}
+
+		body.keyboard-navigation &.active {
+			button:focus {
+				i.mkl-pc-thumbnail span {
+					&::before {
+						box-shadow: 0 3px 8px #0000004a, 0 0 0 2px #FFF, 0 0 0 4px #9E9E9E;
+					}
+				}
+			}
+		}
+	
+	}
+}
+
+/*
+TIPPY
+*/
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers > li.display-mode-colors .layer_choices li.out-of-stock {
+	i.mkl-pc-thumbnail svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+		position: absolute;
+		top: 0;
+    	left: 0;
+		line.cls-1 {
+			stroke: #FFF;
+			stroke-width: 4px;
+		}
+	}
+}
+
+.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
+    display: block;
+}
+
+.tippy-content span.choice-price {
+    font-size: .8em;
+    opacity: .6;
+
 }
 
 @import 'scss/dark_mode';

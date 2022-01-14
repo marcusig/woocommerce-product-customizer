@@ -377,12 +377,21 @@ PC.options = PC.options || {};
 				this.$( 'button' ).prepend( selection.$el );
 			}
 
+			// Add classes
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
-			
+			if ( this.model.get( 'display_mode' ) ) this.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
+
+			if ( 'dropdown' == this.model.get( 'display_mode' ) && this.model.get( 'class_name' ) && -1 !== this.model.get( 'class_name' ).search( 'dropdown-move-label-outside' ) ) {
+				this.$( '.layer-name' ).prependTo( this.$el );
+			}
+
 			wp.hooks.doAction( 'PC.fe.layer.beforeRenderChoices', this );
 			// Add the choices
 			this.add_choices(); 
 			wp.hooks.doAction( 'PC.fe.layer.render', this );
+			
+			// Add display-mode class to the choices element
+			if ( this.choices && this.choices.$el && this.model.get( 'display_mode' ) ) this.choices.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
 			return this.$el;
 		},
 		add_choices: function() { 
@@ -561,20 +570,34 @@ PC.options = PC.options || {};
 				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
 			}, this.options.model.attributes );
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
-			var $description = this.$el.find( '.description' );
-			if ( $description.length && window.tippy ) {
+			if ( window.tippy ) {
+				if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
+					var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
+					if ( this.$( '.out-of-stock' ).length ) {
+						description += this.$( '.out-of-stock' )[0].outerHTML;
+						this.$el.addClass( 'out-of-stock' );
+						if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
+							this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
+						}
+					}
+				} else {
+					var description = this.$( '.description' ).html();
+				}
+				
 				/**
 				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
 				 */
 				var tooltip_options = wp.hooks.applyFilters( 'PC.fe.tooltip.options', {
-					content: $description.html(),
+					content: description,
 					allowHTML: true,
 					placement: 'top',
 					zIndex: 10001
 				},
 				this );
-				tippy( this.$el.find('.choice-item')[0], tooltip_options );
+
+				if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) tippy( this.$( '.choice-item' )[0], tooltip_options );
 			}
+
 			if ( this.model.get( 'is_group' ) ) this.$el.addClass( 'is-group' );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			this.activate();
@@ -599,14 +622,15 @@ PC.options = PC.options || {};
 			if ( $( event.currentTarget ).prop( 'disabled' ) ) return;
 			// Activate the clicked item
 			this.model.collection.selectChoice( this.model.id );
+			var layer = PC.fe.layers.get( this.model.get( 'layerId' ) );
 			var close_choices = 
 				PC.fe.config.close_choices_when_selecting_choice 
 				&& ( $( 'body' ).is('.is-mobile' ) || PC.utils._isMobile() ) 
-				|| PC.fe.config.close_choices_when_selecting_choice_desktop;
+				|| PC.fe.config.close_choices_when_selecting_choice_desktop
+				|| 'dropdown' == layer.get( 'display_mode' );
 
 			// Maybe close the choice list
 			if ( wp.hooks.applyFilters( 'PC.fe.close_choices_after_selection', close_choices, this.model ) ) {
-				var layer = PC.fe.layers.get( this.model.get( 'layerId' ) );
 				if ( layer ) layer.set('active', false);
 			}
 			wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
