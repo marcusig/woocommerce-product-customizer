@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.9
-Stable tag: 1.2.22
+Stable tag: 1.2.23
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.23 - 14/Jan/2022 =
 
 * TWEAK: Fix language namespace on missing string
 * TWEAK: Add action in the reset button
@@ -336,4 +338,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.22 Various tweaks and improvements
+* 1.2.23 Various tweaks and improvements
