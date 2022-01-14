@@ -43,7 +43,7 @@ function mkl_pc_wsb_theme_choice_wrapper_open() {
 add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_wsb_theme_choice_wrapper_open', 6 );
 
 function mkl_pc_wsb_theme_add_mobile_form_button() {
-	echo '<button class="mkl-pc-show-form">' . mkl_pc( 'frontend' )->product->get_cart_icon() .'<span class="screen-reader-text">' . __( 'Add to cart', 'woocommerce' ) . '</span></button>';
+	echo '<button class="mkl-pc-show-form">' . mkl_pc( 'frontend' )->product->get_cart_icon() .'<span class="screen-reader-text">' . apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'woocommerce' ) ) . '</span></button>';
 }
 add_action( 'mkl_pc_frontend_configurator_footer_form_before', 'mkl_pc_wsb_theme_add_mobile_form_button', 20 );
 
