@@ -32,15 +32,15 @@ msgstr ""
 msgid "WooCommerce Version 3+ required."
 msgstr ""
 
-#: src/inc/ajax.php:186
+#: src/inc/ajax.php:188
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:186, src/inc/ajax.php:252
+#: src/inc/ajax.php:188, src/inc/ajax.php:254
 msgid "The session seems to have expired."
 msgstr ""
 
-#: src/inc/ajax.php:252
+#: src/inc/ajax.php:254
 msgid "Error processing the request:"
 msgstr ""
 
@@ -116,7 +116,7 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: src/inc/languages.php:151, src/inc/languages.php:151, src/inc/languages.php:138, src/inc/languages.php:138, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:59, src/inc/admin/settings/layer.php:61
+#: src/inc/languages.php:151, src/inc/languages.php:151, src/inc/languages.php:138, src/inc/languages.php:138, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:81
 msgid "Description"
 msgstr ""
 
@@ -352,7 +352,7 @@ msgstr ""
 msgid "Default:"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:207, src/inc/frontend/frontend-woocommerce.php:124, src/inc/frontend/frontend-woocommerce.php:166, src/inc/frontend/product.php:82
+#: src/inc/admin/settings-page.php:207, src/inc/frontend/frontend-woocommerce.php:124, src/inc/frontend/frontend-woocommerce.php:166, src/inc/frontend/product.php:85
 msgid "Configure"
 msgstr ""
 
@@ -600,11 +600,11 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/product.php:182
+#: src/inc/frontend/product.php:185
 msgid "Edit item in cart"
 msgstr ""
 
-#: src/inc/frontend/product.php:217
+#: src/inc/frontend/product.php:220
 msgid "Please select a variation to configure"
 msgstr ""
 
@@ -612,7 +612,7 @@ msgstr ""
 msgid "Angle Name"
 msgstr ""
 
-#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:112, src/inc/admin/settings/layer.php:117
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:121, src/inc/admin/settings/layer.php:137
 msgid "CSS Class"
 msgstr ""
 
@@ -624,35 +624,43 @@ msgstr ""
 msgid "Choice label"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:54, src/inc/admin/settings/layer.php:56
+#: src/inc/admin/settings/choice.php:54
+msgid "Color hex code"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:57
+msgid "E.g. #EEFF00"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:63, src/inc/admin/settings/layer.php:76
 msgid "Admin label"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:65
+#: src/inc/admin/settings/choice.php:74
 msgid "Custom html"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:69
+#: src/inc/admin/settings/choice.php:78
 msgid "Any content / HTML entered here will be added in the configurator viewer."
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:73
+#: src/inc/admin/settings/choice.php:82
 msgid "Set as default choice"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:79
+#: src/inc/admin/settings/choice.php:88
 msgid "Extra price"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:83
+#: src/inc/admin/settings/choice.php:92
 msgid "Extra Price is available as an addon"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:97, src/inc/admin/settings/layer.php:105
+#: src/inc/admin/settings/choice.php:106, src/inc/admin/settings/layer.php:125
 msgid "Automatic angle switch"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:107
+#: src/inc/admin/settings/choice.php:116
 msgid "Switch to"
 msgstr ""
 
@@ -669,50 +677,66 @@ msgid "Multiple choice"
 msgstr ""
 
 #: src/inc/admin/settings/layer.php:51
+msgid "Display mode"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:55
+msgid "Default"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:59
+msgid "Drop down"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:63
+msgid "Small color choices"
+msgstr ""
+
+#: src/inc/admin/settings/layer.php:71
 msgid "Layer name"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:67
+#: src/inc/admin/settings/layer.php:87
 msgid "This layer does not have choices"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:68
+#: src/inc/admin/settings/layer.php:88
 msgid "For exemple if the layer is a shadow, a static element or custom HTML"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:73
+#: src/inc/admin/settings/layer.php:93
 msgid "Custom HTML"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:78
+#: src/inc/admin/settings/layer.php:98
 msgid "Content entered here will be rendered in the configurator menu."
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:78
+#: src/inc/admin/settings/layer.php:98
 msgid "To add HTML to the viewer, add it to the custom HTML field in the content section."
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:81
+#: src/inc/admin/settings/layer.php:101
 msgid "Default selection"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:86
+#: src/inc/admin/settings/layer.php:106
 msgid "Select the first choice by default, or the one set to default"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:90
+#: src/inc/admin/settings/layer.php:110
 msgid "Select nothing"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:95
+#: src/inc/admin/settings/layer.php:115
 msgid "Choose whether a choice should be selected by default"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:98
+#: src/inc/admin/settings/layer.php:118
 msgid "Require a choice"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:102
+#: src/inc/admin/settings/layer.php:122
 msgid "If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)"
 msgstr ""
 
@@ -982,10 +1006,6 @@ msgstr ""
 
 #: src/inc/themes/wsb/theme.php:67
 msgid "Sidebar background"
-msgstr ""
-
-#: src/inc/frontend/views/parts/admin-bar.php:21
-msgid "Configuration name"
 msgstr ""
 
 #: src/inc/frontend/views/parts/product-viewer.php:8
