@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
-Tested up to: 5.8
+Tested up to: 5.9
 Stable tag: 1.2.22
 Requires PHP: 5.6
 License: GPLv2+

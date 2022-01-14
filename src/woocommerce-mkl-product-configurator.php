@@ -8,7 +8,7 @@
 * Author URI: http://mklacroix.com
 * Version: 1.2.22
 * WC requires at least: 3.2
-* WC tested up to: 5.5
+* WC tested up to: 6
 *
 * Text Domain: product-configurator-for-woocommerce
 * Domain Path: /languages/
