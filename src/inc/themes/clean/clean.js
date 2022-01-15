@@ -12,8 +12,17 @@
 		PC.fe.modal.$el.removeClass( 'showing-choices' );
 	} );
 
-	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/clean', function( where ) {
+	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/clean', function( where, original_view ) {
+		if ( original_view && original_view.model && 'dropdown' == original_view.model.get( 'display_mode' ) && ! PC.utils._isMobile() ) {
+			return 'in';
+		}
 		return PC.fe.modal.toolbar.el;
+	} );
+
+	wp.hooks.addAction( 'PC.fe.layers_list.open', 'MKL/PC/Themes/clean', function( view, model ) {
+		if ( 'dropdown' == model.get( 'display_mode' ) ) {
+			view.$el.removeClass( 'opened' );
+		}
 	} );
 
 })( jQuery );

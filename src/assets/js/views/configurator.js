@@ -322,14 +322,14 @@ PC.options = PC.options || {};
 		activate: function( model ) {
 			if ( model.get( 'active' ) == false ) {
 				if ( model.collection.findWhere( { 'active': true } ) ) {
-					this.$el.addClass('opened');
+					this.$el.addClass( 'opened' );
 					wp.hooks.doAction( 'PC.fe.layers_list.open', this, model );
 				} else {
-					this.$el.removeClass('opened');
+					this.$el.removeClass( 'opened' );
 					wp.hooks.doAction( 'PC.fe.layers_list.close', this, model );
 				}
 			} else {
-				this.$el.addClass('opened');
+				this.$el.addClass( 'opened' );
 				wp.hooks.doAction( 'PC.fe.layers_list.open', this, model );
 			}
 
@@ -405,7 +405,7 @@ PC.options = PC.options || {};
 				return;
 			}
 
-			var where = wp.hooks.applyFilters( 'PC.fe.choices.where', PC.fe.config.where );
+			var where = wp.hooks.applyFilters( 'PC.fe.choices.where', PC.fe.config.where, this );
 			if( ! where || 'out' == where ) {
 				this.options.parent.after( this.choices.$el ); 
 			} else if( 'in' == where ) {
@@ -591,7 +591,7 @@ PC.options = PC.options || {};
 					content: description,
 					allowHTML: true,
 					placement: 'top',
-					zIndex: 10001
+					zIndex: 100001
 				},
 				this );
 
