@@ -27,6 +27,8 @@ class Admin_Woocommerce {
 		$this->choice_settings = new Choice_Settings();
 		$this->layer_settings = new Layer_Settings();
 		$this->angle_settings = new Angle_Settings();
+
+		add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
 	}
 
 	/**
@@ -104,5 +106,21 @@ class Admin_Woocommerce {
 		ob_end_clean();
 
 		return $template;			
+	}
+
+	public function admin_enqueue_scripts() {
+		/**
+		 * Add styles for the addify quotes admin
+		 */
+		wp_add_inline_style( 'afrfq-adminc', '
+			.addify_quote_items span.choice-thumb {
+				max-width: 50px;
+				display: inline-block;
+			}
+			
+			.addify_quote_items span.choice-thumb img {
+				max-width: 100%;
+			}
+		' );
 	}
 } // END CLASS

@@ -134,6 +134,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 		private function _get_order_item_image( $order_item ) {
 
+			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false; 
 			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
 
 			$configurator_data = $order_item->get_meta( '_configurator_data' );

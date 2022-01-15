@@ -42,6 +42,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 			// add hidden input to store configurator data into form
 			add_action( 'woocommerce_after_add_to_cart_button', array( &$this, 'add_configure_hidden_field' ) ); 
+			add_action( 'mkl_pc_frontend_configurator_after_add_to_cart', array( $this, 'add_edit_configuration_from_cart' ), 20 );
+			add_action( 'mkl_pc_frontend_configurator_after_add_to_cart', array( $this, 'add_add_to_quote_button' ), 15 );
 			add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_price' ), 15 );
 			add_action( 'mkl_pc_frontend_configurator_footer_form',array( $this, 'configurator_form' ), 20 ); 
 			add_action( 'mkl_pc_templates_empty_viewer', array( &$this, 'variable_empty_configurator_content'), 20 );
@@ -178,15 +180,35 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 						<?php echo $this->get_cart_icon(); ?>
 						<span><?php echo $add_to_cart; ?></span>
 					</button>
-					<button type="button" class="<?php echo $this->button_class ?> edit-cart-item configurator-add-to-cart">
-						<span><?php _e( 'Edit item in cart', 'product-configurator-for-woocommerce' ); ?></span>
-					</button>
 					<?php do_action( 'mkl_pc_frontend_configurator_after_add_to_cart' ); ?>
 				<?php
 			echo '<# } else { #>';
 				echo '<div class="out-of-stock"></div>';
 			echo '<# } #>';
 			echo '</div>';
+		}
+
+		/**
+		 * Add the Edit item in cart button
+		 */
+		public function add_edit_configuration_from_cart() {
+			?>
+			<button type="button" class="<?php echo $this->button_class ?> edit-cart-item configurator-add-to-cart">
+				<span><?php _e( 'Edit item in cart', 'product-configurator-for-woocommerce' ); ?></span>
+			</button>
+			<?php 
+		}
+
+		/**
+		 * Add the Add to quote button
+		 */
+		public function add_add_to_quote_button() {
+			if ( ! class_exists( 'Addify_Request_For_Quote' ) ) return;
+			?>
+			<button type="button" class="<?php echo $this->button_class ?> add-to-quote">
+				<span><?php _e( 'Add to Quote', 'addify_rfq' ); ?></span>
+			</button>
+			<?php
 		}
 
 		public function get_add_to_cart_label() {

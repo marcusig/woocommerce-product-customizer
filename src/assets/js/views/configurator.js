@@ -209,37 +209,62 @@ PC.options = PC.options || {};
 			return this; 
 		},
 		events: {
-			'click .configurator-add-to-cart': 'add_to_cart'
+			'click .configurator-add-to-cart': 'add_to_cart',
+			'click .add-to-quote': 'add_to_quote'
 		},
 
 		render: function() {
 			if ( ! PC.fe.config.cart_item_key ) {
 				this.$( '.edit-cart-item' ).hide();
 			}
+			// Get the input
+			this.$input = $( 'input[name=pc_configurator_data]' );
+			// The cart must be the one containing the input
+			this.$cart = this.$input.closest( 'form.cart' );
+			if ( ! this.$cart.find( '[name=add-to-cart]' ).length ) {
+				this.$( '.configurator-add-to-cart' ).remove();
+			}
+			
+			if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
+				this.$( '.add-to-quote' ).remove();
+			} else {
+				this.$( '.add-to-quote' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
+			}
+
 			return this.$el; 
 		},
 
-		add_to_cart: function( e ) { 
+		validate_configuration: function() {
 			var data = PC.fe.save_data.save();
 			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
 				console.log( errors );
 				alert( errors.join( "\n" ) );
-				return;
+				return false;
 			}
+			return data;
+		},
 
-			// Get the input
-			var $input = $( 'input[name=pc_configurator_data]' );
-			// The cart must be the one containing the input
-			var $cart = $input.closest( 'form.cart' );
+		populate_form_input: function( data, e ) {
 
 			if ( PC.fe.config.cart_item_key && $( e.currentTarget ).is( '.edit-cart-item' ) ) {
-				var $cart_item_field = $cart.find( 'input[name=pc_cart_item_key]' );
+				var $cart_item_field = this.$cart.find( 'input[name=pc_cart_item_key]' );
 				if ( $cart_item_field ) $cart_item_field.val( PC.fe.config.cart_item_key );
 			}
 
-			$input.val( data );
+			this.$input.val( data );
+		},
+
+		add_to_cart: function( e ) {
+
+			var data = this.validate_configuration();
+			
+			if ( ! data ) {
+				return;
+			}
+
+			this.populate_form_input( data, e );
 
 			if ( PC.fe.debug_configurator_data ) {
 				console.log( 'debug_configurator_data', data );
@@ -258,19 +283,34 @@ PC.options = PC.options || {};
 			 * @param boolean should_submit
 			 * @param object  $cart - The jQuery object
 			 */
-			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, $cart ) ) {
-				if ( $cart.find( '.single_add_to_cart_button' ).length ) {
-					$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
-				} else if ( $cart.find( 'button[name=add-to-cart]' ).length ) {
-					$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
+			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
+				if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
+					this.$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
+				} else if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
+					this.$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
 				} else {
-					$cart.trigger( 'submit' );
+					this.$cart.trigger( 'submit' );
 				}
 			}
 
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
-		}
-	});
+		},
+		add_to_quote: function( e ) {
+
+			var data = this.validate_configuration();
+			
+			if ( ! data ) {
+				return;
+			}
+
+			this.populate_form_input( data, e );
+
+			// Woocommerce Add To Quote plugin
+			if ( $( '.afrfqbt_single_page' ).length ) {
+				$( '.afrfqbt_single_page' ).trigger( 'click' );
+			}
+		},
+	} );
 
 	/*
 		PC.fe.views.layers 
