@@ -5,6 +5,7 @@
 	margin-top: -9px;
 	margin-right: -20px;
 	padding: 20px;
+	display: block !important;
 }
 .settings_page_mkl_pc_settings .wrap > header {
 	margin-bottom: 20px;
