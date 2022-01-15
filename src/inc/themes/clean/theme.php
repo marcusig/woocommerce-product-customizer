@@ -46,7 +46,7 @@ function mkl_pc_clean_theme_filter_colors( $colors ) {
 		'default' => '#e5e5e5',
 		'label' => __( 'Viewer background color', 'product-configurator-for-woocommerce' )
 	];
-	if ( isset( $colors['active_choice_button_bg_color'] ) ) $colors['active_choice_button_bg_color']['default'] = '#F8F7F7';
+	if ( isset( $colors['active_choice_button_bg_color'] ) ) $colors['active_choice_button_bg_color']['default'] = '#FFFFFF';
 
 	return $colors;
 }

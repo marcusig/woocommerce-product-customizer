@@ -463,7 +463,7 @@
 			}
 
 			&.active {
-				button {
+				> button {
 					background: color(active_choice_button_bg_color);
 				}
 			}
@@ -599,7 +599,7 @@
 				// i.img {
 				// 	display: none;
 				// }
-				button {
+				> button {
 					background-color: color(active_layer_button_bg_color);
 					color: color(active_layer_button_text_color);
 					i {
