@@ -20,6 +20,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'save_data' ), 20, 4 );
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
+			add_filter( 'woocommerce_email_order_items_args', array( $this, 'add_image_to_email' ) );
 		}
 
 		public function save_data( $item, $cart_item_key, $values, $order ) {
@@ -116,6 +117,19 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			if ( $config_image = $this->_get_order_item_image( $order_item ) ) return $config_image;
 
 			return $image;
+		}
+
+		/**
+		 * Add the product image to the email
+		 *
+		 * @param array $args
+		 * @return array
+		 */
+		public function add_image_to_email( $args ) {
+			if ( ! mkl_pc( 'settings' )->get( 'force_image_in_email' ) ) return $args;
+			$args['show_image'] = true;
+			$args['image_size'] = array( 100, 100 );
+			return $args;
 		}
 
 		private function _get_order_item_image( $order_item ) {

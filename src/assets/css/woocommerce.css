@@ -59,3 +59,11 @@ button.configure-product + .woocommerce-product-details__short-description {
     height: 100%;
     min-width: 20px;    
 }
+
+/* Image in checkout */
+.shop_table.woocommerce-checkout-review-order-table tbody tr td img.configuration-image {
+    width: 100px;
+    border-radius: 8px;
+    vertical-align: middle;
+    margin-right: 10px;
+}

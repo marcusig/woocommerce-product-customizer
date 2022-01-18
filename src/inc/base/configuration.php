@@ -248,7 +248,7 @@ class Configuration {
 
 			$default_attr = array(
 				'src'   => $url,
-				'class' => "attachment-$size_class size-$size_class",
+				'class' => "attachment-$size_class size-$size_class configuration-image",
 				'alt'   => "",
 			);
 

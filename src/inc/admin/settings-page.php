@@ -399,6 +399,28 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'force_image_in_checkout',
+				__( 'Add product image to the checkout', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'force_image_in_checkout',
+				]
+			);
+
+			add_settings_field(
+				'force_image_in_email',
+				__( 'Add product image to the email', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'force_image_in_email',
+				]
+			);
+
+			add_settings_field(
 				'close_configurator_on_add_to_cart',
 				__( 'Close the configurator when pressing "add to cart"', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

@@ -22,6 +22,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
 			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_cart_item_permalink', array( $this, 'cart_item_permalink' ), 30, 3 );
+			add_filter( 'woocommerce_cart_item_name', array( $this, 'add_image_to_review_order_checkout' ), 100, 3 );
+
 			// add_action( 'woocommerce_after_cart_item_name', array( $this, 'add_edit_link' ), 20, 2 );
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'wc_add_cart_item'), 10, 2 ); 
 			// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
@@ -158,6 +160,22 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			return $image;
+		}
+
+		/**
+		 * Add image to the checkout page
+		 *
+		 * @param string $name
+		 * @param array  $cart_item
+		 * @param string $cart_item_key
+		 * @return string
+		 */
+		public function add_image_to_review_order_checkout( $name, $cart_item, $cart_item_key ) {
+			if ( ! is_checkout() ) return $name;
+			if ( ! mkl_pc( 'settings' )->get( 'force_image_in_checkout' ) ) return $name;
+			$product   = $cart_item['data'];
+			$thumbnail = apply_filters( 'woocommerce_cart_item_thumbnail', $product->get_image(), $cart_item, $cart_item_key );
+			return $thumbnail . $name;
 		}
 
 		/**
