@@ -1,0 +1,106 @@
+.mkl_pc_bg {
+	position: absolute;
+	left: var( --mkl_pc_toolbar_width );
+	top: 0;
+	right: 0;
+	bottom: var( --mkl_pc_footer_height );
+	background-position: 50%;
+	background-size: cover;
+	border-bottom-left-radius: var( --mkl_pc_border-radius );
+	background-color: color( viewer-bg );
+	transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
+	z-index: 3;
+	@media( max-width: $small_screen_width ) {
+		
+		left: 0;
+		top: 0;
+		bottom: 50%;
+		@at-root .mkl_pc.showing-choices .mkl_pc_bg {
+			--mkl_pc_toolbar_width: var( --mkl_pc_toolbar_width_small );
+			transform: translateX( calc( 250px - var( --mkl_pc_toolbar_width_small ) ) );
+		}
+	}
+}
+
+.mkl_pc_viewer {
+	position: absolute;
+	z-index: 4;
+	left: var( --mkl_pc_toolbar_width ); 
+	top: 0;
+	right: 0;
+	bottom: var( --mkl_pc_footer_height );
+	border-bottom-left-radius: var( --mkl_pc_border-radius );
+	background-color: color( viewer-bg );
+	transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
+	.mkl_pc_bg + & {
+		background-color: transparent;	
+	}
+	@media( max-width: $small_screen_width ) {
+		@at-root .mkl_pc.showing-choices .mkl_pc_viewer {
+			--mkl_pc_toolbar_width: var( --mkl_pc_toolbar_width_small );
+			transform: translateX( calc( 250px - var( --mkl_pc_toolbar_width_small ) ) );
+		}
+		// left: 0;
+		// bottom: 50%;
+		// top: 40px;
+	}
+
+	&.is-loading-image {
+
+	}
+
+	@import 'scss/angles_selector';
+
+	.mkl_pc_layers {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		text-align: center;
+		user-select: none;
+
+		img {
+			transition: .2s all;
+			&:not(.active), &.loading {
+				opacity: 0;
+			}
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			transform: translateX(-50%) translateY(-50%);
+			max-height: 100%;
+		}
+
+		.custom-html {
+			position: absolute;
+			width: 100%;
+			top: 0;
+			left: 0;
+			height: 100%;
+			&:not(.active) {
+				display: none;
+			}
+		}				
+
+		.images-loading {
+			display: none;
+			width: 30px;
+			height: 30px;
+			background: color(primary_hover);
+			position: absolute;
+			left: 2em;
+			bottom: 2em;
+			opacity: 0;
+			transition: all .2s;
+			border-radius: 50%;
+			-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+			animation: sk-scaleout 1.0s infinite ease-in-out;
+		}
+
+		img.loading ~ .images-loading {
+			opacity: 1;
+			display: block;
+		}		
+	}
+}

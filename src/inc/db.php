@@ -23,7 +23,7 @@ class DB {
 	private $menu = array();
 	private $layers = array();
 	private $changed_items_count = 0;
-	public $context = 'admin';
+	private $context = 'admin';
 
 	/**
 	 * Initialize the class
@@ -341,7 +341,7 @@ class DB {
 		// } else {
 		// 	$g_product = false;
 		// }
-		$this->context = 'frontend';
+		$this->set_context( 'frontend' );
 		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
 		$product = wc_get_product( $id );
@@ -742,11 +742,12 @@ class DB {
 			return $data;
 		}
 
+		
 		$supported_fields = $this->get_fields();
-
+		
 		// No key is set, we treat as a text field
 		if ( ! $the_key ) return sanitize_text_field( $data );
-
+		
 		// Default to empty field
 		if ( ! in_array( $the_key, array_keys( $supported_fields ) ) ) {
 			return sanitize_text_field( $data );
@@ -769,5 +770,13 @@ class DB {
 
 		error_log( 'MKL Product Configurator: Sanitazing could not be done for the variable ' . $the_key . ' (The function returned and empty string instead)');
 		return '';
+	}
+
+	public function get_context() {
+		return $this->context;
+	}
+
+	public function set_context( $c) {
+		return $this->context = $c;
 	}
 }

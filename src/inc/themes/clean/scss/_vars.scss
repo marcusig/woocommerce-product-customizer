@@ -1,0 +1,65 @@
+// COLORS
+$colors: (
+	container-bg: #F2F2F2,
+	viewer-bg: #FFF,
+	light-gray: #efefef,
+	primary: #3FB181,
+	border-color: #e5e5e5,
+	primary_hover: #3c9871,
+	layers_button_text_color: rgba(0, 0, 0, 0.7),
+	choices_button_text_color: rgba(0, 0, 0, 0.7),
+	overlay_bg: #000000,
+	active_layer_button_bg_color: #eaeaea,
+	active_layer_button_text_color: #000000,
+	active_choice_button_bg_color: #FFFFFF,
+	active_choice_button_text_color: #000000
+);
+
+@function color($color-name) {
+	@return var(--mkl_pc_color-#{$color-name});
+}
+
+// COLORS
+$overlay_bg: #000000;
+$active_bg: #f7f7f7;
+$choice_list_bg: #f7f7f7;
+$footer_bg_color: $active_bg;
+
+
+// DIMENSIONS / DISTANCES / SPACE
+$medium_screen_width: 760px;
+$small_screen_width: 660px;
+
+$distance: 0;
+
+$toolbar_width: 350px;
+
+$toolbar_width_small: 110px;
+
+$inner_space: 1em;
+
+:root {
+	--mkl_pc_border-radius: 60px;
+	--mkl_pc_thumbnail_size: 70px;
+	--mkl_pc_toolbar_width: 450px;
+	--mkl_pc_toolbar_width_medium: 250px;
+	--mkl_pc_toolbar_width_small: 80px;
+	--mkl_pc_icon_border_radius: 12px;
+	--mkl_pc_choice_min_height: 100px;
+	--mkl_pc_layer_min_height: 60px;
+	--mkl_pc_footer_height: 5em;
+	--mkl_pc_scrollbar-width: 6px;
+	
+	// each item in color map
+	@each $name, $color in $colors {
+		--mkl_pc_color-#{$name}: #{$color};
+	}
+	@media ( max-width: $medium_screen_width ) {
+		--mkl_pc_toolbar_width: var( --mkl_pc_toolbar_width_medium );
+		--mkl_pc_footer_height: 4em;
+	}
+	@media ( max-width: $small_screen_width ) {
+		--mkl_pc_toolbar_width: var( --mkl_pc_toolbar_width_small );
+	}
+}
+

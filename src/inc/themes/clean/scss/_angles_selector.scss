@@ -1,0 +1,95 @@
+.angles-select {
+	position: absolute;
+	right: 0;
+	top: 1em;
+	z-index: 2;
+	> a {
+		display: none;
+	}
+	&::before {
+		content: '';
+		display: block;
+		width: 2px;
+		height: 30px;
+		background: #EEE;
+		right: 15px;
+		position: relative;
+	}
+
+	ul{
+		padding: 0;
+		margin: 0;
+		list-style-type: none;
+		position: absolute;
+		top: 30px;
+		left: 0;
+		width: 100%;
+		transition: all 0.2s;
+		display: flex;
+		flex-direction: row;
+		transform-origin: 0 0;
+		transform: rotate(90deg) translateY(-2px);
+	}
+
+	&:hover ul,
+	&:focus-within ul,
+	& > a:focus + ul {
+		// visibility: visible; 
+		// opacity: 1;
+		// transform: translateY(0);
+	}
+	li {
+		a {
+			display: block;						
+			padding: 3px 11px;
+			text-align: center;
+			text-transform: uppercase;
+			font-size: 80%;
+			letter-spacing: 2px;
+			color: color( primary );
+			border-top: 2px solid transparent;
+			span.angle-image {
+				width: 25px;
+				height: 25px;
+				display: inline-block;
+				vertical-align: middle;
+				transform: translateY(-2px);
+				img {
+					width: auto;
+					max-width: 100%;
+					height: auto;
+					display: block;
+				}
+			}						
+		}
+		
+		&.active a {
+			border-top-color: inherit;
+			&::before{
+				padding-right: 1em;
+				opacity: 1;
+			}
+		}
+		&:last-child a{
+			border-bottom: none;
+		}
+
+	}
+	@media (max-width: $small_screen_width) {
+		> a span {
+			display: none;
+		}
+		> a::before {
+			margin-right: 0;
+		}
+		> a::before {
+			margin-right: 0;
+		}
+		&:hover > a span,
+		&:focus-within > a span,
+		& > a:focus span {
+			display: inline-block;
+			margin-left: 1em;
+		}
+	}
+}

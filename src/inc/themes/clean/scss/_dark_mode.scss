@@ -1,0 +1,84 @@
+.mkl_pc.dark  {
+	.mkl_pc_viewer {
+
+		.angles-select li a {
+			color: #FFF;
+
+		}
+		.angles-select li.active a {
+			border-bottom: 2px solid #FFF;
+		}
+	}
+
+	.mkl_pc_toolbar section.choices {
+		border-top: 1px solid #000;
+	}
+	@media (max-width: $small_screen_width) {
+		.mkl-pc-show-form {
+			&::before {
+				background: #353535;
+			}
+		}
+	}
+	.mkl_pc_container .mkl_pc_toolbar section.choices {
+		::-webkit-scrollbar-track {
+			background: var(--mkl_pc_color-layer_choices_bg);
+		}
+		
+		/* Handle */
+		::-webkit-scrollbar-thumb {
+			background: color(primary);
+			border-radius: 6px
+		}
+		::-webkit-scrollbar-button {
+			width: 0;
+		}
+		
+		/* Handle on hover */
+		::-webkit-scrollbar-thumb:hover {
+			background: #555;
+		}
+		.layers button.layer-item {
+			&::after {
+				border-right: 1px solid #ffffff35;
+				border-bottom: 1px solid #ffffff35;
+			}
+		
+			&::before {
+				background: #FFFFFF1F;
+			}
+			&:hover, &:focus {
+				&::after {
+					border-right: 1px solid #ffffffc2;
+					border-bottom: 1px solid #ffffffc2;
+				}
+			}
+		}
+		.layers li.active button.layer-item {
+			&::after {
+				border-right: 1px solid #ffffffc2;
+				border-bottom: 1px solid #ffffffc2;
+			}
+		}
+		.layer_choices li.choices-list li.is-group .choices-list--children {
+			border-color: #FFFFFF1F;
+		}
+	}
+	.cancel {
+		&::before,
+		&::after {
+			background-color: #FFF;
+		}
+
+	}	
+	.mkl_pc_container .mkl-pc-show-form {
+		background: #FFF;
+		svg * {
+			fill: #000;
+		}
+	}
+	
+	
+}
+
+
