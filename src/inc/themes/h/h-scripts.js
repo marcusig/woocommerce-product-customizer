@@ -66,7 +66,7 @@
 		return false;
 	} );
 
-	var resize_layer_choices = function() {
+	var resize_layer_choices = function( resized ) {
 		var cow = $( '.mkl_pc.opened .mkl_pc_container' ).outerWidth();
 		var choice_el_width = 220;
 		var layer_el_width = 190;
@@ -85,13 +85,14 @@
 			'--choice-item-width': choice_el_width + 'px',
 			'--layer-item-width': layer_el_width + 'px',
 		} );
-		if ( $( '.layers' )[0] ) $( '.layers' )[0].scrollTo( 0, 0 );
+		
+		if ( resized && $( '.layers' )[0] ) $( '.layers' )[0].scrollTo( 0, 0 );
 		// $( '.layers' ).css( 'width', layer_el_width * $( '.layers > li' ).length );
 
 	}
 
 	$( window ).on( 'resize', function() {
-		resize_layer_choices();
+		resize_layer_choices( true );
 	} );
 	
 
