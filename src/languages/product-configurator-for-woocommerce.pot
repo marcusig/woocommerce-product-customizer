@@ -32,15 +32,15 @@ msgstr ""
 msgid "WooCommerce Version 3+ required."
 msgstr ""
 
-#: src/inc/ajax.php:188
+#: src/inc/ajax.php:191
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:188, src/inc/ajax.php:254
+#: src/inc/ajax.php:191, src/inc/ajax.php:257
 msgid "The session seems to have expired."
 msgstr ""
 
-#: src/inc/ajax.php:254
+#: src/inc/ajax.php:257
 msgid "Error processing the request:"
 msgstr ""
 
@@ -445,118 +445,126 @@ msgid "(save disk space, but uses more server resource)"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:403
+msgid "Add product image to the checkout"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:414
+msgid "Add product image to the email"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:425
 msgid "Close the configurator when pressing \"add to cart\""
 msgstr ""
 
-#: src/inc/admin/settings-page.php:409
+#: src/inc/admin/settings-page.php:431
 msgid "Helpful if submiting the form via ajax"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:415
+#: src/inc/admin/settings-page.php:437
 msgid "On mobile, close the choices when making a selection"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:426
+#: src/inc/admin/settings-page.php:448
 msgid "On desktop, close the choices when making a selection"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:437
+#: src/inc/admin/settings-page.php:459
 msgid "Show the selected label in the layer header"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:448
+#: src/inc/admin/settings-page.php:470
 msgid "Show the selected image in the layer header"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:459
+#: src/inc/admin/settings-page.php:481
 msgid "Where should the \"configure\" button be placed"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:465
+#: src/inc/admin/settings-page.php:487
 msgid "Before the product excerpt"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:466
+#: src/inc/admin/settings-page.php:488
 msgid "Before the add to cart form"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:467
+#: src/inc/admin/settings-page.php:489
 msgid "Before the quantity input"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:468
+#: src/inc/admin/settings-page.php:490
 msgid "After the add to cart button"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:469
+#: src/inc/admin/settings-page.php:491
 msgid "After the add to cart form"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:478
+#: src/inc/admin/settings-page.php:500
 msgid "Allow adding the product to cart without configuring"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:489
+#: src/inc/admin/settings-page.php:511
 msgid "Disable caching of configurations"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:501
+#: src/inc/admin/settings-page.php:523
 msgid "SKU mode"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:507
+#: src/inc/admin/settings-page.php:529
 msgid "Each choice can have its own SKU"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:508
+#: src/inc/admin/settings-page.php:530
 msgid "Generate a single SKU by compounding the SKU set in each selected choice"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:517
+#: src/inc/admin/settings-page.php:539
 msgid "SKU devider (character used between the parts when compounding the SKU)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:529
+#: src/inc/admin/settings-page.php:551
 msgid "SKU label"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:541
+#: src/inc/admin/settings-page.php:563
 msgid "Show SKU in the cart and checkout"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:552
+#: src/inc/admin/settings-page.php:574
 msgid "Show a reset button in the configurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:576
+#: src/inc/admin/settings-page.php:598
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:672
+#: src/inc/admin/settings-page.php:694
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:673
+#: src/inc/admin/settings-page.php:695
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:733, src/inc/admin/settings-page.php:769
+#: src/inc/admin/settings-page.php:755, src/inc/admin/settings-page.php:791
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:735, src/inc/admin/settings-page.php:771
+#: src/inc/admin/settings-page.php:757, src/inc/admin/settings-page.php:793
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:745
+#: src/inc/admin/settings-page.php:767
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:746
+#: src/inc/admin/settings-page.php:768
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:755
+#: src/inc/admin/settings-page.php:777
 msgid "Select the theme"
 msgstr ""
 
@@ -572,15 +580,15 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:91, src/inc/frontend/order.php:52, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:93, src/inc/frontend/order.php:53, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:107, src/inc/frontend/order.php:58
+#: src/inc/frontend/cart.php:109, src/inc/frontend/order.php:59
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/frontend/cart.php:211
+#: src/inc/frontend/cart.php:229
 msgid "Edit configuration"
 msgstr ""
 
@@ -914,6 +922,18 @@ msgstr ""
 
 #: src/inc/frontend/views/html-product-configurator-templates.php:81
 msgid "Reset configuration"
+msgstr ""
+
+#: src/inc/themes/clean/theme.php:35
+msgid "Accent color hover"
+msgstr ""
+
+#: src/inc/themes/clean/theme.php:39
+msgid "Main background color"
+msgstr ""
+
+#: src/inc/themes/clean/theme.php:43, src/inc/themes/clean/theme.php:47
+msgid "Viewer background color"
 msgstr ""
 
 #: src/inc/themes/dark-mode/theme.php:31

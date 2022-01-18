@@ -112,6 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* NEW THEME: Introducing the new Clean theme
+* TWEAK: Possibility to add image to checkout and email when not already added by the theme or an other plugin
+
 = 1.2.23 - 14/Jan/2022 =
 
 * TWEAK: Fix language namespace on missing string
