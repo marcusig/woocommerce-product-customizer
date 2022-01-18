@@ -414,8 +414,9 @@
 				color: color(layers_button_text_color);
 				font-weight: normal;
 
-				 &:hover, &:focus {
-					 color: color(primary_hover);
+				&:hover, &:focus {
+					color: color(primary_hover);
+					background-color: color( active_layer_button_bg_color );
 				}
 
 				span.text {

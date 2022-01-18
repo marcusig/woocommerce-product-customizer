@@ -243,6 +243,7 @@ Tags: Left
 					background: var(--mkl_pc_color-primary);
 					color: #FFF;
 					border-radius: 14px;
+					border: 2px solid color( primary );
 					font-weight: 300;
 					letter-spacing: 1.2px;
 					font-size: 12px;
@@ -254,13 +255,16 @@ Tags: Left
 				
 				
 				 .quantity {
-					border: 2px solid;
+					border: 2px solid color( primary );
 					border-top-left-radius: 12px;
 					border-bottom-left-radius: 12px;
 					padding-right: 0;
 					margin-right: -12px;
 					box-sizing: border-box;
 					position: relative;
+					height: auto;
+					width: auto;
+
 					&::before {
 						content: 'x';
 						position: absolute;
@@ -278,7 +282,11 @@ Tags: Left
 					border-top-left-radius: 12px;
 					border-bottom-left-radius: 12px;
 					height: 40px;
+					width: 60px;
+					padding-left: 15px;
+					padding-right: 12px;
 					color: color( primary );
+					box-sizing: content-box;
 				}
 			}
 
@@ -305,8 +313,6 @@ Tags: Left
 			}
 
 			button.reset-configuration {
-				margin: 0;
-				padding: 0;
 				background: transparent;
 				color: inherit;
 				appearance: none;
@@ -314,6 +320,9 @@ Tags: Left
 				border:  none;
 				color: color( primary );
 				font-weight: normal;
+				margin: 0;
+				padding: 4px 9px;
+				letter-spacing: normal;
 				span {
 					display: block;
 					font-size: 10px;
@@ -469,7 +478,9 @@ body.configurator_is_inline .mkl_pc {
 
 .save-your-design-modal-container {
 	a {
-
+		&.save-your-design {
+			display: block;
+		}
 		color: color( primary );
 		&:hover,
 		&:focus,
@@ -495,108 +506,128 @@ body.configurator_is_inline .mkl_pc {
 }
 
 /* Color mode */
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar ul.display-mode-colors li.choices-list ul {
-    flex-wrap: wrap;
-
-	li.is-group {
-		width: 100%;
-	}
-
-	li:not(.is-group) {
-		padding: 5px;
-		width: auto;
-		--mkl_pc_choice_min_height: 0;
-		&:nth-child(odd) {
-			border: none;
-		}
-		button {
-			padding: 0;
-			border: none;
-
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar ul.display-mode-colors li.choices-list {
+	padding: 1em;
+	ul {
+		flex-wrap: wrap;
+		--mkl_pc_icon_border_radius: 50%;
+		li.is-group {
+			width: 100%;
 		}
 
-		i.mkl-pc-thumbnail {
-			width: 44px;
-			height: 44px;
-			position: relative;
-			top: auto;
-			transform: none;
-			right: auto;
-			overflow: visible;
-		}
-		
-		i.mkl-pc-thumbnail span {
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			box-shadow: none;
-			overflow: visible;
-			border-radius: 50%;
-			img {
-				border-radius: 50%;
+		li:not(.is-group) {
+			padding: 5px;
+			width: auto;
+			--mkl_pc_choice_min_height: 0;
+			&:nth-child(odd) {
+				border: none;
 			}
-		}
+			button {
+				padding: 0;
+				border: none;
+				&:hover, &:focus {
+					outline: none;
+					background: transparent;
+					i {
+						box-shadow: 0 3px 20px 8px rgba(0, 0, 0, .1);
+						outline-color: #FFF;
+						outline-offset: 2px;
+						outline-style: solid;				
+					}
+				}
+			}
 
-		&.active button {
-			background: transparent;
 			i.mkl-pc-thumbnail {
-				border-color: color( active_choice_button_bg_color );
+				width: 44px;
+				height: 44px;
+				position: relative;
+				top: auto;
+				transform: none;
+				right: auto;
+				overflow: visible;
+				border: none;
 			}
-			i.mkl-pc-thumbnail span {
-				img {
-					box-shadow: 0 6px 15px -4px #00000091;
-				}
-				&::before {
-					content: ' ';
-					display: block;
-					width: 20px;
-					height: 20px;
-					background: #FFF;
-					position: absolute;
-					top: -5px;
-					right: -5px;
-					z-index: 1;
-					border-radius: 3px;
-					box-shadow: 0 3px 8px #0000004a;
-				}
-				&::after {
-					content: ' ';
-					/* color: green; */
-					position: absolute;
-					top: 0;
-					right: -1px;
-					display: block;
-					width: 10px;
-					height: 4px;
-					border-bottom: 2px solid #179608;
-					border-left: 2px solid #179608;
-					transform: rotate(-45deg);
-					z-index: 2;
-					box-sizing: content-box;
-				}
-			}			
 			
-		}
-
-		&.out-of-stock {
-			i.mkl-pc-thumbnail svg {
-				display: block;
-				width: 100%;
-				height: 100%;
-				position: absolute;
+			i.mkl-pc-thumbnail span {
 				top: 0;
 				left: 0;
-				z-index: 1;
-			
-				line.cls-1 {
-					stroke: #FFF;
-					stroke-width: 4px;
+				right: 0;
+				bottom: 0;
+				box-shadow: none;
+				overflow: visible;
+				border-radius: 50%;
+				img {
+					border-radius: 50%;
+				}
+			}
+
+			&.active button {
+				background: transparent;
+				i.mkl-pc-thumbnail {
+					border-color: color( active_choice_button_bg_color );
+				}
+				i.mkl-pc-thumbnail span {
+					img {
+						box-shadow: 0 6px 15px -4px #00000091;
+					}
+					&::before {
+						content: ' ';
+						display: block;
+						width: 20px;
+						height: 20px;
+						background: #FFF;
+						position: absolute;
+						top: -5px;
+						right: -5px;
+						z-index: 1;
+						border-radius: 3px;
+						box-shadow: 0 3px 8px #0000004a;
+					}
+					&::after {
+						content: ' ';
+						/* color: green; */
+						position: absolute;
+						top: 0;
+						right: -1px;
+						display: block;
+						width: 10px;
+						height: 4px;
+						border-bottom: 2px solid #179608;
+						border-left: 2px solid #179608;
+						transform: rotate(-45deg);
+						z-index: 2;
+						box-sizing: content-box;
+					}
+				}			
+				
+			}
+
+			&.out-of-stock {
+				i.mkl-pc-thumbnail {
+					svg {
+						display: block;
+						width: 100%;
+						height: 100%;
+						position: absolute;
+						top: 0;
+						left: 0;
+						z-index: 1;
+					
+						line.cls-1 {
+							stroke: #FFF;
+							stroke-width: 4px;
+						}
+					}
+				}
+				button:focus,
+				button:hover {
+					i.mkl-pc-thumbnail {
+						outline-style: dashed;
+					}
 				}
 			}
 		}
-	}	
-
+	}
 }
 
 
