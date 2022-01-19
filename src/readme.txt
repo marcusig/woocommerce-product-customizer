@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.9
-Stable tag: 1.2.23
+Stable tag: 1.2.24
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -112,7 +112,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.24 - 19/Jan/2022 =
+
 * NEW THEME: Introducing the new Clean theme
+* FEATURE: Added display modes for the layers: Small color, Dropdown
 * TWEAK: Possibility to add image to checkout and email when not already added by the theme or an other plugin
 
 = 1.2.23 - 14/Jan/2022 =
@@ -341,4 +344,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.23 Various tweaks and improvements
+* 1.2.24 Introduciton of the new Clean theme and the display modes for the layers: Small color, Dropdown
