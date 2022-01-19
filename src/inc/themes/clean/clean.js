@@ -1,5 +1,10 @@
 (function($) {
 	if ( ! wp || ! wp.hooks ) return;
+
+	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/clean', function( view ) {
+		view.$el.addClass( 'clean' );
+	}, 20 );
+
 	wp.hooks.addAction( 'PC.fe.before_open', 'MKL/PC/Themes/clean', function() {
 		PC.fe.config.show_layer_description_in_title = true;
 	} );
