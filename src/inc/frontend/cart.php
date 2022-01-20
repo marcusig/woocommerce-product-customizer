@@ -43,7 +43,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 */
 		public function addify_add_quote_item_data( $quote_item_data, $product_id, $variation_id, $quantity, $form_data ) {
 			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $form_data['pc_configurator_data'] ) || '' == $form_data['pc_configurator_data'] ) return $quote_item_data;
-			if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
+			if ( $data = json_decode( stripcslashes( $form_data['pc_configurator_data'] ) ) ) {
 				$data = Plugin::instance()->db->sanitize( $data );
 				$layers = array();
 				if ( is_array( $data ) ) { 
