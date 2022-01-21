@@ -155,7 +155,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						</p>
 						<p>
 							<?php _e( 'How it works:', 'product-configurator-for-woocommerce' ); ?>
-							<br><?php _e( 'This tool looks for the pictures present in the configurator, and check whether they are in the media library.', 'product-configurator-for-woocommerce' ); ?>
+							<br><?php _e( 'This tool looks for the pictures present in the configurator, and checks whether they are in the media library.', 'product-configurator-for-woocommerce' ); ?>
 							<br><?php _e( 'If no exact match is found, it looks for an image with the same file name, and updates the attachment ID in the configurator data.', 'product-configurator-for-woocommerce' ); ?>
 						</p>
 						<p>
