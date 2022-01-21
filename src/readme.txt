@@ -112,6 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Remove limit in get_configurable_products request
+* TWEAK: Fix missing dependency in the newly added Clean theme
+
 = 1.2.24 - 19/Jan/2022 =
 
 * NEW THEME: Introducing the new Clean theme

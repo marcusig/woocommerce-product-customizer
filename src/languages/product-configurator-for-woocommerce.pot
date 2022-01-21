@@ -321,7 +321,7 @@ msgid "How it works:"
 msgstr ""
 
 #: src/inc/admin/settings-page.php:158
-msgid "This tool looks for the pictures present in the configurator, and check whether they are in the media library."
+msgid "This tool looks for the pictures present in the configurator, and checks whether they are in the media library."
 msgstr ""
 
 #: src/inc/admin/settings-page.php:159
@@ -608,11 +608,11 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/product.php:182
+#: src/inc/frontend/product.php:184
 msgid "Edit item in cart"
 msgstr ""
 
-#: src/inc/frontend/product.php:217
+#: src/inc/frontend/product.php:219
 msgid "Please select a variation to configure"
 msgstr ""
 
