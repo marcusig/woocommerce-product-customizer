@@ -121,7 +121,6 @@ PC.import.views = PC.import.views || {};
 				data.conditions = PC.app.get_collection( 'conditions' );
 			}
 
-			console.log( data );
 			exportToJsonFile( data );
 			
 		},
@@ -635,8 +634,8 @@ PC.import.views = PC.import.views || {};
 	var exportToJsonFile = function ( jsonData ) {
 		var dataStr = JSON.stringify( jsonData );
 		var dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent( dataStr );
-	
-		var exportFileDefaultName = 'data.json';
+		var dd = new Date();
+		var exportFileDefaultName = 'configurator-data--product-' + PC.app.get_product().id + '--' + dd.toISOString() + '.json';
 	
 		var linkElement = document.createElement( 'a' );
 		linkElement.setAttribute( 'href', dataUri );
