@@ -329,6 +329,7 @@ class Ajax {
 		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
 		if ( $data = get_transient( 'mkl_get_configurable_products' ) ) wp_send_json_success( $data );
 		$args = array(
+			'limit' => -1,
 			'meta_query' => array(
 				array(
 					'key' => MKL_PC_PREFIX.'_is_configurable',
