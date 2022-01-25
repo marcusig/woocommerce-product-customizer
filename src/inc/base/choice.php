@@ -80,9 +80,17 @@ class Choice {
 	public function get_layer( $item ) {
 		return isset( $this->layer[ $item ] ) ? $this->layer[ $item ] : null;
 	}
+
 	public function get_choice( $item ) {
 
 		return isset( $this->choice[ $item ] ) ? $this->choice[ $item ] : null;
+	}
+
+	public function set_choice( $key, $value ) {
+
+		if ( ! $this->choice ) return false;
+
+		$this->choice[ $key ] = $value;
 	}
 
 	public function get_image( $type = 'image' ) {

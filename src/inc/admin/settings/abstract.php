@@ -69,7 +69,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		 */
 		public function output_setting($options, $echo = true) {
 			
-			if (!is_array($options)) throw new \Exception('Setting options must be an array?');
+			if (!is_array($options)) throw new \Exception('Setting options must be an array.');
 
 			$options = wp_parse_args($options, array(
 				'type' => 'text',
@@ -111,9 +111,18 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 							// Prepare any choice specific attributes
 							$attributes = isset($choice['attributes']) && is_array($choice['attributes']) ? ' ' . $this->field_attributes($choice['attributes']) : '';
 							// Outputs the select
+
+							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
+								$output .= '<# if ( ' . $choice[ 'condition' ] . ' ) { #>';
+							}
+							
 							$output .= '<option'.$attributes.' value="'.$choice['value'].'" <# if("'.$choice['value'].'" == data.'.esc_attr($options['id']).') { #> selected <# } #>>';
 							$output .= $choice['label'];
 							$output .= '</option>';
+
+							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
+								$output .= '<# } #>';
+							}
 						}
 						$output .= '</select>';
 					}

@@ -71,8 +71,8 @@ PC.options = PC.options || {};
 			this.$el.removeClass( 'opened' ); 
 			$('body').removeClass('configurator_is_opened');
 
-			// Empty the form fields to prevent adding the configuration to the cart by mistake
-			$('input[name=pc_configurator_data]').val( '' );
+			// Empty the form fields to prevent adding the configuration to the cart by mistake (only if the configurator doesn't automatically close, as that would empty the field)
+			if ( ! PC.fe.config.close_configurator_on_add_to_cart ) $( 'input[name=pc_configurator_data]' ).val( '' );
 
 			wp.hooks.doAction( 'PC.fe.close', this ); 
 

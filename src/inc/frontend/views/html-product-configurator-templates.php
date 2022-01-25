@@ -169,7 +169,7 @@ add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_ch
 
 function mkl_pc_frontend_configurator_choice_name() {
 	?>
-		<span class="text choice-name"><?php echo apply_filters( 'tmpl-pc-configurator-choice-item-label', '{{data.name}}' ) ?></span>
+		<span class="text choice-name"><?php echo apply_filters( 'tmpl-pc-configurator-choice-item-label', '{{{data.name}}}' ) ?></span>
 	<?php
 }
 add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_name', 10 );
