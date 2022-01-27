@@ -80,7 +80,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				'classes' => '',
 			));
 
-			if (empty($options['id']) || empty($options['label'])) throw new \Exception('Setting options must have and `id` and `label` fields');
+			if ( empty($options['id'] ) || empty( $options['label'] ) ) throw new \Exception( 'Setting options must have and `id` and `label` fields' );
 
 			if ( 'html' === $options['type'] ) {
 				$output = '

@@ -207,7 +207,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// array('backbone', 'admin.js'),
 			);
 
-			if( $this->_current_screen_is( 'product' ) ) {
+			if ( $this->_current_screen_is( 'product' ) ) {
 
 				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
 				
