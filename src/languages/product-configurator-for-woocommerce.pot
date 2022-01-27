@@ -932,7 +932,7 @@ msgstr ""
 msgid "Main background color"
 msgstr ""
 
-#: src/inc/themes/clean/theme.php:43, src/inc/themes/clean/theme.php:47
+#: src/inc/themes/clean/theme.php:43, src/inc/themes/clean/theme.php:47, src/inc/themes/h/theme.php:202, src/inc/themes/h/theme.php:130
 msgid "Viewer background color"
 msgstr ""
 
@@ -1004,7 +1004,7 @@ msgstr ""
 msgid "Add to cart button text color - Hover"
 msgstr ""
 
-#: src/inc/themes/h/theme.php:198, src/inc/themes/h/theme.php:202, src/inc/themes/h/theme.php:126, src/inc/themes/h/theme.php:130
+#: src/inc/themes/h/theme.php:198, src/inc/themes/h/theme.php:126
 msgid "Dimmed label"
 msgstr ""
 

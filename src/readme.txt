@@ -112,6 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Compatibility with the theme Savoy: plus and minus buttons change quantity
+* TWEAK: Fix image order in the order (it was fixed in the cart previously)
+* TWEAK: H theme styling tweaks and fixes
 * TWEAK: Remove limit in get_configurable_products request
 * TWEAK: Fix missing dependency in the newly added Clean theme
 

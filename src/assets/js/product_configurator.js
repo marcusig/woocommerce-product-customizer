@@ -131,16 +131,19 @@ Backbone.Model.prototype.toJSON = function() {
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
 		wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
 
-		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ){
+		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 
 			$( 'form.cart' ).find('button').prop( 'disabled', false ); 
 
-			$( document ).on( 'change', 'form.cart input[name=quantity]', function(e) {
+			$( document ).on( 'change', 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]', function(e) {
 				var q = $(this).val();
-				$( 'form.cart input[name=quantity]' ).each( function( index, el ) {
+				$( 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]' ).each( function( index, el ) {
 					$( el ).val( q );
 				});
 			} );
+
+			// Savoy compatibility
+			if ( $.nmThemeInstance && $.nmThemeInstance.quantityInputsBindButtons ) $.nmThemeInstance.quantityInputsBindButtons( $('.mkl_pc') );
 
 			// Reset config
 			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
