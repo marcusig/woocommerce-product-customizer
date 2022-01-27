@@ -226,6 +226,7 @@
 .theme_setting img {
 	max-width: 150px;
 	border-radius: 4px;
+	display: block;
 }
 
 .theme_setting .img {
@@ -233,8 +234,10 @@
 }
 
 .theme_setting .content {
+    box-sizing: border-box;
 	border-left: 1px solid #efefef;
 	padding-left: 1em;
+	width: calc(100% - (150px + 1em ));
 }
 
 .theme_setting .content h4 {
