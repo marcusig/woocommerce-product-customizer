@@ -526,6 +526,11 @@
 				position: absolute;
 				-webkit-animation: slide-in-top 0.2s ease-out;
 				animation: slide-in-top 0.2s ease-out;
+				@media (max-width: $small_screen_width){
+					max-height: calc( 100vh - ( var(--toolbar_height) + var(--footer-height-small-screen)));
+					overflow-y: auto;
+					overflow-x: hidden;
+				}
 
 				li.active {
 					border-color: #CCC;

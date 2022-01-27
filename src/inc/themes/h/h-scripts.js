@@ -11,6 +11,8 @@
 			view.close();
 		} );
 
+		view.$( '.mkl-pc-show-form span.screen-reader-text' ).removeClass( 'screen-reader-text' );
+		
 		view.$el.on( 'click', '.mkl-pc-show-form', function(e) {
 			view.$el.toggleClass( 'mobile-show-form' );
 		} );

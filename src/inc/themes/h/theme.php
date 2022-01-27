@@ -127,7 +127,7 @@ function mkl_pc_float_theme_filter_colors( $colors ) {
 		);
 		$colors['viewer-bg'] = array(
 			'default' => '#202125',
-			'label' => __( 'Dimmed label', 'product-configurator-for-woocommerce' )
+			'label' => __( 'Viewer background color', 'product-configurator-for-woocommerce' )
 		);
 	} else {
 		$colors['primary'] = array(
@@ -199,7 +199,7 @@ function mkl_pc_float_theme_filter_colors( $colors ) {
 		);
 		$colors['viewer-bg'] = array(
 			'default' => '#EDEDED',
-			'label' => __( 'Dimmed label', 'product-configurator-for-woocommerce' )
+			'label' => __( 'Viewer background color', 'product-configurator-for-woocommerce' )
 		);
 
 	}
