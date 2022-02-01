@@ -284,10 +284,10 @@ PC.options = PC.options || {};
 			 * @param object  $cart - The jQuery object
 			 */
 			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
-				if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
-					this.$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
-				} else if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
+				if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
 					this.$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
+				} else if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
+					this.$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 				} else {
 					this.$cart.trigger( 'submit' );
 				}
