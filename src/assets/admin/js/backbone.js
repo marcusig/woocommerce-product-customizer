@@ -22,6 +22,7 @@
 		},
 
 	});
+
 	// MAIN COLLECTION CONTAINING ALL THE VUES
 	PC.Vues = Backbone.Collection.extend({
 		model: PC.Vue.Model,
@@ -30,7 +31,7 @@
 			var data = [];
 			this.each(function(model, index) {
 				var elms = model.getElms();
-				data[index] = model.toJSON();
+				data[index] = PC.toJSON( model );
 			});
 			return data ;
 
