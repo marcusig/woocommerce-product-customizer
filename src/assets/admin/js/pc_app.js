@@ -1,16 +1,23 @@
 var PC = PC || {};
 // Backbone.emulateHTTP = true;
 
-Backbone.Model.prototype.toJSON = function() {
-	var json = _.clone(this.attributes); 
-	for(var attr in json) {
-		if ((json[attr] instanceof Backbone.Model) || (json[attr] instanceof Backbone.Collection)) {
-			json[attr] = json[attr].toJSON(); 
+PC.toJSON = function( item ) {
+	if ( item instanceof Backbone.Collection ) {
+		var models = []; 
+		item.each( function( model ) {
+			models.push( PC.toJSON( model ) );
+		} );
+		return models;
+	}
+
+	var json = _.clone( item.attributes ); 
+	for ( var attr in json ) {
+		if ( json[attr] instanceof Backbone.Model || json[attr] instanceof Backbone.Collection ) {
+			json[attr] = PC.toJSON( json[attr] );
 		}
 	}
 	return json;
 };
-
 
 !(function($){
 	PC.actionParameter = 'pc_get_data'; 
@@ -204,10 +211,6 @@ Backbone.Model.prototype.toJSON = function() {
 			}
 			return collection.last().get( 'order' ) + 1;
 		}
-
-
-
-
 	};
 
 	PC.media = PC.media || {
@@ -270,7 +273,6 @@ Backbone.Model.prototype.toJSON = function() {
 			this.admin = this.admin || PC.app.get_admin();
 			this.admin_modal = this.admin_modal || this.admin.get_current_modal();
 			this.admin_modal.$el.hide();
-			//.hide();
 			if ( options instanceof jQuery ){
 				this.target = options;
 			} else if ( options.el ) {

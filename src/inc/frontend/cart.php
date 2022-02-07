@@ -27,8 +27,44 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			// add_action( 'woocommerce_after_cart_item_name', array( $this, 'add_edit_link' ), 20, 2 );
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'wc_add_cart_item'), 10, 2 ); 
 			// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
+			// Addify Ad to quote
+			add_filter( 'addify_add_quote_item_data', array( $this, 'addify_add_quote_item_data' ), 20, 5 );
 		}
 
+		/**
+		 * Addify quote
+		 *
+		 * @param array $quote_item_data
+		 * @param integer $product_id
+		 * @param integer $variation_id
+		 * @param integer $quantity
+		 * @param array $form_data
+		 * @return array
+		 */
+		public function addify_add_quote_item_data( $quote_item_data, $product_id, $variation_id, $quantity, $form_data ) {
+			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $form_data['pc_configurator_data'] ) || '' == $form_data['pc_configurator_data'] ) return $quote_item_data;
+			if ( $data = json_decode( stripcslashes( $form_data['pc_configurator_data'] ) ) ) {
+				$data = Plugin::instance()->db->sanitize( $data );
+				$layers = array();
+				if ( is_array( $data ) ) { 
+					foreach( $data as $layer_data ) {
+						$layers[] = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
+					}
+				}
+				$quote_item_data['configurator_data'] = $layers; 
+				$quote_item_data['configurator_data_raw'] = $data;
+			}
+
+			// if ( $data = json_decode( stripcslashes( $form_data['pc_configurator_data'] ) ) ) {
+			// 	$data = Plugin::instance()->db->sanitize( $data );
+			// 	$quote_item_data['configurator_data'] = $form_data['pc_configurator_data']; 
+			// }
+
+			// 	$cart_item_data['configurator_data_raw'] = $data;
+			// }
+			return $quote_item_data;
+		}
+		
 		// Filter data that's saved in the cart, and add the configurator data
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
@@ -101,7 +137,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
 				 * @return boolean
 				 */
-				if ( apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link = $this->get_edit_link( $cart_item ) ) {
+				if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link = $this->get_edit_link( $cart_item ) ) {
 					$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
 				}
 

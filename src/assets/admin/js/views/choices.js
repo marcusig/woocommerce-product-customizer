@@ -348,7 +348,7 @@ PC.views = PC.views || {};
 			if ( new_choice.get( 'admin_label' ) ) {
 				new_choice.set( 'admin_label', new_choice.get( 'admin_label' ) + ' (Copy)' );
 			}			
-			this.model.collection.create( new_choice.toJSON() );
+			this.model.collection.create( PC.toJSON( new_choice ) );
 		},
 		add_angle: function( angle ) {
 			// this.model

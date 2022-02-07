@@ -209,37 +209,62 @@ PC.options = PC.options || {};
 			return this; 
 		},
 		events: {
-			'click .configurator-add-to-cart': 'add_to_cart'
+			'click .configurator-add-to-cart': 'add_to_cart',
+			'click .add-to-quote': 'add_to_quote'
 		},
 
 		render: function() {
 			if ( ! PC.fe.config.cart_item_key ) {
 				this.$( '.edit-cart-item' ).hide();
 			}
+			// Get the input
+			this.$input = $( 'input[name=pc_configurator_data]' );
+			// The cart must be the one containing the input
+			this.$cart = this.$input.closest( 'form.cart' );
+			if ( ! this.$cart.find( '[name=add-to-cart]' ).length ) {
+				this.$( '.configurator-add-to-cart' ).remove();
+			}
+			
+			if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
+				this.$( '.add-to-quote' ).remove();
+			} else {
+				this.$( '.add-to-quote' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
+			}
+
 			return this.$el; 
 		},
 
-		add_to_cart: function( e ) { 
+		validate_configuration: function() {
 			var data = PC.fe.save_data.save();
 			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
 				console.log( errors );
 				alert( errors.join( "\n" ) );
-				return;
+				return false;
 			}
+			return data;
+		},
 
-			// Get the input
-			var $input = $( 'input[name=pc_configurator_data]' );
-			// The cart must be the one containing the input
-			var $cart = $input.closest( 'form.cart' );
+		populate_form_input: function( data, e ) {
 
 			if ( PC.fe.config.cart_item_key && $( e.currentTarget ).is( '.edit-cart-item' ) ) {
-				var $cart_item_field = $cart.find( 'input[name=pc_cart_item_key]' );
+				var $cart_item_field = this.$cart.find( 'input[name=pc_cart_item_key]' );
 				if ( $cart_item_field ) $cart_item_field.val( PC.fe.config.cart_item_key );
 			}
 
-			$input.val( data );
+			this.$input.val( data );
+		},
+
+		add_to_cart: function( e ) {
+
+			var data = this.validate_configuration();
+			
+			if ( ! data ) {
+				return;
+			}
+
+			this.populate_form_input( data, e );
 
 			if ( PC.fe.debug_configurator_data ) {
 				console.log( 'debug_configurator_data', data );
@@ -258,19 +283,34 @@ PC.options = PC.options || {};
 			 * @param boolean should_submit
 			 * @param object  $cart - The jQuery object
 			 */
-			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, $cart ) ) {
-				if ( $cart.find( '.single_add_to_cart_button' ).length ) {
-					$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
-				} else if ( $cart.find( 'button[name=add-to-cart]' ).length ) {
-					$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
+			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
+				if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
+					this.$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
+				} else if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
+					this.$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 				} else {
-					$cart.trigger( 'submit' );
+					this.$cart.trigger( 'submit' );
 				}
 			}
 
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
-		}
-	});
+		},
+		add_to_quote: function( e ) {
+
+			var data = this.validate_configuration();
+			
+			if ( ! data ) {
+				return;
+			}
+
+			this.populate_form_input( data, e );
+
+			// Woocommerce Add To Quote plugin
+			if ( $( '.afrfqbt_single_page' ).length ) {
+				$( '.afrfqbt_single_page' ).trigger( 'click' );
+			}
+		},
+	} );
 
 	/*
 		PC.fe.views.layers 
@@ -554,10 +594,13 @@ PC.options = PC.options || {};
 	PC.fe.views.choice = Backbone.View.extend({
 		tagName: 'li',
 		template: wp.template( 'mkl-pc-configurator-choice-item' ),
+		update_tippy_on_price_update: false,
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.model, 'change:active', this.activate );
 			wp.hooks.doAction( 'PC.fe.choice.init', this );
+			wp.hooks.addAction( 'PC.fe.extra_price.after.get_tax_rates', 'mkl/pc', this.on_price_update.bind( this ) );
+			wp.hooks.addAction( 'PC.fe.extra_price.after.update_price', 'mkl/pc', this.on_price_update.bind( this ) );
 		},
 		events: {
 			'mousedown > .choice-item': 'set_choice',
@@ -571,19 +614,16 @@ PC.options = PC.options || {};
 			}, this.options.model.attributes );
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
 			if ( window.tippy ) {
-				if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
-					var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
-					if ( this.$( '.out-of-stock' ).length ) {
-						description += this.$( '.out-of-stock' )[0].outerHTML;
-						this.$el.addClass( 'out-of-stock' );
-						if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
-							this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
-						}
-					}
-				} else {
-					var description = this.$( '.description' ).html();
-				}
 				
+				var description = this.get_description();
+
+				if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) && this.$( '.out-of-stock' ).length ) {
+					this.$el.addClass( 'out-of-stock' );
+					if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
+						this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
+					}
+				}
+
 				/**
 				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
 				 */
@@ -594,7 +634,7 @@ PC.options = PC.options || {};
 					zIndex: 100001
 				},
 				this );
-
+			
 				if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) tippy( this.$( '.choice-item' )[0], tooltip_options );
 			}
 
@@ -609,6 +649,25 @@ PC.options = PC.options || {};
 
 			return this.$el;
 		}, 
+		on_price_update: function() {
+			if ( ! this.update_tippy_on_price_update || this.model.get( 'is_group' ) ) return;
+			var $ci = this.$( '.choice-item' );
+			if ( $ci.length && $ci[0] && $ci[0]._tippy ) {
+				$ci[0]._tippy.setContent( this.get_description() );
+			}
+		},
+		get_description: function() {
+			if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
+				this.update_tippy_on_price_update = true;
+				var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
+				if ( this.$( '.out-of-stock' ).length ) {
+					description += this.$( '.out-of-stock' )[0].outerHTML;
+				}
+			} else {
+				var description = this.$( '.description' ).html();
+			}
+			return description;
+		},
 		set_choice: function( event ) {
 			if ( this.model.get( 'is_group' ) ) return;
 

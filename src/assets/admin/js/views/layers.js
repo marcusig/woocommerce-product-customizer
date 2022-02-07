@@ -370,7 +370,7 @@ TODO:
 			// Duplicate the layer
 			var cl = this.model.clone();
 			cl.set( 'name', cl.get( 'name' ) + ' (Copy)' );
-			var new_layer = this.model.collection.create( this.model.collection.create_layer( cl.toJSON() ) );
+			var new_layer = this.model.collection.create( this.model.collection.create_layer( PC.toJSON( cl ) ) );
 			if ( cl.get( 'admin_label' ) ) {
 				new_layer.set( 'admin_label', cl.get( 'admin_label' ) + ' (Copy)' );
 			}
@@ -385,7 +385,7 @@ TODO:
 				col.each( function( model ) {
 					var new_choice = model.clone();
 					new_choice.set( 'layerId', new_layer.id );
-					new_choices.create( new_choice.toJSON() );
+					new_choices.create( PC.toJSON( new_choice ) );
 				} );
 				PC.app.is_modified['content'] = true;
 			}
