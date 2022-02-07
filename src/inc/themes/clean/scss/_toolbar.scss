@@ -212,6 +212,7 @@
 						width: 50%;
 						flex-grow: 0;
 						min-height: var(--mkl_pc_choice_min_height);
+						box-sizing: border-box;
 
 						&:nth-child( odd ) {
 							border-right: 1px solid color( border-color );

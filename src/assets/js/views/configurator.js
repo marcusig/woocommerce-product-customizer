@@ -217,8 +217,13 @@ PC.options = PC.options || {};
 			if ( ! PC.fe.config.cart_item_key ) {
 				this.$( '.edit-cart-item' ).hide();
 			}
+			
 			// Get the input
 			this.$input = $( 'input[name=pc_configurator_data]' );
+			
+			// If the input isn't in the page, check in this view
+			if ( ! this.$input.length ) this.$input = this.$( 'input[name=pc_configurator_data]' );
+
 			// The cart must be the one containing the input
 			this.$cart = this.$input.closest( 'form.cart' );
 			if ( ! this.$cart.find( '[name=add-to-cart]' ).length ) {
