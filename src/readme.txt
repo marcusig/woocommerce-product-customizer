@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.9
-Stable tag: 1.2.24
+Stable tag: 1.2.25
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -112,6 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.25 - 7/Feb/2022 =
+
+* TWEAK: Change toJSON method to avoid conflicts
 * TWEAK: Compatibility with the theme Savoy: plus and minus buttons change quantity
 * TWEAK: Fix image order in the order (it was fixed in the cart previously)
 * TWEAK: H theme styling tweaks and fixes
@@ -350,4 +353,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.24 Introduciton of the new Clean theme and the display modes for the layers: Small color, Dropdown
+* 1.2.25 Various compatibility tweaks, improvements and fixes
