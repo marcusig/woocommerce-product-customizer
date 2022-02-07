@@ -580,15 +580,15 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:93, src/inc/frontend/order.php:53, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:53, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:109, src/inc/frontend/order.php:59
+#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:59
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/frontend/cart.php:229
+#: src/inc/frontend/cart.php:265
 msgid "Edit configuration"
 msgstr ""
 
