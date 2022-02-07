@@ -594,10 +594,13 @@ PC.options = PC.options || {};
 	PC.fe.views.choice = Backbone.View.extend({
 		tagName: 'li',
 		template: wp.template( 'mkl-pc-configurator-choice-item' ),
+		update_tippy_on_price_update: false,
 		initialize: function( options ) {
 			this.options = options || {};
 			this.listenTo( this.model, 'change:active', this.activate );
 			wp.hooks.doAction( 'PC.fe.choice.init', this );
+			wp.hooks.addAction( 'PC.fe.extra_price.after.get_tax_rates', 'mkl/pc', this.on_price_update.bind( this ) );
+			wp.hooks.addAction( 'PC.fe.extra_price.after.update_price', 'mkl/pc', this.on_price_update.bind( this ) );
 		},
 		events: {
 			'mousedown > .choice-item': 'set_choice',
@@ -611,19 +614,16 @@ PC.options = PC.options || {};
 			}, this.options.model.attributes );
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
 			if ( window.tippy ) {
-				if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
-					var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
-					if ( this.$( '.out-of-stock' ).length ) {
-						description += this.$( '.out-of-stock' )[0].outerHTML;
-						this.$el.addClass( 'out-of-stock' );
-						if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
-							this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
-						}
-					}
-				} else {
-					var description = this.$( '.description' ).html();
-				}
 				
+				var description = this.get_description();
+
+				if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) && this.$( '.out-of-stock' ).length ) {
+					this.$el.addClass( 'out-of-stock' );
+					if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
+						this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
+					}
+				}
+
 				/**
 				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
 				 */
@@ -634,7 +634,7 @@ PC.options = PC.options || {};
 					zIndex: 100001
 				},
 				this );
-
+			
 				if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) tippy( this.$( '.choice-item' )[0], tooltip_options );
 			}
 
@@ -649,6 +649,25 @@ PC.options = PC.options || {};
 
 			return this.$el;
 		}, 
+		on_price_update: function() {
+			if ( ! this.update_tippy_on_price_update || this.model.get( 'is_group' ) ) return;
+			var $ci = this.$( '.choice-item' );
+			if ( $ci.length && $ci[0] && $ci[0]._tippy ) {
+				$ci[0]._tippy.setContent( this.get_description() );
+			}
+		},
+		get_description: function() {
+			if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
+				this.update_tippy_on_price_update = true;
+				var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
+				if ( this.$( '.out-of-stock' ).length ) {
+					description += this.$( '.out-of-stock' )[0].outerHTML;
+				}
+			} else {
+				var description = this.$( '.description' ).html();
+			}
+			return description;
+		},
 		set_choice: function( event ) {
 			if ( this.model.get( 'is_group' ) ) return;
 
