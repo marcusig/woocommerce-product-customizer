@@ -780,3 +780,10 @@ body:not(.is-mobile) .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices >
     padding: 8px;
     opacity: .4;
 }
+
+.mkl-pc-syd-modal {
+	left: 0;
+	&::after {
+		left: 52px;
+	}
+}
