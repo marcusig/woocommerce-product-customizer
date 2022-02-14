@@ -61,6 +61,19 @@ $inner_space: 1em;
 	}
 }
 
+
+@keyframes configurator-load {
+	0% {
+		opacity: 0;
+	}
+	50% {
+		opacity: 1; 
+	} 
+	100% {
+		opacity: 0; 
+	}
+}
+
 /* Woocommerce  */
 .configurator_is_opened:not(.configurator_is_inline) {
 	overflow: hidden;
@@ -965,6 +978,24 @@ TIPPY
     font-size: .8em;
     opacity: .6;
 
+}
+
+
+/* Code For Loading Screen */
+
+.mkl-configurator-inline.is-shortcode.configure-product:empty {
+	height: 60vh;
+}
+.mkl-configurator-inline.is-shortcode.configure-product:empty::after {
+	content: attr(data-loading);
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	-webkit-animation: configurator-load 1.0s infinite ease-in-out;
+	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
 @import 'scss/dark_mode';
