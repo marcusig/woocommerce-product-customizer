@@ -219,6 +219,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			// $options = get_option( 'mkl_pc__settings' );
+			if ( 'wsb' == mkl_pc( 'settings' )->get_theme() ) {
+				add_settings_field(
+					'wsb_no_toggle',
+					__( 'Always show the choices (no toggle)', 'product-configurator-for-woocommerce' ),
+					[ $this, 'callback_checkbox' ],
+					'mlk_pc_settings', 
+					'settings_section',
+					[ 
+						'setting_name' => 'wsb_no_toggle',
+					]
+				);
+			}
+			
 			add_settings_section(
 				'general_settings', 
 				__( 'General options', 'product-configurator-for-woocommerce' ), 

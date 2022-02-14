@@ -360,211 +360,215 @@ msgstr ""
 msgid "Configurator theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:224
+#: src/inc/admin/settings-page.php:226
+msgid "Always show the choices (no toggle)"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:238
 msgid "General options"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:232
+#: src/inc/admin/settings-page.php:246
 msgid "Preview Image size"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:245
+#: src/inc/admin/settings-page.php:259
 msgid "Thumbnail size"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:253
+#: src/inc/admin/settings-page.php:267
 msgid "Size of the thumbnails in the sidebar"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:259
+#: src/inc/admin/settings-page.php:273
 msgid "Lazy load images"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:265
+#: src/inc/admin/settings-page.php:279
 msgid "Yes (default) - use an empty placeholder until the user selects a choice."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:266
+#: src/inc/admin/settings-page.php:280
 msgid "No - load everything from the beginning."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:275
+#: src/inc/admin/settings-page.php:289
 msgid "Show the product's price in the configurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:286
+#: src/inc/admin/settings-page.php:300
 msgid "Show choices' description"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:297
+#: src/inc/admin/settings-page.php:311
 msgid "Always show the description (no tooltip)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:308
+#: src/inc/admin/settings-page.php:322
 msgid "Show layers' description"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:319
+#: src/inc/admin/settings-page.php:333
 msgid "Show angle/view image"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:330
+#: src/inc/admin/settings-page.php:344
 msgid "Show angle/view name"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:342
+#: src/inc/admin/settings-page.php:356
 msgid "Configuration image generation"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:359
+#: src/inc/admin/settings-page.php:373
 msgid "Show configuration image in cart and checkout"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:370
+#: src/inc/admin/settings-page.php:384
 msgid "Image size in the cart / checkout / order"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:384
+#: src/inc/admin/settings-page.php:398
 msgid "Image mode"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:391
+#: src/inc/admin/settings-page.php:405
 msgid "Add images to the library"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:392
+#: src/inc/admin/settings-page.php:406
 msgid "Generate images on the fly"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:395
+#: src/inc/admin/settings-page.php:409
 msgid "(can take a lot of space on the disk if you have many possible configurations)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:396
+#: src/inc/admin/settings-page.php:410
 msgid "(save disk space, but uses more server resource)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:403
+#: src/inc/admin/settings-page.php:417
 msgid "Add product image to the checkout"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:414
+#: src/inc/admin/settings-page.php:428
 msgid "Add product image to the email"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:425
+#: src/inc/admin/settings-page.php:439
 msgid "Close the configurator when pressing \"add to cart\""
 msgstr ""
 
-#: src/inc/admin/settings-page.php:431
+#: src/inc/admin/settings-page.php:445
 msgid "Helpful if submiting the form via ajax"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:437
+#: src/inc/admin/settings-page.php:451
 msgid "On mobile, close the choices when making a selection"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:448
+#: src/inc/admin/settings-page.php:462
 msgid "On desktop, close the choices when making a selection"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:459
+#: src/inc/admin/settings-page.php:473
 msgid "Show the selected label in the layer header"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:470
+#: src/inc/admin/settings-page.php:484
 msgid "Show the selected image in the layer header"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:481
+#: src/inc/admin/settings-page.php:495
 msgid "Where should the \"configure\" button be placed"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:487
+#: src/inc/admin/settings-page.php:501
 msgid "Before the product excerpt"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:488
+#: src/inc/admin/settings-page.php:502
 msgid "Before the add to cart form"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:489
+#: src/inc/admin/settings-page.php:503
 msgid "Before the quantity input"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:490
+#: src/inc/admin/settings-page.php:504
 msgid "After the add to cart button"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:491
+#: src/inc/admin/settings-page.php:505
 msgid "After the add to cart form"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:500
+#: src/inc/admin/settings-page.php:514
 msgid "Allow adding the product to cart without configuring"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:511
+#: src/inc/admin/settings-page.php:525
 msgid "Disable caching of configurations"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:523
+#: src/inc/admin/settings-page.php:537
 msgid "SKU mode"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:529
+#: src/inc/admin/settings-page.php:543
 msgid "Each choice can have its own SKU"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:530
+#: src/inc/admin/settings-page.php:544
 msgid "Generate a single SKU by compounding the SKU set in each selected choice"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:539
+#: src/inc/admin/settings-page.php:553
 msgid "SKU devider (character used between the parts when compounding the SKU)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:551
+#: src/inc/admin/settings-page.php:565
 msgid "SKU label"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:563
+#: src/inc/admin/settings-page.php:577
 msgid "Show SKU in the cart and checkout"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:574
+#: src/inc/admin/settings-page.php:588
 msgid "Show a reset button in the configurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:598
+#: src/inc/admin/settings-page.php:612
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:694
+#: src/inc/admin/settings-page.php:708
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:695
+#: src/inc/admin/settings-page.php:709
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:755, src/inc/admin/settings-page.php:791
+#: src/inc/admin/settings-page.php:769, src/inc/admin/settings-page.php:805
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:757, src/inc/admin/settings-page.php:793
+#: src/inc/admin/settings-page.php:771, src/inc/admin/settings-page.php:807
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:767
+#: src/inc/admin/settings-page.php:781
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:768
+#: src/inc/admin/settings-page.php:782
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:777
+#: src/inc/admin/settings-page.php:791
 msgid "Select the theme"
 msgstr ""
 
@@ -1024,7 +1028,7 @@ msgstr ""
 msgid "Choice width"
 msgstr ""
 
-#: src/inc/themes/wsb/theme.php:67
+#: src/inc/themes/wsb/theme.php:70
 msgid "Sidebar background"
 msgstr ""
 

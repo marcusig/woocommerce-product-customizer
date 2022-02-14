@@ -1342,6 +1342,10 @@ body.configurator_is_inline .mkl_pc {
 	display: none;
 }
 
+.mkl_pc.no-toggle .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices:not( .display-mode-dropdown ) {
+	display: block;
+}
+
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers > li.display-mode-colors .layer_choices li.out-of-stock {
 	i.mkl-pc-thumbnail svg {
 		display: block;

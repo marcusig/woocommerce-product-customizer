@@ -295,12 +295,17 @@ class Frontend_Woocommerce {
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
 				'sku_mode' => mkl_pc( 'settings')->get( 'sku_mode', 'individual' ),
 				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post->ID ),
+				'no_toggle' => false,
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
 				]
 			) ),
 		);
+
+		if ( 'wsb' == mkl_pc( 'settings' )->get_theme() && mkl_pc( 'settings' )->get( 'wsb_no_toggle' ) ) {
+			$args['config']['no_toggle'] = true;
+		}
 
 		if ( $saved_configuration_content = $this->get_saved_configuration_content() ) {
 			$args['config']['load_config_content'] = $saved_configuration_content;

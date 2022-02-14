@@ -32,6 +32,10 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 			} 
 			return $settings;
 		}
+
+		public function get_theme() {
+			return apply_filters( 'mkl/pc/theme_id', $this->get( 'mkl_pc__theme' ) );
+		}
 	}
 
 }

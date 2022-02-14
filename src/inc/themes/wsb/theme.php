@@ -7,6 +7,7 @@ function mkl_pc_wsb_theme_scripts() {
 			var clone = view.footer.form.\$el.clone().appendTo( view.toolbar.\$el );
 			view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 			view.\$el.addClass( 'wsb' );
+			if ( PC_config.config.no_toggle ) view.\$el.addClass( 'no-toggle' );
 			view.\$el.on( 'click', '.mkl-pc-show-form', function(e) {
 				view.\$el.toggleClass( 'mobile-show-form' );
 			});
@@ -20,9 +21,11 @@ function mkl_pc_wsb_theme_scripts() {
 			return 'in';
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/wsb', function( view ) {
+			if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
 			view.\$el.find( '.layer_choices' ).slideDown(200);
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/wsb', function( view ) {
+			if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
 			view.\$el.find( '.layer_choices' ).slideUp(200);
 		} );
 

@@ -112,12 +112,16 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Possibility to disable toggling of the layers on the theme WSB (show the contents of all layers).
+* FIX: Height of the layers on mobile, on the theme Clean
+
 = 1.2.26 - 7/Feb/2022 =
 
 * FIX: add to cart button not displaying when embeding the shortcode
 
 = 1.2.25 - 7/Feb/2022 =
 
+* COMPAT: Added compatibility with Addify "Request a Quote for WooCommerce"
 * TWEAK: Change toJSON method to avoid conflicts
 * TWEAK: Compatibility with the theme Savoy: plus and minus buttons change quantity
 * TWEAK: Fix image order in the order (it was fixed in the cart previously)
