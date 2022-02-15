@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.9
-Stable tag: 1.2.26
+Stable tag: 1.2.27
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.27 - 15/Feb/2022 =
 
 * TWEAK: Possibility to disable toggling of the layers on the theme WSB (show the contents of all layers).
 * FIX: Height of the layers on mobile, on the theme Clean
@@ -361,4 +363,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.26 (and 1.2.25) Various compatibility tweaks, improvements and fixes
+* 1.2.27 Various tweaks and fixes
