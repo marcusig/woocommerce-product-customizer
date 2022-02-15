@@ -242,7 +242,6 @@ PC.views = PC.views || {};
 			this.listenTo( this.model, 'destroy', this.remove );
 			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group' ), this.render );
 			PC.currentEditedItem = this.model;
-
 			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},
 		events: {
@@ -253,6 +252,7 @@ PC.views = PC.views || {};
 			'click .duplicate-choice': 'duplicate_choice',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
+			'change .setting input[type=date]': 'form_change',
 			'keyup .setting textarea': 'form_change',
 			'change .setting select': 'form_change',
 			'click [type="checkbox"]': 'form_change',

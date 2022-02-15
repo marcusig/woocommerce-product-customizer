@@ -251,7 +251,7 @@ Tags: Left
 					margin: 0;
 				}
 
-				button.configurator-add-to-cart {
+				button.configurator-add-to-cart, button.add-to-quote {
 					text-transform: uppercase;
 					background: var(--mkl_pc_color-primary);
 					color: #FFF;
@@ -266,8 +266,11 @@ Tags: Left
 					z-index: 2;
 				}
 				
-				
-				 .quantity {
+				button.add-to-quote {
+					margin-left: 4px;
+				}
+
+				.quantity {
 					border: 2px solid color( primary );
 					border-top-left-radius: 12px;
 					border-bottom-left-radius: 12px;
