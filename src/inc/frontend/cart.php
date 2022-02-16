@@ -107,6 +107,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				foreach ($configurator_data as $layer) {
 					if ( $layer->is_choice() ) { 
+						if ( $layer->get_layer( 'hide_in_cart' ) ) continue;
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
 						if ( ! empty( $choice_images ) && $choice_images[0]["thumbnail"]['id'] != '' ) {

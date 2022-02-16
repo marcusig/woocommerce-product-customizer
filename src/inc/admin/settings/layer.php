@@ -89,6 +89,12 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'checkbox',
 					'priority' => 30,
 				),
+				'hide_in_cart' => array(
+					'label' => __('Hide this layer in the cart / checkout / order', 'product-configurator-for-woocommerce' ),
+					'help' => __('Useful if you only need to show this in the configurator, but do not need to display it in the order', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 30,
+				),
 				'custom_html' => array(
 					'label' => __( 'Custom HTML', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
