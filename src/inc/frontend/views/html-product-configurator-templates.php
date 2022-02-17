@@ -140,7 +140,10 @@ add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_confi
 
 function mkl_pc_frontend_configurator_layer_name() {
 	?>
-		<span class="text layer-name">{{data.name}}</span>
+		<span class="text layer-name">
+			{{data.name}}
+			<# if ( data.description && PC.fe.config.show_layer_description ) { #><a class="show-description" href="#"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><use href="#mkl-info-icon"></svg></span><# } #>
+		</span>
 	<?php
 }
 add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_name', 10 );

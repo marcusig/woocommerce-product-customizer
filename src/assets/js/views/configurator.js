@@ -423,6 +423,31 @@ PC.options = PC.options || {};
 	});
 
 	/*
+		Description modal
+	*/
+	PC.fe.views.layer_description_modal = Backbone.View.extend( {
+		tagName: 'div',
+		className: 'mkl-pc-layer-description-modal',
+		template: wp.template( 'mkl-pc-configurator-layer-item-description-modal' ),
+		initialize: function( options ) {
+			this.options = options || {};
+			this.layer_type = this.model.get('type');
+			this.render();
+			// this.listenTo( this.options.model, 'change:active', this.activate );
+			// wp.hooks.doAction( 'PC.fe.layers_list_item.init', this );
+		},
+		events: {
+			'click .close-description': 'close',
+		},
+		render: function() {
+			this.$el.append( this.template( this.model.attributes ) );
+		},
+		close: function() {
+			this.remove();
+		}
+	} );
+
+	/*
 		PC.fe.views.layer 
 	*/
 	PC.fe.views.layers_list_item = Backbone.View.extend({
@@ -438,6 +463,7 @@ PC.options = PC.options || {};
 
 		events: {
 			'click > .layer-item': 'show_choices', 
+			'click .show-description': 'show_description', 
 			// 'click a i.close': 'hide_choices', 
 		},
 
@@ -535,6 +561,12 @@ PC.options = PC.options || {};
 				this.model.set( 'active', true ); 
 				wp.hooks.doAction( 'PC.fe.layer.show', this );
 			}
+		},
+		show_description: function( e ) {
+			e.preventDefault();
+			var d = new PC.fe.views.layer_description_modal( { model: this.model } );
+			d.$el.appendTo( 'body' );
+			// mkl-pc-configurator-layer-item-description-modal
 		},
 		activate: function() {
 			if( this.model.get( 'active' ) ) {

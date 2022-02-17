@@ -89,3 +89,44 @@ table span.choice-thumb.color {
     width: 100%;
     text-align: center;
 }
+
+.mkl_pc .show-description svg {
+    display: inline-block;
+    width: 14px;
+
+}
+
+.mkl_pc .show-description svg use, 
+.mkl_pc .show-description svg path {
+    fill: #5a5555;
+    stroke: none;
+}
+
+.mkl-pc-layer-description-modal {
+    position: fixed;
+    z-index: 1000001;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.mkl-description {
+    position: absolute;
+    top: 50px;
+    left: 50px;
+    background: #FFF;
+    height: calc(100% - 100px);
+    width: calc( 100% - 100px );
+    box-shadow: 0 15px 130px rgb(0 0 0 / 54%);
+}
+
+.mkl-pc-layer-description-modal .close {
+    position: absolute;
+    top: 50px;
+    right: 50px;
+    z-index: 3;
+    background: #000;
+    color: #FFF;
+    padding: 8px 16px;
+}
