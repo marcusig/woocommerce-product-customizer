@@ -1023,12 +1023,22 @@ $inner_space: 1em;
 		.mkl-pc-show-form {
 			display: none;
 			background: transparent;
-			border: none;
+			font-size: 12px;
+			border: 2px solid color( primary );
+			padding: 6px 10px;
+			margin-right: 5px;
+			color: color( primary );
+			border-radius: 8px;
 			svg {
-				width: 1.4em;
+				vertical-align: middle;
+				width: 16px;
+				margin-right: 5px;
 				path {
-					fill: var(color(primary));
+					fill: color( primary );
 				}
+			}
+			span {
+				vertical-align: middle;
 			}
 		}
 
@@ -1125,6 +1135,9 @@ $inner_space: 1em;
 				&:hover, &:focus {
 					opacity: .5;
 				}
+				@media (max-width: $small_screen_width) {
+					font-size: 12px;
+				}
 			}
 
 			h3.product-name {
@@ -1137,6 +1150,11 @@ $inner_space: 1em;
 
 			.footer__section-left:empty {
 				display: none;
+			}
+
+			.footer__section-center {
+				flex: 1;
+				display: flex;			
 			}
 
 			.mkl-pc-syd-modal {
@@ -1522,4 +1540,14 @@ body.configurator_is_inline .mkl_pc {
 	letter-spacing: 2px;
 	-webkit-animation: configurator-load 1.0s infinite ease-in-out;
 	animation: configurator-load 1.0s infinite ease-in-out; 
+}
+
+a.save-your-design svg {
+    transform: translateY(-3px);
+    fill: color(primary);
+}
+
+a.save-your-design svg path,
+.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path {
+    fill: var(--mkl_pc_color-primary);
 }
