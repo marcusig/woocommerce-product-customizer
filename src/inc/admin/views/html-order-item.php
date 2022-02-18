@@ -8,7 +8,7 @@
 			if( $layer->is_choice() ) :
 			?>
 			<li><strong><?php echo $layer->get_layer('name') ?></strong>:
-				<?php echo $layer->get_choice('name') ?>
+				<?php echo $layer->get_choice( 'name' ) ?>asdasd
 				<?php do_action( 'mkl_pc_admin_order_item', $layer ); ?>
 			</li>
 			<?php		

@@ -112,7 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Possibility to hide a layer in the cart / order
+* TWEAK: Fix order meta formatting
+* TWEAK: Possibility to hide a layer in the cart / order while still using it in the configurator
 
 = 1.2.27 - 15/Feb/2022 =
 
