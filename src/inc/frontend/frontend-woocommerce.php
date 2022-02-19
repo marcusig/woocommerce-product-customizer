@@ -48,7 +48,7 @@ class Frontend_Woocommerce {
 		add_filter( 'mkl_product_configurator_get_front_end_data', array( $this, 'set_thumbnail_url' ), 20 );
 
 		add_filter( 'mkl_pc_order_item_meta', array($this, 'add_sku_to_meta' ), 20, 5 );
-		add_filter( 'mkl_pc_item_meta', array($this, 'add_sku_to_meta' ), 20, 5 );
+		add_filter( 'mkl_pc_item_meta', array($this, 'add_sku_to_meta_cart' ), 20, 5 );
 	}
 
 	public function register_rest_route() {
@@ -407,6 +407,11 @@ class Frontend_Woocommerce {
 			}
 		}
 		return $data;
+	}
+
+	public function add_sku_to_meta_cart( $meta, $layer, $product ) {
+		if ( 'on' != mkl_pc( 'settings')->get( 'show_sku_in_cart' ) ) return $meta;
+		return $this->add_sku_to_meta( $meta, $layer, $product );
 	}
 
 	public function add_sku_to_meta( $meta, $layer, $product ) {
