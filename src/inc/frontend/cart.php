@@ -97,7 +97,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		public function wc_cart_get_item_data( $data, $cart_item ) { 
-
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
 
 				$configurator_data = $cart_item['configurator_data'];
@@ -107,13 +106,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				foreach ($configurator_data as $layer) {
 					if ( $layer->is_choice() ) { 
-						if ( $layer->get_layer( 'hide_in_cart' ) ) continue;
+						if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
 						if ( ! empty( $choice_images ) && $choice_images[0]["thumbnail"]['id'] != '' ) {
 							$choice_image = '<span class="choice-thumb"><img src="' . wp_get_attachment_url( $choice_images[0]["thumbnail"]['id'] ) . '" alt=""></span> ';
 						}
-						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'] );
+						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'], $cart_item[ 'key' ] );
 						if ( empty( $item_data[ 'label' ] ) && empty( $item_data['value'] ) ) continue;
 						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
 						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => $choice_image . $item_data['value'] ], $layer, $cart_item );

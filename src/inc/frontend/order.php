@@ -40,7 +40,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					// stores each couple layer name + choice as a order_item_meta, for automatic extraction
 					foreach ( $configurator_data as $layer ) {
 						if ( is_object($layer) ) {
-							if ( $layer->get_layer( 'hide_in_cart' ) ) continue;
+							if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
 							if ( $layer->is_choice() ) :
 								$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values, $items_count );
 								$order_meta_for_configuration[] = $choice_meta;
