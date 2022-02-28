@@ -369,9 +369,18 @@ PC.views = PC.views || {};
 
 			data.model = images.get(angle.id);
 			// data.
-			var part = new PC.views.choice_picture(data);
+			var angle_view = new PC.views.choice_picture(data);
 
-			this.$pictures.append( part.render().el );
+			this.$pictures.append( angle_view.render().el );
+
+			/**
+			 * PC.admin.choiceDetails.add_angle action, triggered when adding the angle images to the choice details
+			 *
+			 * @param Backbone.Model angle - The angle
+			 * @param Backbone.View  angle_view - The single angle view
+			 * @param Backbone.View  choiceDetails
+			 */
+			wp.hooks.doAction( 'PC.admin.choiceDetails.add_angle', angle, angle_view, this );
 		},
 		trigger_custom_action: function( event ) {
 			var el = $(event.currentTarget);
