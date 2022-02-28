@@ -10,9 +10,13 @@ PC.toJSON = function( item ) {
 		return models;
 	}
 
-	var json = _.clone( item.attributes ); 
+	if ( item instanceof Backbone.Model ) {
+		var json = _.clone( item.attributes ); 
+	} else {
+		var json = _.clone( item );
+	}
 	for ( var attr in json ) {
-		if ( json[attr] instanceof Backbone.Model || json[attr] instanceof Backbone.Collection ) {
+		if ( json[attr] instanceof Backbone.Model || json[attr] instanceof Backbone.Collection || json[attr] instanceof Object ) {
 			json[attr] = PC.toJSON( json[attr] );
 		}
 	}
