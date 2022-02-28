@@ -281,9 +281,11 @@ CONTENT TEMPLATES
 		<# if ( wp.hooks.applyFilters( 'PC.admin.show_choice_images', true, data ) ) { #>
 			<div class="options">
 				<# if ( data.is_group ) { #>
-				<h3><?php _e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
+					<h3><?php _e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
+				<# } else if ( 'text-overlay' == data.layer_type ) { #>
+					<h3><?php _e( 'Text positions', 'product-configurator-for-woocommerce' ) ?></h3>
 				<# } else { #>
-				<h3><?php _e( 'Pictures', 'product-configurator-for-woocommerce' ) ?></h3>
+					<h3><?php _e( 'Pictures', 'product-configurator-for-woocommerce' ) ?></h3>
 				<# } #>
 				<div class="views">
 					

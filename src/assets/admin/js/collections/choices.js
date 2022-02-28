@@ -48,6 +48,11 @@ PC.choices = Backbone.Collection.extend({
 		var is_active = choice.get('active');
 		// Simple layers
 		if ( 'simple' === this.layer_type || ! this.layer_type ) {
+			// The choice can be deselected if a choice is required
+			if ( is_active && ! activate && this.layer.get( 'required' ) ) {
+				choice.set( 'active', false );
+				return;
+			}
 			// Already active, do nothing
 			if ( is_active ) return;
 			// Deactivate every other choice
