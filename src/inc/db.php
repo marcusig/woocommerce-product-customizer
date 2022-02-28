@@ -603,10 +603,11 @@ class DB {
 				if ( is_array( $item[ 'choices' ] ) ) {
 					foreach( $item[ 'choices' ] as $choice_key => $choice ) {
 						if ( isset( $choice[ 'images' ] ) && is_array( $choice[ 'images' ] ) ) {
-							foreach( $choice[ 'images' ] as $ik => $image ) {								
+							foreach( $choice[ 'images' ] as $ik => $image ) {
 								if ( isset( $image[ 'image' ] ) && $image[ 'image' ]['url'] ) {
 									$new_image_id = $this->_find_image_id( $image[ 'image' ]['url'], $image[ 'image' ]['id'] );
-									if ( $new_image_id && $new_image_id != $image[ 'image' ]['id'] ) {
+									$new_url = wp_get_attachment_url( $new_image_id );
+									if ( $new_image_id && $new_image_id != $image[ 'image' ]['id'] || $new_url != $image[ 'image' ]['url'] ) {
 										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'id' ] = $new_image_id;
 										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_image_id );
 									}
