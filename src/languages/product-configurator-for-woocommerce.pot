@@ -1048,10 +1048,6 @@ msgstr ""
 msgid "Sidebar background"
 msgstr ""
 
-#: src/inc/frontend/views/parts/layer-item.php:10
-msgid "Close"
-msgstr ""
-
 #: src/inc/frontend/views/parts/product-viewer.php:8
 msgid "Change angle"
 msgstr ""
