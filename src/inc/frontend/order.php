@@ -42,8 +42,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 						if ( is_object($layer) ) {
 							if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
 							if ( $layer->is_choice() ) :
-								$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values, $items_count );
-								$order_meta_for_configuration[] = $choice_meta;
+								$order_meta_for_configuration[]	= apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values, $items_count );
 								if ( $compound_sku && $layer->get_choice( 'sku' ) ) {
 									$sku[] = $layer->get_choice( 'sku' );
 								}								
@@ -77,6 +76,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$meta = array(
 				'label' => $layer->get_layer('name'),
 				'value' => $layer->get_choice('name'),
+				'layer' => $layer,
 			);
 			return apply_filters( 'mkl_pc_order_item_meta', $meta, $layer, $product ); 
 		}
@@ -99,10 +99,14 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 		public function get_choices_html( $choices ) {
 			$output = '';
-			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' );
-			$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
 			foreach ( $choices as $choice ) {
 				if ( empty( $choice ) ) continue;
+				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
+					$classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'class_name' ) );
+				}
+
+				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
+				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
 				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['label'] .'</strong>' . ( $choice['label'] ? '<span class="semicol">:</span> ' : '' ) . $choice['value'] . $after, $choice['label'], $choice['value'], $before, $after );
 			}
 

@@ -115,7 +115,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'], $cart_item[ 'key' ] );
 						if ( empty( $item_data[ 'label' ] ) && empty( $item_data['value'] ) ) continue;
 						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
-						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => $choice_image . $item_data['value'] ], $layer, $cart_item );
+						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => $choice_image . $item_data['value'], 'layer' => $layer ], $layer, $cart_item );
 
 						if ( $compound_sku && $layer->get_choice( 'sku' ) ) {
 							$sku[] = $layer->get_choice( 'sku' );
@@ -232,11 +232,18 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return ($a > $b) ? +1 : -1;
 		}
 
+		/**+
+		 * Get the choices HTML to be displayed
+		 */
 		public function get_choices_html( $choices ) {
 			$output = '';
-			$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div>' );
-			$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
 			foreach ( $choices as $choice ) {
+				$classes = '';
+				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
+					$classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'class_name' ) );
+				}
+				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
+				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice );
 				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['name'] .'</strong><span class="semicol">:</span> ' . $choice['value'] . $after, $choice['name'], $choice['value'], $before, $after );
 			}
 
