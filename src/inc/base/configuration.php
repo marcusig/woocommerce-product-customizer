@@ -223,7 +223,7 @@ class Configuration {
 	 */
 	public function get_image( $size = 'woocommerce_thumbnail', $attr = array(), $lazy = true ) {
 
-		$url = $this->get_image_url( $lazy );
+		$url = $this->get_image_url( $lazy, $size );
 
 		$attachment_id = false;
 
@@ -286,7 +286,7 @@ class Configuration {
 	/**
 	 * @return array|string
 	 */
-	public function get_image_url( $lazy = false ) {
+	public function get_image_url( $lazy = false, $size = 'woocommerce_thumbnail' ) {
 		
 		if ( $this->configuration_image_exists() ) return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
 	

@@ -35,6 +35,9 @@ class Images {
 		if ( ! $the_image ) return false;
 
 		if ( 'print' == $output || '' == $output ) {
+			if ( isset( $_REQUEST[ 'width' ] ) && isset( $_REQUEST[ 'height' ] ) ) {
+				$the_image->resize( intval( $_REQUEST[ 'width' ] ), intval( $_REQUEST[ 'height' ] ) );
+			}
 
 			echo $the_image->response();
 			exit;
