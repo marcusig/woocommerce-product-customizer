@@ -29,11 +29,18 @@ PC.choices = Backbone.Collection.extend({
 		if ( ! this.layer_type || 'simple' === this.layer_type ) {
 			if ( ! this.layer.get( 'default_selection' ) || 'select_first' == this.layer.get( 'default_selection' ) ) {
 				var default_selection = this.findWhere( { is_default: true } );
-				if ( default_selection ) { 
+				if ( default_selection ) {
 					default_selection.set( 'active', true );
+					var item = default_selection;
 				} else {
 					var first_available_choice = this.findWhere( { available: true } );
 					if ( first_available_choice ) first_available_choice.set( 'active', true );
+					var item = first_available_choice;
+				}
+
+				// If the item is hidden using conditional logic, select the next available item
+				if ( item && false === item.get( 'cshow' ) ) {
+					
 				}
 			}
 		} else if ( 'multiple' === this.layer_type ) {
@@ -49,7 +56,7 @@ PC.choices = Backbone.Collection.extend({
 		// Simple layers
 		if ( 'simple' === this.layer_type || ! this.layer_type ) {
 			// The choice can be deselected if a choice is required
-			if ( is_active && ! activate && this.layer.get( 'required' ) ) {
+			if ( is_active && ! activate && this.layer.get( 'required' ) && wp.hooks.applyFilters( 'PC.choices.canDeselectSimpleChoice', false, this ) ) {
 				choice.set( 'active', false );
 				return;
 			}
