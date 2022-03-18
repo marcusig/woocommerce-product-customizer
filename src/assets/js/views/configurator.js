@@ -800,9 +800,11 @@ PC.options = PC.options || {};
 			var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, model, this );
 			var layer = new View( { model: model, parent: this } ); 
 			this.$layers.append( layer.$el );
+			wp.hooks.doAction( 'PC.fe.viewer.item.added', layer, this );
 			if ( model.get( 'custom_html' ) ) {
 				var html_layer = new PC.fe.views.viewer_layer_html( { model: model, layer: layer, parent: this } );
 				this.$layers.append( html_layer.$el );
+				wp.hooks.doAction( 'PC.fe.viewer.html_item.added', html_layer, this );
 			}
 			this.layers[ model.id ] = layer;
 		}
