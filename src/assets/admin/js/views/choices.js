@@ -54,6 +54,7 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.empty();
 			this.$el.html( this.template( this.model.attributes ) );
+			this.remove_views();
 
 			this.$active_layer = this.$('.active-layer');
 			var al_button = wp.template('mkl-pc-content-layer-back-link');
@@ -62,6 +63,7 @@ PC.views = PC.views || {};
 			this.$list = this.$('.choices');
 			this.$form = this.state.$('.choice-details'); 
 			this.add_all( this.col );
+			this.update_groups();
 			this.setup_sortable();
 			return this;
 		},
@@ -78,18 +80,18 @@ PC.views = PC.views || {};
 		add_one: function( model ) {
 			var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
 			this.items.push( new_choice );
-			if ( model.get( 'parent' ) ) {
-				var target = this.$( '.choices[data-item-id=' + model.get( 'parent' ) + ']');
-				if ( target.length ) {
-					target.append( new_choice.render().el );
-				} else {
-					this.$list.append( new_choice.render().el );
-				}
-			} else {
-				this.$list.append( new_choice.render().el );
-			}
+			this.$list.append( new_choice.render().el );
 		},
-
+		update_groups: function() {
+			_.each( this.items, function( view ) {
+				if ( view.model.get( 'parent' ) ) {
+					var target = this.$( '.choices[data-item-id=' + view.model.get( 'parent' ) + ']');
+					if ( target.length ) {
+						target.append( view.$el );
+					}
+				}				
+			}.bind( this ) );
+		},
 		remove_one: function( model ) {
 			this.mark_collection_as_modified();
 			// var new_choice = new PC.views.choice({ model: model, state: this.state, collection: this.col, form_target: this.$form });
@@ -126,7 +128,7 @@ PC.views = PC.views || {};
 				if ( $( listItem ).closest( '.group-list' ).length ) {
 					parent = $( listItem ).closest( '.group-list' ).data( 'itemId' );
 				}
-				$( listItem ).trigger( 'sort', [i, parent] );
+				$( listItem ).trigger( 'update_order', [i, parent] );
 			} );
 
 			this.col.sort( { silent: true } );
@@ -136,12 +138,14 @@ PC.views = PC.views || {};
 		hide_choices: function( e ) {
 			e.preventDefault();
 			this.state.$el.removeClass( 'show-choices' );
-
-			_.each( this.items, this.remove_item );
-			this.items = [];
-
+			this.remove_views();
 			this.$el.empty();
 			this.$form.empty();
+		},
+
+		remove_views: function() {
+			_.each( this.items, this.remove_item );
+			this.items = [];
 		},
 
 		create: function( e ) {
@@ -191,16 +195,47 @@ PC.views = PC.views || {};
 		}		
 	});
 
+	PC.views.choiceLabel = Backbone.View.extend( {
+		tagName: 'span',
+		template: wp.template('mkl-pc-content-choice-list-item--label'),
+		initialize: function() {
+			this.render();
+		},
+		render: function() {
+			this.$el.html( this.template( this.model.attributes ) );
+		}
+	} );
+	
 	PC.views.choice = PC.views.layer.extend( {
 		edit_view: function(){ return PC.views.choiceDetails; },
 		events: {
 			'click > button' : 'edit',
 			'drop': 'drop',
-			'sort': 'sort',
+			'update_order': 'update_order',
 		},
 		template: wp.template('mkl-pc-content-choice-list-item'),
-		sort: function( event, index, parent ) {
-			if ( parent && this.model.get( 'is_group' ) ) return;
+		initialize: function( options ) {
+			this.options = options || {}; 
+			this.form_target = options.form_target; 
+			this.listenTo( this.model, 'change:active', this.activate ); 
+			this.listenTo( this.model, 'change:name change:admin_label', this.update_label ); 
+			this.listenTo( this.model, 'destroy', this.remove ); 
+		},		
+		render: function() {
+			this.$el.html( this.template( this.model.attributes ) );
+			if ( ! this.label ) {
+				this.label = new PC.views.choiceLabel( { model: this.model } );
+				this.$( 'h3' ).append( this.label.$el );
+			}
+			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
+			return this;
+		},
+		update_label: function() {
+			this.label.render();
+		},
+		update_order: function( event, index, parent ) {
+			event.stopPropagation();
+			if ( parent && parent == this.model.id ) return;
 			this.model.set( { order: index, parent: parent } );
 		},
 		drop: function( event, index, a ) {

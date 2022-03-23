@@ -244,11 +244,6 @@ CONTENT TEMPLATES
 	<div class="tips sort ui-sortable-handle"></div>
 	<button type="button">
 		<h3>
-			<# if ( data.admin_label && data.admin_label != '' ) { #>
-				{{data.admin_label}}
-			<# } else { #>
-				{{data.name}}
-			<# } #>
 		</h3>
 	</button>
 	<# if ( data.is_group ) { #>
@@ -256,9 +251,17 @@ CONTENT TEMPLATES
 	<# } #>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-content-choice-list-item--label">
+	<# if ( data.admin_label && data.admin_label != '' ) { #>
+		{{data.admin_label}}
+	<# } else { #>
+		{{data.name}}
+	<# } #>
+</script>
+
 <script type="text/html" id="tmpl-mkl-pc-content-choice-form">
 	<div class="form-details">
-		<h3><?php _e('Choice informations', 'product-configurator-for-woocommerce' ) ?></h3>
+		<h3><?php _e('Choice informations', 'product-configurator-for-woocommerce' ) ?> ({{data._id}})</h3>
 		<div class="form-info">
 			<div class="details">
 				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
