@@ -206,7 +206,7 @@ TODO:
 			this.options = options || {}; 
 			this.form_target = options.form_target; 
 			this.listenTo( this.model, 'change:active', this.activate ); 
-			this.listenTo( this.model, 'change:name change:admin_label change:image', this.render); 
+			this.listenTo( this.model, 'change:name change:admin_label change:image', this.render ); 
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},
 		events: {
@@ -216,7 +216,7 @@ TODO:
 		},
 		render: function() {
 			this.$el.html( this.template( this.model.attributes ) );
-			if( this.model.get('active') == true || this.model.get('active') == 'true' ) this.edit();
+			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
 		},
 		edit: function( event ) { 

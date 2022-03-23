@@ -175,8 +175,8 @@ PC.toJSON = function( item ) {
 
 				if ( collection instanceof Array ) {
 					options.data[what] = {};
-					$.each(collection, function(index, value){
-						options.data[what][index] = ( value instanceof Backbone.Collection ) ? JSON.stringify(value) : value;
+					$.each( collection, function( index, value ){
+						options.data[what][index] = ( value instanceof Backbone.Collection ) ? JSON.stringify( value ) : value;
 					});
 				} else if ( collection instanceof Backbone.Collection ) {
 					options.data[what] = JSON.stringify(collection);
