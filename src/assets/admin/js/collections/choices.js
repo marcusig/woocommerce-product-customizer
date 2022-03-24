@@ -56,7 +56,7 @@ PC.choices = Backbone.Collection.extend({
 		// Simple layers
 		if ( 'simple' === this.layer_type || ! this.layer_type ) {
 			// The choice can be deselected if a choice is required
-			if ( is_active && ! activate && this.layer.get( 'required' ) && wp.hooks.applyFilters( 'PC.choices.canDeselectSimpleChoice', false, this ) ) {
+			if ( is_active && ! activate && wp.hooks.applyFilters( 'PC.choices.canDeselectSimpleChoice', this.layer.get( 'can_deselect' ), this ) ) {
 				choice.set( 'active', false );
 				return;
 			}

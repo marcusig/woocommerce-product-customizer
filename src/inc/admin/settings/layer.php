@@ -127,6 +127,12 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 40,
 					'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
 				),
+				'can_deselect' => array(
+					'label' => __( 'The user can deselect the current choice', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 42,
+					'condition' => '!data.not_a_choice && "simple" == data.type',
+				),
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
