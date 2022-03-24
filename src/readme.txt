@@ -112,6 +112,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+
+
+* TWEAK: Resize images when using the method to generate on the fly.
+* TWEAK: Possibility to nest groups
+* FIX: Editing a group's title doesn't break the group's layout in the admin
+
 = 1.2.28 - 3/Mar/2022 =
 
 * TWEAK: Fix SKU display in cart

@@ -315,10 +315,32 @@ class Configuration {
 				$images[] = $layer->image;
 			}
 
-			return get_rest_url() .'mkl_pc/v1/merge/'. $this->product_id . '/'. implode('-', $images) .'/';
+			if ( in_array( $size, get_intermediate_image_sizes() ) ) {
+				$size = $this->get_dimensions_from_size_name( $size );
+			}
+
+			if ( is_array( $size ) ) {
+				$size = "width=" . $size['width'] . "&height=" . $size['height']; 
+			} else {
+				$size = '';
+			}
+
+			return get_rest_url() .'mkl_pc/v1/merge/'. $this->product_id . '/'. implode('-', $images) .'/' . ( $size ? '?' . $size : '' );
 		}
 	}
 
+	public function get_dimensions_from_size_name( $size ) {
+		global $_wp_additional_image_sizes;
+		$dimensions = [];
+		if ( in_array( $size, array( 'thumbnail', 'medium', 'medium_large', 'large' ) ) ) {
+			$dimensions[ 'width' ] = get_option( $size . '_size_w' );
+			$dimensions[ 'height' ] = get_option( $size . '_size_h' );
+		} elseif ( isset( $_wp_additional_image_sizes[ $size ] ) ) {
+			$dimensions[ 'width' ] = $_wp_additional_image_sizes[ $size ][ 'width' ];
+			$dimensions[ 'height' ] = $_wp_additional_image_sizes[ $size ][ 'height' ];
+		}
+		return $dimensions;
+	}
 	/**
 	 * Save image to the disk
 	 *
