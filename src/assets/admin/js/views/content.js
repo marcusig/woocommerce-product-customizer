@@ -64,8 +64,9 @@ PC.views = PC.views || {};
 		},
 
 		add_one: function( model ) {
+			if ( 'group' == model.get( 'type' ) ) return;
+
 			var options = _.defaults( this.options );
-			
 			var content = this.product.get('content');
 			options.model = model;
 			var layer = new PC.views.content_layer( options );

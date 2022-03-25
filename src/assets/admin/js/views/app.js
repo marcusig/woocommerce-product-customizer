@@ -133,7 +133,7 @@ PC.views = PC.views || {};
 
 			}
 
-			if ( !this.product.get('content') ) {
+			if ( ! this.product.get( 'content' ) ) {
 				this.loading ++;
 				this.contentMissing = true;
 			}
@@ -142,12 +142,12 @@ PC.views = PC.views || {};
 
 			this.$el.addClass('loading'); 
 			// fetch the states from the server
-			this.states.fetch({
+			this.states.fetch( {
 				// when received, executes this.fetched
 				url: this.states.url() + '&id=' + this.product.id, 
 				success: _.bind(this.fetched, this)
 
-			});
+			} );
 			this.loading ++;
 			return this;
 
@@ -177,7 +177,7 @@ PC.views = PC.views || {};
 				this.backdrop = this.$('.pc-modal-backdrop');
 			
 				this.modal_content = this.modal.find('.media-frame');
-				this.statesView = new PC.views.states( { el:this.modal_content, parent:this } );
+				this.statesView = new PC.views.states( { el: this.modal_content, parent:this } );
 			}
 			
 			this.modal.show();
@@ -201,7 +201,7 @@ PC.views = PC.views || {};
 		},
 		refresh: function() {
 			
-			if( this.modal ) {
+			if ( this.modal ) {
 				this.statesView.render();
 			}
 

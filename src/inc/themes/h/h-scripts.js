@@ -23,6 +23,10 @@
 			view.$( '.pc_configurator_form' ).addClass( 'has-qty' );
 		}
 
+		view.$( '.layer-choices-title' ).each( function( ind, item ) {
+			$( item ).find( '.close' ).appendTo( $( item ) );
+		} );
+
 		view.$( '.layers' ).wrap( '<div class="layers-wrapper"></div>' );
 		view.$el.addClass( pc_h_config.color_mode );
 		view.$el.addClass( 'h' );
@@ -40,26 +44,31 @@
 		setTimeout( resize_layer_choices, 200 );
 	} );
 
-	// wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/H', function( where ) {
-	// 	return 'in';
-	// } );
+	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/H', function( where ) {
+		return 'out';
+	} );
 
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/H', function( view ) {
-		if ( PC.fe.inline ) {
-			view.$el.find( '.layer_choices' ).show();
-			$(document).scrollTop(scrollStartPost);
-		} else {
-			view.$el.find( '.layer_choices' ).delay(40).slideDown(200);
+		if ( view.model.get( 'parent' ) && view.$el.closest( '.layer_choices' ).length ) {
+			// var parent = view.$el.closest( '.layer_choices' );
+			// $( '.mkl_pc ul[data-layer-id="' + view.model.id + '"]').css( 'padding-bottom', parent.outerHeight() );
+			view.$el.siblings( '.active' ).find( 'button' ).first().trigger( 'click' );
+			$( '.mkl_pc ul[data-layer-id="' + view.model.get( 'parent' ) + '"]' ).closest( '.layer_choices' ).addClass( 'temp-hide' );
 		}
+
 		resize_layer_choices();
 			
 	} );
 	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/H', function( view ) {
-		if ( PC.fe.inline ) {
-			scrollStartPost = $(document).scrollTop();
-			view.$el.find( '.layer_choices' ).hide();
-		} else {
-			view.$el.find( '.layer_choices' ).slideUp(200);
+		// if ( PC.fe.inline ) {
+		// 	scrollStartPost = $(document).scrollTop();
+		// 	view.$el.find( '.layer_choices' ).hide();
+		// } else {
+		// 	view.$el.find( '.layer_choices' ).slideUp(200);
+		// }
+		if ( view.model.get( 'parent' ) ) {
+			var container = $( '.mkl_pc ul[data-layer-id="' + view.model.get( 'parent' ) + '"]' ).closest( '.layer_choices' );
+			container.removeClass( 'temp-hide' );
 		}
 	} );
 

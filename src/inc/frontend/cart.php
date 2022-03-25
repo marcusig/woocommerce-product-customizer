@@ -105,7 +105,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$sku = [];
 
 				foreach ($configurator_data as $layer) {
-					if ( $layer->is_choice() ) { 
+					if ( $layer && $layer->is_choice() ) { 
 						if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
@@ -182,8 +182,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$choices = array(); 
 				usort( $configurator_data, [ $this, '_order_images' ] );
 				foreach ( $configurator_data as $layer ) {
+					if ( ! $layer ) continue;
 					$choice_images = $layer->get_choice( 'images' );
-					if( $choice_images[0]["image"]['id'] ) {
+					if ( $choice_images && $choice_images[0]["image"]['id'] ) {
 						$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
 					}
 				}
@@ -222,6 +223,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @return integer
 		 */
 		private function _order_images( $choice_a, $choice_b ) {
+			if ( ! $choice_a || ! $choice_b ) return 0;
 			$a = $choice_a->get_layer( 'image_order' );
 			$b = $choice_b->get_layer( 'image_order' );
 			// fallback to normal sort
@@ -240,7 +242,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			foreach ( $choices as $choice ) {
 				$classes = '';
 				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
-					$classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'class_name' ) );
+					$classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'type' ) . ' ' . $choice['layer']->get_layer( 'class_name' ) );
 				}
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice );

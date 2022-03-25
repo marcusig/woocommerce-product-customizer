@@ -593,7 +593,7 @@ $inner_space: 1em;
 						}
 
 						&.active {
-							button {
+							> button {
 								background: color(active_choice_button_bg_color);
 							}
 						}
@@ -608,8 +608,8 @@ $inner_space: 1em;
 								animation: slide-in-left 1.0s ease-out;
 							}
 							
-							li.active {
-								button {
+							li.choice.active {
+								> button {
 									background: darken($active_bg, 5%); 
 								}
 							}
@@ -623,54 +623,54 @@ $inner_space: 1em;
 					}
 				}
 
-				.layers {
-					button {
+				li.layers-list-item {
+					> button {
 						padding-left: 60px;
-					}
-					i {
-						position: absolute;
-						display: block;
-						width: 40px;
-						left: 10px;
-						top: 50%;
-						transform: translateY(-50%);
-						opacity: 0.5;
-						text-align: center;
-						@media( max-width: $small_screen_width ) {
-							width: 30px;
-						}
-						
-						img {
-							max-width: 100%;
-						}
-
-						&.selected-choice-image {
-							img ~ img {
-								display: none;
+						i {
+							position: absolute;
+							display: block;
+							width: 40px;
+							left: 10px;
+							top: 50%;
+							transform: translateY(-50%);
+							opacity: 0.5;
+							text-align: center;
+							@media( max-width: $small_screen_width ) {
+								width: 30px;
 							}
-							&:not(:empty) + i {
-								display: none;
-							}									
+							
+							img {
+								max-width: 100%;
+							}
 
+							&.selected-choice-image {
+								img ~ img {
+									display: none;
+								}
+								&:not(:empty) + i {
+									display: none;
+								}									
+
+							}
 						}
 					}
 					i.close {
 						display: none;
 					}
-					button:hover {
+					> button:hover {
 						i {
 							opacity: 1;
 						}
 					}
 
-					li.active {
+					&.active {
 						// i.close {
 						// 	display: block;
 						// }
 						// i.img {
 						// 	display: none;
 						// }
-						button {
+						> button {
 							background-color: color(active_layer_button_bg_color);
 							color: color(active_layer_button_text_color);
 							i {
@@ -679,6 +679,7 @@ $inner_space: 1em;
 						}
 					}
 				}
+				
 				.layer_choices {
 					visibility: hidden;
 					position: absolute;
@@ -828,7 +829,7 @@ $inner_space: 1em;
 						transform: translateX(0);
 						visibility: visible;
 						box-shadow: -12px 0 40px -10px rgba(0, 0, 0, 0.15);
-						li.active {
+						li.choice.active {
 							button {
 								background-color: color(active_choice_button_bg_color);
 								color: color(active_choice_button_text_color);
@@ -927,6 +928,55 @@ $inner_space: 1em;
 						}
 
 
+					}
+
+					/* Child layer */
+					li.layers-list-item {
+						> button {
+							padding-right: 30px;
+							&::after {
+								transition: .1s all;
+								content: ' ';
+								display: block;
+								width: 12px;
+								height: 12px;
+								position: absolute;
+								right: 1.6em;
+								top: 50%;
+								transform: translateY(-50%) rotate(-45deg);
+								border-right: 1px solid #36383a;
+								border-bottom: 1px solid #36383a;
+							}							
+						}
+						&.active {
+							> button {
+								padding-right: 30px;
+								&::after {
+									transform: translateY(-50%) rotate(45deg);
+								}
+							}
+						}
+					}
+
+					.layer_choices {
+						position: relative;
+						left: auto;
+						top: auto;
+						bottom: auto;
+						right: auto;
+						transform: none;
+						display: none;
+						box-shadow: none;
+						padding: 10px;
+						li.layer-choices-title {
+							display: none;
+						}
+						&.active {
+							display: block;
+							li {
+								animation: none;
+							}
+						}
 					}
 				}
 				@media( max-width: $small_screen_width ) {

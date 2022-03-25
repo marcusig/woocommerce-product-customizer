@@ -6,12 +6,14 @@ PC.views.states = Backbone.View.extend({
 	template: wp.template('mkl-pc-menu'),
 	initialize: function( params ) {
 		this.app = params.parent;
-		this.$el.append( this.template() );
+		this.render();
 	},
 	render: function() {
-
-		this.$menu = this.$('.media-menu').html('');
-		this.create_menu();
+		this.$el.append( this.template() );
+		if ( this.app.states.length ) {
+			this.$menu = this.$('.media-menu').html('');
+			this.create_menu();
+		}
 		return this;
 	},
 	reset_active: function(){

@@ -583,7 +583,7 @@ $inner_space: 1em;
 						}
 
 						&.active {
-							button {
+							> button {
 								background: color(active_layer_button_bg_color);
 							}
 						}
@@ -598,7 +598,7 @@ $inner_space: 1em;
 								animation: slide-in-left 1.0s ease-out;
 							}
 							
-							li.active {
+							li.choice.active {
 								button {
 									background: color(active_choice_button_bg_color); 
 								}
@@ -611,37 +611,40 @@ $inner_space: 1em;
 					}
 				}
 
-				.layers {
-					button {
+				li.layers-list-item {
+					> button {
 						padding-left: 60px;
-					}
-					i {
-						position: absolute;
-						display: block;
-						width: 40px;
-						left: 10px;
-						top: 50%;
-						transform: translateY(-50%);
-						opacity: 0.5;
-						text-align: center;
-						@media( max-width: $small_screen_width ) {
-							width: 30px;
-						}
-						&.selected-choice-image {
-							img ~ img {
-								display: none;
+					
+						i {
+							position: absolute;
+							display: block;
+							width: 40px;
+							left: 10px;
+							top: 50%;
+							transform: translateY(-50%);
+							opacity: 0.5;
+							text-align: center;
+							@media( max-width: $small_screen_width ) {
+								width: 30px;
 							}
-							&:not(:empty) + i {
-								display: none;
-							}									
+							&.selected-choice-image {
+								img ~ img {
+									display: none;
+								}
+								&:not(:empty) + i {
+									display: none;
+								}									
 
-						}						
-						
+							}						
+							
+						}
 					}
+
 					i.close {
 						display: none;
 					}
-					button:hover {
+
+					> button:hover {
 						i {
 							opacity: 1;
 						}
@@ -654,13 +657,14 @@ $inner_space: 1em;
 						// i.img {
 						// 	display: none;
 						// }
-						button {
+						> button {
 							i {
 								opacity: 1;
 							}
 						}
 					}
 				}
+
 				.layer_choices {
 					visibility: hidden;
 					position: absolute;
@@ -816,7 +820,7 @@ $inner_space: 1em;
 						transform: translateX(0);
 						visibility: visible;
 						box-shadow: -12px 0 40px -10px rgba(0, 0, 0, 0.15);
-						li.active i.mkl-pc-thumbnail {
+						li.choice.active i.mkl-pc-thumbnail {
 							border-color: color(ll2);
 							opacity: 1;
 							height: 78px; 
@@ -857,10 +861,10 @@ $inner_space: 1em;
 								height: 30px;
 								padding: 0;
 								border-bottom: none;
-								transform: translate(-15px, -50%);
-								@media (max-width: $small_screen_width) {
-									transform: translate(-10px, -50%);
-								}
+								transform: translate(-6px, -50%);
+								// @media (max-width: $small_screen_width) {
+								// 	transform: translate(-6px, -50%);
+								// }
 								span {
 									border-bottom: none;
 									box-shadow: none;
@@ -909,6 +913,56 @@ $inner_space: 1em;
 
 
 					}
+					
+					/* Child layer */
+					li.layers-list-item {
+						> button {
+							padding-right: 30px;
+							&::after {
+								transition: .1s all;
+								content: ' ';
+								display: block;
+								width: 12px;
+								height: 12px;
+								position: absolute;
+								right: 1.6em;
+								top: 50%;
+								transform: translateY(-50%) rotate(-45deg);
+								border-right: 2px solid color(choices_button_text_color);
+								border-bottom: 2px solid color(choices_button_text_color);
+							}							
+						}
+						&.active {
+							> button {
+								padding-right: 30px;
+								background: transparent;
+								&::after {
+									transform: translateY(-50%) rotate(45deg);
+								}
+							}
+						}
+					}
+
+					.layer_choices {
+						position: relative;
+						left: auto;
+						top: auto;
+						bottom: auto;
+						right: auto;
+						transform: none;
+						display: none;
+						box-shadow: none;
+						padding: 10px;
+						li.layer-choices-title {
+							display: none;
+						}
+						&.active {
+							display: block;
+							li {
+								animation: none;
+							}
+						}
+					}					
 				}
 				@media( max-width: $small_screen_width ) {
 					position: absolute;
@@ -986,6 +1040,10 @@ $inner_space: 1em;
 				position: relative;
 				padding-right: 10px;
 				display: inline-block !important;
+				height: auto;
+				.extra-cost-label {
+					color: color( ll3 );
+				}
 			}
 			span.pc-total-price {
 				font-weight: bold;

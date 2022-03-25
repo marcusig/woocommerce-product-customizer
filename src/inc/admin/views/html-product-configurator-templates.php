@@ -31,6 +31,11 @@ GENERAL TEMPLATES
 	<h2 class="media-frame-menu-heading"><?php _e( 'Actions' ); ?></h2>
 	<div class="media-frame-menu">
 		<div role="tablist" aria-orientation="vertical" class="media-menu">
+			<div class="loading-placeholder"></div>
+			<div class="loading-placeholder"></div>
+			<div class="loading-placeholder"></div>
+			<div class="separator"></div>
+			<div class="loading-placeholder"></div>
 		</div>
 	</div>
 </script>
@@ -101,17 +106,22 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <script type="text/html" id="tmpl-mkl-pc-structure-layer">
 	<div class="tips sort ui-sortable-handle"></div>
 	<button type="button">
-		<h3>
-			<# if ( data.admin_label && data.admin_label != '' ) { #>
-				{{data.admin_label}}
-			<# } else { #>
-				{{data.name}}
-			<# } #>
-			<# if ( data.image.url != '' ) { #>
-				<img src="{{data.image.url}}" class="layer-img" />
-			<# } #>
-		</h3>
-	</button>		
+		<h3></h3>
+	</button>
+	<# if ( 'group' == data.type && 'order' == data.orderAttr ) { #>
+		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
+	<# } #>		
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-content-layer-list-item--label">
+	<# if ( data.admin_label && data.admin_label != '' ) { #>
+		{{data.admin_label}}
+	<# } else { #>
+		{{data.name}}
+	<# } #>
+	<# if ( data.image.url != '' ) { #>
+		<img src="{{data.image.url}}" class="layer-img" />
+	<# } #>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-structure-angle-form">

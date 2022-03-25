@@ -562,7 +562,7 @@ $inner_space: 1em;
 							
 							& > li {
 								display: block;
-								& > button {
+								&:not( .layers-list-item ) > button {
 									padding: 0; 
 									border-radius: 6px;
 									&:hover, &:focus {
@@ -684,8 +684,8 @@ $inner_space: 1em;
 						}
 					}
 
-					> li.active {
-						button {
+					li.layers-list-item.active {
+						> button {
 
 							&::before {
 								width: calc( 100% - 1em );
@@ -775,7 +775,7 @@ $inner_space: 1em;
 								font-size: .8em;
 								color: color(light-gray);
 							}
-							> button {
+							> button.choice-item {
 								padding: 5px;
 								margin: 0;
 								background: transparent;
@@ -816,7 +816,21 @@ $inner_space: 1em;
 									margin-top: 1em;
 								}
 							}
-
+							&.choices-list {
+								padding: 3px;
+								box-sizing: border-box;
+								margin: 0;
+							}
+						}
+						ul li.layers-list-item {
+							width: 100%;
+							box-shadow: none;
+							.layer_choices > li {
+								width: 100%;
+								padding: 10px;
+								box-sizing: border-box;
+								box-shadow: none;
+							}
 						}
 					}
 
@@ -832,6 +846,12 @@ $inner_space: 1em;
 									// right: 12px;
 								}
 							}
+						}
+					}
+					
+					&.group {
+						> li.choices-list {
+							padding: 10px;
 						}
 					}
 

@@ -22,11 +22,11 @@ function mkl_pc_wsb_theme_scripts() {
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/wsb', function( view ) {
 			if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
-			view.\$el.find( '.layer_choices' ).slideDown(200);
+			view.\$el.find( '.layer_choices' ).first().slideDown(200);
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/wsb', function( view ) {
 			if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
-			view.\$el.find( '.layer_choices' ).slideUp(200);
+			view.\$el.find( '.layer_choices' ).first().slideUp(200);
 		} );
 
 		// Conditional logic: do not show / hide choices list visibility
