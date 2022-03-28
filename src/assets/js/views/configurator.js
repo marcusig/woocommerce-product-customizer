@@ -348,7 +348,7 @@ PC.options = PC.options || {};
 			// if layer is not a choice or has only one choice, we don't add it to the menu
 			if ( ! model.attributes.not_a_choice ) {
 				var choices = PC.fe.getLayerContent( model.id ); 
-				if ( choices.length ) {
+				if ( choices.length || 'group' == model.get( 'type' ) ) {
 					// if ( 'group' == model.get( 'type' ) )  {
 					// 	var new_layer = new PC.fe.views.layerGroup( { model: model, parent: this.$el } ); 
 					// } else {						
@@ -411,6 +411,7 @@ PC.options = PC.options || {};
 		},
 
 		render: function() {
+
 			if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
 				this.$el.append( $( this.model.get( 'custom_html' ) ) );
 				if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
@@ -576,7 +577,7 @@ PC.options = PC.options || {};
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 
 			
-			if ( ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
+			if ( this.options.content && ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
 				var av = this.options.content.findWhere( { available: true } );
 				if ( av ) av.set( 'active', true );
 			}

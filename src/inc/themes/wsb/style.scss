@@ -447,6 +447,10 @@ $inner_space: 1em;
 				overflow-y: auto;
 				padding: 0;
 				
+				* {
+					box-sizing: border-box;
+				}
+
 				& + .form {
 					position: relative;
 					padding-top: 2em;
@@ -774,6 +778,7 @@ $inner_space: 1em;
 								padding: 10px;
 								box-sizing: border-box;
 								box-shadow: none;
+								margin: 0;
 							}
 						}
 					}
@@ -1297,12 +1302,12 @@ body.configurator_is_inline .mkl_pc {
 /*
 	Variation: color only
 */
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.color-only,
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.display-mode-colors {
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.color-only,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.display-mode-colors {
 	.choices-list li {
 		box-shadow: none;
 		width: auto;
-		button {
+		button.choice-item {
 			padding: 0;
 			text-align: left;
 			height: auto;
@@ -1393,8 +1398,8 @@ body.configurator_is_inline .mkl_pc {
 }
 
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description,
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers > li.display-mode-colors .layer_choices li > button span.text.choice-name,
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers > li.display-mode-colors .layer_choices li > span.out-of-stock {
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > button.choice-item span.text.choice-name,
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > span.out-of-stock {
 	display: none;
 }
 
@@ -1402,7 +1407,7 @@ body.configurator_is_inline .mkl_pc {
 	display: block;
 }
 
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers > li.display-mode-colors .layer_choices li.out-of-stock {
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li.out-of-stock {
 	i.mkl-pc-thumbnail svg {
 		display: block;
 		width: 100%;
