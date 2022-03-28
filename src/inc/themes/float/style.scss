@@ -13,7 +13,7 @@ $colors: (
 	layers_button_text_color: #000000,
 	choices_button_text_color: #000000,
 	overlay_bg: #000000,
-	active_bg: #FFF
+	active_bg: rgb(249, 249, 249)
 );
 
 @function color($color-name) {
@@ -776,7 +776,7 @@ $inner_space: 1em;
 								color: color(light-gray);
 							}
 							> button {
-								padding: .5em;
+								padding: 5px;
 								margin: 0;
 								background: transparent;
 								transition: 0.2s all;
@@ -870,41 +870,53 @@ $inner_space: 1em;
 						border: 1px solid #EEE;
 						box-shadow: 0 20px 20px -10px rgba( 0, 0, 0, .29 );
 						
-						.choices-list li {
-							width: 100%;
-							margin: 0;
-							border-radius: 0;
-							box-shadow: none;
-							
-							li.is-group .choice-group-label {
-								font-size: .8em;
-								opacity: .6;
-							}
-
-							button {
-								display: flex;
-								flex-direction: row;
+						.choices-list {
+							padding: 7px;
+							li {
+								width: 100%;
+								margin: 0;
 								border-radius: 0;
-								align-items: center;
+								box-shadow: none;
+								
+								li.is-group .choice-group-label {
+									font-size: .8em;
+									opacity: .6;
+								}
 
-								i.mkl-pc-thumbnail {
-									height: 50px;
-									width: 50px;
-									margin-top: -0.5em;
-									margin-bottom: -0.5em;									
-								}
-								.choice-text {
-									width: 100%;
-								}
-								span.text.choice-name {
-									position: relative;
+								button.choice-item {
 									display: flex;
-									text-align: left;
-									justify-content: space-between;
+									flex-direction: row;
+									border-radius: 0;
+									align-items: center;
+
+									i.mkl-pc-thumbnail {
+										height: 50px;
+										width: 50px;
+										margin-top: -0.5em;
+										margin-bottom: -0.5em;
+										margin-right: 5px;								
+									}
+									.choice-text {
+										width: 100%;
+									}
+									span.text.choice-name {
+										position: relative;
+										display: flex;
+										text-align: left;
+										justify-content: space-between;
+									}
+									&:hover, 
+									&:focus {
+										background: color( light-gray );
+									} 
+								}
+								&.active {
+									> button.choice-item {
+										background: color(primary); 
+									}
 								}
 							}
 						}
-						
 	
 					}
 				}
