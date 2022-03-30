@@ -112,8 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-
-
+* FEATURE: Added groups in the layers section
 * TWEAK: Added a setting to allow deselecting choices on a per layer basis
 * TWEAK: Resize images when using the method to generate on the fly.
 * TWEAK: Possibility to nest groups
