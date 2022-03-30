@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 5.9
-Stable tag: 1.2.28
+Stable tag: 1.2.29
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -112,10 +112,13 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.29 - 30/Mar/2022 =
+
 * FEATURE: Added the possibility to group layers
 * TWEAK: Added a setting to allow deselecting choices on a per layer basis
 * TWEAK: Resize images when using the method to generate on the fly.
 * TWEAK: Possibility to nest groups
+* TWEAK: Updated composer dependencies
 * FIX: Editing a group's title doesn't break the group's layout in the admin
 
 = 1.2.28 - 3/Mar/2022 =
@@ -376,4 +379,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.28 Various tweaks and fixes
+* 1.2.29 adds layer groups, as well as various tweaks.
