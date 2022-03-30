@@ -38,6 +38,10 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => 'simple'
 						],
 						[
+							'label' => __( 'Group', 'product-configurator-for-woocommerce' ),
+							'value' => 'group'
+						],
+						[
 							'label' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ),
 							'value' => 'multiple',
 							'attributes' => [
@@ -88,12 +92,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'help' => __('For exemple if the layer is a shadow, a static element or custom HTML', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'priority' => 30,
+					'condition' => '"simple" == data.type',
 				),
 				'hide_in_cart' => array(
 					'label' => __('Hide this layer in the cart / checkout / order', 'product-configurator-for-woocommerce' ),
 					'help' => __('Useful if you only need to show this in the configurator, but do not need to display it in the order', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'priority' => 30,
+					'condition' => '"group" != data.type',
 				),
 				'custom_html' => array(
 					'label' => __( 'Custom HTML', 'product-configurator-for-woocommerce' ),
@@ -123,7 +129,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				'required' => array(
 					'label' => __( 'Require a choice', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
-					'condition' => '!data.not_a_choice',
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
 					'priority' => 40,
 					'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
 				),
@@ -136,7 +142,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
-					'condition' => '!data.not_a_choice',
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
 					'choices' => [
 						[
 							'label' => 'No',

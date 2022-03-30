@@ -24,6 +24,11 @@ class Choice {
 		// $this->set_selected_choice();
 	}
 
+	// public function __sleep() {
+	// 	do_action( 'mkl_pc/choice/sleep', $this );
+	// 	// $this->set_selected_choice();
+	// }
+
 	/**
 	 * Clone - Refresh data from database
 	 */
@@ -34,8 +39,7 @@ class Choice {
 
 	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id, $layer_data = false ) { 
 
-		if( !intval( $product_id ) || !intval( $layer_id ) || !intval( $choice_id ) || !intval( $angle_id ) )
-			return false;
+		if( !intval( $product_id ) || !intval( $layer_id ) || !intval( $angle_id ) ) return false;
 		$this->db = Plugin::instance()->db;
 		$this->product_id = (int) $product_id; 
 		$this->variation_id = (int) $variation_id; 
@@ -59,22 +63,27 @@ class Choice {
 		
 		// get all layers
 		$layers = $this->db->get( 'layers', $this->product_id );
-		$this->layer = Utils::get_array_item( $layers, '_id', $this->layer_id ); 
-
+		$this->layer = Utils::get_array_item( $layers, '_id', $this->layer_id );
 		// have to do benchmark here: 
 		// either use above functions either database
 
 	}
 
 	private function set_selected_choice(  ) {
-		$product = wc_get_product( $this->product_id );
+		// $product = wc_get_product( $this->product_id );
 
 		$product_id = $this->db->get_product_id_for_content( $this->product_id, $this->variation_id );
 		$content = $this->db->get( 'content', $product_id ); 
 
-		$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
-		$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ), $this ); 
-		$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ), $this ); 
+		if ( $this->choice_id ) {
+			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
+			$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ), $this ); 
+			$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ), $this ); 
+		} else {
+			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', [], $this ); 
+			$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', false, $this ); 
+			$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', false, $this );
+		}
 	}
 
 	public function get_layer( $item ) {
@@ -83,7 +92,7 @@ class Choice {
 
 	public function get_choice( $item ) {
 
-		return isset( $this->choice[ $item ] ) ? $this->choice[ $item ] : null;
+		return property_exists( $this, 'choice' ) && isset( $this->choice[ $item ] ) ? $this->choice[ $item ] : null;
 	}
 
 	public function set_choice( $key, $value ) {

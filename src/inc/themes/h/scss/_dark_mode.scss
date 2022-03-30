@@ -54,6 +54,18 @@
 				}
 			}
 		}
+		.layer_choices.is-child-layer {
+			li.layer-choices-title {
+				border-right: 1px solid #FFFFFF1F;
+				a.close {
+					&::after {
+						border-right: 1px solid color(layers_button_text_color);
+						border-bottom: 1px solid color(layers_button_text_color);
+						
+					}						
+				}
+			}
+		}
 		.layers li.active button.layer-item {
 			&::after {
 				border-right: 1px solid #ffffffc2;

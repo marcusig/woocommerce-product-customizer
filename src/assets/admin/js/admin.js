@@ -6,9 +6,9 @@ var PC = PC || {};
 
 		init: function (){
 			configurable_product.set_configurable('init');
-			$('input.is_configurable').change(function(event) {
-				configurable_product.set_configurable(this.checked);
-			});
+			$('input.is_configurable').on( 'change', function( event ) {
+				configurable_product.set_configurable( this.checked );
+			} );
 			this.views.init();
 			this.layers_editor.init();
 
@@ -27,13 +27,13 @@ var PC = PC || {};
 				this.change_product_type();
 			},
 			change_product_type: function() {
-				$( 'select#product-type' ).change( function () {
+				$( 'select#product-type' ).on( 'change', function () {
 					// Get value
 					var select_val = $( this ).val();
 					if ( $.inArray(select_val, ['variable','simple']) != -1 ) {
 						PC.product_type = select_val;
 					}
-				});
+				} );
 
 			}
 		}, 

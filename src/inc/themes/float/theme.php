@@ -35,19 +35,19 @@ function mkl_pc_float_theme_scripts() {
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/float', function( view ) {
 			if ( PC.fe.inline ) {
-				view.\$el.find( '.layer_choices' ).show();
+				view.\$el.find( '.layer_choices' ).first().show();
 				// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 			} else {
-				view.\$el.find( '.layer_choices' ).delay(40).slideDown(200);
+				view.\$el.find( '.layer_choices' ).first().delay(40).slideDown(200);
 			}
 				
 		} );
 		wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/float', function( view ) {
 			if ( PC.fe.inline ) {
 				scrollStartPost = $(document).scrollTop();
-				view.\$el.find( '.layer_choices' ).hide();
+				view.\$el.find( '.layer_choices' ).first().hide();
 			} else {
-				view.\$el.find( '.layer_choices' ).slideUp(200);
+				view.\$el.find( '.layer_choices' ).first().slideUp(200);
 			}
 		} );
 

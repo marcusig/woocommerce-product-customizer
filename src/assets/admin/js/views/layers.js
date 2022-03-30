@@ -23,11 +23,10 @@ TODO:
 			this.product_id = options.app.product.id; 
 			this.items = [];
 
+
 			if( this.admin[this.collectionName] ) { 
 				this.col = this.admin[this.collectionName];
-				this.render();
 			} else {
-				
 				var loaded_data = this.admin.model.get(this.collectionName); 
 				// if the data fetched from the admin view has layers
 				if( loaded_data != false ) {
@@ -36,10 +35,17 @@ TODO:
 					// else we create an empty collection
 					this.col = this.admin[this.collectionName] = new PC[this.collectionName]();
 				}
-
-				this.render();
-
 			}
+
+			this.listenTo( this.col, 'add', this.add_one );
+			this.listenTo( this.col, 'add', this.mark_collection_as_modified );
+			this.listenTo( this.col, 'change', this.layers_changed );
+			this.listenTo( this.col, 'change:type', this.add_all );
+			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
+			this.listenTo( this.col, 'simple-selection', this.edit_simple );
+			this.listenTo( this.col, 'destroy', this.removed_model );
+
+			this.render();
 		},
 		single_view: function() { return PC.views.layer; },
 		events: {
@@ -59,13 +65,7 @@ TODO:
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.media-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
-			this.add_all( this.col ); 
-			this.listenTo( this.col, 'add', this.add_one );
-			this.listenTo( this.col, 'add', this.mark_collection_as_modified );
-			this.listenTo( this.col, 'change', this.layers_changed );
-			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
-			this.listenTo( this.col, 'simple-selection', this.edit_simple );
-			this.listenTo( this.col, 'destroy', this.removed_model );
+			this.add_all(); 
 			return this;
 		},
 		mark_collection_as_modified: function() {
@@ -97,12 +97,12 @@ TODO:
 				this.col.orderBy = selection;
 
 				this.col.sort({silent: true});
-				this.add_all( this.col );
+				this.add_all();
 			}
 		},
 		add_one: function( layer ) {
 			var singleView = this.single_view();
-			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col });
+			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col, orderAttr: this.orderAttr });
 			this.items.push(new_layer);
 			this.$list.append( new_layer.render().el );
 		},
@@ -111,7 +111,8 @@ TODO:
 			item.remove();
 		},
 
-		add_all: function( collection ) {
+		add_all: function() {
+			var collection = this.col;
 			this.$list.empty();
 			_.each( this.items, this.remove_item );
 			this.items = [];
@@ -120,24 +121,42 @@ TODO:
 
 			// .ui-sortable-handle 
 			var that = this;
-			this.$list.sortable({
-					containment:          'parent', 
-					items:                '.mkl-list-item',
-					placeholder:          'mkl-list-item__placeholder',
-					cursor:               'move',
-					tolerance:            'pointer',
-					axis:                 'y',
-					handle:               '.sort',
-					scrollSensitivity:    40,
-					forcePlaceholderSize: true,
-					helper:               'clone',
-					opacity:              0.65,
-					stop: 				  function(event, s){
+
+			// Setup the groups
+			if ( 'order' == this.orderAttr ) {
+				_.each( this.items, function( view ) {
+					if ( view.model.get( 'parent' ) ) {
+						var target = this.$( '.layers[data-item-id=' + view.model.get( 'parent' ) + ']');
+						if ( target.length ) {
+							target.append( view.$el );
+						}
+					}				
+				}.bind( this ) );
+			}
+
+			this.$( '.layers' ).sortable( {
+				// containment:          'parent', 
+				items:                '.mkl-list-item',
+				placeholder:          'mkl-list-item__placeholder',
+				// tolerance:            'pointer',
+				cursor:               'move',
+				axis:                 'y',
+				handle:               '.sort',
+				// scrollSensitivity:    40,
+				forcePlaceholderSize: true,
+				helper:               'clone',
+				opacity:              0.65,
+				connectWith: '.sortable-list',
+				stop: function(event, s) {
+					console.log( 'stop' );
+					if ( 'order' == this.orderAttr ) {
+						this.update_sorting();
+					} else {
 						s.item.trigger('drop', s.item.index());
 					}
-					
-			});
-
+				}.bind( this )
+				
+			} );
 		},
 		create: function( event ) {
 			
@@ -189,7 +208,20 @@ TODO:
 		edit_simple: function() {
 			this.edit_multiple_items = false;
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
-		}
+		},
+		update_sorting: function() {
+			this.$( '.layers .mkl-list-item' ).each( function( i, listItem ) {
+				var parent = false;
+				if ( $( listItem ).closest( '.group-list' ).length ) {
+					parent = $( listItem ).closest( '.group-list' ).data( 'itemId' );
+				}
+				$( listItem ).trigger( 'update_order', [i, parent] );
+			} );
+
+			this.col.sort( { silent: true } );
+			console.log( 'ccc ' );
+			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
+		},
 	} );
 
 	
@@ -206,18 +238,26 @@ TODO:
 			this.options = options || {}; 
 			this.form_target = options.form_target; 
 			this.listenTo( this.model, 'change:active', this.activate ); 
-			this.listenTo( this.model, 'change:name change:admin_label change:image', this.render ); 
+			this.listenTo( this.model, 'change:name change:admin_label change:image', this.update_label );
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},
 		events: {
 			'click > button' : 'edit',
 			'drop': 'drop',
 			'update-sort': 'update_sort',
+			'update_order': 'update_order',
 		},
 		render: function() {
-			this.$el.html( this.template( this.model.attributes ) );
+			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
+			if ( ! this.label ) {
+				this.label = new PC.views.layerLabel( { model: this.model } );
+				this.$( 'h3' ).append( this.label.$el );
+			}
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
+		},
+		update_label: function() {
+			this.label.render();
 		},
 		edit: function( event ) { 
 			if ( event && ( event.shiftKey || event.metaKey || event.ctrlKey ) ) {
@@ -270,6 +310,7 @@ TODO:
 			if( this.model.get('active') === true ) {
 				this.model.set('active', false);
 			}
+			console.log( 'DROP');
 
 			// Update the order for all elements in the list
 			this.$el.siblings().addBack().trigger( 'update-sort' );
@@ -280,8 +321,25 @@ TODO:
 		update_sort: function( e ) {
 			e.stopPropagation();
 			this.model.set( this.model.collection.orderBy, $( e.currentTarget ).index() );
-		}
+		},
+		update_order: function( event, index, parent ) {
+			event.stopPropagation();
+			if ( parent && parent == this.model.id ) return;
+			this.model.set( { order: index, parent: parent } );
+		},
+		
 	});
+
+	PC.views.layerLabel = Backbone.View.extend( {
+		tagName: 'span',
+		template: wp.template('mkl-pc-content-layer-list-item--label'),
+		initialize: function() {
+			this.render();
+		},
+		render: function() {
+			this.$el.html( this.template( this.model.attributes ) );
+		}
+	} );
 
 	// LAYER EDITING VIEW
 	PC.views.layer_form = Backbone.View.extend({

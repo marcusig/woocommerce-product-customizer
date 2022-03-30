@@ -132,7 +132,7 @@ body.pc-modal-opened {
 .pc-modal-backdrop {
 	z-index: 149000;
 }
-html .media-modal.pc-modal { 
+html .media-modal.pc-modal {
 	z-index: 150000;
 	.media-frame-title { 
 		.description { 
@@ -193,7 +193,7 @@ html .media-modal.pc-modal {
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background-color: rgba(255,255,255,0.8);
+		background-color: rgba(255,255,255,0.6);
 		z-index: 200;
 		.spinner {
 			position: absolute;
@@ -267,9 +267,28 @@ html .media-modal.pc-modal {
 			padding: 1em;
 		}
 	}
+
+	.loading-placeholder {
+		display: inline-block;
+		width: 60%;
+		height: 10px;
+		background: linear-gradient(45deg, #00000012, #00000008, #00000010);
+		margin-left: 20px;
+		margin-bottom: 9px;
+	}
+	.loading-placeholder:nth-child(1) {
+		width: 65%;
+	}
+	
+	.loading-placeholder:nth-child(3) {
+		width: 75%;
+	}
+	.loading-placeholder:nth-child(4) {
+		width: 72%;
+	}	
 }
 
-.pc-modal-container {
+html .pc-modal-container {
 	&.loading {
 		.loading-screen {
 			display: block;
@@ -346,7 +365,9 @@ html .media-modal.pc-modal {
     max-width: 100%;
 	box-sizing: border-box;
 	transition: transform 0.2s;
+
 	button {
+		position: relative;
 		border: none;
 		padding: $modal-spacing;
 		padding-left: 36px;
@@ -356,6 +377,7 @@ html .media-modal.pc-modal {
 		width: 100%;
 		box-sizing: border-box;
 	}
+
 	.layer-img {
 		position: absolute;
 		right:10px;
@@ -378,6 +400,7 @@ html .media-modal.pc-modal {
 		color: #a0a5aa;
 
 		position: absolute;
+		z-index: 2;
 		top: 18px;
 		left: 10px;
 		height: 16px;

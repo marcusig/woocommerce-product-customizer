@@ -145,7 +145,7 @@ PC.options = PC.options || {};
 			this.$el.append( this.template( { name:this.parent.options.title } ) );
 			this.$selection = this.$el.find('.choices'); 
 			// this.get_cart(); 
-			this.layers = new PC.fe.views.layers_list({parent: this});
+			this.layers = new PC.fe.views.layers_list( { parent: this } );
 			return this.$el; 
 		}, 
 
@@ -348,9 +348,18 @@ PC.options = PC.options || {};
 			// if layer is not a choice or has only one choice, we don't add it to the menu
 			if ( ! model.attributes.not_a_choice ) {
 				var choices = PC.fe.getLayerContent( model.id ); 
-				if ( choices.length ) {
+				if ( choices.length || 'group' == model.get( 'type' ) ) {
+					// if ( 'group' == model.get( 'type' ) )  {
+					// 	var new_layer = new PC.fe.views.layerGroup( { model: model, parent: this.$el } ); 
+					// } else {						
+					// }
 					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
-					this.$el.append( new_layer.render() );
+
+					if ( model.get( 'parent' ) && this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).length ) {
+						this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).append( new_layer.render() ); 
+					} else {
+						this.$el.append( new_layer.render() );
+					}
 					this.items.push( new_layer );
 				}
 			} else {
@@ -386,7 +395,8 @@ PC.options = PC.options || {};
 		PC.fe.views.layer 
 	*/
 	PC.fe.views.layers_list_item = Backbone.View.extend({
-		tagName: 'li', 
+		tagName: 'li',
+		className: 'layers-list-item',
 		template: wp.template( 'mkl-pc-configurator-layer-item' ),
 		initialize: function( options ) {
 			this.options = options || {};
@@ -401,6 +411,7 @@ PC.options = PC.options || {};
 		},
 
 		render: function() {
+
 			if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
 				this.$el.append( $( this.model.get( 'custom_html' ) ) );
 				if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
@@ -441,7 +452,7 @@ PC.options = PC.options || {};
 		},
 		add_choices: function() { 
 
-			if ( ! this.layer_type || 'simple' == this.layer_type ) {
+			if ( ! this.layer_type || 'simple' == this.layer_type || 'group' == this.layer_type ) {
 				this.choices = new PC.fe.views.choices({ content: PC.fe.getLayerContent( this.model.id ), model: this.model }); 
 			}
 
@@ -450,9 +461,13 @@ PC.options = PC.options || {};
 				return;
 			}
 
-			var where = wp.hooks.applyFilters( 'PC.fe.choices.where', PC.fe.config.where, this );
+			var where = PC.fe.config.where;
+			if ( this.model.get( 'parent' ) ) {
+				where = 'in';
+			}
+			where = wp.hooks.applyFilters( 'PC.fe.choices.where', where, this );
 			if( ! where || 'out' == where ) {
-				this.options.parent.after( this.choices.$el ); 
+				this.options.parent.after( this.choices.$el );
 			} else if( 'in' == where ) {
 				this.$el.append( this.choices.$el ); 
 			} else if ( $( where ).length ) {
@@ -465,6 +480,7 @@ PC.options = PC.options || {};
 			if ( event.target.tagName && 'A' == event.target.tagName ) {
 				return;
 			}
+			event.stopPropagation();
 			event.preventDefault();
 			if ( this.model.get( 'active' ) == true ) {
 				wp.hooks.doAction( 'PC.fe.layer.hide', this );
@@ -472,9 +488,11 @@ PC.options = PC.options || {};
 					this.model.set('active', false);
 				}
 			} else {
-				this.model.collection.each( function( model ) {
-					model.set( 'active' , false );
-				});
+				if ( ! this.model.get( 'parent' ) ) {
+					this.model.collection.each( function( model ) {
+						model.set( 'active' , false );
+					});
+				}
 
 				this.model.set( 'active', true ); 
 				wp.hooks.doAction( 'PC.fe.layer.show', this );
@@ -492,7 +510,7 @@ PC.options = PC.options || {};
 			}
 
 		}
-	});
+	} );
 
 	PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 		tagName: 'span',
@@ -555,10 +573,11 @@ PC.options = PC.options || {};
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 
 			this.$el.addClass( this.model.get( 'type' ) );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
+			if ( this.model.get( 'parent' ) ) this.$el.addClass( 'is-child-layer' );
 			this.$list = this.$el.find('.choices-list ul'); 
 			this.add_all( this.options.content ); 
 			
-			if ( ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
+			if ( this.options.content && ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
 				var av = this.options.content.findWhere( { available: true } );
 				if ( av ) av.set( 'active', true );
 			}
@@ -566,6 +585,7 @@ PC.options = PC.options || {};
 		},
 		add_all: function( collection ) { 
 			// this.$el.empty();
+			if ( 'group' == this.model.get( 'type' ) ) return;
 			collection.each( this.add_one, this );
 		},
 		add_one: function( model ) {
@@ -598,6 +618,7 @@ PC.options = PC.options || {};
 	*/
 	PC.fe.views.choice = Backbone.View.extend({
 		tagName: 'li',
+		className: 'choice',
 		template: wp.template( 'mkl-pc-configurator-choice-item' ),
 		update_tippy_on_price_update: false,
 		initialize: function( options ) {
@@ -716,6 +737,10 @@ PC.options = PC.options || {};
 	});
 
 	PC.fe.views.choiceGroup = PC.fe.views.choice.extend({
+		template: wp.template( 'mkl-pc-configurator-choice-group' ),
+	});
+
+	PC.fe.views.layerGroup = PC.fe.views.layers_list_item.extend({
 		template: wp.template( 'mkl-pc-configurator-choice-group' ),
 	});
 
@@ -1124,13 +1149,31 @@ PC.options = PC.options || {};
 			var is_required = parseInt( model.get( 'required' ) );
 			var default_selection = model.get( 'default_selection' ) || 'select_first';
 			var type = model.get( 'type' );
+			var angle_id = PC.fe.angles.first().id;
+
+			if ( 'group' == type ) {
+				if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_layer_group', true, model ) ) this.choices.push( 
+					wp.hooks.applyFilters(
+						'PC.fe.save_data.parse_choices.added_group_layer',
+						{
+							is_choice: false,
+							layer_id: model.id,
+							choice_id: 0,
+							angle_id: angle_id,
+							layer_name: model.get( 'name' ),
+							image: 0,
+							name: '',
+						},
+						model
+					)
+				);
+			}
 			var require_error = false;
 			var choices = PC.fe.getLayerContent( model.id );
 			if ( ! choices ) return;
 			// Check if the layer is hidden:
 			if ( false === model.get( 'cshow' ) ) return;
 			var first_choice = choices.first().id;
-			var angle_id = PC.fe.angles.first().id;
 			if ( ! model.attributes.not_a_choice ) {
 				// Simple with at least 2 items, and multiple choices
 				if ( choices.length > 1 || 'multiple' == type ) {
