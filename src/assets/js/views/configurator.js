@@ -1173,6 +1173,7 @@ PC.options = PC.options || {};
 			if ( ! choices ) return;
 			// Check if the layer is hidden:
 			if ( false === model.get( 'cshow' ) ) return;
+			if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.parent_is_hidden && PC.conditionalLogic.parent_is_hidden( model ) ) return;
 			var first_choice = choices.first().id;
 			if ( ! model.attributes.not_a_choice ) {
 				// Simple with at least 2 items, and multiple choices
