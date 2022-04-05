@@ -60,11 +60,11 @@ msgstr ""
 msgid "Layers of the product "
 msgstr ""
 
-#: src/inc/db.php:59, src/inc/db.php:77, src/inc/db.php:95, src/inc/admin/views/html-product-configurator-templates.php:140, src/inc/admin/views/html-product-configurator-templates.php:176, src/inc/admin/views/html-product-configurator-templates.php:283, src/inc/admin/views/html-product-configurator-templates.php:321, src/inc/admin/views/html-product-configurator-templates.php:395
+#: src/inc/db.php:59, src/inc/db.php:77, src/inc/db.php:95, src/inc/admin/views/html-product-configurator-templates.php:140, src/inc/admin/views/html-product-configurator-templates.php:176, src/inc/admin/views/html-product-configurator-templates.php:282, src/inc/admin/views/html-product-configurator-templates.php:320, src/inc/admin/views/html-product-configurator-templates.php:394
 msgid "Cancel"
 msgstr ""
 
-#: src/inc/db.php:63, src/inc/db.php:81, src/inc/db.php:99, src/inc/admin/views/html-product-configurator-templates.php:66, src/inc/admin/views/html-product-configurator-templates.php:510
+#: src/inc/db.php:63, src/inc/db.php:81, src/inc/db.php:99, src/inc/admin/views/html-product-configurator-templates.php:66, src/inc/admin/views/html-product-configurator-templates.php:509
 msgid "Save"
 msgstr ""
 
@@ -104,7 +104,7 @@ msgstr ""
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:291, src/inc/admin/views/html-product-configurator-templates.php:416
+#: src/inc/db.php:291, src/inc/admin/views/html-product-configurator-templates.php:415
 msgid "Export"
 msgstr ""
 
@@ -232,7 +232,7 @@ msgstr ""
 msgid "Select a picture"
 msgstr ""
 
-#: src/inc/admin/product.php:227, src/inc/admin/views/html-product-configurator-templates.php:394
+#: src/inc/admin/product.php:227, src/inc/admin/views/html-product-configurator-templates.php:393
 msgid "Choose"
 msgstr ""
 
@@ -780,7 +780,7 @@ msgstr ""
 msgid "Details"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:135, src/inc/admin/views/html-product-configurator-templates.php:139, src/inc/admin/views/html-product-configurator-templates.php:170, src/inc/admin/views/html-product-configurator-templates.php:175, src/inc/admin/views/html-product-configurator-templates.php:277, src/inc/admin/views/html-product-configurator-templates.php:282, src/inc/admin/views/html-product-configurator-templates.php:320
+#: src/inc/admin/views/html-product-configurator-templates.php:135, src/inc/admin/views/html-product-configurator-templates.php:139, src/inc/admin/views/html-product-configurator-templates.php:170, src/inc/admin/views/html-product-configurator-templates.php:175, src/inc/admin/views/html-product-configurator-templates.php:276, src/inc/admin/views/html-product-configurator-templates.php:281, src/inc/admin/views/html-product-configurator-templates.php:319
 msgid "Delete"
 msgstr ""
 
@@ -796,11 +796,11 @@ msgstr ""
 msgid "Add / Change picture"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:157, src/inc/admin/views/html-product-configurator-templates.php:195, src/inc/admin/views/html-product-configurator-templates.php:351, src/inc/admin/views/html-product-configurator-templates.php:372
+#: src/inc/admin/views/html-product-configurator-templates.php:157, src/inc/admin/views/html-product-configurator-templates.php:195, src/inc/admin/views/html-product-configurator-templates.php:350, src/inc/admin/views/html-product-configurator-templates.php:371
 msgid "Remove picture"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:171, src/inc/admin/views/html-product-configurator-templates.php:278
+#: src/inc/admin/views/html-product-configurator-templates.php:171, src/inc/admin/views/html-product-configurator-templates.php:277
 msgid "Duplicate"
 msgstr ""
 
@@ -812,135 +812,135 @@ msgstr ""
 msgid "Layer's icon"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:274
+#: src/inc/admin/views/html-product-configurator-templates.php:273
 msgid "Choice informations"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:280
+#: src/inc/admin/views/html-product-configurator-templates.php:279
 msgid "Do you realy want to delete this choice?"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:297
+#: src/inc/admin/views/html-product-configurator-templates.php:296
 msgid "Group thumbnail"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:299
+#: src/inc/admin/views/html-product-configurator-templates.php:298
 msgid "Text positions"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:301
+#: src/inc/admin/views/html-product-configurator-templates.php:300
 msgid "Pictures"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:313
+#: src/inc/admin/views/html-product-configurator-templates.php:312
 msgid "Multiple selection"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:316
+#: src/inc/admin/views/html-product-configurator-templates.php:315
 msgid "Delete the selected items"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:318
+#: src/inc/admin/views/html-product-configurator-templates.php:317
 msgid "Do you realy want to delete the selected items?"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:334
+#: src/inc/admin/views/html-product-configurator-templates.php:333
 msgid "Main Image"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:342, src/inc/admin/views/html-product-configurator-templates.php:364
+#: src/inc/admin/views/html-product-configurator-templates.php:341, src/inc/admin/views/html-product-configurator-templates.php:363
 msgid "Add / Edit image"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:356
+#: src/inc/admin/views/html-product-configurator-templates.php:355
 msgid "Thumbnail"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:391
+#: src/inc/admin/views/html-product-configurator-templates.php:390
 msgid "Select a product:"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:410
+#: src/inc/admin/views/html-product-configurator-templates.php:409
 msgid "Import"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:411
+#: src/inc/admin/views/html-product-configurator-templates.php:410
 msgid "Import configuration"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:413
+#: src/inc/admin/views/html-product-configurator-templates.php:412
 msgid "Import an other product"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:417
+#: src/inc/admin/views/html-product-configurator-templates.php:416
 msgid "Export configuration data"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:438
+#: src/inc/admin/views/html-product-configurator-templates.php:437
 msgid "Choose a product"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:445
+#: src/inc/admin/views/html-product-configurator-templates.php:444
 msgid "Select a file"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:446
+#: src/inc/admin/views/html-product-configurator-templates.php:445
 msgid "Select the JSON file you exported previously."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:452
+#: src/inc/admin/views/html-product-configurator-templates.php:451
 msgid "Preview"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:453
+#: src/inc/admin/views/html-product-configurator-templates.php:452
 msgid "Review the data and press Import data to import it to this product."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:454
+#: src/inc/admin/views/html-product-configurator-templates.php:453
 msgid "Note that any existing configuration will be overriden."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:455
+#: src/inc/admin/views/html-product-configurator-templates.php:454
 msgid "Import data"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:460
+#: src/inc/admin/views/html-product-configurator-templates.php:459
 msgid "Layers and content:"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:482
+#: src/inc/admin/views/html-product-configurator-templates.php:481
 msgid "Angles:"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:493
+#: src/inc/admin/views/html-product-configurator-templates.php:492
 msgid "Conditions"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:507
+#: src/inc/admin/views/html-product-configurator-templates.php:506
 msgid "The import process is complete."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:508
+#: src/inc/admin/views/html-product-configurator-templates.php:507
 msgid "Please check the different elements (Layers, views, content...), and save if you are happy with it."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:509
+#: src/inc/admin/views/html-product-configurator-templates.php:508
 msgid "Alternatively you can save here."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:511
+#: src/inc/admin/views/html-product-configurator-templates.php:510
 msgid "Importing from a different site?"
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:512
+#: src/inc/admin/views/html-product-configurator-templates.php:511
 msgid "When importing from a different site, the images need to be added to the library separately."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:513
+#: src/inc/admin/views/html-product-configurator-templates.php:512
 msgid "If you already imported the matching images to the library, you can use the following tool to try to match the images."
 msgstr ""
 
-#: src/inc/admin/views/html-product-configurator-templates.php:514
+#: src/inc/admin/views/html-product-configurator-templates.php:513
 msgid "Save and fix images"
 msgstr ""
 
