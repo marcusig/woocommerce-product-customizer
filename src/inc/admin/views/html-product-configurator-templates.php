@@ -253,8 +253,7 @@ CONTENT TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-content-choice-list-item">
 	<div class="tips sort ui-sortable-handle"></div>
 	<button type="button">
-		<h3>
-		</h3>
+		<h3><# if ( data.display_label ) { #>{{data.name}}<# } #></h3>
 	</button>
 	<# if ( data.is_group ) { #>
 		<div class="choices group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
