@@ -172,51 +172,51 @@ msgstr ""
 msgid "This product is configurable"
 msgstr ""
 
-#: src/inc/admin/product.php:89
+#: src/inc/admin/product.php:90
 msgid "Select if you want this product to be configurable"
 msgstr ""
 
-#: src/inc/admin/product.php:125
+#: src/inc/admin/product.php:126
 msgid "You are configuring"
 msgstr ""
 
-#: src/inc/admin/product.php:127
+#: src/inc/admin/product.php:128
 msgid "To proceed, follow the instructions:"
 msgstr ""
 
-#: src/inc/admin/product.php:129
+#: src/inc/admin/product.php:130
 msgid "define the structure of the product in %sLayers%s"
 msgstr ""
 
-#: src/inc/admin/product.php:130
+#: src/inc/admin/product.php:131
 msgid "define the views / angles in which your product will be visible in %sViews%s"
 msgstr ""
 
-#: src/inc/admin/product.php:131
+#: src/inc/admin/product.php:132
 msgid "add the Images for each of your choices in %sContent%s"
 msgstr ""
 
-#: src/inc/admin/product.php:135
+#: src/inc/admin/product.php:136
 msgid "Do you need more functionality?"
 msgstr ""
 
-#: src/inc/admin/product.php:136
+#: src/inc/admin/product.php:137
 msgid "Check out the available addons and themes."
 msgstr ""
 
-#: src/inc/admin/product.php:137
+#: src/inc/admin/product.php:138
 msgid "Do you like the plugin?"
 msgstr ""
 
-#: src/inc/admin/product.php:138
+#: src/inc/admin/product.php:139
 msgid "Give it a review on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:139
+#: src/inc/admin/product.php:140
 msgid "Do you think it could be improved?"
 msgstr ""
 
-#: src/inc/admin/product.php:140
+#: src/inc/admin/product.php:141
 msgid "Start a support topic on %swordpress.org%s"
 msgstr ""
 

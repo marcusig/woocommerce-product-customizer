@@ -98,6 +98,7 @@ PC.actionParameter = 'pc_get_data';
 			}
 		}
 
+		$( 'body' ).on( 'click', '.configure-product-redq_rental', configurator_init );
 		$( 'body' ).on( 'click', '.configure-product-simple', configurator_init );
 		$( 'body' ).on( 'mkl/pc/inline-init', '.mkl-configurator-inline', configurator_init );
 
