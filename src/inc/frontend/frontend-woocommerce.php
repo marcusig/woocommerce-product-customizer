@@ -370,6 +370,11 @@ class Frontend_Woocommerce {
 				return $cart_item['configurator_data_raw'];
 			}
 		}
+
+		if ( isset( $_REQUEST['load_config_from_order'] ) && current_user_can( 'manage_woocommerce' ) ) {
+			$config = wc_get_order_item_meta( (int) $_REQUEST['load_config_from_order'], '_configurator_data_raw', true );
+			if ( $config ) return $config;
+		}
 		return false;
 	}
 

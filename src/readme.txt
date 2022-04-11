@@ -112,6 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Possibility to open an order's configuration from the admin
+
 = 1.2.30 - 5/Apr/2022 =
 
 * FIX: Conditional logic compatibility (admin ux issue)

@@ -69,6 +69,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				
 				// stores the whole _configurator_data object
 				$item->add_meta_data( '_configurator_data', $configurator_data, false );
+				$item->add_meta_data( '_configurator_data_raw', $values['configurator_data_raw'], false );
 			}		
 		}
 
