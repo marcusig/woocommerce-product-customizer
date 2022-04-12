@@ -87,6 +87,11 @@ class Frontend_Woocommerce {
 
 		$product_id = $data->get_param( 'id' );
 		$images = explode( '-', $data->get_param( 'images' ) );
+		if ( empty( $images ) ) {
+			header("Content-type: image/gif");
+			readfile( WPINC . '/images/blank.gif' );
+			return;
+		}
 		$content = [];
 		foreach( $images as $image ) {
 			$content[] = [ 'image' => $image ];

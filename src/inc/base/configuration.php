@@ -315,6 +315,9 @@ class Configuration {
 				$images[] = $layer->image;
 			}
 
+			// No images, return an empty one
+			if ( empty( $images ) ) return apply_filters( 'mkl_pc_get_image_url_default_empty_image', includes_url( 'images/blank.gif' ) );
+
 			if ( in_array( $size, get_intermediate_image_sizes() ) ) {
 				$size = $this->get_dimensions_from_size_name( $size );
 			}
