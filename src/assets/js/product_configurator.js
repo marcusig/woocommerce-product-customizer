@@ -344,7 +344,9 @@ PC.actionParameter = 'pc_get_data';
 		$.each( config_items, function( index, config_item ) {
 			// layerContents is a Backbone.Collection
 			try {
-				PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id );
+				if ( PC.fe.getLayerContent( config_item.layer_id ) && PC.fe.getLayerContent( config_item.layer_id ).selectChoice ) {
+					PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id );
+				}
 				wp.hooks.doAction( 'PC.fe.setConfig.setItem', config_item, PC.fe.getLayerContent( config_item.layer_id ) );
 			} catch ( err ) {
 				console.log('Product configurator - setConfig: Could not set this layer:', config_item.layer_id, err);
