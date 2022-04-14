@@ -17,9 +17,7 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 			$this->_hooks();
 		}
 		private function _hooks() {
-			if ( apply_filters( 'mkl/order/override_saved_meta', false ) ) {
-				add_filter( 'woocommerce_order_item_display_meta_value', array( $this, 'format_meta' ), 30, 3 );
-			}
+			add_filter( 'woocommerce_order_item_display_meta_value', array( $this, 'format_meta' ), 30, 3 );
 			// add_action( 'woocommerce_after_order_itemmeta', array( $this, 'wc_admin_order_item_display_configurator_data' ), 100, 3 );
 		}
 
@@ -27,7 +25,11 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 		 * Format the data in the order item meta
 		 */
 		public function format_meta( $display_value, $meta, $order_item ) {
-			if ( 'Configuration' == $meta->key ) {
+
+			if ( 'Configuration' != $meta->key ) return $display_value;
+
+			if ( apply_filters( 'mkl/order/override_saved_meta', false ) ) {
+			
 				static $items_count;
 				if ( ! $items_count ) {
 					$items_count = 1;
@@ -51,10 +53,12 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 				}
 
 				if ( ! empty( $order_meta_for_configuration ) ) {
-					return $fe_order->get_choices_html( $order_meta_for_configuration );
+					$display_value = $fe_order->get_choices_html( $order_meta_for_configuration );
 				}
 			}
-			return $display_value;
+			
+			$view_link = $order_item->get_meta( '_configurator_data_raw' ) ? get_permalink( $order_item->get_product_id() ) : false;
+			return $display_value . ( $view_link ? '<a href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . __( 'View configuration', 'product-configurator-for-woocommerce' ) . '</a>' : '' );
 		}
 
 		public function wc_admin_order_item_display_configurator_data( $item_id, $item, $_product ) {

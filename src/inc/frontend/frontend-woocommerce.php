@@ -87,6 +87,11 @@ class Frontend_Woocommerce {
 
 		$product_id = $data->get_param( 'id' );
 		$images = explode( '-', $data->get_param( 'images' ) );
+		if ( empty( $images ) ) {
+			header("Content-type: image/gif");
+			readfile( WPINC . '/images/blank.gif' );
+			return;
+		}
 		$content = [];
 		foreach( $images as $image ) {
 			$content[] = [ 'image' => $image ];
@@ -368,6 +373,28 @@ class Frontend_Woocommerce {
 
 			if ( $cart_item && isset( $cart_item['configurator_data_raw'] ) ) {
 				return $cart_item['configurator_data_raw'];
+			}
+		}
+
+		if ( isset( $_REQUEST['load_config_from_order'] ) ) {
+			$current_user_can_view_config = current_user_can( 'manage_woocommerce' );
+			if ( ! $current_user_can_view_config ) {
+				$order_id = wc_get_order_id_by_order_item_id( $_REQUEST['load_config_from_order'] );
+				$order = wc_get_order( $order_id );
+				if ( is_a( $order, 'WC_Order' ) ) {
+					if ( $order->get_customer_id() === get_current_user_id() ) {
+						$current_user_can_view_config = true;
+					}
+				}
+			}
+			
+			/**
+			 * Filters whether or not the user can view the configuration from the order item
+			 * Default to true if the current user can "manage_woocommerce", or the current user is the order's customer.
+			 */
+			if ( apply_filters( 'mkl_pc/current_user_can_view_order_config', $current_user_can_view_config ) ) {
+				$config = wc_get_order_item_meta( (int) $_REQUEST['load_config_from_order'], '_configurator_data_raw', true );
+				if ( $config ) return $config;
 			}
 		}
 		return false;

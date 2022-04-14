@@ -192,9 +192,15 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 * Add the Edit item in cart button
 		 */
 		public function add_edit_configuration_from_cart() {
+			if ( ! isset( $_REQUEST[ 'edit_config_from_cart' ] ) ) return;
 			?>
 			<button type="button" class="<?php echo $this->button_class ?> edit-cart-item configurator-add-to-cart">
-				<span><?php _e( 'Edit item in cart', 'product-configurator-for-woocommerce' ); ?></span>
+				<span><?php
+					/**
+					 * Filters the button text "Edit item in cart"
+					 */
+					echo apply_filters( 'mkl_pc/edit_item_in_cart_button/label', __( 'Edit item in cart', 'product-configurator-for-woocommerce' ) );
+				?></span>
 			</button>
 			<?php 
 		}

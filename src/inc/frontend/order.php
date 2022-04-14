@@ -21,6 +21,15 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
 			add_filter( 'woocommerce_email_order_items_args', array( $this, 'add_image_to_email' ) );
+			// My account
+			add_action( 'woocommerce_order_item_meta_end', array( $this, 'add_view_link' ), 20, 3 );
+		}
+
+		public function add_view_link( $item_id, $item, $order ) {
+			$config = wc_get_order_item_meta( $item_id, '_configurator_data_raw', true );
+			if ( ! $config ) return;
+			$view_link = add_query_arg( array( 'load_config_from_order' => $item_id, 'open_configurator'=> 1 ), get_permalink( $item->get_product_id() ) );
+			echo '<a href="' . esc_url( $view_link ) . '" target="_blank">' . __( 'View configuration', 'product-configurator-for-woocommerce' ) . '</a>';
 		}
 
 		public function save_data( $item, $cart_item_key, $values, $order ) {
@@ -69,6 +78,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				
 				// stores the whole _configurator_data object
 				$item->add_meta_data( '_configurator_data', $configurator_data, false );
+				$item->add_meta_data( '_configurator_data_raw', $values['configurator_data_raw'], false );
 			}		
 		}
 

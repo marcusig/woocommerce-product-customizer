@@ -176,6 +176,10 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
+#: src/inc/admin/order.php:61
+msgid "View configuration"
+msgstr ""
+
 #: src/inc/admin/product.php:88
 msgid "This product is configurable"
 msgstr ""
