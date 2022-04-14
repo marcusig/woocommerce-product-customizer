@@ -176,7 +176,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:61
+#: src/inc/admin/order.php:61, src/inc/frontend/order.php:32
 msgid "View configuration"
 msgstr ""
 
@@ -356,7 +356,7 @@ msgstr ""
 msgid "Default:"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:207, src/inc/frontend/frontend-woocommerce.php:124, src/inc/frontend/frontend-woocommerce.php:166, src/inc/frontend/product.php:84
+#: src/inc/admin/settings-page.php:207, src/inc/frontend/frontend-woocommerce.php:129, src/inc/frontend/frontend-woocommerce.php:171, src/inc/frontend/product.php:84
 msgid "Configure"
 msgstr ""
 
@@ -588,11 +588,11 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:58, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:67, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:64
+#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:73
 msgid "Configuration"
 msgstr ""
 
@@ -600,27 +600,27 @@ msgstr ""
 msgid "Edit configuration"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:108, src/inc/frontend/frontend-woocommerce.php:151
+#: src/inc/frontend/frontend-woocommerce.php:113, src/inc/frontend/frontend-woocommerce.php:156
 msgid "A product id must be set in order for this shortcode to work."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:118, src/inc/frontend/frontend-woocommerce.php:160
+#: src/inc/frontend/frontend-woocommerce.php:123, src/inc/frontend/frontend-woocommerce.php:165
 msgid "The provided ID is not a valid product."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:168
+#: src/inc/frontend/frontend-woocommerce.php:173
 msgid "Loading the configurator..."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:281
+#: src/inc/frontend/frontend-woocommerce.php:286
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/product.php:197
+#: src/inc/frontend/product.php:202
 msgid "Edit item in cart"
 msgstr ""
 
-#: src/inc/frontend/product.php:239
+#: src/inc/frontend/product.php:245
 msgid "Please select a variation to configure"
 msgstr ""
 
@@ -1056,7 +1056,7 @@ msgstr ""
 msgid "Choice width"
 msgstr ""
 
-#: src/inc/themes/wsb/theme.php:71
+#: src/inc/themes/wsb/theme.php:87
 msgid "Sidebar background"
 msgstr ""
 
