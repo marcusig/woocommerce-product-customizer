@@ -55,6 +55,23 @@ function mkl_pc_float_theme_scripts() {
 		wp.hooks.addFilter( 'mkl_pc_conditionals.toggle_choices', 'MKL/PC/Themes/float', function( where ) {
 			return false;
 		} );
+
+		// Scroll to newly opened layer, when onening it using conditional logic
+		wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/float', function( model ) {
+			var scrollToView = null;
+			_.each( PC.fe.modal.toolbar.layers.items, function( view ) {
+				if ( view.model.id == model.id ) {
+					scrollToView = view;
+				}
+			} );
+
+			if ( scrollToView ) {
+				setTimeout( function() {
+					scrollToView.el.offsetParent.scrollTo( 0, scrollToView.el.offsetTop );
+				}, 150 );
+			}
+		} );
+
 	})( jQuery );
 	";
 	wp_add_inline_script( 'mkl_pc/js/views/configurator', $data, 'before' );

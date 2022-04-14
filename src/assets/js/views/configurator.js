@@ -476,12 +476,15 @@ PC.options = PC.options || {};
 			wp.hooks.doAction( 'PC.fe.add.choices', this.choices.$el, this );
 		},
 		show_choices: function( event ) {
-			// Allow clicking on link tags
-			if ( event.target.tagName && 'A' == event.target.tagName ) {
-				return;
+			if ( event ) {
+				// Allow clicking on link tags
+				if (  event.target.tagName && 'A' == event.target.tagName ) {
+					return;
+				}
+				event.stopPropagation();
+				event.preventDefault();
 			}
-			event.stopPropagation();
-			event.preventDefault();
+
 			if ( this.model.get( 'active' ) == true ) {
 				wp.hooks.doAction( 'PC.fe.layer.hide', this );
 				if ( wp.hooks.applyFilters( 'PC.fe.layer.self_hide', true, this ) ) {
@@ -718,10 +721,12 @@ PC.options = PC.options || {};
 			if ( wp.hooks.applyFilters( 'PC.fe.close_choices_after_selection', close_choices, this.model ) ) {
 				if ( layer ) layer.set('active', false);
 			}
+			PC.fe.last_clicked = this;
 			wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 		},
 		preload_image: function() {
 			var src = this.model.get_image();
+			if ( ! src ) return;
 			var img = new Image();
 			img.src = src;
 		},
