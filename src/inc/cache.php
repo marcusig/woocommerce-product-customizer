@@ -54,7 +54,7 @@ class Cache {
 		}
 		$upload_dir = wp_upload_dir();
 		$url = trailingslashit( $upload_dir['baseurl'] ) . $dir;
-		if ( false === strpos( $url, 'https' ) ) {
+		if ( is_ssl() && false === strpos( $url, 'https' ) ) {
 			$url = str_replace( 'http://', 'https://', $url );
 		}
 		return apply_filters( 'mkl_pc_cache_dir', array(
