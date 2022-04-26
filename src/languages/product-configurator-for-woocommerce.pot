@@ -172,51 +172,51 @@ msgstr ""
 msgid "This product is configurable"
 msgstr ""
 
-#: src/inc/admin/product.php:90
+#: src/inc/admin/product.php:89
 msgid "Select if you want this product to be configurable"
 msgstr ""
 
-#: src/inc/admin/product.php:126
+#: src/inc/admin/product.php:125
 msgid "You are configuring"
 msgstr ""
 
-#: src/inc/admin/product.php:128
+#: src/inc/admin/product.php:127
 msgid "To proceed, follow the instructions:"
 msgstr ""
 
-#: src/inc/admin/product.php:130
+#: src/inc/admin/product.php:129
 msgid "define the structure of the product in %sLayers%s"
 msgstr ""
 
-#: src/inc/admin/product.php:131
+#: src/inc/admin/product.php:130
 msgid "define the views / angles in which your product will be visible in %sViews%s"
 msgstr ""
 
-#: src/inc/admin/product.php:132
+#: src/inc/admin/product.php:131
 msgid "add the Images for each of your choices in %sContent%s"
 msgstr ""
 
-#: src/inc/admin/product.php:136
+#: src/inc/admin/product.php:135
 msgid "Do you need more functionality?"
 msgstr ""
 
-#: src/inc/admin/product.php:137
+#: src/inc/admin/product.php:136
 msgid "Check out the available addons and themes."
 msgstr ""
 
-#: src/inc/admin/product.php:138
+#: src/inc/admin/product.php:137
 msgid "Do you like the plugin?"
 msgstr ""
 
-#: src/inc/admin/product.php:139
+#: src/inc/admin/product.php:138
 msgid "Give it a review on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:140
+#: src/inc/admin/product.php:139
 msgid "Do you think it could be improved?"
 msgstr ""
 
-#: src/inc/admin/product.php:141
+#: src/inc/admin/product.php:140
 msgid "Start a support topic on %swordpress.org%s"
 msgstr ""
 
@@ -564,23 +564,23 @@ msgstr ""
 msgid "Select the theme"
 msgstr ""
 
-#: src/inc/base/configuration.php:129
+#: src/inc/base/configuration.php:132
 msgid "You have already saved this configuration!"
 msgstr ""
 
-#: src/inc/base/configuration.php:156
+#: src/inc/base/configuration.php:159
 msgid "The configuration was saved successfully!"
 msgstr ""
 
-#: src/inc/base/configuration.php:174
+#: src/inc/base/configuration.php:177
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:75, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:76, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:81
+#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:82
 msgid "Configuration"
 msgstr ""
 
@@ -604,7 +604,7 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/order.php:39
+#: src/inc/frontend/order.php:40
 msgid "Download configuration image"
 msgstr ""
 
