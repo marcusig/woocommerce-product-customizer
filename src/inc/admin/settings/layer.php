@@ -49,6 +49,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							]
 						],
 					],
+					'condition' => '!data.not_a_choice',
 					'priority' => 5,
 				),
 				'display_mode' => array(
