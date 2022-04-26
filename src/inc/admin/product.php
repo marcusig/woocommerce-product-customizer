@@ -99,7 +99,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					
 					?>
 
-					<div class="toolbar show_if_simple show_if_variable start_button_container">
+					<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
 						<?php echo $this->start_button( $post->ID ) ?>
 					</div>
 

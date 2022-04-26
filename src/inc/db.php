@@ -349,19 +349,20 @@ class DB {
 		
 		if ( ! $product ) return [];
 
+		$product_type = apply_filters( 'mkl_product_configurator_get_front_end_data/product_type', $product->get_type(), $product );
 		// get the products 'title' attribute
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
 			array(
 				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
-				'product_type' => $product->get_type(),
+				'product_type' => $product_type,
 				'show_qty'     => ! $product->is_sold_individually(),
 				'is_in_stock'  => $product->is_in_stock() || $product->backorders_allowed(), 
 			) 
 		);
 
 		// Allows to load the Contents on the init data to avoid having to use AJAX. 
-		if( 'simple' == $product->get_type() ) {
+		if( 'simple' == $product_type ) {
 			// the configurator content
 			$init_data['content'] = $this->get( 'content', $id );
 		}
