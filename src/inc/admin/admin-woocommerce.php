@@ -46,49 +46,47 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}
 
-	public function get_editor_menu( $structure ) {
+	// public function get_editor_menu( $structure ) {
 		
-		if( !is_array($structure) ) return false;
-		$menu = '';
+	// 	if( !is_array($structure) ) return false;
+	// 	$menu = '';
 
-		?>
 
-		<div class="pc-editor">
-			<div class="list-elements"></div>
-			<div class="list-choices"></div>
-			<div class="choice-form"></div>
-		</div>
+	// 	<div class="pc-editor">
+	// 		<div class="list-elements"></div>
+	// 		<div class="list-choices"></div>
+	// 		<div class="choice-form"></div>
+	// 	</div>
 
-		<?php
-		foreach ($structure as $index => $element) {
+	// 	foreach ($structure as $index => $element) {
 
-			if( $element['name'] != '' && is_array($element['choice']) ) {
-				$menu .= '<li>';
-				$menu .= '<a href="#"> '. $element['name'] .'</a>';
-				$menu .= '<ul class="wc-pc-tabs-sub">';
-				foreach( $element['choice'] as $choice ) {
-					$menu .= '<li>';
-					$menu .= '<a href="#"> '. $choice .'</a>';
-					$menu .= '
-					<div class="image-selectors">
-						<a href="#" class="image-selector" data-select-image="main">'.__('Choose an image for ').$choice.'</a><br>
-						<a href="#" class="image-selector" data-select-image="thumbnail">'.__('Choose a thumbnail').'</a>
-					</div>';
-					$menu .= '</li>';
-				}
-				$menu .= '</ul>';
-				$menu .= '</li>';
-			}
-		}
+	// 		if( $element['name'] != '' && is_array($element['choice']) ) {
+	// 			$menu .= '<li>';
+	// 			$menu .= '<a href="#"> '. $element['name'] .'</a>';
+	// 			$menu .= '<ul class="wc-pc-tabs-sub">';
+	// 			foreach( $element['choice'] as $choice ) {
+	// 				$menu .= '<li>';
+	// 				$menu .= '<a href="#"> '. $choice .'</a>';
+	// 				$menu .= '
+	// 				<div class="image-selectors">
+	// 					<a href="#" class="image-selector" data-select-image="main">'.__('Choose an image for ').$choice.'</a><br>
+	// 					<a href="#" class="image-selector" data-select-image="thumbnail">'.__('Choose a thumbnail').'</a>
+	// 				</div>';
+	// 				$menu .= '</li>';
+	// 			}
+	// 			$menu .= '</ul>';
+	// 			$menu .= '</li>';
+	// 		}
+	// 	}
 		
 
 
-		if( $menu != '' ) { 
-			return '<ul class="wc-pc-tabs">'. $menu .'</ul><div class="wc-pc-tabs-sub-container" id="pc_tabs_submenu"></div><div id="pc_img_selectors"></div>';
-		} else {
-			return false;
-		}
-	}
+	// 	if( $menu != '' ) { 
+	// 		return '<ul class="wc-pc-tabs">'. $menu .'</ul><div class="wc-pc-tabs-sub-container" id="pc_tabs_submenu"></div><div id="pc_img_selectors"></div>';
+	// 	} else {
+	// 		return false;
+	// 	}
+	// }
 
 	/**
 	 * Get a template part
