@@ -313,6 +313,7 @@ PC.options = PC.options || {};
 			// Woocommerce Add To Quote plugin
 			if ( $( '.afrfqbt_single_page' ).length ) {
 				$( '.afrfqbt_single_page' ).trigger( 'click' );
+				if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 			}
 		},
 	} );
