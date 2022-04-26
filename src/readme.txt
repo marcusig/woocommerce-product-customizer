@@ -115,6 +115,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FEATURE: Possibility to open an order's configuration from the admin
 * TWEAK: Force HTTPS for configuration file when the site URL is misconfigured
 * TWEAK: Woocommerce Add To Quote plugin - close configurator if the setting is enabled
+* FIX: Prevent saving the configuration image over and over again when it's made of only one existing image
 
 = 1.2.30 - 5/Apr/2022 =
 

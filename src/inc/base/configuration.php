@@ -114,7 +114,10 @@ class Configuration {
 		// Checks if user has already saved this configuration
 		if ( $this->configuration_exists() ) {
 
-			$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
+			$attach_id = $this->content_has_single_image( 'id' );
+			if ( ! $attach_id ) {
+				$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
+			}
 			
 			$configurations = get_posts( array( 
 				'posts_per_page' => 1,
@@ -193,11 +196,21 @@ class Configuration {
 	}
 
 	public function configuration_exists() {
+		if ( $this->content_has_single_image() ) return true;
 		return file_exists( $this->upload_dir_path .'/'. $this->get_configuration_image_name() );
 	}
 
 	public function configuration_image_exists() {
+		if ( $this->content_has_single_image() ) return true;
 		return file_exists( $this->upload_dir_path .'/'. $this->get_configuration_image_name() );
+	}
+
+	public function content_has_single_image( $return = 'bool' ) {
+		$item = array_values( $this->content )[0];
+		if ( 1 === count( $this->content ) && $image = wp_get_attachment_url( $item->image ) ) {
+			return 'bool' == $return ? true : $item->image;
+		}
+		return false;
 	}
 
 	public function get_configuration_image_name() {
@@ -206,6 +219,8 @@ class Configuration {
 		}
 
 		$image_file_name = 'product_'. $this->product_id . '-conf';
+
+
 		foreach ($this->content as $layer) {
 			$image_file_name .= '-'.$layer->image;
 		}
@@ -222,6 +237,10 @@ class Configuration {
 	 * @param array  $attr - The image attributes
 	 */
 	public function get_image( $size = 'woocommerce_thumbnail', $attr = array(), $lazy = true ) {
+
+		if ( $single_image = $this->content_has_single_image( 'id' ) ) {
+			return wp_get_attachment_image( $single_image, $size, false, $attr );
+		}
 
 		$url = $this->get_image_url( $lazy, $size );
 
@@ -288,7 +307,9 @@ class Configuration {
 	 */
 	public function get_image_url( $lazy = false, $size = 'woocommerce_thumbnail' ) {
 		
-		if ( $this->configuration_image_exists() ) return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
+		if ( $this->configuration_image_exists() ) {
+			return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
+		}
 	
 		$mode = mkl_pc( 'settings' )->get( 'save_images' );
 		if ( 'save_to_disk' === $mode ) {
@@ -356,13 +377,20 @@ class Configuration {
 			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
 			if ( ! file_exists( $tempfile ) ) return 0;
 			$content = file_get_contents( $tempfile );
-			if ( $content ) $content = json_decode( $content );
+			if ( $content ) {
+				$content = json_decode( $content );
+				$this->content = $content;
+			}
+
 			unlink( $tempfile );
 		}
 
 		// The image already exists
 		if ( $content && is_null( $transient ) && $this->configuration_exists() ) {
-			$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
+			$attach_id = $this->content_has_single_image( 'id' );
+			if ( ! $attach_id ) {
+				$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
+			}
 			if ( $attach_id && $this->ID ) set_post_thumbnail( $this->ID, $attach_id );
 			return $attach_id;
 		} else {
