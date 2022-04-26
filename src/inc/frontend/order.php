@@ -23,13 +23,22 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			add_filter( 'woocommerce_email_order_items_args', array( $this, 'add_image_to_email' ) );
 			// My account
 			add_action( 'woocommerce_order_item_meta_end', array( $this, 'add_view_link' ), 20, 3 );
+			add_action( 'woocommerce_order_item_meta_end', array( $this, 'add_image_download_link' ), 20, 3 );
 		}
 
 		public function add_view_link( $item_id, $item, $order ) {
 			$config = wc_get_order_item_meta( $item_id, '_configurator_data_raw', true );
 			if ( ! $config ) return;
 			$view_link = add_query_arg( array( 'load_config_from_order' => $item_id, 'open_configurator'=> 1 ), get_permalink( $item->get_product_id() ) );
-			echo '<a href="' . esc_url( $view_link ) . '" target="_blank">' . __( 'View configuration', 'product-configurator-for-woocommerce' ) . '</a>';
+			echo '<div class="configuration-link"><a href="' . esc_url( $view_link ) . '" target="_blank">' . __( 'View configuration', 'product-configurator-for-woocommerce' ) . '</a></div>';
+		}
+
+		public function add_image_download_link( $item_id, $item, $order ) {
+			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) || apply_filters( 'mkl_pc/do_not_show_image_download_link', false ) ) return;
+			$config_image = $this->_get_order_item_image( $item, 'url' );
+			if ( $config_image && 'blank.gif' !== substr( $config_image, -9 ) ) {
+				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . __( 'Download configuration image', 'product-configurator-for-woocommerce' ) . '</a></div>';
+			}
 		}
 
 		public function save_data( $item, $cart_item_key, $values, $order ) {
@@ -72,7 +81,6 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					if ( ! empty( $order_meta_for_configuration ) ) {
 						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', __( 'Configuration', 'product-configurator-for-woocommerce' ), $item, $cart_item_key, $values, $order ),  $this->get_choices_html( $order_meta_for_configuration ), false );
 					}
-
 					do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 				}
 				
@@ -152,7 +160,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			return $args;
 		}
 
-		private function _get_order_item_image( $order_item ) {
+		private function _get_order_item_image( $order_item, $return = 'html' ) {
 
 			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false; 
 			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
@@ -172,6 +180,11 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 			$configuration = new Configuration( NULL, array( 'product_id' => $order_item['product_id'], 'content' => json_encode( $choices ) ) );
 			$size = apply_filters( 'mkl_pc/order_image_size', mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' ), $order_item, $configurator_data );
+			
+			if ( 'url' == $return ) {
+				return $configuration->get_image_url( false, $size );
+			}
+
 			$img = $configuration->get_image( $size, [], false );
 
 			if ( $img ) return $img;
