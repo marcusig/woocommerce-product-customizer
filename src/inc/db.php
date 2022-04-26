@@ -289,7 +289,8 @@ class DB {
 					'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
 					'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
 					'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
-					'description' => __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
+					'description' => '',
+					// __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
 				),
 			)
 		);

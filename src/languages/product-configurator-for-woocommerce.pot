@@ -17,7 +17,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: src/woocommerce-mkl-product-configurator.php:63
-msgid "Product Configurator for WooCommerce  requires PHP version 5.4+, plugin is currently NOT ACTIVE."
+msgid "The plugin Product Configurator for WooCommerce requires a PHP version of 5.4+."
 msgstr ""
 
 #: src/woocommerce-mkl-product-configurator.php:71
@@ -108,24 +108,12 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: src/inc/db.php:292
-msgid "Description for I/E of the product "
-msgstr ""
-
 #: src/inc/languages.php:146, src/inc/languages.php:146, src/inc/languages.php:133, src/inc/languages.php:133
 msgid "Name"
 msgstr ""
 
-#: src/inc/languages.php:151, src/inc/languages.php:151, src/inc/languages.php:138, src/inc/languages.php:138, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:85
+#: src/inc/languages.php:151, src/inc/languages.php:151, src/inc/languages.php:138, src/inc/languages.php:138, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:86
 msgid "Description"
-msgstr ""
-
-#: src/inc/plugin.php:33
-msgid "No new class... Cheatin&#8217; huh?"
-msgstr ""
-
-#: src/inc/plugin.php:44
-msgid "No serializing... Cheatin&#8217; huh?"
 msgstr ""
 
 #: src/inc/utils.php:178
@@ -176,7 +164,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:61, src/inc/frontend/order.php:32
+#: src/inc/admin/order.php:61, src/inc/frontend/order.php:33
 msgid "View configuration"
 msgstr ""
 
@@ -232,31 +220,31 @@ msgstr ""
 msgid "Start a support topic on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:226
+#: src/inc/admin/product.php:225
 msgid "Select a picture"
 msgstr ""
 
-#: src/inc/admin/product.php:227, src/inc/admin/views/html-product-configurator-templates.php:393
+#: src/inc/admin/product.php:226, src/inc/admin/views/html-product-configurator-templates.php:393
 msgid "Choose"
 msgstr ""
 
-#: src/inc/admin/product.php:228
+#: src/inc/admin/product.php:227
 msgid "New Layer Name"
 msgstr ""
 
-#: src/inc/admin/product.php:229
+#: src/inc/admin/product.php:228
 msgid "New Angle Name"
 msgstr ""
 
-#: src/inc/admin/product.php:230
+#: src/inc/admin/product.php:229
 msgid "New Choice Name"
 msgstr ""
 
-#: src/inc/admin/product.php:270
+#: src/inc/admin/product.php:269
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:285
+#: src/inc/admin/product.php:284
 msgid "Edit configurator layers"
 msgstr ""
 
@@ -588,11 +576,11 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:67, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:75, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:73
+#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:81
 msgid "Configuration"
 msgstr ""
 
@@ -616,6 +604,10 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
+#: src/inc/frontend/order.php:39
+msgid "Download configuration image"
+msgstr ""
+
 #: src/inc/frontend/product.php:202
 msgid "Edit item in cart"
 msgstr ""
@@ -628,7 +620,7 @@ msgstr ""
 msgid "Angle Name"
 msgstr ""
 
-#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:127, src/inc/admin/settings/layer.php:155
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:127, src/inc/admin/settings/layer.php:156
 msgid "CSS Class"
 msgstr ""
 
@@ -648,7 +640,7 @@ msgstr ""
 msgid "E.g. #EEFF00"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:63, src/inc/admin/settings/layer.php:80
+#: src/inc/admin/settings/choice.php:63, src/inc/admin/settings/layer.php:81
 msgid "Admin label"
 msgstr ""
 
@@ -676,7 +668,7 @@ msgstr ""
 msgid "Extra Price is available as an addon"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:112, src/inc/admin/settings/layer.php:143
+#: src/inc/admin/settings/choice.php:112, src/inc/admin/settings/layer.php:144
 msgid "Automatic angle switch"
 msgstr ""
 
@@ -700,79 +692,79 @@ msgstr ""
 msgid "Multiple choice"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:55
+#: src/inc/admin/settings/layer.php:56
 msgid "Display mode"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:59
+#: src/inc/admin/settings/layer.php:60
 msgid "Default"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:63
+#: src/inc/admin/settings/layer.php:64
 msgid "Drop down"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:67
+#: src/inc/admin/settings/layer.php:68
 msgid "Small color choices"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:75
+#: src/inc/admin/settings/layer.php:76
 msgid "Layer name"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:91
+#: src/inc/admin/settings/layer.php:92
 msgid "This layer does not have choices"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:92
+#: src/inc/admin/settings/layer.php:93
 msgid "For exemple if the layer is a shadow, a static element or custom HTML"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:98
+#: src/inc/admin/settings/layer.php:99
 msgid "Hide this layer in the cart / checkout / order"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:99
+#: src/inc/admin/settings/layer.php:100
 msgid "Useful if you only need to show this in the configurator, but do not need to display it in the order"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:105
+#: src/inc/admin/settings/layer.php:106
 msgid "Custom HTML"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:110
+#: src/inc/admin/settings/layer.php:111
 msgid "Content entered here will be rendered in the configurator menu."
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:110
+#: src/inc/admin/settings/layer.php:111
 msgid "To add HTML to the viewer, add it to the custom HTML field in the content section."
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:113
+#: src/inc/admin/settings/layer.php:114
 msgid "Default selection"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:118
+#: src/inc/admin/settings/layer.php:119
 msgid "Select the first choice by default, or the one set to default"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:122
+#: src/inc/admin/settings/layer.php:123
 msgid "Select nothing"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:127
+#: src/inc/admin/settings/layer.php:128
 msgid "Choose whether a choice should be selected by default"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:130
+#: src/inc/admin/settings/layer.php:131
 msgid "Require a choice"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:134
+#: src/inc/admin/settings/layer.php:135
 msgid "If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)"
 msgstr ""
 
-#: src/inc/admin/settings/layer.php:137
+#: src/inc/admin/settings/layer.php:138
 msgid "The user can deselect the current choice"
 msgstr ""
 

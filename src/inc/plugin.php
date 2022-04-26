@@ -30,7 +30,7 @@ class Plugin {
 	 */
 	private function __clone() {
 		// Cloning instances of the class is forbidden
-		_doing_it_wrong( __FUNCTION__, __( 'No new class... Cheatin&#8217; huh?', 'product-configurator-for-woocommerce' ), '1.0.0' );
+		_doing_it_wrong( __FUNCTION__, 'MKL\PC\Plugin should not be cloned...', '1.0.0' );
 	}
 
 	/**
@@ -41,7 +41,7 @@ class Plugin {
 	 */
 	public function __wakeup() {
 		// Unserializing instances of the class is forbidden
-		_doing_it_wrong( __FUNCTION__, __( 'No serializing... Cheatin&#8217; huh?', 'product-configurator-for-woocommerce' ), '1.0.0' );
+		_doing_it_wrong( __FUNCTION__, 'MKL\PC\Plugin should not be serialized...', '1.0.0' );
 	}
 
 	/**

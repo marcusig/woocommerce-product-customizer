@@ -60,7 +60,7 @@ function mkl_pc_init() {
 }
 
 function mkl_pc_fail_php_version() {
-	$message = esc_html__( 'Product Configurator for WooCommerce  requires PHP version 5.4+, plugin is currently NOT ACTIVE.', 'product-configurator-for-woocommerce' );
+	$message = esc_html__( 'The plugin Product Configurator for WooCommerce requires a PHP version of 5.4+.', 'product-configurator-for-woocommerce' );
 	$html_message = sprintf( '<div class="error">%s</div>', wpautop( $message ) );
 	echo wp_kses_post( $html_message );
 }

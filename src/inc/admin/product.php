@@ -162,7 +162,6 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			$structure = get_post_meta( $this->ID, MKL_PC_PREFIX.'structure', true );
 			// Make variables available to the included template
-			// $menu = $this->get_editor_menu( $structure );
 			$data = json_encode( $structure );
 			$product_type = $this->_product->get_type(); 
 			
