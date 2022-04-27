@@ -290,8 +290,16 @@ PC.options = PC.options || {};
 			 */
 			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
 				if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
+					var btn = this.$cart.find( 'button[name=add-to-cart]' );
+					if ( btn.is( '.ajax_add_to_cart' ) ) {
+						btn.data( 'pc_configurator_data', data );
+					}
 					this.$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
 				} else if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
+					var btn = this.$cart.find( 'button[name=add-to-cart]' );
+					if ( btn.is( '.ajax_add_to_cart' ) ) {
+						btn.data( 'pc_configurator_data', data );
+					}					
 					this.$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
 				} else {
 					this.$cart.trigger( 'submit' );
