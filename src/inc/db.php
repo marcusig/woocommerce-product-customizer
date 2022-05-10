@@ -572,13 +572,19 @@ class DB {
 			$tags['path'] = array(
 				'd' => array(),
 				'fill' => array(),
+				'stroke' => array(),
 				'text' => array(),
+				'class' => array(),
+				'transform' => array(),
+				'data-layer_id' => array(),
 			);
 			$tags['text'] = array(
 				'transform' => array(),
 				'style' => array('fill', 'font-size'),
 				'class' => array(),
 			);
+			$tags['defs'] = array();
+			$tags['style'] = array();
 		}
 
 		/**
