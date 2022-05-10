@@ -445,6 +445,9 @@ PC.options = PC.options || {};
 			// Add classes
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			if ( this.model.get( 'display_mode' ) ) this.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
+			
+			// Add ID
+			if ( this.model.get( 'html_id' ) ) this.el.id = this.model.get( 'html_id' );
 
 			if ( 'dropdown' == this.model.get( 'display_mode' ) && this.model.get( 'class_name' ) && -1 !== this.model.get( 'class_name' ).search( 'dropdown-move-label-outside' ) ) {
 				this.$( '.layer-name' ).prependTo( this.$el );

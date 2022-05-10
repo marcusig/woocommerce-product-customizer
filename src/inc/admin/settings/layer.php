@@ -157,6 +157,11 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'text',
 					'priority' => 500,
 				),
+				'html_id' => array(
+					'label' => __('ID', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 500,
+				),
 	
 			));
 		}

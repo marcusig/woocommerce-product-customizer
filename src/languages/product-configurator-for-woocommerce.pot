@@ -768,6 +768,10 @@ msgstr ""
 msgid "The user can deselect the current choice"
 msgstr ""
 
+#: src/inc/admin/settings/layer.php:161
+msgid "ID"
+msgstr ""
+
 #: src/inc/admin/views/html-order-item.php:2
 msgid "Configurator Data:"
 msgstr ""
