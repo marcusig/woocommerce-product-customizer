@@ -18,6 +18,7 @@ class Configuration {
 	public $upload_dir_url     = '';
 	public $image_name         = '';
 	public $save_image_async   = false;
+	public $image_manager      = false;
 	private $post 	           = null;
 
 	// public $configuration_date          = '';
@@ -59,8 +60,10 @@ class Configuration {
 			$this->ID = 0;
 		}
 
-		require_once ABSPATH . 'wp-admin/includes/image.php';
-		$this->image_manager = new Images();
+		if ( Utils::check_image_requirements() ) {
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			$this->image_manager = new Images();
+		}
 	}
 
 	public function get_the_post() {
@@ -475,13 +478,14 @@ class Configuration {
 			$images[] = $image;
 		}
 
-		if ( count( $images ) ) {
+		if ( count( $images ) && $this->image_manager ) {
 			$this->image_manager->merge( $images, 'print' );
 		}
 	}
 
 	public function save_attachment( $filename, $parent_post_id ) {
 
+		global $wpdb;
 		$filetype = wp_check_filetype( basename( $filename ), null );
 
 		$attachment = array(
@@ -489,7 +493,6 @@ class Configuration {
 			'post_mime_type' => $filetype['type'],
 			'post_title'     => preg_replace( '/\.[^.]+$/', '', basename( $filename ) ),
 			'post_content'   => '',
-			'post_status'    => 'configuration' // Changing the post status prevents the image being listed in the library
 		);
 
 		// Insert the attachment.
@@ -499,7 +502,13 @@ class Configuration {
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
 		wp_update_attachment_metadata( $attach_id, $attach_data );
 
+		if ( mkl_pc( 'settings' )->get( 'show_config_images_in_the_library', true ) ) {
+			// Changing the post status prevents the image being listed in the library
+			$wpdb->update( $wpdb->posts, array( 'post_status' => 'configuration' ), array( 'ID' => $attach_id ) );
+		}
+
 		if ( $parent_post_id ) set_post_thumbnail( $parent_post_id, $attach_id );
+
 		return $attach_id;
 	}
 

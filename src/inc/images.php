@@ -1,7 +1,7 @@
 <?php 
 namespace MKL\PC;
 
-require MKL_PC_PLUGIN_PATH . 'vendor/autoload.php';
+// require MKL_PC_PLUGIN_PATH . 'vendor/autoload.php';
 
 use Intervention\Image\ImageManagerStatic as Image;
 
