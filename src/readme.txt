@@ -112,6 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Do not load Intervention\Image if the server does not support it, to prevent Composer warnings
+
 = 1.2.31 - 27/Apr/2022 =
 
 * FEATURE: Possibility to download an order's configuration from the admin or My account
