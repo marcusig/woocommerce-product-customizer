@@ -453,6 +453,11 @@
     text-transform: uppercase;
 }
 
+button.mkl-settings-toggle-images-in-library[data-mode="hide"] .show-configurations-label,
+button.mkl-settings-toggle-images-in-library[data-mode="show"] .hide-configurations-label{
+    display: none;
+}
+
 @media (max-width: 1100px) {
 	.mkl-pc-themes {
 		min-height: 90vh;

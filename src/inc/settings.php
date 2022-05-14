@@ -36,6 +36,19 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 		public function get_theme() {
 			return apply_filters( 'mkl/pc/theme_id', $this->get( 'mkl_pc__theme' ) );
 		}
+
+		/**
+		 * Set a setting
+		 *
+		 * @param string $key
+		 * @param mixed  $value
+		 * @return void
+		 */
+		public function set( $key, $value ) {
+			$settings = $this->get();
+			$settings[$key] = $value;
+			update_option( 'mkl_pc__settings', $settings );
+		}
 	}
 
 }

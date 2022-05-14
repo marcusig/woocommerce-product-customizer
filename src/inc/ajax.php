@@ -33,6 +33,7 @@ class Ajax {
 		add_action( 'wp_ajax_nopriv_pc_get_data', array( $this, 'get_configurator_data' ) );
 		add_action( 'wp_ajax_pc_set_data', array( $this, 'set_configurator_data' ) );
 		add_action( 'wp_ajax_mkl_pc_purge_config_cache', array( $this, 'purge_config_cache' ) );
+		add_action( 'wp_ajax_mkl_pc_toggle_config_images_in_library', array( $this, 'toggle_config_images_in_library' ) );
 		add_action( 'wp_ajax_nopriv_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 		add_action( 'wp_ajax_mkl_pc_generate_config_image', array( $this, 'generate_config_image' ) );
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids', array( $this, 'fix_image_ids' ) );
@@ -235,6 +236,35 @@ class Ajax {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
 		Plugin::instance()->cache->purge();
 		wp_send_json_success();
+	}
+
+	/**
+	 * Purge the configurations cache
+	 */
+	public function toggle_config_images_in_library() {
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
+		$mode = mkl_pc( 'settings' )->get( 'show_config_images_in_the_library', true );
+		if ( $mode ) {
+			// Will hide the images
+			$new_status = 'configuration';
+		} else {
+			// Will show the images
+			$new_status = 'inherit';
+		}
+
+		global $wpdb;
+		$res = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE $wpdb->posts SET `post_status` = '$new_status' WHERE `post_type` = 'attachment' AND `guid` LIKE '%mkl-pc-config-images%'"
+			)
+		);
+
+		$settings = mkl_pc( 'settings' )->set( 'show_config_images_in_the_library', ! $mode );
+
+		wp_send_json_success( [
+			'mode' => ! $mode,
+			'message' => sprintf( __( '%d rows were affected', 'product-configurator-for-woocommerce' ), $res )
+		] );
 	}
 
 	/**

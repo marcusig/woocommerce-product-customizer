@@ -502,7 +502,7 @@ class Configuration {
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
 		wp_update_attachment_metadata( $attach_id, $attach_data );
 
-		if ( mkl_pc( 'settings' )->get( 'show_config_images_in_the_library', true ) ) {
+		if ( ! mkl_pc( 'settings' )->get( 'show_config_images_in_the_library', true ) ) {
 			// Changing the post status prevents the image being listed in the library
 			$wpdb->update( $wpdb->posts, array( 'post_status' => 'configuration' ), array( 'ID' => $attach_id ) );
 		}
