@@ -162,6 +162,19 @@
 				} );
 			} );
 
+			$('.mkl-settings-toggle-images-in-library').on( 'click', function( e ) {
+				var btn = $( this );
+				btn.prop( 'disabled', 'disabled' );
+				wp.ajax.post({
+					action: 'mkl_pc_toggle_config_images_in_library',
+					security: $( '#_wpnonce' ).val()
+				}).done( function( response ) {
+					btn.prop( 'disabled', false );
+					btn.attr( 'data-mode', response.mode ? 'hide' : 'show' );
+					alert( response.message );
+				} );
+			} );
+
 			$('.mkl-settings-scan-images').on( 'click', function( e ) {
 				var btn = $( this );
 				$id = $( '#configurable-products' ).val();
