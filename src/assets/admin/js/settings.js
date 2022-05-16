@@ -198,10 +198,10 @@
 		init_stock_management: function() {
 			if ( $( '#mkl_pc__settings-stock_link_type' ).length ) {
 				$( '#mkl_pc__settings-stock_link_type' ).on( 'change', function( e ) {
-					$( 'input[name="mkl_pc__settings[extra_price_overrides_product_price]"]' ).closest( 'tr' ).toggle( 'add_to_cart' == $( this ).val() );
+					$( 'input[name="mkl_pc__settings[extra_price_overrides_product_price]"], input[name="mkl_pc__settings[hide_linked_products]"]' ).closest( 'tr' ).toggle( 'add_to_cart' == $( this ).val() );
 				} );
 	
-				$( 'input[name="mkl_pc__settings[extra_price_overrides_product_price]"]' ).closest( 'tr' ).toggle( 'add_to_cart' == $( '#mkl_pc__settings-stock_link_type' ).val() );
+				$( 'input[name="mkl_pc__settings[extra_price_overrides_product_price]"], input[name="mkl_pc__settings[hide_linked_products]"]' ).closest( 'tr' ).toggle( 'add_to_cart' == $( '#mkl_pc__settings-stock_link_type' ).val() );
 			}
 		},
 		get_configurable_products: function() {
