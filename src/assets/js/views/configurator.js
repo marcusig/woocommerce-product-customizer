@@ -649,6 +649,11 @@ PC.options = PC.options || {};
 			'mouseenter > .choice-item': 'preload_image',
 		},
 		render: function() {
+			/**
+				 * Called after rendering the choice item in the list
+				 */
+			wp.hooks.doAction( 'PC.fe.configurator.choice-item.before.render', this );
+
 			var data = _.extend({
 				thumbnail: this.model.get_image( 'thumbnail' ),
 				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
