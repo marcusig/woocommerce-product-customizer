@@ -539,6 +539,7 @@ PC.options = PC.options || {};
 		show_choices: function( event ) {
 			if ( event ) {
 				// Allow clicking on link tags
+				// if ( ( event.target.tagName && 'A' == event.target.tagName ) || $( event.target ).closest( 'a' ).length ) {
 				if (  event.target.tagName && 'A' == event.target.tagName ) {
 					return;
 				}
