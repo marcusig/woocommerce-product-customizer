@@ -650,8 +650,8 @@ PC.options = PC.options || {};
 		},
 		render: function() {
 			/**
-				 * Called after rendering the choice item in the list
-				 */
+			 * Called after rendering the choice item in the list
+			 */
 			wp.hooks.doAction( 'PC.fe.configurator.choice-item.before.render', this );
 
 			var data = _.extend({

@@ -21,9 +21,32 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
 			add_filter( 'woocommerce_email_order_items_args', array( $this, 'add_image_to_email' ) );
+			add_filter( 'woocommerce_email_styles', array( $this, 'add_email_styles' ), 100 );
 			// My account
 			add_action( 'woocommerce_order_item_meta_end', array( $this, 'add_view_link' ), 20, 3 );
 			add_action( 'woocommerce_order_item_meta_end', array( $this, 'add_image_download_link' ), 20, 3 );
+		}
+
+		/**
+		 * Add styles to the email CSS
+		 *
+		 * @param string $styles
+		 * @return string
+		 */
+		public function add_email_styles( $styles ) {
+			$styles .= 'span.choice-thumb img {
+				max-width: 30px;
+			}
+			table span.choice-thumb.color {
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				vertical-align: middle;
+				margin-right: 4px;
+				border-radius: 3px;
+			}
+			';
+			return $styles;
 		}
 
 		public function add_view_link( $item_id, $item, $order ) {
@@ -35,7 +58,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 		public function add_image_download_link( $item_id, $item, $order ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) || apply_filters( 'mkl_pc/do_not_show_image_download_link', false ) ) return;
-			$config_image = $this->_get_order_item_image( $item, 'url' );
+			$config_image = $this->get_order_item_image( $item, 'url' );
 			if ( $config_image && 'blank.gif' !== substr( $config_image, -9 ) ) {
 				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . __( 'Download configuration image', 'product-configurator-for-woocommerce' ) . '</a></div>';
 			}
@@ -110,7 +133,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		public function order_admin_item_thumbnail( $image, $item_id, $order_item ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
 			
-			if ( $config_image = $this->_get_order_item_image( $order_item ) ) return $config_image;
+			if ( $config_image = $this->get_order_item_image( $order_item ) ) return $config_image;
 
 			return $image;
 		}
@@ -142,7 +165,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		public function order_item_thumbnail( $image, $order_item ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
 			
-			if ( $config_image = $this->_get_order_item_image( $order_item ) ) return $config_image;
+			if ( $config_image = $this->get_order_item_image( $order_item ) ) return $config_image;
 
 			return $image;
 		}
@@ -160,7 +183,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			return $args;
 		}
 
-		private function _get_order_item_image( $order_item, $return = 'html' ) {
+		public function get_order_item_image( $order_item, $return = 'html' ) {
 
 			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false; 
 			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
