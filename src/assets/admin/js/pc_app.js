@@ -114,13 +114,13 @@ PC.toJSON = function( item ) {
 			// if ( this.saving == 0 ) this.admin.close();
 		},
 
-		error_saving: function( key, state, a ) {
-			this.errors.push( a );
+		error_saving: function( key, state, a, error_message ) {
+			this.errors.push( error_message );
 			this.saving--;
 			if ( this.saving == 0 ) {
 				state.state_saved( 1 );
+				alert( this.errors.join( "/n" ) );
 			}
-			alert( this.errors.join( "/n" ) );
 		},
 		saved_all: function( key, state, options ) {
 			this.saving--;

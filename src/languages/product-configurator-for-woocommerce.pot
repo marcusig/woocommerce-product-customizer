@@ -168,7 +168,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:61, src/inc/frontend/order.php:33
+#: src/inc/admin/order.php:61, src/inc/frontend/order.php:56
 msgid "View configuration"
 msgstr ""
 
@@ -592,11 +592,11 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:76, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:99, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:82
+#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:105
 msgid "Configuration"
 msgstr ""
 
@@ -620,15 +620,15 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/order.php:40
+#: src/inc/frontend/order.php:63
 msgid "Download configuration image"
 msgstr ""
 
-#: src/inc/frontend/product.php:202
+#: src/inc/frontend/product.php:211
 msgid "Edit item in cart"
 msgstr ""
 
-#: src/inc/frontend/product.php:245
+#: src/inc/frontend/product.php:254
 msgid "Please select a variation to configure"
 msgstr ""
 
