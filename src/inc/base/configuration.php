@@ -49,6 +49,14 @@ class Configuration {
 		$this->upload_dir_path = $wp_upload_dir['basedir'] .'/mkl-pc-config-images'; 
 		$this->upload_dir_url = $wp_upload_dir['baseurl'] .'/mkl-pc-config-images'; 
 
+		// Add an empty index to prevent directory listing if the server doesn't prevent it
+		if ( ! file_exists( $this->upload_dir_path . '/index.php' ) ) {
+			$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . '/index.php', 'w' );
+			if ( $file_handle ) {
+				fclose( $file_handle );
+			}
+		}
+
 		if ( ! is_dir( $this->upload_dir_path ) ) {
 			mkdir( $this->upload_dir_path ); 
 		}
@@ -319,7 +327,7 @@ class Configuration {
 		$mode = mkl_pc( 'settings' )->get( 'save_images' );
 		if ( 'save_to_disk' === $mode ) {
 			if ( $lazy ) {
-				$tempfile = $this->get_configuration_image_name() . '-temp';
+				$tempfile = $this->get_configuration_image_name() . '-temp-' . wp_create_nonce( 'generate-image-from-temp-file' );
 				$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . $tempfile, 'w' );
 				if ( $file_handle ) {
 					fwrite( $file_handle, json_encode( $this->content ) );
@@ -379,6 +387,7 @@ class Configuration {
 	public function save_image( $content, $transient = null ) {
 
 		if ( is_string( $content ) ) {
+			$content = sanitize_file_name( $content );
 			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
 			if ( ! file_exists( $tempfile ) ) return 0;
 			$content = file_get_contents( $tempfile );
