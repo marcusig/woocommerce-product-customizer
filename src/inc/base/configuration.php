@@ -13,6 +13,7 @@ class Configuration {
 
 	public $post_type          = 'mkl_pc_configuration';
 	public $configuration_type = false;
+	public $allow_duplicate    = false;
 	public $should_save_image  = true;
 	public $upload_dir_path    = '';
 	public $upload_dir_url     = '';
@@ -115,7 +116,7 @@ class Configuration {
 			$configuration_data['post_title'] = sanitize_text_field( $args['title'] );
 		}
 		// Checks if user has already saved this configuration
-		if ( $this->configuration_exists() ) {
+		if ( ! $this->allow_duplicate && $this->configuration_image_exists() && ! $updating ) {
 
 			$attach_id = $this->content_has_single_image( 'id' );
 			if ( ! $attach_id ) {
@@ -161,6 +162,7 @@ class Configuration {
 			'saved' => true, 
 			'message' => apply_filters( 'mkl_pc_configuration_saved_message_success', __( 'The configuration was saved successfully!', 'product-configurator-for-woocommerce' ) ),
 			'save_image_async' => $save_image,
+			'config_id' => $this->ID
 		);
 	}
 
