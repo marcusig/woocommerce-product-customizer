@@ -77,10 +77,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function add_configure_button() { 
 			global $product;
 			if ( mkl_pc_is_configurable( get_the_id() ) ) {
-				$options = get_option( 'mkl_pc__settings' );
-				if ( isset( $options['mkl_pc__button_label'] ) && $options['mkl_pc__button_label'] ) {
-					$label = $options['mkl_pc__button_label']; 
-				} else {
+				$label = mkl_pc( 'settings' )->get( 'mkl_pc__button_label', false );
+				if ( ! $label ) {
 					$label = __( 'Configure', 'product-configurator-for-woocommerce' );
 				}
 				if ( ! $product->is_purchasable() || ( 'variable' === $product->get_type() && empty( $product->get_available_variations() ) ) ) {

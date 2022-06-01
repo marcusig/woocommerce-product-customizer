@@ -45,7 +45,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 */
 		public function wpml_register_translatable_strings( $old_value, $options ) {
 			
-			global $sitepress, $wp_registered_settings, $wp_settings_fields;
+			global $sitepress, $wp_settings_fields;
 			if ( ! $sitepress ) return;
 			$settings = get_registered_settings();
 			if ( ! isset( $wp_settings_fields['mlk_pc_settings'] ) ) return;
@@ -61,12 +61,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'configuration_costs_label'
 			] );
 
+			$registered_fields = [];
 			foreach( $wp_settings_fields['mlk_pc_settings'] as $section ) {
 				foreach( $section as $field => $field_options ) {
 					if ( in_array( $field, $translatable_options ) ) {
 						do_action( 'wpml_register_single_string', 'Product Configurator settings', $field_options['title'], isset( $options[$field] ) ? $options[$field] : '' );
+						$registered_fields[$field] = $field_options['title'];
 					}
 				}
+			}
+			if ( ! empty( $registered_fields ) ) {
+				update_option( 'mkl_pc__wpml_registered_fields', $registered_fields );
 			}
 		}
 

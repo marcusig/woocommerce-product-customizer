@@ -580,15 +580,15 @@ msgstr ""
 msgid "Select the theme"
 msgstr ""
 
-#: src/inc/base/configuration.php:135
+#: src/inc/base/configuration.php:136
 msgid "You have already saved this configuration!"
 msgstr ""
 
-#: src/inc/base/configuration.php:162
+#: src/inc/base/configuration.php:163
 msgid "The configuration was saved successfully!"
 msgstr ""
 
-#: src/inc/base/configuration.php:180
+#: src/inc/base/configuration.php:182
 msgid "Invalid configuration_id ID"
 msgstr ""
 
