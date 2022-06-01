@@ -300,12 +300,27 @@ class Ajax {
 		wp_send_json_success( [ 'layers' => $layers, 'angles' => $angles, 'content' => $content, 'changed_items' => $changed_items ] );
 	}
 
+	/**
+	 * Generate the configuration image	(asynchronously)
+	 */
 	public function generate_config_image() {
-		if ( empty( $_POST['data'] ) ) wp_send_json_error( 'No data to process' );
+		
+		if ( empty( $_REQUEST['data'] ) ) wp_send_json_error( 'No data to process' );
 
+		// Extract the temporary suffix: The name should contain '-temp-'
+		$temp_offset = strpos( $_REQUEST['data'], '-temp-' );
+		
+		// Exit if the suffix was not found in the name
+		if ( false === $temp_offset ) wp_send_json_error( 'No data to process' );
+		
+		// Extract the nonce which is storred after the suffix
+		$nonce = substr( $_REQUEST['data'], $temp_offset + 6 );
+		// Exit if the file name doesn't contain a valid nonce
+		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'generate-image-from-temp-file' ) ) wp_send_json_error( 'Unauthorized action', 403 );
+		
 		$config = new Configuration();
-		$config->image_name = rtrim( $_POST['data'] , '-temp' );
-		$image_id = $config->save_image( $_POST['data'] );
+		$config->image_name = rtrim( $_REQUEST['data'] , '-temp-' . $nonce );
+		$image_id = $config->save_image( $_REQUEST['data'] );
 		if ( $image_id ) {
 			$image = wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' );
 			if ( $image ) wp_send_json_success( [ 'url' => $image ] );
