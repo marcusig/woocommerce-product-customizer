@@ -389,6 +389,8 @@ class Configuration {
 		if ( is_string( $content ) ) {
 			$content = sanitize_file_name( $content );
 			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
+			$real_path = realpath( $tempfile );
+			if ( ( false === $real_path ) || ( false === strpos( $real_path, $this->upload_dir_path ) ) ) return 0;
 			if ( ! file_exists( $tempfile ) ) return 0;
 			$content = file_get_contents( $tempfile );
 			if ( $content ) {
