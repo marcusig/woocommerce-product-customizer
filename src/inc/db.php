@@ -212,6 +212,8 @@ class DB {
 		$product->update_meta_data( '_mkl_product_configurator_' . $component , $data );
 		$product->save();
 
+		// WPML Sync custom field
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_' . $component );
 		
 		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );

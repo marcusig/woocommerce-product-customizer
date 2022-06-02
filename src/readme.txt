@@ -112,6 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: WPML compatibility: Sync custom fields after saving the configuration data
+
 = 1.2.32 - 1/Jun/2022 =
 
 * SECURITY: Fix arbitrary file deletion vulnerability
