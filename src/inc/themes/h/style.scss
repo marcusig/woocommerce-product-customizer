@@ -1001,3 +1001,8 @@ TIPPY
 }
 
 @import 'scss/dark_mode';
+
+/* Divi fix */
+.et_divi_theme:not(.configurator_is_inline) .mkl_pc {
+	z-index: 100000;
+}

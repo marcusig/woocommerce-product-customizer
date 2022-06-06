@@ -1518,3 +1518,8 @@ a.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path {
     fill: var(--mkl_pc_color-primary);
 }
+
+/* Divi fix */
+.et_divi_theme:not(.configurator_is_inline) .mkl_pc {
+	z-index: 100000;
+}

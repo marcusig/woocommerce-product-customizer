@@ -820,3 +820,9 @@ body:not(.is-mobile) .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices >
 	-webkit-animation: configurator-load 1.0s infinite ease-in-out;
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
+
+/* Divi fix */
+
+.et_divi_theme:not(.configurator_is_inline) .mkl_pc {
+	z-index: 100000;
+}
