@@ -49,6 +49,9 @@ class Frontend_Woocommerce {
 
 		add_filter( 'mkl_pc_order_item_meta', array($this, 'add_sku_to_meta' ), 20, 5 );
 		add_filter( 'mkl_pc_item_meta', array($this, 'add_sku_to_meta_cart' ), 20, 5 );
+		
+		// Siteground compatibility: exclude JS from async loading
+		add_filter( 'sgo_js_async_exclude', array( $this, 'siteground_optimize_compat' ) );
 	}
 
 	public function register_rest_route() {
@@ -447,6 +450,32 @@ class Frontend_Woocommerce {
 			$meta[ 'value' ] .= '<span class="sku">' . $layer->get_choice( 'sku' ) . '</span>';
 		}
 		return $meta;
+	}
+
+	/**
+	 * Exclude the configurator scripts and dependencies from defer/async
+	 */
+	public function siteground_optimize_compat( $items ) {
+		if ( ! is_callable( 'SiteGround_Optimizer\Helper\Helper::get_script_handle_regex' ) ) return $items;
+
+		global $wp_scripts;
+		$wp_scripts->all_deps( $wp_scripts->queue );
+		$extras = SiteGround_Optimizer\Helper\Helper::get_script_handle_regex( 'mkl', $wp_scripts->to_do );
+		if ( ! empty( $extras ) && 1 < count( $extras ) ) {
+			return array_merge(
+				$items,
+				$extras,
+				[ 
+					'underscore',
+					'backbone',
+					'wp-util',
+					'wp-hooks',
+				],
+				SiteGround_Optimizer\Helper\Helper::get_script_handle_regex( 'jquery', $wp_scripts->to_do )
+			);
+		}
+
+		return $items;
 	}
 
 }

@@ -112,6 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Exclude the configurator scripts and dependencies from Async/Defer loading in SiteGround optimizer
+* TWEAK: Change sanitize function for name fields and translated fields to prevent duplication of postmeta when using WPML
+
 = 1.2.33 - 2/Jun/2022 =
 
 * TWEAK: WPML compatibility: Sync custom fields after saving the configuration data
