@@ -100,23 +100,23 @@ msgstr ""
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
-#: src/inc/db.php:289
+#: src/inc/db.php:296
 msgid "Import / Export"
 msgstr ""
 
-#: src/inc/db.php:290
+#: src/inc/db.php:297
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:291, src/inc/admin/views/html-product-configurator-templates.php:415
+#: src/inc/db.php:298, src/inc/admin/views/html-product-configurator-templates.php:415
 msgid "Export"
 msgstr ""
 
-#: src/inc/languages.php:146, src/inc/languages.php:146, src/inc/languages.php:133, src/inc/languages.php:133
+#: src/inc/languages.php:177, src/inc/languages.php:177, src/inc/languages.php:164, src/inc/languages.php:164
 msgid "Name"
 msgstr ""
 
-#: src/inc/languages.php:151, src/inc/languages.php:151, src/inc/languages.php:138, src/inc/languages.php:138, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:86
+#: src/inc/languages.php:182, src/inc/languages.php:182, src/inc/languages.php:169, src/inc/languages.php:169, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:86
 msgid "Description"
 msgstr ""
 

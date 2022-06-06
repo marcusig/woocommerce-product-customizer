@@ -96,7 +96,7 @@ class Ajax {
 
 					// Translatepress: Do not translate
 					add_filter( 'trp_stop_translating_page', '__return_true' );
-					if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
+					if ( is_user_logged_in() && current_user_can( 'edit_posts' ) && ! isset( $_REQUEST['pc-no-transient'] ) ) {
 						$data = get_transient( 'mkl_pc_data_init_' . $id );
 					}
 					if ( ! $data ) {

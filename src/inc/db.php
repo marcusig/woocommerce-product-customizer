@@ -214,6 +214,11 @@ class DB {
 
 		// WPML Sync custom field
 		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_' . $component );
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		
+		if ( function_exists( 'wp_cache_flush' ) ) {
+			wp_cache_flush();
+		}
 		
 		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
@@ -448,7 +453,11 @@ class DB {
 					'escape' => 'floatval',
 				],
 				'name' => [ 
-					'sanitize' => 'wp_filter_post_kses',
+					'sanitize' => [ $this, 'sanitize_description' ],
+					'escape' => [ $this, 'escape_description' ],
+				],
+				'admin_label' => [ 
+					'sanitize' => [ $this, 'sanitize_description' ],
 					'escape' => [ $this, 'escape_description' ],
 				],
 				'angle_name' => [ 
@@ -511,7 +520,8 @@ class DB {
 					'sanitize' => 'intval',
 					'escape' => 'intval',
 				],
-			]
+			],
+			$this
 		);
 	}
 	
@@ -555,6 +565,10 @@ class DB {
 
 	public function escape_description( $description ) {
 		return wp_kses_post( stripslashes( $description ) );
+	}
+	
+	public function sanitize_description( $description ) {
+		return wp_kses( stripslashes( $description ), 'post' );
 	}
 
 	public function sanitize_custom_html_description( $html ) {

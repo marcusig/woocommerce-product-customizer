@@ -20,6 +20,37 @@ class Languages {
 		add_filter( 'mkl_pc_layer_default_settings', [ $this, 'add_settings' ] );
 		add_filter( 'mkl_pc_angle_default_settings', [ $this, 'add_settings' ] );
 		add_filter( 'mkl_pc_js_config', [ $this, 'add_current_language_to_js' ] );
+		add_filter( 'mkl_pc_db_fields', [ $this, 'add_sanitize_methods' ], 20, 2 );
+		add_action( 'wpml_after_copy_custom_field', [ $this, 'purge_transient_after_translation_sync' ], 20, 3 );
+	}
+
+	/**
+	 * Add sanitize methods to the translated fields
+	 *
+	 * @param array  $fields
+	 * @param object $instance
+	 * @return array
+	 */
+	public function add_sanitize_methods( $fields, $instance ) {
+		if ( ! $this->website_is_multilingual() ) return $fields;
+		$languages = $this->get_languages();
+		foreach( $languages as $language ) {
+			if ( $language == $this->get_default_language() ) continue;
+			$fields['name_' . $language] = [
+				'sanitize' => [ $instance, 'sanitize_description' ],
+				'escape' => [ $instance, 'escape_description' ],				
+			];
+			$fields['description_' . $language] = [
+				'sanitize' => [ $instance, 'sanitize_description' ],
+				'escape' => [ $instance, 'escape_description' ],				
+			];
+		}
+		return $fields;
+	}
+
+	public function purge_transient_after_translation_sync( $post_id_from, $post_id_to, $meta_key ) {
+		if ( false === strpos( $meta_key, '_mkl_product_configurator_' ) ) return;
+		delete_transient( 'mkl_pc_data_init_' . $post_id_to );
 	}
 
 	/**
