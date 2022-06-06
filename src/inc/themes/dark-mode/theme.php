@@ -1,17 +1,6 @@
 <?php
 function mkl_pc_dark_theme_scripts() {
-	$data = "
-	(function($) {
-		wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/dark-mode', function( view ) {
-			view.\$el.addClass( 'dark-mode' );
-		} );
-		wp.hooks.addFilter( 'PC.fe.tooltip.options', 'MKL/PC/Themes/dark-mode', function( options ) {
-			options.theme = 'invert';
-			return options;
-		}, 20);
-	})();
-	";
-	wp_add_inline_script( 'mkl_pc/js/views/configurator', $data, 'before' );
+	wp_enqueue_script( 'mkl/pc/themes/dark-mode', plugin_dir_url( __FILE__ ) . 'dark-mode.js', [ 'wp-hooks', 'jquery' ], filemtime( plugin_dir_path( __FILE__ ) . 'dark-mode.js' ), true );
 }
 add_action( 'mkl_pc_scripts_product_page_after', 'mkl_pc_dark_theme_scripts', 20 );
 
