@@ -456,11 +456,11 @@ class Frontend_Woocommerce {
 	 * Exclude the configurator scripts and dependencies from defer/async
 	 */
 	public function siteground_optimize_compat( $items ) {
-		if ( ! is_callable( 'SiteGround_Optimizer\Helper\Helper::get_script_handle_regex' ) ) return $items;
+		if ( ! is_callable( '\SiteGround_Optimizer\Helper\Helper::get_script_handle_regex' ) ) return $items;
 
 		global $wp_scripts;
 		$wp_scripts->all_deps( $wp_scripts->queue );
-		$extras = SiteGround_Optimizer\Helper\Helper::get_script_handle_regex( 'mkl', $wp_scripts->to_do );
+		$extras = \SiteGround_Optimizer\Helper\Helper::get_script_handle_regex( 'mkl', $wp_scripts->to_do );
 		if ( ! empty( $extras ) && 1 < count( $extras ) ) {
 			return array_merge(
 				$items,
@@ -471,7 +471,7 @@ class Frontend_Woocommerce {
 					'wp-util',
 					'wp-hooks',
 				],
-				SiteGround_Optimizer\Helper\Helper::get_script_handle_regex( 'jquery', $wp_scripts->to_do )
+				\SiteGround_Optimizer\Helper\Helper::get_script_handle_regex( 'jquery', $wp_scripts->to_do )
 			);
 		}
 
