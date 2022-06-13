@@ -206,7 +206,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					/**
 					 * Filters the button text "Edit item in cart"
 					 */
-					echo apply_filters( 'mkl_pc/edit_item_in_cart_button/label', __( 'Edit item in cart', 'product-configurator-for-woocommerce' ) );
+					echo apply_filters( 'mkl_pc/edit_item_in_cart_button/label', mkl_pc( 'settings' )->get( 'edit_item_in_cart', __( 'Edit item in cart', 'product-configurator-for-woocommerce' ) ) );
 				?></span>
 			</button>
 			<?php 

@@ -113,6 +113,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
 				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),
 				'tools' => __( 'Tools', 'product-configurator-for-woocommerce' ),
+				'labels' => __( 'Labels', 'product-configurator-for-woocommerce' ),
 			], $active );
 			?>
 			<div class="wrap">
@@ -143,6 +144,41 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 							if ( isset( $wp_settings_sections[ 'mlk_pc_settings' ] ) ) {
 														
 								foreach ( (array) $wp_settings_sections[ 'mlk_pc_settings' ] as $section ) {
+									if ( 'labels' == $section['id'] ) continue;
+									echo '<section id="' . $section['id'] .'">';
+										if ( $section['title'] ) {
+											echo "<h2>{$section['title']}</h2>\n";
+										}
+								
+										if ( $section['callback'] ) {
+											call_user_func( $section['callback'], $section );
+										}
+								
+										if ( ! isset( $wp_settings_fields ) || ! isset( $wp_settings_fields[ 'mlk_pc_settings' ] ) || ! isset( $wp_settings_fields[ 'mlk_pc_settings' ][ $section['id'] ] ) ) {
+											continue;
+										}
+										echo '<table class="form-table" role="presentation">';
+										do_settings_fields( 'mlk_pc_settings', $section['id'] );
+										echo '</table>';
+									echo '</section>';
+								}
+								submit_button();
+							}
+
+						?>
+					</form>
+				</div>
+				<div class="mkl-settings-content" data-content="labels">
+					<form method="post" action="options.php">
+						<?php
+							settings_fields( 'mlk_pc_settings' );
+							
+							global $wp_settings_sections, $wp_settings_fields;
+
+							if ( isset( $wp_settings_sections[ 'mlk_pc_settings' ] ) ) {
+														
+								foreach ( (array) $wp_settings_sections[ 'mlk_pc_settings' ] as $section ) {
+									if ( 'labels' != $section['id'] ) continue;
 									echo '<section id="' . $section['id'] .'">';
 										if ( $section['title'] ) {
 											echo "<h2>{$section['title']}</h2>\n";
@@ -638,6 +674,61 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'general_settings',
 				[ 
 					'setting_name' => 'show_reset_button',
+				]
+			);
+
+			add_settings_section(
+				'labels',
+				__( 'Other labels', 'product-configurator-for-woocommerce' ), 
+				function() { },
+				'mlk_pc_settings'
+			);
+
+			add_settings_field(
+				'reset_configuration_label', 
+				__( 'Reset configuration', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'labels',
+				[ 
+					'setting_name' => 'reset_configuration_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Reset configuration', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'edit_configuration_label', 
+				__( 'Edit configuration', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'labels',
+				[ 
+					'setting_name' => 'edit_configuration_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Edit configuration', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'edit_item_in_cart', 
+				__( 'Edit item in cart', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'labels',
+				[ 
+					'setting_name' => 'edit_item_in_cart',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Edit item in cart', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'configuration_cart_meta_label', 
+				__( 'Configuration (meta label in the cart)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'labels',
+				[ 
+					'setting_name' => 'configuration_cart_meta_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Configuration', 'product-configurator-for-woocommerce' )
 				]
 			);
 

@@ -102,7 +102,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					}
 	
 					if ( ! empty( $order_meta_for_configuration ) ) {
-						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', __( 'Configuration', 'product-configurator-for-woocommerce' ), $item, $cart_item_key, $values, $order ),  $this->get_choices_html( $order_meta_for_configuration ), false );
+						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', mkl_pc( 'settings' )->get( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $item, $cart_item_key, $values, $order ),  $this->get_choices_html( $order_meta_for_configuration ), false );
 					}
 					do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 				}
