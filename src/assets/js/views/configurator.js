@@ -681,7 +681,9 @@ PC.options = PC.options || {};
 				},
 				this );
 			
-				if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) tippy( this.$( '.choice-item' )[0], tooltip_options );
+				if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) {
+					tippy( this.el, tooltip_options );
+				}
 			}
 
 			if ( this.model.get( 'is_group' ) ) this.$el.addClass( 'is-group' );
@@ -708,10 +710,12 @@ PC.options = PC.options || {};
 				var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
 				if ( this.$( '.out-of-stock' ).length ) {
 					description += this.$( '.out-of-stock' )[0].outerHTML;
+					// console.log('get desc', this.model.collection.layer.get( 'name' ), this.model.get( 'name' ), this.$( '.out-of-stock' ).length, this.$( '.out-of-stock' )[0].outerHTML );
 				}
 			} else {
 				var description = this.$( '.description' ).html();
 			}
+			// console.log( description );
 			return description;
 		},
 		set_choice: function( event ) {
