@@ -26,7 +26,7 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 
 		public function get( $setting = '', $default = false ) {
 			$settings = wp_parse_args( get_option( 'mkl_pc__settings' ), $this->get_defaults() );
-			if ( $setting ){
+			if ( $setting ) {
 				if ( isset( $settings[ $setting ] ) ) {
 					global $sitepress;
 					if ( $sitepress ) {

@@ -110,11 +110,16 @@ class Choice {
 		$image = $this->get_image( $type );
 		return $image ? $image['url'] : '';
 	}
+	
 	public function get_image_id( $type ){
 		$image = $this->get_image( $type );
 		return $image ? $image['id'] : '';
 	}
 
+	public function get_choice_by_id( $id ) {
+		return Utils::get_array_item( $this->choices['choices'], '_id', $id );
+	}
+	
 	public function is_choice() {
 		return is_null( $this->get_layer( 'not_a_choice' ) ) || ! $this->get_layer( 'not_a_choice' );
 	}
