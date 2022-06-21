@@ -360,7 +360,7 @@ msgstr ""
 msgid "Default:"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:254, src/inc/frontend/frontend-woocommerce.php:129, src/inc/frontend/frontend-woocommerce.php:171, src/inc/frontend/product.php:82
+#: src/inc/admin/settings-page.php:254, src/inc/frontend/frontend-woocommerce.php:132, src/inc/frontend/frontend-woocommerce.php:174, src/inc/frontend/product.php:82
 msgid "Configure"
 msgstr ""
 
@@ -604,19 +604,19 @@ msgstr ""
 msgid "Edit configuration"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:113, src/inc/frontend/frontend-woocommerce.php:156
+#: src/inc/frontend/frontend-woocommerce.php:116, src/inc/frontend/frontend-woocommerce.php:159
 msgid "A product id must be set in order for this shortcode to work."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:123, src/inc/frontend/frontend-woocommerce.php:165
+#: src/inc/frontend/frontend-woocommerce.php:126, src/inc/frontend/frontend-woocommerce.php:168
 msgid "The provided ID is not a valid product."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:173
+#: src/inc/frontend/frontend-woocommerce.php:176
 msgid "Loading the configurator..."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:286
+#: src/inc/frontend/frontend-woocommerce.php:289
 msgid "%s is required"
 msgstr ""
 
@@ -980,27 +980,27 @@ msgstr ""
 msgid "Viewer background color"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:31
+#: src/inc/themes/dark-mode/theme.php:20
 msgid "Dark gray (Layers background)"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:35
+#: src/inc/themes/dark-mode/theme.php:24
 msgid "Darker gray (Preview background, borders)"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:39
+#: src/inc/themes/dark-mode/theme.php:28
 msgid "Light gray 1"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:43
+#: src/inc/themes/dark-mode/theme.php:32
 msgid "Light gray 2"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:47
+#: src/inc/themes/dark-mode/theme.php:36
 msgid "Medium gray 3"
 msgstr ""
 
-#: src/inc/themes/dark-mode/theme.php:51
+#: src/inc/themes/dark-mode/theme.php:40
 msgid "Medium gray 4"
 msgstr ""
 
@@ -1068,7 +1068,7 @@ msgstr ""
 msgid "Choice width"
 msgstr ""
 
-#: src/inc/themes/wsb/theme.php:87
+#: src/inc/themes/wsb/theme.php:35
 msgid "Sidebar background"
 msgstr ""
 
