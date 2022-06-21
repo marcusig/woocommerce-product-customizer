@@ -18,6 +18,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 		private function _hooks() {
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
+			add_filter( 'woocommerce_order_again_cart_item_data', array( $this, 'wc_order_again_cart_item_data' ), 10, 3 ); 
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
 			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
@@ -94,6 +95,19 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				} 
 			} 
 			return $cart_item_data; 
+		}
+
+		/**
+		 * Add the configuration data when Ordering again
+		*/
+		public function wc_order_again_cart_item_data( $data, $item, $order ) {
+			$conf_data = $item->get_meta( '_configurator_data' );
+			$raw_conf_data = $item->get_meta( '_configurator_data_raw' );
+			if ( $conf_data && $raw_conf_data ) {
+				$data['configurator_data'] = $conf_data;
+				$data['configurator_data_raw'] = $raw_conf_data;
+			}
+			return $data;
 		}
 
 		public function wc_cart_get_item_data( $data, $cart_item ) { 
