@@ -400,6 +400,13 @@ class Frontend_Woocommerce {
 				if ( $config ) return $config;
 			}
 		}
+
+		if ( isset( $_REQUEST['load-preset'] ) ) {
+			$p = get_post( (int) $_REQUEST['load-preset'] );
+			if ( $p && 'mkl_pc_configuration' === $p->post_type && 'preset' === $p->post_status ) {
+				return json_decode( $p->post_content );
+			}
+		}
 		return false;
 	}
 
