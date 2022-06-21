@@ -17,4 +17,5 @@
 		</div>
 		<?php do_action( 'mkl_pc_frontend_configurator_footer_form_after' ); ?>
 	</div>
+	<?php do_action( 'mkl_pc_frontend_configurator_footer_after' ); ?>
 </script>
