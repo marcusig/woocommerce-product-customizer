@@ -142,7 +142,31 @@ class Frontend_Woocommerce {
 			$tag_name_close = 'button';
 		}
 
-		return '<' . $tag_name . ' class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" data-price="' . esc_attr( $this->product->get_product_price( $product_id ) ) . '" data-product_id="'.$product_id.'">'.$content.'</' . $tag_name_close . '>';
+		$data_attributes = array( 
+			'price' => $this->product->get_product_price( $product_id ),
+			'product_id' => $product_id,
+		);
+
+		if ( isset( $atts[ 'product_id' ] ) ) {
+			$data_attributes['force_form'] = 1;
+		}
+
+		$data_attributes = apply_filters( 'mkl_configurator_button_data_attributes', $data_attributes );
+		
+		return '<' . $tag_name . ' class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" ' . implode( ' ', $this->_output_data_attributes( $data_attributes ) ) . '>'.$content.'</' . $tag_name_close . '>';
+	}
+
+	/**
+	 * Format the data attributes
+	 *
+	 * @param array $data
+	 * @return array
+	 */
+	private function _output_data_attributes( $data ) {
+		$data_attributes_string = array_map( function( $key, $value ) {
+			return ' data-' . $key . '="' . esc_attr( $value ) . '"';
+		}, array_keys( $data ), $data );
+		return $data_attributes_string;
 	}
 
 	/**
@@ -173,7 +197,19 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" data-price="' . esc_attr( $this->product->get_product_price( $product_id ) ) . '" data-product_id="'.$product_id.'" data-loading="'.esc_attr__( 'Loading the configurator...', 'product-configurator-for-woocommerce' ).'"></div>';
+		$data_attributes = array( 
+			'price' => $this->product->get_product_price( $product_id ),
+			'product_id' => $product_id,
+			'loading' => __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ),
+		);
+
+		if ( isset( $atts[ 'product_id' ] ) ) {
+			$data_attributes['force_form'] = 1;
+		}
+
+		$data_attributes = apply_filters( 'mkl_configurator_data_attributes', $data_attributes );
+
+		return '<div class="mkl-configurator-inline is-shortcode configure-product '.$shortcode_class.'" ' . implode( ' ', $this->_output_data_attributes( $data_attributes ) ) . '></div>';
 	}
 
 	/**

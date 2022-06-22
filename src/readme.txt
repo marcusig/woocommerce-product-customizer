@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Possibility to force the add to cart form in the shortcode, to allow using a different product's shortcode on a single product page, by adding `force_form` to the shortcode.
 * TWEAK: Show an error message when the configurator data is incomplete
 * TWEAK: Possibility to choose which view is used in the generated image in the cart
 * TWEAK: Increase the configurator's z-index when using Divi

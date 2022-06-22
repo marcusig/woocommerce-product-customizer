@@ -187,7 +187,7 @@ PC.options = PC.options || {};
 		render: function() {
 			this.$el.append( this.template( {
 				name: PC.fe.currentProductData.product_info.title,
-				show_form: parseInt( PC.fe.config.show_form ) || ! $( 'form.cart' ).length,
+				show_form: parseInt( PC.fe.config.show_form ) || ! $( 'form.cart' ).length || PC.fe.currentProductData.product_info.force_form,
 				is_in_stock: parseInt( PC.fe.currentProductData.product_info.is_in_stock ),
 				product_id: parseInt( PC.fe.active_product ),
 				show_qty: parseInt( PC.fe.currentProductData.product_info.show_qty ),
@@ -235,10 +235,11 @@ PC.options = PC.options || {};
 			this.$input = $( 'input[name=pc_configurator_data]' );
 			
 			// If the input isn't in the page, check in this view
-			if ( ! this.$input.length ) this.$input = this.$( 'input[name=pc_configurator_data]' );
+			if ( ! this.$input.length || PC.fe.currentProductData.product_info.force_form ) this.$input = this.$( 'input[name=pc_configurator_data]' );
 
 			// The cart must be the one containing the input
 			this.$cart = this.$input.closest( 'form.cart' );
+
 			if ( ! this.$cart.find( '[name=add-to-cart]' ).length ) {
 				this.$( '.configurator-add-to-cart' ).remove();
 			}
