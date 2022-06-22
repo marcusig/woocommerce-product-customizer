@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Show an error message when the configurator data is incomplete
 * TWEAK: Possibility to choose which view is used in the generated image in the cart
 * TWEAK: Increase the configurator's z-index when using Divi
 * TWEAK: Move the inline JavaScript from the themes to their own files

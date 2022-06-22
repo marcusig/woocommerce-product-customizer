@@ -76,3 +76,11 @@ table span.choice-thumb.color {
     vertical-align: middle;
     margin-right: 10px;
 }
+
+.configurator-error.error {
+    padding: 10px;
+    background: #fff7f8;
+    border: 1px solid red;
+    border-radius: 3px;
+    color: red;
+}

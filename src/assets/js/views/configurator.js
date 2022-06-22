@@ -80,13 +80,26 @@ PC.options = PC.options || {};
 		},
 
 		start: function( e, arg ) {
-			if( this.toolbar ) this.toolbar.remove();
-			if( this.viewer ) this.viewer.remove();
-			if( this.footer ) this.footer.remove();
+			if ( this.toolbar ) this.toolbar.remove();
+			if ( this.viewer ) this.viewer.remove();
+			if ( this.footer ) this.footer.remove();
 
 			this.viewer = new PC.fe.views.viewer( { parent: this } );
 			this.$main_window.append( this.viewer.render() ); 
-			if( arg == 'no-content' ) {
+			if ( ! PC.fe.angles.length || ! PC.fe.layers.length || ! PC.fe.contents.content.length ) {
+				console.log( e );
+				var message = $( '<div class="error configurator-error" />' ).text( 'The product configuration seems incomplete. Please make sure Layers, angles and content are set.' );
+				if ( ! PC.fe.config.inline ) {
+					$( PC.fe.trigger_el ).after( message );
+					this.close();
+					PC.fe.active_product = false;
+				} else {
+					$( PC.fe.trigger_el ).append( message );
+				}
+				return;
+			}
+
+			if ( arg == 'no-content' ) {
 				this.toolbar = new PC.fe.views.empty_viewer();
 				this.viewer.$el.append( this.toolbar.render() );
 			} else {
@@ -796,8 +809,11 @@ PC.options = PC.options || {};
 				if ( PC.fe.angles.length > 1 ) {
 					this.angles_selector = new PC.fe.views.angles({ parent: this }); 
 					this.$el.append( this.angles_selector.render() );
-				} else {
+				} else if ( PC.fe.angles.length ) {
 					PC.fe.angles.first().set( 'active', true );
+				} else {
+					console.error( 'Product configurator: there are no angles set. Please complete the product setup.' );
+					return;
 				}
 
 				this.$layers = this.$el.find( '.mkl_pc_layers' ); 
