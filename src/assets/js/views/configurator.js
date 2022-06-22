@@ -1175,7 +1175,12 @@ PC.options = PC.options || {};
 			var is_required = parseInt( model.get( 'required' ) );
 			var default_selection = model.get( 'default_selection' ) || 'select_first';
 			var type = model.get( 'type' );
-			var angle_id = PC.fe.angles.first().id;
+			var angle = PC.fe.angles.findWhere( 'use_in_cart', true );
+			if ( ! angle ) {
+				angle = PC.fe.angles.first();
+			}
+
+			var angle_id = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.angle_id', angle.id );
 
 			if ( 'group' == type ) {
 				if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_layer_group', true, model ) ) this.choices.push( 

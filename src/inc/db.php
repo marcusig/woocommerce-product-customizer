@@ -496,6 +496,10 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				'use_in_cart' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'update' => [ 
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_attr',

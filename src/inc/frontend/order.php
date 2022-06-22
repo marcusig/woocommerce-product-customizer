@@ -195,9 +195,9 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$choices = array(); 
 			usort( $configurator_data, [ $this, '_order_images' ] );
 			foreach ( $configurator_data as $layer ) {
-				$choice_images = $layer->get_choice( 'images' );
-				if ( $choice_images && isset( $choice_images[0] ) && $choice_images[0]["image"]['id'] ) {
-					$choices[] = [ 'image' => $choice_images[0]["image"]['id'] ];
+				if ( ! $layer ) continue;
+				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
+					$choices[] = [ 'image' => $choice_image ];
 				}
 			}
 

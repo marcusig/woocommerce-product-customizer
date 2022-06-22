@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Possibility to choose which view is used in the generated image in the cart
 * TWEAK: Increase the configurator's z-index when using Divi
 * TWEAK: Move the inline JavaScript from the themes to their own files
 * TWEAK: Exclude the configurator scripts and dependencies from Async/Defer loading in SiteGround optimizer

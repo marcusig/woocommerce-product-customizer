@@ -348,8 +348,10 @@ TODO:
 		template: wp.template('mkl-pc-structure-layer-form'),
 
 		initialize: function( options ) {
+			if ( this.pre_init ) this.pre_init( options );
 			this.listenTo( this.model, 'destroy', this.remove ); 
 			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type' ), this.render );
+			
 		},
 		events: {
 			// 'click' : 'edit',
@@ -392,6 +394,7 @@ TODO:
 			if ( event.type == 'click' ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
+				
 			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();

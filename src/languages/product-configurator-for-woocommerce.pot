@@ -32,19 +32,19 @@ msgstr ""
 msgid "WooCommerce Version 3+ required."
 msgstr ""
 
-#: src/inc/ajax.php:192
+#: src/inc/ajax.php:193
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:192, src/inc/ajax.php:287
+#: src/inc/ajax.php:193, src/inc/ajax.php:288
 msgid "The session seems to have expired."
 msgstr ""
 
-#: src/inc/ajax.php:266
+#: src/inc/ajax.php:267
 msgid "%d rows were affected"
 msgstr ""
 
-#: src/inc/ajax.php:287
+#: src/inc/ajax.php:288
 msgid "Error processing the request:"
 msgstr ""
 
@@ -592,15 +592,15 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:129, src/inc/frontend/order.php:99, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:143, src/inc/frontend/order.php:99, src/inc/admin/settings/choice.php:44
 msgid "SKU"
 msgstr ""
 
-#: src/inc/frontend/cart.php:145, src/inc/frontend/order.php:105
+#: src/inc/frontend/cart.php:159, src/inc/frontend/order.php:105
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/frontend/cart.php:274
+#: src/inc/frontend/cart.php:288
 msgid "Edit configuration"
 msgstr ""
 

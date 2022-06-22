@@ -14,4 +14,17 @@ PC.views.angle = PC.views.layer.extend({
 
 PC.views.angle_form = PC.views.layer_form.extend({
 	template: wp.template('mkl-pc-structure-angle-form'),
+	pre_init: function( options ) {
+		this.listenTo( this.model, 'change:use_in_cart' , this.set_default_view );
+	},
+	set_default_view: function( model, seleted ) {
+		if ( seleted ) {
+			// Reset use_in_cart in the other angles
+			this.model.collection.each( function( item ) {
+				if ( item.id != model.id ) {
+					item.set( 'use_in_cart', false );
+				}
+			}.bind( this ) );
+		}
+	},
 });

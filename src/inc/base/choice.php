@@ -106,12 +106,12 @@ class Choice {
 		return $this->images[ $type ];
 	}
 
-	public function get_image_url( $type ){
+	public function get_image_url( $type = 'image' ){
 		$image = $this->get_image( $type );
 		return $image ? $image['url'] : '';
 	}
 	
-	public function get_image_id( $type ){
+	public function get_image_id( $type = 'image' ){
 		$image = $this->get_image( $type );
 		return $image ? $image['id'] : '';
 	}
