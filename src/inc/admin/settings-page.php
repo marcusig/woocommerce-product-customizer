@@ -732,6 +732,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'loading_configurator_message',
+				__( 'Loading message (displayed when the configurator is loading, in inline mode)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'loading_configurator_message',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Loading the configurator...', 'product-configurator-for-woocommerce' )
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
