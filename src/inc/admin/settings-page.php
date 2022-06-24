@@ -58,7 +58,14 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'mc_max_items_number',
 				'syd_account_creation_url',
 				'syd_button_label',
-				'configuration_costs_label'
+				'configuration_costs_label',
+				'reset_configuration_label',
+				'edit_configuration_label',
+				'edit_item_in_cart',
+				'configuration_cart_meta_label',
+				'loading_configurator_message',
+				'download_config_image',
+				'view_configuration',
 			] );
 
 			$registered_fields = [];
@@ -677,6 +684,10 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			/*
+				LABELS
+			*/
+
 			add_settings_section(
 				'labels',
 				__( 'Other labels', 'product-configurator-for-woocommerce' ), 
@@ -717,6 +728,30 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				[ 
 					'setting_name' => 'edit_item_in_cart',
 					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Edit item in cart', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'download_config_image', 
+				__( 'Download configuration image', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'labels',
+				[ 
+					'setting_name' => 'download_config_image',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Download configuration image', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'view_configuration', 
+				__( 'View configuration', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'labels',
+				[ 
+					'setting_name' => 'view_configuration',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'View configuration', 'product-configurator-for-woocommerce' )
 				]
 			);
 
