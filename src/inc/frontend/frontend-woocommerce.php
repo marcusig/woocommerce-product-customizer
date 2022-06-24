@@ -200,7 +200,7 @@ class Frontend_Woocommerce {
 		$data_attributes = array( 
 			'price' => $this->product->get_product_price( $product_id ),
 			'product_id' => $product_id,
-			'loading' => __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ),
+			'loading' => mkl_pc( 'settings' )->get( 'loading_configurator_message', __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ) ),
 		);
 
 		if ( isset( $atts[ 'product_id' ] ) ) {

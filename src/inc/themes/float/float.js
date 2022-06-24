@@ -35,7 +35,9 @@
 			view.$el.find( '.layer_choices' ).first().show();
 			// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 		} else {
-			view.$el.find( '.layer_choices' ).first().delay(40).slideDown(200);
+			view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { step: function() {
+				view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
+			} } );
 		}
 			
 	} );

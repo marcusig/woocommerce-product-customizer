@@ -17,10 +17,14 @@
 	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/wsb', function( where ) {
 		return 'in';
 	} );
+
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/wsb', function( view ) {
 		if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
-		view.$el.find( '.layer_choices' ).first().slideDown(200);
+		view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { step: function() {
+			view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
+		} } );
 	} );
+
 	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/wsb', function( view ) {
 		if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
 		view.$el.find( '.layer_choices' ).first().slideUp(200);

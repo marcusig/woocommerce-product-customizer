@@ -80,13 +80,17 @@ class Languages {
 	 * @return array
 	 */
 	public function get_languages() {
+		static $languages;
+		if ( $languages ) return $languages;
 		if ( $this->website_is_multilingual() && 'wpml' === $this->ml_plugin ) {
 			global $sitepress;
-			return array_keys( $sitepress->get_active_languages() );
+			$languages = array_keys( $sitepress->get_active_languages() );
+			return $languages;
 		}
 
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
-			return pll_languages_list();
+			$languages = pll_languages_list();
+			return $languages;
 		}
 
 		return [];
@@ -98,13 +102,17 @@ class Languages {
 	 * @return string|false
 	 */
 	public function get_default_language() {
+		static $default_language;
+		if ( $default_language ) return $default_language;
 		if ( $this->website_is_multilingual() && 'wpml' === $this->ml_plugin ) {
 			global $sitepress;
-			return $sitepress->get_default_language();
+			$default_language = $sitepress->get_default_language();
+			return $default_language;
 		}
 
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
-			return pll_default_language();
+			$default_language = pll_default_language();
+			return $default_language;
 		}
 
 		return false;
