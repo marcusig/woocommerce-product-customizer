@@ -343,6 +343,7 @@ class Frontend_Woocommerce {
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
+					'save_current' => mkl_pc( 'settings')->get( 'use_current_angle_in_cart_image' ),
 				]
 			) ),
 		);

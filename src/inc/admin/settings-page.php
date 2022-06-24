@@ -440,6 +440,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'use_current_angle_in_cart_image',
+				__( 'Use the active angle to generate the image in the cart', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'use_current_angle_in_cart_image',
+				]
+			);
+
 			if ( ! Utils::check_image_requirements() ) {
 				add_settings_field(
 					'image_warning',

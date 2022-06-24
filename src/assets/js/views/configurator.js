@@ -1192,7 +1192,11 @@ PC.options = PC.options || {};
 			var is_required = parseInt( model.get( 'required' ) );
 			var default_selection = model.get( 'default_selection' ) || 'select_first';
 			var type = model.get( 'type' );
-			var angle = PC.fe.angles.findWhere( 'use_in_cart', true );
+			if ( PC.fe.config.angles.save_current ) {
+				var angle = PC.fe.angles.findWhere( 'active', true );
+			} else {
+				var angle = PC.fe.angles.findWhere( 'use_in_cart', true );
+			}
 			if ( ! angle ) {
 				angle = PC.fe.angles.first();
 			}
