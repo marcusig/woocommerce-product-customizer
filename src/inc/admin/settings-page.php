@@ -120,7 +120,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
 				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),
 				'tools' => __( 'Tools', 'product-configurator-for-woocommerce' ),
-				'labels' => __( 'Labels', 'product-configurator-for-woocommerce' ),
 			], $active );
 			?>
 			<div class="wrap">
@@ -151,7 +150,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 							if ( isset( $wp_settings_sections[ 'mlk_pc_settings' ] ) ) {
 														
 								foreach ( (array) $wp_settings_sections[ 'mlk_pc_settings' ] as $section ) {
-									if ( 'labels' == $section['id'] ) continue;
+									// if ( 'labels' == $section['id'] ) continue;
 									echo '<section id="' . $section['id'] .'">';
 										if ( $section['title'] ) {
 											echo "<h2>{$section['title']}</h2>\n";
@@ -175,40 +174,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						?>
 					</form>
 				</div>
-				<div class="mkl-settings-content" data-content="labels">
-					<form method="post" action="options.php">
-						<?php
-							settings_fields( 'mlk_pc_settings' );
-							
-							global $wp_settings_sections, $wp_settings_fields;
 
-							if ( isset( $wp_settings_sections[ 'mlk_pc_settings' ] ) ) {
-														
-								foreach ( (array) $wp_settings_sections[ 'mlk_pc_settings' ] as $section ) {
-									if ( 'labels' != $section['id'] ) continue;
-									echo '<section id="' . $section['id'] .'">';
-										if ( $section['title'] ) {
-											echo "<h2>{$section['title']}</h2>\n";
-										}
-								
-										if ( $section['callback'] ) {
-											call_user_func( $section['callback'], $section );
-										}
-								
-										if ( ! isset( $wp_settings_fields ) || ! isset( $wp_settings_fields[ 'mlk_pc_settings' ] ) || ! isset( $wp_settings_fields[ 'mlk_pc_settings' ][ $section['id'] ] ) ) {
-											continue;
-										}
-										echo '<table class="form-table" role="presentation">';
-										do_settings_fields( 'mlk_pc_settings', $section['id'] );
-										echo '</table>';
-									echo '</section>';
-								}
-								submit_button();
-							}
-
-						?>
-					</form>
-				</div>
 				<div class="mkl-settings-content" data-content="addons">
 					<h2><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></h2>
 					<?php $this->display_addons(); ?>

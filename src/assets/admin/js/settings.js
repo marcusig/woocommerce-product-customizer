@@ -135,6 +135,22 @@
 	var settings = {
 		fetched_products: false,
 		init: function() {
+			
+			// Add the sections submenu
+			var titles = [];
+			$( 'div[data-content="settings"] section' ).each( function( ind, el ) {
+				var title = $( el ).find( 'h2' ).first().text();
+				if ( title ) {
+					titles.push( '<a href="#' + $( el ).prop( 'id' ) +'">' + title + '</a>' );
+				}
+			} );
+			if ( titles.length ) {
+				var $submenu = $( '<div class="submenu" />' );
+				$submenu.html( titles.join( ' | ' ) );
+				$submenu.prependTo( $( '.mkl-settings-content' ) );
+			}
+
+			// Primary tabs nav
 			$( '.mkl-nav-tab-wrapper a' ).on( 'click', function( e ) {
 				e.preventDefault();
 				$( '.mkl-nav-tab-wrapper a' ).removeClass( 'nav-tab-active' );
@@ -151,6 +167,7 @@
 				$( '.mkl-nav-tab-wrapper a' ).first().trigger( 'click' );
 			}
 
+			// Cache purging
 			$('.mkl-settings-purge-config-cache').on( 'click', function( e ) {
 				var btn = $( this );
 				btn.prop( 'disabled', 'disabled' );
@@ -162,6 +179,7 @@
 				} );
 			} );
 
+			// Toggle image visibility in the library
 			$('.mkl-settings-toggle-images-in-library').on( 'click', function( e ) {
 				var btn = $( this );
 				btn.prop( 'disabled', 'disabled' );
@@ -175,6 +193,7 @@
 				} );
 			} );
 
+			// Fix images
 			$('.mkl-settings-scan-images').on( 'click', function( e ) {
 				var btn = $( this );
 				$id = $( '#configurable-products' ).val();
@@ -212,7 +231,6 @@
 				action: 'mkl_pc_get_configurable_products',
 				security: $( '#_wpnonce' ).val(),
 			}).done( function( response ) {
-				console.log( response );
 				if ( response && response.length ) {
 					var options = $( '#configurable-products' ).select2();
 					_.each( response, function( item, i ) {
