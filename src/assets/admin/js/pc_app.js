@@ -108,7 +108,7 @@ PC.toJSON = function( item ) {
 
 				}.bind( this ) );
 			} else {
-				if ( options.saved_all ) options.saved_all();
+				if ( options && options.saved_all ) options.saved_all();
 			}
 
 			// if ( this.saving == 0 ) this.admin.close();
