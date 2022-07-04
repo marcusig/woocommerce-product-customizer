@@ -661,6 +661,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'open_first_layer',
+				__( 'Automatically open the first layer when starting the configurator', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'open_first_layer',
+				]
+			);
+
 			/*
 				LABELS
 			*/

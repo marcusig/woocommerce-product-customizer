@@ -154,6 +154,13 @@ PC.actionParameter = 'pc_get_data';
 			}
 		}, 20 );
 
+
+		if ( PC_config.config.open_first_layer ) {
+			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
+				configurator.$( '.layer-item:visible' ).first().trigger( 'click' );
+			}, 60 );
+		}
+
 		/**
 		 * Launch the configurator inline
 		 */

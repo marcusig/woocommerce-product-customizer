@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 = 1.2.34 - 28/Jun/2022 =
 
+* TWEAK: Possibility to automatically open the first layer
 * TWEAK: Added labels in the settings
 * TWEAK: Added automatic scroll for WSB and Float when opening a layer
 * TWEAK: Possibility to force the add to cart form in the shortcode, to allow using a different product's shortcode on a single product page, by adding `force_form` to the shortcode.

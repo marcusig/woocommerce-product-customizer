@@ -340,6 +340,7 @@ class Frontend_Woocommerce {
 				'sku_mode' => mkl_pc( 'settings')->get( 'sku_mode', 'individual' ),
 				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post->ID ),
 				'no_toggle' => false,
+				'open_first_layer' => ( bool ) mkl_pc( 'settings')->get( 'open_first_layer', false ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
