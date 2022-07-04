@@ -81,7 +81,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 				<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
 			</div>
-			<div class="mkl-list layers ui-sortable">
+			<div class="mkl-list layers ui-sortable sortable-list">
 			</div>
 			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
 				<div class="order-toolbar">
