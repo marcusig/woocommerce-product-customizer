@@ -130,6 +130,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
 				<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
 				</ol>
+				<?php do_action( 'mkl_pc_admin_instructions_after', $this->ID ); ?>
 			</div>
 			<div class="more">
 				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php _e( 'Do you need more functionality?', 'product-configurator-for-woocommerce') ; ?></h2>
