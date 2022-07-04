@@ -46,6 +46,12 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 			return apply_filters( 'mkl/pc/theme_id', $this->get( 'mkl_pc__theme' ) );
 		}
 
+		public function get_label( $setting, $default ) {
+			$label = $this->get( $setting );
+			if ( ! $label ) return $default;
+			return $label;
+		}
+
 		/**
 		 * Set a setting
 		 *

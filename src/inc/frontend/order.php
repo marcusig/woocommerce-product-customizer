@@ -53,14 +53,14 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$config = wc_get_order_item_meta( $item_id, '_configurator_data_raw', true );
 			if ( ! $config ) return;
 			$view_link = add_query_arg( array( 'load_config_from_order' => $item_id, 'open_configurator'=> 1 ), get_permalink( $item->get_product_id() ) );
-			echo '<div class="configuration-link"><a href="' . esc_url( $view_link ) . '" target="_blank">' . mkl_pc( 'settings' )->get( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
+			echo '<div class="configuration-link"><a href="' . esc_url( $view_link ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
 		}
 
 		public function add_image_download_link( $item_id, $item, $order ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) || apply_filters( 'mkl_pc/do_not_show_image_download_link', false ) ) return;
 			$config_image = $this->get_order_item_image( $item, 'url' );
 			if ( $config_image && 'blank.gif' !== substr( $config_image, -9 ) ) {
-				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . mkl_pc( 'settings' )->get( 'download_config_image', __( 'Download configuration image', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
+				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'download_config_image', __( 'Download configuration image', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
 			}
 		}
 
@@ -102,7 +102,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					}
 	
 					if ( ! empty( $order_meta_for_configuration ) ) {
-						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', mkl_pc( 'settings' )->get( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $item, $cart_item_key, $values, $order ),  $this->get_choices_html( $order_meta_for_configuration ), false );
+						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $item, $cart_item_key, $values, $order ),  $this->get_choices_html( $order_meta_for_configuration ), false );
 					}
 					do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 				}

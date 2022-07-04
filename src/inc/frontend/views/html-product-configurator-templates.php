@@ -78,7 +78,7 @@ function mkl_pc_frontend_configurator_footer_add_reset_button() {
 	?>
 		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 			<?php do_action( 'mkl_pc/reset_button/before_label' ); ?>
-			<span><?php echo mkl_pc( 'settings' )->get( 'reset_configuration_label', __( 'Reset configuration', 'product-configurator-for-woocommerce' ) ); ?></span>
+			<span><?php echo mkl_pc( 'settings' )->get_label( 'reset_configuration_label', __( 'Reset configuration', 'product-configurator-for-woocommerce' ) ); ?></span>
 		</button>
 	<?php
 }
