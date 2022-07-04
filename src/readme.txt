@@ -112,7 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.2.34 - 28/Jun/2022 =
+= 1.2.34 - 4/Jul/2022 =
 
 * TWEAK: Possibility to automatically open the first layer
 * TWEAK: Added labels in the settings

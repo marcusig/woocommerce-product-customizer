@@ -168,7 +168,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:61, src/inc/admin/settings-page.php:725, src/inc/admin/settings-page.php:731, src/inc/frontend/order.php:56
+#: src/inc/admin/order.php:61, src/inc/admin/settings-page.php:736, src/inc/admin/settings-page.php:742, src/inc/frontend/order.php:56
 msgid "View configuration"
 msgstr ""
 
@@ -200,55 +200,55 @@ msgstr ""
 msgid "add the Images for each of your choices in %sContent%s"
 msgstr ""
 
-#: src/inc/admin/product.php:135
+#: src/inc/admin/product.php:136
 msgid "Do you need more functionality?"
 msgstr ""
 
-#: src/inc/admin/product.php:136
+#: src/inc/admin/product.php:137
 msgid "Check out the available addons and themes."
 msgstr ""
 
-#: src/inc/admin/product.php:137
+#: src/inc/admin/product.php:138
 msgid "Do you like the plugin?"
 msgstr ""
 
-#: src/inc/admin/product.php:138
+#: src/inc/admin/product.php:139
 msgid "Give it a review on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:139
+#: src/inc/admin/product.php:140
 msgid "Do you think it could be improved?"
 msgstr ""
 
-#: src/inc/admin/product.php:140
+#: src/inc/admin/product.php:141
 msgid "Start a support topic on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:225
+#: src/inc/admin/product.php:226
 msgid "Select a picture"
 msgstr ""
 
-#: src/inc/admin/product.php:226, src/inc/admin/views/html-product-configurator-templates.php:393
+#: src/inc/admin/product.php:227, src/inc/admin/views/html-product-configurator-templates.php:393
 msgid "Choose"
 msgstr ""
 
-#: src/inc/admin/product.php:227
+#: src/inc/admin/product.php:228
 msgid "New Layer Name"
 msgstr ""
 
-#: src/inc/admin/product.php:228
+#: src/inc/admin/product.php:229
 msgid "New Angle Name"
 msgstr ""
 
-#: src/inc/admin/product.php:229
+#: src/inc/admin/product.php:230
 msgid "New Choice Name"
 msgstr ""
 
-#: src/inc/admin/product.php:269
+#: src/inc/admin/product.php:270
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:284
+#: src/inc/admin/product.php:285
 msgid "Edit configurator layers"
 msgstr ""
 
@@ -356,7 +356,7 @@ msgstr ""
 msgid "Configure button label"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:263, src/inc/admin/settings-page.php:683, src/inc/admin/settings-page.php:695, src/inc/admin/settings-page.php:707, src/inc/admin/settings-page.php:719, src/inc/admin/settings-page.php:731, src/inc/admin/settings-page.php:743, src/inc/admin/settings-page.php:755
+#: src/inc/admin/settings-page.php:263, src/inc/admin/settings-page.php:694, src/inc/admin/settings-page.php:706, src/inc/admin/settings-page.php:718, src/inc/admin/settings-page.php:730, src/inc/admin/settings-page.php:742, src/inc/admin/settings-page.php:754, src/inc/admin/settings-page.php:766
 msgid "Default:"
 msgstr ""
 
@@ -552,71 +552,75 @@ msgstr ""
 msgid "Show a reset button in the configurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:670
+#: src/inc/admin/settings-page.php:666
+msgid "Automatically open the first layer when starting the configurator"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:681
 msgid "Other labels"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:677, src/inc/admin/settings-page.php:683, src/inc/frontend/views/html-product-configurator-templates.php:81
+#: src/inc/admin/settings-page.php:688, src/inc/admin/settings-page.php:694, src/inc/frontend/views/html-product-configurator-templates.php:81
 msgid "Reset configuration"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:689, src/inc/admin/settings-page.php:695, src/inc/frontend/cart.php:287
+#: src/inc/admin/settings-page.php:700, src/inc/admin/settings-page.php:706, src/inc/frontend/cart.php:287
 msgid "Edit configuration"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:701, src/inc/admin/settings-page.php:707, src/inc/frontend/product.php:209
+#: src/inc/admin/settings-page.php:712, src/inc/admin/settings-page.php:718, src/inc/frontend/product.php:209
 msgid "Edit item in cart"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:713, src/inc/admin/settings-page.php:719, src/inc/frontend/order.php:63
+#: src/inc/admin/settings-page.php:724, src/inc/admin/settings-page.php:730, src/inc/frontend/order.php:63
 msgid "Download configuration image"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:737
+#: src/inc/admin/settings-page.php:748
 msgid "Configuration (meta label in the cart)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:743, src/inc/frontend/cart.php:159, src/inc/frontend/order.php:105
+#: src/inc/admin/settings-page.php:754, src/inc/frontend/cart.php:159, src/inc/frontend/order.php:105
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:749
+#: src/inc/admin/settings-page.php:760
 msgid "Loading message (displayed when the configurator is loading, in inline mode)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:755, src/inc/frontend/frontend-woocommerce.php:203
+#: src/inc/admin/settings-page.php:766, src/inc/frontend/frontend-woocommerce.php:203
 msgid "Loading the configurator..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:774
+#: src/inc/admin/settings-page.php:785
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:870
+#: src/inc/admin/settings-page.php:881
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:871
+#: src/inc/admin/settings-page.php:882
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:931, src/inc/admin/settings-page.php:967
+#: src/inc/admin/settings-page.php:942, src/inc/admin/settings-page.php:978
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:933, src/inc/admin/settings-page.php:969
+#: src/inc/admin/settings-page.php:944, src/inc/admin/settings-page.php:980
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:943
+#: src/inc/admin/settings-page.php:954
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:944
+#: src/inc/admin/settings-page.php:955
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:953
+#: src/inc/admin/settings-page.php:964
 msgid "Select the theme"
 msgstr ""
 
