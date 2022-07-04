@@ -51,7 +51,13 @@ PC.choice = Backbone.Model.extend({
 		var m = this.attributes.images.get( angle_id );
 		return m ? m.attributes[image][what] : ''; 
 	},
-
+	has_image: function() {
+		var count = 0;
+		this.get( 'images' ).each( function( item ) {
+			if ( item.get( 'image' ) && item.get( 'image' ).url ) count++;
+		} );
+		return count;
+	},
 	parse: function( response ) {
 		// console.log('choice model parse:', response);
 	},

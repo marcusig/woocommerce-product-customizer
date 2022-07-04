@@ -865,9 +865,14 @@ PC.options = PC.options || {};
 		},
 
 		add_single_choice: function( model ) {
-			var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, model, this );
-			var layer = new View( { model: model, parent: this } ); 
-			this.$layers.append( layer.$el );
+			if ( model.has_image() || wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, model ) ) {
+				var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, model, this );
+				var layer = new View( { model: model, parent: this } ); 
+				this.$layers.append( layer.$el );
+			} else {
+				layer = false;
+			}
+
 			wp.hooks.doAction( 'PC.fe.viewer.item.added', layer, this );
 			if ( model.get( 'custom_html' ) ) {
 				var html_layer = new PC.fe.views.viewer_layer_html( { model: model, layer: layer, parent: this } );
