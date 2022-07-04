@@ -134,7 +134,7 @@ PC.actionParameter = 'pc_get_data';
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 
-			$( 'form.cart' ).find('button').prop( 'disabled', false ); 
+			$( 'form.cart button' ).prop( 'disabled', false ); 
 
 			$( document ).on( 'change', 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]', function(e) {
 				var q = $(this).val();
