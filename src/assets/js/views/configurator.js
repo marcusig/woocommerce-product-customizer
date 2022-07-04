@@ -672,17 +672,22 @@ PC.options = PC.options || {};
 				thumbnail: this.model.get_image( 'thumbnail' ),
 				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
 			}, this.options.model.attributes );
+			
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
+
+			if ( this.$( '.out-of-stock' ).length ) {
+				this.$el.addClass( 'out-of-stock' );
+			}
+
+			if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) && this.$( '.out-of-stock' ).length ) {
+				if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
+					this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
+				}
+			}
+
 			if ( window.tippy ) {
 				
 				var description = this.get_description();
-
-				if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) && this.$( '.out-of-stock' ).length ) {
-					this.$el.addClass( 'out-of-stock' );
-					if ( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).length ) {
-						this.$( '.mkl-pc-thumbnail' ).append( $( '#tmpl-mkl-pc-configurator-color-out-of-stock' ).html() );
-					}
-				}
 
 				/**
 				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/

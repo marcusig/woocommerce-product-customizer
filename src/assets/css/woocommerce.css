@@ -84,3 +84,8 @@ table span.choice-thumb.color {
     border-radius: 3px;
     color: red;
 }
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choices-list li.out-of-stock--no-more-choice {
+    width: 100%;
+    text-align: center;
+}
