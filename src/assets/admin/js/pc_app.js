@@ -158,6 +158,8 @@ PC.toJSON = function( item ) {
 
 			options = options || {};
 			options.context = this;
+			options.timeout = 24000;
+			
 			// Set the action and ID.
 			options.data = _.extend( options.data || {}, {
 				action:  PC.setActionParameter,
