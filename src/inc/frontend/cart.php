@@ -156,7 +156,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				}
 
 				$data[] = array( 
-					'key' => mkl_pc( 'settings' )->get( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
+					'key' => mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
 					'value' => $value
 				);				
 
