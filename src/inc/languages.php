@@ -22,6 +22,7 @@ class Languages {
 		add_filter( 'mkl_pc_js_config', [ $this, 'add_current_language_to_js' ] );
 		add_filter( 'mkl_pc_db_fields', [ $this, 'add_sanitize_methods' ], 20, 2 );
 		add_action( 'wpml_after_copy_custom_field', [ $this, 'purge_transient_after_translation_sync' ], 20, 3 );
+		add_filter( 'mkl_pc_item_meta', [ $this, 'translate_cart_data' ], 2, 4 );
 	}
 
 	/**
@@ -245,5 +246,28 @@ class Languages {
 		
 
 		return $config;
+	}
+
+	/**
+	 * Override the name and label with the translated one, if applicable
+	 *
+	 * @param array $meta
+	 * @param object $layer
+	 * @param object $product
+	 * @param string $cart_item_key
+	 * @return array
+	 */
+	public function translate_cart_data( $meta, $layer, $product, $cart_item_key ) {
+		if ( $this->website_is_multilingual() && $this->get_current_language() !== $this->get_default_language() ) {
+			if ( $label_translation = $layer->get_layer( 'name_' . $this->get_current_language() ) ) {
+				$meta['label'] = $label_translation;
+			}
+			if ( $value_translation = $layer->get_choice( 'name_' . $this->get_current_language() ) ) {
+				$meta['value'] = $value_translation;
+			}
+		}
+
+		return $meta;
+
 	}
 }

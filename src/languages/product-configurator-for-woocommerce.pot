@@ -112,11 +112,11 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: src/inc/languages.php:185, src/inc/languages.php:185, src/inc/languages.php:172, src/inc/languages.php:172
+#: src/inc/languages.php:186, src/inc/languages.php:186, src/inc/languages.php:173, src/inc/languages.php:173
 msgid "Name"
 msgstr ""
 
-#: src/inc/languages.php:190, src/inc/languages.php:190, src/inc/languages.php:177, src/inc/languages.php:177, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:86
+#: src/inc/languages.php:191, src/inc/languages.php:191, src/inc/languages.php:178, src/inc/languages.php:178, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:86
 msgid "Description"
 msgstr ""
 
