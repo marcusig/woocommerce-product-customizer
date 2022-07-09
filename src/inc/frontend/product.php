@@ -145,7 +145,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			global $product;
 			if ( ! isset( $this->options['show_price_in_configurator'] ) || 'on' != $this->options['show_price_in_configurator'] ) return;
 		?>
-			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $product ? $product->get_price_html() : ''; ?><# } #></span>
+			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $product && is_a( $product, 'WC_Product' ) ? $product->get_price_html() : ''; ?><# } #></span>
 		<?php 
 		}
 
@@ -154,7 +154,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product, $mkl_product;
-			if ( ! $product && $mkl_product ) {
+			if ( ( ! $product || ! is_a( $product, 'WC_Product' ) ) && $mkl_product ) {
 				$product = $mkl_product;
 			}
 			$add_to_cart = $this->get_add_to_cart_label();
