@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix delete configuration method
 * TWEAK: Change language logic for the cart and checkout
 
 = 1.2.34 - 4/Jul/2022 =
