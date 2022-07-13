@@ -200,7 +200,7 @@ class Configuration {
 				return false;
 			}
 			// $author_id = get_author
-			if ( current_user_can( 'delete_posts' ) || $this->post->post_author ===  $user_id ) {
+			if ( current_user_can( 'delete_posts' ) || (int) $this->post->post_author === $user_id ) {
 				wp_delete_post( $this->ID );
 				return true;
 			}
