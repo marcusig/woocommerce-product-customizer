@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.34
+Stable tag: 1.2.35
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -112,6 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.35 - 17/Jul/2022 =
+
+* TWEAK: Added automatic scroll setting to make automatic scroll optional on WSB and Float
 * TWEAK: Fix static image classes
 * TWEAK: Fix delete configuration method
 * TWEAK: Change language logic for the cart and checkout
@@ -421,4 +424,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.34 Various improvements, added the public strings as settings
+* 1.2.35 Various improvements and fixes
