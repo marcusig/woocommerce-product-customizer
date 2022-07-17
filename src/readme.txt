@@ -112,6 +112,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix static image classes
 * TWEAK: Fix delete configuration method
 * TWEAK: Change language logic for the cart and checkout
 

@@ -918,14 +918,28 @@ PC.options = PC.options || {};
 		render: function() {
 			var img = this.model.get_image();
 			// Default to a transparent image
-			if (!img) img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+			if ( ! img ) img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 			wp.hooks.doAction( 'PC.fe.viewer.static_layer.render', this );
 
-			this.parent.imagesLoading ++;
-			this.parent.$el.addClass('is-loading-image');
-			this.$el.addClass( 'active static loading' );
-			this.el.src = img
+			var classes = [ 'active', 'static', 'loading' ];
+			
+			classes.push( this.model.collection.getType() );
+			
+			var layer_class = PC.fe.layers.get( this.model.get( 'layerId' ) ).get( 'class_name' );
+			if ( layer_class ) classes.push( layer_class );
+			if ( this.model.get( 'class_name' ) ) classes.push( this.model.get( 'class_name' ) );
+			
+			/**
+			 * Filter the classes applied to the image
+			 */
+			classes = wp.hooks.applyFilters( 'PC.fe.viewer.static_layer.classes', classes, this );
+			this.$el.addClass( classes.join( ' ' ) );
+			if ( img ) {
+				this.el.src = img;
+				this.parent.imagesLoading ++;
+				this.parent.$el.addClass('is-loading-image');
+			}
 			this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
 
 			return this.$el; 
