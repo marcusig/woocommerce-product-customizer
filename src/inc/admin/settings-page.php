@@ -672,6 +672,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'auto_scroll',
+				__( 'Automatically scroll to the top of the opened layer (Supported themes only) ', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'auto_scroll',
+				]
+			);
+
 			/*
 				LABELS
 			*/

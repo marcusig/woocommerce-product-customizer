@@ -33,10 +33,11 @@
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/float', function( view ) {
 		if ( PC.fe.inline ) {
 			view.$el.find( '.layer_choices' ).first().show();
+			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 		} else {
 			view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { step: function() {
-				view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
+				if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			} } );
 		}
 			

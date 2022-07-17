@@ -17,6 +17,7 @@ class Update {
 			'1.2.9' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.2.12' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.2.17' => [ [ $this, 'set_default_setting_value_v1_2_17' ] ],
+			'1.2.35' => [ [ $this, 'set_default_setting_value_v1_2_35' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -77,6 +78,17 @@ class Update {
 	private function set_default_setting_value_v1_2_17() {
 		$options = get_option( 'mkl_pc__settings' );
 		$options['show_active_choice_in_layer'] = true;
+		update_option( 'mkl_pc__settings', $options );
+	}
+
+	/**
+	 * Set the default 'show_active_choice_in_layer' option
+	 *
+	 * @return void
+	 */
+	private function set_default_setting_value_v1_2_35() {
+		$options = get_option( 'mkl_pc__settings' );
+		$options['auto_scroll'] = true;
 		update_option( 'mkl_pc__settings', $options );
 	}
 
