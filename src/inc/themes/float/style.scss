@@ -512,8 +512,8 @@ $inner_space: 1em;
 						border: none;
 						box-shadow: 0 15px 30px rgba(63, 67, 74, .10);
 						border-radius: 8px;
-						-webkit-animation: slide-in-top 0.2s ease-out;
-						animation: slide-in-top 0.2s ease-out;
+						// -webkit-animation: slide-in-top 0.2s ease-out;
+						// animation: slide-in-top 0.2s ease-out;
 
 						button {
 							border: none;
@@ -1591,6 +1591,12 @@ a.save-your-design svg {
 a.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path {
     fill: var(--mkl_pc_color-primary);
+}
+
+/* hide_in_configurator */
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.hide_in_configurator.layers-list-item {
+    display: none !important;
 }
 
 /* Divi fix */

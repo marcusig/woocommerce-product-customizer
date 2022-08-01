@@ -533,6 +533,10 @@ $inner_space: 1em;
 						// -webkit-animation: slide-in-left 1.0s ease-out;
 						// animation: slide-in-left 1.0s ease-out;
 
+						&.hide_in_configurator {
+							display: none !important;
+						}
+						
 						button {
 							display: block;
 							width: 100%;

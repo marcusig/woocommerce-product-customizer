@@ -226,6 +226,23 @@
 								display: block;
 							}
 						}
+
+						&.has-text-field {
+							.text-field {
+								display: none;
+							}
+							&.active {
+								height: auto;
+								min-height: 0;
+								button {
+									height: auto;
+									min-height: 0;
+								}
+								.text-field {
+									display: block;
+								}	
+							}
+						}
 					}
 					li.is-group {
 						width: 100%;
@@ -542,6 +559,9 @@
 			transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
 			li {
 				min-height: var( --mkl_pc_layer_min_height );
+				&.layers-list-item.hide_in_configurator {
+					display: none !important;
+				}
 			}
 			button {
 				height: 100%;

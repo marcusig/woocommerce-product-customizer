@@ -498,7 +498,15 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				'show_group_label_in_cart' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'hide_in_cart' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'hide_in_configurator' => [ 
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],

@@ -153,6 +153,10 @@
 				// border-radius: 8px;
 				-webkit-animation: slide-in-top 0.2s ease-out;
 				animation: slide-in-top 0.2s ease-out;
+				
+				&.hide_in_configurator, ul li.hide_in_configurator {
+					display: none !important;
+				}
 
 				button {
 					border: none;
