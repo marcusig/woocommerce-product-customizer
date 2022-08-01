@@ -1048,6 +1048,15 @@ PC.options = PC.options || {};
 		},
 		toggle_current_layer_class: function( layer, new_val ) {
 			this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) );
+		},
+		preload_image: function( e ) {
+			if ( this.model.get( 'active' ) ) return;
+			if ( ! this.model.get_image() || this.el.src == this.model.get_image() ) return;
+			
+			this.render( true );
+			// if ( ! src ) return;
+			// var img = new Image();
+			// img.src = src;
 		}
 	}); 
 
@@ -1217,6 +1226,7 @@ PC.options = PC.options || {};
 			var is_required = parseInt( model.get( 'required' ) );
 			var default_selection = model.get( 'default_selection' ) || 'select_first';
 			var type = model.get( 'type' );
+			if ( 'form' == type ) is_required = false;
 			if ( PC.fe.config.angles.save_current ) {
 				var angle = PC.fe.angles.findWhere( 'active', true );
 			} else {
