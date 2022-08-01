@@ -56,59 +56,59 @@ msgstr ""
 msgid "Welcome to the Product Configurator "
 msgstr ""
 
-#: src/inc/db.php:54
+#: src/inc/db.php:55
 msgid "Layers"
 msgstr ""
 
-#: src/inc/db.php:55
+#: src/inc/db.php:56
 msgid "Layers of the product "
 msgstr ""
 
-#: src/inc/db.php:59, src/inc/db.php:77, src/inc/db.php:95, src/inc/admin/views/html-product-configurator-templates.php:140, src/inc/admin/views/html-product-configurator-templates.php:176, src/inc/admin/views/html-product-configurator-templates.php:282, src/inc/admin/views/html-product-configurator-templates.php:320, src/inc/admin/views/html-product-configurator-templates.php:394
+#: src/inc/db.php:60, src/inc/db.php:79, src/inc/db.php:98, src/inc/admin/views/html-product-configurator-templates.php:140, src/inc/admin/views/html-product-configurator-templates.php:176, src/inc/admin/views/html-product-configurator-templates.php:282, src/inc/admin/views/html-product-configurator-templates.php:320, src/inc/admin/views/html-product-configurator-templates.php:394
 msgid "Cancel"
 msgstr ""
 
-#: src/inc/db.php:63, src/inc/db.php:81, src/inc/db.php:99, src/inc/admin/views/html-product-configurator-templates.php:66, src/inc/admin/views/html-product-configurator-templates.php:509
+#: src/inc/db.php:64, src/inc/db.php:83, src/inc/db.php:102, src/inc/admin/views/html-product-configurator-templates.php:66, src/inc/admin/views/html-product-configurator-templates.php:509
 msgid "Save"
 msgstr ""
 
-#: src/inc/db.php:67
+#: src/inc/db.php:68
 msgid "Define the layers the product is composed of. "
 msgstr ""
 
-#: src/inc/db.php:72
+#: src/inc/db.php:74
 msgid "Views"
 msgstr ""
 
-#: src/inc/db.php:73
+#: src/inc/db.php:75
 msgid "Angles of the product "
 msgstr ""
 
-#: src/inc/db.php:85
+#: src/inc/db.php:87
 msgid "Define the view angles, if you want the client to be able to switch between them. "
 msgstr ""
 
-#: src/inc/db.php:90
+#: src/inc/db.php:93
 msgid "Content"
 msgstr ""
 
-#: src/inc/db.php:91
+#: src/inc/db.php:94
 msgid "Contents "
 msgstr ""
 
-#: src/inc/db.php:103
+#: src/inc/db.php:106
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
-#: src/inc/db.php:296
+#: src/inc/db.php:301
 msgid "Import / Export"
 msgstr ""
 
-#: src/inc/db.php:297
+#: src/inc/db.php:302
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:298, src/inc/admin/views/html-product-configurator-templates.php:415
+#: src/inc/db.php:303, src/inc/admin/views/html-product-configurator-templates.php:415
 msgid "Export"
 msgstr ""
 
@@ -116,7 +116,7 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-#: src/inc/languages.php:192, src/inc/languages.php:192, src/inc/languages.php:179, src/inc/languages.php:179, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:68, src/inc/admin/settings/layer.php:86
+#: src/inc/languages.php:192, src/inc/languages.php:192, src/inc/languages.php:179, src/inc/languages.php:179, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:75, src/inc/admin/settings/layer.php:86
 msgid "Description"
 msgstr ""
 
@@ -640,7 +640,7 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/cart.php:143, src/inc/frontend/order.php:99, src/inc/admin/settings/choice.php:44
+#: src/inc/frontend/cart.php:143, src/inc/frontend/order.php:99, src/inc/admin/settings/choice.php:50
 msgid "SKU"
 msgstr ""
 
@@ -664,7 +664,7 @@ msgstr ""
 msgid "Angle Name"
 msgstr ""
 
-#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:127, src/inc/admin/settings/layer.php:156
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:134, src/inc/admin/settings/layer.php:156
 msgid "CSS Class"
 msgstr ""
 
@@ -676,51 +676,55 @@ msgstr ""
 msgid "Use as group"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:49
+#: src/inc/admin/settings/choice.php:44
+msgid "Show group name in the cart / order"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:56
 msgid "Choice label"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:54
+#: src/inc/admin/settings/choice.php:61
 msgid "Color hex code"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:57
+#: src/inc/admin/settings/choice.php:64
 msgid "E.g. #EEFF00"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:63, src/inc/admin/settings/layer.php:81
+#: src/inc/admin/settings/choice.php:70, src/inc/admin/settings/layer.php:81
 msgid "Admin label"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:74
+#: src/inc/admin/settings/choice.php:81
 msgid "Custom html"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:78
+#: src/inc/admin/settings/choice.php:85
 msgid "Any content / HTML entered here will be added in the configurator viewer."
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:82
+#: src/inc/admin/settings/choice.php:89
 msgid "Set as default choice"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:88
+#: src/inc/admin/settings/choice.php:95
 msgid "Hide the layer in the cart if this choice is selected"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:94
+#: src/inc/admin/settings/choice.php:101
 msgid "Extra price"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:98
+#: src/inc/admin/settings/choice.php:105
 msgid "Extra Price is available as an addon"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:112, src/inc/admin/settings/layer.php:144
+#: src/inc/admin/settings/choice.php:119, src/inc/admin/settings/layer.php:144
 msgid "Automatic angle switch"
 msgstr ""
 
-#: src/inc/admin/settings/choice.php:122
+#: src/inc/admin/settings/choice.php:129
 msgid "Switch to"
 msgstr ""
 

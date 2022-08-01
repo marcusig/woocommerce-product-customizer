@@ -23,7 +23,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			// add_action( 'woocommerce_settings_' . sanitize_title( $this->settings_id ) . '_after', array( $this, 'wc_settings_after' ), 20 );
 			add_filter( 'plugin_action_links_' . MKL_PC_PLUGIN_BASE_NAME, array( $this, 'plugin_settings_link' ) );
 			add_action( 'update_option_mkl_pc__settings' , array( $this, 'updated_settings' ), 20 );
-			add_action( 'update_option_mkl_pc__settings', array( $this, 'wpml_register_translatable_strings' ), 10, 2 );
 		}
 
 		/**
@@ -34,52 +33,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		public function updated_settings() {
 			if ( ! isset( $_REQUEST['option_page'] ) || 'mlk_pc_settings' != $_REQUEST['option_page'] ) return;
 			mkl_pc( 'cache' )->purge();
-		}
-
-		/**
-		 * Add translatable strings to WPML String translation section
-		 *
-		 * @param array $old_value
-		 * @param array $options
-		 * @return void
-		 */
-		public function wpml_register_translatable_strings( $old_value, $options ) {
-			
-			global $sitepress, $wp_settings_fields;
-			if ( ! $sitepress ) return;
-			$settings = get_registered_settings();
-			if ( ! isset( $wp_settings_fields['mlk_pc_settings'] ) ) return;
-			$translatable_options = apply_filters( 'mkl_pc_translatable_settings', [
-				'mkl_pc__button_label',
-				'sku_glue',
-				'sku_label',
-				'mc_max_items_message',
-				'mc_max_items_message_global',
-				'mc_max_items_number',
-				'syd_account_creation_url',
-				'syd_button_label',
-				'configuration_costs_label',
-				'reset_configuration_label',
-				'edit_configuration_label',
-				'edit_item_in_cart',
-				'configuration_cart_meta_label',
-				'loading_configurator_message',
-				'download_config_image',
-				'view_configuration',
-			] );
-
-			$registered_fields = [];
-			foreach( $wp_settings_fields['mlk_pc_settings'] as $section ) {
-				foreach( $section as $field => $field_options ) {
-					if ( in_array( $field, $translatable_options ) ) {
-						do_action( 'wpml_register_single_string', 'Product Configurator settings', $field_options['title'], isset( $options[$field] ) ? $options[$field] : '' );
-						$registered_fields[$field] = $field_options['title'];
-					}
-				}
-			}
-			if ( ! empty( $registered_fields ) ) {
-				update_option( 'mkl_pc__wpml_registered_fields', $registered_fields );
-			}
 		}
 
 		/**

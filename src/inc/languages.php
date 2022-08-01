@@ -24,8 +24,58 @@ class Languages {
 		add_action( 'wpml_after_copy_custom_field', [ $this, 'purge_transient_after_translation_sync' ], 20, 3 );
 		add_filter( 'mkl_pc_item_meta', [ $this, 'translate_cart_data' ], 2, 4 );
 		add_filter( 'mkl_pc_order_item_meta', [ $this, 'translate_order_data' ], 2, 3 );
+		add_action( 'update_option_mkl_pc__settings', array( $this, 'register_translatable_settings' ), 10, 2 );
 	}
 
+	/**
+	 * Add translatable strings to WPML String translation section
+	 *
+	 * @param array $old_value
+	 * @param array $options
+	 * @return void
+	 */
+	public function register_translatable_settings( $old_value, $options ) {
+		
+		global $sitepress, $wp_settings_fields;
+		if ( ! $sitepress && ! function_exists( 'pll_register_string' ) ) return;
+		$settings = get_registered_settings();
+		if ( ! isset( $wp_settings_fields['mlk_pc_settings'] ) ) return;
+		$translatable_options = apply_filters( 'mkl_pc_translatable_settings', [
+			'mkl_pc__button_label',
+			'sku_glue',
+			'sku_label',
+			'mc_max_items_message',
+			'mc_max_items_message_global',
+			'mc_max_items_number',
+			'syd_account_creation_url',
+			'syd_button_label',
+			'configuration_costs_label',
+			'reset_configuration_label',
+			'edit_configuration_label',
+			'edit_item_in_cart',
+			'configuration_cart_meta_label',
+			'loading_configurator_message',
+			'download_config_image',
+			'view_configuration',
+		] );
+
+		$registered_fields = [];
+		foreach( $wp_settings_fields['mlk_pc_settings'] as $section ) {
+			foreach( $section as $field => $field_options ) {
+				if ( in_array( $field, $translatable_options ) ) {
+					do_action( 'wpml_register_single_string', 'Product Configurator settings', $field_options['title'], isset( $options[$field] ) ? $options[$field] : '' );
+					if ( function_exists( 'pll_register_string' ) ) {
+						pll_register_string( $field, isset( $options[$field] ) ? $options[$field] : '', 'Product Configurator', false );
+					}
+					$registered_fields[$field] = $field_options['title'];
+				}
+			}
+		}
+		if ( ! empty( $registered_fields ) ) {
+			update_option( 'mkl_pc__wpml_registered_fields', $registered_fields );
+		}
+	}
+	
 	/**
 	 * Add sanitize methods to the translated fields
 	 *
