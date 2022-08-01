@@ -662,6 +662,7 @@ PC.options = PC.options || {};
 			'mousedown > .choice-item': 'set_choice',
 			'keydown > .choice-item': 'set_choice',
 			'mouseenter > .choice-item': 'preload_image',
+			'focus > .choice-item': 'preload_image',
 		},
 		render: function() {
 			/**
@@ -766,10 +767,12 @@ PC.options = PC.options || {};
 			wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 		},
 		preload_image: function() {
-			var src = this.model.get_image();
-			if ( ! src ) return;
-			var img = new Image();
-			img.src = src;
+			// console.log('preload image');
+			this.model.trigger( 'preload-image' );
+			// var src = this.model.get_image();
+			// if ( ! src ) return;
+			// var img = new Image();
+			// img.src = src;
 		},
 		activate: function() {
 			if( this.model.get('active') === true ) {
@@ -961,6 +964,7 @@ PC.options = PC.options || {};
 			this.parent = options.parent || PC.fe;
 			this.is_loaded = false;
 			this.listenTo( this.model, 'change:active', this.change_layer );
+			this.listenTo( this.model, 'preload-image', this.preload_image );
 			this.listenTo( PC.fe.layers, 'change:active', this.toggle_current_layer_class );
 			this.listenTo( PC.fe.angles, 'change:active', this.change_angle );
 			wp.hooks.doAction( 'PC.fe.choice-img.init', this );
@@ -970,7 +974,7 @@ PC.options = PC.options || {};
 
 			return this; 
 		},
- 		render: function() {
+ 		render: function( force ) {
 			 
 			var is_active = this.model.get( 'active' );
 			var img = this.model.get_image();
@@ -988,7 +992,7 @@ PC.options = PC.options || {};
 			// Add the classes
 			this.$el.addClass( classes.join( ' ' ) );
 			// Default to a transparent image
-			if (!img) img = this.empty_img;
+			if ( ! img ) img = this.empty_img;
 
 			wp.hooks.doAction( 'PC.fe.viewer.layer.render', this );
 
@@ -1003,7 +1007,7 @@ PC.options = PC.options || {};
 			} else {
 				if ( ! this.is_loaded ) {
 					this.$el.addClass( 'loading' );
-					if ( 'lazy' == PC.fe.config.image_loading_mode ) {
+					if ( 'lazy' == PC.fe.config.image_loading_mode && ! force ) {
 						this.el.src = this.empty_img;
 					} else {
 						this.el.src = img;	
@@ -1016,13 +1020,13 @@ PC.options = PC.options || {};
 
 			return this.$el; 
 		},
-		get_image_url: function( choice_id, image ) {
-			image = image || 'image'; 
-			var active_angle = PC.fe.angles.findWhere( { active: true } );
-			var angle_id = active_angle.id; 
+		// get_image_url: function( choice_id, image ) {
+		// 	image = image || 'image'; 
+		// 	var active_angle = PC.fe.angles.findWhere( { active: true } );
+		// 	var angle_id = active_angle.id; 
 
-			return this.choices.get( choice_id ).attributes.images.get( angle_id ).attributes[image].url; 
-		},
+		// 	return this.choices.get( choice_id ).attributes.images.get( angle_id ).attributes[image].url; 
+		// },
 		change_layer: function( model ) {
 			this.render();
 		},
@@ -1317,7 +1321,7 @@ PC.options = PC.options || {};
 					// Only one choice
 					var choice = choices.first();
 					var is_active = choice.get( 'active' );
-					if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) ) ) {
+					if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) && 'form' != model.get( 'type' ) ) ) {
 						if ( false === choice.get( 'cshow' ) ) return;
 						var img_id = choice.get_image('image', 'id'); 
 						if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(

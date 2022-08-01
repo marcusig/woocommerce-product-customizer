@@ -112,6 +112,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Better image preloading when hovering a choice
+
 = 1.2.35 - 17/Jul/2022 =
 
 * TWEAK: Added automatic scroll setting to make automatic scroll optional on WSB and Float
