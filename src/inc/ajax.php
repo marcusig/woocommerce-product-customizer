@@ -157,8 +157,12 @@ class Ajax {
 
 			/**
 			 * Filter the product's configuration JavaScript object which will be used in the frontend
+			 *
+			 * @param string $output - JS output
+			 * @param int    $id     - Product ID
+			 * @param array  $data   - The configurator data 
 			 */
-			$output = apply_filters( 'mkl_pc_get_configurator_data_js_output', $output, $id );
+			$output = apply_filters( 'mkl_pc_get_configurator_data_js_output', $output, $id, $data );
 			if ( $gzip ) {
 				echo gzencode( $output );
 			} else {
