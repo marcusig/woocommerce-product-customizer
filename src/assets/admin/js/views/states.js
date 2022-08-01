@@ -22,6 +22,8 @@ PC.views.states = Backbone.View.extend({
 	create_menu: function(  ) {
 		var that = this;
 		that.items = [];
+		this.app.states.orderBy = 'order';
+		this.app.states.sort();
 		this.app.states.each(function(model, index) {
 			var line = '';
 			switch(model.get('type')) {

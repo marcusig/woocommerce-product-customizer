@@ -47,6 +47,7 @@ class DB {
 
 				// ),
 				'description' => '',
+				'order' => 10,
 			),
 			array(
 				'type' 	=> 'part',
@@ -65,6 +66,7 @@ class DB {
 
 				),
 				'description' => __( 'Define the layers the product is composed of. ', 'product-configurator-for-woocommerce' ),
+				'order' => 20,
 			),
 			array(
 				'type' 	=> 'part',
@@ -83,6 +85,7 @@ class DB {
 
 				),
 				'description' => __( 'Define the view angles, if you want the client to be able to switch between them. ', 'product-configurator-for-woocommerce' ),
+				'order' => 30,
 			),
 			array(
 				'type' 	=> 'part',
@@ -101,13 +104,14 @@ class DB {
 
 				),
 				'description' => __( 'Define choices for each layer and assign them pictures', 'product-configurator-for-woocommerce' ),
+				'order' => 40,
 			),
 		);
 
 		$this->menu = $default_menu;
 
 		// Add tne import section at the end of the menu
-		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 120 );
+		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 1200 );
 
 	}
 
@@ -289,6 +293,7 @@ class DB {
 			array(
 				array(
 					'type' 	=> 'separator',
+					'order' => 1190,
 				),
 				array(
 					'type' 	=> 'part',
@@ -297,6 +302,7 @@ class DB {
 					'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
 					'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
 					'description' => '',
+					'order' => 1200,
 					// __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
 				),
 			)
