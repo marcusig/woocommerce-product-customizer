@@ -40,10 +40,17 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'priority' => 5,
 							'condition' => '!data.not_a_choice'
 						),
+						'show_group_label_in_cart' => array(
+							'label' => __('Show group name in the cart / order', 'product-configurator-for-woocommerce' ),
+							'type' => 'checkbox',
+							'priority' => 6,
+							'condition' => '!data.not_a_choice && data.is_group'
+						),
 						'sku' => array(
 							'label' => __('SKU', 'product-configurator-for-woocommerce' ),
 							'type' => 'text',
 							'priority' => 9,
+							'condition' => '!data.not_a_choice && !data.is_group'
 						),
 						'name' => array(
 							'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
