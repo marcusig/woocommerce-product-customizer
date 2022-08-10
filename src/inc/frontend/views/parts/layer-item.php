@@ -1,13 +1,14 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 <script type="text/html" id="tmpl-mkl-pc-configurator-layer-item" data-wg-notranslate>
-	<button class="layer-item" type="button">
-		<?php do_action( 'tmpl-mkl-pc-configurator-layer-item-button' ); ?>
-	</button>
-</script>
-
-<script type="text/html" id="tmpl-mkl-pc-configurator-layer-group" data-wg-notranslate>
-	<button class="layer-item" type="button"><div class="layer-group-label">
-		<?php do_action( 'tmpl-mkl-pc-configurator-layer-item-button' ); ?>
-	</button>
-	<ul class="layers-list--children" data-item-id="{{data._id}}"></ul>
+	<# if ( wp.hooks.applyFilters( 'mkl-pc-configurator-layer-item.with.button', true, data ) ) { #>
+		<button class="layer-item" type="button">
+	<# } else { #>
+		<span class="layer-item" type="button">
+	<# } #>
+			<?php do_action( 'tmpl-mkl-pc-configurator-layer-item-button' ); ?>
+	<# if ( wp.hooks.applyFilters( 'mkl-pc-configurator-layer-item.with.button', true, data ) ) { #>
+		</button>
+	<# } else { #>
+		</span>
+	<# } #>
 </script>
