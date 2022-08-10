@@ -77,10 +77,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function add_configure_button() { 
 			global $product;
 			if ( mkl_pc_is_configurable( get_the_id() ) ) {
-				$label = mkl_pc( 'settings' )->get( 'mkl_pc__button_label', false );
-				if ( ! $label ) {
-					$label = __( 'Configure', 'product-configurator-for-woocommerce' );
-				}
+				$label = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 				if ( ! $product->is_purchasable() || ( 'variable' === $product->get_type() && empty( $product->get_available_variations() ) ) ) {
 					echo '<!-- Product configurator - The current product is not purchasable or has no available variations -->';
 					return;
@@ -154,7 +151,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product, $mkl_product;
-			if ( ( ! $product || ! is_a( $product, 'WC_Product' ) ) && $mkl_product ) {
+			if ( ! $product && $mkl_product ) {
 				$product = $mkl_product;
 			}
 			$add_to_cart = $this->get_add_to_cart_label();
