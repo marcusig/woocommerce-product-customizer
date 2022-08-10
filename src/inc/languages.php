@@ -24,9 +24,38 @@ class Languages {
 		add_action( 'wpml_after_copy_custom_field', [ $this, 'purge_transient_after_translation_sync' ], 20, 3 );
 		add_filter( 'mkl_pc_item_meta', [ $this, 'translate_cart_data' ], 2, 4 );
 		add_filter( 'mkl_pc_order_item_meta', [ $this, 'translate_order_data' ], 2, 3 );
-		add_action( 'update_option_mkl_pc__settings', array( $this, 'register_translatable_settings' ), 10, 2 );
+
+		add_action( 'update_option_mkl_pc__settings', array( $this, 'wpml_register_translatable_settings' ), 10, 2 );
+		add_action( 'init', array( $this, 'pll_register_translatable_settings' ), 20 );
 	}
 
+	/**
+	 * Get the translatable options
+	 *
+	 * @return array
+	 */
+	private function _get_translatable_options() {
+		return apply_filters( 'mkl_pc_translatable_settings', array_keys( $this->get_translatable_options_defaults() ) );
+	}
+
+	public function get_translatable_options_defaults() {
+		return apply_filters( 'mkl_pc_translatable_settings_defaults', [
+			'mkl_pc__button_label' => __( 'Configure', 'product-configurator-for-woocommerce' ),
+			'sku_glue' => __( '', 'product-configurator-for-woocommerce' ),
+			'sku_label' => __( 'SKU', 'product-configurator-for-woocommerce' ),
+			'mc_max_items_message' => __( 'You have reached the maximum number of selectable items', 'product-configurator-for-woocommerce' ),
+			'mc_max_items_message_global' => __( 'You have reached the maximum number of selectable items for this product', 'product-configurator-for-woocommerce' ),
+			'reset_configuration_label' => __( 'Reset configuration', 'product-configurator-for-woocommerce' ),
+			'edit_configuration_label' => __( 'Edit configuration', 'product-configurator-for-woocommerce' ),
+			'edit_item_in_cart' => __( 'Edit item in cart', 'product-configurator-for-woocommerce' ),
+			'configuration_cart_meta_label' => _x( 'Configuration', 'Label displayed in the cart / order', 'product-configurator-for-woocommerce' ),
+			'loading_configurator_message' => __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ),
+			'download_config_image' => __( 'Download configuration image', 'product-configurator-for-woocommerce' ),
+			'view_configuration' => _x( 'View configuration', 'Label of the link to view a configuration, in the cart or an order', 'product-configurator-for-woocommerce' ),
+			'configuration_costs_label' => __( 'Configuration costs:', 'mkl-pc-extra-price' ),
+
+		] );		
+	}
 	/**
 	 * Add translatable strings to WPML String translation section
 	 *
@@ -34,31 +63,13 @@ class Languages {
 	 * @param array $options
 	 * @return void
 	 */
-	public function register_translatable_settings( $old_value, $options ) {
+	public function wpml_register_translatable_settings( $old_value, $options ) {
 		
 		global $sitepress, $wp_settings_fields;
-		if ( ! $sitepress && ! function_exists( 'pll_register_string' ) ) return;
+		if ( ! $sitepress ) return;
 		$settings = get_registered_settings();
 		if ( ! isset( $wp_settings_fields['mlk_pc_settings'] ) ) return;
-		$translatable_options = apply_filters( 'mkl_pc_translatable_settings', [
-			'mkl_pc__button_label',
-			'sku_glue',
-			'sku_label',
-			'mc_max_items_message',
-			'mc_max_items_message_global',
-			'mc_max_items_number',
-			'syd_account_creation_url',
-			'syd_button_label',
-			'configuration_costs_label',
-			'reset_configuration_label',
-			'edit_configuration_label',
-			'edit_item_in_cart',
-			'configuration_cart_meta_label',
-			'loading_configurator_message',
-			'download_config_image',
-			'view_configuration',
-		] );
-
+		$translatable_options = $this->_get_translatable_options();
 		$registered_fields = [];
 		foreach( $wp_settings_fields['mlk_pc_settings'] as $section ) {
 			foreach( $section as $field => $field_options ) {
@@ -73,6 +84,35 @@ class Languages {
 		}
 		if ( ! empty( $registered_fields ) ) {
 			update_option( 'mkl_pc__wpml_registered_fields', $registered_fields );
+		}
+	}
+
+	/**
+	 * Add translatable strings to WPML String translation section
+	 *
+	 * @param array $old_value
+	 * @param array $options
+	 * @return void
+	 */
+	public function pll_register_translatable_settings() {
+		if ( ! function_exists( 'pll_register_string' ) ) return;
+		$translatable_options = $this->_get_translatable_options();
+		$translatable_defaults = $this->get_translatable_options_defaults();
+
+		$registered_fields = [];
+		foreach( $translatable_options as $option ) {
+			pll_register_string( 
+				$option,
+				mkl_pc( 'settings' )->get_label( $option, isset( $translatable_defaults[$option] ) ? $translatable_defaults[$option] : '' ),
+				'Product Configurator', 
+				false
+			);
+			
+			$registered_fields[] = $option;
+		}
+
+		if ( ! empty( $registered_fields ) ) {
+			update_option( 'mkl_pc__pll_registered_fields', $registered_fields );
 		}
 	}
 	

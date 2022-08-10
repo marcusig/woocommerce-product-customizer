@@ -35,6 +35,20 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 							return apply_filters( 'wpml_translate_single_string', $settings[ $setting ], 'Product Configurator settings', $wpml_registered_fields[ $setting ] );
 						}
 					}
+					if ( function_exists( 'pll__' ) ) {
+						$pll_registered_fields = get_option( 'mkl_pc__pll_registered_fields', [] );
+						
+						$defaults = mkl_pc( 'languages' )->get_translatable_options_defaults();
+
+						if ( in_array( $setting, $pll_registered_fields ) ) {
+							$setting_value = $settings[ $setting ] ? $settings[ $setting ] : '';
+							if ( ! $setting_value && $default ) $setting_value = $default;
+							if ( ! $setting_value && isset( $defaults[ $setting ] ) ) $setting_value = $defaults[ $setting ];
+							if ( $setting_value ) {
+								return pll__( $setting_value );
+							}
+						}
+					}
 					return $settings[ $setting ];
 				}
 				return $default;
