@@ -112,7 +112,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Possibility to show a group label in the cart
+* FEATURE: Possibility to hide a layer menu in the configurator (useful mostly together with conditional logic)
+* FEATURE: Possibility to show a group label in the cart
+* TWEAK: Fix double addition of items to the cart
 * TWEAK: Better image preloading when hovering a choice
 
 = 1.2.35 - 17/Jul/2022 =
