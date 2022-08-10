@@ -669,13 +669,15 @@ PC.options = PC.options || {};
 			 * Called after rendering the choice item in the list
 			 */
 			wp.hooks.doAction( 'PC.fe.configurator.choice-item.before.render', this );
-
+			
 			var data = _.extend({
 				thumbnail: this.model.get_image( 'thumbnail' ),
 				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
 			}, this.options.model.attributes );
 			
 			this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
+
+			wp.hooks.doAction( 'PC.fe.configurator.choice-item.render.after-template', this );
 
 			if ( this.$( '.out-of-stock' ).length ) {
 				this.$el.addClass( 'out-of-stock' );
