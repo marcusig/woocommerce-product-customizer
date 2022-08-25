@@ -703,7 +703,7 @@ PC.options = PC.options || {};
 					zIndex: 100001
 				},
 				this );
-			
+
 				if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) {
 					tippy( this.el, tooltip_options );
 				}

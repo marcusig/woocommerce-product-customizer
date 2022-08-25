@@ -253,9 +253,14 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function get_choices_html( $choices ) {
 			$output = '';
 			foreach ( $choices as $choice ) {
-				$classes = '';
+				$classes = [];
 				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
-					$classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'type' ) . ' ' . $choice['layer']->get_layer( 'class_name' ) );
+					$classes[] = $choice['layer']->get_layer( 'type' );
+					$classes[] = $choice['layer']->get_layer( 'class_name' );
+					$classes[] = $choice['layer']->get_choice( 'class_name' );
+					$classes[] = $choice['layer']->get_layer( 'html_id' );
+					$classes = Utils::sanitize_html_classes( array_filter( apply_filters( 'mkl_pc_cart_item_choice__classes', $classes, $choice['layer'] ) ) );
+					// $classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'type' ) . ' ' . $choice['layer']->get_layer( 'class_name' ) );
 				}
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice );

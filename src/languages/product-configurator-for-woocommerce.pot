@@ -135,7 +135,7 @@ msgstr ""
 msgid "Reset configuration"
 msgstr ""
 
-#: src/inc/languages.php:49, src/inc/admin/settings-page.php:664, src/inc/admin/settings-page.php:670, src/inc/frontend/cart.php:287
+#: src/inc/languages.php:49, src/inc/admin/settings-page.php:664, src/inc/admin/settings-page.php:670, src/inc/frontend/cart.php:292
 msgid "Edit configuration"
 msgstr ""
 

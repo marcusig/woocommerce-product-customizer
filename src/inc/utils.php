@@ -189,12 +189,13 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		/**
 		 * Sanitize html classes
 		 *
-		 * @param string $classes
+		 * @param string|array $classes
 		 * @return string
 		 */
 		public static function sanitize_html_classes( $classes ) {
+			if ( is_array( $classes ) ) return implode( ' ', array_filter( array_map( 'self::sanitize_html_classes', $classes ) ) );
 			$classes_array = explode( ' ', $classes );
-			return implode( ' ', array_map( 'sanitize_html_class', $classes_array ) );
+			return implode( ' ', array_filter( array_map( 'sanitize_html_class', $classes_array ) ) );
 		}
 
 		/**
