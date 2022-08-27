@@ -26,7 +26,7 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 		 */
 		public function format_meta( $display_value, $meta, $order_item ) {
 
-			if ( 'Configuration' != $meta->key ) return $display_value;
+			if ( 'Configuration' != $meta->key && '_configurator_data' != $meta->key) return $display_value;
 
 			if ( apply_filters( 'mkl/order/override_saved_meta', true ) ) {
 			
