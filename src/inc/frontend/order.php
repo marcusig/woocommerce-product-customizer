@@ -18,6 +18,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		}
 		private function _hooks() {
 			add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'save_data' ), 20, 4 );
+			add_filter( 'woocommerce_order_item_get_formatted_meta_data', array( $this, 'get_formatted_meta_data' ), 30, 2 );
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
 			add_filter( 'woocommerce_email_order_items_args', array( $this, 'add_image_to_email' ) );
@@ -67,50 +68,109 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		public function save_data( $item, $cart_item_key, $values, $order ) {
 			if ( isset( $values['configurator_data'] ) ) {
 				$configurator_data = $values['configurator_data'];
+				// stores the whole _configurator_data object
+				$item->add_meta_data( '_configurator_data', $configurator_data, false );
+				$item->add_meta_data( '_configurator_data_raw', $values['configurator_data_raw'], false );
+				$item->add_meta_data( 'Configuration', '<div class="order-configuration-details">The configuration data should be overriden dynamically</div>' );
+				if ( $sku = $this->get_sku( $configurator_data ) ) {
+					$item->add_meta_data(
+						mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
+						$sku
+					);
+
+				}
+				do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
+			}
+		}
+
+		public function get_sku( $configurator_data ) {
+			$compound_sku = 'compound' == mkl_pc( 'settings')->get( 'sku_mode' ) && wc_product_sku_enabled();
+			$sku = [];
+			if ( ! $compound_sku ) return '';
+
+			// stores each couple layer name + choice as a order_item_meta, for automatic extraction
+			foreach ( $configurator_data as $layer ) {
+				if ( ! is_object($layer) ) continue;
+				if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
+				if ( $layer->is_choice() ) {
+					if ( $layer->get_choice( 'sku' ) ) {
+						$sku[] = $layer->get_choice( 'sku' );
+					}
+				}
+			}
+
+			if ( count( $sku ) ) {
+				return implode( mkl_pc( 'settings')->get_label( 'sku_glue', '' ), $sku );
+			}
+
+			return '';
+		}
+		
+		public function formatted_meta_contains_config( $formatted_meta ) {
+			if ( empty( $formatted_meta ) ) return false;
+			foreach( $formatted_meta as $meta ) {
+				if ( strpos( $meta->value, 'order-configuration-details' ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Get the formated data
+		 *
+		 * @param array         $formatted_meta
+		 * @param WC_Order_Item $order_item
+		 * @return array
+		 */
+		public function get_formatted_meta_data( $formatted_meta, $order_item ) {
+			foreach( $formatted_meta as $k => $meta ) {
+				if ( ! strpos( $meta->value, 'order-configuration-details' ) ) continue;
+				global $mkl_pc_get_current_item;
+				if ( ! $mkl_pc_get_current_item ) {
+					$mkl_pc_get_current_item = 1;
+				} else {
+					$mkl_pc_get_current_item++;
+				}
+				$configurator_meta = $order_item->get_meta( '_configurator_data', false );
+				if ( empty( $configurator_meta ) ) return $formatted_meta;
 				static $items_count;
 				if ( ! $items_count ) {
 					$items_count = 1;
 				} else {
 					$items_count += 1;
 				}
-				if ( is_array( $configurator_data ) ) {
-					$order_meta_for_configuration = [];
-					$compound_sku = 'compound' == mkl_pc( 'settings')->get( 'sku_mode' ) && wc_product_sku_enabled();
-					$sku = [];
-	
-					// stores each couple layer name + choice as a order_item_meta, for automatic extraction
-					foreach ( $configurator_data as $layer ) {
-						if ( is_object($layer) ) {
-							if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
-							if ( $layer->is_choice() ) :
-								$order_meta_for_configuration[]	= apply_filters( 'mkl_pc/order_created/save_layer_meta', $this->set_order_item_meta( $layer, $values['data'] ), $layer, $item, $values, $items_count );
-								if ( $compound_sku && $layer->get_choice( 'sku' ) ) {
-									$sku[] = $layer->get_choice( 'sku' );
-								}								
-								do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $item, $order );
-							?>
-							<?php
-							endif;
-						} 
-					}
+			
+				foreach( $configurator_meta as $meta ) {
+					
+					$configurator_data = $meta->value;
 
-					if ( $compound_sku && count( $sku ) ) {
-						$item->add_meta_data( 
-							mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
-							implode( mkl_pc( 'settings')->get( 'sku_glue', '' ), $sku )
-						);
+					if ( is_array( $configurator_data ) ) {
+						$order_meta_for_configuration = [];
+
+						// stores each couple layer name + choice as a order_item_meta, for automatic extraction
+						foreach ( $configurator_data as $layer ) {
+							if ( is_object($layer) ) {
+								if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
+								if ( $layer->is_choice() ) {
+									$item_data = Product::set_layer_item_meta( $layer, $order_item->get_product(), $order_item->get_id() );
+									$order_meta_for_configuration[]	= apply_filters( 'mkl_pc/order_created/save_layer_meta', $item_data, $layer, $order_item, [], $items_count );
+									do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $order_item, $order_item->get_order() );
+								}
+							} 
+						}
+
+						if ( ! empty( $order_meta_for_configuration ) ) {
+							$display_key = apply_filters( 'mkl_pc/order_created/get_data/label', mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $order_item, $configurator_data );
+							$display_key = apply_filters_deprecated( 'mkl_pc/order_created/saved_data/label', array( $display_key, $order_item, '', [], $order_item->get_order() ), '1.2.35', 'mkl_pc/order_created/get_data/label' );
+
+							$formatted_meta[ $k ]->display_key = apply_filters( 'woocommerce_order_item_display_meta_key', $display_key, $meta, $order_item );
+							$formatted_meta[ $k ]->display_value = wpautop( make_clickable( apply_filters( 'woocommerce_order_item_display_meta_value', $this->get_choices_html( $order_meta_for_configuration ), $meta, $order_item ) ) );
+						}
 					}
-	
-					if ( ! empty( $order_meta_for_configuration ) ) {
-						$item->add_meta_data( apply_filters( 'mkl_pc/order_created/saved_data/label', mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $item, $cart_item_key, $values, $order ),  $this->get_choices_html( $order_meta_for_configuration ), false );
-					}
-					do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 				}
-				
-				// stores the whole _configurator_data object
-				$item->add_meta_data( '_configurator_data', $configurator_data, false );
-				$item->add_meta_data( '_configurator_data_raw', $values['configurator_data_raw'], false );
-			}		
+			}
+			return $formatted_meta;
 		}
 
 		public function set_order_item_meta( $layer, $product ) {
@@ -153,17 +213,21 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$output = '';
 			foreach ( $choices as $choice ) {
 				if ( empty( $choice ) ) continue;
-				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
-					$classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'class_name' ) );
-				}
 
+				$classes = [];
+				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
+					$classes[] = $choice['layer']->get_layer( 'type' );
+					$classes[] = $choice['layer']->get_layer( 'class_name' );
+					$classes[] = $choice['layer']->get_choice( 'class_name' );
+					$classes[] = $choice['layer']->get_layer( 'html_id' );
+				}
+				$classes = Utils::sanitize_html_classes( array_filter( apply_filters( 'mkl_pc_cart_item_choice__classes', $classes, $choice['layer'] ) ) );
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
 				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['label'] .'</strong>' . ( $choice['label'] ? '<span class="semicol">:</span> ' : '' ) . $choice['value'] . $after, $choice['label'], $choice['value'], $before, $after );
 			}
 
 			return '<div class="order-configuration-details">' . $output . '</div>';
-
 		}
 
 		/**
