@@ -259,9 +259,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					$classes[] = $choice['layer']->get_layer( 'class_name' );
 					$classes[] = $choice['layer']->get_choice( 'class_name' );
 					$classes[] = $choice['layer']->get_layer( 'html_id' );
-					$classes = Utils::sanitize_html_classes( array_filter( apply_filters( 'mkl_pc_cart_item_choice__classes', $classes, $choice['layer'] ) ) );
 					// $classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'type' ) . ' ' . $choice['layer']->get_layer( 'class_name' ) );
 				}
+				$classes = Utils::sanitize_html_classes( array_filter( apply_filters( 'mkl_pc_cart_item_choice__classes', $classes, $choice['layer'] ) ) );
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice );
 				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . stripslashes( $choice['name'] ) .'</strong><span class="semicol">:</span> ' . stripslashes( $choice['value'] ) . $after, $choice['name'], $choice['value'], $before, $after );

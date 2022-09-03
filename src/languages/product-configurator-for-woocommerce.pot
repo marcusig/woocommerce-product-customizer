@@ -119,7 +119,7 @@ msgstr ""
 #: src/inc/languages.php:44
 msgstr ""
 
-#: src/inc/languages.php:45, src/inc/frontend/cart.php:143, src/inc/frontend/order.php:99, src/inc/admin/settings/choice.php:50
+#: src/inc/languages.php:45, src/inc/frontend/cart.php:143, src/inc/frontend/order.php:143, src/inc/admin/settings/choice.php:50
 msgid "SKU"
 msgstr ""
 
@@ -152,7 +152,7 @@ msgstr ""
 msgid "Loading the configurator..."
 msgstr ""
 
-#: src/inc/languages.php:53, src/inc/admin/settings-page.php:688, src/inc/admin/settings-page.php:694, src/inc/frontend/order.php:63
+#: src/inc/languages.php:53, src/inc/admin/settings-page.php:688, src/inc/admin/settings-page.php:694, src/inc/frontend/order.php:64
 msgid "Download configuration image"
 msgstr ""
 
@@ -217,7 +217,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:61, src/inc/admin/settings-page.php:700, src/inc/admin/settings-page.php:706, src/inc/frontend/order.php:56
+#: src/inc/admin/order.php:61, src/inc/admin/settings-page.php:700, src/inc/admin/settings-page.php:706, src/inc/frontend/order.php:57
 msgid "View configuration"
 msgstr ""
 
@@ -613,7 +613,7 @@ msgstr ""
 msgid "Configuration (meta label in the cart)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:718, src/inc/frontend/cart.php:159, src/inc/frontend/order.php:105
+#: src/inc/admin/settings-page.php:718, src/inc/frontend/cart.php:159, src/inc/frontend/order.php:149
 msgid "Configuration"
 msgstr ""
 

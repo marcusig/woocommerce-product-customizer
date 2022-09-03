@@ -28,7 +28,7 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 
 			if ( 'Configuration' != $meta->key ) return $display_value;
 
-			if ( apply_filters( 'mkl/order/override_saved_meta', false ) ) {
+			if ( apply_filters( 'mkl/order/override_saved_meta', true ) ) {
 			
 				static $items_count;
 				if ( ! $items_count ) {
@@ -63,7 +63,7 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 
 		public function wc_admin_order_item_display_configurator_data( $item_id, $item, $_product ) {
 			
-			if( isset( $item['item_meta']['configurator_data'] ) ) {
+			if ( isset( $item['item_meta']['configurator_data'] ) ) {
 
 				$data = (array) unserialize( $item['item_meta']['configurator_data'][0] ); 
 
