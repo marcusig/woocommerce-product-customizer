@@ -3,8 +3,11 @@ PC.fe = PC.fe || {};
 PC.fe.views = PC.fe.views || {};
 PC.options = PC.options || {};
 
+var mkl_pc_underscore = _.noConflict();
+
 !( function( $ ) {
-	'use strict'; 
+	'use strict';
+	var underscore = mkl_pc_underscore;
 	/*
 		PC.fe.views.configurator 
 		-> MAIN WINDOW
@@ -54,7 +57,7 @@ PC.options = PC.options || {};
 		open: function() {
 			this.$el.show(); 
 
-			setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
+			setTimeout( underscore.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
 
 			// Set focus on the first layer
 			if ( ! PC.fe.inline ) {
@@ -76,7 +79,7 @@ PC.options = PC.options || {};
 
 			wp.hooks.doAction( 'PC.fe.close', this ); 
 
-			setTimeout( _.bind( this.$el.hide, this.$el ), 500 );
+			setTimeout( underscore.bind( this.$el.hide, this.$el ), 500 );
 		},
 
 		start: function( e, arg ) {
