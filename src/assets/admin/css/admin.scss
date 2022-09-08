@@ -1,37 +1,3 @@
-/*
-.form-field {
-	padding: 10px;
-	padding-left: 167px;
-
-	.piklist-field-list {
-		margin-left: 150px;
-		label {
-			width: auto;
-			float: none;
-			// display: block; 
-		}
-	}
-
-	.piklist-field-addmore-wrapper {
-		label {
-			margin-left: 0;
-			float:none;
-			display: block; 
-
-		}
-		input[type=text], 
-		input[type=number], 
-		input[type=email], 
-		input[type=password] {
-			width: auto;
-			float: none;
-		}
-	}
-	&.no-label {
-		padding-left: 10px;
-	}
-}
-*/ 
 #woocommerce-product-data .panel .wc-metaboxes-wrapper {
 	width: 100%;
 }
@@ -352,8 +318,12 @@ html .pc-modal-container {
 		}
 		
 	}
-
 }
+
+.pc-modal-opened span.select2-container {
+	z-index: 1500000;
+}
+
 .mkl-list {
 
 }
