@@ -3,11 +3,9 @@ PC.fe = PC.fe || {};
 PC.fe.views = PC.fe.views || {};
 PC.options = PC.options || {};
 
-var mkl_pc_underscore = _.noConflict();
-
 !( function( $ ) {
 	'use strict';
-	var underscore = mkl_pc_underscore;
+	var underscore = _;
 	/*
 		PC.fe.views.configurator 
 		-> MAIN WINDOW
