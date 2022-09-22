@@ -204,6 +204,9 @@ PC.options = PC.options || {};
 
 		reset_configurator: function( event ) {
 			PC.fe.contents.content.resetConfig();
+			if ( PC.fe.initial_preset ) {
+				PC.fe.setConfig( PC.fe.initial_preset );
+			}
 			wp.hooks.doAction( 'PC.fe.reset_configurator' );
 		},
 

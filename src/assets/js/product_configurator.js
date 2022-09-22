@@ -84,6 +84,10 @@ PC.actionParameter = 'pc_get_data';
 				return;
 			}
 
+			if ( $target.data( 'preset' ) ) {
+				PC.fe.initial_preset = $target.data( 'preset' );
+			}
+
 			if ( 'mkl/pc/inline-init' == event.type ) {
 				PC.fe.inline = true;
 				PC.fe.inlineTarget = event.target;
@@ -151,6 +155,8 @@ PC.actionParameter = 'pc_get_data';
 
 			if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
 				PC.fe.setConfig( PC_config.config.load_config_content );
+			} else if ( PC.fe.initial_preset ) {
+				PC.fe.setConfig( PC.fe.initial_preset );
 			}
 		}, 20 );
 
