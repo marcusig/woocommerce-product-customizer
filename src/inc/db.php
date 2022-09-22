@@ -555,9 +555,9 @@ class DB {
 	}
 
 	/**
-	 * Sanitize the data
+	 * Escape the data
 	 *
-	 * @param mixed  $data - The data to sanitize
+	 * @param mixed  $data - The data to escape
 	 * @param string $key
 	 * @return mixed
 	 */

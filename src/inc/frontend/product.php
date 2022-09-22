@@ -151,7 +151,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product, $mkl_product;
-			if ( ! $product && $mkl_product ) {
+			if ( ( ! $product || ! is_a( $product, 'WC_Product' ) ) && $mkl_product ) {
 				$product = $mkl_product;
 			}
 			$add_to_cart = $this->get_add_to_cart_label();

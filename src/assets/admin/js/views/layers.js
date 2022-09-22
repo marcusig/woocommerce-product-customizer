@@ -391,7 +391,7 @@ TODO:
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
 
-			if ( event.type == 'click' ) {
+			if ( 'click' === event.type ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
 				

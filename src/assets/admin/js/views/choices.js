@@ -333,7 +333,9 @@ PC.views = PC.views || {};
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
 			
-			if( event.type == 'click' ) {
+			if ( 'keyup' === event.type && 'checkbox' === event.currentTarget.type ) return;
+
+			if ( 'click' === event.type ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
 
