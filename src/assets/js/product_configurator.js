@@ -84,7 +84,11 @@ PC.actionParameter = 'pc_get_data';
 				return;
 			}
 
+			var reset = false;
 			if ( $target.data( 'preset' ) ) {
+				if ( ! PC.fe.initial_preset || PC.fe.initial_preset && PC.fe.initial_preset != $target.data( 'preset' ) ) {
+					reset = true;
+				}
 				PC.fe.initial_preset = $target.data( 'preset' );
 			}
 
@@ -95,7 +99,7 @@ PC.actionParameter = 'pc_get_data';
 
 			// Open configurator
 			try {
-				PC.fe.open( product_id, product_id, $target );
+				PC.fe.open( product_id, product_id, $target, reset );
 			} catch ( err ) {
 				console.error( 'we had an error: ', err );
 				// PC.fe.close();
@@ -216,7 +220,7 @@ PC.actionParameter = 'pc_get_data';
 
 	};
 
-	PC.fe.open = function( product_id, parent_id, $element ) {
+	PC.fe.open = function( product_id, parent_id, $element, reset ) {
 
 		PC.fe.opened = true;
 		wp.hooks.doAction( 'PC.fe.before_open' );
@@ -226,6 +230,9 @@ PC.actionParameter = 'pc_get_data';
 		// variations: if product_id is different from active, we remove the modal to create a new one.
 		if( product_id == PC.fe.active_product ) {
 			this.modal.open(); 
+			if ( reset && PC.fe.modal ) {
+				PC.fe.modal.resetConfig();
+			}
 			return;
 		}
 
