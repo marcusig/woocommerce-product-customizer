@@ -829,3 +829,29 @@ class DB {
 		return $this->context = $c;
 	}
 }
+/*
+
+Layer
+- id
+- type
+- name
+
+Layer_meta
+- meta_id
+- layer_id
+- meta_key
+- meta_value
+
+Choice
+- id
+- layer_id
+- type
+- name
+
+choice_meta
+- meta_id
+- layer_id
+- meta_key
+- meta_value
+
+*/
