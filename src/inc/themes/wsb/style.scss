@@ -1536,3 +1536,44 @@ a.save-your-design svg path,
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
 }
+
+@media (max-width: 660px) {
+	.mkl_pc.no-form-modal .mkl_pc_container {
+		.mkl-pc-show-form {
+			display: none;
+		}
+		footer .form.form-cart {
+			position: relative;
+			padding: 0;
+			background: transparent;
+			box-shadow: none;
+			border-radius: 0;
+			bottom: auto;
+			width: auto;
+			flex-direction: row;
+			align-items: center;
+			left: auto;
+			padding-right: 5px;
+		}
+
+		footer .form.form-cart .pc_configurator_form button {
+			margin: 0;
+			font-size: .9rem;
+		}
+
+		footer button.reset-configuration {
+			width: auto;
+			font-size: 12px;
+			display: inline-block;
+			max-width: 110px;
+			white-space: normal;
+			line-height: 1.2;
+		}
+
+		.form.form-cart .pc-total-price {
+			margin: 0;
+			margin-right: 5px;
+			font-size: 1rem;
+		}    
+	}
+}

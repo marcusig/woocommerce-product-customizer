@@ -4,6 +4,10 @@ namespace MKL\PC;
 
 use WP_Error;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
+
 class Themes {
 
 	/**

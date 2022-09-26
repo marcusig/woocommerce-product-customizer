@@ -6,6 +6,9 @@
 		var clone = view.footer.form.$el.clone().appendTo( view.toolbar.$el );
 		view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 		view.$el.addClass( 'float' );
+		if ( PC_config.config.no_form_modal ) {
+			view.$el.addClass( 'no-form-modal' );
+		}
 		view.$el.on( 'click', '.mkl-pc-show-form', function(e) {
 			view.$el.toggleClass( 'mobile-show-form' );
 		} );

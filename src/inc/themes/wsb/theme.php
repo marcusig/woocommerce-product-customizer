@@ -38,3 +38,6 @@ function mkl_pc_wsb_theme_filter_colors( $colors ) {
 	return $colors;
 }
 add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_wsb_theme_filter_colors' );
+
+require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-no-form-modal.php';
+new MKL_PC_Theme__no_form_modal( 'wsb' );

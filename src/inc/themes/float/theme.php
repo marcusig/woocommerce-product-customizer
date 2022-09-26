@@ -1,4 +1,9 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
+
 function mkl_pc_float_theme_scripts() {
 	wp_enqueue_script( 'jquery-ui-accordion' );
 	wp_enqueue_script( 'mkl/pc/themes/float', plugin_dir_url( __FILE__ ) . 'float.js', [ 'wp-hooks', 'jquery' ], filemtime( plugin_dir_path( __FILE__ ) . 'float.js' ), true );
@@ -43,3 +48,6 @@ function mkl_pc_float_theme_filter_colors( $colors ) {
 	return $colors;
 }
 add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_float_theme_filter_colors' );
+
+require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-no-form-modal.php';
+new MKL_PC_Theme__no_form_modal( 'float' );
