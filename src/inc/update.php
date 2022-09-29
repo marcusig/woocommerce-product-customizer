@@ -24,7 +24,7 @@ class Update {
 		$saved_version = get_option( 'mkl_pc_version' );
 
 		// First install
-		if ( !$saved_version ) {
+		if ( ! $saved_version ) {
 			update_option( 'mkl_pc_version', MKL_PC_VERSION );
 			return;
 		}
@@ -91,6 +91,56 @@ class Update {
 		$options = get_option( 'mkl_pc__settings' );
 		$options['auto_scroll'] = true;
 		update_option( 'mkl_pc__settings', $options );
+	}
+
+	public function update_db() {
+		global $wpdb;
+
+		$collate = '';
+
+		if ( $wpdb->has_cap( 'collation' ) ) {
+			$collate = $wpdb->get_charset_collate();
+		}
+
+		$schema = "
+		CREATE TABLE {$wpdb->prefix}mklpc_layers (
+			layer_id BIGINT UNSIGNED NOT NULL auto_increment,
+			type varchar(255) default NULL,
+			name varchar(500) NULL,
+			parent BIGINT UNSIGNED NULL,
+			PRIMARY KEY  (layer_id),
+			KEY parent (parent)
+		  ) $collate;
+		CREATE TABLE {$wpdb->prefix}mklpc_layermeta (
+			meta_id BIGINT UNSIGNED NOT NULL auto_increment,
+			layer_id BIGINT UNSIGNED NOT NULL,
+			meta_key varchar(255) default NULL,
+			meta_value longtext NULL,
+			PRIMARY KEY  (meta_id),
+			KEY layer_id (layer_id),
+			KEY meta_key (meta_key(32))
+		  ) $collate;
+		CREATE TABLE {$wpdb->prefix}mklpc_choices (
+			choice_id BIGINT UNSIGNED NOT NULL auto_increment,
+			layer_id BIGINT UNSIGNED NOT NULL,
+			name varchar(500) NULL,
+			parent BIGINT UNSIGNED NULL,
+			PRIMARY KEY  (choice_id),
+			KEY layer_id (layer_id),
+			KEY parent (parent),
+		  ) $collate;
+		CREATE TABLE {$wpdb->prefix}mklpc_choicemeta (
+			meta_id BIGINT UNSIGNED NOT NULL auto_increment,
+			choice_id BIGINT UNSIGNED NOT NULL,
+			meta_key varchar(255) default NULL,
+			meta_value longtext NULL,
+			PRIMARY KEY  (meta_id),
+			KEY choice_id (choice_id),
+			KEY meta_key (meta_key(32))
+		  ) $collate;
+		";
+
+		dbDelta( $schema );
 	}
 
 	public static function instance() {
