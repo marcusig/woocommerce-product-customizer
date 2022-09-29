@@ -403,7 +403,17 @@ TODO:
 				var new_val = input.val();
 			}
 
-			if( this.model.get(setting) != new_val ) {
+			if ( 'type' == setting && 'group' == new_val ) {
+				var content = PC.app.get_layer_content( this.model.id );
+				if ( content && content.length ) {
+					if ( ! confirm( PC_lang.group_with_content_warning ) ) {
+						event.preventDefault();
+						input.val( this.model.get( setting ) );
+						return false;
+					}
+				}
+			}
+			if ( this.model.get(setting) != new_val ) {
 				this.model.set(setting, new_val);
 			}
 

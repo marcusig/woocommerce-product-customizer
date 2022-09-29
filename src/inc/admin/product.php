@@ -223,11 +223,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				}
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', array(
-					'media_title' => __('Select a picture', 'product-configurator-for-woocommerce' ),
-					'media_select_button' => __('Choose', 'product-configurator-for-woocommerce' ),
-					'layers_new_placeholder' => __('New Layer Name', 'product-configurator-for-woocommerce'),
-					'angles_new_placeholder' => __('New Angle Name', 'product-configurator-for-woocommerce'),
-					'choice_new_placeholder' => __('New Choice Name', 'product-configurator-for-woocommerce'),
+					'media_title' => __( 'Select a picture', 'product-configurator-for-woocommerce' ),
+					'media_select_button' => __( 'Choose', 'product-configurator-for-woocommerce' ),
+					'layers_new_placeholder' => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
+					'angles_new_placeholder' => __( 'New Angle Name', 'product-configurator-for-woocommerce' ),
+					'choice_new_placeholder' => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
+					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
 				) ) );
 

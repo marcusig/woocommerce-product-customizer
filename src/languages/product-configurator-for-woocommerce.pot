@@ -293,11 +293,19 @@ msgstr ""
 msgid "New Choice Name"
 msgstr ""
 
-#: src/inc/admin/product.php:270
+#: src/inc/admin/product.php:231
+msgid "Changing the type to group will discard the content you already added to this layer."
+msgstr ""
+
+#: src/inc/admin/product.php:231
+msgid "Do you want to continue?"
+msgstr ""
+
+#: src/inc/admin/product.php:271
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:285
+#: src/inc/admin/product.php:286
 msgid "Edit configurator layers"
 msgstr ""
 
@@ -679,6 +687,10 @@ msgstr ""
 
 #: src/inc/frontend/product.php:249
 msgid "Please select a variation to configure"
+msgstr ""
+
+#: src/inc/themes-common/customizer-no-form-modal.php:31
+msgid "No add to cart modal"
 msgstr ""
 
 #: src/inc/admin/settings/angle.php:33

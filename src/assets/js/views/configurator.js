@@ -384,7 +384,9 @@ PC.options = PC.options || {};
 					// }
 					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
 
-					if ( model.get( 'parent' ) && this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).length ) {
+					var parent_id = model.get( 'parent' );
+					var parent = parent_id ? model.collection.get( model.get( 'parent' ) ) : false;
+					if ( parent && 'group' == parent.get( 'type' ) && this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).length ) {
 						this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).append( new_layer.render() ); 
 					} else {
 						this.$el.append( new_layer.render() );
@@ -1238,7 +1240,7 @@ PC.options = PC.options || {};
 			var is_required = parseInt( model.get( 'required' ) );
 			var default_selection = model.get( 'default_selection' ) || 'select_first';
 			var type = model.get( 'type' );
-			if ( 'form' == type ) is_required = false;
+			if ( 'form' == type || 'group' == type ) is_required = false;
 			if ( PC.fe.config.angles.save_current ) {
 				var angle = PC.fe.angles.findWhere( 'active', true );
 			} else {
