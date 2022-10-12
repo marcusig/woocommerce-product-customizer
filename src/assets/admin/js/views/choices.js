@@ -287,6 +287,7 @@ PC.views = PC.views || {};
 			'click .duplicate-choice': 'duplicate_choice',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
+			'input .setting input': 'form_change',
 			'change .setting input[type=date]': 'form_change',
 			'keyup .setting textarea': 'form_change',
 			'change .setting select': 'form_change',
@@ -329,7 +330,6 @@ PC.views = PC.views || {};
 			return this;
 		},
 		form_change: function( event ) {
-
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
 			
