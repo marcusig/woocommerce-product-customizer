@@ -58,14 +58,14 @@ PC.choices = Backbone.Collection.extend({
 			// The choice can be deselected if a choice is required
 			if ( is_active && ! activate && wp.hooks.applyFilters( 'PC.choices.canDeselectSimpleChoice', this.layer.get( 'can_deselect' ), this ) ) {
 				choice.set( 'active', false );
-				return;
+			} else {
+				// Already active, do nothing
+				if ( is_active ) return;
+				// Deactivate every other choice
+				this.deactivateAll();
+				// Set this choice to active
+				choice.set( 'active', true );
 			}
-			// Already active, do nothing
-			if ( is_active ) return;
-			// Deactivate every other choice
-			this.deactivateAll();
-			// Set this choice to active
-			choice.set( 'active', true );
 		} else if ( 'multiple' === this.layer_type ) {
 			// Multiple choice: toggle the current state
 			if ( ! is_active && ( activate || 'undefined' == typeof activate ) ) {
