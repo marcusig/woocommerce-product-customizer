@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.36
+Stable tag: 1.2.37
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.37 - 12/Oct/2022 =
+
+* TWEAKS: Various tweaks and fixes
 
 = 1.2.36 - 27/Aug/2022 =
 
