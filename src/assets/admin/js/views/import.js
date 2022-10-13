@@ -371,7 +371,7 @@ PC.import.views = PC.import.views || {};
 			}
 
 			// Add the conditions
-			if ( Import.imported_data.collections.conditions ) {
+			if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
 				var conditions = this.col = new PC.conditionsCollection( Import.imported_data.collections.conditions );
 				PC.app.get_product().set( 'conditions' , conditions );
 				PC.app.is_modified[ 'conditions' ] = true;
