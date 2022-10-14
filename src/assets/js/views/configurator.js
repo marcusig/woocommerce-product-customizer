@@ -431,7 +431,7 @@ PC.options = PC.options || {};
 		template: wp.template( 'mkl-pc-configurator-layer-item' ),
 		initialize: function( options ) {
 			this.options = options || {};
-			this.layer_type = this.model.get('type');
+			this.layer_type = this.model.get( 'type' );
 			this.listenTo( this.options.model, 'change:active', this.activate );
 			wp.hooks.doAction( 'PC.fe.layers_list_item.init', this );
 		},
@@ -557,15 +557,36 @@ PC.options = PC.options || {};
 			this.choices = PC.fe.getLayerContent( this.model.id );
 			if ( ! this.choices ) return;
 			this.listenTo( this.choices, 'change:active', this.render );
+			if ( 'group' == this.model.get( 'type' ) && PC.fe.layers ) {
+				this.children_layers = PC.fe.layers.where( { 'parent': this.model.id  } );
+				if ( this.children_layers.length ) {
+					_.each( this.children_layers, function( l ) {
+						var c_choices = PC.fe.getLayerContent( l.id );
+						this.listenTo( c_choices, 'change:active', this.render );
+					}.bind( this ) );
+				}
+			}
 			this.render();
 		},
-		render: function( params ) {
+		render: function( changed_model ) {
 			var choices_names = [];
 			var active_choices = this.choices.where( { active: true } );
-			// var active_choices = 
 			_.each( active_choices, function( item ) {
 				choices_names.push( item.get_name() );
 			} );
+
+			if ( this.children_layers && this.children_layers.length ) {
+				_.each( this.children_layers, function( l ) {
+					var c_choices = PC.fe.getLayerContent( l.id );
+					if ( c_choices ) {
+						var active_child_choices = c_choices.where( { active: true } );
+						_.each( active_child_choices, function( item ) {
+							choices_names.push( item.get_name() );
+						} );
+					}
+				}.bind( this ) );
+			}
+
 			this.$el.html( choices_names.join( ', ' ) );
 		}
 	} );

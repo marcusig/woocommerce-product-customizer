@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 = 1.2.37 - 12/Oct/2022 =
 
+* TWEAKS: When selecting choices of layers contained in a group layer, add the selected items to the group header
 * TWEAKS: Various tweaks and fixes
 
 = 1.2.36 - 27/Aug/2022 =
