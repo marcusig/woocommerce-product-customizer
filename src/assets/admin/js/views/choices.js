@@ -333,16 +333,17 @@ PC.views = PC.views || {};
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
 			
-			if ( 'keyup' === event.type && 'checkbox' === event.currentTarget.type ) return;
+			if ( ( 'keyup' === event.type || 'input' === event.type ) && 'checkbox' === event.currentTarget.type ) return;
 
 			if ( 'click' === event.type ) {
 				// checkbox
-				var new_val = input.prop('checked'); 
+				var new_val = input.prop( 'checked' );
 
 				// Reset is_default in the other choices
 				if ( 'is_default' == setting && new_val && 'simple' == this.layer.get( 'type' ) ) {
 					this.model.collection.invoke( 'set', { is_default: false } );
 				}
+
 			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();
@@ -351,7 +352,7 @@ PC.views = PC.views || {};
 				var new_val = input.val();
 			}
 
-			if( this.model.get(setting) != new_val ) {
+			if ( this.model.get( setting ) != new_val ) {
 				this.model.set(setting, new_val);
 			} 
 
