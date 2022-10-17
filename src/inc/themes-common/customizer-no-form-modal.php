@@ -4,6 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
+/**
+ * Remove the add to cart modal on mobile or not
+ */
 class MKL_PC_Theme__no_form_modal {
 	public function __construct( $theme ) {
 		$this->theme = $theme;
