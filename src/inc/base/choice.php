@@ -39,7 +39,7 @@ class Choice {
 
 	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id, $layer_data = false ) { 
 
-		if( !intval( $product_id ) || !intval( $layer_id ) || !intval( $angle_id ) ) return false;
+		if ( !intval( $product_id ) || !intval( $layer_id ) || !intval( $angle_id ) ) return false;
 		$this->db = Plugin::instance()->db;
 		$this->product_id = (int) $product_id; 
 		$this->variation_id = (int) $variation_id; 
