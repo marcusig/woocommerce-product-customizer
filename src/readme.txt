@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.37
+Stable tag: 1.2.38
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.38 - 20/Oct/2022 =
+
+* FIX: Issue with checkboxes in the choice settings
+* FIX: Import broke when the configuration contained conditional information and the conditional logic add-on was not installed
+* TWEAK: added action mkl_pc/wc_cart_add_item_data/adding_choice, called when a choice is added to the cart item
 
 = 1.2.37 - 12/Oct/2022 =
 
@@ -436,4 +442,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.35 Various improvements and fixes
+* 1.2.38 Fix an issue with the checkboxes not behaving properly in the configurator admin 

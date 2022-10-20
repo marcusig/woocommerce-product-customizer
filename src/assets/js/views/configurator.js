@@ -533,6 +533,7 @@ PC.options = PC.options || {};
 				}
 
 				this.model.set( 'active', true ); 
+				PC.fe.current_layer = this.model;
 				wp.hooks.doAction( 'PC.fe.layer.show', this );
 			}
 		},

@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 class Product {
-	public static function set_layer_item_meta( $layer, $product, $item_key ) {
+	public static function set_layer_item_meta( $layer, $product, $item_key, $context = '' ) {
 
 		$label = $layer->get_layer( 'name' );
 		$value = $layer->get_choice( 'name' );
@@ -27,6 +27,6 @@ class Product {
 			'value' => $value,
 			'layer' => $layer
 		);
-		return apply_filters( 'mkl_pc_item_meta', (array) $meta, $layer, $product, $item_key ); 
+		return apply_filters( 'mkl_pc_item_meta', (array) $meta, $layer, $product, $item_key, $context ); 
 	}
 }

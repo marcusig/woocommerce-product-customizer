@@ -153,7 +153,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 							if ( is_object($layer) ) {
 								if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
 								if ( $layer->is_choice() ) {
-									$item_data = Product::set_layer_item_meta( $layer, $order_item->get_product(), $order_item->get_id() );
+									$item_data = Product::set_layer_item_meta( $layer, $order_item->get_product(), $order_item->get_id(), 'order' );
 									$order_meta_for_configuration[]	= apply_filters( 'mkl_pc/order_created/save_layer_meta', $item_data, $layer, $order_item, [], $items_count );
 									do_action( 'mkl_pc/order_created/after_save_layer_meta', $layer, $order_item, $order_item->get_order() );
 								}
@@ -166,6 +166,9 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 							$formatted_meta[ $k ]->display_key = apply_filters( 'woocommerce_order_item_display_meta_key', $display_key, $meta, $order_item );
 							$formatted_meta[ $k ]->display_value = wpautop( make_clickable( apply_filters( 'woocommerce_order_item_display_meta_value', $this->get_choices_html( $order_meta_for_configuration ), $meta, $order_item ) ) );
+							// if ( wc()->is_rest_api_request() && apply_filters( 'mkl_pc/override_order_meta_value_for_rest', true ) ) {
+							// 	$formatted_meta[ $k ]->value = $formatted_meta[ $k ]->display_value;
+							// }
 						}
 					}
 				}

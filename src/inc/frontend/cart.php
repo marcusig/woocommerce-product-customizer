@@ -129,7 +129,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						if ( ! empty( $choice_images ) && $choice_images[0]["thumbnail"]['id'] != '' ) {
 							$choice_image = '<span class="choice-thumb"><img src="' . wp_get_attachment_url( $choice_images[0]["thumbnail"]['id'] ) . '" alt=""></span> ';
 						}
-						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'], $cart_item[ 'key' ] );
+						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'], $cart_item[ 'key' ], 'cart' );
 						if ( empty( $item_data[ 'label' ] ) && empty( $item_data['value'] ) ) continue;
 						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
 						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => $choice_image . $item_data['value'], 'layer' => $layer ], $layer, $cart_item );
