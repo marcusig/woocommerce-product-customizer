@@ -210,6 +210,7 @@ PC.options = PC.options || {};
 
 		reset_configurator: function( event ) {
 			PC.fe.modal.resetConfig();
+			PC.fe.save_data.reset_errors();
 		},
 
 		get_price: function() {
@@ -265,7 +266,17 @@ PC.options = PC.options || {};
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
 				console.log( errors );
-				alert( errors.join( "\n" ) );
+				var messages = [];
+				_.each( PC.fe.errors, function( error ) {
+					if ( error.choice ) {
+						error.choice.set( 'has_error', error );
+					}
+					if ( error.layer ) {
+						error.layer.set( 'has_error', error );
+					}
+					messages.push( error.message );
+				} );
+				alert( messages.join( "\n" ) );
 				return false;
 			}
 			return data;
@@ -1257,6 +1268,18 @@ PC.options = PC.options || {};
 			return JSON.stringify( this.choices );
 		},
 
+		reset_errors: function() {
+			if ( PC.fe.errors.length ) {
+				_.each( PC.fe.errors, function( error ) {
+					if ( error.choice && error.choice.get( 'has_error' ) ) {
+						error.choice.set( 'has_error', false );
+					}
+					if ( error.layer && error.layer.get( 'has_error' ) ) {
+						error.layer.set( 'has_error', false );
+					}
+				} );
+			}
+		}, 
 		// get choices for one layer 
 		parse_choices: function( model ) {
 			var is_required = parseInt( model.get( 'required' ) );
@@ -1328,7 +1351,10 @@ PC.options = PC.options || {};
 
 						// The item is out of stock, so throw an error
 						if ( false === choice.get( 'available' ) ) {
-							PC.fe.errors.push( PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) ) );
+							PC.fe.errors.push( {
+								choice: choice,
+								message: PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) )
+							} );
 						}
 
 						var img_id = choice.get_image( 'image', 'id' );
@@ -1372,7 +1398,10 @@ PC.options = PC.options || {};
 
 						// The item is out of stock, so throw an error
 						if ( false === choice.get( 'available' ) ) {
-							PC.fe.errors.push( PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) ) );
+							PC.fe.errors.push( {
+								choice: choice,
+								message: PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) ) 
+							} );
 						}
 					} else if ( is_required ) {
 						require_error = true;
@@ -1398,7 +1427,11 @@ PC.options = PC.options || {};
 			}
 
 			if ( require_error ) {	
-				PC.fe.errors.push( PC_config.lang.required_error_message.replace( '%s', model.get( 'name' ) ) );
+				PC.fe.errors.push( {
+					choice: false,
+					layer: model,
+					message: PC_config.lang.required_error_message.replace( '%s', model.get( 'name' ) ) 
+				} );
 			}
 
 			wp.hooks.doAction( 'PC.fe.save_data.parse_choices.after', model, this );
