@@ -5,3 +5,4 @@
 /dist
 /vendor
 *.zip
+src/languages/product-configurator-for-woocommerce.pot
