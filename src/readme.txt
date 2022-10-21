@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.38
+Stable tag: 1.2.39
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.39 - 21/Oct/2022 =
+
+* REVERT: Revert change in which the order data is dynamically displayed in the admin, which made it difficult for configuration in orders to be edited
+* TWEAK: Improved error management in the front end, giving the possibility to display the error in its context (only for form fields at the moment)
 
 = 1.2.38 - 20/Oct/2022 =
 
@@ -442,4 +447,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.38 Fix an issue with the checkboxes not behaving properly in the configurator admin 
+* 1.2.39 Reverse dynamic order meta
