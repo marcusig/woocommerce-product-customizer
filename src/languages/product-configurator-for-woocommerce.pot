@@ -119,7 +119,7 @@ msgstr ""
 #: src/inc/languages.php:44
 msgstr ""
 
-#: src/inc/languages.php:45, src/inc/frontend/cart.php:146, src/inc/frontend/order.php:77, src/inc/admin/settings/choice.php:50
+#: src/inc/languages.php:45, src/inc/frontend/cart.php:146, src/inc/frontend/order.php:81, src/inc/admin/settings/choice.php:50
 msgid "SKU"
 msgstr ""
 
@@ -621,7 +621,7 @@ msgstr ""
 msgid "Configuration (meta label in the cart)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:718, src/inc/frontend/cart.php:162, src/inc/frontend/order.php:164
+#: src/inc/admin/settings-page.php:718, src/inc/frontend/cart.php:162, src/inc/frontend/order.php:75, src/inc/frontend/order.php:217
 msgid "Configuration"
 msgstr ""
 
