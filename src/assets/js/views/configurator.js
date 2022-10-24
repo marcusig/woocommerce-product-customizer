@@ -473,7 +473,7 @@ PC.options = PC.options || {};
 
 			if ( PC.fe.config.show_active_choice_in_layer ) {
 				var selection = new PC.fe.views.layers_list_item_selection( { model: this.options.model } );
-				this.$( 'button' ).append( selection.$el );
+				this.$( 'button .layer-name' ).after( selection.$el );
 			}
 
 			if ( PC.fe.config.show_active_choice_image_in_layer ) {
