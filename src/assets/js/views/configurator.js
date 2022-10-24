@@ -478,6 +478,7 @@ PC.options = PC.options || {};
 			// Add classes
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			if ( this.model.get( 'display_mode' ) ) this.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
+			if ( this.layer_type ) this.$el.addClass( 'type-' + this.layer_type );
 			if ( this.model.get( 'hide_in_configurator' ) ) this.$el.addClass( 'hide_in_configurator' );
 
 			// Add ID
