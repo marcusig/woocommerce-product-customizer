@@ -585,7 +585,14 @@ PC.options = PC.options || {};
 			var choices_names = [];
 			var active_choices = this.choices.where( { active: true } );
 			_.each( active_choices, function( item ) {
-				if ( this.should_display( item ) ) choices_names.push( item.get_name() );
+				var name = item.get_name();
+				if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
+					var parent = item.collection.get( item.get( 'parent' ) );
+					if ( parent.get( 'show_group_label_in_cart' ) ) {
+						name = parent.get_name() + ' - ' + name;
+					}
+				}
+				if ( this.should_display( item ) ) choices_names.push( name );
 			}.bind( this ) );
 
 			if ( this.children_layers && this.children_layers.length ) {
@@ -594,7 +601,14 @@ PC.options = PC.options || {};
 					if ( c_choices ) {
 						var active_child_choices = c_choices.where( { active: true } );
 						_.each( active_child_choices, function( item ) {
-							if ( this.should_display( item ) ) choices_names.push( item.get_name() );
+							var name = item.get_name();
+							if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
+								var parent = item.collection.get( item.get( 'parent' ) );
+								if ( parent.get( 'show_group_label_in_cart' ) ) {
+									name = parent.get_name() + ' - ' + name;
+								}
+							}
+							if ( this.should_display( item ) ) choices_names.push( name );
 						}.bind( this ) );
 					}
 				}.bind( this ) );
