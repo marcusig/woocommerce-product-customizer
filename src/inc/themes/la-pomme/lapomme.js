@@ -1,19 +1,48 @@
 (function($) {
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/lapomme', function( view ) {
-		// duplicate the form to have a different one on mobile or desktop views
-		// var clone = view.footer.form.$el.clone().appendTo( view.toolbar.$el );
-		// view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 
-		// view.$el.addClass( 'lapomme' );
-		// if ( PC_config.config.no_form_modal ) {
-		// 	view.$el.addClass( 'no-form-modal' );
-		// }
+		if ( window.tippy ) {
+			if ( view.$( '.reset-configuration' ).length ) {
+				var reset_btn = view.$( '.reset-configuration' )
+				var description = reset_btn.find( 'span' ).html();
 
-		// if ( PC_config.config.no_toggle ) view.$el.addClass( 'no-toggle' );
+				/**
+				 * 
+					 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
+					 */
+				 var tooltip_options = {
+					content: description,
+					allowHTML: true,
+					placement: 'top',
+					zIndex: 100001
+				};
+			
+				if ( tooltip_options.content && tooltip_options.content.length && reset_btn.length ) {
+					tippy( reset_btn[0], tooltip_options );
+				}	
+			}
 
-		// view.$el.on( 'click', '.mkl-pc-show-form', function(e) {
-		// 	view.$el.toggleClass( 'mobile-show-form' );
-		// });
+			if ( view.$( '.save-your-design' ).length ) {
+				var syd_button = view.$( '.save-your-design' )
+				var description = syd_button.find( 'span' ).html();
+
+				/**
+				 * 
+					 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
+					 */
+				 var tooltip_options = {
+					content: description,
+					allowHTML: true,
+					placement: 'top',
+					zIndex: 100001
+				};
+			
+				if ( tooltip_options.content && tooltip_options.content.length && syd_button.length ) {
+					tippy( syd_button[0], tooltip_options );
+				}	
+			}
+		}
+		
 	});
 
 	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/lapomme', function( view ) {

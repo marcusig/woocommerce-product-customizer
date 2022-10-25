@@ -1,6 +1,6 @@
 <?php
 function mkl_pc_lapomme_theme_scripts() {
-	wp_enqueue_script( 'mkl/pc/themes/lapomme', plugin_dir_url( __FILE__ ) . 'lapomme.js', [ 'wp-hooks', 'jquery' ], filemtime( plugin_dir_path( __FILE__ ) . 'lapomme.js' ), true );
+	wp_enqueue_script( 'mkl/pc/themes/lapomme', plugin_dir_url( __FILE__ ) . 'lapomme.js', [ 'wp-hooks', 'jquery', 'mkl_pc/js/vendor/tippy' ], filemtime( plugin_dir_path( __FILE__ ) . 'lapomme.js' ), true );
 }
 add_action( 'mkl_pc_scripts_product_page_after', 'mkl_pc_lapomme_theme_scripts', 20 );
 
@@ -33,6 +33,38 @@ function mkl_pc_lapomme_theme_remove_title() {
 }
 add_action( 'mkl_pc_frontend_templates_before', 'mkl_pc_lapomme_theme_remove_title', 20 );
 
+/**
+ * Move the Extra Price after the total
+ *
+ * @return void
+ */
+function mkl_pc_lapomme_theme_move_extra_price() {
+	$ep = mkl_pc()->get_extension( 'extra-price' );
+	if ( $ep ) {
+		
+		add_action( 'mkl_pc_frontend_configurator_footer_form', function() {
+			echo '<div class="price-container">';
+		}, 6 );
+		
+		remove_action( 'mkl_pc_frontend_configurator_footer_form', array( $ep, 'after_add_to_cart_button' ), 9 );
+		add_action( 'mkl_pc_frontend_configurator_footer_form', array( $ep, 'after_add_to_cart_button' ), 17 );
+		
+		remove_action( 'mkl_pc_frontend_configurator_footer_form', array( $ep, 'after_add_to_cart_button' ), 9 );
+		add_action( 'mkl_pc_frontend_configurator_footer_form', array( $ep, 'after_add_to_cart_button' ), 17 );
+
+		add_action( 'mkl_pc_frontend_configurator_footer_form', function() {
+			echo '</div>';
+		}, 18 );
+	}
+
+	$syd = mkl_pc()->get_extension( 'save-your-design' );
+	if ( $syd ) {
+		remove_action( 'mkl_pc_frontend_configurator_footer_section_right_before', array( $syd->product, 'add_configurator_button' ), 20 ); 
+		add_action( 'mkl_pc_frontend_configurator_footer_form', array( $syd->product, 'add_configurator_button' ), 120 ); 
+	}
+}
+add_action( 'mkl_pc_frontend_configurator_footer_section_left_before', 'mkl_pc_lapomme_theme_move_extra_price', 40 );
+
 function mkl_pc_lapomme_theme_filter_colors( $colors ) {
 	$remove = [ 'active_layer_button_bg_color', 'active_layer_button_text_color', 'active_choice_button_bg_color', 'active_choice_button_text_color' ];
 	foreach( $remove as  $r ) {
@@ -47,5 +79,3 @@ function mkl_pc_lapomme_theme_filter_colors( $colors ) {
 }
 add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_lapomme_theme_filter_colors' );
 
-require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-no-form-modal.php';
-new MKL_PC_Theme__no_form_modal( 'lapomme' );
