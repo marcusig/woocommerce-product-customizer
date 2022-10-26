@@ -18,6 +18,11 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 		private function _hooks() {
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
+
+			add_filter( 'woocommerce_add_cart_item', array( $this, 'add_weight_to_product' ), 10, 3 );
+			add_filter( 'woocommerce_product_get_weight', array( $this, 'get_weight' ), 20, 2 );
+			add_filter( 'woocommerce_cart_contents_weight', array( $this, 'recalculate_cart_weight' ), 10 );
+			
 			add_filter( 'woocommerce_order_again_cart_item_data', array( $this, 'wc_order_again_cart_item_data' ), 10, 3 ); 
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
@@ -81,17 +86,25 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$cart->remove_cart_item( $_POST['pc_cart_item_key'] );
 					}
 
+
 					if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
 						$data = Plugin::instance()->db->sanitize( $data );
+						$item_weight = 0;
 						$layers = array();
 						if ( is_array( $data ) ) { 
 							foreach( $data as $layer_data ) {
 								$choice = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
 								$layers[] = $choice;
+								if ( $weight = $choice->get_choice( 'weight' ) ) {
+									$item_weight += floatval( $weight );
+								}
 								do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$data ) );
 							}
 						}
 
+						if ( $item_weight ) {
+							$cart_item_data['configuration_weight'] = $item_weight; 
+						}
 						$cart_item_data['configurator_data'] = $layers; 
 						$cart_item_data['configurator_data_raw'] = $data;
 					}
@@ -298,11 +311,46 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return '';
 		}
 
-		// public function wc_add_cart_item( $data, $cart_item_key ) {
+		public function add_weight_to_product( $cart_item, $cart_item_key ) {
+			if ( isset( $cart_item['data'] ) && isset( $cart_item['configuration_weight'] ) ) {
+				$cart_item['data']->update_meta_data( 'configuration_weight', $cart_item['configuration_weight'] );
+			}
+			return $cart_item;
+		}
 
-		// 	return $data;
+		/**
+		 * Maybe add the extra weight to the original item
+		 *
+		 * @param float      $weight
+		 * @param WC_Product $product
+		 * @return float
+		 */
+		public function get_weight( $weight, $product ) {
+			if ( $extra_weight = $product->get_meta( 'configuration_weight', true ) ) {
+				return floatval( $weight ) + floatval( $extra_weight );
+			}
+			return $weight;
+		}
 
-		// }
+		/**
+		 * Maybe add the extra weight to the original item
+		 *
+		 * @param float $weight
+		 * @return float
+		 */
+		public function recalculate_cart_weight( $weight ) {
+			// return $weight;
+			foreach ( WC()->cart->get_cart() as $cart_item_key => $values ) {
+				if ( $values['data']->has_weight() ) {
+					$w = (float) $values['data']->get_weight();
+					// if ( isset( $values['configuration_weight'] ) ) {
+					// 	$w += (float) $values['configuration_weight'];
+					// }
+					$weight += (float) $w * $values['quantity'];
+				}
+			}
+			return $weight;
+		}
 
 		// public function pc_price_change( $cart_object ) {
 		//     foreach ( $cart_object->cart_contents as $key => $value ) {
