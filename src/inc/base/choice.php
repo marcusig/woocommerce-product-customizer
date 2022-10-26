@@ -103,6 +103,7 @@ class Choice {
 	}
 
 	public function get_image( $type = 'image' ) {
+		if ( ! $this->images ) return '';
 		return $this->images[ $type ];
 	}
 
