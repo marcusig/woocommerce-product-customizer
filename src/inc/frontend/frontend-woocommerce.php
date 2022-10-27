@@ -242,7 +242,12 @@ class Frontend_Woocommerce {
 		
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
+		
+		// Register vendor scripts
 		wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
+		wp_register_script( 'mkl_pc/html2canvas', MKL_PC_ASSETS_URL . 'js/vendor/html2canvas.min.js', [], '1.4.1', true );
+		wp_register_script( 'mkl_pc/touchswipe', MKL_PC_ASSETS_URL . 'js/vendor/jquery.touchSwipe.min.js', [], '1.6.18', true );
+
 		wp_enqueue_script( 'mkl_pc/general', MKL_PC_ASSETS_URL . 'js/general.js', [ 'jquery' ], filemtime( MKL_PC_ASSETS_PATH . 'js/general.js' ) );
 		wp_localize_script( 'mkl_pc/general', 'mkl_pc_general', [
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
@@ -294,6 +299,14 @@ class Frontend_Woocommerce {
 		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
 			$deps[] = 'mkl_pc/js/vendor/tippy';
 		}
+
+		// if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
+		// 	$deps[] = 'mkl_pc/touchswipe';
+		// }
+
+		// if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
+		// 	$deps[] = 'mkl_pc/html2canvas';
+		// }
 
 		// Porto compatibility
 		if ( defined( 'PORTO_VERSION' ) ) {
