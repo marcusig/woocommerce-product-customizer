@@ -681,7 +681,7 @@ msgstr ""
 msgid "The provided ID is not a valid product."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:324
+#: src/inc/frontend/frontend-woocommerce.php:331
 msgid "%s is required"
 msgstr ""
 
