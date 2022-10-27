@@ -537,6 +537,14 @@ $inner_space: 1em;
 						&.hide_in_configurator {
 							display: none !important;
 						}
+
+						&.form-item {
+							padding-top: 5px;
+							padding-bottom: 5px;
+							&:first-child {
+								padding-top: 1em;
+							}
+						}
 						// -webkit-animation: slide-in-left 1.0s ease-out;
 						// animation: slide-in-left 1.0s ease-out;
 
@@ -614,6 +622,9 @@ $inner_space: 1em;
 							}
 							
 							li.choice.active {
+								&.has-text-field {
+									border-bottom: 1px solid $light-gray;
+								}
 								> button {
 									background: darken($active_bg, 5%); 
 								}
@@ -1267,7 +1278,7 @@ body.configurator_is_inline .mkl_pc {
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul {
     display: flex;
     flex-wrap: wrap;
-
+	padding: 5px;
 	li.is-group {
 		width: 100%;
 	}
@@ -1276,7 +1287,11 @@ body.configurator_is_inline .mkl_pc {
 		padding: 5px;
 
 		button {
-			padding: 0;
+			padding: 4px;
+			text-align: center;
+			&:focus {
+				outline: 2px solid color(primary);
+			}
 		}
 
 		i.mkl-pc-thumbnail {
@@ -1305,6 +1320,9 @@ body.configurator_is_inline .mkl_pc {
 		&.active button {
 			background: transparent;
 			i.mkl-pc-thumbnail {
+				width: 44px;
+				height: 44px;
+				right: auto;
 				border-color: color( active_choice_button_bg_color );
 			}
 			i.mkl-pc-thumbnail span {
