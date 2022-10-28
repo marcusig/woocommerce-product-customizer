@@ -85,6 +85,19 @@ class Cache {
 		}
 	}
 
+	/**
+	 * Delete a configuraiton file, given a product ID
+	 *
+	 * @param integer $product_id The product ID
+	 */
+	public function delete_config_file( $product_id ) {
+		$location = $this->get_cache_location();
+		$file_name = $this->get_config_file_name( $product_id );
+		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) {
+			unlink( trailingslashit( $location['path'] ) . $file_name );
+		}
+	}
+
 	public function purge() {
 		$location = $this->get_cache_location();
 		$src = $location[ 'path' ];
