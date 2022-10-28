@@ -112,7 +112,7 @@ PC.actionParameter = 'pc_get_data';
 
 		$('form.cart').each(function(index, form) { 
 
-			if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( form ).find( 'button[name="add-to-cart"]' ).prop( 'disabled', 'disabled' ); 
+			if ( $( 'body' ).is( '.is_configurable' ) && ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( form ).find( 'button[name="add-to-cart"]' ).prop( 'disabled', 'disabled' ); 
 			$( form ).on( 'submit', function( event ) {
 				$( 'input[name=pc_configurator_data]' ).val( PC.fe.save_data.save() ); 
 				if( $( 'input[name=pc_configurator_data]' ).val() == '' ) {
