@@ -28,7 +28,8 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 
 			if ( ! is_string( $meta->value ) || ( ! strpos( $meta->value, 'order-configuration-details' ) && ! strpos( $meta->value, 'order-configuration' ) ) ) return $display_value;
 
-			if ( apply_filters( 'mkl/order/override_saved_meta', ! strpos( $meta->value, 'order-configuration-details' ) ) ) {
+			// Automatically override items with 'order-configuration-details'
+			if ( apply_filters( 'mkl/order/override_saved_meta', strpos( $meta->value, 'order-configuration-details' ) ) ) {
 			
 				static $items_count;
 				if ( ! $items_count ) {
@@ -37,26 +38,25 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 					$items_count += 1;
 				}
 				$configurator_data = $order_item->get_meta( '_configurator_data' );
+				if ( ! $configurator_data ) return $display_value;
 				$fe_order = mkl_pc( 'frontend' )->order;
 				$product = is_callable( array( $order_item, 'get_product' ) ) ? $order_item->get_product() : false;
-				
-				foreach ( $configurator_data as $layer ) {
-					if ( is_object($layer) ) {
-						if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
-						if ( $layer->is_choice() ) :
-							$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $fe_order->set_order_item_meta( $layer, $product ), $layer, $order_item, [], $items_count );
-							$order_meta_for_configuration[] = $choice_meta;
-						?>
-						<?php
-						endif;
-					} 
-				}
+				$order_meta_for_configuration = $fe_order->get_configuration_choices_for_display( $configurator_data, $order_item );
+				// foreach ( $configurator_data as $layer ) {
+				// 	if ( is_object($layer) ) {
+				// 		if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
+				// 		if ( $layer->is_choice() ) :
+				// 			$choice_meta = apply_filters( 'mkl_pc/order_created/save_layer_meta', $fe_order->set_order_item_meta( $layer, $product ), $layer, $order_item, [], $items_count );
+				// 			$order_meta_for_configuration[] = $choice_meta;
+				// 		endif;
+				// 	} 
+				// }
 
 				if ( ! empty( $order_meta_for_configuration ) ) {
 					$display_value = $fe_order->get_choices_html( $order_meta_for_configuration );
 				}
-			}
-			
+			} 
+			$display_value = apply_filters( 'mkl/order/admin_meta/display_value', $display_value, $configurator_data, $order_item );
 			$view_link = $order_item->get_meta( '_configurator_data_raw' ) ? get_permalink( $order_item->get_product_id() ) : false;
 			return $display_value . ( $view_link ? '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>' : '' );
 		}
