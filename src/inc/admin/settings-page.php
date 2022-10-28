@@ -370,6 +370,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'swipe_to_change_view',
+				__( 'The user can swipe right or left to change view', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'swipe_to_change_view',
+				]
+			);
+
 			if ( ! Utils::check_image_requirements() ) {
 				add_settings_field(
 					'image_warning',

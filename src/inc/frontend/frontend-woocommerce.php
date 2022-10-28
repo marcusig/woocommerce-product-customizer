@@ -300,9 +300,9 @@ class Frontend_Woocommerce {
 			$deps[] = 'mkl_pc/js/vendor/tippy';
 		}
 
-		// if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
-		// 	$deps[] = 'mkl_pc/touchswipe';
-		// }
+		if ( ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ) ) {
+			$deps[] = 'mkl_pc/touchswipe';
+		}
 
 		// if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
 		// 	$deps[] = 'mkl_pc/html2canvas';
@@ -354,6 +354,7 @@ class Frontend_Woocommerce {
 				'no_toggle' => false,
 				'open_first_layer' => ( bool ) mkl_pc( 'settings')->get( 'open_first_layer', false ),
 				'auto_scroll' => ( bool ) mkl_pc( 'settings')->get( 'auto_scroll', false ),
+				'swipe_to_change_view' => ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),

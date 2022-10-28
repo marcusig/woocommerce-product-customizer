@@ -98,6 +98,86 @@ $inner_space: 1em;
 	}
 }
 
+// @keyframes swipe-previous {
+// 	0% {
+//         width: 0px;
+//         right: 0;
+// 	}
+//     30% {
+//         width: 100%;
+//         right: 0;
+// 	}
+//     60% {
+//         width: 100%;
+//         right: 0;
+// 	}
+    
+//     100% {
+//         width: 0px;
+//         right: 100%;
+// 	}
+// }
+
+// @keyframes swipe-next {
+// 	0% {
+//         width: 0px;
+//         right: 100%;
+// 	}
+//     30% {
+//         width: 100%;
+//         right: 0;
+// 	}
+//     60% {
+//         width: 100%;
+//         right: 0;
+// 	}
+    
+//     100% {
+//         width: 0px;
+//         right: 0;
+// 	}
+// }
+
+// .mkl_pc .mkl_pc_container .mkl_pc_viewer .mkl_pc_layers::before {
+//     content: '';
+//     display: block;
+//     position: absolute;
+//     height: 100%;
+//     background: red;
+//     z-index: 3;
+// }
+
+// .mkl_pc .mkl_pc_container .mkl_pc_viewer .mkl_pc_layers::after {
+//     content: '';
+//     display: block;
+//     position: absolute;
+//     height: 2px;
+// 	width: 50px;
+//     background: #000;
+//     z-index: 3;
+// 	opacity: 1;
+// 	left: calc( 50% - 25px);
+// 	top: 50%;
+// }
+
+// .mkl_pc .mkl_pc_container .mkl_pc_viewer .mkl_pc_layers.do-swipe-right::before {
+//     animation: 2s swipe-previous;
+// }
+
+// .mkl_pc .mkl_pc_container .mkl_pc_viewer .mkl_pc_layers.do-swipe-right::before {
+//     animation: 2s swipe-previous;
+// }
+
+// .mkl_pc .mkl_pc_container .mkl_pc_viewer .mkl_pc_layers.swiping-left::after {
+//     left: calc( 100% - 10px);
+// 	background: red;
+// }
+
+// .mkl_pc .mkl_pc_container .mkl_pc_viewer .mkl_pc_layers.swiping-right::after {
+//     left: 10px;
+// 	background: red;
+// }
+
 /* Woocommerce  */
 .configurator_is_opened:not(.configurator_is_inline) {
 	overflow: hidden;

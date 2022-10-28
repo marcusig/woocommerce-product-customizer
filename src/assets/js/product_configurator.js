@@ -162,6 +162,83 @@ PC.actionParameter = 'pc_get_data';
 			} else if ( PC.fe.initial_preset ) {
 				PC.fe.setConfig( PC.fe.initial_preset );
 			}
+
+			
+			
+			// Swipe
+			if ( PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
+				var swipeOptions = {
+					triggerOnTouchEnd: true,
+					swipeStatus: function( event, phase, direction, distance ) {
+						var current_angle = PC.fe.angles.findWhere( { active: true } );
+						var current_index = PC.fe.angles.indexOf( current_angle );
+						var new_angle = false;
+						var previous_angle = 0 <= ( current_index - 1 ) ? PC.fe.angles.at( current_index - 1) : false;
+						var next_angle = PC.fe.angles.at( current_index + 1);
+						
+						if ( 'start' == phase ) {
+							console.log('start', direction);
+						} else if ( 'end' == phase ) {
+							if ( 'right' == direction && previous_angle ) {
+								new_angle = previous_angle;
+							}
+
+							if ( 'left' == direction && next_angle ) {
+								new_angle = next_angle;
+							}
+
+							if ( current_angle && new_angle ) {
+								current_angle.set( 'active', false );
+								new_angle.set( 'active', true );
+								// $( '.mkl_pc_layers' )
+								// 	.removeClass( 'swiping-left' )
+								// 	.removeClass( 'swiping-right' )
+								// 	.addClass( 'do-swipe-' + direction );
+
+								// setTimeout( function() {
+								// 	$( '.mkl_pc_layers' ).removeClass( 'do-swipe-' + direction );
+								// }, 2000 );
+							}
+							// $( '.mkl_pc_layers' ).css( 'transform', 'translateX(0px)' );
+						} else if ( 'move' == phase ) {
+
+							if ( 'right' == direction && ! previous_angle ) {
+								return;
+							}
+
+							if ( 'left' == direction && ! next_angle ) {
+								return;
+							}
+
+							if ( 'left' == direction ) {
+								// show previous indication
+								// distance = distance * -1;
+								// $( '.mkl_pc_layers' ).addClass( 'swiping-left' );
+							}
+
+							if ( 'right' == direction ) {
+								// show previous indication
+								// $( '.mkl_pc_layers' ).addClass( 'swiping-right' );
+							}
+
+							if ( 'left' == direction || 'right' == direction ) {
+								// $( '.mkl_pc_layers' ).css( 'transform', 'translateX(' + distance + 'px)' );
+							}
+						} else if ( 'cancel' == phase ) {
+							// $( '.mkl_pc_layers' ).css( 'transform', 'translateX(0px)' );
+							// $( '.mkl_pc_layers' )
+							// 		.removeClass( 'swiping-left' )
+							// 		.removeClass( 'swiping-right' )
+							// 		.removeClass( 'do-swipe-' + direction );
+						}
+					},
+					allowPageScroll: "vertical",
+					threshold: 75
+				};
+				$( '.mkl_pc_layers' ).swipe( swipeOptions );
+				
+			}
+
 		}, 20 );
 
 
