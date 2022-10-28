@@ -207,9 +207,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// array('backbone', 'admin.js'),
 			);
 
+			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) ) {
+				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
+			}
+
 			if ( $this->_current_screen_is( 'product' ) ) {
 
-				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
 				
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
 				// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
