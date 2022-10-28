@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.39
+Stable tag: 1.2.40
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,13 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.40 - 28/Oct/2022 =
+
+* FEATURE: Possibility to swipe the viewer to change view
+* FIX: Order summary may not be displaying correctly in the admin on older orders
+* TWEAK: Possibility do display the group name in the selected item list in the configurator
+* TWEAK: Do not disable the add to cart button if the current product is not configurable
 
 = 1.2.39 - 21/Oct/2022 =
 
@@ -447,4 +454,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.39 Reverse dynamic order meta
+* 1.2.40 Various tweaks and fixes, possibility to swipe between views
