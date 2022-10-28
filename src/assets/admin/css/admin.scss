@@ -880,3 +880,17 @@ CONTENT
 		display: block;
 	}
 }
+
+#order_line_items {
+	.user-uploads {
+		margin-bottom: 10px;
+		padding-bottom: 10px;
+		padding-top: 10px;
+		border-bottom: 1px solid #f1f1f7;
+		border-top: 1px solid #f1f1f7;
+		margin-top: 10px;
+		h4 {
+			margin: 0;
+		}
+	}
+}
