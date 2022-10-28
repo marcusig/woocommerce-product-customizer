@@ -176,9 +176,7 @@ PC.actionParameter = 'pc_get_data';
 						var previous_angle = 0 <= ( current_index - 1 ) ? PC.fe.angles.at( current_index - 1) : false;
 						var next_angle = PC.fe.angles.at( current_index + 1);
 						
-						if ( 'start' == phase ) {
-							console.log('start', direction);
-						} else if ( 'end' == phase ) {
+						if ( 'end' == phase ) {
 							if ( 'right' == direction && previous_angle ) {
 								new_angle = previous_angle;
 							}
@@ -190,46 +188,7 @@ PC.actionParameter = 'pc_get_data';
 							if ( current_angle && new_angle ) {
 								current_angle.set( 'active', false );
 								new_angle.set( 'active', true );
-								// $( '.mkl_pc_layers' )
-								// 	.removeClass( 'swiping-left' )
-								// 	.removeClass( 'swiping-right' )
-								// 	.addClass( 'do-swipe-' + direction );
-
-								// setTimeout( function() {
-								// 	$( '.mkl_pc_layers' ).removeClass( 'do-swipe-' + direction );
-								// }, 2000 );
 							}
-							// $( '.mkl_pc_layers' ).css( 'transform', 'translateX(0px)' );
-						} else if ( 'move' == phase ) {
-
-							if ( 'right' == direction && ! previous_angle ) {
-								return;
-							}
-
-							if ( 'left' == direction && ! next_angle ) {
-								return;
-							}
-
-							if ( 'left' == direction ) {
-								// show previous indication
-								// distance = distance * -1;
-								// $( '.mkl_pc_layers' ).addClass( 'swiping-left' );
-							}
-
-							if ( 'right' == direction ) {
-								// show previous indication
-								// $( '.mkl_pc_layers' ).addClass( 'swiping-right' );
-							}
-
-							if ( 'left' == direction || 'right' == direction ) {
-								// $( '.mkl_pc_layers' ).css( 'transform', 'translateX(' + distance + 'px)' );
-							}
-						} else if ( 'cancel' == phase ) {
-							// $( '.mkl_pc_layers' ).css( 'transform', 'translateX(0px)' );
-							// $( '.mkl_pc_layers' )
-							// 		.removeClass( 'swiping-left' )
-							// 		.removeClass( 'swiping-right' )
-							// 		.removeClass( 'do-swipe-' + direction );
 						}
 					},
 					allowPageScroll: "vertical",
