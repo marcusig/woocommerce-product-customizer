@@ -28,6 +28,9 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 
 			if ( ! is_string( $meta->value ) || ( ! strpos( $meta->value, 'order-configuration-details' ) && ! strpos( $meta->value, 'order-configuration' ) ) ) return $display_value;
 
+			$configurator_data = $order_item->get_meta( '_configurator_data' );
+			if ( ! $configurator_data ) return $display_value;
+			
 			// Automatically override items with 'order-configuration-details'
 			if ( apply_filters( 'mkl/order/override_saved_meta', strpos( $meta->value, 'order-configuration-details' ) ) ) {
 			
@@ -37,8 +40,6 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 				} else {
 					$items_count += 1;
 				}
-				$configurator_data = $order_item->get_meta( '_configurator_data' );
-				if ( ! $configurator_data ) return $display_value;
 				$fe_order = mkl_pc( 'frontend' )->order;
 				$product = is_callable( array( $order_item, 'get_product' ) ) ? $order_item->get_product() : false;
 				$order_meta_for_configuration = $fe_order->get_configuration_choices_for_display( $configurator_data, $order_item );
@@ -55,8 +56,9 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 				if ( ! empty( $order_meta_for_configuration ) ) {
 					$display_value = $fe_order->get_choices_html( $order_meta_for_configuration );
 				}
-			} 
-			$display_value = apply_filters( 'mkl/order/admin_meta/display_value', $display_value, $configurator_data, $order_item );
+			}
+			
+			$display_value = apply_filters( 'mkl/order/admin_meta/display_value', $display_value, $order_item, $configurator_data );
 			$view_link = $order_item->get_meta( '_configurator_data_raw' ) ? get_permalink( $order_item->get_product_id() ) : false;
 			return $display_value . ( $view_link ? '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>' : '' );
 		}
