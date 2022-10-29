@@ -217,7 +217,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:61, src/inc/admin/settings-page.php:711, src/inc/admin/settings-page.php:717, src/inc/frontend/order.php:57
+#: src/inc/admin/order.php:62, src/inc/admin/settings-page.php:711, src/inc/admin/settings-page.php:717, src/inc/frontend/order.php:57
 msgid "View configuration"
 msgstr ""
 
