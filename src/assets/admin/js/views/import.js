@@ -310,7 +310,7 @@ PC.import.views = PC.import.views || {};
 				var file_content = e.target.result;
 				var configuration = JSON.parse( file_content ); // parse json 
 				var collections = wp.hooks.applyFilters( 'PC.fe.import.collections', [ 'layers', 'content', 'angles', 'conditions' ] );
-				_.each( collections, function( col_name ) {
+				PC._us.each( collections, function( col_name ) {
 					if ( ! configuration.hasOwnProperty( col_name ) ) return;
 				} );
 				Import.imported_data = Import.imported_data || {};

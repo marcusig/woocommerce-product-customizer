@@ -69,7 +69,7 @@ PC.views = PC.views || {};
 		},
 
 		choices_changed: function(e,f) {
-			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
+			if ( 1 === PC._us.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
 			PC.app.is_modified[this.collectionName] = true;
 		},
 
@@ -83,7 +83,7 @@ PC.views = PC.views || {};
 			this.$list.append( new_choice.render().el );
 		},
 		update_groups: function() {
-			_.each( this.items, function( view ) {
+			PC._us.each( this.items, function( view ) {
 				if ( view.model.get( 'parent' ) ) {
 					var target = this.$( '.choices[data-item-id=' + view.model.get( 'parent' ) + ']');
 					if ( target.length ) {
@@ -144,7 +144,7 @@ PC.views = PC.views || {};
 		},
 
 		remove_views: function() {
-			_.each( this.items, this.remove_item );
+			PC._us.each( this.items, this.remove_item );
 			this.items = [];
 		},
 
@@ -307,7 +307,7 @@ PC.views = PC.views || {};
 			} else {
 				args = {};
 			}
-			this.$el.html( this.template( _.defaults( args, this.model.attributes ) ) );
+			this.$el.html( this.template( PC._us.defaults( args, this.model.attributes ) ) );
 			this.$pictures = this.$('.views');
 
 			if ( this.model.get( 'is_group' ) )  {
@@ -500,7 +500,7 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.empty();
 
-			var data = _.defaults(this.model.attributes);
+			var data = PC._us.defaults(this.model.attributes);
 			data.is_group = this.options.choice.get( 'is_group' );
 			data.angle_name = this.options.angle.get('name');
 			this.$el.append( this.template( data ) );

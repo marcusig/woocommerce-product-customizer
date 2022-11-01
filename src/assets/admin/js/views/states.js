@@ -144,7 +144,7 @@ PC.views.state = Backbone.View.extend({
 		if( this.menu && this.menu.length > 1 ) {
 			var menu_target = new PC.views.button_group();
 			this.$('.media-toolbar-primary').append( menu_target.render().el ); 
-			_.each( this.menu, function( menu_item, ind ) {
+			PC._us.each( this.menu, function( menu_item, ind ) {
 				var button = new PC.views.button( menu_item );
 				menu_target.$el.append( button.render().el );
 			});
@@ -170,8 +170,8 @@ PC.views.state = Backbone.View.extend({
 
 		PC.app.save( this.collectionName, this.col, {
 			// success: 'successfuil'
-			success: _.bind(this.state_saved, this),
-			error: _.bind(this.error_saving, this),
+			success: PC._us.bind(this.state_saved, this),
+			error: PC._us.bind(this.error_saving, this),
 		} );
 		// this.layers.save();
 	},
@@ -186,7 +186,7 @@ PC.views.state = Backbone.View.extend({
 		this.$el.addClass('saved'); 
 		var that = this;
 		// show "saved" for 2.5s
-		_.delay(function() {
+		PC._us.delay(function() {
 			that.$toolbar.removeClass('saved'); 
 			that.$el.removeClass('saved'); 
 		}, 2500);
@@ -237,7 +237,7 @@ PC.views.button = Backbone.View.extend({
 	tagName: 'button',
 	className: 'button media-button button-large',
 	initialize: function( options ) {
-		this.options = _.defaults( options, { text: ' - ', class:'' } );
+		this.options = PC._us.defaults( options, { text: ' - ', class:'' } );
 
 		this.render();
 	},

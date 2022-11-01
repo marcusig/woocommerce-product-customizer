@@ -233,7 +233,7 @@
 			}).done( function( response ) {
 				if ( response && response.length ) {
 					var options = $( '#configurable-products' ).select2();
-					_.each( response, function( item, i ) {
+					PC._us.each( response, function( item, i ) {
 						var newOption = new Option(item.name, item.id, i == 0, i == 0);
 						options.append( newOption );
 					} );

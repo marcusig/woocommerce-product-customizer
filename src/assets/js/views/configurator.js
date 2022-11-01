@@ -267,7 +267,7 @@ PC.options = PC.options || {};
 				// show errors and prevent adding to cart
 				console.log( errors );
 				var messages = [];
-				_.each( PC.fe.errors, function( error ) {
+				PC._us.each( PC.fe.errors, function( error ) {
 					if ( error.choice ) {
 						error.choice.set( 'has_error', error );
 					}
@@ -573,7 +573,7 @@ PC.options = PC.options || {};
 			if ( 'group' == this.model.get( 'type' ) && PC.fe.layers ) {
 				this.children_layers = PC.fe.layers.where( { 'parent': this.model.id  } );
 				if ( this.children_layers.length ) {
-					_.each( this.children_layers, function( l ) {
+					PC._us.each( this.children_layers, function( l ) {
 						var c_choices = PC.fe.getLayerContent( l.id );
 						this.listenTo( c_choices, 'change:active', this.render );
 					}.bind( this ) );
@@ -584,7 +584,7 @@ PC.options = PC.options || {};
 		render: function( changed_model ) {
 			var choices_names = [];
 			var active_choices = this.choices.where( { active: true } );
-			_.each( active_choices, function( item ) {
+			PC._us.each( active_choices, function( item ) {
 				var name = item.get_name();
 				if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
 					var parent = item.collection.get( item.get( 'parent' ) );
@@ -596,11 +596,11 @@ PC.options = PC.options || {};
 			}.bind( this ) );
 
 			if ( this.children_layers && this.children_layers.length ) {
-				_.each( this.children_layers, function( l ) {
+				PC._us.each( this.children_layers, function( l ) {
 					var c_choices = PC.fe.getLayerContent( l.id );
 					if ( c_choices ) {
 						var active_child_choices = c_choices.where( { active: true } );
-						_.each( active_child_choices, function( item ) {
+						PC._us.each( active_child_choices, function( item ) {
 							var name = item.get_name();
 							if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
 								var parent = item.collection.get( item.get( 'parent' ) );
@@ -634,7 +634,7 @@ PC.options = PC.options || {};
 		render: function( choice_model, activated ) {
 			var active_choices = this.choices.where( { active: true } );
 			var html_content = '';
-			_.each( active_choices, function( item ) {
+			PC._us.each( active_choices, function( item ) {
 				var image = item.get_image( 'thumbnail' );
 				if ( image ) {
 					html_content += '<img src="' + image + '">';
@@ -730,7 +730,7 @@ PC.options = PC.options || {};
 			 */
 			wp.hooks.doAction( 'PC.fe.configurator.choice-item.before.render', this );
 			
-			var data = _.extend({
+			var data = PC._us.extend({
 				thumbnail: this.model.get_image( 'thumbnail' ),
 				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
 			}, this.options.model.attributes );
@@ -911,7 +911,7 @@ PC.options = PC.options || {};
 
 		add_layers: function() {
 			var orders = PC.fe.layers.pluck( 'image_order' );
-			if ( orders.length && _.max( orders ) ) {
+			if ( orders.length && PC._us.max( orders ) ) {
 				PC.fe.layers.orderBy = 'image_order';
 				PC.fe.layers.sort();
 			}
@@ -1289,7 +1289,7 @@ PC.options = PC.options || {};
 
 		reset_errors: function() {
 			if ( PC.fe.errors.length ) {
-				_.each( PC.fe.errors, function( error ) {
+				PC._us.each( PC.fe.errors, function( error ) {
 					if ( error.choice && error.choice.get( 'has_error' ) ) {
 						error.choice.set( 'has_error', false );
 					}
@@ -1355,7 +1355,7 @@ PC.options = PC.options || {};
 						require_error = true;
 					}
 
-					_.each( selected_choices, function( choice ) {
+					PC._us.each( selected_choices, function( choice ) {
 						if ( false === choice.get( 'cshow' ) ) return;
 						if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.parent_is_hidden && PC.conditionalLogic.parent_is_hidden( choice ) ) return;
 						// Check for a required item

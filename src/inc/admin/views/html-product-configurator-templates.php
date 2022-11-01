@@ -425,7 +425,7 @@ IMPORT / EXPORT
 	<div class="importer-header">
 		<button class="button button-group button-primary return" type="button" data-action="return"><span class="dashicons dashicons-arrow-left-alt"></span></button>
 		<ol>
-			<# _.each( data.menu_items, function( item, index ) { #>
+			<# PC._us.each( data.menu_items, function( item, index ) { #>
 				<li>{{item.label}}</li>
 			<# }); #>
 		</ol>
@@ -458,14 +458,14 @@ IMPORT / EXPORT
 			<div class="preview-content--collection">
 				<h4><?php _e( 'Layers and content:', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc">
-					<# _.each( data.layers, function( layer ) { #>
+					<# PC._us.each( data.layers, function( layer ) { #>
 						<li>{{layer.name}}
 							<#
-								var content = data.content && _.findWhere( data.content, { layerId: layer._id } );
+								var content = data.content && PC._us.findWhere( data.content, { layerId: layer._id } );
 								if ( content && content.choices && content.choices.length ) {
 							#>
 								<ul class="ul-square">
-									<# _.each( content.choices, function( choice ) { #>
+									<# PC._us.each( content.choices, function( choice ) { #>
 										<li>{{choice.name}}</li>
 									<# }); #>
 								</ul>
@@ -480,7 +480,7 @@ IMPORT / EXPORT
 			<div class="preview-content--collection">
 				<h4><?php _e( 'Angles:', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc">
-					<# _.each( data.angles, function( angle ) { #>
+					<# PC._us.each( data.angles, function( angle ) { #>
 						<li>{{angle.name}}</li>
 					<# }); #>
 				</ul>
@@ -491,7 +491,7 @@ IMPORT / EXPORT
 			<div class="preview-content--collection">
 				<h4><?php _e( 'Conditions', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc">
-					<# _.each( data.conditions, function( condition ) { #>
+					<# PC._us.each( data.conditions, function( condition ) { #>
 						<li>{{condition.name}}</li>
 					<# }); #>
 				</ul>

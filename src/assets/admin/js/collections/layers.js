@@ -32,7 +32,7 @@ PC.layers = Backbone.Collection.extend({
     },
 
 	create_layer: function( data ) {
-		var m = _.extend( data, {
+		var m = PC._us.extend( data, {
 			_id: PC.app.get_new_id( this ),
 			order: this.nextOrder(),
 			image_order: this.nextOrder( 'image_order' ),

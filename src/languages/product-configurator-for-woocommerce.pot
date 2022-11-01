@@ -217,7 +217,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:62, src/inc/admin/settings-page.php:711, src/inc/admin/settings-page.php:717, src/inc/frontend/order.php:57
+#: src/inc/admin/order.php:63, src/inc/admin/settings-page.php:711, src/inc/admin/settings-page.php:717, src/inc/frontend/order.php:57
 msgid "View configuration"
 msgstr ""
 
@@ -273,39 +273,39 @@ msgstr ""
 msgid "Start a support topic on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:226
+#: src/inc/admin/product.php:229
 msgid "Select a picture"
 msgstr ""
 
-#: src/inc/admin/product.php:227, src/inc/admin/views/html-product-configurator-templates.php:393
+#: src/inc/admin/product.php:230, src/inc/admin/views/html-product-configurator-templates.php:393
 msgid "Choose"
 msgstr ""
 
-#: src/inc/admin/product.php:228
+#: src/inc/admin/product.php:231
 msgid "New Layer Name"
 msgstr ""
 
-#: src/inc/admin/product.php:229
+#: src/inc/admin/product.php:232
 msgid "New Angle Name"
 msgstr ""
 
-#: src/inc/admin/product.php:230
+#: src/inc/admin/product.php:233
 msgid "New Choice Name"
 msgstr ""
 
-#: src/inc/admin/product.php:231
+#: src/inc/admin/product.php:234
 msgid "Changing the type to group will discard the content you already added to this layer."
 msgstr ""
 
-#: src/inc/admin/product.php:231
+#: src/inc/admin/product.php:234
 msgid "Do you want to continue?"
 msgstr ""
 
-#: src/inc/admin/product.php:271
+#: src/inc/admin/product.php:274
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:286
+#: src/inc/admin/product.php:289
 msgid "Edit configurator layers"
 msgstr ""
 
@@ -685,7 +685,7 @@ msgstr ""
 msgid "The provided ID is not a valid product."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:337
+#: src/inc/frontend/frontend-woocommerce.php:340
 msgid "%s is required"
 msgstr ""
 

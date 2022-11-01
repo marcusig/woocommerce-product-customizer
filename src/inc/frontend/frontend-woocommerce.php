@@ -402,6 +402,10 @@ class Frontend_Woocommerce {
 		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
 
 		wp_enqueue_style( 'mlk_pc/css' );
+		wp_add_inline_script( 'underscore', "
+			var PC = PC || {};
+			PC._us = _;
+		", 'after' );
 
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );

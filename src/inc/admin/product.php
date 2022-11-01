@@ -235,6 +235,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'enable_html_layers' => true,
 				) ) );
 
+				wp_add_inline_script( 'underscore', "
+					var PC = PC || {};
+					PC._us = _;
+				", 'after' );
+					
 				do_action( 'mkl_pc_admin_scripts_product_page' );
 			}
 		}

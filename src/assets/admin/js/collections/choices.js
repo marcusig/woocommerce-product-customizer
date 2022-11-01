@@ -45,7 +45,7 @@ PC.choices = Backbone.Collection.extend({
 			}
 		} else if ( 'multiple' === this.layer_type ) {
 			var default_selection = this.where( { is_default: true, available: true } );
-			_.each( default_selection, function( item ) {
+			PC._us.each( default_selection, function( item ) {
 				item.set( 'active', true );
 			} );
 		}

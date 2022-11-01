@@ -62,7 +62,7 @@
 	// Scroll to newly opened layer, when onening it using conditional logic
 	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/float', function( model ) {
 		var scrollToView = null;
-		_.each( PC.fe.modal.toolbar.layers.items, function( view ) {
+		PC._us.each( PC.fe.modal.toolbar.layers.items, function( view ) {
 			if ( view.model.id == model.id ) {
 				scrollToView = view;
 			}

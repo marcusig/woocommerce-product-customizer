@@ -11,9 +11,9 @@ PC.toJSON = function( item ) {
 	}
 
 	if ( item instanceof Backbone.Model ) {
-		var json = _.clone( item.attributes ); 
+		var json = PC._us.clone( item.attributes ); 
 	} else {
-		var json = _.clone( item );
+		var json = PC._us.clone( item );
 	}
 	for ( var attr in json ) {
 		if ( json[attr] instanceof Backbone.Model || json[attr] instanceof Backbone.Collection || json[attr] instanceof Object ) {
@@ -88,7 +88,7 @@ PC.toJSON = function( item ) {
 		save_all: function( state, options ) {
 			this.saving = 0;
 			this.errors = [];
-			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
+			if ( PC._us.indexOf( PC._us.values( this.is_modified ), true ) != -1 ) {
 
 				if ( state ) {
 					state.$save_button.addClass('disabled');
@@ -101,8 +101,8 @@ PC.toJSON = function( item ) {
 						this.saving ++;
 						this.save( key, this.get_collection( key ), {
 							// success: 'successfuil'
-							success: _.bind( this.saved_all, this, key, state, options ),
-							error: _.bind( this.error_saving, this, key, state, options )
+							success: PC._us.bind( this.saved_all, this, key, state, options ),
+							error: PC._us.bind( this.error_saving, this, key, state, options )
 						} );
 					}
 
@@ -130,7 +130,7 @@ PC.toJSON = function( item ) {
 
 				if ( state && state.state_saved ) state.state_saved();
 				if ( options && options.saved_all ) options.saved_all();
-				// _.delay(function() {
+				// PC._us.delay(function() {
 				// 	that.admin.close();
 				// }, 1500);
 
@@ -161,7 +161,7 @@ PC.toJSON = function( item ) {
 			options.timeout = 24000;
 			
 			// Set the action and ID.
-			options.data = _.extend( options.data || {}, {
+			options.data = PC._us.extend( options.data || {}, {
 				action:  PC.setActionParameter,
 				id:      save_id,
 				nonce:   this.admin_data.get('nonces').update,
@@ -191,7 +191,7 @@ PC.toJSON = function( item ) {
 			// if ( model.hasChanged() ) {
 			// 	options.data.changes = {};
 
-			// 	_.each( model.changed, function( value, key ) {
+			// 	PC._us.each( model.changed, function( value, key ) {
 			// 		options.data.changes[ key ] = this.get( key );
 			// 	}, this );
 			// }

@@ -17,7 +17,7 @@
 			return this.elms;
 		},
 		toJSON : function() {
-			var attrs = _.clone( this.attributes );
+			var attrs = PC._us.clone( this.attributes );
 			return attrs;
 		},
 
@@ -51,7 +51,7 @@
 			return this;
 		},
 		toJSON : function() {
-			var attrs = _.clone( this.attributes );
+			var attrs = PC._us.clone( this.attributes );
 			return attrs;
 		},
 
