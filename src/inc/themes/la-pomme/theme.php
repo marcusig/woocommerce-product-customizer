@@ -79,3 +79,10 @@ function mkl_pc_lapomme_theme_filter_colors( $colors ) {
 }
 add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_lapomme_theme_filter_colors' );
 
+function mkl_pc_lapomme_syd_icon() {
+	return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xml:space="preserve">
+		<path d="m34.9 44.8-9.8-7c-.6-.4-1.5-.4-2.1 0l-9.8 7c-1.2.9-2.9 0-2.9-1.5V4.7c0-1 .8-1.8 1.8-1.8h23.8c1 0 1.8.8 1.8 1.8v38.6c0 1.5-1.6 2.3-2.8 1.5z"/>
+	</svg>
+	';
+}
+add_filter( 'PC.syd.svg.icon', 'mkl_pc_lapomme_syd_icon' );

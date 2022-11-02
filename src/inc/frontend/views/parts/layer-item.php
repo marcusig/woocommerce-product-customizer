@@ -3,7 +3,7 @@
 	<# if ( wp.hooks.applyFilters( 'mkl-pc-configurator-layer-item.with.button', true, data ) ) { #>
 		<button class="layer-item" type="button">
 	<# } else { #>
-		<span class="layer-item" type="button">
+		<span class="layer-item">
 	<# } #>
 			<?php do_action( 'tmpl-mkl-pc-configurator-layer-item-button' ); ?>
 	<# if ( wp.hooks.applyFilters( 'mkl-pc-configurator-layer-item.with.button', true, data ) ) { #>

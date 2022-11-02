@@ -70,6 +70,12 @@
 		return false;
 	} );
 	
+	wp.hooks.addFilter( 'mkl-pc-configurator-layer-item.with.button', 'MKL/PC/Themes/lapomme', function( use_button, data ) {
+		if ( 'dropdown' == data.display_mode ) return true;
+		return false;
+			
+	}, 20 );
+
 	// Scroll to newly opened layer, when onening it using conditional logic
 	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/float', function( model ) {
 		var scrollToView = null;
