@@ -14,7 +14,10 @@ PC.options = PC.options || {};
 		tagName: 'div',
 		className: 'mkl_pc',
 		template: wp.template( 'mkl-pc-configurator' ), 
-		initialize: function( product_id, parent_id ) {
+		initialize: function( options ) {
+			this.options = options;
+			var product_id = options.product_id;
+			var parent_id = options.parent_id;
 			wp.hooks.doAction( 'PC.fe.init.modal', this ); 
 			if ( parent_id ) {
 				this.options = PC.productData['prod_' + parent_id].product_info; 
@@ -86,7 +89,8 @@ PC.options = PC.options || {};
 			if ( this.footer ) this.footer.remove();
 
 			this.viewer = new PC.fe.views.viewer( { parent: this } );
-			this.$main_window.append( this.viewer.render() ); 
+			this.$main_window.append( this.viewer.render() );
+			
 			if ( ! PC.fe.angles.length || ! PC.fe.layers.length || ! PC.fe.contents.content.length ) {
 				console.log( e );
 				var message = $( '<div class="error configurator-error" />' ).text( 'The product configuration seems incomplete. Please make sure Layers, angles and content are set.' );
@@ -568,14 +572,15 @@ PC.options = PC.options || {};
 		className: 'selected-choice',
 		initialize: function() {
 			this.choices = PC.fe.getLayerContent( this.model.id );
-			if ( ! this.choices ) return;
-			this.listenTo( this.choices, 'change:active', this.render );
+			if ( ! this.choices && 'group' !== this.model.get( 'type' ) ) return;
+			this.listenTo( this.choices, 'change:active change:cshow', this.render );
 			if ( 'group' == this.model.get( 'type' ) && PC.fe.layers ) {
 				this.children_layers = PC.fe.layers.where( { 'parent': this.model.id  } );
 				if ( this.children_layers.length ) {
 					PC._us.each( this.children_layers, function( l ) {
 						var c_choices = PC.fe.getLayerContent( l.id );
-						this.listenTo( c_choices, 'change:active', this.render );
+						this.listenTo( c_choices, 'change:active change:cshow', this.render );
+						this.listenTo( l, 'change:cshow', this.render );
 					}.bind( this ) );
 				}
 			}
@@ -583,17 +588,19 @@ PC.options = PC.options || {};
 		},
 		render: function( changed_model ) {
 			var choices_names = [];
-			var active_choices = this.choices.where( { active: true } );
-			PC._us.each( active_choices, function( item ) {
-				var name = item.get_name();
-				if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
-					var parent = item.collection.get( item.get( 'parent' ) );
-					if ( parent.get( 'show_group_label_in_cart' ) ) {
-						name = parent.get_name() + ' - ' + name;
+			if ( this.choices ) {
+				var active_choices = this.choices.where( { active: true } );
+					PC._us.each( active_choices, function( item ) {
+					var name = item.get_name();
+					if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
+						var parent = item.collection.get( item.get( 'parent' ) );
+						if ( parent.get( 'show_group_label_in_cart' ) ) {
+							name = parent.get_name() + ' - ' + name;
+						}
 					}
-				}
-				if ( this.should_display( item ) ) choices_names.push( name );
-			}.bind( this ) );
+					if ( this.should_display( item ) ) choices_names.push( name );
+				}.bind( this ) );
+			}
 
 			if ( this.children_layers && this.children_layers.length ) {
 				PC._us.each( this.children_layers, function( l ) {
@@ -795,7 +802,7 @@ PC.options = PC.options || {};
 					description += this.$( '.out-of-stock' )[0].outerHTML;
 					// console.log('get desc', this.model.collection.layer.get( 'name' ), this.model.get( 'name' ), this.$( '.out-of-stock' ).length, this.$( '.out-of-stock' )[0].outerHTML );
 				}
-			} else {
+			} else if ( ! PC.fe.config.choice_description_no_tooltip ) {
 				var description = this.$( '.description' ).html();
 			}
 			// console.log( description );

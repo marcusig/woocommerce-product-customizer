@@ -281,7 +281,7 @@ PC.actionParameter = 'pc_get_data';
 		PC.fe.active_product = product_id; 
 		PC.fe.parent_product = parent_id ? parent_id : product_id;
 
-		this.modal = this.modal || new PC.fe.views.configurator( product_id, parent_id ); 
+		this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
 
 		PC.fe.init( product_id, parent_id, $element ); 
 
@@ -405,6 +405,8 @@ PC.actionParameter = 'pc_get_data';
 		$.each( config_items, function( index, config_item ) {
 			// layerContents is a Backbone.Collection
 			try {
+				var layer = PC.fe.layers.get( config_item.layer_id );
+				if ( layer && 'group' == layer.get( 'type' ) ) return;
 				if ( PC.fe.getLayerContent( config_item.layer_id ) && PC.fe.getLayerContent( config_item.layer_id ).selectChoice ) {
 					PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id );
 				}
