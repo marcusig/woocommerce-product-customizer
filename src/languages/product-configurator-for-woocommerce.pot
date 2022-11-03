@@ -112,7 +112,7 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: src/inc/languages.php:43, src/inc/admin/settings-page.php:216, src/inc/frontend/frontend-woocommerce.php:132, src/inc/frontend/frontend-woocommerce.php:198, src/inc/frontend/product.php:80
+#: src/inc/languages.php:43, src/inc/admin/settings-page.php:216, src/inc/frontend/frontend-woocommerce.php:132, src/inc/frontend/frontend-woocommerce.php:201, src/inc/frontend/product.php:80
 msgid "Configure"
 msgstr ""
 
@@ -148,7 +148,7 @@ msgctxt "Label displayed in the cart / order"
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/languages.php:52, src/inc/admin/settings-page.php:741, src/inc/frontend/frontend-woocommerce.php:203
+#: src/inc/languages.php:52, src/inc/admin/settings-page.php:741, src/inc/frontend/frontend-woocommerce.php:206
 msgid "Loading the configurator..."
 msgstr ""
 
@@ -301,11 +301,11 @@ msgstr ""
 msgid "Do you want to continue?"
 msgstr ""
 
-#: src/inc/admin/product.php:274
+#: src/inc/admin/product.php:279
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:289
+#: src/inc/admin/product.php:294
 msgid "Edit configurator layers"
 msgstr ""
 
@@ -681,8 +681,12 @@ msgstr ""
 msgid "A product id must be set in order for this shortcode to work."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:126, src/inc/frontend/frontend-woocommerce.php:192
+#: src/inc/frontend/frontend-woocommerce.php:126, src/inc/frontend/frontend-woocommerce.php:195
 msgid "The provided ID is not a valid product."
+msgstr ""
+
+#: src/inc/frontend/frontend-woocommerce.php:185
+msgid "The global product variable is not a WC_Product instance"
 msgstr ""
 
 #: src/inc/frontend/frontend-woocommerce.php:340

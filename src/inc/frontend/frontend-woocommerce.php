@@ -179,8 +179,14 @@ class Frontend_Woocommerce {
 	public function configurator_shortcode( $atts, $content = '' ) {
 
 		if ( ! isset( $atts[ 'product_id' ] ) ) {
-			global $product;
+			global $product, $post;
 			if ( ! $product ) return __( 'A product id must be set in order for this shortcode to work.', 'product-configurator-for-woocommerce' );
+			if ( $product && ! is_a( $product, 'WC_Product' ) ) {
+				if ( is_string( $product ) && $post ) {
+					$product = wc_get_product( $post );
+				}				
+				if ( ! is_a( $product, 'WC_Product' ) ) return __( 'The global product variable is not a WC_Product instance', 'product-configurator-for-woocommerce' ) . ' - ' . print_r( $product, true );
+			}
 			$product_id = $product->get_id();
 		} else {
 			global $mkl_product;
