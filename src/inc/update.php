@@ -41,6 +41,7 @@ class Update {
 			do_action( 'mkl_pc_updated_plugin' );
 			update_option('mkl_pc_version', MKL_PC_VERSION);
 		}
+		$this->update_db();
 	}
 
 	private function update_wrong_layer_ids() {
@@ -94,6 +95,7 @@ class Update {
 	}
 
 	public function update_db() {
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		global $wpdb;
 
 		$collate = '';
@@ -108,8 +110,13 @@ class Update {
 			type varchar(255) default NULL,
 			name varchar(500) NULL,
 			parent BIGINT UNSIGNED NULL,
+			global BIGINT UNSIGNED NULL,
+			layer_order SMALLINT(2) NOT NULL default 0,
+			product_id BIGINT UNSIGNED NULL,
+			date_modified timestamp NOT NULL,
 			PRIMARY KEY  (layer_id),
-			KEY parent (parent)
+			KEY parent (parent),
+			KEY product_id (product_id)
 		  ) $collate;
 		CREATE TABLE {$wpdb->prefix}mklpc_layermeta (
 			meta_id BIGINT UNSIGNED NOT NULL auto_increment,
@@ -125,9 +132,11 @@ class Update {
 			layer_id BIGINT UNSIGNED NOT NULL,
 			name varchar(500) NULL,
 			parent BIGINT UNSIGNED NULL,
+			date_modified datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+			choice_order SMALLINT(2) NOT NULL default 0,
 			PRIMARY KEY  (choice_id),
 			KEY layer_id (layer_id),
-			KEY parent (parent),
+			KEY parent (parent)
 		  ) $collate;
 		CREATE TABLE {$wpdb->prefix}mklpc_choicemeta (
 			meta_id BIGINT UNSIGNED NOT NULL auto_increment,
