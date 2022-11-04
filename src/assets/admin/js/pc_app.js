@@ -26,6 +26,7 @@ PC.toJSON = function( item ) {
 !(function($){
 	PC.actionParameter = 'pc_get_data'; 
 	PC.setActionParameter = 'pc_set_data'; 
+	// PC.base_url = 
 	PC.app = PC.app || {
 		is_modified: {
 			layers: false,
@@ -147,7 +148,7 @@ PC.toJSON = function( item ) {
 				save_id = this.options.product_id;
 			}
 			// If we do not have the necessary nonce, fail immeditately.
-			if ( ! this.admin_data.get('nonces') || ! this.admin_data.get('nonces').update ) {
+			if ( ! PC_lang.update_nonce ) {
 				console.log('nonce problem');
 				return $.Deferred().rejectWith( this ).promise();
 			}
@@ -164,7 +165,7 @@ PC.toJSON = function( item ) {
 			options.data = PC._us.extend( options.data || {}, {
 				action:  PC.setActionParameter,
 				id:      save_id,
-				nonce:   this.admin_data.get('nonces').update,
+				nonce:   PC_lang.update_nonce,
 				data: what,
 				// id: wp.media.model.settings.post.id
 			});

@@ -411,7 +411,7 @@ PC.import.views = PC.import.views || {};
 			PC.app.save_all( false, { saved_all: this.fix.bind( this ) } );
 		},
 		fix: function() {
-			if ( ! PC.app.admin_data.get('nonces') || ! PC.app.admin_data.get('nonces').update ) {
+			if ( ! PC_lang.update_nonce ) {
 				alert( 'A nonce for the request was not found!' );
 			}
 			var save_id = PC.app.id;
@@ -420,7 +420,7 @@ PC.import.views = PC.import.views || {};
 			}
 			wp.ajax.post({
 				action: 'mkl_pc_fix_image_ids_config',
-				security: PC.app.admin_data.get('nonces').update,
+				security: PC_lang.update_nonce,
 				id: save_id
 			}).done( function( response ) {
 				PC.app.admin_data.set( 'layers', response.layers );

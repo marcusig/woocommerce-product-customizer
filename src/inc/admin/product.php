@@ -33,11 +33,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			}, 20, 1 );
 
 			// add the checkbox to activate configurator on the product
+			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
+			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
 			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
 			add_action( 'admin_footer', array($this, 'editor' ) ); 
-			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
-			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
 
 		}
 
@@ -52,6 +52,23 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			foreach( $product_types as $product_type ) {
 				add_action( 'woocommerce_process_product_meta_' . $product_type, array( $this, 'save_product_setting' ) );
 			}
+		}
+
+		/**
+		 * Plugins loaded
+		 *
+		 * @return void
+		 */
+		public function init_product_data() {
+			global $post;
+			
+			if ( ! $this->_current_screen_is( 'product' ) ) return false;
+
+			// exit early if we don't have a post (Problem found using Yith Product addons plugin)
+			if ( ! $post ) return;
+
+			$this->ID = $post->ID;
+			$this->_product = wc_get_product( $this->ID ); 
 		}
 
 		/**
@@ -149,16 +166,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function editor() {
-			global $post;
-			
 			if ( ! $this->_current_screen_is( 'product' ) ) return false;
-
-			// exit early if we don't have a post (Problem found using Yith Product addons plugin)
-			if( ! $post ) return;
-
-			$this->ID = $post->ID;
-			$this->_product = wc_get_product( $this->ID ); 
-
 			if ( ! $this->_product ) return;
 
 			$structure = get_post_meta( $this->ID, MKL_PC_PREFIX.'structure', true );
@@ -176,8 +184,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function load_scripts() {
+			$this->init_product_data();
 			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
-			
+
 			$scripts = array(
 				array('admin', 'admin.js'),
 				//MODELS
@@ -225,7 +234,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), filemtime( MKL_PC_ASSETS_PATH . 'admin/js/'. $file ), true );
 				}
 
-				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', array(
+				$pc_lang = array(
 					'media_title' => __( 'Select a picture', 'product-configurator-for-woocommerce' ),
 					'media_select_button' => __( 'Choose', 'product-configurator-for-woocommerce' ),
 					'layers_new_placeholder' => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
@@ -233,8 +242,16 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'choice_new_placeholder' => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
 					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
-				) ) );
+					'is_rest_enabled' => true,
+					'rest_url' => get_rest_url()
+				);
 
+				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
+				if ( current_user_can( 'delete_post', $this->ID ) ) $pc_lang['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $this->ID );
+
+				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );
+				
+		
 				wp_add_inline_script( 'underscore', "
 					var PC = PC || {};
 					PC._us = _;

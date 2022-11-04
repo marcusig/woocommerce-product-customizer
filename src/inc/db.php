@@ -335,10 +335,6 @@ class DB {
 			'product_info' => array()
 		);
 
-		if ( current_user_can( 'edit_post', $id ) ) $init_data['nonces']['update'] = wp_create_nonce( 'update-pc-post_' . $id );
-
-		if ( current_user_can( 'delete_post', $id ) ) $init_data['nonces']['delete'] = wp_create_nonce( 'delete-pc-post_' . $id );
-
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $product );
 	}
 
