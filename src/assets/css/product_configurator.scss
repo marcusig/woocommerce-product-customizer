@@ -1403,6 +1403,7 @@ body.configurator_is_inline .mkl_pc {
 
 .mkl-configurator-inline.is-shortcode.configure-product:empty {
 	height: 60vh;
+	position: relative;
 }
 .mkl-configurator-inline.is-shortcode.configure-product:empty::after {
 	content: attr(data-loading);
