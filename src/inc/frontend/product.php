@@ -151,8 +151,13 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_form() {
 			global $product, $mkl_product;
-			if ( ( ! $product || ! is_a( $product, 'WC_Product' ) ) && $mkl_product ) {
+			
+			if ( ( ! $product || ! is_a( $product, 'WC_Product' ) ) && $mkl_product && is_a( $mkl_product, 'WC_Product' ) ) {
 				$product = $mkl_product;
+			}
+
+			if ( ! is_a( $product, 'WC_Product' ) ) {
+				$product = wc_get_product();
 			}
 			$add_to_cart = $this->get_add_to_cart_label();
 
@@ -160,7 +165,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 			echo '<# if ( data.is_in_stock ) { #>';
 				echo '<# if ( ! data.show_form ) { #>';
-				if ( $product && ! $product->is_sold_individually() ) {
+				if ( $product && is_a( $product, 'WC_Product' ) && ! $product->is_sold_individually() ) {
 					woocommerce_quantity_input( array(
 						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
 						'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
