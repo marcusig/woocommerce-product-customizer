@@ -182,5 +182,26 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			}
 			return $render;
 		}
+
+		/**
+		 * Get the list of settings
+		 *
+		 * @param boolean|array $settings
+		 * @return array
+		 */
+		public function get_settings_list( $settings = false ) {
+			if ( ! $settings ) {
+				$settings = $this->get_default_settings();
+			}
+			$list = [];
+			foreach( $settings as $key => $setting ) {
+				if ( 0 === strpos( $key, '_' ) && isset( $setting['fields'] ) ) {
+					$list = array_merge( $list, $this->get_settings_list( $setting['fields'] ) );
+					continue;
+				}
+				$list[$key] = $setting['label'];
+			}
+			return $list;
+		}
 	}
 }

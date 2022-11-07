@@ -69,10 +69,18 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'settings.php';
 		
 		include_once MKL_PC_INCLUDE_PATH . 'base/product.php';
-		include_once MKL_PC_INCLUDE_PATH . 'base/layer.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/angle.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/choice.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/configuration.php';
+		
+		include_once MKL_PC_INCLUDE_PATH . 'api/rest-base-controller.php';
+		include_once MKL_PC_INCLUDE_PATH . 'api/rest-layer-controller.php';
+		include_once MKL_PC_INCLUDE_PATH . 'api/rest-choice-controller.php';
+
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data-store.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/choice-data-store.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/choice-data.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'cache.php';
 		include_once MKL_PC_INCLUDE_PATH . 'db.php';
@@ -83,7 +91,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
 
-		if( is_admin() ) {
+		if( is_admin() || WC()->is_rest_api_request() ) {
 			include_once MKL_PC_INCLUDE_PATH . 'admin/admin-woocommerce.php';
 		}
 	}
@@ -130,6 +138,18 @@ class Plugin {
 	}
 
 	/**
+	 * Install the data stores
+	 *
+	 * @param array $stores
+	 * @return array
+	 */
+	public function install_data_stores( $stores ) {
+		$stores['pc-layer'] = 'MKL_PC_Layer_Data_Store';
+		$stores['pc-choice'] = 'MKL_PC_Choice_Data_Store';
+		return $stores;
+	}
+	
+	/**
 	 * Initialize the plugin
 	 *
 	 * @return void
@@ -140,12 +160,17 @@ class Plugin {
 			return;
 		}
 		// return;
+		$this->_register_tables();
 		$this->_includes();
+
+		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+		add_filter( 'woocommerce_data_stores', array( $this, 'install_data_stores' ) );
+
 		$this->languages = new Languages();
 		$this->frontend = new Frontend_Woocommerce();
 		$this->customizer = new Customizer();
 		
-		if( is_admin() ) {
+		if( is_admin() || WC()->is_rest_api_request() ) {
 			$this->admin = new Admin_Woocommerce();
 		}
 		
@@ -155,8 +180,34 @@ class Plugin {
 		$this->themes = new Themes();
 		$this->ajax = new Ajax();
 
+
 		do_action( 'mkl_pc_is_loaded' );
 	}
+
+	public function register_rest_routes() {
+		$layer_controller = new Rest_Layer_Controller();
+    	$layer_controller->register_routes();
+		$choice_controller = new Rest_Choice_Controller();
+    	$choice_controller->register_routes();
+	}
+
+	private function _register_tables() {
+		global $wpdb;
+		// List of tables without prefixes.
+		$tables = array(
+			'pc_layers'     => 'mklpc_layers',
+			'pc_layermeta'  => 'mklpc_layermeta',
+			'pc_choices'    => 'mklpc_choices',
+			'pc_choicemeta' => 'mklpc_choicemeta',
+		);
+
+		foreach ( $tables as $name => $table ) {
+			$wpdb->$name    = $wpdb->prefix . $table;
+			$wpdb->tables[] = $table;
+		}
+	}
+
+
 }
 
 // var_dump('$mkl_pl', $mkl_pl);

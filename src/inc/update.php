@@ -95,6 +95,7 @@ class Update {
 	}
 
 	public function update_db() {
+		if ( ! isset( $_REQUEST['update-db'] ) ) return;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		global $wpdb;
 
@@ -113,9 +114,11 @@ class Update {
 			global BIGINT UNSIGNED NULL,
 			layer_order SMALLINT(2) NOT NULL default 0,
 			product_id BIGINT UNSIGNED NULL,
-			date_modified timestamp NOT NULL,
+			date_modified datetime NOT NULL,
+			status varchar(100) NULL default 'published',
 			PRIMARY KEY  (layer_id),
 			KEY parent (parent),
+			KEY status (status),
 			KEY product_id (product_id)
 		  ) $collate;
 		CREATE TABLE {$wpdb->prefix}mklpc_layermeta (
@@ -134,8 +137,10 @@ class Update {
 			parent BIGINT UNSIGNED NULL,
 			date_modified datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 			choice_order SMALLINT(2) NOT NULL default 0,
+			status varchar(100) NULL default 'published',
 			PRIMARY KEY  (choice_id),
 			KEY layer_id (layer_id),
+			KEY status (status),
 			KEY parent (parent)
 		  ) $collate;
 		CREATE TABLE {$wpdb->prefix}mklpc_choicemeta (
