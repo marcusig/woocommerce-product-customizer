@@ -2,11 +2,11 @@ var PC = window.PC || {};
 PC.import = PC.import || {};
 PC.import.models = PC.import.models || {};
 PC.import.views = PC.import.views || {};
-( function( $, Import ){
+( function( $, Import, _ ){
 	/**
 	 * Main import state view
 	 */
-	PC.views.import = Backbone.View.extend({
+	PC.views.import = Backbone.View.extend( {
 		tagName: 'div',
 		className: 'state layers-state', 
 		template: wp.template('mkl-pc-import-export'),
@@ -352,23 +352,54 @@ PC.import.views = PC.import.views || {};
 		process_import: function() {
 			// Import.imported_data.collections
 			// Add the layers
-			PC.app.admin_data.set( 'layers', Import.imported_data.collections.layers );
+			// PC.app.admin_data.set( 'layers', Import.imported_data.collections.layers );
 			// Add the angles
-			PC.app.admin_data.set( 'angles', Import.imported_data.collections.angles );
+			// PC.app.admin_data.set( 'angles', Import.imported_data.collections.angles );
 			// Parse those
-			PC.app.admin.set_data();
+			// PC.app.admin.set_data();
+			var mode = 'override';
+			var layers_col = PC.app.get_collection( 'layers' );
+			var content_col = PC.app.get_collection( 'content' );
+			var angles_col = PC.app.get_collection( 'angles' );
+			var conditions_col = PC.app.get_collection( 'conditions' );
+			if ( Import.imported_data.collections.layers.length ) {
 
-			PC.app.is_modified[ 'layers' ] = true;
-			PC.app.is_modified[ 'angles' ] = true;
+				if ( 'override' == mode ) {
+					// Delete existing content
+					if ( content_col ) {
+						content_col.each( function( layer_content ) {
+							// reset();
+							if ( layer_content.get( 'choices' ) ) layer_content.get( 'choices' ).reset();
+						} );
+						content_col.reset();
+					}
+					if ( layers_col ) layers_col.reset();
+					if ( angles_col ) angles_col.reset();
+
+					if ( Import.imported_data.collections.conditions && PC.views.conditional && conditions_col ) {
+						conditions_col.reset();
+					}
+				}
+
+				_.each( Import.imported_data.collections.layers, function( layer, index ) {
+					if ( layer._id ) layer._id = null;
+					var Layer = layers_col.create( layer );
+					// var choice_collection= new PC.choices()
+				} );
+				
+			}
+
+			// PC.app.is_modified[ 'layers' ] = true;
+			// PC.app.is_modified[ 'angles' ] = true;
 			
 			// Add the content
-			var new_content = PC.app.get_product().parse( Import.imported_data.collections );
-			if ( new_content.hasOwnProperty( 'content' ) ) {
-				PC.app.get_product().set( 'content', new_content.content );
-				PC.app.is_modified[ 'content' ] = true;
-			} else {
-				alert( 'No content was imported' );
-			}
+			// var new_content = PC.app.get_product().parse( Import.imported_data.collections );
+			// if ( new_content.hasOwnProperty( 'content' ) ) {
+			// 	PC.app.get_product().set( 'content', new_content.content );
+			// 	PC.app.is_modified[ 'content' ] = true;
+			// } else {
+			// 	alert( 'No content was imported' );
+			// }
 
 			// Add the conditions
 			if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
@@ -377,10 +408,26 @@ PC.import.views = PC.import.views || {};
 				PC.app.is_modified[ 'conditions' ] = true;
 			}
 
+			this.import_layer( PC.app.get_collection( 'layers' ).first() );
+
 			// Hook
 			wp.hooks.doAction( 'PC.admin.import.process_import', Import );
 
 			Import.state.current_tool.next();
+		},
+		import_layer: function( layer ) {
+			var importer_layer_id = layer.id;
+			var data = PC.toJSON( layer );
+			var layer_id = 0;
+			wp.apiFetch(
+				{ path: 'mklpc/v1/configuration/' + PC.app.id + '/layers', method: "POST", data: data }
+			).then( (
+				function ( e ) { 
+					console.log( e );
+					if ( e.success ) { 
+					}
+				}
+			) );
 		}
 	});
 
@@ -642,4 +689,4 @@ PC.import.views = PC.import.views || {};
 		linkElement.setAttribute( 'download', exportFileDefaultName );
 		linkElement.click();
 	}
-})( jQuery, PC.import );
+})( jQuery, PC.import, PC._us );
