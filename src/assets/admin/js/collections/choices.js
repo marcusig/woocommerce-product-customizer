@@ -3,12 +3,22 @@ var PC = PC || {};
 
 
 PC.choices = Backbone.Collection.extend({
+	url: function() { 
+		var base = PC_lang.rest_url + PC_lang.rest_base + this.layer.id + '/choices';
+		base += '?_wpnonce=' + PC_lang.rest_nonce;
+		return base;
+	},
 	// url: function() { return ajaxurl + '?action='+PC.actionParameter+'&data=choices' },
 	model: PC.choice,
 	initialize: function( models, options ) {
 		this.layer = options.layer;
 		if ( ! this.layer ) return;
 		this.layer_type = this.layer.get( 'type' );
+		// if ( ! models || ! models.length ) {
+		// 	console.log( 'should fetch data' );
+		// 	this.fetch();
+		// }
+		return this;
 	},
 	nextOrder: function() {
 		if ( ! this.length ) {

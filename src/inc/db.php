@@ -326,7 +326,7 @@ class DB {
 
 		$init_data = array(
 			// 'menu' => $this->get_menu(),
-			'layers' => $this->get('layers', $parent_id),
+			// 'layers' => $this->get('layers', $parent_id),
 			'angles' => $this->get('angles', $parent_id),
 			'nonces'      => array(
 				'update' => false,

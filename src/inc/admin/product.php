@@ -193,6 +193,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/models/state', 'models/state.js'),
 				array('backbone/models/choice', 'models/choice.js'),
 				array('backbone/models/layer', 'models/layer.js'),
+				array('backbone/models/angle', 'models/angle.js'),
 				array('backbone/models/product', 'models/product.js'),
 				array('backbone/models/admin', 'models/admin.js'),
 				//COLLECTIONS
@@ -235,15 +236,17 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				}
 
 				$pc_lang = array(
-					'media_title' => __( 'Select a picture', 'product-configurator-for-woocommerce' ),
-					'media_select_button' => __( 'Choose', 'product-configurator-for-woocommerce' ),
-					'layers_new_placeholder' => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
-					'angles_new_placeholder' => __( 'New Angle Name', 'product-configurator-for-woocommerce' ),
-					'choice_new_placeholder' => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
+					'media_title'                => __( 'Select a picture', 'product-configurator-for-woocommerce' ),
+					'media_select_button'        => __( 'Choose', 'product-configurator-for-woocommerce' ),
+					'layers_new_placeholder'     => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
+					'angles_new_placeholder'     => __( 'New Angle Name', 'product-configurator-for-woocommerce' ),
+					'choice_new_placeholder'     => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
 					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
-					'enable_html_layers' => true,
-					'is_rest_enabled' => true,
-					'rest_url' => get_rest_url()
+					'enable_html_layers'         => true,
+					'is_rest_enabled'            => true,
+					'rest_url'                   => get_rest_url(),
+					'rest_base'                  => 'mklpc/v1/configuration/',
+					'rest_nonce'                 => wp_create_nonce( 'wp_rest' ),
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );

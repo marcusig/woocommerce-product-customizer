@@ -109,7 +109,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<h3></h3>
 	</button>
 	<# if ( 'group' == data.type && 'order' == data.orderAttr ) { #>
-		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
+		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data.id}}"></div>
 	<# } #>		
 </script>
 
@@ -256,7 +256,7 @@ CONTENT TEMPLATES
 		<h3><# if ( data.display_label ) { #>{{data.name}}<# } #></h3>
 	</button>
 	<# if ( data.is_group ) { #>
-		<div class="choices group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
+		<div class="choices group-list ui-sortable sortable-list" data-item-id="{{data.id}}"></div>
 	<# } #>
 </script>
 

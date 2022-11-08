@@ -3,9 +3,15 @@ var PC = PC || {};
 
 
 PC.layer = Backbone.Model.extend({ 
-	idAttribute: '_id',
+	url: function() {
+		var base = PC_lang.rest_url + PC_lang.rest_base + PC.app.id + '/layers';
+		if ( this.id ) base += '/' + this.id;
+		base += '?_wpnonce=' + PC_lang.rest_nonce;
+		return base;
+	},
+	idAttribute: 'id',
 	defaults: {
-		_id: 0,
+		// _id: 0,
 		name: '',
 		description: '',
 		order:0,
@@ -35,6 +41,8 @@ PC.layer = Backbone.Model.extend({
 		}
 	},
 	sync: function( method, model, options ) {
+		// console.log( method, model.isNew(), model.idAttribute, model, options );
+		Backbone.Model.prototype.sync( method, model, options );
 	},
 
 })

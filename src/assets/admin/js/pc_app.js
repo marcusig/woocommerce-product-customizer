@@ -23,6 +23,26 @@ PC.toJSON = function( item ) {
 	return json;
 };
 
+PC.sync = function( method, model, options ) {
+	switch ( method ) {
+		case 'create':
+		case 'update':
+			var supported_method = 'POST';
+			break;
+		case 'delete':
+			var supported_method = 'DELETE';
+			break;
+		default:
+			var supported_method = 'GET';
+			break;
+	}
+	wp.apiFetch( { path: model.url(), method: supported_method, data: PC.toJSON( model ) } ).then( (
+		function ( e ) { 
+			console.log( e );
+		}
+	)  )
+};
+
 !(function($){
 	PC.actionParameter = 'pc_get_data'; 
 	PC.setActionParameter = 'pc_set_data'; 

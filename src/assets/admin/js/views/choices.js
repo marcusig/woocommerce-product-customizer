@@ -26,7 +26,7 @@ PC.views = PC.views || {};
 			if ( this.content.get( this.model.id ) ) {
 				this.col = this.content.get( this.model.id ).get('choices');
 			} else {
-				this.content.add( { layerId: this.model.id, choices: new PC.choices([], { layer: PC.app.admin.layers.get( this.model.id ) } ) } );
+				this.content.add( { layerId: this.model.id, choices: new PC.choices( null, { layer: PC.app.admin.layers.get( this.model.id ) } ) } );
 				this.col = this.content.get( this.model.id );
 			}
 			this.state = this.options.state; 
@@ -162,9 +162,10 @@ PC.views = PC.views || {};
 				alert( 'The layer is set as Not a choice, so only one item can be added.' );
 				return;
 			}
-			// Add the new layer's model to the collection
-			this.col.add( this.new_attributes( this.$new_input.val().trim() ) ); 
-			
+
+			// Add the new choice's model to the collection
+			var new_item = this.new_attributes( this.$new_input.val().trim() );
+			var added = this.col.create( new_item );
 
 			this.$new_input.val(''); 
 
@@ -172,7 +173,7 @@ PC.views = PC.views || {};
 
 		new_attributes: function( name ) {
 			return {
-				_id: PC.app.get_new_id( this.col ),
+				// _id: PC.app.get_new_id( this.col ),
 				name: name,
 				order: this.col.nextOrder(),
 				active: true,
@@ -289,6 +290,9 @@ PC.views = PC.views || {};
 			'keyup .setting input': 'form_change',
 			'input .setting input': 'form_change',
 			'change .setting input[type=date]': 'form_change',
+			'change .setting input[type=text]': 'form_change',
+			'change .setting input[type=number]': 'form_change',
+			'change .setting textarea': 'form_change',
 			'keyup .setting textarea': 'form_change',
 			'change .setting select': 'form_change',
 			'click [type="checkbox"]': 'form_change',
@@ -332,7 +336,8 @@ PC.views = PC.views || {};
 		form_change: function( event ) {
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
-			
+			var should_save = false;
+
 			if ( ( 'keyup' === event.type || 'input' === event.type ) && 'checkbox' === event.currentTarget.type ) return;
 
 			if ( 'click' === event.type ) {
@@ -344,17 +349,33 @@ PC.views = PC.views || {};
 					this.model.collection.invoke( 'set', { is_default: false } );
 				}
 
-			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
+				should_save = true;
+
+
+			} else if ( 
+				'text' === event.currentTarget.type 
+				|| 'textarea' === event.currentTarget.type 
+				|| 'number' === event.currentTarget.type
+				|| 'date' === event.currentTarget.type 
+			) {
 				// text + textarea
 				var new_val = input.val().trim();
+				if ( 'change' == event.type ) {
+					should_save = true;
+				}
 			} else {
 				// Other cases (select...)
 				var new_val = input.val();
+				if ( 'change' == event.type ) {
+					should_save = true;
+				}
 			}
 
 			if ( this.model.get( setting ) != new_val ) {
 				this.model.set(setting, new_val);
-			} 
+			}
+
+			if ( should_save ) this.model.save();
 
 		},
 		form_changed: function() {
@@ -395,18 +416,19 @@ PC.views = PC.views || {};
 				choice: this.model,
 			};
 			
-			if( !this.model.get('images') )
-				this.model.set('images', new PC.choice_pictures() );
+			if ( ! this.model.get( 'images' ) ) {
+				this.model.set( 'images', new PC.choice_pictures() );
+			}
 				
-			var images = this.model.get('images');
-			if( !images.get(angle.id) ){
-				images.add({
+			var images = this.model.get( 'images' );
+			if( ! images.get( angle.id ) ){
+				images.add( {
 					angleId: angle.id,
-				});
+				} );
 			} 
 
 			data.model = images.get(angle.id);
-			// data.
+			console.log(data);
 			var angle_view = new PC.views.choice_picture(data);
 
 			this.$pictures.append( angle_view.render().el );
@@ -500,7 +522,7 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.empty();
 
-			var data = PC._us.defaults(this.model.attributes);
+			var data = PC._us.defaults( this.model.attributes );
 			data.is_group = this.options.choice.get( 'is_group' );
 			data.angle_name = this.options.angle.get('name');
 			this.$el.append( this.template( data ) );

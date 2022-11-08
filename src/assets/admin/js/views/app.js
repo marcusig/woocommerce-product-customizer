@@ -53,12 +53,13 @@ PC.views = PC.views || {};
 
 		set_data: function() {
 
-			if( PC.app.admin_data.get('layers') != false ) {
-				this.layers = new PC.layers( PC.app.admin_data.get('layers') );
-			}
-			if( PC.app.admin_data.get('angles') != false ) {
-				this.angles = new PC.angles( PC.app.admin_data.get('angles') );
-			}
+			// if( PC.app.admin_data.get('layers') != false ) {
+			// this.layers = new PC.layers();
+			// }
+
+			// if( PC.app.admin_data.get('angles') != false ) {
+			// 	this.angles = new PC.angles( PC.app.admin_data.get('angles') );
+			// }
 
 		},
 		remove_relationships: function( collectionName, model ) {
@@ -91,6 +92,7 @@ PC.views = PC.views || {};
 	} );
 
 	// PC.views.editor is the main modal window view.
+	// There can be one editor per variation
 	PC.views.editor = Backbone.View.extend({
 
 		tagName: 'div',
@@ -102,19 +104,45 @@ PC.views = PC.views || {};
 			this.product = options.current_product;
 			this.states = new PC.states();
 			this.admin = PC.app.get_admin();
+			this.content = this.product.get( 'content' );
+
 			if ( ! this.admin.structure ) {
+				// this.loading ++;
+				/**
+				 * CREATE THE LAYERS COLLECTION
+				 * and fetch any existing layers
+				 */
+				this.admin.layers = new PC.layers();
 				this.loading ++;
+				this.admin.layers.fetch( { success: function() {
+					this.admin.layers.each( function( layer, ind ) {
+						this.loading ++;
+						/**
+						 * For each layer, create a Choice collection, and fetch any belonging choice.
+						 */
+						var choices_collection = new PC.choices( [], { layer: layer } );
+						setTimeout( function() {
+							choices_collection.fetch( { success: this.fetched.bind( this ) } );
+							this.content.add( { layerId: layer.id, choices: choices_collection } );
+						}.bind( this ), 300 * ind );
+					}.bind( this ) );
 
-				PC.app.admin_data.fetch({
+					this.fetched();
+
+				}.bind( this ) } );
+
+				this.loading ++;
+				PC.app.admin_data.fetch( {
 					success: PC._us.bind(function( model, res, options ) {
-						
-						this.admin.set_data();
-
 						this.fetched( model, res, options );
+
+						if ( PC.app.admin_data.get( 'angles' ) != false ) {
+							this.admin.angles = new PC.angles( PC.app.admin_data.get( 'angles' ) );
+						}
 
 						if ( this.contentMissing ) {
 							this.contentMissing = false;
-							this.product.fetch({
+							this.product.fetch( {
 								success: PC._us.bind(this.fetched, this),
 								error: function(model, res, options) {
 									console.log('error fecthing data');
@@ -131,30 +159,33 @@ PC.views = PC.views || {};
 					}
 				}); 
 
+
+
+
 			}
 
-			if ( ! this.product.get( 'content' ) ) {
-				this.loading ++;
-				this.contentMissing = true;
-			}
+			// if ( ! this.product.get( 'content' ) ) {
+			// 	this.loading ++;
+			// 	this.contentMissing = true;
+			// }
 
 			this.open();
 
 			this.$el.addClass('loading'); 
 			// fetch the states from the server
+			this.loading ++;
 			this.states.fetch( {
 				// when received, executes this.fetched
 				url: this.states.url() + '&id=' + this.product.id, 
 				success: PC._us.bind(this.fetched, this)
 
 			} );
-			this.loading ++;
 			return this;
-
 		},
  		// States are fecthed
 		fetched: function( model, response, options ) {
 			this.loading --;
+			console.log( 'ff', model, response, options );
 			if( this.loading == 0 ) {
 				this.refresh(); 
 				this.$el.removeClass('loading');

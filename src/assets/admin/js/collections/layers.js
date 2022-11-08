@@ -4,15 +4,15 @@ var PC = PC || {};
 
 PC.layers = Backbone.Collection.extend({
 	url: function() { 
-		var url = ajaxurl + '?action='+PC.actionParameter+'&data=layers';
-		if ( this.product_id ) url += '&id='+this.product_id;
-		return url;
+		var base = PC_lang.rest_url + PC_lang.rest_base + PC.app.id + '/layers?_wpnonce=' + PC_lang.rest_nonce;
+		// if ( this.product_id ) url += '&id='+this.product_id;
+		return base;
 	},
 	model: PC.layer,
 	initialize: function( data, options ) {
 		if ( options && options.product_id ) {
 			this.product_id = options.product_id;
-		} 
+		}
 	},
 	nextOrder: function( order_name ) {
 		if ( ! order_name ) order_name = 'order';
@@ -28,12 +28,12 @@ PC.layers = Backbone.Collection.extend({
 	   	return layer.get('order');
     },
 
-    sync: function( method, model, options ) {
-    },
+    // sync: function( method, model, options ) {
+    // },
 
 	create_layer: function( data ) {
 		var m = PC._us.extend( data, {
-			_id: PC.app.get_new_id( this ),
+			// _id: PC.app.get_new_id( this ),
 			order: this.nextOrder(),
 			image_order: this.nextOrder( 'image_order' ),
 			active: true

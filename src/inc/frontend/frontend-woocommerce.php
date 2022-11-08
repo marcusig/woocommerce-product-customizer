@@ -280,6 +280,7 @@ class Frontend_Woocommerce {
 		$scripts = array(
 			array('backbone/models/choice', 'models/choice.js'),
 			array('backbone/models/layer', 'models/layer.js'),
+			array('backbone/models/angle', 'models/angle.js'),
 			//COLLECTIONS
 			array('backbone/collections/layers', 'collections/layers.js'),
 			array('backbone/collections/angles', 'collections/angles.js'),

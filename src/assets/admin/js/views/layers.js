@@ -169,7 +169,8 @@ TODO:
 				return;
 			}
 			// Add the new layer's model to the collection
-			this.col.create( this.new_attributes( this.$new_input.val().trim() ) ); 
+			var new_attrs = this.new_attributes( this.$new_input.val().trim() );
+			this.col.create( new_attrs );
 			
 
 			this.$new_input.val(''); 			
@@ -186,7 +187,7 @@ TODO:
 		},
 		new_attributes: function( name ) {
 			return {
-				_id: PC.app.get_new_id( this.col ),
+				//_id: PC.app.get_new_id( this.col ),
 				name: name,
 				order: this.col.nextOrder(),
 				image_order: this.col.nextOrder(),
@@ -273,9 +274,13 @@ TODO:
 
 				return;
 			}
+
 			this.model.collection.trigger( 'simple-selection' );
+
 			var editView = this.edit_view();
-			if( !event ) {
+			console.log( event );
+
+			if( ! event ) {
 				if( ! this.form ) {
 					this.options.collection.each(function(model) {
 						model.set('active' , false);
@@ -286,9 +291,10 @@ TODO:
 					this.form_target.html( this.form.render().el );
 				}
 			} else {
-				if( this.model.get('active') == false || this.model.get('active') == 'false' ) {
-					this.options.collection.each(function(model) {
-						model.set('active' , false);
+				console.log( 'ev 12', this.model, this.model.get( 'active' ) );
+				if( ! this.model.get( 'active' ) || 'false' == this.model.get( 'active' ) ) {
+					this.options.collection.each( function( model ) {
+						model.set( 'active' , false );
 					});
 					this.model.set( 'active' , true );
 
@@ -363,6 +369,12 @@ TODO:
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
 			'change .setting select': 'form_change',
+			
+			'change .setting input[type=date]': 'form_change',
+			'change .setting input[type=text]': 'form_change',
+			'change .setting input[type=number]': 'form_change',
+			'change .setting textarea': 'form_change',
+
 			'click [type="checkbox"]': 'form_change',
 			'click [type="checkbox"][data-setting="not_a_choice"]': 'on_change_not_a_choice',
 
@@ -390,17 +402,32 @@ TODO:
 
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
+			var should_save = false;
+
+			if ( ( 'keyup' === event.type || 'input' === event.type ) && 'checkbox' === event.currentTarget.type ) return;
 
 			if ( 'click' === event.type ) {
 				// checkbox
 				var new_val = input.prop('checked'); 
+				should_save = true;
 				
-			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
+			} else if ( 
+				'text' === event.currentTarget.type 
+				|| 'textarea' === event.currentTarget.type 
+				|| 'number' === event.currentTarget.type
+				|| 'date' === event.currentTarget.type 
+			) {
 				// text + textarea
 				var new_val = input.val().trim();
+				if ( 'change' == event.type ) {
+					should_save = true;
+				}
 			} else {
 				// Other cases (select...)
 				var new_val = input.val();
+				if ( 'change' == event.type ) {
+					should_save = true;
+				}
 			}
 
 			if ( 'type' == setting && 'group' == new_val ) {
@@ -413,9 +440,12 @@ TODO:
 					}
 				}
 			}
-			if ( this.model.get(setting) != new_val ) {
-				this.model.set(setting, new_val);
+			
+			if ( this.model.get( setting ) != new_val ) {
+				this.model.set( setting, new_val );
 			}
+
+			if ( should_save ) this.model.save();
 
 		},
 		delete_layer: function( event ) {

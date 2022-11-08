@@ -3,23 +3,33 @@ var PC = PC || {};
 
 
 PC.choice = Backbone.Model.extend({
-	idAttribute: '_id',
+	url: function() {
+		var base = PC_lang.rest_url + PC_lang.rest_base + this.get( 'layerId' ) + '/choices';
+		if ( this.id ) base += '/' + this.id;
+		base += '?_wpnonce=' + PC_lang.rest_nonce;
+		return base;
+	},
+	idAttribute: 'id',
 	defaults: {
-		_id:0,
 		name: '',
 		description: '',
 		images: null,
-		layerId: null,
+		layer_id: null,
 		available: true,
 	},
 	initialize: function( attributes, options ) {
 
-		if ( ! attributes.layerId ) this.set( 'layerId', options.layer.id );
+		if ( ! attributes.layerId && attributes.layer_id ) this.set( 'layerId', attributes.layer_id );
 
 		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
 			var images = new PC.choice_pictures( attributes.images );
 			this.set('images', images); 
 		}
+
+		this.on( 'change:order', this.save() );
+		this.on( 'change:is_default', function( model ) {
+			if ( ! model.get( 'active' ) ) model.save();
+		}  );
 
 		// Reset choice selection to false by default
 		if ( PC.fe ) this.set( 'active', false );
@@ -58,10 +68,11 @@ PC.choice = Backbone.Model.extend({
 		} );
 		return count;
 	},
-	parse: function( response ) {
-		// console.log('choice model parse:', response);
-	},
+	// parse: function( response ) {
+	// 	// console.log('choice model parse:', response);
+	// },
 	sync: function( method, model, options ) {
+		Backbone.Model.prototype.sync( method, model, options );
 	},
 	get_name: function () {
 		var attrs = wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.attributes );
@@ -70,13 +81,13 @@ PC.choice = Backbone.Model.extend({
 	
 });
 
-PC.content = Backbone.Model.extend({ 
+PC.content = Backbone.Model.extend( {
 	idAttribute: 'layerId',
 	defaults: {
 		layerId: null,
 		choices: null,
 	},
-});
+} );
 
 PC.choice_picture = Backbone.Model.extend({
 	idAttribute: 'angleId',
