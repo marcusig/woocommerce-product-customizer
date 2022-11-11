@@ -240,6 +240,8 @@ PC.options = PC.options || {};
 		render: function() {
 			if ( ! PC.fe.config.cart_item_key ) {
 				this.$( '.edit-cart-item' ).hide();
+			} else if ( PC.fe.config.cart_item_key && this.$( '.edit-cart-item' ).length ) { 
+				this.$el.addClass( 'edit-cart-item-is-displayed');
 			}
 			
 			// Get the input
@@ -622,6 +624,7 @@ PC.options = PC.options || {};
 			}
 
 			this.$el.html( choices_names.join( ', ' ) );
+			wp.hooks.doAction( 'PC.fe.set.selected_choice', choices_names, this );
 		},
 		should_display: function( model ) {
 			if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.item_is_hidden && PC.conditionalLogic.item_is_hidden( model ) ) return false;
