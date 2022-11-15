@@ -340,7 +340,7 @@ PC.actionParameter = 'pc_get_data';
 		}
 	}; 
 
-	PC.fe.getLayerContent = function( id ) {
+	PC.fe.getLayerContent = PC.fe.get_layer_content = function( id ) {
 		if ( PC.fe.contents.content.get( id ) ) 
 			return PC.fe.contents.content.get( id ).attributes.choices; 
 		return false;
