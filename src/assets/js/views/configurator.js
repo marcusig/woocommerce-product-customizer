@@ -1308,7 +1308,13 @@ PC.options = PC.options || {};
 					}
 				} );
 			}
-		}, 
+		},
+		is_layer_valid: function( layer ) {
+			this.reset_errors();
+			PC.fe.errors = [];
+			this.parse_choices( layer );
+			return ! PC.fe.errors.length;
+		},
 		// get choices for one layer 
 		parse_choices: function( model ) {
 			var is_required = parseInt( model.get( 'required' ) );
