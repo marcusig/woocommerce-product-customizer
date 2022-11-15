@@ -18,6 +18,7 @@ class Update {
 			'1.2.12' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.2.17' => [ [ $this, 'set_default_setting_value_v1_2_17' ] ],
 			'1.2.35' => [ [ $this, 'set_default_setting_value_v1_2_35' ] ],
+			'1.2.41' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );

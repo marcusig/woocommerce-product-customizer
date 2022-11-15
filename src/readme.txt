@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.40
+Stable tag: 1.2.41
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,6 +111,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 11. General plugin settings
 
 == Changelog ==
+
+= 1.2.41 - 15/Nov/2022 =
+
+* TWEAK: Only show image download link if the order is completed
+* TWEAK: Various tweaks, filters and JS methods added
 
 = 1.2.40 - 28/Oct/2022 =
 
@@ -454,4 +459,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.40 Various tweaks and fixes, possibility to swipe between views
+* 1.2.41 Various tweaks and fixes
