@@ -59,6 +59,18 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 		public function add_image_download_link( $item_id, $item, $order ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) || apply_filters( 'mkl_pc/do_not_show_image_download_link', false ) ) return;
+			
+			/**
+			 * mkl_pc/customer_can_see_image_download_link - Filters whether the image download link should be added
+			 * 
+			 * @param bool           $display_link
+			 * @param int            $item_id - the order item ID
+			 * @param WC_Order_Item  $item    - the order item
+			 * @param WC_Order       $order   - the order
+			 * @return bool
+			 */
+			if ( apply_filters( 'mkl_pc/customer_can_see_image_download_link', 'completed' != $order->get_status(), $item_id, $item, $order ) ) return;
+
 			$config_image = $this->get_order_item_image( $item, 'url' );
 			if ( $config_image && 'blank.gif' !== substr( $config_image, -9 ) ) {
 				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'download_config_image', __( 'Download configuration image', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
