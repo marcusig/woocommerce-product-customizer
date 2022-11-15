@@ -8,7 +8,7 @@ PC.layers = Backbone.Collection.extend({
 		if ( this.product_id ) url += '&id='+this.product_id;
 		return url;
 	},
-	model: PC.layer, 
+	model: PC.layer,
 	initialize: function( data, options ) {
 		if ( options && options.product_id ) {
 			this.product_id = options.product_id;
@@ -40,6 +40,19 @@ PC.layers = Backbone.Collection.extend({
 		} );
 		return m;
 	},
-
-    
-})
+	get_children: function( model ) {
+		if ( model.children ) return model.children;
+		var children = this.where( { parent: model.id } );
+		if ( children.length ) {
+			PC._us.each( children, function( layer ) {
+				var other_chilren = this.get_children( layer );
+				if ( other_chilren.count ) {
+					children = children.concat( other_chilren );
+				}
+			}.bind( this ) );
+		}
+		// Cache the value
+		model.children = children;
+		return model.children;
+	}
+} )
