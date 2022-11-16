@@ -12,7 +12,7 @@ class Product {
 		$label = $layer->get_layer( 'name' );
 		$value = $layer->get_choice( 'name' );
 		if ( apply_filters( 'mkl_pc_item_meta/wrap_choice_name', true, $layer ) ) {
-			$value = '<span class="pc-choice-name">' . $value . '</span>';
+			$value = '<span class="mkl_pc-choice-name">' . $value . '</span>';
 		}
 		if ( $layer->get_choice( 'show_group_label_in_cart' ) ) {
 			$parent_id = $layer->get_choice( 'parent' );
