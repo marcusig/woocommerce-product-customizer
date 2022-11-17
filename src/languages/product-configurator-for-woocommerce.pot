@@ -32,19 +32,19 @@ msgstr ""
 msgid "WooCommerce Version 3+ required."
 msgstr ""
 
-#: src/inc/ajax.php:197
+#: src/inc/ajax.php:197, src/inc/rest.php:197
 msgid "Error saving the data:"
 msgstr ""
 
-#: src/inc/ajax.php:197, src/inc/ajax.php:292
+#: src/inc/ajax.php:197, src/inc/ajax.php:292, src/inc/rest.php:197, src/inc/rest.php:292
 msgid "The session seems to have expired."
 msgstr ""
 
-#: src/inc/ajax.php:271
+#: src/inc/ajax.php:271, src/inc/rest.php:271
 msgid "%d rows were affected"
 msgstr ""
 
-#: src/inc/ajax.php:292
+#: src/inc/ajax.php:292, src/inc/rest.php:292
 msgid "Error processing the request:"
 msgstr ""
 
@@ -273,39 +273,39 @@ msgstr ""
 msgid "Start a support topic on %swordpress.org%s"
 msgstr ""
 
-#: src/inc/admin/product.php:238
+#: src/inc/admin/product.php:239
 msgid "Select a picture"
 msgstr ""
 
-#: src/inc/admin/product.php:239, src/inc/admin/views/html-product-configurator-templates.php:393
+#: src/inc/admin/product.php:240, src/inc/admin/views/html-product-configurator-templates.php:393
 msgid "Choose"
 msgstr ""
 
-#: src/inc/admin/product.php:240
+#: src/inc/admin/product.php:241
 msgid "New Layer Name"
 msgstr ""
 
-#: src/inc/admin/product.php:241
+#: src/inc/admin/product.php:242
 msgid "New Angle Name"
 msgstr ""
 
-#: src/inc/admin/product.php:242
+#: src/inc/admin/product.php:243
 msgid "New Choice Name"
 msgstr ""
 
-#: src/inc/admin/product.php:243
+#: src/inc/admin/product.php:244
 msgid "Changing the type to group will discard the content you already added to this layer."
 msgstr ""
 
-#: src/inc/admin/product.php:243
+#: src/inc/admin/product.php:244
 msgid "Do you want to continue?"
 msgstr ""
 
-#: src/inc/admin/product.php:296
+#: src/inc/admin/product.php:299
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:311
+#: src/inc/admin/product.php:314
 msgid "Edit configurator layers"
 msgstr ""
 

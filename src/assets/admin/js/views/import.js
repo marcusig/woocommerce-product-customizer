@@ -384,6 +384,7 @@ PC.import.views = PC.import.views || {};
 				_.each( Import.imported_data.collections.layers, function( layer, index ) {
 					if ( layer._id ) layer._id = null;
 					var Layer = layers_col.create( layer );
+					console.log( Layer.id, Layer.get( 'date_modified' ) );
 					// var choice_collection= new PC.choices()
 				} );
 				

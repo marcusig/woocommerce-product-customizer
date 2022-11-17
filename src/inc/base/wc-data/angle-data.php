@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 
-class Choice_Data extends Layer_Data {
+class Angle_Data extends Layer_Data {
 
 	/**
 	 * Order Data array. This is the core order data exposed in APIs since 3.0.0.
@@ -15,11 +15,8 @@ class Choice_Data extends Layer_Data {
 	 * @var array
 	 */
 	protected $data = array(
-		'layer_id'      => 0,
+		'product_id'    => 0,
 		'name'          => '',
-		'admin_label'   => '',
-		'parent'        => 0,
-		'is_group'      => false,
 		'date_modified' => 0,
 		'class_name'    => '',
 		'order'         => 0,
@@ -32,7 +29,7 @@ class Choice_Data extends Layer_Data {
 	 *
 	 * @var string
 	 */
-	protected $cache_group = 'pc_choices';
+	protected $cache_group = 'pc_angles';
 
 	/**
 	 * Meta type. This should match up with
@@ -41,14 +38,14 @@ class Choice_Data extends Layer_Data {
 	 *
 	 * @var string
 	 */
-	protected $meta_type = 'pc_choice';
+	protected $meta_type = 'pc_angle';
 
 	/**
 	 * This is the name of this object type.
 	 *
 	 * @var string
 	 */
-	protected $object_type = 'choice';
+	protected $object_type = 'angle';
 
 
 	/**
@@ -59,7 +56,7 @@ class Choice_Data extends Layer_Data {
 	public function __construct( $item = 0 ) {
 		parent::__construct( $item );
 
-		if ( $item instanceof Choice_Data ) {
+		if ( $item instanceof Angle_Data ) {
 			$this->set_id( $item->get_id() );
 		} elseif ( is_numeric( $item ) && $item > 0 ) {
 			$this->set_id( $item );
@@ -79,26 +76,6 @@ class Choice_Data extends Layer_Data {
 	 * @return string
 	 */
 	public function get_object_type() {
-		return 'choice';
+		return 'angle';
 	}
-
-	/**
-	 * Set the layer ID
-	 *
-	 * @param int $layer_id
-	 * @return void
-	 */
-	public function set_layer_id( $layer_id ) {
-		$this->set_prop( 'layer_id', (int) $layer_id );
-	}
-
-	/**
-	 * Get the layer ID
-	 *
-	 * @return int
-	 */
-	public function get_layer_id() {
-		return (int) $this->get_prop( 'layer_id' );
-	}
-
 }

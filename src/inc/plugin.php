@@ -78,8 +78,10 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-choice-controller.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data-store.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/angle-data-store.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/choice-data-store.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/angle-data.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/choice-data.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'cache.php';

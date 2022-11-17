@@ -14,14 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @version  3.0.0
  */
-class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
+class MKL_PC_Angle_Data_Store extends MKL_PC_Layer_Data_Store {
 
 	/**
 	 * Object type.
 	 *
 	 * @var string
 	 */
-	protected $object_type = 'choice';
+	protected $object_type = 'angle';
 
 	/**
 	 * Meta type. This should match up with
@@ -30,7 +30,7 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 	 *
 	 * @var string
 	 */
-	protected $meta_type = 'choice';
+	protected $meta_type = 'angle';
 
 	/**
 	 * This only needs set if you are using a custom metadata type (for example payment tokens.
@@ -39,7 +39,7 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 	 *
 	 * @var string
 	 */
-	protected $object_id_field_for_meta = 'choice_id';
+	protected $object_id_field_for_meta = 'angle_id';
 
 	/**
 	 * Create a new order item in the database.
@@ -51,12 +51,11 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 		global $wpdb;
 
 		$wpdb->insert(
-			$wpdb->prefix . 'mklpc_choices',
+			$wpdb->prefix . 'mklpc_angles',
 			array(
 				'name'          => $item->get_name(),
-				'layer_id'      => $item->get( 'layer_id' ),
-				'parent'        => $item->get( 'parent' ),
-				'choice_order'  => $item->get( 'order' ),
+				'product_id'    => $item->get( 'product_id' ),
+				'angle_order'  => $item->get( 'order' ),
 				'status'        => $item->get_status(),
 				'date_modified' => current_time( 'mysql' ),
 			)
@@ -67,7 +66,7 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 		$item->apply_changes();
 		$this->clear_cache( $item );
 
-		do_action( 'mkl_pc_new_choice', $item->get_id(), $item, $item->get( 'layer_id' ) );
+		do_action( 'mkl_pc_new_angle', $item->get_id(), $item, $item->get( 'product_id') );
 	}
 
 	/**
@@ -81,27 +80,26 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 
 		$changes = $item->get_changes();
 
-		if ( array_intersect( array( 'name', 'layer_id', 'parent', 'choice_order', 'status', 'date_modified' ), array_keys( $changes ) ) ) {
+		if ( array_intersect( array( 'name', 'product_id', 'angle_order', 'status', 'date_modified' ), array_keys( $changes ) ) ) {
 			$wpdb->update(
-				$wpdb->prefix . 'mklpc_choices',
+				$wpdb->prefix . 'mklpc_angles',
 				array(
 					'name'          => $item->get_name(),
-					'layer_id'      => $item->get( 'layer_id' ),
-					'parent'        => $item->get( 'parent' ),
-					'choice_order'  => $item->get( 'order' ),
+					'product_id'      => $item->get( 'product_id' ),
+					'angle_order'  => $item->get( 'order' ),
 					'status'        => $item->get_status(),
 					'date_modified' => current_time( 'mysql' ),
 				),
-				array( 'choice_id' => $item->get_id() )
+				array( 'angle_id' => $item->get_id() )
 			);
 		} else {
 			// Always update the date_modified
 			$wpdb->update(
-				$wpdb->prefix . 'mklpc_choices',
+				$wpdb->prefix . 'mklpc_angles',
 				array(
 					'date_modified' => current_time( 'mysql' ),
 				),
-				array( 'choice_id' => $item->get_id() )
+				array( 'angle_id' => $item->get_id() )
 			);
 
 		}
@@ -111,7 +109,7 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 		$item->apply_changes();
 		$this->clear_cache( $item );
 
-		do_action( 'mkl_pc_update_choice', $item->get_id(), $item, $item->get( 'layer_id') );
+		do_action( 'mkl_pc_update_angle', $item->get_id(), $item, $item->get( 'product_id') );
 	}
 
 	/**
@@ -123,11 +121,10 @@ class MKL_PC_Choice_Data_Store extends MKL_PC_Layer_Data_Store {
 	protected function get_object_props_for_reading( $item, $data ) {
 		return array(
 			'id' => $item->get_id(),
-			'layer_id' => $data->layer_id,
+			'product_id' => $data->product_id,
 			'name' => $data->name,
-			'parent' => $data->parent,
 			'date_modified' => $data->date_modified,
-			'order' => $data->choice_order,
+			'order' => $data->angle_order,
 			'status' => $data->status,
 		);
 	}

@@ -41,7 +41,7 @@ class Update {
 			do_action( 'mkl_pc_updated_plugin' );
 			update_option('mkl_pc_version', MKL_PC_VERSION);
 		}
-		$this->update_db();
+		// $this->update_db();
 	}
 
 	private function update_wrong_layer_ids() {
@@ -150,6 +150,26 @@ class Update {
 			meta_value longtext NULL,
 			PRIMARY KEY  (meta_id),
 			KEY choice_id (choice_id),
+			KEY meta_key (meta_key(32))
+		  ) $collate;
+		CREATE TABLE {$wpdb->prefix}mklpc_angles (
+			angle_id BIGINT UNSIGNED NOT NULL auto_increment,
+			name varchar(500) NULL,
+			angle_order SMALLINT(2) NOT NULL default 0,
+			product_id BIGINT UNSIGNED NULL,
+			date_modified datetime NOT NULL,
+			status varchar(100) NULL default 'published',
+			PRIMARY KEY  (angle_id),
+			KEY status (status),
+			KEY product_id (product_id)
+		  ) $collate;
+		CREATE TABLE {$wpdb->prefix}mklpc_anglemeta (
+			meta_id BIGINT UNSIGNED NOT NULL auto_increment,
+			angle_id BIGINT UNSIGNED NOT NULL,
+			meta_key varchar(255) default NULL,
+			meta_value longtext NULL,
+			PRIMARY KEY  (meta_id),
+			KEY angle_id (angle_id),
 			KEY meta_key (meta_key(32))
 		  ) $collate;
 		";
