@@ -35,6 +35,7 @@ class Frontend_Woocommerce {
 
 	private function _hooks() {
 		add_action( 'wp_enqueue_scripts', array( $this, 'load_scripts' ), 50 );
+		add_filter( 'script_loader_tag', array( $this, 'prevent_underscore_conflict' ), 10, 2 );
 		add_action( 'template_redirect', array( $this, 'setup_themes' ), 50 );
 		add_action( 'admin_init', array( $this, 'setup_themes' ), 50 );
 		add_action( 'customize_register', array( $this, 'setup_themes' ), 9 );
@@ -408,13 +409,32 @@ class Frontend_Woocommerce {
 		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
 
 		wp_enqueue_style( 'mlk_pc/css' );
-		wp_add_inline_script( 'underscore', "
-			var PC = PC || {};
-			PC._us = _;
-		", 'after' );
 
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );
+	}
+
+	/**
+	 * Prevent Understore conflict. 
+	 * Based on what The Events Calendar does
+	 * 
+	 * @param string $tag
+	 * @param string $handle
+	 * @return string
+	 */
+	public function prevent_underscore_conflict( $tag, $handle ) {
+		if ( is_admin() ) {
+			return $tag;
+		}
+
+		if ( 'underscore' === $handle ) {
+			$dir = MKL_PC_ASSETS_URL . 'js';
+			$tag = "<script src='{$dir}/underscore-before.js'></script>\n"
+			       . $tag
+			       . "<script src='{$dir}/underscore-after.js'></script>\n";
+		}
+
+		return $tag;
 	}
 
 	/**
