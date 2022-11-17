@@ -41,7 +41,7 @@ class Update {
 			do_action( 'mkl_pc_updated_plugin' );
 			update_option('mkl_pc_version', MKL_PC_VERSION);
 		}
-		$this->update_db();
+		// $this->update_db();
 	}
 
 	private function update_wrong_layer_ids() {
