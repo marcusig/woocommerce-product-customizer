@@ -71,9 +71,7 @@ PC.choice = Backbone.Model.extend({
 	// parse: function( response ) {
 	// 	// console.log('choice model parse:', response);
 	// },
-	sync: function( method, model, options ) {
-		Backbone.Model.prototype.sync( method, model, options );
-	},
+	sync: PC.sync,
 	get_name: function () {
 		var attrs = wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.attributes );
 		return attrs.name;

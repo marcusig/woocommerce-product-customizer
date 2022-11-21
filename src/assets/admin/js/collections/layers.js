@@ -54,5 +54,6 @@ PC.layers = Backbone.Collection.extend({
 		// Cache the value
 		model.children = children;
 		return model.children;
-	}
+	},
+	sync: PC.sync,
 } )

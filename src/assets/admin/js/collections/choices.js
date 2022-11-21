@@ -95,7 +95,8 @@ PC.choices = Backbone.Collection.extend({
 	},
 	getType: function() {
 		return this.layer_type;
-	}
+	},
+	sync: PC.sync,
 });
 
 PC.content_list = Backbone.Collection.extend({

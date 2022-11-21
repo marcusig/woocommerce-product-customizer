@@ -188,6 +188,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
 
 			$scripts = array(
+				array('utils', 'utils.js'),
 				array('admin', 'admin.js'),
 				//MODELS
 				array('backbone/models/state', 'models/state.js'),

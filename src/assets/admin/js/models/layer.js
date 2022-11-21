@@ -40,9 +40,5 @@ PC.layer = Backbone.Model.extend({
 			} 
 		}
 	},
-	sync: function( method, model, options ) {
-		// console.log( method, model.isNew(), model.idAttribute, model, options );
-		Backbone.Model.prototype.sync( method, model, options );
-	},
-
+	sync: PC.sync,
 })
