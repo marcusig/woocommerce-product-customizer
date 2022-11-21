@@ -367,6 +367,8 @@ class DB {
 				'product_type' => $product_type,
 				'show_qty'     => ! $product->is_sold_individually(),
 				'is_in_stock'  => $product->is_in_stock() || $product->backorders_allowed(), 
+				'weight'       => $product->get_weight(),
+				'weight_unit'  => get_option( 'woocommerce_weight_unit' ),
 			) 
 		);
 
@@ -437,6 +439,10 @@ class DB {
 				'width' => [ 
 					'sanitize' => 'intval',
 					'escape' => 'intval',
+				],
+				'weight' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
 				],
 				'angleId' => [ 
 					'sanitize' => 'intval',

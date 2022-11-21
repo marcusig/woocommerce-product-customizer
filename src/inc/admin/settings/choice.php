@@ -130,6 +130,11 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							),
 							'priority' => 50,
 						),
+						'weight' => array(
+							'label' => __('Weight', 'product-configurator-for-woocommerce' ) . ' (' . get_option( 'woocommerce_weight_unit' ) . ')',
+							'type' => 'number',
+							'priority' => 60,
+						),
 						'class_name' => array(
 							'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
 							'type' => 'text',
