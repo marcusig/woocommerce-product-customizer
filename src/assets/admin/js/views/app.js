@@ -109,6 +109,14 @@ PC.views = PC.views || {};
 			if ( ! this.admin.structure ) {
 				// this.loading ++;
 				/**
+				 * CREATE THE Angles COLLECTION
+				 * and fetch any existing angles
+				 */
+				this.admin.angles = new PC.angles();
+				this.loading ++;
+				this.admin.angles.fetch( { success: this.fetched.bind( this ) } );
+
+				/**
 				 * CREATE THE LAYERS COLLECTION
 				 * and fetch any existing layers
 				 */
@@ -124,7 +132,7 @@ PC.views = PC.views || {};
 						setTimeout( function() {
 							choices_collection.fetch( { success: this.fetched.bind( this ) } );
 							this.content.add( { layerId: layer.id, choices: choices_collection } );
-						}.bind( this ), 300 * ind );
+						}.bind( this ), 50 * ind );
 					}.bind( this ) );
 
 					this.fetched();
@@ -135,10 +143,6 @@ PC.views = PC.views || {};
 				PC.app.admin_data.fetch( {
 					success: PC._us.bind(function( model, res, options ) {
 						this.fetched( model, res, options );
-
-						if ( PC.app.admin_data.get( 'angles' ) != false ) {
-							this.admin.angles = new PC.angles( PC.app.admin_data.get( 'angles' ) );
-						}
 
 						if ( this.contentMissing ) {
 							this.contentMissing = false;
