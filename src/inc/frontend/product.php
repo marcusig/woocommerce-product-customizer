@@ -166,11 +166,13 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			echo '<# if ( data.is_in_stock ) { #>';
 				echo '<# if ( ! data.show_form ) { #>';
 				if ( $product && is_a( $product, 'WC_Product' ) && ! $product->is_sold_individually() ) {
-					woocommerce_quantity_input( array(
+					$qty_input = woocommerce_quantity_input( array(
 						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
 						'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
 						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( intval( $_POST['quantity'] ) ) : 1 )
-					), $product );
+					), $product, false );
+					$qty_input = preg_replace( '/<script.*?\/script>/s', '', $qty_input );
+					echo $qty_input;
 				}
 				echo '<# } #>';
 				?>
@@ -180,7 +182,11 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 							<input type="hidden" name="pc_cart_item_key">
 							<input type="hidden" name="add-to-cart" value="{{data.product_id}}">
 							<# if ( data.show_qty ) { #>
-								<?php woocommerce_quantity_input( [], $product ); ?>
+								<?php 
+									$qty_input = woocommerce_quantity_input( [], $product, false );
+									$qty_input = preg_replace( '/<script.*?\/script>/s', '', $qty_input );
+									echo $qty_input;
+								?>
 							<# } #>
 						</form>
 					<# } #>
