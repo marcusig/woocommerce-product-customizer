@@ -251,7 +251,10 @@ html .media-modal.pc-modal {
 	}
 	.loading-placeholder:nth-child(4) {
 		width: 72%;
-	}	
+	}
+	.no-data {
+		padding: 5px 20px;
+	}
 }
 
 html .pc-modal-container {
