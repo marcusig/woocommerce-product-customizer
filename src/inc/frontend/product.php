@@ -141,8 +141,10 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function configurator_price() {
 			global $product;
 			if ( ! isset( $this->options['show_price_in_configurator'] ) || 'on' != $this->options['show_price_in_configurator'] ) return;
+			$price = $product && is_a( $product, 'WC_Product' ) ? $product->get_price_html() : '';
+			if ( $price ) $price = preg_replace( '/<script.*?\/script>/s', '', $price );
 		?>
-			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $product && is_a( $product, 'WC_Product' ) ? $product->get_price_html() : ''; ?><# } #></span>
+			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
 		<?php 
 		}
 
