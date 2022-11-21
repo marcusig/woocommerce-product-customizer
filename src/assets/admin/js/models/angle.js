@@ -4,9 +4,12 @@ var PC = PC || {};
 
 PC.angle = PC.layer.extend({ 
 	url: function() {
-		return '';
+		var base = PC_lang.rest_url + PC_lang.rest_base + PC.app.id + '/angles';
+		if ( this.id ) base += '/' + this.id;
+		base += '?_wpnonce=' + PC_lang.rest_nonce;
+		return base;
 	},
-	idAttribute: '_id',
+	idAttribute: 'id',
 	defaults: {
 		_id: 0,
 		name: '',
@@ -20,5 +23,4 @@ PC.angle = PC.layer.extend({
 		not_a_choice: false,
 		type: 'simple',
 	}
-
 })

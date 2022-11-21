@@ -75,6 +75,7 @@ class Plugin {
 		
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-base-controller.php';
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-layer-controller.php';
+		include_once MKL_PC_INCLUDE_PATH . 'api/rest-angle-controller.php';
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-choice-controller.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data-store.php';
@@ -148,6 +149,7 @@ class Plugin {
 	public function install_data_stores( $stores ) {
 		$stores['pc-layer'] = 'MKL_PC_Layer_Data_Store';
 		$stores['pc-choice'] = 'MKL_PC_Choice_Data_Store';
+		$stores['pc-angle'] = 'MKL_PC_Angle_Data_Store';
 		return $stores;
 	}
 	
@@ -191,6 +193,8 @@ class Plugin {
     	$layer_controller->register_routes();
 		$choice_controller = new Rest_Choice_Controller();
     	$choice_controller->register_routes();
+		$angle_controller = new Rest_Angle_Controller();
+    	$angle_controller->register_routes();
 	}
 
 	private function _register_tables() {
@@ -201,6 +205,8 @@ class Plugin {
 			'pc_layermeta'  => 'mklpc_layermeta',
 			'pc_choices'    => 'mklpc_choices',
 			'pc_choicemeta' => 'mklpc_choicemeta',
+			'pc_angles'    => 'mklpc_angles',
+			'pc_anglemeta' => 'mklpc_anglemeta',
 		);
 
 		foreach ( $tables as $name => $table ) {

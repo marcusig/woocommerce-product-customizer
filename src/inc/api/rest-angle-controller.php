@@ -114,6 +114,16 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 			),
 			'schema' => array( $this, 'get_public_item_schema' ),
 		) );
+
+		register_rest_route( $this->namespace, '/' . $this->rest_base . '/batch', array(
+			array(
+				'methods'             => \WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'batch_items' ),
+				'permission_callback' => array( $this, 'batch_items_permissions_check' ),
+				'args'                => $this->get_endpoint_args_for_item_schema( \WP_REST_Server::EDITABLE ),
+			),
+			'schema' => array( $this, 'get_public_item_schema' ),
+		) );
 	}
 
 	/**
@@ -161,7 +171,6 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 			return new \WP_Error( "woocommerce_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'woocommerce' ), array( 'status' => 400 ) );
 		}
 
-		
 		$object = $this->prepare_object_for_database( $request, false );
 		
 		if ( is_wp_error( $object ) ) {
@@ -178,10 +187,10 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 
 	protected function prepare_object_for_database( $request, $creating = false ) {
 		$id    = isset( $request['id'] ) ? absint( $request['id'] ) : 0;
-		$layer = $this->get_object( $id );
-
+		$object = $this->get_object( (int) $id );
+		logdebug(['$object', $object]);
 		$available_props = $this->get_item_fields();
-		$available_settings = array_merge( $available_props, array_keys( mkl_pc()->admin->layer_settings->get_settings_list() ) );
+		$available_settings = array_merge( $available_props, array_keys( mkl_pc()->admin->angle_settings->get_settings_list() ) );
 		$posted_data = $request->get_params();
 		$props = [];
 		foreach( $available_settings as $setting ) {
@@ -189,21 +198,21 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 			if ( in_array(  $setting, $available_props ) ) {
 				$props[$setting] = $posted_data[$setting];
 			} else {
-				$layer->update_meta_data( $setting, $posted_data[$setting], true );
+				$object->update_meta_data( $setting, $posted_data[$setting], true );
 			}
 		}
 
 		$props = array_merge(
 			$props,
 			[
-				'product_id' => $creating ? absint( $request['product_id'] ) : $layer->get( 'product_id' ) ,
+				'product_id' => $creating ? absint( $request['product_id'] ) : $object->get( 'product_id' ) ,
 				// 'order'      => $posted_data['order'],
 			]
 		);
 
-		$layer->set_props( $props );
-		// $layer->save_meta_data();
-		return $layer;
+		$object->set_props( $props );
+		// $object->save_meta_data();
+		return $object;
 	}
 
 	public function get_item_schema() {
@@ -271,11 +280,12 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 	 */
 	protected function get_object( $id ) {
 		try {
-			$layer = new Layer_Data( $id );
+			$object = new Angle_Data( $id );
+			logdebug( [ 'get obk', $object ] );
 		} catch ( \Exception $e ) {
 			return false;
 		}
-		return $layer;
+		return $object;
 	}
 
 	/**
@@ -287,7 +297,7 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 	protected function get_objects( $request ) {
 		global $wpdb;
 		$product_id = (int) $request['product_id'];
-		$data = $wpdb->get_col( $wpdb->prepare( "SELECT layer_id FROM {$wpdb->prefix}mklpc_layers WHERE product_id = %d;", $product_id ) );
+		$data = $wpdb->get_col( $wpdb->prepare( "SELECT angle_id FROM {$wpdb->prefix}mklpc_angles WHERE product_id = %d;", $product_id ) );
 		// wp_cache_set( 'item-' . $item->get_id(), $data, 'mklpc-layers' );
 
 		return array(

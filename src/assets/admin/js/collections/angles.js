@@ -2,7 +2,11 @@ var PC = PC || {};
 // PC.model = PC.model || {};
 
 PC.angles = Backbone.Collection.extend( {
-	url: function() { return ajaxurl + '?action=' + PC.actionParameter+'&data=angles' },
+	url: function() { 
+		var base = PC_lang.rest_url + PC_lang.rest_base + PC.app.id + '/angles?_wpnonce=' + PC_lang.rest_nonce;
+		// if ( this.product_id ) url += '&id='+this.product_id;
+		return base;
+	},
 	model: PC.angle, // use the same basic model as the layers
 	nextOrder: function() {
 		if ( ! this.length ) {
@@ -13,4 +17,5 @@ PC.angles = Backbone.Collection.extend( {
 	comparator: function( layer ) {
 	   	return layer.get('order');
     },
+	sync: PC.sync,
 } )
