@@ -112,14 +112,14 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: src/inc/languages.php:43, src/inc/admin/settings-page.php:216, src/inc/frontend/frontend-woocommerce.php:132, src/inc/frontend/frontend-woocommerce.php:204, src/inc/frontend/product.php:80
+#: src/inc/languages.php:43, src/inc/admin/settings-page.php:216, src/inc/frontend/frontend-woocommerce.php:133, src/inc/frontend/frontend-woocommerce.php:205, src/inc/frontend/product.php:80
 msgid "Configure"
 msgstr ""
 
 #: src/inc/languages.php:44
 msgstr ""
 
-#: src/inc/languages.php:45, src/inc/frontend/cart.php:146, src/inc/frontend/order.php:93, src/inc/admin/settings/choice.php:50
+#: src/inc/languages.php:45, src/inc/frontend/cart.php:159, src/inc/frontend/order.php:93, src/inc/admin/settings/choice.php:50
 msgid "SKU"
 msgstr ""
 
@@ -135,11 +135,11 @@ msgstr ""
 msgid "Reset configuration"
 msgstr ""
 
-#: src/inc/languages.php:49, src/inc/admin/settings-page.php:675, src/inc/admin/settings-page.php:681, src/inc/frontend/cart.php:295
+#: src/inc/languages.php:49, src/inc/admin/settings-page.php:675, src/inc/admin/settings-page.php:681, src/inc/frontend/cart.php:308
 msgid "Edit configuration"
 msgstr ""
 
-#: src/inc/languages.php:50, src/inc/admin/settings-page.php:687, src/inc/admin/settings-page.php:693, src/inc/frontend/product.php:211
+#: src/inc/languages.php:50, src/inc/admin/settings-page.php:687, src/inc/admin/settings-page.php:693, src/inc/frontend/product.php:219
 msgid "Edit item in cart"
 msgstr ""
 
@@ -148,7 +148,7 @@ msgctxt "Label displayed in the cart / order"
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/languages.php:52, src/inc/admin/settings-page.php:741, src/inc/frontend/frontend-woocommerce.php:209
+#: src/inc/languages.php:52, src/inc/admin/settings-page.php:741, src/inc/frontend/frontend-woocommerce.php:210
 msgid "Loading the configurator..."
 msgstr ""
 
@@ -625,7 +625,7 @@ msgstr ""
 msgid "Configuration (meta label in the cart)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:729, src/inc/frontend/cart.php:162, src/inc/frontend/order.php:87, src/inc/frontend/order.php:229
+#: src/inc/admin/settings-page.php:729, src/inc/frontend/cart.php:175, src/inc/frontend/order.php:87, src/inc/frontend/order.php:229
 msgid "Configuration"
 msgstr ""
 
@@ -677,23 +677,23 @@ msgstr ""
 msgid "Invalid configuration_id ID"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:116, src/inc/frontend/frontend-woocommerce.php:183
+#: src/inc/frontend/frontend-woocommerce.php:117, src/inc/frontend/frontend-woocommerce.php:184
 msgid "A product id must be set in order for this shortcode to work."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:126, src/inc/frontend/frontend-woocommerce.php:198
+#: src/inc/frontend/frontend-woocommerce.php:127, src/inc/frontend/frontend-woocommerce.php:199
 msgid "The provided ID is not a valid product."
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:188
+#: src/inc/frontend/frontend-woocommerce.php:189
 msgid "The global product variable is not a WC_Product instance"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:343
+#: src/inc/frontend/frontend-woocommerce.php:344
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/product.php:254
+#: src/inc/frontend/product.php:262
 msgid "Please select a variation to configure"
 msgstr ""
 
@@ -705,7 +705,7 @@ msgstr ""
 msgid "Angle Name"
 msgstr ""
 
-#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:134, src/inc/admin/settings/layer.php:163
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:139, src/inc/admin/settings/layer.php:163
 msgid "CSS Class"
 msgstr ""
 
@@ -767,6 +767,10 @@ msgstr ""
 
 #: src/inc/admin/settings/choice.php:129
 msgid "Switch to"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:134
+msgid "Weight"
 msgstr ""
 
 #: src/inc/admin/settings/layer.php:33
