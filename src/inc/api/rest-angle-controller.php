@@ -281,7 +281,6 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 	protected function get_object( $id ) {
 		try {
 			$object = new Angle_Data( $id );
-			logdebug( [ 'get obk', $object ] );
 		} catch ( \Exception $e ) {
 			return false;
 		}
