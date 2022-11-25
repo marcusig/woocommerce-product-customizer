@@ -189,8 +189,7 @@ PC.views = PC.views || {};
  		// States are fecthed
 		fetched: function( model, response, options ) {
 			this.loading --;
-			console.log( 'ff', model, response, options );
-			if( this.loading == 0 ) {
+			if ( 0 == this.loading ) {
 				this.refresh(); 
 				this.$el.removeClass('loading');
 			}
