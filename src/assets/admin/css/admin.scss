@@ -864,6 +864,46 @@ CONTENT
 		height: 100%;
 		overflow: auto;
 		box-sizing: border-box;
+
+		ul li.loading {
+			list-style-type: none;
+			position: relative;
+			&::before {
+				content: '\f463';
+				display: inline-block;
+				font-size: 20px;
+				width: 20px;
+				height: 20px;
+				position: absolute;
+				top: -1px;
+				left: -23px;
+				font-family: 'dashicons';
+				font-weight: 200;
+				animation: rotation 1s linear infinite;
+				text-align: center;
+				line-height: 20px;
+			}
+		}
+
+		ul li.done {
+			list-style-type: none;
+			position: relative;
+			&::before {
+				content: '\f15e';
+				display: inline-block;
+				font-size: 20px;
+				width: 20px;
+				height: 20px;
+				position: absolute;
+				top: -1px;
+				left: -23px;
+				font-family: 'dashicons';
+				font-weight: 200;
+				text-align: center;
+				line-height: 20px;
+				color: rgb(0, 169, 0);
+			}
+		}
 	}
 	
 	.preview-action {
