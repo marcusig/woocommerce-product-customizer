@@ -15,18 +15,20 @@ PC.choice = Backbone.Model.extend({
 		description: '',
 		images: null,
 		layer_id: null,
+		layerId: null,
 		available: true,
 	},
 	initialize: function( attributes, options ) {
 
 		if ( ! attributes.layerId && attributes.layer_id ) this.set( 'layerId', attributes.layer_id );
+		if ( ! attributes.layer_id && attributes.layerId ) this.set( 'layer_id', attributes.layerId );
 
 		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
 			var images = new PC.choice_pictures( attributes.images );
 			this.set('images', images); 
 		}
 
-		this.on( 'change:order', this.save() );
+		this.on( 'change:order', this.save );
 		this.on( 'change:is_default', function( model ) {
 			if ( ! model.get( 'active' ) ) model.save();
 		}  );
