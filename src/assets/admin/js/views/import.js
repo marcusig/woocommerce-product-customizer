@@ -2,7 +2,7 @@ var PC = window.PC || {};
 PC.import = PC.import || {};
 PC.import.models = PC.import.models || {};
 PC.import.views = PC.import.views || {};
-( function( $, Import, _ ){
+( function( $, Import, _ ) {
 	/**
 	 * Main import state view
 	 */
@@ -357,38 +357,46 @@ PC.import.views = PC.import.views || {};
 			// PC.app.admin_data.set( 'angles', Import.imported_data.collections.angles );
 			// Parse those
 			// PC.app.admin.set_data();
-			var mode = 'override';
-			var layers_col = PC.app.get_collection( 'layers' );
-			var content_col = PC.app.get_collection( 'content' );
-			var angles_col = PC.app.get_collection( 'angles' );
-			var conditions_col = PC.app.get_collection( 'conditions' );
-			if ( Import.imported_data.collections.layers.length ) {
+			// var layers_col = PC.app.get_collection( 'layers' );
+			// var content_col = PC.app.get_collection( 'content' );
+			// var conditions_col = PC.app.get_collection( 'conditions' );
+			this.mode = 'override';
 
-				if ( 'override' == mode ) {
-					// Delete existing content
-					if ( content_col ) {
-						content_col.each( function( layer_content ) {
-							// reset();
-							if ( layer_content.get( 'choices' ) ) layer_content.get( 'choices' ).reset();
-						} );
-						content_col.reset();
-					}
-					if ( layers_col ) layers_col.reset();
-					if ( angles_col ) angles_col.reset();
+			// Stores ids in a old:new maner, to be able to fix relationships after importing.
+			this.id_relationships = {
+				layers: [],
+				content: [],
+				angles: []
+			};
 
-					if ( Import.imported_data.collections.conditions && PC.views.conditional && conditions_col ) {
-						conditions_col.reset();
-					}
-				}
+			// Maybe Import the angles
 
-				_.each( Import.imported_data.collections.layers, function( layer, index ) {
-					if ( layer._id ) layer._id = null;
-					var Layer = layers_col.create( layer );
-					console.log( Layer.id, Layer.get( 'date_modified' ) );
-					// var choice_collection= new PC.choices()
-				} );
-				
-			}
+			/**
+			 * 
+			 *  delete existing angles (if there are new and existing ones)
+			 *  .then save new angles
+			 *  .then delete existing layers (if there are new and existing ones)
+			 *  .then delete existing content (if there are new ones and existing ones and layers were deleted)
+			 *  [
+			 * 		.then import layer
+			 *  	.then import content for layer
+			 *  ]
+			 *  .then import conditions
+			 */
+
+			this.reset_angles()
+				.then( this.import_angles.bind( this ) )
+				.then( this.reset_layers.bind( this ) )
+				.then( this.import_layers.bind( this ) )
+				.then(
+					function() {
+						console.log( 'last then' );
+						this.$( '.import-status' ).text( 'Successfuly Imported the new content' ).removeClass( 'loading' );
+						wp.hooks.doAction( 'PC.admin.import.process_import', Import );
+						// Import.state.current_tool.next();
+					}.bind( this )
+				);
+			
 
 			// PC.app.is_modified[ 'layers' ] = true;
 			// PC.app.is_modified[ 'angles' ] = true;
@@ -403,33 +411,187 @@ PC.import.views = PC.import.views || {};
 			// }
 
 			// Add the conditions
-			if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
-				var conditions = this.col = new PC.conditionsCollection( Import.imported_data.collections.conditions );
-				PC.app.get_product().set( 'conditions' , conditions );
-				PC.app.is_modified[ 'conditions' ] = true;
-			}
+			// if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
+			// 	var conditions = this.col = new PC.conditionsCollection( Import.imported_data.collections.conditions );
+			// 	PC.app.get_product().set( 'conditions' , conditions );
+			// 	PC.app.is_modified[ 'conditions' ] = true;
+			// }
 
-			this.import_layer( PC.app.get_collection( 'layers' ).first() );
+			// this.import_layer( PC.app.get_collection( 'layers' ).first() );
 
 			// Hook
-			wp.hooks.doAction( 'PC.admin.import.process_import', Import );
 
-			Import.state.current_tool.next();
 		},
-		import_layer: function( layer ) {
-			var importer_layer_id = layer.id;
-			var data = PC.toJSON( layer );
-			var layer_id = 0;
-			wp.apiFetch(
-				{ path: 'mklpc/v1/configuration/' + PC.app.id + '/layers', method: "POST", data: data }
-			).then( (
-				function ( e ) { 
-					console.log( e );
-					if ( e.success ) { 
+		reset_angles: function() {
+			var angles_col = PC.app.get_collection( 'angles' );
+			if ( Import.imported_data.collections.angles.length && 'override' == this.mode && angles_col ) {
+				var deleted_ids = angles_col.pluck( 'id' );
+				angles_col.reset();
+				this.$( '.import-status' ).text( 'Deleting existing angles' ).addClass( 'loading' );
+				return this.reset_remote_collection( 'angles', deleted_ids );
+			} else {
+				var dfd = new $.Deferred();
+				return dfd.resolve().promise();
+			}
+
+		},
+		import_angles: function() {
+			var dfd = new $.Deferred();
+			var view = this;
+			if ( Import.imported_data.collections.angles.length ) {
+				var angles_col = PC.app.get_collection( 'angles' );
+				if ( angles_col ) {
+					var imports = [];
+					// Add all the angles
+					view.$( '.import-status' ).text( 'Importing angles' ).addClass( 'loading' );
+					_.each( Import.imported_data.collections.angles, function( angle, index ) {
+						var old_angle_id = angle._id || angle.id;
+						if ( angle._id ) angle._id = null;
+						if ( angle.id ) angle.id = null;
+						var Angle = angles_col.create( angle )
+							.once( 'request', function( model_or_collection, xhr, options ) {
+								// Add the xhr to the list
+								imports.push( xhr );
+							} )
+							.once( 'sync', function( model ) {
+								view.id_relationships.angles.push( { old_id: old_angle_id, new_id: Angle.id } );
+							} );
+						// var choice_collection= new PC.choices()
+					} );
+
+					// Resolve when all the imports are complete
+					$.when( imports ).then( function( status ) {
+						dfd.resolve();
+					} );
+				} else {
+					console.warn( 'No angles collection found' );
+					return dfd.resolve().promise();
+				}
+				return dfd.promise();
+			} else {
+				// No content, resolve now
+				return dfd.resolve().promise();
+			}
+		},
+		reset_layers: function(  ) {
+			var layers_col = PC.app.get_collection( 'layers' );
+			var dfd = new $.Deferred();
+			if ( layers_col && layers_col.length ) {
+				var deleted_ids = layers_col.pluck( 'id' );
+				layers_col.reset();
+				this.$( '.import-status' ).text( 'Deleting existing layers' ).addClass( 'loading' );
+				return this.reset_remote_collection( 'layers', deleted_ids )
+			}
+			return dfd.resolve().promise();
+		},
+		import_layers: function() {
+			var dfd = new $.Deferred();
+			this.$( '.import-status' ).text( 'Importing new layers' ).addClass( 'loading' );
+			var layers_col = PC.app.get_collection( 'layers' );
+			var content_col = PC.app.get_collection( 'content' );
+			if ( Import.imported_data.collections.layers.length ) {
+
+				if ( 'override' == this.mode ) {
+					// Delete existing content
+					if ( content_col ) {
+						content_col.each( function( layer_content ) {
+							// reset();
+							if ( layer_content.get( 'choices' ) ) {
+								var deleted_ids = layer_content.get( 'choices' ).pluck( 'id' );
+								layer_content.get( 'choices' ).reset();
+								this.reset_remote_collection( 'choices', deleted_ids );
+							}
+						}.bind( this ) );
+						content_col.reset();
 					}
+
+					//reset();
+
+					// if ( Import.imported_data.collections.conditions && PC.views.conditional && conditions_col ) {
+					// 	conditions_col.reset();
+					// }
+				}
+
+				var processing = 0;
+				_.each( Import.imported_data.collections.layers, function( layer, layer_index ) {
+					// reset the ID and store it for future ref
+					var old_id = layer._id || layer.id;
+					var layer_item = $( '.preview-content--collection .layers > li[data-id="' + old_id + '"]' );
+					layer_item.addClass( 'loading' );
+
+					processing++;
+					var Layer = layers_col.create( layer )
+						.once( 'sync', function( new_layer, response, options ) {
+							processing--;
+							// Add the xhr to the list
+							layer_item.removeClass( 'loading' );
+							layer_item.addClass( 'done' );
+							this.id_relationships.layers.push( { old_id: old_id, new_id: Layer.id } );
+							var choices_id_relationships = [];
+
+							var choice_collection = new PC.choices( [], Layer );
+							content_col.add( { layerId: Layer.id, choices: choice_collection } );
+							if ( Import.imported_data.collections.content ) {
+								var content_for_layer = _.findWhere( Import.imported_data.collections.content, { layerId: old_id } )
+								if ( content_for_layer && content_for_layer.choices && content_for_layer.choices.length ) {
+									_.each( content_for_layer.choices, function( choice, index ) {
+										var old_choice_id = choice._id || choice.id;
+										var choice_item = layer_item.find( 'li[data-id="' + old_choice_id + '"]' );
+
+										choice_item.addClass( 'loading' );
+										choice.layerId = Layer.id;
+										processing++;
+										choice_collection.create( choice )
+											.once( 'sync', function( new_choice, response, options ) {
+												choice_item.removeClass( 'loading' );
+												choice_item.addClass( 'done' );
+												processing--;
+												choices_id_relationships.push( { old_id: old_choice_id, new_id: new_choice.id } );
+												console.log( 'imported content', processing );
+												if ( 0 == processing ) {
+													dfd.resolve();
+												}
+											}.bind( this ) );
+									}.bind( this ) );
+								}
+							}
+
+							this.id_relationships.content.push( {
+								layerId: Layer.id,
+								choices: choices_id_relationships
+							} );
+
+						}.bind( this ) );
+				}.bind( this ) );
+			}
+			return dfd.promise();
+		},
+		reset_remote_collection: function( slug, ids ) {
+			var dfd = new $.Deferred();
+			wp.apiFetch(
+				{ path: 'mklpc/v1/configuration/' + PC.app.id + '/' + slug + '/batch', method: "POST", data: { delete: ids } }
+			).then( (
+				function ( e ) {
+					dfd.resolve();
 				}
 			) );
-		}
+			return dfd.promise();
+		},
+
+		// import_layer: function( layer ) {
+		// 	var importer_layer_id = layer.id;
+		// 	var data = PC.toJSON( layer );
+		// 	var layer_id = 0;
+		// 	wp.apiFetch(
+		// 		{ path: 'mklpc/v1/configuration/' + PC.app.id + '/layers', method: "POST", data: data }
+		// 	).then( (
+		// 		function ( e ) { 
+		// 			console.log( e );
+		// 			if ( e.success ) { 
+		// 			}
+		// 		}
+		// 	) );
+		// }
 	});
 
 	Import.views.importerViews.configuration_imported = Backbone.View.extend({
