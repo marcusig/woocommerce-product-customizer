@@ -192,6 +192,20 @@ class Rest_Base_Controller extends \WP_REST_Controller {
 		if ( ! $object || 0 === $object->get_id() ) {
 			return new \WP_Error( "woocommerce_rest_{$this->object_type}_invalid_id", __( 'Invalid ID.', 'woocommerce' ), array( 'status' => 404 ) );
 		}
+
+		// check parent
+		if ( isset( $request['product_id'] ) ) {
+			if ( $object->get_product_id() !== (int) $request['product_id'] ) {
+				return new \WP_Error( "woocommerce_rest_{$this->object_type}_invalid_id", __( 'Parent ID mismatch.', 'woocommerce' ), array( 'status' => 404 ) );
+			}
+		}
+
+		if ( isset( $request['layer_id'] ) ) {
+			if ( $object->get_layer_id() !== (int) $request['layer_id'] ) {
+				return new \WP_Error( "woocommerce_rest_{$this->object_type}_invalid_id", __( 'Parent ID mismatch.', 'woocommerce' ), array( 'status' => 404 ) );
+			}
+		}
+
 		$supports_trash = false;
 
 		/**
@@ -249,7 +263,7 @@ class Rest_Base_Controller extends \WP_REST_Controller {
 		 */
 		do_action( "woocommerce_rest_delete_{$this->object_type}_object", $object, $response, $request );
 
-		return $response;
+		return rest_ensure_response( $response );
 	}
 
 	/**
@@ -279,12 +293,23 @@ class Rest_Base_Controller extends \WP_REST_Controller {
 				}
 
 				$_item = new \WP_REST_Request( 'DELETE', $request->get_route() );
-				$_item->set_query_params(
-					array(
-						'id'    => $id,
-						'force' => true,
-					)
+				$params = array(
+					'id'    => $id,
+					'force' => true,
 				);
+
+				if ( isset( $request['product_id'] ) ) {
+					$params['product_id'] = $request['product_id'];
+				}
+
+				if ( isset( $request['layer_id'] ) ) {
+					$params['layer_id'] = $request['layer_id'];
+				}
+
+				$_item->set_query_params(
+					$params
+				);
+
 				$_response = $this->delete_item( $_item );
 
 				if ( is_wp_error( $_response ) ) {

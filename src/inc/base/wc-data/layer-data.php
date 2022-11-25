@@ -87,6 +87,16 @@ class Layer_Data extends \WC_Data {
 	}
 
 	/**
+	 * Get product ID
+	 *
+	 * @param  string $context What the value is for. Valid values are 'view' and 'edit'.
+	 * @return string
+	 */
+	public function get_product_id( $context = 'view' ) {
+		return $this->get_prop( 'product_id', $context );
+	}
+
+	/**
 	 * Get order item name.
 	 *
 	 * @param  string $context What the value is for. Valid values are 'view' and 'edit'.

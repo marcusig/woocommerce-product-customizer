@@ -50,12 +50,7 @@ class Rest_Choice_Controller extends Rest_Base_Controller {
 	 */
 	public function register_routes() {
 		register_rest_route( $this->namespace, '/' . $this->rest_base, array(
-			'args' => array(
-				'layer_id'  => array(
-					'description' => __( 'The layer ID.', 'woocommerce' ),
-					'type'        => 'integer',
-				),
-			),
+			'args' => array(),
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_items' ),
@@ -83,14 +78,14 @@ class Rest_Choice_Controller extends Rest_Base_Controller {
 					'description' => __( 'Unique identifier for the resource.', 'woocommerce' ),
 					'type'        => 'integer',
 				),
-				'product_id'  => array(
-					'description' => __( 'The product ID.', 'woocommerce' ),
-					'type'        => 'integer',
-				),
-				'layer_id'  => array(
-					'description' => __( 'The layer ID.', 'woocommerce' ),
-					'type'        => 'integer',
-				),
+				// 'product_id'  => array(
+				// 	'description' => __( 'The product ID.', 'woocommerce' ),
+				// 	'type'        => 'integer',
+				// ),
+				// 'layer_id'  => array(
+				// 	'description' => __( 'The layer ID.', 'woocommerce' ),
+				// 	'type'        => 'integer',
+				// ),
 			),
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
