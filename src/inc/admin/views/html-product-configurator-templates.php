@@ -452,36 +452,38 @@ IMPORT / EXPORT
 		<p><?php _e( 'Review the data and press Import data to import it to this product.', 'product-configurator-for-woocommerce' ); ?></p>
 		<p><strong><?php _e( 'Note that any existing configuration will be overriden.', 'product-configurator-for-woocommerce' ); ?></strong></p>
 		<button class="import-selected button button-primary" type="button"><?php _e( 'Import data', 'product-configurator-for-woocommerce' ); ?></button>
+		<p class="import-status"></p>
 	</div>
 	<div class="preview-content">
-		<# if ( data.layers ) { #>
+
+		<# if ( data.angles ) { #>
 			<div class="preview-content--collection">
-				<h4><?php _e( 'Layers and content:', 'product-configurator-for-woocommerce' ); ?></h4>
-				<ul class="ul-disc">
-					<# PC._us.each( data.layers, function( layer ) { #>
-						<li>{{layer.name}}
-							<#
-								var content = data.content && PC._us.findWhere( data.content, { layerId: layer._id } );
-								if ( content && content.choices && content.choices.length ) {
-							#>
-								<ul class="ul-square">
-									<# PC._us.each( content.choices, function( choice ) { #>
-										<li>{{choice.name}}</li>
-									<# }); #>
-								</ul>
-							<# } #>
-						</li>
+				<h4><?php _e( 'Angles:', 'product-configurator-for-woocommerce' ); ?></h4>
+				<ul class="ul-disc angles">
+					<# PC._us.each( data.angles, function( angle ) { #>
+						<li data-id="{{angle._id || angle.id}}">{{angle.name}}</li>
 					<# }); #>
 				</ul>
 			</div>
 		<# } #>
 
-		<# if ( data.angles ) { #>
+		<# if ( data.layers ) { #>
 			<div class="preview-content--collection">
-				<h4><?php _e( 'Angles:', 'product-configurator-for-woocommerce' ); ?></h4>
-				<ul class="ul-disc">
-					<# PC._us.each( data.angles, function( angle ) { #>
-						<li>{{angle.name}}</li>
+				<h4><?php _e( 'Layers and content:', 'product-configurator-for-woocommerce' ); ?></h4>
+				<ul class="ul-disc layers">
+					<# PC._us.each( data.layers, function( layer ) { #>
+						<li data-id="{{layer._id || layer.id}}">{{layer.name}}
+							<#
+								var content = data.content && PC._us.findWhere( data.content, { layerId: layer._id } );
+								if ( content && content.choices && content.choices.length ) {
+							#>
+								<ul class="ul-square choices">
+									<# PC._us.each( content.choices, function( choice ) { #>
+										<li data-id="{{choice._id || choice.id}}">{{choice.name}}</li>
+									<# }); #>
+								</ul>
+							<# } #>
+						</li>
 					<# }); #>
 				</ul>
 			</div>
