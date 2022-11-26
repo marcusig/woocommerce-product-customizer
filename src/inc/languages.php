@@ -128,6 +128,7 @@ class Languages {
 		$languages = $this->get_languages();
 		foreach( $languages as $language ) {
 			if ( $language == $this->get_default_language() ) continue;
+			$language = str_replace( '-', '_', $language );
 			$fields['name_' . $language] = [
 				'sanitize' => [ $instance, 'sanitize_description' ],
 				'escape' => [ $instance, 'escape_description' ],				
@@ -259,6 +260,8 @@ class Languages {
 			foreach( $this->get_languages() as $l ) {
 				$flag_url = $this->get_flag( $l );
 				if ( $default != $l ) {
+					// Replace dashes by underscores
+					$l = str_replace( '-', '_', $l );
 					if ( isset( $settings[ '_general' ] ) && isset( $settings[ '_general' ][ 'fields' ] ) ) {
 						$settings[ '_general' ][ 'fields' ]['name_'.$l] = array(
 							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l,
@@ -298,7 +301,7 @@ class Languages {
 	 * @return array
 	 */
 	public function add_current_language_to_js( $config ) {
-		if ( $current_language = $this->get_current_language() ) $config['current_language'] = $current_language;
+		if ( $current_language = $this->get_current_language() ) $config['current_language'] = str_replace( '-', '_', $current_language );;
 
 		// WCML
 		global $woocommerce_wpml;
