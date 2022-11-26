@@ -161,11 +161,11 @@ msgctxt "Label of the link to view a configuration, in the cart or an order"
 msgid "View configuration"
 msgstr ""
 
-#: src/inc/languages.php:277, src/inc/languages.php:277, src/inc/languages.php:264, src/inc/languages.php:264
+#: src/inc/languages.php:280, src/inc/languages.php:280, src/inc/languages.php:267, src/inc/languages.php:267
 msgid "Name"
 msgstr ""
 
-#: src/inc/languages.php:282, src/inc/languages.php:282, src/inc/languages.php:269, src/inc/languages.php:269, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:75, src/inc/admin/settings/layer.php:86
+#: src/inc/languages.php:285, src/inc/languages.php:285, src/inc/languages.php:272, src/inc/languages.php:272, src/inc/admin/settings/angle.php:38, src/inc/admin/settings/choice.php:75, src/inc/admin/settings/layer.php:86
 msgid "Description"
 msgstr ""
 
