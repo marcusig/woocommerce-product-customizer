@@ -1,7 +1,7 @@
 /*!
 Theme Name:   La Pomme
-Description:  A silicon valey inspired theme
-Tags:         right selector, drawers, accordion, right sidebar
+Description:  A Silicon Valley inspired theme
+Tags:         right selector, right sidebar
 */
 
 // COLORS
@@ -298,6 +298,7 @@ $inner_space: 1em;
 			display: block; 
 			font-size: 1.3em;
 			line-height: 1;
+			padding-top: 4px;
 		}
 
 		button.configurator-add-to-cart {
@@ -452,9 +453,20 @@ $inner_space: 1em;
 			}
 
 			.mkl-pc-syd-modal {
-				left: 0;
+				right: 0;
+    			left: auto;
+				border-radius: 15px;
+
 				&::after {
-					left: 40px;
+					left: auto;
+					right: 10px;
+					width: 15px;
+					height: 15px;
+					bottom: -5px;
+				}
+				.mkl-pc-modal-list h4 {
+					background: #f5f5f7;
+					border-radius: 15px 15px 0 0;
 				}
 			}
 
@@ -590,7 +602,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 /*
 	Variation: color only
 */
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul ul.layer_choices li.display-mode-colors {
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul ul.layer_choices.display-mode-colors {
 	.choices-list li {
 		box-shadow: none;
 		width: auto;
@@ -778,6 +790,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 span.save-your-design-modal-container {
 	padding-right: 5px;
 	padding-left: 5px;
+	padding-top: 4px;
 }
 
 a.save-your-design span {
