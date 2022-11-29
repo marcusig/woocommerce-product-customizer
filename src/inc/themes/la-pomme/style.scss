@@ -177,10 +177,22 @@ $inner_space: 1em;
 		position: absolute;
 		width: auto;
 		height: auto;
-		top: $distance;
-		left: $distance;
-		right: $distance;
-		bottom: $distance;
+		padding-bottom: $footer_height;
+
+		&:not( body.configurator_is_inline .mkl_pc & ){
+			top: $distance;
+			left: $distance;
+			right: $distance;
+			bottom: $footer_height;
+			padding-bottom: 0;
+			@media (max-width: $medium_screen_width) {
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+			}
+
+		}
 		background: #fff;
 		display: flex;
 		overflow: auto;
@@ -190,14 +202,7 @@ $inner_space: 1em;
 		transform: translateY(-30px);
 		// transition: all 0.3s;
 		transition: all 0.5s;
-		padding-bottom: $footer_height;
 
-		@media (max-width: $medium_screen_width) {
-			top: 0;
-			left: 0;
-			right: 0;
-			bottom: 0;
-		}
 
 		.mkl_pc_bg {
 			display: none;
@@ -559,6 +564,19 @@ body.configurator_is_inline .mkl_pc {
 		.mkl_pc_viewer {
 			min-height: 60vh;
 		}
+	}
+}
+
+body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
+	.mkl_pc_container {
+		margin-right: 280px;
+		footer {
+			margin-right: 280px;
+		}
+	}
+	.mkl_pc_admin {
+		position: fixed;
+		top: 32px;
 	}
 }
 
