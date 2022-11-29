@@ -37,6 +37,7 @@ PC.actions = PC.actions || {};
 		},
 		select: function( e ) {
 			this.originals.target.trigger( 'product_selected', { text: this.selected_text, id: this.selected } );
+			console.log(this.selected);
 			this.close();
 		},
 		close: function( e ) {

@@ -40,6 +40,7 @@ class Ajax {
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids_config', array( $this, 'fix_image_ids_from_configurator' ) );
 		add_action( 'wp_ajax_mkl_pc_get_configurable_products', array( $this, 'get_configurable_products' ) );
 		add_filter( 'weglot_js-data_treat_page', array( $this, 'weglot_compat' ), 20, 4 );
+		add_action( 'wp_ajax_pc_json_search_products_and_variations', array( $this, 'search_products_and_variations' ) );
 	}
 
 	/**
@@ -403,5 +404,102 @@ class Ajax {
 		// Cache the data for 5 min
 		set_transient( 'mkl_get_configurable_products', $data, 300 );
 		wp_send_json_success( $data );
+	}
+
+	/**
+	 * Get the product and variations. Alternative to WooCommerce's function, sending more data
+	 *
+	 * @param string $term (default: '') Term to search for.
+	 * @param bool   $include_variations in search or not.
+	 * @return void
+	 */
+	public function search_products_and_variations( $term = '', $include_variations = true ) {
+		logdebug( 'coucou ' );
+		check_ajax_referer( 'search-products', 'security' );
+
+		if ( empty( $term ) && isset( $_GET['term'] ) ) {
+			$term = (string) wc_clean( wp_unslash( $_GET['term'] ) );
+		}
+
+		if ( empty( $term ) ) {
+			wp_die();
+		}
+
+		if ( ! empty( $_GET['limit'] ) ) {
+			$limit = absint( $_GET['limit'] );
+		} else {
+			$limit = absint( apply_filters( 'woocommerce_json_search_limit', 30 ) );
+		}
+
+		$include_ids = ! empty( $_GET['include'] ) ? array_map( 'absint', (array) wp_unslash( $_GET['include'] ) ) : array();
+		$exclude_ids = ! empty( $_GET['exclude'] ) ? array_map( 'absint', (array) wp_unslash( $_GET['exclude'] ) ) : array();
+
+		$exclude_types = array();
+		if ( ! empty( $_GET['exclude_type'] ) ) {
+			// Support both comma-delimited and array format inputs.
+			$exclude_types = wp_unslash( $_GET['exclude_type'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			if ( ! is_array( $exclude_types ) ) {
+				$exclude_types = explode( ',', $exclude_types );
+			}
+
+			// Sanitize the excluded types against valid product types.
+			foreach ( $exclude_types as &$exclude_type ) {
+				$exclude_type = strtolower( trim( $exclude_type ) );
+			}
+			$exclude_types = array_intersect(
+				array_merge( array( 'variation' ), array_keys( wc_get_product_types() ) ),
+				$exclude_types
+			);
+		}
+
+		$data_store = \WC_Data_Store::load( 'product' );
+		$ids        = $data_store->search_products( $term, '', (bool) $include_variations, false, $limit, $include_ids, $exclude_ids );
+
+		$products = array();
+
+		foreach ( $ids as $id ) {
+			$product_object = wc_get_product( $id );
+
+			if ( ! wc_products_array_filter_readable( $product_object ) ) {
+				continue;
+			}
+
+			$formatted_name = $product_object->get_formatted_name();
+			$managing_stock = $product_object->managing_stock();
+
+			if ( in_array( $product_object->get_type(), $exclude_types, true ) ) {
+				continue;
+			}
+
+			if ( $managing_stock && ! empty( $_GET['display_stock'] ) ) {
+				$stock_amount = $product_object->get_stock_quantity();
+				/* Translators: %d stock amount */
+				$formatted_name .= ' &ndash; ' . sprintf( __( 'Stock: %d', 'woocommerce' ), wc_format_stock_quantity_for_display( $stock_amount, $product_object ) );
+			}
+
+			if ( $managing_stock ) {
+				$stock = (int) $product_object->get_stock_quantity();
+				$wc_backorder = $product_object->get_backorders();
+			} else {
+				if ( 'instock' == $product_object->get_stock_status() ) {
+					$stock = 100000;
+				} elseif( 'outofstock'  == $product_object->get_stock_status()  ) {
+					$stock = 0;
+					$wc_backorder = 'no';
+				} else {
+					$stock = 0;
+					$wc_backorder = 'yes';
+				}
+			}
+
+			$products[ $product_object->get_id() ] = [
+				'name'  => rawurldecode( wp_strip_all_tags( $formatted_name ) ),
+				'price' => $product_object->get_price(),
+				'stock' => $stock, 
+				'wc_backorder' => $wc_backorder,
+			];
+		}
+
+		wp_send_json( apply_filters( 'woocommerce_json_search_found_products', $products ) );
 	}
 }
