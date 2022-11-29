@@ -51,10 +51,6 @@
 				transform:rotate(-45deg);
 			}
 		}
-		@media( max-width: $medium_screen_width ) {
-			left: $toolbar_width_medium;
-			width: calc( 100% - #{$toolbar_width_medium} );
-		}
 
 		@media( max-width: $small_screen_width ) {
 			width: 100%;
@@ -592,16 +588,17 @@
 				
 			}
 		}
-
 		@media( max-width: $small_screen_width ) {
-			position: absolute;
-			top: 0;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			height: 100%;
 			box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
-		}				
+			body:not(.configurator_is_inline) & {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				height: 100%;
+			}
+		}
 	}
 
 	@media (max-width: $medium_screen_width) {
@@ -610,7 +607,7 @@
 	@media( max-width: $small_screen_width ) {
 		width: 100%;
 		top: 50%;
-		bottom: $footer_height_small_screen;
+		bottom: var( --footer_height );
 		.form.form-cart {
 			display: none;
 		}

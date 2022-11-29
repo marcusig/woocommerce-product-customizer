@@ -31,12 +31,11 @@ $toolbar_width: 350px;
 $toolbar_width_medium: 280px;
 $toolbar_width_small: 110px;
 
-$footer_height: 5em;
-$footer_height_small_screen: 4em;
 $inner_space: 1em;
 
 :root {
 	--toolbar_width: 400px;
+	--footer_height: 5em;
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
@@ -177,27 +176,27 @@ $inner_space: 1em;
 		position: absolute;
 		width: auto;
 		height: auto;
-		padding-bottom: $footer_height;
+		padding-bottom: var( --footer_height );
 
-		&:not( body.configurator_is_inline .mkl_pc & ){
+		&:not( body.configurator_is_inline & ) {
 			top: $distance;
 			left: $distance;
 			right: $distance;
-			bottom: $footer_height;
+			bottom: var( --footer_height );
 			padding-bottom: 0;
 			@media (max-width: $medium_screen_width) {
 				top: 0;
 				left: 0;
 				right: 0;
-				bottom: 0;
 			}
 
 		}
 		background: #fff;
 		display: flex;
 		overflow: auto;
-
+		flex-wrap: wrap;
 		visibility: hidden;
+		align-items: flex-start;
 		opacity: 0;
 		transform: translateY(-30px);
 		// transition: all 0.3s;
@@ -276,6 +275,7 @@ $inner_space: 1em;
 		.price-container {
 			text-align: right;
 			padding-right: 10px;
+			
 		}
 		.extra-cost {
 			visibility: hidden;
@@ -385,8 +385,7 @@ $inner_space: 1em;
 			bottom: 0;
 			left: 0;
 			right: 0;
-			height: $footer_height;
-			z-index: 2; 
+			height: var( --footer_height );
 			padding: $inner_space; 
 			
 			background: #F5F5F7;
@@ -431,12 +430,18 @@ $inner_space: 1em;
 
 			.footer__section-center {
 				flex: 1;
-				display: flex;			
+				display: flex;
+				&:empty {
+					display: none;
+				}	
+			}
+			.footer__section-right {
+				width: 100%;
 			}
 
 			@media (max-width: $medium_screen_width) {
 				text-align: center;
-				height: $footer_height_small_screen;
+				// height: $footer_height_small_screen;
 			}
 
 			@media (max-width: $small_screen_width) {
@@ -477,11 +482,13 @@ $inner_space: 1em;
 						position: fixed;
 						left: 0;
 						top: 45px;
+						z-index: 9;
 					}
 					@media ( max-width: 600px ) {
 						position: fixed;
 						left: 0;
 						top: 0;
+						z-index: 9;
 					}
 					> .cancel {
 						@media (min-width: $small_screen_width) {

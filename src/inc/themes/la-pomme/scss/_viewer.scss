@@ -3,14 +3,24 @@
 	z-index: 1;
 	width: 50%;
 	top: 0;
+	min-height: calc( 100vh - var(--footer_height ) );
 	
 	@media( max-width: $medium_screen_width ) {
 		right: $toolbar_width_medium;
 	}
 	@media( max-width: $small_screen_width ) {
-		right: 0;
-		top: 0;
-		bottom: 50%;
+		width: 100%;
+		position: relative;
+		right: auto;
+		left: auto;
+		bottom: auto;
+		body:not(.configurator_is_inline) & {
+			position: absolute;
+			bottom: 50%;
+			left: 0;
+			right: 0;
+			min-height: 0;
+		}
 	}
 
 	.angles-select {
