@@ -32,6 +32,7 @@ Get the starter theme from [Github](https://github.com/marcusig/product-configur
 
 ## Demos
 
+- Check out [the demos here](http://demos.mklacroix.com/)
 - [Basic demo](http://demos.mklacroix.com/shop/custom-chair/) - the configurator is using a modal window
 - [Inline demo](http://demos.mklacroix.com/configurable-watch/) - the configurator is inserted inline, using the shortcode `[mkl_configurator product_id=1 classes="container-class something-else"]`
 - [Add-ons demo](http://demos.mklacroix.com/addons/product/super-sneakers/) - basic demo with all the add-ons enabled
