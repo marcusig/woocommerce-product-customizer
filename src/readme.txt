@@ -19,11 +19,7 @@ Give your customers a great experience, and make your life easy: no need to crea
 
 Instead, export your layers from Photoshop, a 3D render, or any other source, and allow the user to configure their product using those.
 
-<a href="http://demos.mklacroix.com/shop/custom-chair/">Basic demo</a>
-
-<a href="http://demos.mklacroix.com/configurable-watch/">Inline demo</a>
-
-<a href="http://demos.mklacroix.com/addons/product/super-sneakers/">Basic demo with all addons</a>
+<a href="http://demos.mklacroix.com/">Check out the demos here</a>
 
 You can report bugs or suggestions on the <a href="https://github.com/marcusig/woocommerce-product-customizer/issues">github repository</a> or the <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">support forum</a>.
 
@@ -104,11 +100,17 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 4. Editing a configuration - Contents screen 
 5. Editing a configuration - Contents screen editing
 6. Frontend default: replaces the Add to cart button by a "Configure" button
-7. Frontend: configuring a product
+7. Frontend: configuring a product - Default theme
 8. Frontend: configuring a product
 9. Frontend: configuration in the cart
 10. Backend: configuration in the order
 11. General plugin settings
+12. Configurator theme - Clean
+13. Configurator theme - Dark mode
+14. Configurator theme - Float
+15. Configurator theme - H
+16. Configurator theme - La Pomme
+17. Configurator theme - WSB
 
 == Changelog ==
 
