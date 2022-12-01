@@ -188,7 +188,6 @@ class Rest_Angle_Controller extends Rest_Base_Controller {
 	protected function prepare_object_for_database( $request, $creating = false ) {
 		$id    = isset( $request['id'] ) ? absint( $request['id'] ) : 0;
 		$object = $this->get_object( (int) $id );
-		logdebug(['$object', $object]);
 		$available_props = $this->get_item_fields();
 		$available_settings = array_merge( $available_props, array_keys( mkl_pc()->admin->angle_settings->get_settings_list() ) );
 		$posted_data = $request->get_params();

@@ -77,6 +77,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-layer-controller.php';
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-angle-controller.php';
 		include_once MKL_PC_INCLUDE_PATH . 'api/rest-choice-controller.php';
+		include_once MKL_PC_INCLUDE_PATH . 'api/rest-condition-controller.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data-store.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/angle-data-store.php';
@@ -198,6 +199,8 @@ class Plugin {
     	$choice_controller->register_routes();
 		$angle_controller = new Rest_Angle_Controller();
     	$angle_controller->register_routes();
+		$condition_controller = new Rest_Condition_Controller();
+    	$condition_controller->register_routes();
 	}
 
 	private function _register_tables() {

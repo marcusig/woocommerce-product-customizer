@@ -391,6 +391,8 @@ PC.import.views = PC.import.views || {};
 				.then( this.reset_layers.bind( this ) )
 				.then( this.import_layers.bind( this ) )
 				.then( this.fix_relationships.bind( this ) )
+				.then( this.reset_conditions.bind( this ) )
+				.then( this.import_conditions.bind( this ) )
 				.then( 
 					function() {
 						console.log( 'last then' );
@@ -451,7 +453,7 @@ PC.import.views = PC.import.views || {};
 						var old_angle_id = angle._id || angle.id;
 						if ( angle._id ) angle._id = null;
 						if ( angle.id ) angle.id = null;
-						var angle_item = $( '.preview-content--collection .layers > li[data-id="' + old_angle_id + '"]' );
+						var angle_item = $( '.preview-content--collection .angles > li[data-id="' + old_angle_id + '"]' );
 						angle_item.addClass( 'loading' );	
 						var Angle = angles_col.create( angle )
 							.once( 'request', function( model_or_collection, xhr, options ) {
@@ -574,17 +576,145 @@ PC.import.views = PC.import.views || {};
 			return dfd.promise();
 		},
 		fix_relationships: function() {
-			// Fix layer parents
 			var layers_col = PC.app.get_collection( 'layers' );
-			var layers_with_parent = 
-			// Fix layer angle auto switch
-			// Fix choices parent
-			// Fix choices angle auto switch
 			var dfd = new $.Deferred();
-			return dfd.resolve().promise();
+			var requests = [];
+
+			this.$( '.import-status' ).text( 'Fix relationships' ).addClass( 'loading' );
+			layers_col.each( function( layer ) {
+				// Fix layer parents
+				var changed = false;
+				if ( layer.get( 'parent' ) ) {
+					layer.set( 'parent', this.find_new_item_id( 'layers', layer.get( 'parent' ) ) );
+					changed = true;
+				}
+
+				// Fix layer angle auto switch
+				var angle_switch = layer.get( 'angle_switch' );
+				if ( 'no' != angle_switch ) {
+					layer.set( 'angle_switch', this.find_new_item_id( 'angles', angle_switch ) || angle_switch );
+					changed = true;
+				}
+
+				if ( changed ) {
+					layer.once( 'request', function( model_or_collection, xhr, options ) {
+						// Add the xhr to the list
+						requests.push( xhr );
+					} );
+					layer.save();
+				}
+
+				var content_col = PC.app.get_layer_content( layer.id );
+
+				content_col.each( function( choice ) {
+
+					var changed = false;
+
+					// Fix choices parent
+					if ( choice.get( 'parent' ) ) {
+						choice.set( 'parent', this.find_new_item_id( 'content', choice.get( 'parent' ), layer.id ) );
+						changed = true;
+					}
+
+					var angle_switch = choice.get( 'angle_switch' );
+					if ( 'no' != angle_switch ) {
+						choice.set( 'angle_switch', this.find_new_item_id( 'angles', angle_switch ) || angle_switch );
+						changed = true;
+					}
+
+					if ( changed ) {
+						choice.once( 'request', function( model_or_collection, xhr, options ) {
+							// Add the xhr to the list
+							requests.push( xhr );
+						} );
+						choice.save();
+					}
+		
+
+				}.bind( this ) );
+
+			}.bind( this ) );
+
+			$.when( requests ).then( function( status ) {
+				dfd.resolve();
+			} );
+
+			return dfd.promise();
+		},
+		reset_conditions: function() {
+			var conditions = PC.app.get_collection( 'conditions' );
+			if ( PC.views.conditional && Import.imported_data.collections.conditions.length && 'override' == this.mode && conditions ) {
+				this.$( '.import-status' ).text( 'Deleting existing conditions' ).addClass( 'loading' );
+				var deleted_ids = conditions.pluck( 'id' );
+				conditions.reset();
+				return this.reset_remote_collection( 'conditions', deleted_ids );
+			} else {
+				console.log( 'no conditions to reset' );
+				var dfd = new $.Deferred();
+				return dfd.resolve().promise();
+			}
+		},
+		import_conditions: function() {
+			var conditions = PC.app.get_collection( 'conditions' );
+			var dfd = new $.Deferred();
+			if ( Import.imported_data.collections.conditions.length ) {
+				this.$( '.import-status' ).text( 'Importing conditions' ).addClass( 'loading' );
+				var processing = 0;
+				_.each( Import.imported_data.collections.conditions, function( condition, condition_index ) {
+					// reset the ID and store it for future ref
+					processing++;
+					var old_id = condition._id || condition.id;
+					var condition_item = $( '.preview-content--collection .conditions > li[data-id="' + old_id + '"]' );
+					condition_item.addClass( 'loading' );
+
+					// Change IDs in the rules
+					condition.rules = _.map( condition.rules, function( rule, rindex ) {
+						rule.actioner.layerId = this.find_new_item_id( 'layer', rule.actioner.layerId ) || rule.actioner.layerId;
+						if ( -1 == rule.actioner.choiceId || -2 == rule.actioner.choiceId ) return rule;
+						rule.actioner.choiceId = this.find_new_item_id( 'content', rule.actioner.choiceId, rule.actioner.layerId ) || rule.actioner.choiceId;
+						return rule;
+					}.bind( this ) );
+
+					// Change IDs in the actions
+					condition.actions = _.map( condition.actions, function( action, rindex ) {
+						action.layerId = this.find_new_item_id( 'layer', action.layerId ) || action.layerId;
+						if ( ! action.choiceId ) return action;
+						action.choiceId = this.find_new_item_id( 'content', action.choiceId, action.layerId ) || action.choiceId;
+						return action;
+					}.bind( this ) );
+
+					var Condition = conditions.create( condition )
+						.once( 'sync', function( new_layer, response, options ) {
+							processing--;
+							// Add the xhr to the list
+							condition_item.removeClass( 'loading' );
+							condition_item.addClass( 'done' );
+							if ( 0 == processing ) {
+								dfd.resolve();
+							}
+						} );
+				}.bind( this ) );
+				
+				return dfd.promise();
+			} else {
+				return dfd.resolve().promise();
+			}
+		},
+		find_new_item_id: function( col, old_id, layer_id ) {
+			if ( ! this.id_relationships[col] )return 0;
+			if ( 'content' == col ) {
+				var matching_choices = _.findWhere( this.id_relationships[col], { layerId: layer_id } );
+				var collection = matching_choices ? matching_choices.choices : [];
+			} else { 
+				var collection = this.id_relationships[col];
+			}
+			var match = _.findWhere( collection, { old_id: old_id } );
+			if ( match ) return match.new_id;
+			return 0;
 		},
 		reset_remote_collection: function( slug, ids ) {
 			var dfd = new $.Deferred();
+			if ( ! ids.length ) return dfd.resolve().promise();
 			wp.apiFetch(
 				{ path: 'mklpc/v1/configuration/' + PC.app.id + '/' + slug + '/batch', method: "POST", data: { delete: ids } }
 			).then( (

@@ -163,9 +163,6 @@ PC.views = PC.views || {};
 					}
 				}); 
 
-
-
-
 			}
 
 			// if ( ! this.product.get( 'content' ) ) {
@@ -184,6 +181,9 @@ PC.views = PC.views || {};
 				success: PC._us.bind(this.fetched, this)
 
 			} );
+
+			wp.hooks.doAction( 'PC.admin.editor.init', this );
+
 			return this;
 		},
  		// States are fecthed

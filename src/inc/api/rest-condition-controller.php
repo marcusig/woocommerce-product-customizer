@@ -228,7 +228,7 @@ class Rest_Condition_Controller extends Rest_Base_Controller {
 	public function get_item_fields() {
 		$fields = array(
 			'name',
-			'condition_order',
+			'order',
 			'product_id',
 			'date_modified',
 			'relationship',

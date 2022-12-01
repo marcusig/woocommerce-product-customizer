@@ -188,7 +188,7 @@ class Update {
 				reversible BOOLEAN default 0,
 				always_check BOOLEAN default 0,
 				PRIMARY KEY  (condition_id),
-				KEY status (status),
+				KEY enabled (enabled),
 				KEY product_id (product_id)
 			  ) $collate;
 			";

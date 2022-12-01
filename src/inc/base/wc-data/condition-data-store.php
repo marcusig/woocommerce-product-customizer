@@ -57,8 +57,8 @@ class MKL_PC_Condition_Data_Store extends MKL_PC_Layer_Data_Store {
 				'product_id'      => $item->get( 'product_id' ),
 				'condition_order' => $item->get( 'order' ),
 				'relationship'    => $item->get( 'relationship' ),
-				'rules'           => $item->get( 'rules' ),
-				'actions'         => $item->get( 'actions' ),
+				'rules'           => maybe_serialize( $item->get( 'rules' ) ),
+				'actions'         => maybe_serialize( $item->get( 'actions' ) ),
 				'enabled'         => $item->get( 'enabled' ),
 				'reversible'      => $item->get( 'reversible' ),
 				'always_check'    => $item->get( 'always_check' ),
@@ -67,7 +67,7 @@ class MKL_PC_Condition_Data_Store extends MKL_PC_Layer_Data_Store {
 		);
 		$item->set_id( $wpdb->insert_id );
 		// $this->save_item_data( $item );
-		$item->save_meta_data();
+		//$item->save_meta_data();
 		$item->apply_changes();
 		$this->clear_cache( $item );
 
@@ -126,11 +126,29 @@ class MKL_PC_Condition_Data_Store extends MKL_PC_Layer_Data_Store {
 		}
 
 		// $this->save_item_data( $item );
-		$item->save_meta_data();
+		// $item->save_meta_data();
 		$item->apply_changes();
 		$this->clear_cache( $item );
 
 		do_action( 'mkl_pc_update_condition', $item->get_id(), $item, $item->get( 'product_id') );
+	}
+
+	/**
+	 * Remove an order item from the database.
+	 *
+	 * @since 3.0.0
+	 * @param WC_Order_Item $item Order item object.
+	 * @param array         $args Array of args to pass to the delete method.
+	 */
+	public function delete( &$item, $args = array() ) {
+		if ( $item->get_id() ) {
+			global $wpdb;
+			do_action( 'mklpc_before_delete_' . $this->object_type, $item->get_id() );
+			$wpdb->delete( $wpdb->prefix . 'mklpc_' . $this->object_type . 's', array( $this->object_type . '_id' => $item->get_id() ) );
+			// $wpdb->delete( $wpdb->prefix . 'mklpc_' . $this->object_type . 'meta', array( $this->object_type . '_id' => $item->get_id() ) );
+			do_action( 'mklpc_delete_' . $this->object_type, $item->get_id() );
+			$this->clear_cache( $item );
+		}
 	}
 
 	/**

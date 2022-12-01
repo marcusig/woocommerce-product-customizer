@@ -492,9 +492,9 @@ IMPORT / EXPORT
 		<# if ( data.conditions ) { #>
 			<div class="preview-content--collection">
 				<h4><?php _e( 'Conditions', 'product-configurator-for-woocommerce' ); ?></h4>
-				<ul class="ul-disc">
+				<ul class="ul-disc conditions">
 					<# PC._us.each( data.conditions, function( condition ) { #>
-						<li>{{condition.name}}</li>
+						<li data-id="{{condition._id || condition.id}}">{{condition.name}}</li>
 					<# }); #>
 				</ul>
 			</div>

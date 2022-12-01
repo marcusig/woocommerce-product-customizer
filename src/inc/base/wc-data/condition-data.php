@@ -15,16 +15,16 @@ class Condition_Data extends \WC_Data {
 	 * @var array
 	 */
 	protected $data = array(
-		'name'            => '',
-		'product_id'      => 0,
-		'condition_order' => 0,
-		'relationship'    => 'AND',
-		'rules'           => '',
-		'actions'         => '',
-		'enabled'         => true,
-		'reversible'      => false,
-		'always_check'    => false,
-		'date_modified'   => '',
+		'name'          => '',
+		'product_id'    => 0,
+		'order'         => 0,
+		'relationship'  => 'AND',
+		'rules'         => '',
+		'actions'       => '',
+		'enabled'       => true,
+		'reversible'    => false,
+		'always_check'  => false,
+		'date_modified' => '',
 	);
 
 	/**
@@ -59,7 +59,7 @@ class Condition_Data extends \WC_Data {
 	 */
 	public function __construct( $item = 0 ) {
 		parent::__construct( $item );
-
+		$this->db = mkl_pc()->db;
 		if ( $item instanceof Condition_Data ) {
 			$this->set_id( $item->get_id() );
 		} elseif ( is_numeric( $item ) && $item > 0 ) {
@@ -120,11 +120,11 @@ class Condition_Data extends \WC_Data {
 	}
 	
 	public function set_rules( $rules ) {
-		$this->set_prop( 'rules', $this->db->sanitize( $rules, 'rules' ) );
+		$this->set_prop( 'rules', $this->db->sanitize( maybe_unserialize( $rules ), 'rules' ) );
 	}
 
 	public function set_actions( $actions ) {
-		$this->set_prop( 'actions', $this->db->sanitize( $actions, 'actions' ) );
+		$this->set_prop( 'actions', $this->db->sanitize( maybe_unserialize( $actions ), 'actions' ) );
 	}
 
 	public function set_relationship( $relationship ) {
@@ -149,5 +149,9 @@ class Condition_Data extends \WC_Data {
 
 	public function set_order( $order ) {
 		$this->set_prop( 'order', (int) $order);
+	}
+
+	public function read_meta_data( $force_read = false ) {
+		$this->meta_data = array();
 	}
 }
