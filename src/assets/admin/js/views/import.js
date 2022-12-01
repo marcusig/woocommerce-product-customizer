@@ -349,7 +349,9 @@ PC.import.views = PC.import.views || {};
 		open_json_file: function( ef ) {
 			console.log( ef );
 		},
-		process_import: function() {
+		process_import: function( e ) {
+			this.$( '.import-selected' ).hide();
+
 			// Import.imported_data.collections
 			// Add the layers
 			// PC.app.admin_data.set( 'layers', Import.imported_data.collections.layers );
@@ -388,7 +390,8 @@ PC.import.views = PC.import.views || {};
 				.then( this.import_angles.bind( this ) )
 				.then( this.reset_layers.bind( this ) )
 				.then( this.import_layers.bind( this ) )
-				.then(
+				.then( this.fix_relationships.bind( this ) )
+				.then( 
 					function() {
 						console.log( 'last then' );
 						this.$( '.import-status' ).text( 'Successfuly Imported the new content' ).removeClass( 'loading' );
@@ -448,12 +451,16 @@ PC.import.views = PC.import.views || {};
 						var old_angle_id = angle._id || angle.id;
 						if ( angle._id ) angle._id = null;
 						if ( angle.id ) angle.id = null;
+						var angle_item = $( '.preview-content--collection .layers > li[data-id="' + old_angle_id + '"]' );
+						angle_item.addClass( 'loading' );	
 						var Angle = angles_col.create( angle )
 							.once( 'request', function( model_or_collection, xhr, options ) {
 								// Add the xhr to the list
 								imports.push( xhr );
 							} )
 							.once( 'sync', function( model ) {
+								angle_item.removeClass( 'loading' );
+								angle_item.addClass( 'done' );
 								view.id_relationships.angles.push( { old_id: old_angle_id, new_id: Angle.id } );
 							} );
 						// var choice_collection= new PC.choices()
@@ -565,6 +572,16 @@ PC.import.views = PC.import.views || {};
 				}.bind( this ) );
 			}
 			return dfd.promise();
+		},
+		fix_relationships: function() {
+			// Fix layer parents
+			var layers_col = PC.app.get_collection( 'layers' );
+			var layers_with_parent = 
+			// Fix layer angle auto switch
+			// Fix choices parent
+			// Fix choices angle auto switch
+			var dfd = new $.Deferred();
+			return dfd.resolve().promise();
 		},
 		reset_remote_collection: function( slug, ids ) {
 			var dfd = new $.Deferred();
