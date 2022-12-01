@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.41
+Stable tag: 1.2.42
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,6 +113,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.42 - 30/Nov/2022 =
+
+* THEME: Added a new theme: La Pomme (<a href="https://demos.mklacroix.com/custom-laptop/">demo</a>)
 
 = 1.2.41 - 15/Nov/2022 =
 
@@ -461,4 +465,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.41 Various tweaks and fixes
+* 1.2.42 Introduction of the new configuratir theme La Pomme
