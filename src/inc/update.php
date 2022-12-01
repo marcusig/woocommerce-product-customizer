@@ -174,6 +174,26 @@ class Update {
 		  ) $collate;
 		";
 
+		if ( defined( 'MKL_PC_CONDITIONAL_LOGIC_URL' ) ) {
+			$schema .= "CREATE TABLE {$wpdb->prefix}mklpc_conditions (
+				condition_id BIGINT UNSIGNED NOT NULL auto_increment,
+				name varchar(500) NULL,
+				condition_order SMALLINT(2) NOT NULL default 0,
+				product_id BIGINT UNSIGNED NULL,
+				date_modified datetime NOT NULL,
+				relationship varchar(255) default NULL,
+				rules longtext default NULL,  
+				actions longtext default NULL,
+				enabled BOOLEAN default 1,
+				reversible BOOLEAN default 0,
+				always_check BOOLEAN default 0,
+				PRIMARY KEY  (condition_id),
+				KEY status (status),
+				KEY product_id (product_id)
+			  ) $collate;
+			";
+		}
+
 		dbDelta( $schema );
 	}
 

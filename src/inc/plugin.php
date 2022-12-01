@@ -81,9 +81,11 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data-store.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/angle-data-store.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/choice-data-store.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/condition-data-store.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/layer-data.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/angle-data.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/choice-data.php';
+		include_once MKL_PC_INCLUDE_PATH . 'base/wc-data/condition-data.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'cache.php';
 		include_once MKL_PC_INCLUDE_PATH . 'db.php';
@@ -150,6 +152,7 @@ class Plugin {
 		$stores['pc-layer'] = 'MKL_PC_Layer_Data_Store';
 		$stores['pc-choice'] = 'MKL_PC_Choice_Data_Store';
 		$stores['pc-angle'] = 'MKL_PC_Angle_Data_Store';
+		$stores['pc-condition'] = 'MKL_PC_Condition_Data_Store';
 		return $stores;
 	}
 	
@@ -208,6 +211,10 @@ class Plugin {
 			'pc_angles'    => 'mklpc_angles',
 			'pc_anglemeta' => 'mklpc_anglemeta',
 		);
+
+		if ( defined( 'MKL_PC_CONDITIONAL_LOGIC_URL' ) ) {
+			$tables['pc_conditions'] = 'mklpc_conditions';
+		}
 
 		foreach ( $tables as $name => $table ) {
 			$wpdb->$name    = $wpdb->prefix . $table;
