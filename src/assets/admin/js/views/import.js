@@ -396,7 +396,7 @@ PC.import.views = PC.import.views || {};
 				.then( 
 					function() {
 						console.log( 'last then' );
-						this.$( '.import-status' ).text( 'Successfuly Imported the new content' ).removeClass( 'loading' );
+						this.log_progress( 'Successfuly Imported the new content', 'success' );
 						wp.hooks.doAction( 'PC.admin.import.process_import', Import );
 						// Import.state.current_tool.next();
 					}.bind( this )
@@ -432,7 +432,7 @@ PC.import.views = PC.import.views || {};
 			if ( Import.imported_data.collections.angles.length && 'override' == this.mode && angles_col ) {
 				var deleted_ids = angles_col.pluck( 'id' );
 				angles_col.reset();
-				this.$( '.import-status' ).text( 'Deleting existing angles' ).addClass( 'loading' );
+				this.log_progress( 'Deleting existing angles' );
 				return this.reset_remote_collection( 'angles', deleted_ids );
 			} else {
 				var dfd = new $.Deferred();
@@ -448,7 +448,7 @@ PC.import.views = PC.import.views || {};
 				if ( angles_col ) {
 					var imports = [];
 					// Add all the angles
-					view.$( '.import-status' ).text( 'Importing angles' ).addClass( 'loading' );
+					this.log_progress( 'Importing angles' );
 					_.each( Import.imported_data.collections.angles, function( angle, index ) {
 						var old_angle_id = angle._id || angle.id;
 						if ( angle._id ) angle._id = null;
@@ -470,8 +470,9 @@ PC.import.views = PC.import.views || {};
 
 					// Resolve when all the imports are complete
 					$.when( imports ).then( function( status ) {
+						this.log_progress( 'Done.' );
 						dfd.resolve();
-					} );
+					}.bind( this ) );
 				} else {
 					console.warn( 'No angles collection found' );
 					return dfd.resolve().promise();
@@ -488,14 +489,14 @@ PC.import.views = PC.import.views || {};
 			if ( layers_col && layers_col.length ) {
 				var deleted_ids = layers_col.pluck( 'id' );
 				layers_col.reset();
-				this.$( '.import-status' ).text( 'Deleting existing layers' ).addClass( 'loading' );
+				this.log_progress( 'Deleting existing layers' );
 				return this.reset_remote_collection( 'layers', deleted_ids )
 			}
 			return dfd.resolve().promise();
 		},
 		import_layers: function() {
 			var dfd = new $.Deferred();
-			this.$( '.import-status' ).text( 'Importing new layers' ).addClass( 'loading' );
+			this.log_progress( 'Importing new layers' );
 			var layers_col = PC.app.get_collection( 'layers' );
 			var content_col = PC.app.get_collection( 'content' );
 			if ( Import.imported_data.collections.layers.length ) {
@@ -503,13 +504,18 @@ PC.import.views = PC.import.views || {};
 				if ( 'override' == this.mode ) {
 					// Delete existing content
 					if ( content_col ) {
+						var promises = [];
+						this.log_progress( 'Deleting existing choices for layer' );
 						content_col.each( function( layer_content ) {
 							// reset();
 							if ( layer_content.get( 'choices' ) ) {
 								var deleted_ids = layer_content.get( 'choices' ).pluck( 'id' );
 								layer_content.get( 'choices' ).reset();
-								this.reset_remote_collection( 'choices', deleted_ids );
+								promises.push( this.reset_remote_collection( 'choices', deleted_ids, false ) );
 							}
+						}.bind( this ) );
+						$.when( promises ).then( function() {
+							this.log_progress( 'Done' );
 						}.bind( this ) );
 						content_col.reset();
 					}
@@ -556,8 +562,8 @@ PC.import.views = PC.import.views || {};
 												choice_item.addClass( 'done' );
 												processing--;
 												choices_id_relationships.push( { old_id: old_choice_id, new_id: new_choice.id } );
-												console.log( 'imported content', processing );
 												if ( 0 == processing ) {
+													this.log_progress( 'Done.' );
 													dfd.resolve();
 												}
 											}.bind( this ) );
@@ -580,7 +586,7 @@ PC.import.views = PC.import.views || {};
 			var dfd = new $.Deferred();
 			var requests = [];
 
-			this.$( '.import-status' ).text( 'Fix relationships' ).addClass( 'loading' );
+			this.log_progress( 'Fixing relationships' );
 			layers_col.each( function( layer ) {
 				// Fix layer parents
 				var changed = false;
@@ -636,15 +642,16 @@ PC.import.views = PC.import.views || {};
 			}.bind( this ) );
 
 			$.when( requests ).then( function( status ) {
+				this.log_progress( 'Done.' );
 				dfd.resolve();
-			} );
+			}.bind( this ) );
 
 			return dfd.promise();
 		},
 		reset_conditions: function() {
 			var conditions = PC.app.get_collection( 'conditions' );
 			if ( PC.views.conditional && Import.imported_data.collections.conditions.length && 'override' == this.mode && conditions ) {
-				this.$( '.import-status' ).text( 'Deleting existing conditions' ).addClass( 'loading' );
+				this.log_progress( 'Deleting existing conditions' );
 				var deleted_ids = conditions.pluck( 'id' );
 				conditions.reset();
 				return this.reset_remote_collection( 'conditions', deleted_ids );
@@ -658,18 +665,18 @@ PC.import.views = PC.import.views || {};
 			var conditions = PC.app.get_collection( 'conditions' );
 			var dfd = new $.Deferred();
 			if ( Import.imported_data.collections.conditions.length ) {
-				this.$( '.import-status' ).text( 'Importing conditions' ).addClass( 'loading' );
+				this.log_progress( 'Importing conditions' );
 				var processing = 0;
 				_.each( Import.imported_data.collections.conditions, function( condition, condition_index ) {
 					// reset the ID and store it for future ref
 					processing++;
 					var old_id = condition._id || condition.id;
-					var condition_item = $( '.preview-content--collection .conditions > li[data-id="' + old_id + '"]' );
+					var condition_item = $( '.preview-content--collection .conditions > li[data-index="' + condition_index + '"]' );
 					condition_item.addClass( 'loading' );
 
 					// Change IDs in the rules
 					condition.rules = _.map( condition.rules, function( rule, rindex ) {
-						rule.actioner.layerId = this.find_new_item_id( 'layer', rule.actioner.layerId ) || rule.actioner.layerId;
+						rule.actioner.layerId = this.find_new_item_id( 'layers', rule.actioner.layerId ) || rule.actioner.layerId;
 						if ( -1 == rule.actioner.choiceId || -2 == rule.actioner.choiceId ) return rule;
 						rule.actioner.choiceId = this.find_new_item_id( 'content', rule.actioner.choiceId, rule.actioner.layerId ) || rule.actioner.choiceId;
 						return rule;
@@ -677,7 +684,7 @@ PC.import.views = PC.import.views || {};
 
 					// Change IDs in the actions
 					condition.actions = _.map( condition.actions, function( action, rindex ) {
-						action.layerId = this.find_new_item_id( 'layer', action.layerId ) || action.layerId;
+						action.layerId = this.find_new_item_id( 'layers', action.layerId ) || action.layerId;
 						if ( ! action.choiceId ) return action;
 						action.choiceId = this.find_new_item_id( 'content', action.choiceId, action.layerId ) || action.choiceId;
 						return action;
@@ -691,8 +698,9 @@ PC.import.views = PC.import.views || {};
 							condition_item.addClass( 'done' );
 							if ( 0 == processing ) {
 								dfd.resolve();
+								this.log_progress( 'Done.' );
 							}
-						} );
+						}.bind( this ) );
 				}.bind( this ) );
 				
 				return dfd.promise();
@@ -712,19 +720,31 @@ PC.import.views = PC.import.views || {};
 			if ( match ) return match.new_id;
 			return 0;
 		},
-		reset_remote_collection: function( slug, ids ) {
+		reset_remote_collection: function( slug, ids, log ) {
+			log = 'undefined' == typeof log ? true : log;
 			var dfd = new $.Deferred();
 			if ( ! ids.length ) return dfd.resolve().promise();
 			wp.apiFetch(
 				{ path: 'mklpc/v1/configuration/' + PC.app.id + '/' + slug + '/batch', method: "POST", data: { delete: ids } }
 			).then( (
 				function ( e ) {
+					if ( log ) this.log_progress( 'Done.' );
 					dfd.resolve();
-				}
+				}.bind( this )
 			) );
 			return dfd.promise();
 		},
-
+		log_progress: function( text, type ) {
+			var item = $( '<li />' );
+			if ( ! this.$status_list ) {
+				this.$status_list = $( '<ul class="ul-square" />' )
+				this.$( '.import-status' ).append( this.$status_list );
+			}
+			item.text( text );
+			if ( type ) item.addClass( type );
+			this.$status_list.append( item );
+			return item;
+		},
 		// import_layer: function( layer ) {
 		// 	var importer_layer_id = layer.id;
 		// 	var data = PC.toJSON( layer );

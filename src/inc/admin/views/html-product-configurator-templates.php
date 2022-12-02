@@ -452,7 +452,7 @@ IMPORT / EXPORT
 		<p><?php _e( 'Review the data and press Import data to import it to this product.', 'product-configurator-for-woocommerce' ); ?></p>
 		<p><strong><?php _e( 'Note that any existing configuration will be overriden.', 'product-configurator-for-woocommerce' ); ?></strong></p>
 		<button class="import-selected button button-primary" type="button"><?php _e( 'Import data', 'product-configurator-for-woocommerce' ); ?></button>
-		<p class="import-status"></p>
+		<div class="import-status"></div>
 	</div>
 	<div class="preview-content">
 
@@ -493,8 +493,8 @@ IMPORT / EXPORT
 			<div class="preview-content--collection">
 				<h4><?php _e( 'Conditions', 'product-configurator-for-woocommerce' ); ?></h4>
 				<ul class="ul-disc conditions">
-					<# PC._us.each( data.conditions, function( condition ) { #>
-						<li data-id="{{condition._id || condition.id}}">{{condition.name}}</li>
+					<# PC._us.each( data.conditions, function( condition, index ) { #>
+						<li data-index="{{index}}">{{condition.name}}</li>
 					<# }); #>
 				</ul>
 			</div>
