@@ -138,16 +138,31 @@
 			
 			// Add the sections submenu
 			var titles = [];
-			$( 'div[data-content="settings"] section' ).each( function( ind, el ) {
+			var $sections = $( 'div[data-content="settings"] section' );
+			$sections.each( function( ind, el ) {
 				var title = $( el ).find( 'h2' ).first().text();
 				if ( title ) {
-					titles.push( '<a href="#' + $( el ).prop( 'id' ) +'">' + title + '</a>' );
+					titles.push( '<a href="#' + $( el ).prop( 'id' ) +'" data-item="' + $( el ).prop( 'id' ) + '">' + title + '</a>' );
 				}
 			} );
+
 			if ( titles.length ) {
 				var $submenu = $( '<div class="submenu" />' );
-				$submenu.html( titles.join( ' | ' ) );
-				$submenu.prependTo( $( '.mkl-settings-content' ) );
+				$submenu.html( titles.join( '' ) );
+				$submenu.prependTo( $( '.mkl-settings-content[data-content="settings"]' ) );
+				$submenu.on( 'click', 'a', function( e ) {
+					console.log( 'clicked a ', $(this) );
+					e.preventDefault();
+					// Deactivate current
+					$submenu.find( 'a' ).removeClass( 'active' );
+					$sections.removeClass( 'active' );
+
+					// Activate this
+					$( this ).addClass( 'active' );
+					$( '#' + $( this ).data( 'item' ) ).addClass( 'active' );
+				} );
+				// Activate the first item
+				$submenu.find( 'a' ).first().trigger( 'click' );
 			}
 
 			// Primary tabs nav
@@ -233,7 +248,7 @@
 			}).done( function( response ) {
 				if ( response && response.length ) {
 					var options = $( '#configurable-products' ).select2();
-					PC._us.each( response, function( item, i ) {
+					_.each( response, function( item, i ) {
 						var newOption = new Option(item.name, item.id, i == 0, i == 0);
 						options.append( newOption );
 					} );
