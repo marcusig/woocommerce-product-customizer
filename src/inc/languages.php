@@ -24,6 +24,7 @@ class Languages {
 		add_action( 'wpml_after_copy_custom_field', [ $this, 'purge_transient_after_translation_sync' ], 20, 3 );
 		add_filter( 'mkl_pc_item_meta', [ $this, 'translate_cart_data' ], 2, 4 );
 		add_filter( 'mkl_pc_order_item_meta', [ $this, 'translate_order_data' ], 2, 3 );
+		add_filter( 'mkl_configurator_data_attributes', [ $this, 'configurator_data_attributes' ] );
 
 		add_action( 'update_option_mkl_pc__settings', array( $this, 'wpml_register_translatable_settings' ), 10, 2 );
 		add_action( 'init', array( $this, 'pll_register_translatable_settings' ), 20 );
@@ -164,6 +165,13 @@ class Languages {
 			return true;	
 		}
 
+		// Check for TranslatePress
+		if ( function_exists( 'trp_translate' ) ) {
+			$this->ml_plugin = 'translatepress';
+			return true;	
+		}
+
+
 		return false;
 	}
 
@@ -183,6 +191,15 @@ class Languages {
 
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
 			$languages = pll_languages_list();
+			return $languages;
+		}
+
+		if ( $this->website_is_multilingual() && 'translatepress' === $this->ml_plugin ) {
+			$trp                  = \TRP_Translate_Press::get_trp_instance();
+			$trp_settings         = $trp->get_component( 'settings' );
+			$language_codes_array = $trp_settings->get_settings()['publish-languages'];
+
+			$languages = $language_codes_array;
 			return $languages;
 		}
 
@@ -208,6 +225,13 @@ class Languages {
 			return $default_language;
 		}
 
+		if ( $this->website_is_multilingual() && 'translatepress' === $this->ml_plugin ) {
+			$trp              = \TRP_Translate_Press::get_trp_instance();
+			$trp_settings     = $trp->get_component( 'settings' );
+			$default_language = $trp_settings->get_settings()['default-language'];
+			return $default_language;
+		}
+
 		return false;
 	}
 
@@ -224,6 +248,11 @@ class Languages {
 
 		if ( $this->website_is_multilingual() && 'polylang' === $this->ml_plugin ) {
 			return pll_current_language();
+		}
+
+		if ( $this->website_is_multilingual() && 'translatepress' === $this->ml_plugin ) {
+			global $TRP_LANGUAGE;
+			return $TRP_LANGUAGE;
 		}
 
 		return false;
@@ -244,6 +273,13 @@ class Languages {
 		if ( $this->website_is_multilingual() && 'wpml' === $this->ml_plugin ) {
 			global $sitepress;
 			return $sitepress->get_flag_url( $language );
+		}
+		
+		if ( $this->website_is_multilingual() && 'translatepress' === $this->ml_plugin ) {
+			$trp      = \TRP_Translate_Press::get_trp_instance();
+			$switcher = $trp->get_component( 'language_switcher' );
+			
+			return $switcher->add_flag( $language, $language, 'ls_shortcode' );
 		}
 		return '';
 	}
@@ -383,5 +419,12 @@ class Languages {
 		}
 
 		return $meta;
+	}
+
+	public function configurator_data_attributes( $data_attributes ) {
+		if ( $this->website_is_multilingual() && 'translatepress' === $this->ml_plugin && mkl_pc( 'settings' )->get( 'disable_translatepress_dynamic_translation' ) ) {
+			$data_attributes['no-translation'] = ''; 
+		}
+		return $data_attributes;
 	}
 }

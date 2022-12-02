@@ -114,6 +114,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* COMPAT: Improved compatibility with TranslatePress, with the possibility to translate strings in the configurator to prevent Dynamic translation and its possible issues
+
 = 1.2.42 - 30/Nov/2022 =
 
 * THEME: Added a new theme: La Pomme (<a href="https://demos.mklacroix.com/custom-laptop/">demo</a>)
