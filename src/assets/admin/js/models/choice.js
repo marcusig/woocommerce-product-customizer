@@ -9,6 +9,11 @@ PC.choice = Backbone.Model.extend({
 		base += '?_wpnonce=' + PC_lang.rest_nonce;
 		return base;
 	},
+	preinitialize: function( attributes ) {
+		if ( ! attributes.id && attributes._id ) {
+			attributes.id = attributes._id;
+		}
+	},
 	idAttribute: 'id',
 	defaults: {
 		name: '',

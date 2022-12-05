@@ -10,6 +10,11 @@ PC.angle = PC.layer.extend({
 		return base;
 	},
 	idAttribute: 'id',
+	preinitialize: function( attributes ) {
+		if ( ! attributes.id && attributes._id ) {
+			attributes.id = attributes._id;
+		}
+	},
 	defaults: {
 		_id: 0,
 		name: '',
