@@ -321,12 +321,12 @@ PC.actionParameter = 'pc_get_data';
 			var content = new PC.content_list();
 			if( ! response instanceof Object ) {
 				return content;
-			} else if( undefined == response.content || response.content == false || response.content == 'false' ) {
+			} else if ( undefined == response.content || response.content == false || response.content == 'false' ) {
 				return content;
 			}
 
 			// content.add( response.content );
-			$.each( response.content, function(key, value) {
+			$.each( response.content, function( key, value ) {
 				var ob = PC._us.clone( value );
 				if ( ob.choices && ob.choices.length > 0 && PC.fe.layers.get( ob.layerId ) ) {
 					ob.choices = new PC.choices( ob.choices, { layer: PC.fe.layers.get( ob.layerId ) } );
