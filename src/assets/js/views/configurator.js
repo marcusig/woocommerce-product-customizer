@@ -575,6 +575,7 @@ PC.options = PC.options || {};
 		initialize: function() {
 			this.choices = PC.fe.getLayerContent( this.model.id );
 			if ( ! this.choices && 'group' !== this.model.get( 'type' ) ) return;
+			this.listenTo( this.model, 'change:cshow', this.render );
 			this.listenTo( this.choices, 'change:active change:cshow', this.render );
 			if ( 'group' == this.model.get( 'type' ) && PC.fe.layers ) {
 				this.children_layers = PC.fe.layers.where( { 'parent': this.model.id  } );
