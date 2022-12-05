@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.42
+Stable tag: 1.2.43
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,6 +114,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.43 - 05/Dec/2022 =
+
+* TWEAK: Group description CSS tweaks (default theme and Dark Mode theme)
+* TWEAK: Redesign settings page
+* TWEAK: Render selected option when Layer cshow change
 * COMPAT: Improved compatibility with TranslatePress, with the possibility to translate strings in the configurator to prevent Dynamic translation and its possible issues
 
 = 1.2.42 - 30/Nov/2022 =
@@ -467,4 +472,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.42 Introduction of the new configuratir theme La Pomme
+* 1.2.43 Various tweaks and improvements - Also check out the new La Pomme theme, released in 1.2.42! 
