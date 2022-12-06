@@ -53,7 +53,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function add_to_cart_text( $text, $product ) {
 			if ( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
 				$text = __( 'Select options', 'woocommerce' );
-			} 
+			}
 			return $text;
 
 		}
