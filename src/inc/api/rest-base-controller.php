@@ -333,8 +333,12 @@ class Rest_Base_Controller extends \WP_REST_Controller {
 		 * @param WP_REST_Response $response The response data.
 		 * @param WP_REST_Request  $request  The request sent to the API.
 		 */
-		do_action( "woocommerce_rest_delete_{$this->object_type}_object", $object, $response, $request );
+		do_action( "woocommerce_rest_batch_{$this->object_type}_object", $items, $response, $request );
 
 		return $response;
+	}
+
+	public function get_route() {
+		return '/' . $this->namespace . '/' . $this->rest_base;
 	}
 }
