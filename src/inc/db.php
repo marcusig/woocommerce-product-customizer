@@ -144,21 +144,65 @@ class DB {
 	 */
 	public function get( $that, $post_id ) {
 
-		if( ! is_string($that) ) return false;
+		if ( ! is_string( $that ) ) return false;
 
-		if( ! $this->is_product( $post_id ) ) return false;
+		if ( ! $this->is_product( $post_id ) ) return false;
 
-		$product = wc_get_product($post_id);
+		$product = wc_get_product( $post_id );
+		$product_version = $product->get_meta( '_mkl_product_configurator_data_version', true );
+		$product_version = $product_version ? ( int ) $product_version : 1;		
+		
 
-		$data = $product->get_meta( '_mkl_product_configurator_' . $that );
-
-		$data = maybe_unserialize( $data );
-
-		if ( is_string( $data) ) {
-			$data = json_decode( stripslashes( $data ), 1 );
+		if ( 1 === $product_version ) {
+			$data = $product->get_meta( '_mkl_product_configurator_' . $that );
+			$data = maybe_unserialize( $data );
+	
+			if ( is_string( $data) ) {
+				$data = json_decode( stripslashes( $data ), 1 );
+			}
+		} elseif ( 2 == $product_version ) {
+			switch( $that ) {
+				case 'content':
+					global $wpdb;
+					$data = [];
+					$rest_controller = mkl_pc()->rest_choices_controller;
+					$layers = $wpdb->get_col( $wpdb->prepare( "SELECT layer_id FROM {$wpdb->prefix}mklpc_layers WHERE product_id = %d;", $post_id ) );
+					if ( $layers && count( $layers ) ) {
+						foreach( $layers as $layer_id ) {
+							$_item = new \WP_REST_Request( 'GET', $rest_controller->get_route() );
+							$_item->set_query_params(
+								[
+									'layer_id' => $layer_id
+								]
+							);
+							$_result = $rest_controller->get_items( $_item );
+							if ( $_result && ! is_wp_error( $_result ) ) {
+								$data[] = [
+									'layerId' => $layer_id,
+									'choices' => $_result->jsonSerialize()
+								];
+							}
+						}
+					}
+					break;
+				case 'conditions':
+				case 'angles':
+				case 'layers':
+					$rest_controller = mkl_pc( 'rest_' . $that . '_controller' );
+					$request = new \WP_REST_Request( 'GET', $rest_controller->get_route() );
+					$request->set_query_params(
+						[
+							'product_id' => $post_id
+						]
+					);
+					$_result = $rest_controller->get_items( $request );
+					$data = $_result->get_data();
+					// var_dump( $data ); die
+					break;
+			}
 		}
 
-		if( '' == $data || false == $data ) {
+		if ( '' == $data || false == $data ) {
 			return false; 
 		} else {
 			/**
@@ -299,7 +343,7 @@ class DB {
 					'type' 	=> 'part',
 					'menu_id' 	=> 'import',
 					'label' => __( 'Import / Export' , 'product-configurator-for-woocommerce' ),
-					'title' => __( 'Import / Export the product\'s data ', 'product-configurator-for-woocommerce' ),
+					'title' => __( "Import / Export the product's data ", 'product-configurator-for-woocommerce' ),
 					'bt_save_text' => __( 'Export' , 'product-configurator-for-woocommerce' ),
 					'description' => '',
 					'order' => 1200,
@@ -326,8 +370,8 @@ class DB {
 
 		$init_data = array(
 			// 'menu' => $this->get_menu(),
-			// 'layers' => $this->get('layers', $parent_id),
-			// 'angles' => $this->get('angles', $parent_id),
+			// 'layers' => $this->get( 'layers', $parent_id ),
+			// 'angles' => $this->get( 'angles', $parent_id ),
 			'product_info' => array()
 		);
 
@@ -347,12 +391,20 @@ class DB {
 		// } else {
 		// 	$g_product = false;
 		// }
+
 		$this->set_context( 'frontend' );
 		if ( is_callable( [ mkl_pc( 'frontend' ), 'setup_themes' ] ) ) mkl_pc( 'frontend' )->setup_themes();
 		$init_data = $this->get_init_data( $id );
+
 		$product = wc_get_product( $id );
 		
 		if ( ! $product ) return [];
+
+		if ( 'variation' === $product->get_type() ) {
+			$parent_id = $product->get_parent_id();
+		} else {
+			$parent_id = $id;
+		}
 
 		$product_type = apply_filters( 'mkl_product_configurator_get_front_end_data/product_type', $product->get_type(), $product );
 		// get the products 'title' attribute
@@ -367,6 +419,9 @@ class DB {
 				'weight_unit'  => get_option( 'woocommerce_weight_unit' ),
 			) 
 		);
+
+		$init_data['layers'] = $this->get( 'layers', $parent_id );
+		$init_data['angles'] = $this->get( 'angles', $parent_id );
 
 		// Allows to load the Contents on the init data to avoid having to use AJAX. 
 		if( 'simple' == $product_type ) {
@@ -528,6 +583,10 @@ class DB {
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
 				],
+				'date_modified' => [
+					'sanitize' => [ $this, 'sanitize_date' ],
+					'escape' => [ $this, 'esc_date' ],
+				],
 				'product_type' => [ 
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_html',
@@ -535,6 +594,18 @@ class DB {
 				'parent' => [ 
 					'sanitize' => 'intval',
 					'escape' => 'intval',
+				],
+				'enabled' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'reversible' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'always_check' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
 				],
 			],
 			$this
@@ -577,6 +648,16 @@ class DB {
 	public function esc_image( $image ) {
 		if ( is_int( $image ) ) return intval( $image );
 		return $this->esc_url( $image );
+	}
+
+	public function sanitize_date( $date ) {
+		if ( is_int( $date ) ) return intval( $date );
+		return $date;
+	}
+
+	public function esc_date( $date ) {
+		if ( is_int( $date ) ) return intval( $date );
+		return $date;
 	}
 
 	public function escape_description( $description ) {
@@ -776,7 +857,12 @@ class DB {
 		if ( 'array' === $data_type ) {
 			foreach ( $data as $key => $value ) {
 				$data[$key] = $this->_sanitize_or_escape( $action, $value, $key );
+
 			}
+			return $data;
+		}
+
+		if ( is_a( $data, 'WC_DateTime' ) ) {
 			return $data;
 		}
 
