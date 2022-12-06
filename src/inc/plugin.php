@@ -193,14 +193,14 @@ class Plugin {
 	}
 
 	public function register_rest_routes() {
-		$layer_controller = new Rest_Layer_Controller();
-    	$layer_controller->register_routes();
-		$choice_controller = new Rest_Choice_Controller();
-    	$choice_controller->register_routes();
-		$angle_controller = new Rest_Angle_Controller();
-    	$angle_controller->register_routes();
-		$condition_controller = new Rest_Condition_Controller();
-    	$condition_controller->register_routes();
+		$this->rest_layers_controller = new Rest_Layer_Controller();
+    	$this->rest_layers_controller->register_routes();
+		$this->rest_choices_controller = new Rest_Choice_Controller();
+    	$this->rest_choices_controller->register_routes();
+		$this->rest_angles_controller = new Rest_Angle_Controller();
+    	$this->rest_angles_controller->register_routes();
+		$this->rest_conditions_controller = new Rest_Condition_Controller();
+    	$this->rest_conditions_controller->register_routes();
 	}
 
 	private function _register_tables() {
