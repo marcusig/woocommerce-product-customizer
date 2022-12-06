@@ -137,7 +137,7 @@ class Rest_Condition_Controller extends Rest_Base_Controller {
 		$product = wc_get_product( (int) $request['product_id'] );
 		$object = $this->prepare_object_for_database( $request, true );
 		$id = $object->save();
-		$object->save_meta_data();
+		// $object->save_meta_data();
 
 		// if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
 		// 	return new \WP_Error( 'woocommerce_rest_order_invalid_id', __( 'Invalid product ID.', 'woocommerce' ), array( 'status' => 404 ) );
@@ -178,7 +178,7 @@ class Rest_Condition_Controller extends Rest_Base_Controller {
 		}
 
 		$object->save();
-		$object->save_meta_data();
+		//$object->save_meta_data();
 
 		$request->set_param( 'context', 'edit' );
 		$response = $this->prepare_item_for_response( $object, $request );
@@ -205,7 +205,6 @@ class Rest_Condition_Controller extends Rest_Base_Controller {
 		);
 
 		$object->set_props( $props );
-		// $object->save_meta_data();
 		return $object;
 	}
 
@@ -230,7 +229,6 @@ class Rest_Condition_Controller extends Rest_Base_Controller {
 			'name',
 			'order',
 			'product_id',
-			'date_modified',
 			'relationship',
 			'rules',
 			'actions',
