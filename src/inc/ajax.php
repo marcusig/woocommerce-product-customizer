@@ -96,7 +96,7 @@ class Ajax {
 					// Translatepress: Do not translate
 					add_filter( 'trp_stop_translating_page', '__return_true' );
 					if ( is_user_logged_in() && current_user_can( 'edit_posts' ) && ! isset( $_REQUEST['pc-no-transient'] ) ) {
-						$data = get_transient( 'mkl_pc_data_init_' . $id );
+						// $data = get_transient( 'mkl_pc_data_init_' . $id );
 					}
 					if ( ! $data ) {
 						$data = $this->db->get_front_end_data( $id );
@@ -111,7 +111,7 @@ class Ajax {
 				}
 				break;
 			case 'menu' :
-				$data = $this->db->get_menu();
+				$data = $this->db->get_menu( $id );
 				break;
 			case 'angles' :
 				$data = $this->db->get_angles( $id );
