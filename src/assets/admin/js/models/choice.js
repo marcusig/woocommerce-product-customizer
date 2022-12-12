@@ -4,7 +4,7 @@ var PC = PC || {};
 
 PC.choice = Backbone.Model.extend({
 	url: function() {
-		var base = PC_lang.rest_url + PC_lang.rest_base + this.get( 'layerId' ) + '/choices';
+		var base = PC_lang.rest_url + PC_lang.rest_base + PC.app.get_product().id + '/' + this.get( 'layerId' ) + '/choices';
 		if ( this.id ) base += '/' + this.id;
 		base += '?_wpnonce=' + PC_lang.rest_nonce;
 		return base;
