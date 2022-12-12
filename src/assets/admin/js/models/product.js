@@ -3,15 +3,15 @@ var PC = PC || {};
 (function($){
 
 	PC.product = Backbone.Model.extend({
-		// url: function() { 
-		// 	var action = PC.actionParameter,
-		// 		data = 'content';
-		// 	return ajaxurl + '?action='+action+'&data='+data+'&id='+this.id
-		// },
+		url: function() { 
+			var action = PC.actionParameter,
+				data = 'content';
+			return ajaxurl + '?action='+action+'&data='+data+'&id='+this.id
+		},
 
 		idAttribute: 'product_id',
 		defaults: {
-			product_type:'simple', 
+			product_type: 'simple', 
 			modified: false,
 			content: null,
 		}, 
