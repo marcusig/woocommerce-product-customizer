@@ -190,7 +190,7 @@ class Rest_Layer_Controller extends Rest_Base_Controller {
 		$layer = $this->get_object( $id );
 
 		$available_props = $this->get_item_fields();
-		$available_settings = array_merge( $available_props, array_keys( mkl_pc()->admin->layer_settings->get_settings_list() ) );
+		$available_settings = array_merge( [ 'old_id' ], $available_props, array_keys( mkl_pc()->admin->layer_settings->get_settings_list() ) );
 		$posted_data = $request->get_params();
 		$props = [];
 		foreach( $available_settings as $setting ) {

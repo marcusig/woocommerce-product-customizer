@@ -28,7 +28,7 @@ class Rest_Choice_Controller extends Rest_Base_Controller {
 	 *
 	 * @var string
 	 */
-	protected $rest_base = 'configuration/(?P<layer_id>[\d]+)/choices';
+	protected $rest_base = 'configuration/(?P<product_id>[\d]+)/(?P<layer_id>[\d]+)/choices';
 	// protected $rest_base = 'orders/(?P<order_id>[\d]+)/notes';
 
 	/**
@@ -223,6 +223,7 @@ class Rest_Choice_Controller extends Rest_Base_Controller {
 			$props,
 			[
 				'layer_id' => $creating ? absint( $request['layer_id'] ) : $choice->get( 'layer_id' ) ,
+				'product_id' => $creating ? absint( $request['product_id'] ) : $choice->get( 'product_id' ) ,
 				// 'order'      => $posted_data['order'],
 			]
 		);
@@ -314,7 +315,8 @@ class Rest_Choice_Controller extends Rest_Base_Controller {
 	protected function get_objects( $request ) {
 		global $wpdb;
 		$layer_id = (int) $request['layer_id'];
-		$data = $wpdb->get_col( $wpdb->prepare( "SELECT choice_id FROM {$wpdb->prefix}mklpc_choices WHERE layer_id = %d;", $layer_id ) );
+		$product_id = (int) $request['product_id'];
+		$data = $wpdb->get_col( $wpdb->prepare( "SELECT choice_id FROM {$wpdb->prefix}mklpc_choices WHERE layer_id = %d AND product_id = %d;", $layer_id, $product_id ) );
 		// wp_cache_set( 'item-' . $item->get_id(), $data, 'mklpc-layers' );
 
 		return array(
