@@ -122,9 +122,9 @@ var PC = PC || {};
 		// 	});
 		// });
 
-		$('.start-configuration').on('click', function(event){
+		$( '.start-configuration' ).on('click', function(event){
 			event.preventDefault();
-			var product_id = $(this).data('product-id');
+			var product_id = $( this ).data( 'product-id' );
 			PC.app.start( {
 				product_id : product_id,
 				product_type : 'simple'
