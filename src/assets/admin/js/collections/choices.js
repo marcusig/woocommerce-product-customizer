@@ -4,7 +4,7 @@ var PC = PC || {};
 
 PC.choices = Backbone.Collection.extend({
 	url: function() { 
-		var base = PC_lang.rest_url + PC_lang.rest_base + this.layer.id + '/choices';
+		var base = PC_lang.rest_url + PC_lang.rest_base + PC.app.get_product().id + '/' + this.layer.id + '/choices';
 		base += '?_wpnonce=' + PC_lang.rest_nonce;
 		return base;
 	},
