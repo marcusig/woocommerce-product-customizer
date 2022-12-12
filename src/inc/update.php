@@ -133,6 +133,7 @@ class Update {
 		CREATE TABLE {$wpdb->prefix}mklpc_choices (
 			choice_id BIGINT UNSIGNED NOT NULL auto_increment,
 			layer_id BIGINT UNSIGNED NOT NULL,
+			product_id BIGINT UNSIGNED NULL,
 			name varchar(500) NULL,
 			parent BIGINT UNSIGNED NULL,
 			date_modified datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
@@ -140,6 +141,7 @@ class Update {
 			status varchar(100) NULL default 'published',
 			PRIMARY KEY  (choice_id),
 			KEY layer_id (layer_id),
+			KEY product_id (product_id),
 			KEY status (status),
 			KEY parent (parent)
 		  ) $collate;
