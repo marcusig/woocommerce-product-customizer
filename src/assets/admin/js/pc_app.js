@@ -29,10 +29,9 @@
 
 		},
 		start: function( options ) {
-
 			this.options = options || {};
 			
-			if ( !this.admin ) this.init( options );
+			if ( ! this.admin ) this.init( options );
 			this.admin.open( options );
 		},
 		get_admin: function() {
