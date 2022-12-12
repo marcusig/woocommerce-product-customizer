@@ -398,6 +398,30 @@ CONTENT TEMPLATES
 <?php 
 /*
 
+Data migration
+
+*/
+ ?>
+<script type="text/html" id="tmpl-mkl-pc-migrate-data">
+	<div class="media-frame-content migrate-data">
+		<div class="import-export-content">
+			<div class="migrate-info">
+				<h3><?php _e( 'Migrate the configurator data for this product', 'product-configurator-for-woocommerce' ); ?></h3>
+				<p><?php _e( 'Version 2 of the product configurator plugin comes with a new data structure, which allows for better scaling.', 'product-configurator-for-woocommerce' ); ?></p>
+				<p><?php _e( 'It requires you to migrate the data to the new structure.', 'product-configurator-for-woocommerce' ); ?></p>
+				<p><?php _e( 'Please make sure to backup your database before proceeding with the upgrades.', 'product-configurator-for-woocommerce' ); ?></p>
+				<p><button class="button" data-action="migrate"><?php _e( 'Migrate this configuration', 'product-configurator-for-woocommerce' ); ?></button></p>
+				<!-- <p><?php _e( 'Or' ); ?></p>
+				<p><button class="button" data-action="import-from-product"><?php _e( 'Import an other product', 'product-configurator-for-woocommerce' ); ?></button></p> -->
+			</div>
+		</div>
+		<div class="migration-action-content">
+		</div>
+	</div>
+</script>
+<?php 
+/*
+
 IMPORT / EXPORT
 
 */
