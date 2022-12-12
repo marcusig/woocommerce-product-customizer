@@ -278,7 +278,6 @@ TODO:
 			this.model.collection.trigger( 'simple-selection' );
 
 			var editView = this.edit_view();
-			console.log( event );
 
 			if( ! event ) {
 				if( ! this.form ) {
@@ -291,7 +290,6 @@ TODO:
 					this.form_target.html( this.form.render().el );
 				}
 			} else {
-				console.log( 'ev 12', this.model, this.model.get( 'active' ) );
 				if( ! this.model.get( 'active' ) || 'false' == this.model.get( 'active' ) ) {
 					this.options.collection.each( function( model ) {
 						model.set( 'active' , false );
