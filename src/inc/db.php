@@ -111,6 +111,7 @@ class DB {
 		$this->menu = $default_menu;
 
 		// Add tne import section at the end of the menu
+		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_migrate_section' ], 10, 2 );
 		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 1200 );
 
 	}
@@ -149,8 +150,7 @@ class DB {
 		if ( ! $this->is_product( $post_id ) ) return false;
 
 		$product = wc_get_product( $post_id );
-		$product_version = $product->get_meta( '_mkl_product_configurator_data_version', true );
-		$product_version = $product_version ? ( int ) $product_version : 1;		
+		$product_version = $this->_get_product_version( $product );
 		
 
 		if ( 1 === $product_version ) {
@@ -322,10 +322,11 @@ class DB {
 	/**
 	 * Get the menu
 	 *
+	 * @param int $product_id
 	 * @return array
 	 */
-	public function get_menu(){
-		return apply_filters( 'mkl_product_configurator_admin_menu', $this->menu ); 
+	public function get_menu( $product_id ){
+		return apply_filters( 'mkl_product_configurator_admin_menu', $this->menu, $product_id );
 	}
 
 	/**
@@ -354,6 +355,31 @@ class DB {
 	}
 
 	/**
+	 * Add tne Migrate section to the menu, for products requiring it
+	 */
+	public function add_migrate_section( $menu, $product_id ) {
+		$product = wc_get_product( $product_id );
+		if ( ! $product ) return $menu;
+		$product_version = $this->_get_product_version( $product );
+		if ( 2 === $product_version ) return $menu;
+		return array_merge(
+			$menu, 
+			array(
+				array(
+					'type' 	=> 'part',
+					'menu_id' 	=> 'migrate',
+					'label' => __( 'Migrate' , 'product-configurator-for-woocommerce' ),
+					'title' => __( "Migrate the product's data ", 'product-configurator-for-woocommerce' ),
+					'bt_save_text' => '',
+					'description' => '',
+					'order' => 1,
+					// __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
+				),
+			)
+		);
+	}
+
+	/**
 	 * Get the basic data structure
 	 *
 	 * @param integer $id - The product's ID
@@ -370,10 +396,14 @@ class DB {
 
 		$init_data = array(
 			// 'menu' => $this->get_menu(),
-			// 'layers' => $this->get( 'layers', $parent_id ),
-			// 'angles' => $this->get( 'angles', $parent_id ),
 			'product_info' => array()
 		);
+
+		if ( 1 === $this->_get_product_version( $product ) ) {
+			$init_data['layers'] = $this->get( 'layers', $parent_id );
+			$init_data['angles'] = $this->get( 'angles', $parent_id );
+			$init_data['content'] = $this->get( 'content', $id );
+		}
 
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $product );
 	}
@@ -420,11 +450,11 @@ class DB {
 			) 
 		);
 
-		$init_data['layers'] = $this->get( 'layers', $parent_id );
-		$init_data['angles'] = $this->get( 'angles', $parent_id );
+		if ( ! isset( $init_data['layers'] ) ) $init_data['layers'] = $this->get( 'layers', $parent_id );
+		if ( ! isset( $init_data['angles'] ) ) $init_data['angles'] = $this->get( 'angles', $parent_id );
 
 		// Allows to load the Contents on the init data to avoid having to use AJAX. 
-		if( 'simple' == $product_type ) {
+		if ( 'simple' == $product_type ) {
 			// the configurator content
 			$init_data['content'] = $this->get( 'content', $id );
 		}
@@ -909,6 +939,21 @@ class DB {
 
 	public function set_context( $c) {
 		return $this->context = $c;
+	}
+
+	/**
+	 * Get the product's configurator data version
+	 *
+	 * @param int $product_id
+	 * @return WC_Product|int
+	 */
+	private function _get_product_version( $product ) {
+		if ( ! is_a( $product, 'WC_Product' ) ) {
+			$product = wc_get_product( $product );
+		}
+		if ( ! $product ) return 0;
+		$version = (int) $product->get_meta( '_mkl_product_configurator_data_version', true );
+		return $version ? $version : 1;
 	}
 }
 /*
