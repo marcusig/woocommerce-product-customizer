@@ -100,15 +100,15 @@ msgstr ""
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
-#: src/inc/db.php:301
+#: src/inc/db.php:303
 msgid "Import / Export"
 msgstr ""
 
-#: src/inc/db.php:302
+#: src/inc/db.php:304
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:303, src/inc/admin/views/html-product-configurator-templates.php:415
+#: src/inc/db.php:305, src/inc/admin/views/html-product-configurator-templates.php:415
 msgid "Export"
 msgstr ""
 
@@ -701,7 +701,7 @@ msgstr ""
 msgid "The global product variable is not a WC_Product instance"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:344
+#: src/inc/frontend/frontend-woocommerce.php:345
 msgid "%s is required"
 msgstr ""
 
