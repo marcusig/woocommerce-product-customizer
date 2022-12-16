@@ -144,11 +144,13 @@ class DB {
 	 */
 	public function get( $that, $post_id ) {
 
-		if( ! is_string($that) ) return false;
+		if ( ! is_string( $that ) ) return false;
 
-		if( ! $this->is_product( $post_id ) ) return false;
+		if ( ! $this->is_product( $post_id ) ) return false;
 
-		$product = wc_get_product($post_id);
+		$product = wc_get_product( $post_id );
+
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return false;
 
 		$data = $product->get_meta( '_mkl_product_configurator_' . $that );
 
@@ -158,7 +160,7 @@ class DB {
 			$data = json_decode( stripslashes( $data ), 1 );
 		}
 
-		if( '' == $data || false == $data ) {
+		if ( '' == $data || false == $data ) {
 			return false; 
 		} else {
 			/**
