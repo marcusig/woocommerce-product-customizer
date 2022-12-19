@@ -70,8 +70,8 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 = Using FTP =
 
 1. Download the latest version of this plugin from https://wordpress.org/plugins/
-2. Unzip the zip file, which will extract the wp-optimize directory to your computer
-3. Upload the wp-optimize directory to the /wp-content/plugins/ directory in your web space
+2. Unzip the zip file, which will extract the proruct-configurator-for-woocommerce directory to your computer
+3. Upload the proruct-configurator-for-woocommerce directory to the /wp-content/plugins/ directory in your web space
 4. Activate the plugin in the Plugin dashboard
 
 == Frequently Asked Questions ==
