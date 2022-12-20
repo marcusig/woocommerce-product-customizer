@@ -127,11 +127,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		public function wc_cart_get_item_data( $data, $cart_item ) { 
+
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
 
 				$configurator_data = $cart_item['configurator_data'];
-				$choices = array(); 
-				$compound_sku = 'compound' == mkl_pc( 'settings')->get( 'sku_mode' ) && wc_product_sku_enabled() && mkl_pc( 'settings')->get( 'show_sku_in_cart' );
+				$choices = array();
+				$sku_mode = apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode' ), $cart_item['data'] );
+				$compound_sku = 'compound' == $sku_mode && wc_product_sku_enabled() && mkl_pc( 'settings')->get( 'show_sku_in_cart' );
 				$sku = [];
 
 				foreach ($configurator_data as $layer) {

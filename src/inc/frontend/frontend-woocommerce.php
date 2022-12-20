@@ -53,6 +53,8 @@ class Frontend_Woocommerce {
 		
 		// Siteground compatibility: exclude JS from async loading
 		add_filter( 'sgo_js_async_exclude', array( $this, 'siteground_optimize_compat' ) );
+
+		add_filter( 'mkl_pc/sku_mode', array( $this, 'maybe_filter_sku_mode' ), 20, 2 );
 	}
 
 	public function register_rest_route() {
@@ -356,7 +358,7 @@ class Frontend_Woocommerce {
 				'show_layer_description' => mkl_pc( 'settings')->get( 'show_layer_description' ),
 				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
-				'sku_mode' => mkl_pc( 'settings')->get( 'sku_mode', 'individual' ),
+				'sku_mode' => apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ),
 				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post->ID ),
 				'no_toggle' => false,
 				'open_first_layer' => ( bool ) mkl_pc( 'settings')->get( 'open_first_layer', false ),
@@ -534,7 +536,13 @@ class Frontend_Woocommerce {
 	}
 
 	public function add_sku_to_meta( $meta, $layer, $product ) {
-		$sku_mode = mkl_pc( 'settings')->get( 'sku_mode', 'individual' );
+		/**
+		 * Filter mkl_pc/sku_mode
+		 * Filters the SKU display mode, set in the configurator settings
+		 * @param string $mode - The SKU mode
+		 * @param WC_Product|bool - The product, if applicable in the context
+		 */
+		$sku_mode = apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode', 'individual' ), $product );
 		if ( 'individual' == $sku_mode && $layer->get_choice( 'sku' ) ) {
 			$meta[ 'value' ] .= '<span class="sku">' . $layer->get_choice( 'sku' ) . '</span>';
 		}
@@ -567,4 +575,17 @@ class Frontend_Woocommerce {
 		return $items;
 	}
 
+	/**
+	 * Maybe filter the SKU mode, if the product has the relevant meta
+	 *
+	 * @param string          $mode
+	 * @param WC_Product|bool $product
+	 * @return string
+	 */
+	public function maybe_filter_sku_mode( $mode, $product = false ) {
+		if ( $product && is_a( $product, 'WC_Product' ) && $product->get_meta( 'sku_mode', true ) ) {
+			return $product->get_meta( 'sku_mode', true );
+		}
+		return $mode;
+	}
 }
