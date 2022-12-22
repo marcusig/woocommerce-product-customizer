@@ -119,7 +119,7 @@ msgstr ""
 #: src/inc/languages.php:45
 msgstr ""
 
-#: src/inc/languages.php:46, src/inc/frontend/cart.php:161, src/inc/frontend/order.php:93, src/inc/admin/settings/choice.php:50
+#: src/inc/languages.php:46, src/inc/frontend/cart.php:162, src/inc/frontend/order.php:93, src/inc/admin/settings/choice.php:50
 msgid "SKU"
 msgstr ""
 
@@ -135,7 +135,7 @@ msgstr ""
 msgid "Reset configuration"
 msgstr ""
 
-#: src/inc/languages.php:50, src/inc/admin/settings-page.php:675, src/inc/admin/settings-page.php:681, src/inc/frontend/cart.php:310
+#: src/inc/languages.php:50, src/inc/admin/settings-page.php:675, src/inc/admin/settings-page.php:681, src/inc/frontend/cart.php:311
 msgid "Edit configuration"
 msgstr ""
 
@@ -625,7 +625,7 @@ msgstr ""
 msgid "Configuration (meta label in the cart)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:729, src/inc/frontend/cart.php:177, src/inc/frontend/order.php:87, src/inc/frontend/order.php:229
+#: src/inc/admin/settings-page.php:729, src/inc/frontend/cart.php:178, src/inc/frontend/order.php:87, src/inc/frontend/order.php:229
 msgid "Configuration"
 msgstr ""
 

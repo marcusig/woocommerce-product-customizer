@@ -19,9 +19,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		private function _hooks() {
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 
-			add_filter( 'woocommerce_add_cart_item', array( $this, 'add_weight_to_product' ), 10, 3 );
+			add_filter( 'woocommerce_add_cart_item', array( $this, 'add_weight_to_product' ), 10 );
+			add_filter( 'woocommerce_get_cart_item_from_session', array( $this, 'add_weight_to_product' ), 20 );
 			add_filter( 'woocommerce_product_get_weight', array( $this, 'get_weight' ), 20, 2 );
-			add_filter( 'woocommerce_cart_contents_weight', array( $this, 'recalculate_cart_weight' ), 10 );
 			
 			add_filter( 'woocommerce_order_again_cart_item_data', array( $this, 'wc_order_again_cart_item_data' ), 10, 3 ); 
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
@@ -313,7 +313,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return '';
 		}
 
-		public function add_weight_to_product( $cart_item, $cart_item_key ) {
+		/**
+		 * Add the weight from the cart item to the product, to be used when `$product->get_weight()` is called
+		 *
+		 * @param array $cart_item
+		 * @return array
+		 */
+		public function add_weight_to_product( $cart_item ) {
 			if ( isset( $cart_item['data'] ) && isset( $cart_item['configuration_weight'] ) ) {
 				$cart_item['data']->update_meta_data( 'configuration_weight', $cart_item['configuration_weight'] );
 			}
@@ -330,26 +336,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function get_weight( $weight, $product ) {
 			if ( $extra_weight = $product->get_meta( 'configuration_weight', true ) ) {
 				return floatval( $weight ) + floatval( $extra_weight );
-			}
-			return $weight;
-		}
-
-		/**
-		 * Maybe add the extra weight to the original item
-		 *
-		 * @param float $weight
-		 * @return float
-		 */
-		public function recalculate_cart_weight( $weight ) {
-			// return $weight;
-			foreach ( WC()->cart->get_cart() as $cart_item_key => $values ) {
-				if ( $values['data']->has_weight() ) {
-					$w = (float) $values['data']->get_weight();
-					// if ( isset( $values['configuration_weight'] ) ) {
-					// 	$w += (float) $values['configuration_weight'];
-					// }
-					$weight += (float) $w * $values['quantity'];
-				}
 			}
 			return $weight;
 		}
