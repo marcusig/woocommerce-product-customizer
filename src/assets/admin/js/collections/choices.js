@@ -16,9 +16,9 @@ PC.choices = Backbone.Collection.extend({
 		}
 		return this.last().get('order') + 1;
 	},
-	comparator: function( choice, choice_2 ) {
-	   	return wp.hooks.applyFilters( 'PC.choices.comparator', choice.get('order'), choice, choice_2 );
-    },
+	comparator: wp.hooks.applyFilters( 'PC.choices.comparator', function( choice ) {
+		return choice.get( 'order' );
+    } ),
     deactivateAll: function() {
     	this.each(function( choice ) {
     		choice.set('active', false);
