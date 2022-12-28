@@ -11,9 +11,11 @@
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-choice-group" data-wg-notranslate>
+	<?php do_action( 'tmpl-pc-configurator-choice-group-item--before' ); ?>
 	<div class="choice-group-label">
 	<?php do_action( 'tmpl-pc-configurator-choice-item' ); ?>
 	<?php do_action( 'tmpl-pc-configurator-choice-item--after' ); ?>
 	</div>
 	<ul class="choices-list--children" data-item-id="{{data._id}}"></ul>
+	<?php do_action( 'tmpl-pc-configurator-choice-group-item--after' ); ?>
 </script>
