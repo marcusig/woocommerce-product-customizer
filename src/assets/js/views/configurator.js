@@ -450,6 +450,7 @@ PC.options = PC.options || {};
 			this.options = options || {};
 			this.layer_type = this.model.get( 'type' );
 			this.listenTo( this.options.model, 'change:active', this.activate );
+			this.listenTo( this.options.model, 'change:hide_in_configurator', this.hide_in_configurator );
 			wp.hooks.doAction( 'PC.fe.layers_list_item.init', this );
 		},
 
@@ -485,7 +486,8 @@ PC.options = PC.options || {};
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			if ( this.model.get( 'display_mode' ) ) this.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
 			if ( this.layer_type ) this.$el.addClass( 'type-' + this.layer_type );
-			if ( this.model.get( 'hide_in_configurator' ) ) this.$el.addClass( 'hide_in_configurator' );
+
+			this.hide_in_configurator( this.model, this.model.get( 'hide_in_configurator' ) );
 
 			// Add ID
 			if ( this.model.get( 'html_id' ) ) this.el.id = this.model.get( 'html_id' );
@@ -565,8 +567,10 @@ PC.options = PC.options || {};
 				if ( this.choices ) this.choices.$el.removeClass( 'active' );
 				wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 			}
-
-		}
+		},
+		hide_in_configurator: function( model, should_hide ) {
+			this.$el.toggleClass( 'hide_in_configurator', !! should_hide );
+		},
 	} );
 
 	PC.fe.views.layers_list_item_selection = Backbone.View.extend({
