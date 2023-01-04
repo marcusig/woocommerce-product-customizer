@@ -1,4 +1,4 @@
-# Copyright (C) 2022 product-configurator-for-woocommerce
+# Copyright (C) 2023 product-configurator-for-woocommerce
 # This file is distributed under the same license as the product-configurator-for-woocommerce package.
 msgid ""
 msgstr ""
