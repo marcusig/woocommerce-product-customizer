@@ -452,7 +452,9 @@ html .pc-modal-container {
 //.layers,
 .structure-toolbar,
 .choices-toolbar {
-	position: relative;
+	position: sticky;
+	top: 0;
+	z-index: 3;
 	padding: $modal-spacing;
 	background: #EAE9E9;
 	border-bottom: 1px solid #CCC;
@@ -567,7 +569,7 @@ CONTENT
 		.structure-toolbar {
 			position: sticky;
 			top: 0;
-			z-index: 2;
+			z-index: 3;
 		}
 	}
 
