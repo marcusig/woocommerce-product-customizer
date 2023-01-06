@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.43
+Stable tag: 1.2.44
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -70,8 +70,8 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 = Using FTP =
 
 1. Download the latest version of this plugin from https://wordpress.org/plugins/
-2. Unzip the zip file, which will extract the proruct-configurator-for-woocommerce directory to your computer
-3. Upload the proruct-configurator-for-woocommerce directory to the /wp-content/plugins/ directory in your web space
+2. Unzip the zip file, which will extract the product-configurator-for-woocommerce directory to your computer
+3. Upload the product-configurator-for-woocommerce directory to the /wp-content/plugins/ directory in your web space
 4. Activate the plugin in the Plugin dashboard
 
 == Frequently Asked Questions ==
@@ -113,6 +113,13 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.44 - 04/Jan/2023 =
+
+* TWEAK: Listen to the setting "Hide this layer in the menu", to be able to toggle the layer visibility in the menu only using Conditional Logic
+* TWEAK: Added hooks in the choice-group template
+* TWEAK: Fixed weight calculation logic
+* TWEAK: Added a filter to the SKU mode, to allow changing the SKU mode per product: `apply_filters( 'mkl_pc/sku_mode', $mode, $product )` 
 
 = 1.2.43 - 05/Dec/2022 =
 
@@ -472,4 +479,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.43 Various tweaks and improvements - Also check out the new La Pomme theme, released in 1.2.42! 
+* 1.2.44 Various tweaks and improvements
