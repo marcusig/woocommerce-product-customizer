@@ -257,7 +257,12 @@ class Frontend_Woocommerce {
 		wp_register_script( 'mkl_pc/html2canvas', MKL_PC_ASSETS_URL . 'js/vendor/html2canvas.min.js', [], '1.4.1', true );
 		wp_register_script( 'mkl_pc/touchswipe', MKL_PC_ASSETS_URL . 'js/vendor/jquery.touchSwipe.min.js', [], '1.6.18', true );
 
-		wp_enqueue_script( 'mkl_pc/general', MKL_PC_ASSETS_URL . 'js/general.js', [ 'jquery' ], filemtime( MKL_PC_ASSETS_PATH . 'js/general.js' ) );
+		$file_suffix = '';
+		if ( ! defined( 'SCRIPT_DEBUG' ) || ! SCRIPT_DEBUG ) {
+			$file_suffix = '.min';
+		}
+
+		wp_enqueue_script( 'mkl_pc/general', MKL_PC_ASSETS_URL . 'js/general' . $file_suffix . '.js', [ 'jquery' ], filemtime( MKL_PC_ASSETS_PATH . 'js/general' . $file_suffix . '.js' ) );
 		wp_localize_script( 'mkl_pc/general', 'mkl_pc_general', [
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 		] );
@@ -325,8 +330,8 @@ class Frontend_Woocommerce {
 		$deps = apply_filters( 'mkl_pc/js/product_configurator/dependencies', $deps );
 		$configurator_deps = apply_filters( 'mkl_pc/js/configurator/dependencies', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ) );
 
-		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator.js' ) , true );
-		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator.js' ) , true );
+		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator' . $file_suffix . '.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator' . $file_suffix . '.js' ) , true );
+		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator' . $file_suffix . '.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator' . $file_suffix . '.js' ) , true );
 
 		$bg_image = get_option( 'mkl_pc_theme_viewer_bg', false );
 		$money_format = get_woocommerce_price_format();
@@ -431,9 +436,9 @@ class Frontend_Woocommerce {
 
 		if ( 'underscore' === $handle ) {
 			$dir = MKL_PC_ASSETS_URL . 'js';
-			$tag = "<script src='{$dir}/underscore-before.js'></script>\n"
+			$tag = "<script src='{$dir}/underscore-before.min.js'></script>\n"
 			       . $tag
-			       . "<script src='{$dir}/underscore-after.js'></script>\n";
+			       . "<script src='{$dir}/underscore-after.min.js'></script>\n";
 		}
 
 		return $tag;
