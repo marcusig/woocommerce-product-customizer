@@ -606,6 +606,7 @@ class DB {
 				'width' => array(),
 				'height' => array(),
 				'class' => array(),
+				'id' => array(),
 			);
 			$tags['path'] = array(
 				'd' => array(),
@@ -615,11 +616,13 @@ class DB {
 				'class' => array(),
 				'transform' => array(),
 				'data-layer_id' => array(),
+				'id' => array(),
 			);
 			$tags['text'] = array(
 				'transform' => array(),
 				'style' => array('fill', 'font-size'),
 				'class' => array(),
+				'id' => array(),
 			);
 			$tags['defs'] = array();
 			$tags['style'] = array();
