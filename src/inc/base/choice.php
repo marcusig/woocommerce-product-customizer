@@ -17,17 +17,29 @@ class Choice {
 	public $angle_id; 
 	public $product_id; 
 	public $variation_id; 
+	public $layer_data; 
 	private $db = null;
 
 	public function __wakeup() {
+		$this->db = Plugin::instance()->db;
+		$this->set_layer(); 
+		$this->set_selected_choice();
 		do_action( 'mkl_pc/choice/wakeup', $this );
+		do_action( 'mkl_pc/choice/init', $this, $this->layer_data );
 		// $this->set_selected_choice();
 	}
 
-	// public function __sleep() {
-	// 	do_action( 'mkl_pc/choice/sleep', $this );
-	// 	// $this->set_selected_choice();
-	// }
+	public function __sleep() {
+		do_action( 'mkl_pc/choice/sleep', $this );
+		return apply_filters( 'mkl_pc_choice_sleep_properties', [
+			'product_id',
+			'variation_id',
+			'layer_id',
+			'choice_id',
+			'angle_id',
+			'layer_data'
+		], $this );
+	}
 
 	/**
 	 * Clone - Refresh data from database
@@ -41,11 +53,12 @@ class Choice {
 
 		if ( !intval( $product_id ) || !intval( $layer_id ) || !intval( $angle_id ) ) return false;
 		$this->db = Plugin::instance()->db;
-		$this->product_id = (int) $product_id; 
-		$this->variation_id = (int) $variation_id; 
-		$this->layer_id = 	(int) $layer_id; 
-		$this->choice_id = 	(int) $choice_id; 
-		$this->angle_id = 	(int) $angle_id; 
+		$this->product_id   = (int) $product_id;
+		$this->variation_id = (int) $variation_id;
+		$this->layer_id 	= (int) $layer_id;
+		$this->choice_id 	= (int) $choice_id;
+		$this->angle_id 	= (int) $angle_id;
+		$this->layer_data   = $layer_data;
 
 		$this->set_layer(); 
 		
