@@ -701,7 +701,7 @@ msgstr ""
 msgid "The global product variable is not a WC_Product instance"
 msgstr ""
 
-#: src/inc/frontend/frontend-woocommerce.php:346
+#: src/inc/frontend/frontend-woocommerce.php:351
 msgid "%s is required"
 msgstr ""
 
