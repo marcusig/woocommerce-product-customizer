@@ -140,7 +140,7 @@ add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_confi
 
 function mkl_pc_frontend_configurator_layer_name() {
 	?>
-		<span class="text layer-name">{{data.name}}</span>
+		<span class="text layer-name">{{{data.name}}}</span>
 	<?php
 }
 add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_name', 10 );
