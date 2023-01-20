@@ -1,6 +1,6 @@
 {
 	"require": {
-		"intervention/image": "^2.5"
+		"intervention/image": "^2.7"
 	},
 	"prefer-stable" : true
 }
