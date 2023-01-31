@@ -269,7 +269,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		private function _current_screen_is( $name ) {
 			$screen = get_current_screen();
-			return $screen->post_type === $name;
+			
+			return $screen->post_type === $name && 'post' === $screen->base;
 		}
 
 		/**
