@@ -618,6 +618,35 @@ class DB {
 				'data-layer_id' => array(),
 				'id' => array(),
 			);
+			$tags['rect'] = array(
+				'x' => array(),
+				'y' => array(),
+				'width' => array(),
+				'height' => array(),
+				'class' => array(),
+				'transform' => array(),
+				'data-layer_id' => array(),
+				'id' => array(),
+			);
+			$tags['circle'] = array(
+				'cx' => array(),
+				'cy' => array(),
+				'r' => array(),
+				'class' => array(),
+				'transform' => array(),
+				'data-layer_id' => array(),
+				'id' => array(),
+			);
+			$tags['ellipse'] = array(
+				'cx' => array(),
+				'cy' => array(),
+				'rx' => array(),
+				'ry' => array(),
+				'class' => array(),
+				'transform' => array(),
+				'data-layer_id' => array(),
+				'id' => array(),
+			);
 			$tags['text'] = array(
 				'transform' => array(),
 				'style' => array('fill', 'font-size'),
