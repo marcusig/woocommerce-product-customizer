@@ -369,6 +369,7 @@ TODO:
 			'click .edit-attachment': 'edit_attachment',
 			'click .remove-attachment': 'select_attachment',
 			'select-media': 'select_attachment',
+			'click .mkl-pc--action': 'trigger_custom_action',
 		},
 		render: function() {
 			this.$el.html( this.template( this.model.attributes ) );
@@ -489,7 +490,14 @@ TODO:
 					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
 				}, this );
 			}
-		}
+		},
+		trigger_custom_action: function( event ) {
+			var el = $( event.currentTarget );
+			var action = el.data( 'action' );
+			if ( action in PC.actions ) {
+				PC.actions[action](el, this);
+			}
+		},
 	});
 
 	PC.views.layer_img = Backbone.View.extend({
