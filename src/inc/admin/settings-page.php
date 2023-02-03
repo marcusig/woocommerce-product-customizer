@@ -742,6 +742,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'angle_switch_label',
+				__( 'Angle switch label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'angle_switch_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Change angle', 'product-configurator-for-woocommerce' )
+				]
+			);
+
 			// Translatepress options
 			if ( function_exists( 'trp_translate' ) ) {
 				add_settings_section(

@@ -301,11 +301,11 @@ msgstr ""
 msgid "Do you want to continue?"
 msgstr ""
 
-#: src/inc/admin/product.php:296
+#: src/inc/admin/product.php:297
 msgid "Start product's configurator"
 msgstr ""
 
-#: src/inc/admin/product.php:311
+#: src/inc/admin/product.php:312
 msgid "Edit configurator layers"
 msgstr ""
 
@@ -413,7 +413,7 @@ msgstr ""
 msgid "Configure button label"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:216, src/inc/admin/settings-page.php:669, src/inc/admin/settings-page.php:681, src/inc/admin/settings-page.php:693, src/inc/admin/settings-page.php:705, src/inc/admin/settings-page.php:717, src/inc/admin/settings-page.php:729, src/inc/admin/settings-page.php:741
+#: src/inc/admin/settings-page.php:216, src/inc/admin/settings-page.php:669, src/inc/admin/settings-page.php:681, src/inc/admin/settings-page.php:693, src/inc/admin/settings-page.php:705, src/inc/admin/settings-page.php:717, src/inc/admin/settings-page.php:729, src/inc/admin/settings-page.php:741, src/inc/admin/settings-page.php:753
 msgid "Default:"
 msgstr ""
 
@@ -633,47 +633,55 @@ msgstr ""
 msgid "Loading message (displayed when the configurator is loading, in inline mode)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:749
+#: src/inc/admin/settings-page.php:747
+msgid "Angle switch label"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:753, src/inc/frontend/views/parts/product-viewer.php:8
+msgid "Change angle"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:761
 msgid "TranslatePress"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:756
+#: src/inc/admin/settings-page.php:768
 msgid "Disable TranslatePress Dynamic translation for the condigurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:762
+#: src/inc/admin/settings-page.php:774
 msgid "Activate this setting if you wish to translate the configurator from within the configurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:782
+#: src/inc/admin/settings-page.php:794
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:878
+#: src/inc/admin/settings-page.php:890
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:879
+#: src/inc/admin/settings-page.php:891
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:939, src/inc/admin/settings-page.php:975
+#: src/inc/admin/settings-page.php:951, src/inc/admin/settings-page.php:987
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:941, src/inc/admin/settings-page.php:977
+#: src/inc/admin/settings-page.php:953, src/inc/admin/settings-page.php:989
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:951
+#: src/inc/admin/settings-page.php:963
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:952
+#: src/inc/admin/settings-page.php:964
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:961
+#: src/inc/admin/settings-page.php:973
 msgid "Select the theme"
 msgstr ""
 
@@ -1167,8 +1175,4 @@ msgstr ""
 
 #: src/inc/themes/wsb/theme.php:35
 msgid "Sidebar background"
-msgstr ""
-
-#: src/inc/frontend/views/parts/product-viewer.php:8
-msgid "Change angle"
 msgstr ""

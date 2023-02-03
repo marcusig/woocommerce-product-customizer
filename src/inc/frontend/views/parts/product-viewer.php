@@ -5,7 +5,7 @@
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-angles-list">
-	<a href="#" class="change-angle--trigger"><span><?php _e( 'Change angle', 'product-configurator-for-woocommerce' ) ?></span></a>
+	<a href="#" class="change-angle--trigger"><span><?php echo mkl_pc( 'settings' )->get_label( 'angle_switch_label', __( 'Change angle', 'product-configurator-for-woocommerce' ) ) ?></span></a>
 	<ul>
 		
 	</ul>
