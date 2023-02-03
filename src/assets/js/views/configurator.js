@@ -326,6 +326,7 @@ PC.options = PC.options || {};
 			 * @param object  $cart - The jQuery object
 			 */
 			if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
+				$( e.currentTarget ).addClass( 'adding-to-cart' );
 				if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
 					var btn = this.$cart.find( 'button[name=add-to-cart]' );
 					if ( btn.is( '.ajax_add_to_cart' ) ) {
