@@ -75,6 +75,7 @@ table span.choice-thumb.color {
     border-radius: 8px;
     vertical-align: middle;
     margin-right: 10px;
+    max-width: 100%;
 }
 
 .configurator-error.error {

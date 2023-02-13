@@ -506,7 +506,7 @@ PC.options = PC.options || {};
 			if ( this.choices && this.choices.$el && this.model.get( 'display_mode' ) ) this.choices.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
 			return this.$el;
 		},
-		add_choices: function() { 
+		add_choices: function() {
 
 			if ( ! this.layer_type || 'simple' == this.layer_type || 'group' == this.layer_type ) {
 				this.choices = new PC.fe.views.choices({ content: PC.fe.getLayerContent( this.model.id ), model: this.model }); 
@@ -534,7 +534,7 @@ PC.options = PC.options || {};
 		show_choices: function( event ) {
 			if ( event ) {
 				// Allow clicking on link tags
-				if (  event.target.tagName && 'A' == event.target.tagName ) {
+				if (  event.target.tagName && 'A' == event.target.tagName || $( event.target ).closest( 'a' ).length ) {
 					return;
 				}
 				event.stopPropagation();

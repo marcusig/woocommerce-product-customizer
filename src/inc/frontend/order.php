@@ -71,7 +71,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			 */
 			if ( apply_filters( 'mkl_pc/customer_can_see_image_download_link', 'completed' != $order->get_status(), $item_id, $item, $order ) ) return;
 
-			$config_image = $this->get_order_item_image( $item, 'url' );
+			$config_image = $this->get_order_item_image( $item, 'url', 'full' );
 			if ( $config_image && 'blank.gif' !== substr( $config_image, -9 ) ) {
 				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'download_config_image', __( 'Download configuration image', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
 			}
@@ -323,7 +323,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			return $args;
 		}
 
-		public function get_order_item_image( $order_item, $return = 'html' ) {
+		public function get_order_item_image( $order_item, $return = 'html', $size = false ) {
 
 			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false; 
 			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
@@ -342,7 +342,8 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			}
 
 			$configuration = new Configuration( NULL, array( 'product_id' => $order_item['product_id'], 'content' => json_encode( $choices ) ) );
-			$size = apply_filters( 'mkl_pc/order_image_size', mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' ), $order_item, $configurator_data );
+			if ( ! $size ) $size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
+			$size = apply_filters( 'mkl_pc/order_image_size', $size, $order_item, $configurator_data );
 			
 			if ( 'url' == $return ) {
 				return $configuration->get_image_url( false, $size );

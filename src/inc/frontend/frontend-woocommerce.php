@@ -277,7 +277,7 @@ class Frontend_Woocommerce {
 		}
 
 		// Exit if the plugin is not configurable
-		$prod = wc_get_product( $post->ID );
+		$prod = $post ? wc_get_product( $post->ID ) : false;
 		if ( $prod ) {
 			$date_modified = $prod->get_date_modified();
 		} else {
@@ -364,7 +364,7 @@ class Frontend_Woocommerce {
 				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
 				'sku_mode' => apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ),
-				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post->ID ),
+				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post ? $post->ID : false ),
 				'no_toggle' => false,
 				'open_first_layer' => ( bool ) mkl_pc( 'settings')->get( 'open_first_layer', false ),
 				'auto_scroll' => ( bool ) mkl_pc( 'settings')->get( 'auto_scroll', false ),

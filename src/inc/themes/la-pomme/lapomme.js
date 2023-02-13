@@ -1,6 +1,8 @@
 (function($) {
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/lapomme', function( view ) {
 
+		view.$el.addClass( 'lapomme' );
+		
 		if ( window.tippy ) {
 			if ( view.$( '.reset-configuration' ).length ) {
 				var reset_btn = view.$( '.reset-configuration' )
