@@ -1,4 +1,4 @@
-(function($){
+(function($, _){
 	var PC = window.MKL_Configurator = window.MKL_Configurator || {};
 
 	// MAIN ELEMENT CONTAINING THE ELEMENTS 
@@ -17,7 +17,7 @@
 			return this.elms;
 		},
 		toJSON : function() {
-			var attrs = PC._us.clone( this.attributes );
+			var attrs = _.clone( this.attributes );
 			return attrs;
 		},
 
@@ -51,7 +51,7 @@
 			return this;
 		},
 		toJSON : function() {
-			var attrs = PC._us.clone( this.attributes );
+			var attrs = _.clone( this.attributes );
 			return attrs;
 		},
 
@@ -231,4 +231,4 @@
 		}
 	});
 
-})(jQuery);
+})( jQuery, PC._us || window._ );
