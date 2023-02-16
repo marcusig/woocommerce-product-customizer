@@ -14,11 +14,11 @@ PC.actionParameter = 'pc_get_data';
 // 	return json;
 // };
 
-!( function( $ ) {
+!( function( $, _ ) {
 	'use strict';
 
 	PC.fe.config = PC.fe.config || PC_config.config;
-	PC.fe.config = PC._us.extend( {}, PC.fe.config);
+	PC.fe.config = _.extend( {}, PC.fe.config);
 	PC.fe.products_content = PC.fe.products_content || [];
 
 	$( function() {
@@ -327,7 +327,7 @@ PC.actionParameter = 'pc_get_data';
 
 			// content.add( response.content );
 			$.each( response.content, function(key, value) {
-				var ob = PC._us.clone( value );
+				var ob = _.clone( value );
 				if ( ob.choices && ob.choices.length > 0 && PC.fe.layers.get( ob.layerId ) ) {
 					ob.choices = new PC.choices( ob.choices, { layer: PC.fe.layers.get( ob.layerId ) } );
 					content.add( ob );
@@ -365,7 +365,7 @@ PC.actionParameter = 'pc_get_data';
 			})
 			.done(function( response ) {
 				this.modal.$el.removeClass('loading');
-				if ( PC._us.isObject( response ) && response.content ) {
+				if ( _.isObject( response ) && response.content ) {
 					this.contents = PC.fe.setContent.parse( response ); 
 					PC.fe.products_content[product_id] = this.contents;
 					// Add conditions to the data
@@ -473,7 +473,7 @@ PC.actionParameter = 'pc_get_data';
 		}
 	} );
 
-})(jQuery);
+})( jQuery, PC._us || window._ );
 
 PC.utils = PC.utils || {
 	_isTouch: function() {

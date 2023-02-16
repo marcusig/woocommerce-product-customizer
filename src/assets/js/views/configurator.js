@@ -3,7 +3,7 @@ PC.fe = PC.fe || {};
 PC.fe.views = PC.fe.views || {};
 PC.options = PC.options || {};
 
-!( function( $ ) {
+!( function( $, _ ) {
 	'use strict';
 	var underscore = _;
 	/*
@@ -273,7 +273,7 @@ PC.options = PC.options || {};
 				// show errors and prevent adding to cart
 				console.log( errors );
 				var messages = [];
-				PC._us.each( PC.fe.errors, function( error ) {
+				_.each( PC.fe.errors, function( error ) {
 					if ( error.choice ) {
 						error.choice.set( 'has_error', error );
 					}
@@ -585,7 +585,7 @@ PC.options = PC.options || {};
 			if ( 'group' == this.model.get( 'type' ) && PC.fe.layers ) {
 				this.children_layers = PC.fe.layers.where( { 'parent': this.model.id  } );
 				if ( this.children_layers.length ) {
-					PC._us.each( this.children_layers, function( l ) {
+					_.each( this.children_layers, function( l ) {
 						var c_choices = PC.fe.getLayerContent( l.id );
 						this.listenTo( c_choices, 'change:active change:cshow', this.render );
 						this.listenTo( l, 'change:cshow', this.render );
@@ -598,7 +598,7 @@ PC.options = PC.options || {};
 			var choices_names = [];
 			if ( this.choices ) {
 				var active_choices = this.choices.where( { active: true } );
-					PC._us.each( active_choices, function( item ) {
+					_.each( active_choices, function( item ) {
 					var name = item.get_name();
 					if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
 						var parent = item.collection.get( item.get( 'parent' ) );
@@ -611,11 +611,11 @@ PC.options = PC.options || {};
 			}
 
 			if ( this.children_layers && this.children_layers.length ) {
-				PC._us.each( this.children_layers, function( l ) {
+				_.each( this.children_layers, function( l ) {
 					var c_choices = PC.fe.getLayerContent( l.id );
 					if ( c_choices ) {
 						var active_child_choices = c_choices.where( { active: true } );
-						PC._us.each( active_child_choices, function( item ) {
+						_.each( active_child_choices, function( item ) {
 							var name = item.get_name();
 							if ( item.get( 'parent' ) && item.collection.get( item.get( 'parent' ) ) ) {
 								var parent = item.collection.get( item.get( 'parent' ) );
@@ -650,7 +650,7 @@ PC.options = PC.options || {};
 		render: function( choice_model, activated ) {
 			var active_choices = this.choices.where( { active: true } );
 			var html_content = '';
-			PC._us.each( active_choices, function( item ) {
+			_.each( active_choices, function( item ) {
 				var image = item.get_image( 'thumbnail' );
 				if ( image ) {
 					html_content += '<img src="' + image + '">';
@@ -746,7 +746,7 @@ PC.options = PC.options || {};
 			 */
 			wp.hooks.doAction( 'PC.fe.configurator.choice-item.before.render', this );
 			
-			var data = PC._us.extend({
+			var data = _.extend({
 				thumbnail: this.model.get_image( 'thumbnail' ),
 				disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
 			}, this.options.model.attributes );
@@ -927,7 +927,7 @@ PC.options = PC.options || {};
 
 		add_layers: function() {
 			var orders = PC.fe.layers.pluck( 'image_order' );
-			if ( orders.length && PC._us.max( orders ) ) {
+			if ( orders.length && _.max( orders ) ) {
 				PC.fe.layers.orderBy = 'image_order';
 				PC.fe.layers.sort();
 			}
@@ -1305,7 +1305,7 @@ PC.options = PC.options || {};
 
 		reset_errors: function() {
 			if ( PC.fe.errors.length ) {
-				PC._us.each( PC.fe.errors, function( error ) {
+				_.each( PC.fe.errors, function( error ) {
 					if ( error.choice && error.choice.get( 'has_error' ) ) {
 						error.choice.set( 'has_error', false );
 					}
@@ -1377,7 +1377,7 @@ PC.options = PC.options || {};
 						require_error = true;
 					}
 
-					PC._us.each( selected_choices, function( choice ) {
+					_.each( selected_choices, function( choice ) {
 						if ( false === choice.get( 'cshow' ) ) return;
 						if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.parent_is_hidden && PC.conditionalLogic.parent_is_hidden( choice ) ) return;
 						// Check for a required item
@@ -1479,4 +1479,4 @@ PC.options = PC.options || {};
 		}
 
 	};
-})(jQuery);
+} ) ( jQuery, PC._us || window._ );

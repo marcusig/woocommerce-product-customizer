@@ -8,7 +8,7 @@ TODO:
 	-> if variable, use variation ID to store content
 
 */
-(function($){
+(function( $, _ ){
 	PC.views.layers = Backbone.View.extend({
 		tagName: 'div',
 		className: 'state layers-state', 
@@ -83,7 +83,7 @@ TODO:
 			// check if it's the first time
 			if ( 'image_order' == selection ) {
 				var orders = this.col.pluck( 'image_order' );
-				if ( orders.length && ! PC._us.max( orders ) ) {
+				if ( orders.length && ! _.max( orders ) ) {
 					this.col.each( function( m ) {
 						m.set( 'image_order', m.get( 'order' ) );
 					} );
@@ -114,7 +114,7 @@ TODO:
 		add_all: function() {
 			var collection = this.col;
 			this.$list.empty();
-			PC._us.each( this.items, this.remove_item );
+			_.each( this.items, this.remove_item );
 			this.items = [];
 			// this.$list.empty();
 			collection.each( this.add_one, this ); 
@@ -124,7 +124,7 @@ TODO:
 
 			// Setup the groups
 			if ( 'order' == this.orderAttr ) {
-				PC._us.each( this.items, function( view ) {
+				_.each( this.items, function( view ) {
 					if ( view.model.get( 'parent' ) ) {
 						var target = this.$( '.layers[data-item-id=' + view.model.get( 'parent' ) + ']');
 						if ( target.length ) {
@@ -176,7 +176,7 @@ TODO:
 			
 		},
 		layers_changed: function(e) {
-			if ( 1 === PC._us.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
+			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
 			// if something has changed in the layers collection
 			PC.app.is_modified[this.collectionName] = true; 
 
@@ -248,7 +248,7 @@ TODO:
 			'update_order': 'update_order',
 		},
 		render: function() {
-			this.$el.html( this.template( PC._us.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
+			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
 			if ( ! this.label ) {
 				this.label = new PC.views.layerLabel( { model: this.model } );
 				this.$( 'h3' ).append( this.label.$el );
@@ -543,7 +543,7 @@ TODO:
 					break;
 				case 'confirm':
 					// this.model.destroy();
-					PC._us.each( this.collection.where( { active: true } ), function( model ) {
+					_.each( this.collection.where( { active: true } ), function( model ) {
 						model.destroy();
 					} );
 					this.collection.trigger( 'simple-selection' );
@@ -558,4 +558,4 @@ TODO:
 		},
 	});
 
-})(jQuery);
+})(jQuery, PC._us || window._);

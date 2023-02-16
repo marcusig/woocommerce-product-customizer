@@ -1,7 +1,7 @@
 var PC = PC || {};
 PC.views = PC.views || {};
 
-(function($){
+(function($, _){
 
 	PC.views.content = Backbone.View.extend({
 		tagName: 'div',
@@ -66,7 +66,7 @@ PC.views = PC.views || {};
 		add_one: function( model ) {
 			if ( 'group' == model.get( 'type' ) ) return;
 
-			var options = PC._us.defaults( this.options );
+			var options = _.defaults( this.options );
 			var content = this.product.get('content');
 			options.model = model;
 			var layer = new PC.views.content_layer( options );
@@ -103,7 +103,7 @@ PC.views = PC.views || {};
 		},
 		render: function() {
 			var n_choices = this.choices.length;
-			var data = PC._us.defaults(this.model.attributes);
+			var data = _.defaults(this.model.attributes);
 			data.choices_number = n_choices;
 			this.$el.empty();
 			this.$el.append( this.template( data ) );
@@ -119,4 +119,4 @@ PC.views = PC.views || {};
 
 
 
-})(jQuery);
+})(jQuery, PC._us || window._ );

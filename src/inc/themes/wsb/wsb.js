@@ -1,4 +1,4 @@
-(function($) {
+(function( $, _ ) {
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/wsb', function( view ) {
 		// duplicate the form to have a different one on mobile or desktop views
 		var clone = view.footer.form.$el.clone().appendTo( view.toolbar.$el );
@@ -41,7 +41,7 @@
 	// Scroll to newly opened layer, when onening it using conditional logic
 	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/float', function( model ) {
 		var scrollToView = null;
-		PC._us.each( PC.fe.modal.toolbar.layers.items, function( view ) {
+		_.each( PC.fe.modal.toolbar.layers.items, function( view ) {
 			if ( view.model.id == model.id ) {
 				scrollToView = view;
 			}
@@ -54,4 +54,4 @@
 		}
 	} );
 
-})( jQuery );
+})( jQuery, PC._us || window._ );

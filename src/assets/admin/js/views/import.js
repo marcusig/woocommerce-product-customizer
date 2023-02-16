@@ -2,7 +2,7 @@ var PC = window.PC || {};
 PC.import = PC.import || {};
 PC.import.models = PC.import.models || {};
 PC.import.views = PC.import.views || {};
-( function( $, Import ){
+( function( $, Import, _ ) {
 	/**
 	 * Main import state view
 	 */
@@ -310,7 +310,7 @@ PC.import.views = PC.import.views || {};
 				var file_content = e.target.result;
 				var configuration = JSON.parse( file_content ); // parse json 
 				var collections = wp.hooks.applyFilters( 'PC.fe.import.collections', [ 'layers', 'content', 'angles', 'conditions' ] );
-				PC._us.each( collections, function( col_name ) {
+				_.each( collections, function( col_name ) {
 					if ( ! configuration.hasOwnProperty( col_name ) ) return;
 				} );
 				Import.imported_data = Import.imported_data || {};
@@ -642,4 +642,4 @@ PC.import.views = PC.import.views || {};
 		linkElement.setAttribute( 'download', exportFileDefaultName );
 		linkElement.click();
 	}
-})( jQuery, PC.import );
+})( jQuery, PC.import, PC._us || window._ );

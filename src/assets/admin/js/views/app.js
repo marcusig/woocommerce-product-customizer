@@ -2,7 +2,7 @@ var PC = PC || {};
 
 PC.views = PC.views || {};
 
-(function($){
+(function($, _){
 
 	// BASE VIEW, MANAGING KEEPING RECORDS OF ALL THE MODALS / PRODUCTS
 	/*
@@ -106,7 +106,7 @@ PC.views = PC.views || {};
 				this.loading ++;
 
 				PC.app.admin_data.fetch({
-					success: PC._us.bind(function( model, res, options ) {
+					success: _.bind(function( model, res, options ) {
 						
 						this.admin.set_data();
 
@@ -115,7 +115,7 @@ PC.views = PC.views || {};
 						if ( this.contentMissing ) {
 							this.contentMissing = false;
 							this.product.fetch({
-								success: PC._us.bind(this.fetched, this),
+								success: _.bind(this.fetched, this),
 								error: function(model, res, options) {
 									console.log('error fecthing data');
 									console.log( model, res, options );
@@ -145,7 +145,7 @@ PC.views = PC.views || {};
 			this.states.fetch( {
 				// when received, executes this.fetched
 				url: this.states.url() + '&id=' + this.product.id, 
-				success: PC._us.bind(this.fetched, this)
+				success: _.bind(this.fetched, this)
 
 			} );
 			this.loading ++;
@@ -190,7 +190,7 @@ PC.views = PC.views || {};
 		},
 
 		close: function() {
-			if( PC._us.indexOf( PC._us.values( PC.app.is_modified ), true ) != -1 ) { 
+			if( _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) { 
 				if( !confirm( PC.lang.confirm_closing || 'Some values have not been saved. Are you sure you want to close?' ) ) 
 					return false;
 			}
@@ -226,4 +226,4 @@ PC.views = PC.views || {};
 
 
 
-})(jQuery);
+})(jQuery, PC._us || window._ );
