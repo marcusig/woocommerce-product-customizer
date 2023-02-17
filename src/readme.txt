@@ -114,6 +114,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Display angle switch option on layer groups
+
 = 1.2.44 - 04/Jan/2023 =
 
 * TWEAK: Listen to the setting "Hide this layer in the menu", to be able to toggle the layer visibility in the menu only using Conditional Logic
