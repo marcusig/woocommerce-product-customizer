@@ -392,35 +392,31 @@ PC.options = PC.options || {};
 			wp.hooks.doAction( 'PC.fe.layers_list.layers.added', this );
 		},
 		add_one: function( model ){
-			// if layer is not a choice or has only one choice, we don't add it to the menu
+			var new_layer;
+
 			if ( ! model.attributes.not_a_choice ) {
 				var choices = PC.fe.getLayerContent( model.id ); 
 				if ( choices.length || 'group' == model.get( 'type' ) ) {
-					// if ( 'group' == model.get( 'type' ) )  {
-					// 	var new_layer = new PC.fe.views.layerGroup( { model: model, parent: this.$el } ); 
-					// } else {						
-					// }
-					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
-
-					var parent_id = model.get( 'parent' );
-					var parent = parent_id ? model.collection.get( model.get( 'parent' ) ) : false;
-					if ( parent && 'group' == parent.get( 'type' ) && this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).length ) {
-						this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).append( new_layer.render() ); 
-					} else {
-						this.$el.append( new_layer.render() );
-					}
-					this.items.push( new_layer );
+					new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
 				}
 			} else {
 				if ( model.get( 'custom_html' ) ) {
-					var new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } );
-					this.$el.append( new_layer.render() );
-					this.items.push( new_layer );
+					new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } );
 				}
 			}
 
-			// add to a new collection to be used to render the viewer
+			if ( ! new_layer ) return;
 
+			var parent_id = model.get( 'parent' );
+			var parent = parent_id ? model.collection.get( model.get( 'parent' ) ) : false;
+			if ( parent && 'group' == parent.get( 'type' ) && this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).length ) {
+				this.options.parent.$( 'ul[data-layer-id=' + model.get( 'parent' ) + ']' ).append( new_layer.render() ); 
+			} else {
+				this.$el.append( new_layer.render() );
+			}
+
+			// add to a new collection to be used to render the viewer
+			this.items.push( new_layer );
 		},
 		activate: function( model ) {
 			if ( model.get( 'active' ) == false ) {
