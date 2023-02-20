@@ -22,6 +22,7 @@
 	} );
 
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/wsb', function( view ) {
+		if ( ! wp.hooks.applyFilters( 'pc.themes.wsb.toggle_choices', true, view ) ) return;
 		if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
 		view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { step: function() {
 			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
@@ -29,6 +30,7 @@
 	} );
 
 	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/wsb', function( view ) {
+		if ( ! wp.hooks.applyFilters( 'pc.themes.wsb.toggle_choices', true, view ) ) return;
 		if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
 		view.$el.find( '.layer_choices' ).first().slideUp(200);
 	} );

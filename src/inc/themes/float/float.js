@@ -34,6 +34,7 @@
 		return 'in';
 	} );
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/float', function( view ) {
+		if ( ! wp.hooks.applyFilters( 'pc.themes.float.toggle_choices', true, view ) ) return;
 		if ( PC.fe.inline ) {
 			view.$el.find( '.layer_choices' ).first().show();
 			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
@@ -46,6 +47,7 @@
 			
 	} );
 	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/float', function( view ) {
+		if ( ! wp.hooks.applyFilters( 'pc.themes.float.toggle_choices', true, view ) ) return;
 		if ( PC.fe.inline ) {
 			scrollStartPost = $(document).scrollTop();
 			view.$el.find( '.layer_choices' ).first().hide();
