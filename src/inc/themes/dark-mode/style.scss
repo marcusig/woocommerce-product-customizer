@@ -788,6 +788,9 @@ $inner_space: 1em;
 									display: block; 
 									position: relative; 
 									box-shadow: none;
+									top: auto;
+									transform: none;
+
 									@media( max-width: $small_screen_width ) {
 										height: 30px; 
 										width: 30px;
@@ -820,6 +823,42 @@ $inner_space: 1em;
 									font-size: 90%;
 								}
 							}
+
+							button.choice-group-label {
+								height: auto;
+								padding: 10px 14px;
+								&::after,
+								&::before {
+									content: '';
+									width: 15px;
+									display: block;
+									height: 2px;
+									background: color(ll2);
+									position: absolute;
+									right: 30px;
+									transition: .2s all;										
+								}
+	
+								&:hover, &:focus {
+									&::after, &::before {
+										background: color(ll1);
+									}
+								}
+							}
+
+							&:not( .show-group-content ) {
+								button.choice-group-label {
+									border-bottom: none;
+									&::before {
+										right: 30px;
+										transform: rotate( 90deg );
+									}
+									& ~ ul.choices-list--children {
+										display: none;
+									}
+								}
+							}
+							
 							& + .is-group {
 								margin-top: 1em;
 							}

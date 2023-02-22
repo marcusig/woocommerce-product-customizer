@@ -404,12 +404,48 @@
 								display: none;
 							}
 							.choice-text {
-								opacity: .6;
+								
 							}
+						}
+
+						button.choice-group-label {
+							border-radius: 0;
+							box-shadow: none;
+							width: 100%;
+							margin-top: 10px;
+							&::after,
+							&::before {
+								content: '';
+								width: 15px;
+								display: block;
+								height: 2px;
+								background: color(primary);
+								position: absolute;
+								right: 35px;
+								transition: .2s all;										
+							}
+
+							&:hover, &:focus {
+								&::after, &::before {
+									background: color(primary);
+								}
+							}
+							cursor: pointer;
 						}
 
 						& + .is-group {
 							margin-top: .2em;
+						}
+
+						&:not( .show-group-content ) {
+							button.choice-group-label {
+								&::before {
+									transform: rotate( 90deg );
+								}
+								& ~ ul.choices-list--children {
+									display: none;
+								}
+							}
 						}
 					}							
 				}
