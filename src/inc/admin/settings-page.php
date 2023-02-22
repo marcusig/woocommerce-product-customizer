@@ -647,6 +647,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'choice_groups_toggle',
+				__( 'Enable toggling of the choice groups', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'choice_groups_toggle',
+				]
+			);
+
 			/*
 				LABELS
 			*/
