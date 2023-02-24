@@ -8,7 +8,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language-Team: @Mklacroix\n"
 "Last-Translator: @marcusig\n"
-"POT-Creation-Date: 2023-02-18 07:40+0000\n"
+"POT-Creation-Date: 2023-02-22 08:24+0000\n"
 "Report-Msgid-Bugs-To: https://github.com/marcusig/woocommerce-product-customizer/issues\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
@@ -113,7 +113,7 @@ msgstr ""
 msgid "Export"
 msgstr ""
 
-#: src/inc/languages.php:44, src/inc/admin/settings-page.php:216, src/inc/frontend/frontend-woocommerce.php:135, src/inc/frontend/frontend-woocommerce.php:207, src/inc/frontend/product.php:80
+#: src/inc/languages.php:44, src/inc/admin/settings-page.php:216, src/inc/frontend/frontend-woocommerce.php:135, src/inc/frontend/frontend-woocommerce.php:207, src/inc/frontend/product.php:82
 msgid "Configure"
 msgstr ""
 
@@ -133,15 +133,15 @@ msgstr ""
 msgid "You have reached the maximum number of selectable items for this product"
 msgstr ""
 
-#: src/inc/languages.php:49, src/inc/admin/settings-page.php:663, src/inc/admin/settings-page.php:669, src/inc/frontend/views/html-product-configurator-templates.php:81
+#: src/inc/languages.php:49, src/inc/admin/settings-page.php:674, src/inc/admin/settings-page.php:680, src/inc/frontend/views/html-product-configurator-templates.php:81
 msgid "Reset configuration"
 msgstr ""
 
-#: src/inc/languages.php:50, src/inc/admin/settings-page.php:675, src/inc/admin/settings-page.php:681, src/inc/frontend/cart.php:310
+#: src/inc/languages.php:50, src/inc/admin/settings-page.php:686, src/inc/admin/settings-page.php:692, src/inc/frontend/cart.php:310
 msgid "Edit configuration"
 msgstr ""
 
-#: src/inc/languages.php:51, src/inc/admin/settings-page.php:687, src/inc/admin/settings-page.php:693, src/inc/frontend/product.php:219
+#: src/inc/languages.php:51, src/inc/admin/settings-page.php:698, src/inc/admin/settings-page.php:704, src/inc/frontend/product.php:221
 msgid "Edit item in cart"
 msgstr ""
 
@@ -150,11 +150,11 @@ msgctxt "Label displayed in the cart / order"
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/languages.php:53, src/inc/admin/settings-page.php:741, src/inc/frontend/frontend-woocommerce.php:212
+#: src/inc/languages.php:53, src/inc/admin/settings-page.php:752, src/inc/frontend/frontend-woocommerce.php:212
 msgid "Loading the configurator..."
 msgstr ""
 
-#: src/inc/languages.php:54, src/inc/admin/settings-page.php:699, src/inc/admin/settings-page.php:705, src/inc/frontend/order.php:76
+#: src/inc/languages.php:54, src/inc/admin/settings-page.php:710, src/inc/admin/settings-page.php:716, src/inc/frontend/order.php:76
 msgid "Download configuration image"
 msgstr ""
 
@@ -219,7 +219,7 @@ msgstr ""
 msgid "Custom background image"
 msgstr ""
 
-#: src/inc/admin/order.php:63, src/inc/admin/settings-page.php:711, src/inc/admin/settings-page.php:717, src/inc/frontend/order.php:57
+#: src/inc/admin/order.php:63, src/inc/admin/settings-page.php:722, src/inc/admin/settings-page.php:728, src/inc/frontend/order.php:57
 msgid "View configuration"
 msgstr ""
 
@@ -415,7 +415,7 @@ msgstr ""
 msgid "Configure button label"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:216, src/inc/admin/settings-page.php:669, src/inc/admin/settings-page.php:681, src/inc/admin/settings-page.php:693, src/inc/admin/settings-page.php:705, src/inc/admin/settings-page.php:717, src/inc/admin/settings-page.php:729, src/inc/admin/settings-page.php:741, src/inc/admin/settings-page.php:753
+#: src/inc/admin/settings-page.php:216, src/inc/admin/settings-page.php:680, src/inc/admin/settings-page.php:692, src/inc/admin/settings-page.php:704, src/inc/admin/settings-page.php:716, src/inc/admin/settings-page.php:728, src/inc/admin/settings-page.php:740, src/inc/admin/settings-page.php:752, src/inc/admin/settings-page.php:764
 msgid "Default:"
 msgstr ""
 
@@ -619,71 +619,75 @@ msgstr ""
 msgid "Automatically scroll to the top of the opened layer (Supported themes only) "
 msgstr ""
 
-#: src/inc/admin/settings-page.php:656
+#: src/inc/admin/settings-page.php:652
+msgid "Enable toggling of the choice groups"
+msgstr ""
+
+#: src/inc/admin/settings-page.php:667
 msgid "Other labels"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:723
+#: src/inc/admin/settings-page.php:734
 msgid "Configuration (meta label in the cart)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:729, src/inc/frontend/cart.php:177, src/inc/frontend/order.php:87, src/inc/frontend/order.php:229
+#: src/inc/admin/settings-page.php:740, src/inc/frontend/cart.php:177, src/inc/frontend/order.php:87, src/inc/frontend/order.php:229
 msgid "Configuration"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:735
+#: src/inc/admin/settings-page.php:746
 msgid "Loading message (displayed when the configurator is loading, in inline mode)"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:747
+#: src/inc/admin/settings-page.php:758
 msgid "Angle switch label"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:753, src/inc/frontend/views/parts/product-viewer.php:8
+#: src/inc/admin/settings-page.php:764, src/inc/frontend/views/parts/product-viewer.php:8
 msgid "Change angle"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:761
+#: src/inc/admin/settings-page.php:772
 msgid "TranslatePress"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:768
+#: src/inc/admin/settings-page.php:779
 msgid "Disable TranslatePress Dynamic translation for the condigurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:774
+#: src/inc/admin/settings-page.php:785
 msgid "Activate this setting if you wish to translate the configurator from within the configurator"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:794
+#: src/inc/admin/settings-page.php:805
 msgid "Edit the theme settings in the customizer"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:890
+#: src/inc/admin/settings-page.php:901
 msgid "Get the official Product Configurator themes"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:891
+#: src/inc/admin/settings-page.php:902
 msgid "Beautiful design, integrated live configuring interface, widgetized homepage, flexible, lightweight and much more..."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:951, src/inc/admin/settings-page.php:987
+#: src/inc/admin/settings-page.php:962, src/inc/admin/settings-page.php:998
 msgid "Theme preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:953, src/inc/admin/settings-page.php:989
+#: src/inc/admin/settings-page.php:964, src/inc/admin/settings-page.php:1000
 msgid "No preview"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:963
+#: src/inc/admin/settings-page.php:974
 msgid "No theme is in use."
 msgstr ""
 
-#: src/inc/admin/settings-page.php:964
+#: src/inc/admin/settings-page.php:975
 msgid "Select a theme"
 msgstr ""
 
-#: src/inc/admin/settings-page.php:973
+#: src/inc/admin/settings-page.php:984
 msgid "Select the theme"
 msgstr ""
 
@@ -715,7 +719,7 @@ msgstr ""
 msgid "%s is required"
 msgstr ""
 
-#: src/inc/frontend/product.php:262
+#: src/inc/frontend/product.php:264
 msgid "Please select a variation to configure"
 msgstr ""
 
@@ -727,7 +731,7 @@ msgstr ""
 msgid "Angle Name"
 msgstr ""
 
-#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:139, src/inc/admin/settings/layer.php:163
+#: src/inc/admin/settings/angle.php:43, src/inc/admin/settings/choice.php:159, src/inc/admin/settings/layer.php:163
 msgid "CSS Class"
 msgstr ""
 
@@ -792,6 +796,22 @@ msgid "Switch to"
 msgstr ""
 
 #: src/inc/admin/settings/choice.php:134
+msgid "Content of this group is hidden by default, toggled when clicking the title"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:139
+msgid "Use global setting"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:143
+msgid "Yes"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:147
+msgid "No"
+msgstr ""
+
+#: src/inc/admin/settings/choice.php:154
 msgid "Weight"
 msgstr ""
 

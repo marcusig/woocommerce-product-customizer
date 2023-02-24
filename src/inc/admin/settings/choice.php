@@ -130,6 +130,26 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							),
 							'priority' => 50,
 						),
+						'choice_groups_toggle' => array(
+							'label' => __( 'Content of this group is hidden by default, toggled when clicking the title', 'product-configurator-for-woocommerce' ),
+							'type' => 'select',
+							'condition' => '!data.not_a_choice && data.is_group',
+							'choices' => [
+								[
+									'label' => __( 'Use global setting', 'product-configurator-for-woocommerce' ),
+									'value' => 'inherit'
+								],
+								[
+									'label' => __( 'Yes', 'product-configurator-for-woocommerce' ),
+									'value' => 'enabled'
+								],
+								[
+									'label' => __( 'No', 'product-configurator-for-woocommerce' ),
+									'value' => 'disabled'
+								],
+							],
+							'priority' => 55,
+						),
 						'weight' => array(
 							'label' => __('Weight', 'product-configurator-for-woocommerce' ) . ' (' . get_option( 'woocommerce_weight_unit' ) . ')',
 							'type' => 'number',

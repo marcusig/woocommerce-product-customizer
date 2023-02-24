@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.1
-Stable tag: 1.2.44
+Stable tag: 1.2.45
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,6 +114,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.45 - 24/Feb/2023 =
+
+* TWEAK: Various tweaks and improvements, and new hooks.
+* TWEAK: Possibility to toggle choice groups
 * TWEAK: Display angle switch option on layer groups
 
 = 1.2.44 - 04/Jan/2023 =

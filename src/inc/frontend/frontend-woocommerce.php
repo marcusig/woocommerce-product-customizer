@@ -369,6 +369,7 @@ class Frontend_Woocommerce {
 				'open_first_layer' => ( bool ) mkl_pc( 'settings')->get( 'open_first_layer', false ),
 				'auto_scroll' => ( bool ) mkl_pc( 'settings')->get( 'auto_scroll', false ),
 				'swipe_to_change_view' => ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ),
+				'choice_groups_toggle' => ( bool ) mkl_pc( 'settings')->get( 'choice_groups_toggle', false ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),

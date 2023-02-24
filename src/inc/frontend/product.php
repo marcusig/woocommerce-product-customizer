@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 	class Frontend_Product {
+		public $options;
+		public $button_class;
 		
 		public function __construct() {
 			$this->options = get_option( 'mkl_pc__settings' );

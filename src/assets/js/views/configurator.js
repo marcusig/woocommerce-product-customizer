@@ -735,6 +735,7 @@ PC.options = PC.options || {};
 			'keydown > .choice-item': 'set_choice',
 			'mouseenter > .choice-item': 'preload_image',
 			'focus > .choice-item': 'preload_image',
+			'click > button.choice-group-label': 'toggle_group',
 		},
 		render: function() {
 			/**
@@ -857,13 +858,12 @@ PC.options = PC.options || {};
 				wp.hooks.doAction( 'PC.fe.choice.deactivate', this );
 			}
 		},
+		toggle_group: function() {
+			this.$el.toggleClass( 'show-group-content' );
+		}
 	});
 
 	PC.fe.views.choiceGroup = PC.fe.views.choice.extend({
-		template: wp.template( 'mkl-pc-configurator-choice-group' ),
-	});
-
-	PC.fe.views.layerGroup = PC.fe.views.layers_list_item.extend({
 		template: wp.template( 'mkl-pc-configurator-choice-group' ),
 	});
 

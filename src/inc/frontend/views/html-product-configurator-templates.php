@@ -45,7 +45,7 @@ function mkl_pc_frontend_configurator__choice_item_attrs() {
 	foreach( $attributes as $name => $value ) {
 		if ( $attrs_string ) $attrs_string .= ' ';
 		if ( is_string( $name ) ) {
-			$attrs_string .= $name . '="' . esc_attr( $value ) . '"';
+			$attrs_string .= esc_attr( $name ) . '="' . esc_attr( $value ) . '"';
 		}
 	}
 	echo ' ' . $attrs_string;

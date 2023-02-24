@@ -495,10 +495,15 @@
 							i.mkl-pc-thumbnail {
 								height: 38px;
 								margin: 0;
+								order: initial;
 							}
 							span.choice-price {
 								display: none;
 							}
+						}
+						
+						&.has-advanced-description {
+							padding-right: 30px;
 						}
 
 						.choices-list--children {
@@ -517,6 +522,39 @@
 						.is-group {
 							.choice-group-label {
 								padding-left: 1em;
+							}
+						}
+
+						button.choice-group-label {
+							padding-right: 65px;
+							&::after,
+							&::before {
+								content: '';
+								width: 15px;
+								display: block;
+								height: 2px;
+								background: color(primary);
+								position: absolute;
+								right: 30px;
+								transition: .2s all;										
+							}
+
+							&:hover, &:focus {
+								&::after, &::before {
+									background: color(primary_hover);
+								}
+							}
+						}
+
+						&:not( .show-group-content ) {
+							button.choice-group-label {
+								&::before {
+									right: 30px;
+									transform: rotate( 90deg );
+								}
+								& ~ ul.choices-list--children {
+									display: none;
+								}
 							}
 						}
 					}
