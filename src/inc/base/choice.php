@@ -18,6 +18,8 @@ class Choice {
 	public $product_id; 
 	public $variation_id; 
 	public $layer_data; 
+	public $choice;
+	public $images;
 	private $db = null;
 
 	public function __wakeup() {
@@ -136,6 +138,19 @@ class Choice {
 	
 	public function is_choice() {
 		return is_null( $this->get_layer( 'not_a_choice' ) ) || ! $this->get_layer( 'not_a_choice' );
+	}
+
+	/**
+	 * For older data which didn't save the layer_data, give an option to populate it.
+	 * Usefull for older orders
+	 *
+	 * @param stdClass $layer_data
+	 * @return void
+	 */
+	public function set_layer_data( $layer_data ) {
+		if ( ! empty( $this->layer_data ) ) return;
+		$this->layer_data = $layer_data;
+		do_action( 'mkl_pc/choice/init', $this, $this->layer_data );
 	}
 
 }
