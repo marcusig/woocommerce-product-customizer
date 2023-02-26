@@ -273,7 +273,7 @@ PC.options = PC.options || {};
 				// show errors and prevent adding to cart
 				console.log( errors );
 				var messages = [];
-				_.each( PC.fe.errors, function( error ) {
+				_.each( errors, function( error ) {
 					if ( error.choice ) {
 						error.choice.set( 'has_error', error );
 					}
