@@ -241,6 +241,7 @@ class DB {
 	 */
 	public function get_product_id_for_content( $product_id, $variation_id ) {
 		$product = wc_get_product( $product_id );
+		if ( ! $product ) return 0;
 		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
 		if ( ( ! $mode || 'share_layers_config' == $mode ) && $variation_id ) {
 			return $variation_id;
@@ -259,6 +260,8 @@ class DB {
 		if ( empty( $data ) ) return false;
 
 		$product_id = $this->get_product_id_for_content( $product_id, $variation_id );
+
+		if ( ! $product_id ) return false;
 
 		$content = $this->get( 'content', $product_id );
 

@@ -225,7 +225,7 @@ class Configuration {
 	 * @return bool|string
 	 */
 	public function content_has_single_image( $return = 'bool' ) {
-		if ( ! property_exists( $this, 'content' ) || ! is_array( $this->content ) ) return false;
+		if ( ! property_exists( $this, 'content' ) || ! is_array( $this->content ) || empty( $this->content ) ) return false;
 		$item = array_values( $this->content )[0];
 		if ( 1 === count( $this->content ) && $image = wp_get_attachment_url( $item->image ) ) {
 			return 'bool' == $return ? true : $item->image;
