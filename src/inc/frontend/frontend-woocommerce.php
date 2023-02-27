@@ -254,6 +254,7 @@ class Frontend_Woocommerce {
 		
 		// Register vendor scripts
 		wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
+		wp_register_script( 'fabric', MKL_PC_ASSETS_URL . 'js/vendor/fabric.min.js', [], '5.2.1', true );
 		wp_register_script( 'mkl_pc/html2canvas', MKL_PC_ASSETS_URL . 'js/vendor/html2canvas.min.js', [], '1.4.1', true );
 		wp_register_script( 'mkl_pc/touchswipe', MKL_PC_ASSETS_URL . 'js/vendor/jquery.touchSwipe.min.js', [], '1.6.18', true );
 
