@@ -8,6 +8,8 @@ const sourcemaps = require('gulp-sourcemaps');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
 const gutil = require('gulp-util');
+const concat = require('gulp-concat-util');
+
 // const replace = require('gulp-replace');
 var plumber = require('gulp-plumber');
 var wpPot = require('gulp-wp-pot');
@@ -57,8 +59,22 @@ gulp.task('scss', function(done) {
 
 });
 
+gulp.task('concat_js_views', function(done) {
+	return gulp.src(['src/assets/js/views/parts/*.js'], { base: 'src', allowEmpty: true })
+		// .pipe(sourcemaps.init())
+		.pipe( concat( 'configurator.js' ) )
+		.pipe( concat.header( 'var PC = PC || {};\nPC.fe = PC.fe || {};\n\nPC.fe.views = PC.fe.views || {};\nPC.options = PC.options || {};\n\n!( function( $, _ ) {\n\n\'use strict\';\n' ) )
+		.pipe( concat.footer( '\n} ) ( jQuery, PC._us || window._ );\n' ) )
+		.pipe(gulp.dest( 'dist/assets/js/views/' ))
+		.pipe(uglify())
+		// .pipe(sourcemaps.write('maps'))
+		.pipe( rename( { suffix: '.min' } ) )
+		.pipe( gulp.dest( 'dist/assets/js/views/' ) )
+		.on('end', done);
+});
+
 gulp.task('js', function(done) {
-	return gulp.src(['src/assets/**/*.js', '!src/assets/**/*.min.js'], { base: 'src', allowEmpty: true })
+	return gulp.src(['src/assets/**/*.js', '!src/assets/**/*.min.js',  '!src/assets/js/views/parts/*.js'], { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
 		// .pipe(sourcemaps.init())
 		.pipe(uglify())
@@ -119,12 +135,14 @@ gulp.task('build',
 		'pot',
 		'vendor',
 		'scss',
-		'js'
+		'js',
+		'concat_js_views',
 	)
 );
 
 gulp.task('watch', function() {
 	gulp.watch('src/**/*.scss', gulp.parallel('scss'));
+	gulp.watch('src/assets/js/views/parts/*.js', gulp.parallel('concat_js_views'));
 	// gulp.watch(jsPaths, { interval: 500 }, ['js']);
 	gulp.watch('src/**/*')
 		.on('change', function(path, stats) {
