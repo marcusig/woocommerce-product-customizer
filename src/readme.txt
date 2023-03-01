@@ -114,6 +114,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.46 - 28/Feb/2023 =
+
+* FIX: Prevent fatal error when the product object isn't found
+
 = 1.2.45 - 24/Feb/2023 =
 
 * TWEAK: Various tweaks and improvements, and new hooks.
