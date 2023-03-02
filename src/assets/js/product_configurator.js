@@ -218,7 +218,7 @@ PC.actionParameter = 'pc_get_data';
 		if ( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
 			$( '.configure-product-simple' ).trigger( 'click' );
 		}
-	});
+	} );
 
 	PC.fe.init = function( product_id, parent_id, $element ) {
 		if ( PC.fe.is_using_shortcode ) {

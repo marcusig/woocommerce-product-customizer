@@ -8,7 +8,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Language-Team: @Mklacroix\n"
 "Last-Translator: @marcusig\n"
-"POT-Creation-Date: 2023-02-27 05:46+0000\n"
+"POT-Creation-Date: 2023-03-01 12:25+0000\n"
 "Report-Msgid-Bugs-To: https://github.com/marcusig/woocommerce-product-customizer/issues\n"
 "X-Poedit-Basepath: ..\n"
 "X-Poedit-KeywordsList: __;_e;_ex:1,2c;_n:1,2;_n_noop:1,2;_nx:1,2,4c;_nx_noop:1,2,3c;_x:1,2c;esc_attr__;esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c\n"
@@ -101,15 +101,15 @@ msgstr ""
 msgid "Define choices for each layer and assign them pictures"
 msgstr ""
 
-#: src/inc/db.php:303
+#: src/inc/db.php:306
 msgid "Import / Export"
 msgstr ""
 
-#: src/inc/db.php:304
+#: src/inc/db.php:307
 msgid "Import / Export the product's data "
 msgstr ""
 
-#: src/inc/db.php:305, src/inc/admin/views/html-product-configurator-templates.php:415
+#: src/inc/db.php:308, src/inc/admin/views/html-product-configurator-templates.php:415
 msgid "Export"
 msgstr ""
 
