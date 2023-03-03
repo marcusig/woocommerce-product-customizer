@@ -669,6 +669,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'use_canvas',
+				__( 'Render mode: use canvas instead of HTML', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'use_canvas',
+				]
+			);
+
 			/*
 				LABELS
 			*/

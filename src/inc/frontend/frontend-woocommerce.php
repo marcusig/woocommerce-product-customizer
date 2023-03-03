@@ -319,6 +319,11 @@ class Frontend_Woocommerce {
 			$deps[] = 'mkl_pc/touchswipe';
 		}
 
+		if ( ( bool ) mkl_pc( 'settings')->get( 'use_canvas', false ) ) {
+			$deps[] = 'fabric';
+		}
+
+
 		// if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
 		// 	$deps[] = 'mkl_pc/html2canvas';
 		// }
@@ -371,6 +376,7 @@ class Frontend_Woocommerce {
 				'auto_scroll' => ( bool ) mkl_pc( 'settings')->get( 'auto_scroll', false ),
 				'swipe_to_change_view' => ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ),
 				'choice_groups_toggle' => ( bool ) mkl_pc( 'settings')->get( 'choice_groups_toggle', false ),
+				'use_canvas' => (bool) mkl_pc( 'settings' )->get( 'use_canvas', false ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
