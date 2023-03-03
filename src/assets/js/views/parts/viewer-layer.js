@@ -110,6 +110,7 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 				this.el.src = img
 			} 
 			this.$el.addClass( 'active' );
+			if ( this.model.get( 'c_item' ) ) this.model.get( 'c_item' ).visible = true;
 		} else {
 			if ( ! this.is_loaded ) {
 				this.$el.addClass( 'loading' );
@@ -119,8 +120,11 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 					this.el.src = img;	
 				}
 			}
+			if ( this.model.get( 'c_item' ) ) this.model.get( 'c_item' ).visible = false;
 			this.$el.removeClass( 'active' );
 		}
+
+		if ( this.model.get( 'c_item' ) ) this.model.get( 'c_item' ).canvas.renderAll();
 
 		this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
 
