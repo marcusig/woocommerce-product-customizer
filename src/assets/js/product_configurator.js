@@ -346,6 +346,12 @@ PC.actionParameter = 'pc_get_data';
 		return false;
 	};
 
+	PC.fe.get_choice_model = function( layerId, choiceId ) {
+		var content = PC.fe.get_layer_content( layerId );
+		if ( ! content || ! choiceId ) return false;
+		return content.get( choiceId );
+	};
+
 	PC.fe.fetchContent = function( product_id ) {
 		if ( ! PC.fe.products_content[product_id] ) { 
 

@@ -190,6 +190,7 @@ $parts = apply_filters( 'mkl_pc_frontend_templates_parts',
 		array( 'path' => $root, 'file' =>'layer-item.php' ),
 		array( 'path' => $root, 'file' =>'choices.php' ),
 		array( 'path' => $root, 'file' =>'choice-item.php' ),
+		array( 'path' => $root, 'file' =>'summary.php' ),
 	)
 );
 
