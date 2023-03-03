@@ -107,6 +107,9 @@ PC.fe.views.configurator = Backbone.View.extend({
 			this.$main_window.append( this.footer.render() );
 		}
 
+		// this.summary = new PC.fe.views.summary();
+		// this.$main_window.append( this.summary.$el );
+
 		var images = this.viewer.$el.find( 'img' ),
 			imagesLoaded = 0,
 			that = this;
