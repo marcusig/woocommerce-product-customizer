@@ -14,7 +14,7 @@ PC.fe.views.layers_list = Backbone.View.extend({
 	}, 
 	render: function() {
 		this.options.parent.$selection.append( this.$el ); 
-		this.add_all( PC.fe.layers ); 
+		this.add_all( PC.fe.layers );
 		return this.$el;
 	}, 
 	add_all: function( collection ) { 
@@ -65,7 +65,6 @@ PC.fe.views.layers_list = Backbone.View.extend({
 			this.$el.addClass( 'opened' );
 			wp.hooks.doAction( 'PC.fe.layers_list.open', this, model );
 		}
-
-	},	
+	},
 
 });

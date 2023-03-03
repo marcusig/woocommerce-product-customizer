@@ -87,6 +87,10 @@ PC.toJSON = function( item ) {
 			if ( ! layer_content ) return false;
 			return layer_content.get( 'choices' );
 		},
+		get_choice_model: function( layerId, choiceId ) {
+			var content = this.get_layer_content( layerId );
+			return content.get( choiceId ) || false;
+		},
 		save_all: function( state, options ) {
 			this.saving = 0;
 			this.errors = [];

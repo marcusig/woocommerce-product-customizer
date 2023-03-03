@@ -9,7 +9,10 @@ PC.fe.save_data = {
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
 		return JSON.stringify( this.choices );
 	},
-
+	get_choices: function() {
+		this.save();
+		return this.choices;
+	},
 	reset_errors: function() {
 		if ( PC.fe.errors.length ) {
 			_.each( PC.fe.errors, function( error ) {
@@ -43,6 +46,7 @@ PC.fe.save_data = {
 			angle = PC.fe.angles.first();
 		}
 
+		var model_data = wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', model.attributes );
 		var angle_id = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.angle_id', angle.id );
 
 		if ( 'group' == type ) {
@@ -54,7 +58,7 @@ PC.fe.save_data = {
 						layer_id: model.id,
 						choice_id: 0,
 						angle_id: angle_id,
-						layer_name: model.get( 'name' ),
+						layer_name: model_data.name,
 						image: 0,
 						name: '',
 					},
@@ -101,7 +105,7 @@ PC.fe.save_data = {
 					if ( false === choice.get( 'available' ) ) {
 						PC.fe.errors.push( {
 							choice: choice,
-							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) )
+							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + ' > ' + choice.get_name() )
 						} );
 					}
 
@@ -114,9 +118,9 @@ PC.fe.save_data = {
 								layer_id: model.id,
 								choice_id: choice.id,
 								angle_id: angle_id,
-								layer_name: model.attributes.name,
+								layer_name: model_data.name,
 								image: img_id,
-								name: choice.attributes.name,
+								name: choice.get_name(),
 							},
 							choice
 						)
@@ -148,7 +152,7 @@ PC.fe.save_data = {
 					if ( false === choice.get( 'available' ) ) {
 						PC.fe.errors.push( {
 							choice: choice,
-							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model.get( 'name' ) + ' > ' + choice.get( 'name' ) ) 
+							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + ' > ' + choice.get_name() )
 						} );
 					}
 				} else if ( is_required ) {
@@ -168,7 +172,7 @@ PC.fe.save_data = {
 						choice_id: choice.id,
 						angle_id: angle_id,
 						image: img_id,
-						name: choice.attributes.name,
+						name: choice.get_name(),
 					}
 				)
 			);
@@ -178,7 +182,7 @@ PC.fe.save_data = {
 			PC.fe.errors.push( {
 				choice: false,
 				layer: model,
-				message: PC_config.lang.required_error_message.replace( '%s', model.get( 'name' ) ) 
+				message: PC_config.lang.required_error_message.replace( '%s', model_data.name ) 
 			} );
 		}
 
