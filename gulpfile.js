@@ -91,7 +91,7 @@ gulp.task('pot', function(done) {
 		lastTranslator: '@marcusig',
 		team: '@Mklacroix'
 	}))
-	.pipe(gulp.dest('src/languages/product-configurator-for-woocommerce.pot'))
+	.pipe(gulp.dest('dist/languages/product-configurator-for-woocommerce.pot'))
 	.on('end', done);
 });
 
@@ -115,8 +115,8 @@ gulp.task('pot', function(done) {
 gulp.task('build', 
 	gulp.series(
 		'clean',
-		'pot',
 		'move_src',
+		'pot',
 		'vendor',
 		'scss',
 		'js'
