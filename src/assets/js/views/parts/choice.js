@@ -88,6 +88,10 @@ PC.fe.views.choice = Backbone.View.extend({
 		if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
 			this.update_tippy_on_price_update = true;
 			var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
+			if ( this.$( '.choice-price' ).length ) {
+				description += this.$( '.choice-price' ).html();
+				this.$( '.choice-price' ).hide();
+			}
 			if ( this.$( '.out-of-stock' ).length ) {
 				description += this.$( '.out-of-stock' )[0].outerHTML;
 				// console.log('get desc', this.model.collection.layer.get( 'name' ), this.model.get( 'name' ), this.$( '.out-of-stock' ).length, this.$( '.out-of-stock' )[0].outerHTML );
