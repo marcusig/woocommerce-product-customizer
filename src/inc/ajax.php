@@ -141,7 +141,8 @@ class Ajax {
 		} elseif ( isset($_REQUEST['view']) && 'js' === $_REQUEST['view'] ) {
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
 			$gzip = false;
-			if ( apply_filters( 'mkl_pc_get_configurator_gzip_data_js_output', true ) && $this->gzip_accepted() && function_exists( 'gzencode' ) ) {
+			$disable_gzip = mkl_pc( 'settings' )->get( 'disable_configuration_gzip', false );
+			if ( apply_filters( 'mkl_pc_get_configurator_gzip_data_js_output', ! $disable_gzip ) && $this->gzip_accepted() && function_exists( 'gzencode' ) ) {
 				header( 'Content-Encoding: gzip' );
 				$gzip = true;
 			}

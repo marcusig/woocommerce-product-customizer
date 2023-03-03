@@ -114,6 +114,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Possibility to disable GZIP compression of the configuration data
+
 = 1.2.46 - 28/Feb/2023 =
 
 * FIX: Prevent fatal error when the product object isn't found

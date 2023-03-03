@@ -658,6 +658,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'disable_configuration_gzip',
+				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'disable_configuration_gzip',
+				]
+			);
+
 			/*
 				LABELS
 			*/
