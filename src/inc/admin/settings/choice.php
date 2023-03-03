@@ -121,7 +121,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'condition' => '!data.not_a_choice',
 							'choices' => [
 								[
-									'label' => 'No',
+									'label' => _x( 'No', 'Automatic angle switch - Choose an angle, or no switch', 'product-configurator-for-woocommerce' ),
 									'value' => 'no'
 								],
 							],
@@ -144,7 +144,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 									'value' => 'enabled'
 								],
 								[
-									'label' => __( 'No', 'product-configurator-for-woocommerce' ),
+									'label' => _x( 'No', 'Content of this group is hidden by default - Yes, No, Inherit', 'product-configurator-for-woocommerce' ),
 									'value' => 'disabled'
 								],
 							],

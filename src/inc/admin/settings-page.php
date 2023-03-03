@@ -780,7 +780,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			if ( function_exists( 'trp_translate' ) ) {
 				add_settings_section(
 					'translatepress',
-					__( 'TranslatePress', 'product-configurator-for-woocommerce' ), 
+					'TranslatePress', 
 					function() { },
 					'mlk_pc_settings'
 				);
@@ -793,7 +793,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'translatepress',
 					[ 
 						'setting_name' => 'disable_translatepress_dynamic_translation',
-						'description' => __( 'Activate this setting if you wish to translate the configurator from within the configurator', 'product-configurator-for-woocommerce' )
+						'description' => __( 'Activate this setting if you wish to translate the configuration data from within the configurator', 'product-configurator-for-woocommerce' )
 					]
 				);
 			}
