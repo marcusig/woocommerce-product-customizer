@@ -304,15 +304,15 @@ class Frontend_Woocommerce {
 		// To include potential other scripts BEFORE the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_before' );
 
-		wp_register_script( 'mkl_pc/js/vendor/popper', 'https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js', [], '2', true );
-		wp_register_script( 'mkl_pc/js/vendor/tippy', 'https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js', [ 'mkl_pc/js/vendor/popper' ], '6', true );
+		wp_register_script( 'mkl_pc/js/vendor/popper', MKL_PC_ASSETS_URL . 'js/vendor/popper.min.js', [], '2', true );
+		wp_register_script( 'mkl_pc/js/vendor/tippy', MKL_PC_ASSETS_URL . 'js/vendor/tippy-bundle.umd.min.js', [ 'mkl_pc/js/vendor/popper' ], '6.3.7', true );
 		wp_register_script( 'mkl_pc/js/vendor/as', MKL_PC_ASSETS_URL . 'js/vendor/adaptive-scale.min.js', [], '1.0.0', true );
 
 		$deps = array('jquery', 'backbone', 'wp-util', 'wp-hooks', 'mkl_pc/js/views/configurator' );
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
-		if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
-			$deps[] = 'mkl_pc/js/vendor/tippy';
-		}
+		$deps[] = 'mkl_pc/js/vendor/tippy';
+		// if ( mkl_pc( 'settings')->get( 'show_choice_description' ) && ! mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ) ) {
+		// }
 
 		if ( ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ) ) {
 			$deps[] = 'mkl_pc/touchswipe';
@@ -359,8 +359,8 @@ class Frontend_Woocommerce {
 				'close_choices_when_selecting_choice_desktop' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice_desktop' ),
 				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
-				'show_choice_description' => mkl_pc( 'settings')->get( 'show_choice_description' ),
-				'show_layer_description' => mkl_pc( 'settings')->get( 'show_layer_description' ),
+				'show_choice_description' => (bool) mkl_pc( 'settings')->get( 'show_choice_description' ),
+				'show_layer_description' => (bool) mkl_pc( 'settings')->get( 'show_layer_description' ),
 				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
 				'sku_mode' => apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ),
