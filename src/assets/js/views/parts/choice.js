@@ -68,6 +68,8 @@ PC.fe.views.choice = Backbone.View.extend({
 
 		if ( this.model.get( 'is_group' ) ) this.$el.addClass( 'is-group' );
 		if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
+		if ( data.thumbnail ) this.$el.addClass( 'has-thumbnail' );
+
 		this.activate();
 		this.$el.data( 'view', this );
 		/**
