@@ -76,7 +76,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		}
 
 		var where = PC.fe.config.where;
-		if ( this.model.get( 'parent' ) ) {
+		if ( this.model.get( 'parent' ) && this.model.collection.get( this.model.get( 'parent' ) ) && 'group' === this.model.collection.get( this.model.get( 'parent' ) ).get( 'type' ) ) {
 			where = 'in';
 		}
 		where = wp.hooks.applyFilters( 'PC.fe.choices.where', where, this );
@@ -105,7 +105,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				this.model.set('active', false);
 			}
 		} else {
-			if ( ! this.model.get( 'parent' ) ) {
+			if ( ! this.model.get( 'parent' ) || ( this.model.get( 'parent' ) && this.model.collection.get( this.model.get( 'parent' ) ) && 'group' !== this.model.collection.get( this.model.get( 'parent' ) ).get( 'type' )) ) {
 				this.model.collection.each( function( model ) {
 					model.set( 'active' , false );
 				});
