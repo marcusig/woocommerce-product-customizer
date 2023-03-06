@@ -1,6 +1,6 @@
 // COLORS
 $colors: (
-	light-gray: #efefef,
+	light-gray: #e3e3e3,
 	primary: var(--wp--preset--color--palette-color-1, #0089cd),
 	primary_hover: #000,
 	layers_button_text_color: rgba(0, 0, 0, 0.7),
@@ -17,7 +17,6 @@ $colors: (
 }
 
 // COLORS
-$light-gray: #efefef;
 $overlay_bg: #000000;
 $active_bg: #f7f7f7;
 $choice_list_bg: #f7f7f7;
@@ -424,7 +423,7 @@ $inner_space: 1em;
 			flex-direction: column;
 
 			> header {
-				border-bottom: 1px solid $light-gray; 
+				border-bottom: 1px solid color(light-gray); 
 				h3 {
 					margin: 0;
 					padding: 0;
@@ -544,6 +543,20 @@ $inner_space: 1em;
 							&:first-child {
 								padding-top: 1em;
 							}
+							input[type="text"], 
+							input[type="date"], 
+							input[type="number"],
+							textarea {
+								background: #FFF;
+								border: 1px solid #CCC;
+								&:focus {
+									border-color: #777;
+
+								}
+							}
+							textarea {
+								min-height: 80px;
+							}							
 						}
 						// -webkit-animation: slide-in-left 1.0s ease-out;
 						// animation: slide-in-left 1.0s ease-out;
@@ -554,7 +567,7 @@ $inner_space: 1em;
 							text-align: left; 
 							padding: 30px 14px; 
 							border: none;
-							border-bottom: 1px solid $light-gray; 
+							border-bottom: 1px solid color(light-gray); 
 							background-color: transparent;
 							position: relative; 
  							line-height: 1.3; 
@@ -623,7 +636,7 @@ $inner_space: 1em;
 							
 							li.choice.active {
 								&.has-text-field {
-									border-bottom: 1px solid $light-gray;
+									border-bottom: 1px solid color(light-gray);
 								}
 								> button {
 									background: darken($active_bg, 5%); 
@@ -632,7 +645,7 @@ $inner_space: 1em;
 						}
 
 						ul.choices-list--children {
-							border: 1px solid $light-gray;
+							border: 1px solid color(light-gray);
     						margin: .5em;
 						}
 
@@ -706,7 +719,7 @@ $inner_space: 1em;
 					transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
 					background: $choice_list_bg;
 					transform: translateX(100%);
-					// border-left: 1px solid $light-gray;
+					// border-left: 1px solid color(light-gray);
 					@media( max-width: $medium_screen_width ) {
 						left: 0;
 					}
@@ -718,7 +731,14 @@ $inner_space: 1em;
 							align-items: center;
 							flex-wrap: wrap;
 							padding: 26px;
+							border-radius: 0;
 
+							span.choice-text--container {
+								display: flex;
+								width: 100%;
+								align-items: center;
+							}
+							
 							span.choice-price {
 								display: inline-block;
 								padding: 0 6px;
@@ -762,7 +782,7 @@ $inner_space: 1em;
 										top: 6px;
 										left: 6px;					
 										background: url("data:image/svg+xml;utf8,%3Csvg filter='drop-shadow(0px 0px 2px rgb(0 0 0 / .8))' xmlns='http://www.w3.org/2000/svg'  viewBox='0 0 30 30'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='4' d='M4 16L11 23 27 7'/%3E%3C/svg%3E");
-										background-size: 30px 30px;
+										background-size: 20px;
 										background-position: center center;
 										background-repeat: no-repeat;
 										z-index: 1;
@@ -780,6 +800,7 @@ $inner_space: 1em;
 								}
 								& + .text.choice-name {
 									margin-left: 10px;
+									max-width: calc(100% - 70px);
 								}
 							}
 
@@ -803,7 +824,7 @@ $inner_space: 1em;
 							padding: 10px 14px;
 						}
 
-						&.choice:not(.is-group):not(.has-thumbnail) > button::before {
+						&.choice:not(.is-group):not(.has-thumbnail) > button .choice-text--container::before {
 							content: '';
 							display: block;
 							width: 20px;
@@ -814,7 +835,7 @@ $inner_space: 1em;
 							margin-right: 10px;
 							box-sizing: border-box;
 						}
-						&.active.choice:not(.is-group):not(.has-thumbnail) > button::before {
+						&.active.choice:not(.is-group):not(.has-thumbnail) > button .choice-text--container::before {
 							background: url("data:image/svg+xml;utf8,%3Csvg filter='drop-shadow(0px 0px 2px rgb(0 0 0 / .3))' xmlns='http://www.w3.org/2000/svg'  viewBox='0 0 30 30'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='6' d='M4 16L11 23 27 7'/%3E%3C/svg%3E");
 							background-size: 60%;
 							background-position: center center;
@@ -826,7 +847,7 @@ $inner_space: 1em;
 
 						&.is-group {
 
-							border-bottom: 1px solid $light-gray;
+							border-bottom: 1px solid color(light-gray);
 
 							.choice-group-label {
 								display: flex;
@@ -940,18 +961,33 @@ $inner_space: 1em;
 							i.mkl-pc-thumbnail {
 								border-color: color(primary);
 								opacity: 1;
-								@media( max-width: $small_screen_width ) {
-									height: 35px; 
-									width: 35px;
-									right: 12px;
-								}
 								span {
 									&::before {
 										opacity: 1;
 									}									
 								}
 							}
+							&.has-text-field {
+								input[type="text"], 
+								input[type="date"], 
+								input[type="number"],
+								textarea {
+									background: #FFF;
+									border: 1px solid #CCC;
+									&:focus {
+										border-color: #777;
+	
+									}
+								}
+								textarea {
+									min-height: 80px;
+								}
+								.text-field {
+									padding-top: 0;
+								}
+							}
 						}
+
 					}
 
 					li.layer-choices-title {
@@ -972,7 +1008,7 @@ $inner_space: 1em;
 							padding: 10px 8px;
 							padding-left: 14px;
 
-							border-bottom: 1px solid $light-gray;
+							border-bottom: 1px solid color(light-gray);
 							position: relative;
 							a.close {
 								position: absolute;
@@ -1318,7 +1354,7 @@ $inner_space: 1em;
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choices-list li.has-qty.active {
-	border-bottom: 1px solid $light-gray;
+	border-bottom: 1px solid color(light-gray);
 }
 
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description {
@@ -1366,9 +1402,12 @@ body.configurator_is_inline .mkl_pc {
 	li.is-group {
 		width: 100%;
 	}
-
+	&.choices-list--children {
+		padding: 0;
+		border: none;
+	}
 	li:not(.is-group) {
-		padding: 0px;
+		padding: 0;
 
 		button {
 			padding: 4px;
@@ -1381,7 +1420,7 @@ body.configurator_is_inline .mkl_pc {
 					border-color: transparent;
 				}
 			}
-			&::before {
+			.choice-text--container::before {
 				display: none !important;
 			}
 
@@ -1395,7 +1434,7 @@ body.configurator_is_inline .mkl_pc {
 			transform: none;
 			right: auto;
 			overflow: visible;
-			border-radius: 6px;
+			border-radius: var( --mkl-pc-thumbnail--border-radius, 50% ); 
 		}
 		
 
@@ -1406,9 +1445,9 @@ body.configurator_is_inline .mkl_pc {
 			bottom: 0;
 			box-shadow: none;
 			overflow: visible;
-			border-radius: 4px;
+			border-radius: var( --mkl-pc-thumbnail--border-radius, 50% ); 
 			img {
-				border-radius: 4px;
+				border-radius: var( --mkl-pc-thumbnail--border-radius, 50% ); 
 			}
 		}
 
@@ -1424,12 +1463,11 @@ body.configurator_is_inline .mkl_pc {
 					height: 44px;
 					right: auto;
 					border-color: color( active_choice_button_bg_color );
-					border-radius: 6px;
 					box-shadow: 0 0 0px 2px color(primary);
 				}
 				i.mkl-pc-thumbnail span {
 					img {
-						box-shadow: 0 6px 15px -4px #00000091;
+						box-shadow: none;
 					}
 				}		
 			}
@@ -1456,9 +1494,9 @@ body.configurator_is_inline .mkl_pc {
 }
 
 
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li:not(.is-group) span.text,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li:not(.is-group) span.text,
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li span.description,
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li span.out-of-stock {
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul.display-mode-colors li.choices-list ul li span.out-of-stock {
     display: none;
 }
 
