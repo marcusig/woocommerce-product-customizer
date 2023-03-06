@@ -156,6 +156,16 @@ add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_confi
 	CHOICE CONTENT
 */
 
+function mkl_pc_frontend_configurator_choice_open_tag() {
+	?><span class="choice-text--container"><?php
+}
+add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_open_tag', 3 );
+
+function mkl_pc_frontend_configurator_choice_close_tag() {
+	?></span><?php
+}
+add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_close_tag', 40 );
+
 function mkl_pc_frontend_configurator_choice_thumbnail() {
 	?>
 		<# if ( data.thumbnail ) { #>
@@ -179,7 +189,7 @@ function mkl_pc_frontend_configurator_choice_description() {
 		<# if ( data.description ) { #><span class="description">{{{data.description}}}</span><# } #>
 	<?php
 }
-add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_description', 20 );
+add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_description', 50 );
 
 $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 
