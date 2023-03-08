@@ -121,6 +121,10 @@ class Frontend_Woocommerce {
 		} else {
 			global $mkl_product;
 			$product_id = intval( $atts[ 'product_id' ] );
+			if ( function_exists( 'wpml_object_id_filter' ) ) {
+				$translated_product_id = wpml_object_id_filter( $product_id );	
+				if ( $translated_product_id ) $product_id = $translated_product_id;
+			}
 			$product = $mkl_product = wc_get_product( $product_id );
 		}
 
@@ -194,6 +198,11 @@ class Frontend_Woocommerce {
 		} else {
 			global $mkl_product;
 			$product_id = intval( $atts[ 'product_id' ] );
+			if ( function_exists( 'wpml_object_id_filter' ) ) {
+				$translated_product_id = wpml_object_id_filter( $product_id );
+				if ( $translated_product_id ) $product_id = $translated_product_id;
+			}
+
 			$product = $mkl_product = wc_get_product( $product_id );
 		}
 		$shortcode_class = isset( $atts[ 'classes' ] ) ? Utils::sanitize_html_classes( $atts[ 'classes' ] ) : '';
