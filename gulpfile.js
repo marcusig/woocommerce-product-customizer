@@ -146,7 +146,7 @@ gulp.task('watch', function() {
 	// gulp.watch(jsPaths, { interval: 500 }, ['js']);
 	gulp.watch('src/**/*')
 		.on('change', function(path, stats) {
-			console.log(stats);
+			// console.log(stats);
 			console.log('File ' + colorize.cyan(get_relative_file_path(path)) + ' was modified');
 			return gulp.src(path, {base: 'src'})
 				.pipe(plumber(reportError))
