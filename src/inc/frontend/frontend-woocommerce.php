@@ -136,7 +136,7 @@ class Frontend_Woocommerce {
 		
 		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
-		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
+		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 
 		$options = get_option( 'mkl_pc__settings' );
 		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
