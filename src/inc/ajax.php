@@ -224,7 +224,7 @@ class Ajax {
 			$data = $this->db->sanitize( $data );
 		}
 
-		$result = $this->db->set( $id, $ref_id, $component, $data );
+		$result = $this->db->set( $id, $ref_id, $component, $data, isset( $_REQUEST['modified_choices'] ) ? $_REQUEST['modified_choices'] : false );
 		
 		// Delete the data transient if it exists, to make sure we don't serve stale data.
 		delete_transient( 'mkl_pc_data_init_' . $id );

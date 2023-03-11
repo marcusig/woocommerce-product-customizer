@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Send list of modified choices when saving
 * TWEAK: Added a summary view, for future use (code only, not visible in the configurator for now)
 * TWEAK: Possibility to disable GZIP compression of the configuration data
 

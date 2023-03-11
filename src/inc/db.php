@@ -183,7 +183,7 @@ class DB {
 	 * @param array   $raw_data  - The data
 	 * @return array
 	 */
-	public function set( $id, $ref_id, $component, $raw_data ) {
+	public function set( $id, $ref_id, $component, $raw_data, $modified_choices = false ) {
 		if( ! $this->is_product( $id ) ) return false;
 
 		if( $ref_id !== $id && !$this->is_product( $ref_id ) ) return false;
@@ -202,7 +202,7 @@ class DB {
 					foreach ( $value['choices'] as $choice_index => $choice) {
 						if( isset( $choice['active'] ) ) {
 							$raw_data[$key]['choices'][$choice_index]['active'] = false;
-							$raw_data[$key]['choices'][$choice_index] = apply_filters( 'mkl_product_configurator/data/set/choice', $raw_data[$key]['choices'][$choice_index], $id, $raw_data );
+							$raw_data[$key]['choices'][$choice_index] = apply_filters( 'mkl_product_configurator/data/set/choice', $raw_data[$key]['choices'][$choice_index], $id, $raw_data, $modified_choices );
 						}
 					}
 				}

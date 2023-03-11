@@ -34,6 +34,7 @@ PC.toJSON = function( item ) {
 			angles: false,
 			content: false,
 		},
+		modified_choices: [],
 		state: null,
 		init: function( options ) {
 			PC.lang = PC_lang || {};
@@ -141,6 +142,7 @@ PC.toJSON = function( item ) {
 				// }, 1500);
 
 			}
+			PC.app.modified_choices = []; 
 
 		},
 		save: function( what, collection, options ) {
@@ -189,6 +191,10 @@ PC.toJSON = function( item ) {
 				} else if ( collection instanceof Backbone.Collection ) {
 					options.data[what] = JSON.stringify(collection);
 				}
+				if ( 'content' == what ) {
+					options.data.modified_choices = PC.app.modified_choices;
+				}
+	
 			} else {
 				options.data[what] = 'empty';
 			}

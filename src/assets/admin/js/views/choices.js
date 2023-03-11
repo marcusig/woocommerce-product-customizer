@@ -70,6 +70,10 @@ PC.views = PC.views || {};
 
 		choices_changed: function(e,f) {
 			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
+			// console.log( e );
+			if ( -1 == PC.app.modified_choices.indexOf( e.get( 'layerId' ) + '_' + e.id ) ) {
+				PC.app.modified_choices.push( e.get( 'layerId' ) + '_' + e.id );
+			}
 			PC.app.is_modified[this.collectionName] = true;
 		},
 
