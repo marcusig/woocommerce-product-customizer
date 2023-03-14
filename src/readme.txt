@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.2
-Stable tag: 1.2.46
+Stable tag: 1.2.47
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,6 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.47 - 14/Mar/2023 =
+
+* Tested up to 6.2
 * TWEAK: Send list of modified choices when saving
 * TWEAK: Added a summary view, for future use (code only, not visible in the configurator for now)
 * TWEAK: Possibility to disable GZIP compression of the configuration data
@@ -493,4 +496,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.44 Various tweaks and improvements
+* 1.2.47 Various tweaks and improvements, tested up to 6.2
