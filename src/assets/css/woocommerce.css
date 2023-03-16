@@ -90,3 +90,7 @@ table span.choice-thumb.color {
     width: 100%;
     text-align: center;
 }
+
+.is_configurable :not(.enable-add-to-cart):not(.configurator_is_inline) .summary .yith-ywraq-add-button.show {
+    display: none !important;
+}

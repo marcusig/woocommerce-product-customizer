@@ -32,10 +32,14 @@ PC.fe.views.form = Backbone.View.extend({
 			this.$( '.configurator-add-to-cart' ).remove();
 		}
 		
-		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
+		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length && ! $( '.add-request-quote-button' ).length ) {
 			this.$( '.add-to-quote' ).remove();
-		} else {
+		}
+		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
 			this.$( '.add-to-quote' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
+		}
+		if ( $( '.add-request-quote-button' ).length && PC_config.config.ywraq_hide_add_to_cart ) {
+			this.$( '.configurator-add-to-cart' ).remove();
 		}
 
 		return this.$el; 
@@ -136,5 +140,14 @@ PC.fe.views.form = Backbone.View.extend({
 			$( '.afrfqbt_single_page' ).trigger( 'click' );
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 		}
+
+		if ( $( e.currentTarget ).is( '.yith-raq' ) ) {
+			$( '.add-request-quote-button' ).trigger( 'click' );
+			if ( ! PC.fe.inline ) PC.fe.modal.close();
+			if ( PC_config.config.ywraq_hide_add_to_cart ) {
+				if ( 'button' === PC.fe.trigger_el[0].type ) $( PC.fe.trigger_el[0] ).remove();
+			}
+		}
+
 	},
 } );
