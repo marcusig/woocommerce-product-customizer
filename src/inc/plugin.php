@@ -82,10 +82,12 @@ class Plugin {
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
-
+		include_once MKL_PC_INCLUDE_PATH . 'compatibility/compatibility-general.php';
+		
 		if( is_admin() ) {
 			include_once MKL_PC_INCLUDE_PATH . 'admin/admin-woocommerce.php';
 		}
+
 	}
 
 	/**
