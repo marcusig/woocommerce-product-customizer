@@ -117,6 +117,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 = 1.2.47 - 14/Mar/2023 =
 
 * Tested up to 6.2
+* COMPATIBILITY: added compatibility with YITH Request a Quote for WooCommerce
 * TWEAK: Send list of modified choices when saving
 * TWEAK: Added a summary view, for future use (code only, not visible in the configurator for now)
 * TWEAK: Possibility to disable GZIP compression of the configuration data

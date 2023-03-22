@@ -109,6 +109,11 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				this.model.collection.each( function( model ) {
 					model.set( 'active' , false );
 				});
+			} else {
+				// Toggle any dropdowns
+				_.each( this.model.collection.where( { 'display_mode': 'dropdown' } ), function( model ) {
+					model.set( 'active' , false );
+				} );
 			}
 
 			this.model.set( 'active', true ); 
