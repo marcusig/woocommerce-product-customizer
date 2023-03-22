@@ -11,6 +11,10 @@
 	vertical-align: middle;
 }
 
+td.product-name dl.variation dd div strong:empty + .semicol {
+    display: none;
+}
+
 .woocommerce td.product-name dl.variation dt.variation-Configuration {
     display: block;
     float: none;
