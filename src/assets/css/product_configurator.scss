@@ -724,7 +724,7 @@ $inner_space: 1em;
 						left: 0;
 					}
 					li {
-						> button {
+						> button.choice-item {
 							background: transparent;
 							transition: 0.2s all;
 							display: flex;
