@@ -1631,7 +1631,8 @@ a.save-your-design svg path,
 
 /* hide_in_configurator */
 
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.hide_in_configurator.layers-list-item {
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.hide_in_configurator.layers-list-item,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.hide_in_configurator.layers-list-item {
     display: none !important;
 }
 
