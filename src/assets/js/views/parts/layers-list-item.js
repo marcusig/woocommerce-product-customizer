@@ -33,12 +33,12 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 		if ( PC.fe.config.show_active_choice_in_layer ) {
 			var selection = new PC.fe.views.layers_list_item_selection( { model: this.options.model } );
-			this.$( 'button .layer-name' ).after( selection.$el );
+			this.$( '.layer-item .layer-name' ).after( selection.$el );
 		}
 
 		if ( PC.fe.config.show_active_choice_image_in_layer ) {
 			var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model } );
-			this.$( 'button' ).prepend( selection.$el );
+			this.$( '.layer-item' ).prepend( selection.$el );
 		}
 
 		// Add classes
