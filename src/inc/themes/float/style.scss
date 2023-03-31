@@ -741,6 +741,7 @@ $inner_space: 1em;
 							span.choice-price {
 								display: block;
 								color: #777;
+								min-width: 60px;
 							}
 
 							i.mkl-pc-thumbnail {
@@ -948,10 +949,18 @@ $inner_space: 1em;
 								}
 
 								button.choice-item {
-									display: flex;
-									flex-direction: row;
 									border-radius: 0;
-									align-items: center;
+									.choice-text--container {
+										display: flex;
+										flex-direction: row;
+										align-items: center;
+										width: 100%;
+										flex-wrap: wrap;
+										span.description {
+											order: 2;
+											width: 100%;
+										}										
+									}
 
 									i.mkl-pc-thumbnail {
 										height: 50px;
@@ -961,7 +970,7 @@ $inner_space: 1em;
 										margin-right: 5px;								
 									}
 									.choice-text {
-										width: 100%;
+										flex: 1;
 									}
 									span.text.choice-name {
 										position: relative;
@@ -969,9 +978,16 @@ $inner_space: 1em;
 										text-align: left;
 										justify-content: space-between;
 									}
+									span.choice-price {
+										text-align: right;
+									}
+
 									&:hover, 
 									&:focus {
 										background: color( light-gray );
+										span.description {
+											color: color( choices_button_text_color );
+										}
 									} 
 								}
 								&.active {
