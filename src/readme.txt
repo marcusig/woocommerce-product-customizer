@@ -114,6 +114,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added the setting "In layer groups, close the siblings when opening an other layer"
+* TWEAK: CSS tweaks
+* FIX: method get_image_url sometimes returning an ID instead of an url
+
 = 1.2.47 - 14/Mar/2023 =
 
 * Tested up to 6.2

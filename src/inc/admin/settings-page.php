@@ -500,6 +500,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'auto_close_siblings_in_groups',
+				__( 'In layer groups, close the siblings when opening an other layer', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'auto_close_siblings_in_groups',
+				]
+			);
+
+			add_settings_field(
 				'show_active_choice_in_layer',
 				__( 'Show the selected label in the layer header', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

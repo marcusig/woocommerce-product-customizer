@@ -105,11 +105,18 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				this.model.set('active', false);
 			}
 		} else {
-			if ( ! this.model.get( 'parent' ) || ( this.model.get( 'parent' ) && this.model.collection.get( this.model.get( 'parent' ) ) && 'group' !== this.model.collection.get( this.model.get( 'parent' ) ).get( 'type' )) ) {
+			if ( ! this.model.get( 'parent' ) || ( this.model.get( 'parent' ) && this.model.collection.get( this.model.get( 'parent' ) ) && 'group' !== this.model.collection.get( this.model.get( 'parent' ) ).get( 'type' ) ) ) {
 				this.model.collection.each( function( model ) {
 					model.set( 'active' , false );
 				});
 			} else {
+				if ( PC_config.config.auto_close_siblings_in_groups ) {
+					// Toggle any siblings
+					_.each( this.model.collection.where( { 'parent': this.model.get( 'parent' ) } ), function( model ) {
+						model.set( 'active' , false );
+					} );
+						
+				}
 				// Toggle any dropdowns
 				_.each( this.model.collection.where( { 'display_mode': 'dropdown' } ), function( model ) {
 					model.set( 'active' , false );
