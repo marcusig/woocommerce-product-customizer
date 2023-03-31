@@ -345,7 +345,8 @@ class Configuration {
 					'url'  => apply_filters( 'mkl_pc_get_image_url_default_empty_image', includes_url( 'images/blank.gif' ) ),
 				];
 			} else {
-				return $this->save_image( $this->content );
+				$image_id = $this->save_image( $this->content );
+				return $image_id ? wp_get_attachment_image_url( $image_id, $size ) : '';
 			}
 				
 		} else { // on_the_fly
