@@ -94,6 +94,10 @@ PC.fe.views.choice = Backbone.View.extend({
 				description += this.$( '.choice-price' ).html();
 				this.$( '.choice-price' ).hide();
 			}
+			if ( this.$( '.description' ).length ) {
+				description += this.$( '.description' ).html();
+				this.$( '.description' ).hide();
+			}
 			if ( this.$( '.out-of-stock' ).length ) {
 				description += this.$( '.out-of-stock' )[0].outerHTML;
 				// console.log('get desc', this.model.collection.layer.get( 'name' ), this.model.get( 'name' ), this.$( '.out-of-stock' ).length, this.$( '.out-of-stock' )[0].outerHTML );
