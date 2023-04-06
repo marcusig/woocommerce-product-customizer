@@ -358,8 +358,20 @@
 
 					> button.choice-item {
 						border: 1px solid #d2d2d7;
-						display: flex;
 						width: 100%;
+
+						.choice-text--container {
+							display: flex;
+							flex-direction: row;
+							align-items: center;
+							width: 100%;
+							flex-wrap: wrap;
+							span.description {
+								order: 2;
+								width: 100%;
+							}										
+						}
+						display: flex;
 						align-items: center;
 						padding: 25px 10px;
 						margin: 0;
@@ -546,12 +558,19 @@
 							
 						}
 
-						button {
-							display: flex;
-							flex-direction: row;
+						button.choice-item {
 							border-radius: 0;
-							align-items: center;
-
+							.choice-text--container {
+								display: flex;
+								flex-direction: row;
+								align-items: center;
+								width: 100%;
+								flex-wrap: wrap;
+								span.description {
+									order: 2;
+									width: 100%;
+								}										
+							}
 							i.mkl-pc-thumbnail {
 								height: 50px;
 								width: 50px;

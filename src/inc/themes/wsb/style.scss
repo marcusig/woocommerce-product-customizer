@@ -894,11 +894,19 @@ $inner_space: 1em;
 									
 								}
 
-								button {
-									display: flex;
-									flex-direction: row;
+								button.choice-item {
 									border-radius: 0;
-									align-items: center;
+									.choice-text--container {
+										display: flex;
+										flex-direction: row;
+										align-items: center;
+										width: 100%;
+										flex-wrap: wrap;
+										span.description {
+											order: 2;
+											width: 100%;
+										}										
+									}
 
 									i.mkl-pc-thumbnail {
 										height: 50px;
@@ -907,7 +915,10 @@ $inner_space: 1em;
 										margin-bottom: -0.5em;									
 									}
 									.choice-text {
-										width: 100%;
+										flex: 1;
+									}
+									span.choice-price {
+										text-align: right;
 									}
 									span.text.choice-name {
 										position: relative;
@@ -918,6 +929,9 @@ $inner_space: 1em;
 									&:hover, 
 									&:focus {
 										background: color( light-gray );
+										span.description {
+											color: color( choices_button_text_color );
+										}										
 									} 
 								}
 
@@ -1440,8 +1454,8 @@ body.configurator_is_inline .mkl_pc {
 }
 
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description,
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > button.choice-item span.text.choice-name,
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > span.out-of-stock {
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > button.choice-item span.text.choice-name,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > span.out-of-stock {
 	display: none;
 }
 
