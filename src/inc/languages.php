@@ -54,7 +54,7 @@ class Languages {
 			'download_config_image' => __( 'Download configuration image', 'product-configurator-for-woocommerce' ),
 			'view_configuration' => _x( 'View configuration', 'Label of the link to view a configuration, in the cart or an order', 'product-configurator-for-woocommerce' ),
 			'configuration_costs_label' => __( 'Configuration costs:', 'mkl-pc-extra-price' ),
-
+			'adv_desc_close_label' => __( 'Close', 'mkl-pc-advanced-description' ),
 		] );		
 	}
 	/**
