@@ -135,13 +135,17 @@ class Configuration {
 				'posts_per_page' => 1,
 				'post_status' 	 => $this->configuration_type,
 				'post_type'      => $this->post_type,
-				'post_author'    => get_current_user_id(),
+				'author'         => get_current_user_id(),
 				'meta_name'      => '_thumbnail_id',
 				'meta_value'     => $attach_id,
 			) );
 
 			if ( count( $configurations ) > 0 ) {
-				return array( 'saved' => false, 'error' => __( 'You have already saved this configuration!', 'product-configurator-for-woocommerce' ) );
+				foreach( $configurations as $configuration ) {
+					if ( isset($args['content']) && $configuration->post_content === stripslashes($args['content']) ) {
+						return array( 'saved' => false, 'error' => __( 'You have already saved this configuration!', 'product-configurator-for-woocommerce' ) );
+					}
+				}
 			}
 		}
 
