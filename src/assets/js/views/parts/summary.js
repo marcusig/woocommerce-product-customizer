@@ -13,7 +13,6 @@ PC.fe.views.summary = Backbone.View.extend( {
 	},
 	render: function() {
 		this.clear();
-		console.log( 'renderin' );
 		var choices = PC.fe.save_data.get_choices();
 		_.each( choices, function( item ) {
 			var layer = PC.fe.layers.get( item.layer_id );
@@ -75,7 +74,6 @@ PC.fe.views.summary_item = Backbone.View.extend( {
 	},
 	render: function() {
 		this.$el.html( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.model.attributes ) ) );
-		console.log( 'render item' );
 		wp.hooks.doAction( 'PC.fe.configurator.summary-item.render.after-template', this );
 	}
 } );
