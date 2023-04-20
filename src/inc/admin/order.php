@@ -26,8 +26,7 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 		 */
 		public function format_meta( $display_value, $meta, $order_item ) {
 
-			if ( ! is_string( $meta->value ) || ( ! strpos( $meta->value, 'order-configuration-details' ) && ! strpos( $meta->value, 'order-configuration' ) ) ) return $display_value;
-
+			// if ( ! is_string( $meta->value ) || ( ! strpos( $meta->value, 'order-configuration-details' ) && ! strpos( $meta->value, 'order-configuration' ) ) ) return $display_value;
 			$configurator_data = $order_item->get_meta( '_configurator_data' );
 			if ( ! $configurator_data ) return $display_value;
 			
