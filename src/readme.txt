@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.2
-Stable tag: 1.2.47
+Stable tag: 1.2.48
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,8 +114,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.48 - 6/May/2023 =
+
+* TWEAK: WPML - prevent duplicate meta on translated products, causing stale data to be used
 * TWEAK: Added the setting "In layer groups, close the siblings when opening an other layer"
 * TWEAK: CSS tweaks
+* FIX: display of group names in the cart not working as expected
 * FIX: method get_image_url sometimes returning an ID instead of an url
 
 = 1.2.47 - 14/Mar/2023 =
@@ -501,4 +505,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.47 Various tweaks and improvements, tested up to 6.2
+* 1.2.48 Various tweaks and improvements
