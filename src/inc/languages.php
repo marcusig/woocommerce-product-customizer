@@ -28,6 +28,7 @@ class Languages {
 
 		add_action( 'update_option_mkl_pc__settings', array( $this, 'wpml_register_translatable_settings' ), 10, 2 );
 		add_action( 'init', array( $this, 'pll_register_translatable_settings' ), 20 );
+		add_action( 'wpml_after_copy_custom_field', [ $this, 'wpml_maybe_fix_duplicate_data' ], 20, 3 );
 	}
 
 	/**
@@ -426,5 +427,18 @@ class Languages {
 			$data_attributes['no-translation'] = ''; 
 		}
 		return $data_attributes;
+	}
+
+	public function wpml_maybe_fix_duplicate_data( $post_id_from, $post_id_to, $meta_key ) {
+		if ( in_array( $meta_key, [ '_mkl_product_configurator_content', '_mkl_product_configurator_layers', '_mkl_product_configurator_conditions', '_mkl_product_configurator_angles' ] ) ) {
+			$meta = get_post_meta( $post_id_to, $meta_key, false );
+			if ( is_array( $meta ) && 1 < count( $meta ) ) {
+				$keep = end( $meta );
+				// delete all post_meta
+				delete_post_meta( $post_id_to, $meta_key );
+				// insert the last one only
+				add_post_meta( $post_id_to, $meta_key, $keep );
+			}
+		}
 	}
 }
