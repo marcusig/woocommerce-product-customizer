@@ -116,6 +116,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 = 1.2.48 - 6/May/2023 =
 
+* TWEAK: Added old default theme
 * TWEAK: WPML - prevent duplicate meta on translated products, causing stale data to be used
 * TWEAK: Added the setting "In layer groups, close the siblings when opening an other layer"
 * TWEAK: CSS tweaks
