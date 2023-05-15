@@ -40,11 +40,17 @@ class Compat_Yith_Raq {
 		} else {
 			$item_id = md5( $_REQUEST['product_id'] );
 		}
-		
+
 		if ( isset( $rq->raq_content[ $item_id ] ) ) {
 			$raq = $rq->raq_content[ $item_id ];
 			$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = $_POST['pc_configurator_data'];
-			if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
+
+			$data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) );
+			if ( ! $data ) {
+				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( $_POST['pc_configurator_data'] );
+				$data = json_decode( stripcslashes( urldecode( $_POST['pc_configurator_data'] ) ) );
+			}
+			if ( $data ) {
 				$data = mkl_pc( 'db' )->sanitize( $data );
 				$layers = array();
 				$product_id = $raq['product_id'];
@@ -66,7 +72,7 @@ class Compat_Yith_Raq {
 				$temp_item_data = array_merge(
 					$temp_item_data,
 					array(
-						'key'          => 'configuration_to_pdf',
+						'key'          => 'configuration_to_yithraq',
 						'product_id'   => $product_id,
 						'variation_id' => $variation_id,
 						'variation'    => false,
