@@ -114,6 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* COMPATIBILITY: added compatibility with YITH Request a Quote for WooCommerce Premium
+* TWEAK: YITH Request a Quote - display configured image in the RAQ cart
+
 = 1.2.48 - 6/May/2023 =
 
 * TWEAK: Added old default theme

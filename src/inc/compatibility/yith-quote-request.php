@@ -18,6 +18,8 @@ class Compat_Yith_Raq {
 		add_filter( 'ywraq_product_image', [ $this, 'item_image' ], 20, 2 );
 		add_filter( 'mkl_pc_js_config', [ $this, 'config' ] );
 		add_action( 'mkl_pc_frontend_configurator_after_add_to_cart', [ $this, 'add_add_to_quote_button' ], 15 );
+		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
+
 	}
 
 	public function config( $config ) {
@@ -25,6 +27,23 @@ class Compat_Yith_Raq {
 			$config['ywraq_hide_add_to_cart'] = true;
 		}
 		return $config;
+	}
+
+	public function enqueue_scripts() {
+		// List of dependencies
+		$dependencies = [
+			'jquery',
+			'wp-util',
+			'wp-hooks',
+			'mkl_pc/js/views/configurator'
+		];
+		wp_enqueue_script( 
+			'mkl_pc/yith/js', 
+			trailingslashit( plugin_dir_url( __FILE__ ) ) . 'assets/js/ytih-raq.js', 
+			$dependencies, 
+			filemtime( trailingslashit( plugin_dir_path ( __FILE__ ) ) . 'assets/js/ytih-raq.js' ), 
+			true
+		);
 	}
 
 	public function yith_raq_updated() {
@@ -86,7 +105,9 @@ class Compat_Yith_Raq {
 				$rq->raq_content[ $item_id ][ 'pc_configurator_data' ] = $d;
 				$rq->raq_content[ $item_id ][ 'pc_layers' ] = $layers;
 				if ( ! isset( $rq->raq_content[ $item_id ][ 'variations' ] ) ) $rq->raq_content[ $item_id ][ 'variations' ] = [];
-				$rq->raq_content[ $item_id ][ 'variations' ] = array_merge( $rq->raq_content[ $item_id ][ 'variations' ], $d );
+				foreach( $d as $variation ) {					
+					$rq->raq_content[ $item_id ][ 'variations' ][$variation['key']] = $variation['value'];
+				}
 				$added = true;
 				$rq->set_session( $rq->raq_content );
 			}
