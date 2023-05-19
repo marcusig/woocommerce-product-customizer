@@ -72,7 +72,7 @@ class Cache {
 		/**
 		 * Filter the product's configuration JavaScript object which will be used in the frontend
 		 */
-		apply_filters( 'mkl_pc_get_configurator_data_js_output', $data, $product_id );
+		apply_filters( 'mkl_pc_get_configurator_data_js_output', $data, $product_id, $config_data );
 
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name($product_id);
