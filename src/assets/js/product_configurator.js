@@ -281,10 +281,20 @@ PC.actionParameter = 'pc_get_data';
 
 		PC.fe.active_product = product_id; 
 		PC.fe.parent_product = parent_id ? parent_id : product_id;
-
-		this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
-
-		PC.fe.init( product_id, parent_id, $element ); 
+		
+		if ( PC.productData['prod_'+product_id] ) {
+			this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
+			PC.fe.init( product_id, parent_id, $element );
+		} else if ( PC.productDataMode && "json" == PC.productDataMode ) {
+			wp.hooks.addAction( 'mkl_pc.product_data.loaded', 'mkl_pc', function( id ) {
+				if ( id == product_id ) {
+					this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
+					PC.fe.init( product_id, parent_id, $element );
+				}
+			}.bind( this ) );
+		} else {
+			$element.after( $( '<div>Error loading the configurator data</div>' ) );
+		}
 
 		// if( !this.layers && !variation ) {
 		// 	return;
