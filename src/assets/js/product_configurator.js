@@ -102,6 +102,7 @@ PC.actionParameter = 'pc_get_data';
 				PC.fe.open( product_id, product_id, $target, reset );
 			} catch ( err ) {
 				console.error( 'we had an error: ', err );
+				console.trace( err );
 				// PC.fe.close();
 			}
 		}
@@ -272,7 +273,7 @@ PC.actionParameter = 'pc_get_data';
 			return;
 		}
 
-		if( product_id != PC.fe.active_product && this.modal && PC.fe.inline != true ) {
+		if ( product_id != PC.fe.active_product && this.modal && PC.fe.inline != true ) {
 			this.modal.remove();
 			this.modal = null;
 			wp.hooks.doAction( 'PC.fe.reset_product' );
