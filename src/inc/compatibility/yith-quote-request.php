@@ -23,9 +23,8 @@ class Compat_Yith_Raq {
 	}
 
 	public function config( $config ) {
-		if ( get_option( 'ywraq_hide_add_to_cart' ) === 'yes' ) {
-			$config['ywraq_hide_add_to_cart'] = true;
-		}
+		$config['ywraq_hide_add_to_cart'] = 'yes' === get_option( 'ywraq_hide_add_to_cart' );
+		$config['ywraq_hide_price']       = 'yes' === get_option( 'ywraq_hide_price' );
 		return $config;
 	}
 
