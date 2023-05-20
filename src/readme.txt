@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.2
-Stable tag: 1.2.48
+Stable tag: 1.2.49
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,7 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* COMPATIBILITY: added compatibility with YITH Request a Quote for WooCommerce Premium
+= 1.2.49 - 20/May/2023 =
+
+* COMPATIBILITY: added basic compatibility with YITH Request a Quote for WooCommerce Premium (some features aren't currently working, such as the configurator extra price, or adding the request to the cart)
 * TWEAK: YITH Request a Quote - display configured image in the RAQ cart
 
 = 1.2.48 - 6/May/2023 =
@@ -509,4 +511,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.48 Various tweaks and improvements
+* 1.2.49 Basic compatibility with Yith RAQ premium, various tweaks and improvements
