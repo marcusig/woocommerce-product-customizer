@@ -282,7 +282,7 @@ PC.actionParameter = 'pc_get_data';
 		PC.fe.active_product = product_id; 
 		PC.fe.parent_product = parent_id ? parent_id : product_id;
 		
-		if ( PC.productData['prod_'+product_id] ) {
+		if ( PC.productData['prod_'+parent_id] ) {
 			this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
 			PC.fe.init( product_id, parent_id, $element );
 		} else if ( PC.productDataMode && "json" == PC.productDataMode ) {
