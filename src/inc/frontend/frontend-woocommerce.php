@@ -19,6 +19,9 @@ class Frontend_Woocommerce {
 	public $_product = NULL;
 	public $ID = NULL;
 	public $frontend = NULL;
+	public $product = NULL;
+	public $cart = NULL;
+	public $order = NULL;
 	public function __construct() {
 		// Plugin::instance()->db;	
 		$this->_hooks();
