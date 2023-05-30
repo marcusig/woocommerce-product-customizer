@@ -98,17 +98,16 @@ gulp.task('js', function(done) {
 gulp.task('pot', function(done) {
 	return gulp.src('src/**/*.php')
 		.pipe(plumber(reportError))
-	// // .pipe(sort())
 		.pipe(wpPot({
-		domain: 'product-configurator-for-woocommerce',
-		destFile:'product-configurator-for-woocommerce.pot',
-		package: 'product-configurator-for-woocommerce',
-		bugReport: 'https://github.com/marcusig/woocommerce-product-customizer/issues',
-		lastTranslator: '@marcusig',
-		team: '@Mklacroix'
-	}))
-	.pipe(gulp.dest('dist/languages/product-configurator-for-woocommerce.pot'))
-	.on('end', done);
+			domain: 'product-configurator-for-woocommerce',
+			destFile:'product-configurator-for-woocommerce.pot',
+			package: 'product-configurator-for-woocommerce',
+			bugReport: 'https://github.com/marcusig/woocommerce-product-customizer/issues',
+			lastTranslator: '@marcusig',
+			team: '@Mklacroix'
+		}))
+		.pipe(gulp.dest('dist/languages/product-configurator-for-woocommerce.pot'))
+		.on('end', done);
 });
 
 // gulp.task('pot', function(done) {
