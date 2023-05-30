@@ -562,8 +562,9 @@ class Frontend_Woocommerce {
 		 * @param WC_Product|bool - The product, if applicable in the context
 		 */
 		$sku_mode = apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode', 'individual' ), $product );
+		$slu_label = apply_filters( 'mkl_pc/sku_label', '<span class="sku-label">' . mkl_pc( 'settings')->get( 'sku_label', __( 'SKU:', 'product-configurator-for-woocommerce' ) ) . '</span> ', $product );
 		if ( 'individual' == $sku_mode && $layer->get_choice( 'sku' ) ) {
-			$meta[ 'value' ] .= '<span class="sku">' . $layer->get_choice( 'sku' ) . '</span>';
+			$meta[ 'value' ] .= ' <span class="sku">' . $slu_label . $layer->get_choice( 'sku' ) . '</span>';
 		}
 		return $meta;
 	}
