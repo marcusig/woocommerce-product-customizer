@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.2
-Stable tag: 1.2.49
+Stable tag: 1.2.50
 Requires PHP: 5.6
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,6 +113,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.50 - 22/May/2023 =
+
+* FIX compatibility issue with variable products
 
 = 1.2.49 - 20/May/2023 =
 
@@ -511,4 +515,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.49 Basic compatibility with Yith RAQ premium, various tweaks and improvements
+* 1.2.50 Basic compatibility with Yith RAQ premium, various tweaks and improvements
