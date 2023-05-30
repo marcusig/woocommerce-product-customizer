@@ -373,7 +373,7 @@ class Frontend_Woocommerce {
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
 				'show_choice_description' => (bool) mkl_pc( 'settings')->get( 'show_choice_description' ),
 				'show_layer_description' => (bool) mkl_pc( 'settings')->get( 'show_layer_description' ),
-				'show_active_choice_in_layer' => mkl_pc( 'settings')->get( 'show_active_choice_in_layer', 1 ),
+				'show_active_choice_in_layer' => (bool) mkl_pc( 'settings')->get( 'show_active_choice_in_layer' ),
 				'show_active_choice_image_in_layer' => ( bool ) mkl_pc( 'settings')->get( 'show_active_choice_image_in_layer' ),
 				'sku_mode' => apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ),
 				'show_form' => apply_filters( 'mkl_pc_show_form', ! $g_product, $post ? $post->ID : false ),
