@@ -19,13 +19,20 @@ class Compat_Yith_Raq {
 		add_filter( 'mkl_pc_js_config', [ $this, 'config' ] );
 		add_action( 'mkl_pc_frontend_configurator_after_add_to_cart', [ $this, 'add_add_to_quote_button' ], 15 );
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
-
+		// add_filter( 'yith_ywraq_product_subtotal_html', [ $this, 'apply_extra_price' ], 20, 3 );
+		add_action( 'ywraq_quote_adjust_price', [ $this, 'apply_extra_price' ], 20, 2 );
 	}
 
 	public function config( $config ) {
 		$config['ywraq_hide_add_to_cart'] = 'yes' === get_option( 'ywraq_hide_add_to_cart' );
 		$config['ywraq_hide_price']       = 'yes' === get_option( 'ywraq_hide_price' );
 		return $config;
+	}
+
+	public function apply_extra_price( $raq, $product ) {
+		if ( isset( $raq['pc_layers'] ) && isset( $raq['pc_extra_price'] ) ) {
+			$product->set_price( $product->get_price() + $raq['pc_extra_price'] );
+		}
 	}
 
 	public function enqueue_scripts() {
@@ -74,9 +81,13 @@ class Compat_Yith_Raq {
 				$layers = array();
 				$product_id = $raq['product_id'];
 				$variation_id = isset( $raq['variation_id'] ) ? $raq['variation_id'] : 0;
+				$ep = 0;
 				if ( is_array( $data ) ) { 
 					foreach( $data as $layer_data ) {
 						$choice = new \MKL\PC\Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
+						if ( $item_price = $choice->get_choice( 'extra_price' ) ) {
+							$ep += $item_price;
+						}
 						$layers[] = $choice;
 						do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$data ) );
 					}
@@ -103,6 +114,9 @@ class Compat_Yith_Raq {
 				$d = apply_filters( 'woocommerce_get_item_data', [], $temp_item_data );
 				$rq->raq_content[ $item_id ][ 'pc_configurator_data' ] = $d;
 				$rq->raq_content[ $item_id ][ 'pc_layers' ] = $layers;
+				$rq->raq_content[ $item_id ][ 'configurator_data' ] = $layers;
+				$rq->raq_content[ $item_id ][ 'configurator_data_raw' ] = $data;
+				$rq->raq_content[ $item_id ][ 'pc_extra_price' ] = $ep;
 				if ( ! isset( $rq->raq_content[ $item_id ][ 'variations' ] ) ) $rq->raq_content[ $item_id ][ 'variations' ] = [];
 				foreach( $d as $variation ) {					
 					$rq->raq_content[ $item_id ][ 'variations' ][$variation['key']] = $variation['value'];
