@@ -59,7 +59,8 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 			
 			$display_value = apply_filters( 'mkl/order/admin_meta/display_value', $display_value, $order_item, $configurator_data );
 			$view_link = $order_item->get_meta( '_configurator_data_raw' ) ? get_permalink( $order_item->get_product_id() ) : false;
-			return $display_value . ( $view_link ? '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>' : '' );
+			
+			return $display_value . ( $view_link ? '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>' : '' );
 		}
 
 		public function wc_admin_order_item_display_configurator_data( $item_id, $item, $_product ) {
