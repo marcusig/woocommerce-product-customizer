@@ -114,6 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added link to full size image in the Admin > Order (link added to the thumbnail)
+* FIX: Default label to view configuration not showing in the admin > Order
+
 = 1.2.50 - 22/May/2023 =
 
 * FIX compatibility issue with variable products
