@@ -269,7 +269,12 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		public function order_admin_item_thumbnail( $image, $item_id, $order_item ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
 			
-			if ( $config_image = $this->get_order_item_image( $order_item ) ) return $config_image;
+			if ( $config_image = $this->get_order_item_image( $order_item ) ) {				
+				if ( $full_size_link = $this->get_order_item_image( $order_item, 'url', 'full' ) ) {
+					$config_image = '<a class="configurator-full-size-image" href="' . $full_size_link .'" target="_blank">' . $config_image . '</a>'; 
+				}
+				return $config_image;
+			}
 
 			return $image;
 		}
