@@ -831,7 +831,7 @@ $inner_space: 1em;
 							height: 20px;
 							border-radius: 20px;
 							background: color(active_choice_button_bg_color);
-							
+							flex-shrink: 0;
 							margin-right: 10px;
 							box-sizing: border-box;
 						}
