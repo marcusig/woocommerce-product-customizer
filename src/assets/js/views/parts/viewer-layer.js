@@ -157,7 +157,8 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 
 	},
 	toggle_current_layer_class: function( layer, new_val ) {
-		this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) );
+		if ( layer.id !== this.model.get( 'layerId' ) ) return;
+		this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) && new_val );
 	},
 	preload_image: function( e ) {
 		if ( this.model.get( 'active' ) ) return;
@@ -224,7 +225,8 @@ PC.fe.views.viewer_layer_html = Backbone.View.extend({
 		// this.render();
 	},
 	toggle_current_layer_class: function( layer, new_val ) {
-		this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) );
+		if ( layer.id !== this.model.get( 'layerId' ) ) return;
+		this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) && new_val );
 	},
 	conditional_display: function() {
 		var model_cshow = false !== this.model.get( 'cshow' );
