@@ -457,7 +457,8 @@ TODO:
 				col.each( function( model ) {
 					var new_choice = model.clone();
 					new_choice.set( 'layerId', new_layer.id );
-					new_choices.create( PC.toJSON( new_choice ) );
+					var new_item = new_choices.create( PC.toJSON( new_choice ) );
+					PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
 				} );
 				PC.app.is_modified['content'] = true;
 			}

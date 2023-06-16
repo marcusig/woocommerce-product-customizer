@@ -167,11 +167,10 @@ PC.views = PC.views || {};
 				return;
 			}
 			// Add the new layer's model to the collection
-			this.col.add( this.new_attributes( this.$new_input.val().trim() ) ); 
-			
+			var new_item = this.col.add( this.new_attributes( this.$new_input.val().trim() ) ); 
+			PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
 
-			this.$new_input.val(''); 
-
+			this.$new_input.val('');
 		},
 
 		new_attributes: function( name ) {
@@ -389,8 +388,10 @@ PC.views = PC.views || {};
 			new_choice.set( 'name', new_choice.get( 'name' ) + ' (Copy)' );
 			if ( new_choice.get( 'admin_label' ) ) {
 				new_choice.set( 'admin_label', new_choice.get( 'admin_label' ) + ' (Copy)' );
-			}			
+			}
 			this.model.collection.create( PC.toJSON( new_choice ) );
+			PC.app.modified_choices.push( new_choice.get( 'layerId' ) + '_' + new_choice.id );
+
 		},
 		add_angle: function( angle ) {
 			// this.model

@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix current_layer toggle when closing all layers
 * TWEAK: Added link to full size image in the Admin > Order (link added to the thumbnail)
 * FIX: Default label to view configuration not showing in the admin > Order
 
