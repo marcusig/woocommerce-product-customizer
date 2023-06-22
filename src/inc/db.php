@@ -200,7 +200,7 @@ class DB {
 					$raw_data[$key]['active'] = false;
 				} elseif( isset( $value['choices'] ) ) {
 					foreach ( $value['choices'] as $choice_index => $choice) {
-						if( isset( $choice['active'] ) ) {
+						if ( isset( $choice['active'] ) ) {
 							$raw_data[$key]['choices'][$choice_index]['active'] = false;
 							$raw_data[$key]['choices'][$choice_index] = apply_filters( 'mkl_product_configurator/data/set/choice', $raw_data[$key]['choices'][$choice_index], $id, $raw_data, $modified_choices );
 						}
@@ -273,7 +273,7 @@ class DB {
 				if ( $choice_id !== $choice[ '_id' ] ) continue;
 				$choice = wp_parse_args( $data, $choice );
 				$content[$index]['choices'][$choice_index] = $choice;
-				$this->set( $product_id, $product_id, 'content', $content );
+				$this->set( $product_id, $product_id, 'content', $content, [ $layer_id . '_' . $choice_id ] );
 				return true;
 			}
 		}
