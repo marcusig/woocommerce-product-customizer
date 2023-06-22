@@ -226,6 +226,8 @@ class Ajax {
 
 		$result = $this->db->set( $id, $ref_id, $component, $data, isset( $_REQUEST['modified_choices'] ) ? $_REQUEST['modified_choices'] : false );
 		
+		do_action( 'mkl_pc_saved_configurator_data', $id, $ref_id, $component, $data, isset( $_REQUEST['modified_choices'] ) ? $_REQUEST['modified_choices'] : false );
+
 		// Delete the data transient if it exists, to make sure we don't serve stale data.
 		delete_transient( 'mkl_pc_data_init_' . $id );
 		if ( $ref_id && $ref_id != $id) {
