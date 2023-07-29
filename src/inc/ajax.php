@@ -93,17 +93,25 @@ class Ajax {
 				if( isset($_REQUEST['fe']) && $_REQUEST['fe'] == 1 ) {
 					// Set the context for proper data escaping
 					$this->db->set_context( 'frontend' );
-
+					$product = wc_get_product( $id );
+					$data_version = $product->get_meta( '_mkl_product_configurator_last_updated' );
 					// Translatepress: Do not translate
 					add_filter( 'trp_stop_translating_page', '__return_true' );
 					if ( is_user_logged_in() && current_user_can( 'edit_posts' ) && ! isset( $_REQUEST['pc-no-transient'] ) ) {
-						$data = get_transient( 'mkl_pc_data_init_' . $id );
+						$cached_data_version = get_transient( 'mkl_pc_data_init_version_' . $id );
+						if ( $cached_data_version && $cached_data_version != $data_version ) {
+							delete_transient( 'mkl_pc_data_init_' . $id );
+							delete_transient( 'mkl_pc_data_init_version_' . $id );
+						} else {
+							$data = get_transient( 'mkl_pc_data_init_' . $id );
+						}
 					}
 					if ( ! $data ) {
 						$data = $this->db->get_front_end_data( $id );
 						$data = $this->db->escape( $data );
 						if ( is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
 							set_transient( 'mkl_pc_data_init_' . $id, $data, 600 );
+							set_transient( 'mkl_pc_data_init_version_' . $id, $data_version, 600 );
 						}
 					}
 				} else {
