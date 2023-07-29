@@ -248,12 +248,16 @@ class DB {
 		}
 		return $product_id;
 	}
+
 	/**
 	 * Update a choice
 	 *
 	 * @param int   $product_id
+	 * @param int   $variation_id
+	 * @param int   $layer_id
 	 * @param int   $choice_id
 	 * @param array $data
+	 * @return boolean
 	 */
 	public function update_choice( $product_id, $variation_id, $layer_id, $choice_id, $data = array() ) {
 
