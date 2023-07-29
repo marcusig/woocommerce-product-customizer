@@ -3,9 +3,9 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
-Tested up to: 6.2
-Stable tag: 1.2.50
-Requires PHP: 5.6
+Tested up to: 6.3
+Stable tag: 1.2.51
+Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.51 - 29/Jul/2023 =
 
 * TWEAK: Fix current_layer toggle when closing all layers
 * TWEAK: Added link to full size image in the Admin > Order (link added to the thumbnail)
