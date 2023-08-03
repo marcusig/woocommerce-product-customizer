@@ -1172,7 +1172,10 @@ $inner_space: 1em;
 			}
 			button.configurator-add-to-cart {
 				@media (max-width: $small_screen_width) {
-					background: transparent !important;
+					// remove bg from icon only button
+					&:not(.edit-cart-item) {
+						background: transparent !important;
+					}
 				}
 
 				svg {
@@ -1189,6 +1192,18 @@ $inner_space: 1em;
 				span {
 					@media (max-width: $small_screen_width) {
 						display: none;
+					}
+				}
+			}
+
+			.form.edit-cart-item-is-displayed {
+				@media (max-width: $small_screen_width) {
+					// Only show the edit button
+					button.configurator-add-to-cart:not(.edit-cart-item) {
+						display: none;
+					}
+					button.configurator-add-to-cart.edit-cart-item span {
+						display: inline-block;
 					}
 				}
 			}
