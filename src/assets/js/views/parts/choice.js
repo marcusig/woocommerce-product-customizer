@@ -57,7 +57,8 @@ PC.fe.views.choice = Backbone.View.extend({
 				content: description,
 				allowHTML: true,
 				placement: 'top',
-				zIndex: 100001
+				zIndex: 100001,
+				appendTo: 'parent',
 			},
 			this );
 
