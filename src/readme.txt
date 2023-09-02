@@ -114,6 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Change tooltip container to prevent overlay when scrolling
+* TWEAK: Show "Edit cart item" button on mobile (Default and Old default themes)
+
 = 1.2.51 - 29/Jul/2023 =
 
 * TWEAK: Fix current_layer toggle when closing all layers
