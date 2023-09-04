@@ -158,14 +158,6 @@ PC.actionParameter = 'pc_get_data';
 			// Reset config
 			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
 
-			if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
-				PC.fe.setConfig( PC_config.config.load_config_content );
-			} else if ( PC.fe.initial_preset ) {
-				PC.fe.setConfig( PC.fe.initial_preset );
-			}
-
-			
-			
 			// Swipe
 			if ( PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
 				var swipeOptions = {
@@ -202,11 +194,22 @@ PC.actionParameter = 'pc_get_data';
 		}, 20 );
 
 
+		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
+			setTimeout( function() {
+				if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
+					PC.fe.setConfig( PC_config.config.load_config_content );
+				} else if ( PC.fe.initial_preset ) {
+					PC.fe.setConfig( PC.fe.initial_preset );
+				}
+			}, 300 );
+		}, 50 );
+
 		if ( PC_config.config.open_first_layer ) {
 			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 				configurator.$( '.layer-item:visible' ).first().trigger( 'click' );
 			}, 60 );
 		}
+
 
 		/**
 		 * Launch the configurator inline
