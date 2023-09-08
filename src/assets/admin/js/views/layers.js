@@ -268,14 +268,33 @@ TODO:
 					this.model.set( 'active' , true );
 				}
 				this.activate();
-				this.form_target.empty();
-				this.model.collection.trigger( 'multiple-selection' );
-
-				return;
+				var current_selection = this.model.collection.where( { active: true } );
+				if ( current_selection.length && current_selection.length > 1 ) {
+					// Shift, select items between
+					if ( event.shiftKey && this.model.collection.last_clicked && this.model.collection.last_clicked != this ) {
+						if ( this.model.collection.last_clicked.model.get( 'order' ) < this.model.get( 'order' ) ) {
+							var start = this.model.collection.indexOf( this.model.collection.last_clicked.model );
+							var end = this.model.collection.indexOf( this.model );
+						} else {
+							var end = this.model.collection.indexOf( this.model.collection.last_clicked.model );
+							var start = this.model.collection.indexOf( this.model );
+						}
+						var slice = this.model.collection.slice( start, end );
+						_.each( slice, function( item ) {
+							item.set( 'active', item.collection.last_clicked.model.get( 'active' ) );
+						}.bind( this ) );
+					}
+					this.form_target.empty();
+					this.model.collection.last_clicked = this;
+					this.model.collection.trigger( 'multiple-selection' );
+					return;
+				}
 			}
+
 			this.model.collection.trigger( 'simple-selection' );
+
 			var editView = this.edit_view();
-			if( !event ) {
+			if( ! event ) {
 				if( ! this.form ) {
 					this.options.collection.each(function(model) {
 						model.set('active' , false);
@@ -286,7 +305,7 @@ TODO:
 					this.form_target.html( this.form.render().el );
 				}
 			} else {
-				if( this.model.get('active') == false || this.model.get('active') == 'false' ) {
+				if( this.model.get( 'active' ) == false || this.model.get('active') == 'false' || this.model.collection.where( { active: true } ).length > 1 ) {
 					this.options.collection.each(function(model) {
 						model.set('active' , false);
 					});
@@ -297,6 +316,7 @@ TODO:
 					this.form_target.html( this.form.render().el );
 				}
 			}
+			this.model.collection.last_clicked = this;
 		},
 		activate: function(){
 			if(this.model.get('active') === true) {
