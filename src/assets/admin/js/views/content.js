@@ -90,7 +90,7 @@ PC.views = PC.views || {};
 			// get previously saved choices
 			var product_choices = this.product.get('content'); 
 
-			if( !product_choices.get( this.model.id ) ) {
+			if ( ! product_choices.get( this.model.id ) ) {
 				// product_choices.add({layerId: this.model.id, choices: new PC.choices( [], { layer: PC.app.get_product( this.model.id ) } ) });
 				product_choices.add({layerId: this.model.id, choices: new PC.choices( [], { layer: PC.app.admin.layers.get( this.model.id ) } ) });
 			}
@@ -99,7 +99,6 @@ PC.views = PC.views || {};
 			this.listenTo( this.choices, 'add', this.render );
 			this.listenTo( this.choices, 'remove', this.render );
 			this.render();
-			
 		},
 		render: function() {
 			var n_choices = this.choices.length;
@@ -107,6 +106,9 @@ PC.views = PC.views || {};
 			data.choices_number = n_choices;
 			this.$el.empty();
 			this.$el.append( this.template( data ) );
+			if ( this.model.get( 'active' ) ) {
+				this.$( 'a' ).trigger( 'click' );
+			}
 		},
 		toggleLayer: function(e) {
 			e.preventDefault();
