@@ -15,6 +15,8 @@ PC.views = PC.views || {};
 			this.options = options || {};
 			this.admin = PC.app.get_admin(); 
 			this.product = PC.app.get_product(); 
+			
+			PC.selection.reset();
 
 			if( !this.product.get('content') ) {
 				this.product.set('content', new PC.content_list() );
