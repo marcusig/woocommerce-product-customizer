@@ -320,6 +320,20 @@ CONTENT TEMPLATES
 						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
 					</p>
 				</div>
+
+				<h3><?php _e( 'Reorder the selected items', 'product-configurator-for-woocommerce' ) ?></h3>
+				<div class="order">
+					<button class="button up" type="button"><i class="dashicons dashicons-arrow-up-alt2"></i></button>
+					<button class="button down" type="button"><i class="dashicons dashicons-arrow-down-alt2"></i></button>
+				</div>
+
+				<# if ( data.render_group ) { #>
+				<h3><?php _e( 'Create a group with the selected items', 'product-configurator-for-woocommerce' ) ?></h3>
+				<div class="group">
+					<input type="text" placeholder="<?php esc_attr_e( 'Group name', 'product-configurator-for-woocommerce' ); ?>" >
+					<button type="button" class="button button-primary"><?php _e( 'Group items', 'product-configurator-for-woocommerce' ) ?></button>
+				</div>
+				<# } #>
 			</div>
 		</div>
 	</div>
