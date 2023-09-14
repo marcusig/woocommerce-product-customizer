@@ -62,7 +62,7 @@ PC.views = PC.views || {};
 			this.$new_input = this.$('.structure-toolbar input'); 
 			this.$list = this.$('.choices');
 			this.$form = this.state.$('.choice-details'); 
-			this.add_all( this.col );
+			this.add_all();
 			this.update_groups();
 			this.setup_sortable();
 			return this;
@@ -103,8 +103,8 @@ PC.views = PC.views || {};
 			// this.$list.append( new_choice.render().el );
 		},
 
-		add_all: function( collection ){
-			collection.each( this.add_one, this );
+		add_all: function(){
+			this.col.each( this.add_one, this );
 		},
 
 		setup_sortable: function() {
@@ -185,15 +185,13 @@ PC.views = PC.views || {};
 		},
 
 		edit_multiple: function() {
-			this.edit_multiple_items = true;
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form.remove();
 			if ( this.col.where( { active: true } ).length ) {
-				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col } );
+				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col, view: this } );
 				this.$form.append( this.edit_multiple_items_form.$el );
 			}
 		},
 		edit_simple: function() {
-			this.edit_multiple_items = false;
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
 		}		
 	});
@@ -216,7 +214,7 @@ PC.views = PC.views || {};
 			'drop': 'drop',
 			'update_order': 'update_order',
 		},
-		template: wp.template('mkl-pc-content-choice-list-item'),
+		template: wp.template( 'mkl-pc-content-choice-list-item' ),
 		initialize: function( options ) {
 			this.options = options || {}; 
 			this.form_target = options.form_target; 
