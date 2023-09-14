@@ -96,8 +96,8 @@ PC.views = PC.views || {};
 			}
 
 			this.choices = product_choices.get( this.model.id ).get( 'choices' );
-			this.listenTo( this.choices, 'add', this.render );
-			this.listenTo( this.choices, 'remove', this.render );
+			this.listenTo( this.choices, 'add', this.udpate_number );
+			this.listenTo( this.choices, 'remove', this.udpate_number );
 			this.render();
 		},
 		render: function() {
@@ -109,6 +109,9 @@ PC.views = PC.views || {};
 			if ( this.model.get( 'active' ) ) {
 				this.$( 'a' ).trigger( 'click' );
 			}
+		},
+		udpate_number: function() {
+			this.$( '.number-of-choices' ).text( this.choices.length );
 		},
 		toggleLayer: function(e) {
 			e.preventDefault();
