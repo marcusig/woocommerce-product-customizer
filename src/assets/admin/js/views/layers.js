@@ -619,7 +619,14 @@ TODO:
 				item.get( 'view' ).model.set( 'parent', new_group.id );
 			}.bind( this ) );
 
-			new_group.set( 'active', false );
+			PC.selection.adding_group = false;
+			PC.selection.reset();
+			this.collection.trigger( 'simple-selection' );
+
+			var group_view = this.edited_list_view.items[this.edited_list_view.items.length - 1];
+			
+			new_group.set( 'active', true );
+			group_view.edit();
 
 			// Finaly, change the type of the new element, which will trigger a render of the list.
 			if ( this.collection instanceof PC.layers ) {
@@ -627,12 +634,6 @@ TODO:
 			} else if ( this.collection instanceof PC.choices ) {
 				new_group.set( 'is_group', true );
 			}
-
-			PC.selection.adding_group = false;
-			PC.selection.reset();
-			this.collection.trigger( 'simple-selection' );
-			
-			new_group.set( 'active', true );
 		}
 	});
 
