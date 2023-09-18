@@ -18,6 +18,13 @@ class Admin_Woocommerce {
 	public $_product = NULL;
 	public $ID = NULL;
 	public $admin = NULL;
+	public $customizer;
+	public $order;
+	public $product;
+	public $settings;
+	public $choice_settings;
+	public $layer_settings;
+	public $angle_settings;
 	public function __construct() {
 		$this->_includes();
 		$this->customizer = new Customizer();
