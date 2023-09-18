@@ -40,17 +40,18 @@ PC.views = PC.views || {};
 
 			this.render(); 
 		},
-
 		events: {
 			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
 			'keypress .structure-toolbar input': 'create',
+			'remove': 'cleanup_on_remove', 
 		},
-
 		remove_item: function( item ) {
 			item.remove();
 		},
-
+		cleanup_on_remove: function() {
+			this.remove_views();	
+		},
 		render: function() {
 			this.$el.empty();
 			this.$el.html( this.template( this.model.attributes ) );
@@ -223,6 +224,7 @@ PC.views = PC.views || {};
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},		
 		render: function() {
+			this.$el.data( 'view', this );
 			this.$el.html( this.template( this.model.attributes ) );
 			if ( ! this.label ) {
 				this.label = new PC.views.choiceLabel( { model: this.model } );
