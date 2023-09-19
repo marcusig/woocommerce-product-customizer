@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* ENHANCEMENT: When selecting multiple items in the admin, it is now possible to group the selected items, as well as reorder them
 * TWEAK: Change tooltip container to prevent overlay when scrolling
 * TWEAK: Show "Edit cart item" button on mobile (Default and Old default themes)
 
