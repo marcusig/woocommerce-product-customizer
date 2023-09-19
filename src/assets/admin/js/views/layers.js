@@ -22,7 +22,8 @@ TODO:
 			this.admin = PC.app.get_admin();
 			this.product_id = options.app.product.id; 
 			this.items = [];
-
+			
+			PC.selection.reset();
 
 			if( this.admin[this.collectionName] ) { 
 				this.col = this.admin[this.collectionName];
@@ -52,11 +53,12 @@ TODO:
 			'click .add-layer': 'create',
 			'click .order-toolbar button': 'change_order_type',
 			'keypress .structure-toolbar input': 'create',
-			// 'remove': 'is_being_removed', 
+			'remove': 'cleanup_on_remove', 
 			'save-state': 'save_layers',
 
 		}, 
-		is_being_removed: function() {
+		cleanup_on_remove: function() {
+			_.each( this.items, this.remove_item );
 		},
 		render: function( ) {
 			this.col.orderBy = 'order';
@@ -66,6 +68,7 @@ TODO:
 			this.$form = this.$('.media-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
 			this.add_all(); 
+			
 			return this;
 		},
 		mark_collection_as_modified: function() {
@@ -103,7 +106,7 @@ TODO:
 		add_one: function( layer ) {
 			var singleView = this.single_view();
 			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col, orderAttr: this.orderAttr });
-			this.items.push(new_layer);
+			this.items.push( new_layer );
 			this.$list.append( new_layer.render().el );
 		},
 
@@ -198,16 +201,15 @@ TODO:
 			return this.col;
 		},
 		edit_multiple: function() {
-			this.edit_multiple_items = true;
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form.remove();
 			if ( this.col.where( { active: true } ).length ) {
-				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col } );
+				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col, view: this } );
 				this.$form.append( this.edit_multiple_items_form.$el );
 			}
 		},
 		edit_simple: function() {
-			this.edit_multiple_items = false;
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
+			PC.selection.reset();
 		},
 		update_sorting: function() {
 			this.$( '.layers .mkl-list-item' ).each( function( i, listItem ) {
@@ -219,7 +221,6 @@ TODO:
 			} );
 
 			this.col.sort( { silent: true } );
-			console.log( 'ccc ' );
 			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
 		},
 	} );
@@ -248,6 +249,7 @@ TODO:
 			'update_order': 'update_order',
 		},
 		render: function() {
+			this.$el.data( 'view', this );
 			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
 			if ( ! this.label ) {
 				this.label = new PC.views.layerLabel( { model: this.model } );
@@ -259,19 +261,21 @@ TODO:
 		update_label: function() {
 			this.label.render();
 		},
-		edit: function( event ) { 
+		edit: function( event ) {
+			if ( PC.selection.adding_group ) return;
 			if ( event && ( event.shiftKey || event.metaKey || event.ctrlKey ) ) {
+
 				// Multiple select
 				if ( this.model.get( 'active' ) ) {
 					this.model.set( 'active' , false );
 				} else {
 					this.model.set( 'active' , true );
 				}
-				this.activate();
-				var current_selection = this.model.collection.where( { active: true } );
-				if ( current_selection.length && current_selection.length > 1 ) {
+
+				if ( PC.selection.is_multiple() ) {
 					// Shift, select items between
-					if ( event.shiftKey && this.model.collection.last_clicked && this.model.collection.last_clicked != this ) {
+					if ( event && event.shiftKey && this.model.collection.last_clicked && this.model.collection.last_clicked != this ) {
+						var last_clicked = this.model.collection.last_clicked.model;
 						if ( this.model.collection.last_clicked.model.get( 'order' ) < this.model.get( 'order' ) ) {
 							var start = this.model.collection.indexOf( this.model.collection.last_clicked.model );
 							var end = this.model.collection.indexOf( this.model );
@@ -281,6 +285,8 @@ TODO:
 						}
 						var slice = this.model.collection.slice( start, end );
 						_.each( slice, function( item ) {
+							// Only select from the same parent
+							if ( last_clicked.get( 'parent' ) != item.get( 'parent' ) ) return;
 							item.set( 'active', item.collection.last_clicked.model.get( 'active' ) );
 						}.bind( this ) );
 					}
@@ -288,6 +294,8 @@ TODO:
 					this.model.collection.last_clicked = this;
 					this.model.collection.trigger( 'multiple-selection' );
 					return;
+				} else {
+					this.activate();
 				}
 			}
 
@@ -319,11 +327,12 @@ TODO:
 			this.model.collection.last_clicked = this;
 		},
 		activate: function(){
-			if(this.model.get('active') === true) {
+			if (this.model.get('active') === true) {
 				this.$el.addClass('active');
 			} else {
 				this.$el.removeClass('active');
 			}
+			PC.selection.select( this );
 		},
 		drop: function( event, index ) {
 			// Remove the active state after drop
@@ -533,6 +542,7 @@ TODO:
 
 		initialize: function( options ) {
 			this.collection = options.collection;
+			this.edited_list_view = options.view;
 			this.render();
 			this.listenTo( this.collection, 'simple-selection', this.remove );
 			// this.listenTo( this.model, 'destroy', this.remove ); 
@@ -543,14 +553,18 @@ TODO:
 			'click .delete-layer': 'delete_items',
 			'click .confirm-delete-layer': 'delete_items',
 			'click .cancel-delete-layer': 'delete_items',
+			'click .order .up': 'move_items',
+			'click .order .down': 'move_items',
+			'click .group button': 'group_items',
 		},
 		render: function() {
-			this.$el.html( this.template() );
+			this.$el.html( this.template( { render_group: ! ( this.collection instanceof PC.angles ) } ) );
 			this.delete_btns = {
 				prompt: this.$('.delete-layer'),
 				confirm: this.$('.prompt-delete'),
 				// cancel: this.$('.cancel-delete-layer'),
 			};
+
 			// this.populate_angles_list();
 			return this;
 		},
@@ -567,6 +581,7 @@ TODO:
 					_.each( this.collection.where( { active: true } ), function( model ) {
 						model.destroy();
 					} );
+					PC.selection.reset();
 					this.collection.trigger( 'simple-selection' );
 					break;
 				case 'cancel':
@@ -577,6 +592,99 @@ TODO:
 
 			}
 		},
+		move_items: function( event ) {
+			var bt = $( event.currentTarget );
+			var direction = bt.is( '.up' ) ? -1 : 1;
+
+			var last_in_list = PC.selection.last().get( 'view' );
+			var next = last_in_list.$el.next();
+			var first_in_list = PC.selection.first().get( 'view' );
+			var previous = first_in_list.$el.prev();
+
+			console.log( 'next', next, 'prev', previous );
+
+			var order = this.collection.orderBy || 'order';
+
+			// Move down
+			if ( 1 == direction ) {
+				// There is no next sibling, so bail.
+				if ( ! next.length ) return;
+				next.insertBefore( first_in_list.$el );
+
+				// Update the next item order
+				var next_view = next.data( 'view' );
+				next_view.model.set( order, first_in_list.model.get( order ) );
+
+				// Update items in the selection
+				PC.selection.each( function( item ) {
+					item.get( 'view' ).model.set( order, item.get( 'view' ).model.get( order ) + 1 );
+				} );
+
+			// Move up
+			} else {
+				// There is no previous sibling, so bail.
+				if ( ! previous.length ) return;
+				previous.insertAfter( last_in_list.$el );
+
+				// Update the previous item order
+				var previous_view = previous.data( 'view' );
+
+				previous_view.model.set( order, last_in_list.model.get( order ) );
+
+				// Update items in the selection
+				PC.selection.each( function( item ) {
+					item.get( 'view' ).model.set( order, item.get( 'view' ).model.get( order ) - 1 );
+				} );
+
+			}
+
+			this.collection.sort();
+
+		},
+		group_items: function( event ) {
+			// Get the new group name; bail if empty
+			var input = this.$( '.group input' );
+			if ( ! input.val().trim() ) return;
+			PC.selection.adding_group = true;
+
+			var selection = this.collection.where( { active: true } );
+			
+			// Get the order of the first item, which we'll use for the group
+			var order = selection[0].get( 'order' );
+			// Get the attributes for the new model
+			var attrs = PC.app.new_attributes( this.collection, { name: input.val().trim() } );
+			attrs.order = order;
+			if ( this.collection instanceof PC.layers ) {
+				// attrs.type = 'group';
+			} else if ( this.collection instanceof PC.choices ) {
+				// attrs.is_group = true;
+				attrs.layerId = this.collection.layer.id;
+			}
+
+			// Create the new group
+			var new_group = this.collection.add( attrs );
+
+			// Add the selection to the group
+			PC.selection.each( function( item ) {
+				item.get( 'view' ).model.set( 'parent', new_group.id );
+			}.bind( this ) );
+
+			PC.selection.adding_group = false;
+			PC.selection.reset();
+			this.collection.trigger( 'simple-selection' );
+
+			var group_view = this.edited_list_view.items[this.edited_list_view.items.length - 1];
+			
+			new_group.set( 'active', true );
+			group_view.edit();
+
+			// Finaly, change the type of the new element, which will trigger a render of the list.
+			if ( this.collection instanceof PC.layers ) {
+				new_group.set( 'type', 'group' );
+			} else if ( this.collection instanceof PC.choices ) {
+				new_group.set( 'is_group', true );
+			}
+		}
 	});
 
 })(jQuery, PC._us || window._);

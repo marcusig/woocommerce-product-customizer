@@ -14,6 +14,14 @@ class Plugin {
 	public static $_instance = null;
 	public $db = null;
 	public $ajax = null;
+	public $languages = null;
+	public $frontend = null;
+	public $customizer = null;
+	public $admin = null;
+	public $settings = null;
+	public $cache = null;
+	public $themes = null;
+
 	/**
 	 * @var Extensions
 	 */

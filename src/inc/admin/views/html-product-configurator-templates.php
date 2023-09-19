@@ -312,14 +312,32 @@ CONTENT TEMPLATES
 		<h3><?php _e('Multiple selection', 'product-configurator-for-woocommerce' ) ?></h3>
 		<div class="form-info">
 			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete the selected items', 'product-configurator-for-woocommerce' ) ?></button>
-				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete the selected items?', 'product-configurator-for-woocommerce' ); ?></p>
-					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
-					</p>
+				<div class="multiple-edit--action">
+					<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete the selected items', 'product-configurator-for-woocommerce' ) ?></button>
+					<div class="prompt-delete hidden notice">
+						<p><?php _e( 'Do you realy want to delete the selected items?', 'product-configurator-for-woocommerce' ); ?></p>
+						<p>
+							<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
+							<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
+						</p>
+					</div>
 				</div>
+				<div class="multiple-edit--action">
+					<h3><?php _e( 'Reorder the selected items', 'product-configurator-for-woocommerce' ) ?></h3>
+					<div class="order">
+						<button class="button up" type="button"><i class="dashicons dashicons-arrow-up-alt2"></i></button>
+						<button class="button down" type="button"><i class="dashicons dashicons-arrow-down-alt2"></i></button>
+					</div>
+				</div>
+				<# if ( data.render_group ) { #>
+					<div class="multiple-edit--action">
+						<h3><?php _e( 'Create a group with the selected items', 'product-configurator-for-woocommerce' ) ?></h3>
+						<div class="group">
+							<input type="text" placeholder="<?php esc_attr_e( 'Group name', 'product-configurator-for-woocommerce' ); ?>" >
+							<button type="button" class="button button-primary"><?php _e( 'Group items', 'product-configurator-for-woocommerce' ) ?></button>
+						</div>
+					</div>
+				<# } #>
 			</div>
 		</div>
 	</div>

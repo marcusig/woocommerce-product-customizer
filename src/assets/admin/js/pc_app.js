@@ -228,8 +228,39 @@ PC.toJSON = function( item ) {
 				return 1;
 			}
 			return collection.last().get( 'order' ) + 1;
-		}
+		},
+
+		new_attributes: function( col, data ) {
+			var m = _.extend( data, {
+				_id: this.get_new_id( col ),
+				order: this.get_new_order( col ),
+				active: true
+			} );
+			return m;
+		},
 	};
+
+	PC.selection_collection = Backbone.Collection.extend( {
+		comparator: 'order',
+		adding_group: false,
+		modelId: function( attrs ) {
+			return attrs._id;
+		},
+		is_multiple: function() {
+			return !! ( this.length > 1 );
+		},
+		select: function( item_view ) {
+			if ( this.adding_group ) return;
+			var item = item_view.model;
+			if ( item.get( 'active' ) && ! this.get( item.id ) ) {
+				this.add( { _id: item.id, view: item_view, order: item.get( 'order' ) } );
+			} else if ( ! item.get( 'active' ) ) {
+				this.remove( this.get( item.id ) );
+			}
+		},
+	} );
+
+	PC.selection = new PC.selection_collection();
 
 	PC.media = PC.media || {
 		frame: function() {

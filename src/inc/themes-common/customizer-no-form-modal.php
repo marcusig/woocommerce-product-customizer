@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Remove the add to cart modal on mobile or not
  */
 class MKL_PC_Theme__no_form_modal {
+	public $theme;
 	public function __construct( $theme ) {
 		$this->theme = $theme;
 		add_action( 'mkl_pc_customizer_settings', [ $this, 'customizer_settings' ], 20, 2 );
