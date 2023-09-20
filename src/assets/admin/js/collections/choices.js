@@ -25,7 +25,7 @@ var PC = PC || {};
 				choice.set('active', false);
 			});
 		},
-		resetChoice: function() {
+		resetChoice: function( multiple_activate_defaults ) {
 			this.deactivateAll();
 			if ( ! this.layer_type || 'simple' === this.layer_type ) {
 				if ( ! this.layer.get( 'default_selection' ) || 'select_first' == this.layer.get( 'default_selection' ) ) {
@@ -44,7 +44,9 @@ var PC = PC || {};
 						
 					}
 				}
-			} else if ( 'multiple' === this.layer_type ) {
+			} else if ( 'multiple' === this.layer_type && ( multiple_activate_defaults || 'undefined' == typeof multiple_activate_defaults ) ) {
+				// if we are setting a configuration, do not set the default choices
+				if ( PC.fe.is_setting_config ) return;
 				var default_selection = this.where( { is_default: true, available: true } );
 				_.each( default_selection, function( item ) {
 					item.set( 'active', true );
@@ -68,8 +70,9 @@ var PC = PC || {};
 					choice.set( 'active', true );
 				}
 			} else if ( 'multiple' === this.layer_type ) {
+				// console.log( 'Set multiple', is_active, activate, choice.get( 'name' ) );
 				// Multiple choice: toggle the current state
-				if ( ! is_active && ( activate || 'undefined' == typeof activate ) ) {
+				if ( ! is_active && ( activate || 'undefined' == typeof activate ) || force && ( activate || 'undefined' == typeof activate ) ) {
 					if ( wp.hooks.applyFilters( 'PC.choices.canSelectChoice', true, choice, this ) ) {
 						choice.set( 'active', true );
 					} else {
@@ -79,8 +82,6 @@ var PC = PC || {};
 				} else {
 					if ( ! activate ) choice.set( 'active', false );
 				}
-
-
 			}
 			wp.hooks.doAction( 'PC.fe.choice.change', choice );
 		},

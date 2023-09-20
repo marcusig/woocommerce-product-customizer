@@ -419,8 +419,9 @@ PC.actionParameter = 'pc_get_data';
 
 	PC.fe.setConfig = function( config_items ) {
 		
-		wp.hooks.doAction( 'PC.fe.setConfig.before', config_items );
+		PC.fe.is_setting_config = true;
 
+		wp.hooks.doAction( 'PC.fe.setConfig.before', config_items );
 		// First reset all to the default choice,
 		// in case some of the layers in the saved config are missing / extra
 		PC.fe.contents.content.resetConfig();
@@ -440,6 +441,8 @@ PC.actionParameter = 'pc_get_data';
 		} );
 
 		wp.hooks.doAction( 'PC.fe.setConfig', config_items );
+
+		PC.fe.is_setting_config = false;
 	};
 
 	/*
