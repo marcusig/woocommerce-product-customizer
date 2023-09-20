@@ -92,7 +92,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 	show_choices: function( event ) {
 		if ( event ) {
 			// Allow clicking on link tags
-			if (  event.target.tagName && 'A' == event.target.tagName || $( event.target ).closest( 'a' ).length ) {
+			if ( event.target.tagName && 'A' == event.target.tagName || $( event.target ).closest( 'a' ).length ) {
 				return;
 			}
 			event.stopPropagation();
