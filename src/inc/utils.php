@@ -31,7 +31,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 					return $array[0];
 				// get the item with such id
 				} else {
-					$result = self::filter_by_value( $array, $by, $search_value );
+					$result = Utils::filter_by_value( $array, $by, $search_value );
 					if ( $result ) {
 						return $result[0];
 					} else {
@@ -104,7 +104,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 				if ( NULL == $product_id || false == $product_id ) return false;
 			} 
 			// if $product_id doesn't match a product, exit
-			if ( ! self::is_product( $product_id )  ) return false;
+			if ( ! Utils::is_product( $product_id )  ) return false;
 
 			$fetched_product = wc_get_product( $product_id );
 
@@ -193,7 +193,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		 * @return string
 		 */
 		public static function sanitize_html_classes( $classes ) {
-			if ( is_array( $classes ) ) return implode( ' ', array_filter( array_map( 'self::sanitize_html_classes', $classes ) ) );
+			if ( is_array( $classes ) ) return implode( ' ', array_filter( array_map( 'MKL\PC\Utils::sanitize_html_classes', $classes ) ) );
 			$classes_array = explode( ' ', $classes );
 			return implode( ' ', array_filter( array_map( 'sanitize_html_class', $classes_array ) ) );
 		}

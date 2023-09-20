@@ -14,6 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! class_exists('MKL\PC\Admin_Product') ) {
 	class Admin_Product {
 
+		public $ID;
+		private $_product;
 		public function __construct() {
 			$this->_hooks();
 		}

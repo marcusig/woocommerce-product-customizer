@@ -20,6 +20,8 @@ class Configuration {
 	public $image_name         = '';
 	public $save_image_async   = false;
 	public $image_manager      = false;
+	public $product_id;
+	public $content            = null;
 	private $post 	           = null;
 
 	// public $configuration_date          = '';

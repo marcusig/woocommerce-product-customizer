@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Languages {
+	public $ml_plugin;
 	public function __construct() {
 		$this->_hooks();
 	}
