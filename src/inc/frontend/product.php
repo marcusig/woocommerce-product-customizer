@@ -24,6 +24,11 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			$this->button_class = isset( $this->options['mkl_pc__button_classes'] ) && ! empty( $this->options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $this->options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
 		}
 
+		/**
+		 * Setup hooks
+		 *
+		 * @return void
+		 */
 		private function _hooks() {
 			add_action( 'wp' , array( &$this, 'wp_init' ) ); 
 			add_filter( 'woocommerce_product_add_to_cart_text', array( &$this, 'add_to_cart_text' ), 30, 2 ); 
@@ -52,13 +57,21 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			add_action( 'wp_footer', array( &$this, 'print_product_configuration' ) );
 		}
 
+		/**
+		 * Loop: Change the text button from Add to cart to Select options
+		 *
+		 * @param string $text
+		 * @param WC_Product $product
+		 * @return string
+		 */
 		public function add_to_cart_text( $text, $product ) {
-			if ( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
+			if ( mkl_pc_is_configurable( $product->get_id() ) && 'simple' == $product->get_type() ) {
 				$text = __( 'Select options', 'woocommerce' );
 			} 
 			return $text;
 
 		}
+
 		// Changes Removes add to cart link for simple + configurable products 
 		// From add to cart link to premalink
 		public function add_to_cart_link( $link, $product ) { 
@@ -69,6 +82,14 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			return $link;
 		}
 
+		/**
+		 * Remove the ajax Add to cart feature from the configurable products in the loop
+		 *
+		 * @param mixed $value
+		 * @param string $feature
+		 * @param WC_Product $product
+		 * @return mixed
+		 */
 		public function simple_product_supports( $value, $feature, $product ) {
 			if ( mkl_pc_is_configurable( $product->get_id() ) && $product->get_type() == 'simple' ) {
 				if ( $feature == 'ajax_add_to_cart' ) $value = false;
@@ -76,6 +97,11 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			return $value;
 		}
 
+		/**
+		 * Add the "Configure" button to the product summary
+		 *
+		 * @return void
+		 */
 		public function add_configure_button() { 
 			global $product;
 			if ( mkl_pc_is_configurable( get_the_id() ) ) {
@@ -88,6 +114,12 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			}
 		}
 
+		/**
+		 * Get the a product's price, with various plugins compatibility
+		 *
+		 * @param integer $product_id
+		 * @return float
+		 */
 		public function get_product_price( $product_id ) {
 			$product = wc_get_product( $product_id ); 
 			$base_currency = get_option( 'woocommerce_currency' );
