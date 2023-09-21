@@ -286,7 +286,10 @@ TODO:
 						var slice = this.model.collection.slice( start, end );
 						_.each( slice, function( item ) {
 							// Only select from the same parent
-							if ( last_clicked.get( 'parent' ) != item.get( 'parent' ) ) return;
+							if ( last_clicked.get( 'parent' ) != item.get( 'parent' ) ) {
+								var parent = item.collection.get( item.get( 'parent' ) );
+								if ( parent && ( 'group' === parent.get( 'type' ) || parent.get( 'is_group' ) ) ) return;
+							}
 							item.set( 'active', item.collection.last_clicked.model.get( 'active' ) );
 						}.bind( this ) );
 					}
