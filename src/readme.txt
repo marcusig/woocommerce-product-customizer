@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.3
-Stable tag: 1.2.51
+Stable tag: 1.2.52
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,6 +113,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.52 - 21/Sep/2023 =
 
 * FIX: Fix issue with multiple choice not setting properly when loading a saved configuration
 * TWEAK: compatibility with PHP 8.2
@@ -528,4 +530,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.50 Basic compatibility with Yith RAQ premium, various tweaks and improvements
+* 1.2.52 improved multiple selection in the admin, Compatibility with Yith Catalogue mode, various tweaks and improvements
