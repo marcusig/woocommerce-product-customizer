@@ -114,6 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FIX: Fix issue with multiple choice not setting properly when loading a saved configuration
+* TWEAK: compatibility with PHP 8.2
+* Compatibility with Yith Catalogue mode
 * ENHANCEMENT: When selecting multiple items in the admin, it is now possible to group the selected items, as well as reorder them
 * TWEAK: Change tooltip container to prevent overlay when scrolling
 * TWEAK: Show "Edit cart item" button on mobile (Default and Old default themes)
