@@ -14,7 +14,8 @@
 	} ); 
 	
 	wp.hooks.addFilter( 'PC.fe.trigger_add_to_cart', 'mkl_pc.compat.yith_catalogue', function( atc ) {
-		return false;
+		if ( PC_config.config.yith_catalogue ) return false;
+		return atc;
 	} ); 
 
 } )( jQuery );
