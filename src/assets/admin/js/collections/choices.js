@@ -40,9 +40,9 @@ var PC = PC || {};
 					}
 
 					// If the item is hidden using conditional logic, select the next available item
-					if ( item && false === item.get( 'cshow' ) ) {
+					// if ( item && false === item.get( 'cshow' ) ) {
 						
-					}
+					// }
 				}
 			} else if ( 'multiple' === this.layer_type && ( multiple_activate_defaults || 'undefined' == typeof multiple_activate_defaults ) ) {
 				// if we are setting a configuration, do not set the default choices
@@ -72,7 +72,7 @@ var PC = PC || {};
 			} else if ( 'multiple' === this.layer_type ) {
 				// console.log( 'Set multiple', is_active, activate, choice.get( 'name' ) );
 				// Multiple choice: toggle the current state
-				if ( ! is_active && ( activate || 'undefined' == typeof activate ) || force && ( activate || 'undefined' == typeof activate ) ) {
+				if ( ! is_active && ( activate || 'undefined' == typeof activate ) ) {
 					if ( wp.hooks.applyFilters( 'PC.choices.canSelectChoice', true, choice, this ) ) {
 						choice.set( 'active', true );
 					} else {
