@@ -135,9 +135,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			// Price Based on Country
 			if ( function_exists( 'wcpbc_the_zone' ) ) {
 				$zone = wcpbc_the_zone();
-				if ( is_callable( [ $zone, 'get_exchange_rate' ] ) ) {
-					$rate = $zone->get_exchange_rate();
-					$price = $price / $rate;
+				if ( is_callable( [ $zone, 'get_post_price' ] ) ) {
+					$price = $zone->get_post_price( $product_id, '_price' );
 				}
 			}
 			

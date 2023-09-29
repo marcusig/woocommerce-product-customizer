@@ -541,17 +541,7 @@ PC.utils = PC.utils || {
 			return amount * parseFloat( wc_aelia_currency_switcher_params.current_exchange_rate_from_base );
 		}
 
-		// Price Based on Country
-		if ( 'undefined' != typeof PC.fe.config.wcpbc_rate && parseFloat( PC.fe.config.wcpbc_rate ) ) {
-			var converted = amount * parseFloat( PC.fe.config.wcpbc_rate );
-			if ( PC.fe.config.wcpbc_round_nearest ) {
-				converted = Math.ceil( converted / PC.fe.config.wcpbc_round_nearest ) * PC.fe.config.wcpbc_round_nearest;
-			}
-			return converted;
-		}
-
-
-		return amount;
+		return wp.hooks.applyFilters( 'PC.fe.maybeConvertAmountToCurrency', amount );
 	},
 	/**
 	 * Add the language filters
@@ -568,6 +558,5 @@ PC.utils = PC.utils || {
 		wp.hooks.addFilter( 'PC.fe.configurator.layer_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
 		wp.hooks.addFilter( 'PC.fe.configurator.choice_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
 		wp.hooks.addFilter( 'PC.fe.configurator.angle_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
-	}	
-
+	}
 };
