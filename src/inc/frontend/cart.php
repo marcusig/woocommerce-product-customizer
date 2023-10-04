@@ -135,6 +135,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$sku_mode = apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode' ), $cart_item['data'] );
 				$compound_sku = 'compound' == $sku_mode && wc_product_sku_enabled() && mkl_pc( 'settings')->get( 'show_sku_in_cart' );
 				$sku = [];
+				$edit_link = $this->get_edit_link( $cart_item );
 
 				foreach ($configurator_data as $layer) {
 					if ( $layer && $layer->is_choice() ) { 
@@ -158,26 +159,52 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				if ( $compound_sku && count( $sku ) ) {
 					$data[] = array(
+						'className' => 'configuration-sku',
 						'key' => mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
 						'value' => implode( mkl_pc( 'settings')->get( 'sku_glue', '' ), $sku )
 					);
 				}
 
-				$value = $this->get_choices_html( $choices );
-
-				/**
-				 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
-				 * @return boolean
-				 */
-				if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link = $this->get_edit_link( $cart_item ) ) {
-					$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
+				if ( 'block' == $this->_get_cart_item_context() ) {
+					$value = '&nbsp;';
+				} else {
+					$value = $this->get_choices_html( $choices );
+					/**
+					 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
+					 * @return boolean
+					 */
+					if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link ) {
+						$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
+					}
 				}
 
-				$data[] = array( 
+				$data[] = array(
+					'className' => 'mkl-configuration',
 					'key' => mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
 					'value' => $value
-				);				
+				);
 
+				if ( 'block' == $this->_get_cart_item_context() ) {
+
+					$data = array_merge( $data, array_map( function( $item ) {
+						if ( isset( $item['choice'] ) ) unset( $item['choice'] );
+						return $item;
+					}, $this->get_choices_data( $choices ) ) );
+
+					/**
+					 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
+					 * @return boolean
+					 */
+					// Links aren't supported yet
+					// if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link ) {
+					// 	$data[] = [
+					// 		'className' => 'mkl-configuration--edit-link',
+					// 		'key' => '',
+					// 		'name' => '',
+					// 		'value' => '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>',
+					// 	];
+					// }
+				}
 			}
 
 			return $data; 
@@ -269,7 +296,23 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * Get the choices HTML to be displayed
 		 */
 		public function get_choices_html( $choices ) {
+			$data = $this->get_choices_data( $choices );
 			$output = '';
+			foreach ( $data as $choice ) {
+				$classes = $choice[ 'className' ];
+				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice['choice'] );
+				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice['choice'] );
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . stripslashes( $choice['key'] ) .'</strong><span class="semicol">:</span> ' . stripslashes( $choice['value'] ) . $after, $choice['key'], $choice['value'], $before, $after );
+			}
+
+			return $output;
+		}
+
+		/**+
+		 * Get the choices Data
+		 */
+		public function get_choices_data( $choices ) {
+			$data = [];
 			foreach ( $choices as $choice ) {
 				$classes = [];
 				if ( isset( $choice['layer'] ) && is_callable( [ $choice['layer'], 'get_layer' ] ) ) {
@@ -280,13 +323,21 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					// $classes = Utils::sanitize_html_classes( $choice['layer']->get_layer( 'type' ) . ' ' . $choice['layer']->get_layer( 'class_name' ) );
 				}
 				$classes = Utils::sanitize_html_classes( array_filter( apply_filters( 'mkl_pc_cart_item_choice__classes', $classes, $choice['layer'] ) ) );
-				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
-				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice );
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . stripslashes( $choice['name'] ) .'</strong><span class="semicol">:</span> ' . stripslashes( $choice['value'] ) . $after, $choice['name'], $choice['value'], $before, $after );
+				$item = apply_filters( 'mkl_pc_cart_item_choice_data', [
+					'className' => $classes,
+					'key' => $choice['name'],
+					'name' => $choice['name'],
+					'value' => $choice['value'],
+					'choice' => $choice
+				], $choice );
+
+				// if ( WC()->is_rest_api_request() ) {
+				// 	unset( $item[ 'choice' ] );
+				// }
+				$data[] = $item;
 			}
 
-			return $output;
-
+			return $data;
 		}
 
 		/**
@@ -338,6 +389,18 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				return floatval( $weight ) + floatval( $extra_weight );
 			}
 			return $weight;
+		}
+
+
+		private function _get_cart_item_context() {
+			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 5 );
+			foreach( $trace as $call ) {
+				// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
+				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
+					return 'block';
+				}
+			}
+			return 'default';
 		}
 
 		// public function pc_price_change( $cart_object ) {
