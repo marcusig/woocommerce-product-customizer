@@ -372,12 +372,14 @@ class DB {
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
 			array(
-				'title'        => apply_filters( 'the_title', $product->get_title(), $id ),
-				'product_type' => $product_type,
-				'show_qty'     => ! $product->is_sold_individually(),
-				'is_in_stock'  => $product->is_in_stock() || $product->backorders_allowed(), 
-				'weight'       => $product->get_weight(),
-				'weight_unit'  => get_option( 'woocommerce_weight_unit' ),
+				'title'         => apply_filters( 'the_title', $product->get_title(), $id ),
+				'product_type'  => $product_type,
+				'show_qty'      => ! $product->is_sold_individually(),
+				'is_in_stock'   => $product->is_in_stock() || $product->backorders_allowed(), 
+				'weight'        => $product->get_weight(),
+				'weight_unit'   => get_option( 'woocommerce_weight_unit' ),
+				'qty_min_value' => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
+				'qty_max_value' => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
 			) 
 		);
 

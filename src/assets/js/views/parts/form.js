@@ -42,7 +42,22 @@ PC.fe.views.form = Backbone.View.extend({
 			this.$( '.configurator-add-to-cart' ).remove();
 		}
 
-		return this.$el; 
+		if ( this.$( 'input.qty' ).length ) {
+			// Get qty with the Cart's input
+			if ( this.$( 'input.qty' ) != this.$cart.find( '.qty' ) ) {
+				this.$( 'input.qty' ).val( this.$cart.find( '.qty' ).val() );
+			}
+			// Set min value
+			if ( 'undefined' != typeof PC.fe.currentProductData.product_info.qty_min_value ) {
+				this.$( 'input.qty' ).prop( 'min', PC.fe.currentProductData.product_info.qty_min_value );
+			}
+			// Set max value
+			if ( 'undefined' != typeof PC.fe.currentProductData.product_info.qty_max_value ) {
+				this.$( 'input.qty' ).prop( 'max', PC.fe.currentProductData.product_info.qty_max_value );
+			}
+		}
+
+		return this.$el;
 	},
 
 	validate_configuration: function() {
