@@ -152,6 +152,9 @@ PC.actionParameter = 'pc_get_data';
 				});
 			} );
 
+			// Blocksy buttons compat
+			if ( ctFrontend && ctFrontend.handleEntryPoints ) ctFrontend.handleEntryPoints( ctFrontend.allFrontendEntryPoints );
+
 			// Savoy compatibility
 			if ( $.nmThemeInstance && $.nmThemeInstance.quantityInputsBindButtons ) $.nmThemeInstance.quantityInputsBindButtons( $('.mkl_pc') );
 
