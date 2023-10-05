@@ -31,7 +31,7 @@ class Compat_Yith_Raq {
 
 	public function apply_extra_price( $raq, $product ) {
 		if ( isset( $raq['pc_layers'] ) && isset( $raq['pc_extra_price'] ) ) {
-			$product->set_price( $product->get_price() + $raq['pc_extra_price'] );
+			$product->set_price( floatval( $product->get_price() ) + floatval( $raq['pc_extra_price'] ) );
 		}
 	}
 
