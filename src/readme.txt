@@ -114,6 +114,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: use minimum and maximum quantity filters for the Quantity input
+
 = 1.2.53 - 22/Sep/2023 =
 
 * FIX: Fix issue with multiple choice not deselecting after previous fix attempt
