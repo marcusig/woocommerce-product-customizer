@@ -319,6 +319,7 @@ class Frontend_Woocommerce {
 		wp_register_script( 'mkl_pc/js/vendor/popper', MKL_PC_ASSETS_URL . 'js/vendor/popper.min.js', [], '2', true );
 		wp_register_script( 'mkl_pc/js/vendor/tippy', MKL_PC_ASSETS_URL . 'js/vendor/tippy-bundle.umd.min.js', [ 'mkl_pc/js/vendor/popper' ], '6.3.7', true );
 		wp_register_script( 'mkl_pc/js/vendor/as', MKL_PC_ASSETS_URL . 'js/vendor/adaptive-scale.min.js', [], '1.0.0', true );
+		wp_register_script( 'mkl_pc/js/vendor/download', MKL_PC_ASSETS_URL . 'js/vendor/download.min.js', [], '4.21', true );
 
 		$deps = array('jquery', 'backbone', 'wp-util', 'wp-hooks', 'mkl_pc/js/views/configurator' );
 		// wp_enqueue_script( 'mkl_pc/js/vendor/TouchSwipe', MKL_PC_ASSETS_URL.'js/vendor/jquery.touchSwipe.min.js', array('jquery' ), '1.6.18', true );
