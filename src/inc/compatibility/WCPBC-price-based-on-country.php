@@ -42,7 +42,7 @@ class Compat_WCPBC {
 
 	public function set_linked_product_data( $choice, $linked_product, $product_id ) {
 		foreach ( WCPBC_Pricing_Zones::get_zones() as $zone ) {
-			logdebug( ['zone info', $zone->get_id(), $zone->get_post_price( $linked_product->get_id(), '_price' ), $zone] );
+			// logdebug( ['zone info', $zone->get_id(), $zone->get_post_price( $linked_product->get_id(), '_price' ), $zone] );
 			if ( ! $zone->get_enabled() || $zone->is_exchange_rate_price( $linked_product) ) continue;
 			$choice['extra_price_zone_' . $zone->get_id()] = $zone->get_post_price( $linked_product->get_id(), '_price' );
 		}
