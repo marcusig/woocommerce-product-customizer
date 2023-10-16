@@ -98,3 +98,9 @@ table span.choice-thumb.color {
 .is_configurable :not(.enable-add-to-cart):not(.configurator_is_inline) .summary .yith-ywraq-add-button.show {
     display: none !important;
 }
+
+/* Block cart item hide */
+tr.wc-block-cart-items__row.configurator-hidden,
+.wc-block-components-order-summary-item.configurator-hidden {
+    display: none !important;
+}
