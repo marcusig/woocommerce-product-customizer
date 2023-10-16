@@ -114,7 +114,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+
+
+* TWEAK: Added compatibility with Blocksy's +- buttons in quantity input
 * TWEAK: use minimum and maximum quantity filters for the Quantity input
+* TWEAK: Added (partial) compatibility with the cart and checkout blocks. 
 
 = 1.2.53 - 22/Sep/2023 =
 
