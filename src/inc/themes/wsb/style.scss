@@ -1360,7 +1360,7 @@ body.configurator_is_inline .mkl_pc {
 */
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.color-only,
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.display-mode-colors {
-	.choices-list li {
+	.choices-list li.choice {
 		box-shadow: none;
 		width: auto;
 		button.choice-item {
