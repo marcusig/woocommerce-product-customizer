@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.3
-Stable tag: 1.2.53
+Stable tag: 1.2.54
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,8 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.54 - 17/Oct/2023 =
 
-
+* TWEAK: Fix CSS issue where colors appeared as selected in layer groups
 * TWEAK: Added compatibility with Blocksy's +- buttons in quantity input
 * TWEAK: use minimum and maximum quantity filters for the Quantity input
 * TWEAK: Added (partial) compatibility with the cart and checkout blocks. 
@@ -540,4 +541,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.53 improved multiple selection in the admin, Compatibility with Yith Catalogue mode, various tweaks and improvements
+* 1.2.54 Added (partial) compatibility with the cart and checkout blocks, various tweaks
