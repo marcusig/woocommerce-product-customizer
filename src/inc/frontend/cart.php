@@ -135,7 +135,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$sku_mode = apply_filters( 'mkl_pc/sku_mode', mkl_pc( 'settings')->get( 'sku_mode' ), $cart_item['data'] );
 				$compound_sku = 'compound' == $sku_mode && wc_product_sku_enabled() && mkl_pc( 'settings')->get( 'show_sku_in_cart' );
 				$sku = [];
-				$edit_link = $this->get_edit_link( $cart_item );
+				$edit_link = '';
+				if ( apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) ) {
+					$edit_link = $this->get_edit_link( $cart_item );
+				}
 
 				foreach ($configurator_data as $layer) {
 					if ( $layer && $layer->is_choice() ) { 
@@ -173,7 +176,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
 					 * @return boolean
 					 */
-					if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link ) {
+					if ( ! is_admin() && $edit_link ) {
 						$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
 					}
 				}
