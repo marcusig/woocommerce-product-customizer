@@ -86,6 +86,7 @@
 			top: 50%;
 			transform: translateX(-50%) translateY(-50%);
 			max-height: 100%;
+			-webkit-user-drag: none;
 		}
 		.custom-html {
 			position: absolute;
