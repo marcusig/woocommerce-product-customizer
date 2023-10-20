@@ -65,6 +65,7 @@ PC.fe.save_data = {
 					model
 				)
 			);
+			return;
 		}
 		var require_error = false;
 		var choices = PC.fe.getLayerContent( model.id );
