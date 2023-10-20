@@ -177,7 +177,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 				error_log("MKL Product Configurator: template not found: ".$template_file);
 				echo __('Error:', 'product-configurator-for-woocommerce').' '.__('template not found', 'product-configurator-for-woocommerce')." (".$template_file.")";
 			} else {
-				extract($extract_these);
+				extract($extract_these, EXTR_SKIP);
 				include $template_file;
 			}
 

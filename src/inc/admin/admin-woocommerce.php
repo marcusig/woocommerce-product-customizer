@@ -104,7 +104,7 @@ class Admin_Woocommerce {
 	 */
 	public function get_template_part( $file_path, $view_data = null ) {
 		if ( ! file_exists( $file_path ) ) return '';
-		if ( $view_data ) extract( $view_data );
+		if ( $view_data ) extract( $view_data, EXTR_SKIP );
 		ob_start();
 		include $file_path;
 		$template = ob_get_contents();
