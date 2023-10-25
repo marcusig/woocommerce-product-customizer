@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
-Tested up to: 6.3
+Tested up to: 6.4
 Stable tag: 1.2.54
 Requires PHP: 7.0
 License: GPLv2+
@@ -113,6 +113,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+* TWEAK: Fix selection not applied when a simple layer has "User can deselect a choice" enabled
+* TWEAK: Do not save more data if the layer is a group
+* TWEAK: Configuration class improvements
+* Tested up to 6.4
 
 = 1.2.54 - 17/Oct/2023 =
 
