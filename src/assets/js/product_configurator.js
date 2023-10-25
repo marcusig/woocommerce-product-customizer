@@ -435,7 +435,7 @@ PC.actionParameter = 'pc_get_data';
 				var layer = PC.fe.layers.get( config_item.layer_id );
 				if ( layer && 'group' == layer.get( 'type' ) ) return;
 				if ( PC.fe.getLayerContent( config_item.layer_id ) && PC.fe.getLayerContent( config_item.layer_id ).selectChoice ) {
-					PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id );
+					PC.fe.getLayerContent( config_item.layer_id ).selectChoice( config_item.choice_id, true );
 				}
 				wp.hooks.doAction( 'PC.fe.setConfig.setItem', config_item, PC.fe.getLayerContent( config_item.layer_id ) );
 			} catch ( err ) {
