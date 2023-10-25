@@ -1,6 +1,8 @@
 <?php
 namespace MKL\PC;
 
+use WP_Error;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -19,9 +21,10 @@ class Configuration {
 	public $upload_dir_url     = '';
 	public $image_name         = '';
 	public $save_image_async   = false;
-	public $image_manager      = false;
 	public $product_id;
 	public $content            = null;
+	public $image_path         = null;
+	public $configuration_visibility = 'private';
 	private $post 	           = null;
 
 	// public $configuration_date          = '';
@@ -65,7 +68,11 @@ class Configuration {
 
 		if ( null != $ID && intval( $ID ) ) {
 			$this->ID = absint( intval( $ID ) );
-			$this->post = get_post( $this->ID ); 
+			$conf_post = get_post( $this->ID );
+			if ( 'private' === $this->get_visibility() && $this->post->post_author != get_current_user_id() && ! current_user_can( 'manage_woocommerce' ) ) {
+				return new WP_Error( '403', __( 'Unauthorized action, author issue', 'product-configurator-for-woocommerce' ) );
+			}
+			$this->post = $conf_post;
 			// if ( ! $this->post ) return false;
 		} else {
 			$this->ID = 0;
@@ -504,6 +511,10 @@ class Configuration {
 		if ( count( $images ) && $image_manager = $this->_get_image_manager() ) {
 			$image_manager->merge( $images, 'print' );
 		}
+	}
+
+	private function get_visibility() {
+		return apply_filters( 'mkl_pc_configuration_visibility', $this->configuration_visibility, $this );
 	}
 
 	public function save_attachment( $filename, $parent_post_id ) {
