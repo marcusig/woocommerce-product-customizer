@@ -154,7 +154,7 @@ class Configuration {
 
 
 		if ( is_wp_error( $this->ID ) ) {
-			return array( 'saved' => false, 'error' => 'Could not save... ' . $this->ID );
+			return array( 'saved' => false, 'error' => 'Could not save... ' . $this->ID->get_error_message() );
 
 		}
 
