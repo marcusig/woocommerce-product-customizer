@@ -18,7 +18,7 @@
 	} );
 
 	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/clean', function( where, original_view ) {
-		if ( original_view && original_view.model && 'dropdown' == original_view.model.get( 'display_mode' ) && ! PC.utils._isMobile() ) {
+		if ( original_view && original_view.model && 'dropdown' == original_view.model.get( 'display_mode' ) && ! PC.utils._isMobile() && ! original_view.model.get( 'parent' ) ) {
 			return 'in';
 		}
 		return PC.fe.modal.toolbar.el;
