@@ -34,8 +34,8 @@ class Configuration {
 	public function __construct( $ID = NULL, $args = array() ) {
 
 		$default_args = array(
-			'product_id'       => 0,
-			'content' => []
+			'product_id' => 0,
+			'content'    => []
 		);
 
 		$args = wp_parse_args( $args, $default_args );
@@ -62,18 +62,13 @@ class Configuration {
 		if ( ! is_dir( $this->upload_dir_path ) ) {
 			mkdir( $this->upload_dir_path ); 
 		}
-		
+
 		if ( null != $ID && intval( $ID ) ) {
 			$this->ID = absint( intval( $ID ) );
 			$this->post = get_post( $this->ID ); 
 			// if ( ! $this->post ) return false;
 		} else {
 			$this->ID = 0;
-		}
-
-		if ( Utils::check_image_requirements() ) {
-			require_once ABSPATH . 'wp-admin/includes/image.php';
-			$this->image_manager = new Images();
 		}
 	}
 
@@ -400,6 +395,7 @@ class Configuration {
 	 */
 	public function save_image( $content, $transient = null ) {
 
+		$image_manager = $this->_get_image_manager();
 		if ( is_string( $content ) ) {
 			$content = sanitize_file_name( $content );
 			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
@@ -485,7 +481,7 @@ class Configuration {
 			}
 
 			if ( count( $images ) > 1 && Utils::check_image_requirements() ) {
-				$fimage = $this->image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
+				$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
 			} elseif ( count( $images ) == 1 ) {
 				$fimage = $images[0];
 			} else {
@@ -505,8 +501,8 @@ class Configuration {
 			$images[] = $image;
 		}
 
-		if ( count( $images ) && $this->image_manager ) {
-			$this->image_manager->merge( $images, 'print' );
+		if ( count( $images ) && $image_manager = $this->_get_image_manager() ) {
+			$image_manager->merge( $images, 'print' );
 		}
 	}
 
@@ -539,5 +535,14 @@ class Configuration {
 		return $attach_id;
 	}
 
+	private function _get_image_manager() {
+		static $im;
+		if ( ! $im && Utils::check_image_requirements() ) {
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			$im = new Images();
+		}
+		return $im;
+
+	}
 
 }
