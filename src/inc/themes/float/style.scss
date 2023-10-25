@@ -808,9 +808,18 @@ $inner_space: 1em;
 								margin: 0;
 								box-shadow: none;
 								.choice-group-label {
-									display: flex;
-									align-items: center;
 									padding-left: 3px;
+									.choice-text--container {
+										display: flex;
+										flex-direction: row;
+										align-items: center;
+										width: 100%;
+										flex-wrap: wrap;
+										span.description {
+											order: 2;
+											width: 100%;
+										}
+									}									
 									i.mkl-pc-thumbnail {
 										height: 38px;
 										margin: 0;
@@ -836,6 +845,7 @@ $inner_space: 1em;
 										background: #36383a55;
 										position: absolute;
 										right: 30px;
+										top: 50%;
 										transition: .2s all;										
 									}
 
