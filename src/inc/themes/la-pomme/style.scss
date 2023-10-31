@@ -402,14 +402,36 @@ $inner_space: 1em;
 			align-items: center;
 			box-sizing: border-box;
 
+			a.save-your-design--pdf ,
 			button.reset-configuration {
 				margin: 0;
-				padding: 0;
+				padding: 4px 9px;
 				background: transparent;
 				color: inherit;
+				text-transform: none;
+				font-size: 1em;
+				text-transform: none;
+				font-weight: normal;
+
 				appearance: none;
 				box-shadow: none;
 				border:  none;
+				color: var(--mkl_pc_color-primary);
+				svg {
+					height: 23px;
+					fill: currentColor;
+					width: 23px;
+					margin-right: 6px;
+					vertical-align: middle;					
+				}
+				&.icon-only {
+					span {
+						display: none;
+					}
+					svg {
+						margin-right: 0;
+					}
+				}
 				&:hover, &:focus {
 					opacity: .5;
 				}
@@ -806,7 +828,8 @@ a.save-your-design svg {
 }
 
 a.save-your-design svg path,
-.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path {
+.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
+a.save-your-design--pdf svg path {
 	fill: transparent;
     stroke-width: 3px;
     stroke: var(--mkl_pc_color-primary);

@@ -4,45 +4,26 @@
 		view.$el.addClass( 'lapomme' );
 		
 		if ( window.tippy ) {
-			if ( view.$( '.reset-configuration' ).length ) {
-				var reset_btn = view.$( '.reset-configuration' )
-				var description = reset_btn.find( 'span' ).html();
 
+			var btns = view.$( '.reset-configuration, .save-your-design, .save-your-design--pdf' );
+			btns.each( function( index, btn ) {
 				/**
 				 * 
-					 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
-					 */
-				 var tooltip_options = {
-					content: description,
+				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
+				 */
+				var tooltip_options = {
+					content: $( btn ).find( 'span' ).html(),
 					allowHTML: true,
 					placement: 'top',
 					zIndex: 100001
 				};
 			
-				if ( tooltip_options.content && tooltip_options.content.length && reset_btn.length ) {
-					tippy( reset_btn[0], tooltip_options );
-				}	
-			}
+				if ( tooltip_options.content && tooltip_options.content.length ) {
+					$( btn ).addClass( 'icon-only' );
+					tippy( btn, tooltip_options );
+				}
+			} );
 
-			if ( view.$( '.save-your-design' ).length ) {
-				var syd_button = view.$( '.save-your-design' )
-				var description = syd_button.find( 'span' ).html();
-
-				/**
-				 * 
-					 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
-					 */
-				 var tooltip_options = {
-					content: description,
-					allowHTML: true,
-					placement: 'top',
-					zIndex: 100001
-				};
-			
-				if ( tooltip_options.content && tooltip_options.content.length && syd_button.length ) {
-					tippy( syd_button[0], tooltip_options );
-				}	
-			}
 		}
 		
 	});
