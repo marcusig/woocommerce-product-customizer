@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.4
-Stable tag: 1.2.54
+Stable tag: 1.2.55
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,9 +114,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.55 - 31/Oct/2023 =
+
 * TWEAK: Fix selection not applied when a simple layer has "User can deselect a choice" enabled
 * TWEAK: Do not save more data if the layer is a group
-* TWEAK: Configuration class improvements
+* TWEAK: MKL\PC\Configuration class improvements
 * Tested up to 6.4
 
 = 1.2.54 - 17/Oct/2023 =
@@ -546,4 +548,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.54 Added (partial) compatibility with the cart and checkout blocks, various tweaks
+* 1.2.55 Tested up to 6.4, various improvements to themes (design tweaks) and other tweaks
