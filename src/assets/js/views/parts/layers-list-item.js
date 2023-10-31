@@ -123,6 +123,11 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				_.each( this.model.collection.where( { 'display_mode': 'dropdown' } ), function( model ) {
 					model.set( 'active' , false );
 				} );
+
+			}
+
+			if ( event && 'dropdown' === this.model.get( 'display_mode' ) ) {
+				$( document ).on( 'click.mkl-pc', this.dropdown_click_outside.bind( this ) );
 			}
 
 			this.model.set( 'active', true ); 
@@ -130,14 +135,20 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			wp.hooks.doAction( 'PC.fe.layer.show', this );
 		}
 	},
+	dropdown_click_outside: function( event ) {
+		if ( ! $( event.target ).closest( '.display-mode-dropdown.active' ).length && this.model.get( 'active' ) ) {
+			this.show_choices();
+		}
+	},
 	activate: function() {
-		if( this.model.get( 'active' ) ) {
+		if ( this.model.get( 'active' ) ) {
 			this.$el.addClass( 'active' ); 
 			if ( this.choices ) this.choices.$el.addClass( 'active' );
 			wp.hooks.doAction( 'PC.fe.layer.activate', this );
 		} else {
 			this.$el.removeClass( 'active' );
 			if ( this.choices ) this.choices.$el.removeClass( 'active' );
+			$( document ).off( 'click.mkl-pc' );
 			wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 		}
 	},
