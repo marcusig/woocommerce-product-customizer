@@ -196,7 +196,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		 * Maybe override the formated data
 		 *
 		 * @param array         $formatted_meta
-		 * @param WC_Order_Item $order_item
+		 * @param \WC_Order_Item $order_item
 		 * @return array
 		 */
 		public function maybe_override_formatted_meta_data( $formatted_meta, $order_item ) {
