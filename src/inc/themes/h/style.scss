@@ -209,6 +209,7 @@ $inner_space: 1em;
 					padding: 0;
 				}
 				.configurator-add-to-cart {
+					display: inline-block;
 					border-radius: 4px;
 					font-size: 16px;
 					text-align: left;
@@ -461,16 +462,22 @@ $inner_space: 1em;
 				}
 			}
 
+			a.save-your-design,
+			a.save-your-design--pdf,
 			button.reset-configuration {
 				margin: 0;
-				padding: 0;
+				text-transform: none;
+				font-size: 14px;
+				font-weight: 400;
+				display: inline-block;
+				padding: 6px 12px;
 				background: transparent;
-				color: color( primary );
+				color: color(ll2);
 				appearance: none;
 				box-shadow: none;
 				border:  none;
-				font-size: 12px;
-				text-transform: uppercase;
+				text-decoration: none;		
+				color: color( primary );
 				@media (max-width: $medium_screen_width) {
 					max-width: 110px;
 					white-space: normal;
@@ -603,10 +610,6 @@ $inner_space: 1em;
 		margin-right: -1em;
 	}
 	
-	a.save-your-design {
-		color: color( primary );
-	}
-
 	@media (max-width: $small_screen_width) {		
 		a.save-your-design svg {
 			transform: translateY(0px);
@@ -781,6 +784,9 @@ body.configurator_is_inline .mkl_pc {
 		color: color( choices_button_text_color );
 		--layer-item-width: 0;
 		.form-item {
+			&::after {
+				display: none;
+			}
 			&:not(.is-group) {
 				min-width: 0;
 			}
