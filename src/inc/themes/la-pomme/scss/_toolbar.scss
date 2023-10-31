@@ -104,7 +104,7 @@
 				animation: slide-in-top 0.2s ease-out;
 
 				&.type-group {
-					border: 1px solid #d2d2d7;
+					border: 1px solid color(border);
 					padding: 20px;
 					border-radius: 12px;
 				}
@@ -356,8 +356,8 @@
 						color: color(light-gray);
 					}
 
-					> button.choice-item {
-						border: 1px solid #d2d2d7;
+					> button.choice-item, > button.choice-group-label {
+						border: 1px solid color(border);
 						width: 100%;
 
 						.choice-text--container {
@@ -404,10 +404,21 @@
 						padding: 0;
 						margin: 0;
 						box-shadow: none;
-						.choice-group-label {
+						div.choice-group-label {
 							display: flex;
 							align-items: center;
 							padding-left: 3px;
+							.choice-text--container {
+								display: flex;
+								flex-direction: row;
+								align-items: center;
+								width: 100%;
+								flex-wrap: wrap;
+								span.description {
+									order: 2;
+									width: 100%;
+								}										
+							}							
 							i.mkl-pc-thumbnail {
 								height: 38px;
 								margin: 0;
@@ -421,10 +432,6 @@
 						}
 
 						button.choice-group-label {
-							border-radius: 0;
-							box-shadow: none;
-							width: 100%;
-							margin-top: 10px;
 							&::after,
 							&::before {
 								content: '';
@@ -457,6 +464,19 @@
 								& ~ ul.choices-list--children {
 									display: none;
 								}
+							}
+						}
+
+						&.show-group-content {
+							> button.choice-group-label {
+								border-bottom-left-radius: 0;
+								border-bottom-right-radius: 0;
+							}
+							> ul.choices-list--children {
+								border: 1px solid color(border);
+								border-top: none;
+								padding: 10px;
+								border-radius: 0 0 10px 10px;
 							}
 						}
 					}							
@@ -499,7 +519,7 @@
 			padding: 0;
 			> button.layer-item {
 				padding: 25px 10px;
-				border: 1px solid #d2d2d7;
+				border: 1px solid color(border);
 				border-radius: 12px;
 				width: 100%;
 				&::after {
@@ -558,7 +578,7 @@
 							
 						}
 
-						button.choice-item {
+						button.choice-item, > button.choice-group-label {
 							border-radius: 0;
 							.choice-text--container {
 								display: flex;
@@ -569,7 +589,8 @@
 								span.description {
 									order: 2;
 									width: 100%;
-								}										
+									margin-top: 10px;
+								}
 							}
 							i.mkl-pc-thumbnail {
 								height: 50px;
