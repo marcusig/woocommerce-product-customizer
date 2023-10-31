@@ -587,7 +587,6 @@ $inner_space: 1em;
 							}
 
 							span.text {
-								display: block;
 								font-weight: 500;
 							}
 							
@@ -679,6 +678,11 @@ $inner_space: 1em;
 				li.layers-list-item {
 					> button {
 						padding-left: 60px;
+
+						span.text {
+							display: block;
+						}
+						
 						i {
 							position: absolute;
 							display: block;
@@ -749,7 +753,6 @@ $inner_space: 1em;
 					}
 					li {
 						> button {
-							padding-right: 85px;
 							background: transparent;
 							transition: 0.2s all;
 							span.choice-price {
@@ -821,6 +824,12 @@ $inner_space: 1em;
 								}
 							}
 						}
+						&.has-thumbnail {
+							> button {
+								padding-right: 85px;
+							}
+						}
+
 						&.is-group {
 
 							border-bottom: 1px solid $light-gray;
@@ -833,6 +842,13 @@ $inner_space: 1em;
 								padding: 5px 14px;
 								font-size: .8em;
 
+								.choice-text--container {
+									display: flex;
+									align-items: start;
+									flex-wrap: wrap;
+									flex-direction: column;	
+									width: 100%;
+								}
 								.text.choice-name {
 									opacity: .8;
 									text-transform: uppercase;
@@ -1209,16 +1225,42 @@ $inner_space: 1em;
 				}
 			}
 
+			a.save-your-design,
+			a.save-your-design--pdf ,
 			button.reset-configuration {
 				margin: 0;
-				padding: 0;
+				padding: 4px 9px;
 				background: transparent;
 				color: inherit;
+				text-transform: none;
+				font-size: 1em;
+				text-transform: none;
+				font-weight: normal;
+
 				appearance: none;
 				box-shadow: none;
 				border:  none;
+				color: var(--mkl_pc_color-primary);
+				svg {
+					height: 23px;
+					fill: currentColor;
+					width: 23px;
+					margin-right: 6px;
+					vertical-align: middle;					
+				}
+				&.icon-only {
+					span {
+						display: none;
+					}
+					svg {
+						margin-right: 0;
+					}
+				}
 				&:hover, &:focus {
 					opacity: .5;
+				}
+				@media (max-width: $small_screen_width) {
+					font-size: 12px;
 				}
 			}
 			
