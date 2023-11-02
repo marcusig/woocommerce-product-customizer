@@ -134,10 +134,23 @@ PC.fe.views.configurator = Backbone.View.extend({
 		this.open();
 	},
 	resetConfig: function() {
+		// Reset the configuration
 		PC.fe.contents.content.resetConfig();
+
+		// Maybe load the initial preset
 		if ( PC.fe.initial_preset ) {
 			PC.fe.setConfig( PC.fe.initial_preset );
 		}
+		
+		// Maybe reset the view
+		if ( 1 < PC.fe.angles.length ) {
+			PC.fe.angles.each( function( model ) {
+				model.set('active' , false); 
+			} );
+			PC.fe.angles.first().set( 'active', true ); 
+		}
+
+		// Trigger an action after reseting
 		wp.hooks.doAction( 'PC.fe.reset_configurator' );
 	}
 });
