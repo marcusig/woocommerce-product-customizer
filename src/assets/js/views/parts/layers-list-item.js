@@ -14,8 +14,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 	},
 
 	events: {
-		'click > .layer-item': 'show_choices', 
-		// 'click a i.close': 'hide_choices', 
+		'click > button.layer-item': 'show_choices', 
 	},
 
 	render: function() {
