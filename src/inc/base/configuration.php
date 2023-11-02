@@ -69,7 +69,7 @@ class Configuration {
 		if ( null != $ID && intval( $ID ) ) {
 			$this->ID = absint( intval( $ID ) );
 			$conf_post = get_post( $this->ID );
-			if ( 'private' === $this->get_visibility() && $this->post->post_author != get_current_user_id() && ! current_user_can( 'manage_woocommerce' ) ) {
+			if ( 'private' === $this->get_visibility() && $conf_post->post_author != get_current_user_id() && ! current_user_can( 'manage_woocommerce' ) ) {
 				return new WP_Error( '403', __( 'Unauthorized action, author issue', 'product-configurator-for-woocommerce' ) );
 			}
 			$this->post = $conf_post;
