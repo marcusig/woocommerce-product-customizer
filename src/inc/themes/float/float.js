@@ -40,7 +40,7 @@
 			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 		} else {
-			view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { step: function() {
+			view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { duration: 100, step: function() {
 				if ( PC_config.config.auto_scroll && view.el.offsetParent ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			} } );
 		}
@@ -52,7 +52,7 @@
 			scrollStartPost = $(document).scrollTop();
 			view.$el.find( '.layer_choices' ).first().hide();
 		} else {
-			view.$el.find( '.layer_choices' ).first().slideUp(200);
+			view.$el.find( '.layer_choices' ).first().slideUp(100);
 		}
 	} );
 
