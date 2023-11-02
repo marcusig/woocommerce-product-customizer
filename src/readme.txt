@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.4
-Stable tag: 1.2.55
+Stable tag: 1.2.56
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,6 +113,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.56 - 2/Nov/2023 = 
+
+* TWEAK: Dropdown style changes in Float
+* TWEAK: Reset angle when reseting config
+* FIX: Error in check preventing configurations to be deleted
 
 = 1.2.55 - 31/Oct/2023 =
 
