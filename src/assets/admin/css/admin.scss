@@ -119,7 +119,7 @@ body.pc-modal-opened {
 	z-index: 149000;
 }
 html .media-modal.pc-modal {
-	z-index: 150000;
+	z-index: 150000!important;
 	.media-frame-title { 
 		.description { 
 			display: block;
