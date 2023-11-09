@@ -114,6 +114,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Prevent potential fatal error when editing an order in the admin
+* TWEAK: Prevent zindex conflict with third party plugins in the admin
+
 = 1.2.56 - 2/Nov/2023 = 
 
 * TWEAK: Dropdown style changes in Float
