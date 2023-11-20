@@ -49,8 +49,8 @@ return json_decode('[
 	},
 	{
 		"product_name": "form-builder",
-		"label": "Conditional logic",
-		"description": "Collect data (text) directly from the product confifurator.",
+		"label": "Form fields",
+		"description": "Let your customers input their information directly from the product configurator, and make complex price calculations when used with the Extra-price add-on",
 		"img": "mkl-pc-form-fields.png",
 		"product_url": "https://wc-product-configurator.com/product/form-fields/"
 	}
