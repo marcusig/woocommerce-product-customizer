@@ -47,7 +47,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'condition' => '!data.not_a_choice && data.is_group'
 						),
 						'sku' => array(
-							'label' => __('SKU', 'product-configurator-for-woocommerce' ),
+							'label' => ( 'individual' == mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ) ? __('SKU', 'product-configurator-for-woocommerce' ) : __('SKU part', 'product-configurator-for-woocommerce' ),
 							'type' => 'text',
 							'priority' => 9,
 							'condition' => '!data.not_a_choice && !data.is_group'
