@@ -30,6 +30,8 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 			$configurator_data = $order_item->get_meta( '_configurator_data' );
 			if ( ! $configurator_data ) return $display_value;
 			
+			if ( ! is_string( $meta->value ) || ! strpos( $meta->value, 'order-configuration' ) ) return $display_value;
+
 			// Automatically override items with 'order-configuration-details'
 			if ( is_string( $meta->value ) && apply_filters( 'mkl/order/override_saved_meta', strpos( $meta->value, 'order-configuration-details' ) ) ) {
 			
