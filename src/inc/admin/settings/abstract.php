@@ -84,7 +84,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			if ( 'html' === $options['type'] ) {
 				$output = '
-				<div class="setting html">
+				<div class="setting html ' . esc_attr( $options['id'] ) . '">
 					<span class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</span>
 					';
 			} else {

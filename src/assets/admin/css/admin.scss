@@ -342,6 +342,21 @@ html .pc-modal-container {
 		}
 		
 	}
+	.mkl-pc-setting--warning {
+		padding: 10px;
+		background: #fffbf0;
+		border: 1px solid #efe8df;
+		border-radius: 3px;
+	}
+
+	.setting span.name.required_info {
+		display: none;
+	}
+
+	.setting.required_info {
+		margin-left: 34%;
+		width: auto;
+	}
 }
 
 .pc-modal-opened .mkl_pc span.select2-container {

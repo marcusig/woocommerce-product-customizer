@@ -139,8 +139,16 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'checkbox',
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
 					'priority' => 40,
-					'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
+					// 'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
 				),
+				'required_info' => array(
+					'label' => __( 'Info', 'product-configurator-for-woocommerce' ),
+					'type' => 'html',
+					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
+					'condition' => 'data.required && ( "select_first" == data.default_selection || ! data.default_selection)',
+					'priority' => 40,
+				),
+
 				'can_deselect' => array(
 					'label' => __( 'The user can deselect the current choice', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
