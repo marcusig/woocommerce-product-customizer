@@ -168,8 +168,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				if ( $compound_sku && count( $sku ) ) {
 					$data[] = array(
 						'className' => 'configuration-sku',
-						'key' => mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
-						'value' => implode( mkl_pc( 'settings')->get( 'sku_glue', '' ), $sku )
+						'key' => mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
+						'value' => implode( mkl_pc( 'settings')->get_label( 'sku_glue', '' ), $sku )
 					);
 				}
 
