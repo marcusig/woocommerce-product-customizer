@@ -89,7 +89,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 					';
 			} else {
 				$output = '
-					<label class="setting">
+					<label class="setting ' . esc_attr( $options['type'] ) . ' ' . esc_attr( $options['id'] ) . '">
 						<span class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</span>
 						';
 			}
