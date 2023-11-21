@@ -2,6 +2,7 @@
 Theme Name:   WSB
 Description:  A White Side Bar theme
 Tags:         right selector, drawers, accordion, right sidebar
+Supports: columns, color_swatches, steps
 */
 
 // COLORS
@@ -855,107 +856,25 @@ $inner_space: 1em;
 						display: none;
 					}
 
+					&.columns-1 > li.choices-list > ul li.choice:not(.is-group) {
+						width: calc(100% - .6em);
+					}
+					&.columns-2 > li.choices-list > ul li.choice:not(.is-group) {
+						width: calc(50% - .6em);
+						@media(max-screen: $small_screen_width) {
+							width: calc(100% - .6em);
+						}
+					}
+					&.columns-4 > li.choices-list > ul li.choice:not(.is-group) {
+						width: calc(25% - .6em);
+						@media(max-screen: $small_screen_width) {
+							width: calc(50% - .6em);
+						}
+					}
 				}
 
-				li.display-mode-dropdown {
-					padding: 10px 20px;
-					> button.layer-item {
-						padding-top: 10px;
-						padding-bottom: 10px;
-						border: 1px solid #EEE;
-					}
-					&.dropdown-move-label-outside {
-						> button.layer-item {
-							span.selected-choice {
-								font-size: 1rem;
-								text-transform: inherit;
-								opacity: 1;
-								padding-top: 10px;
-								padding-bottom: 10px;
-							}
-						}
-					}
-					.layer_choices {
-						position: absolute;
-						top: calc(100% - 11px);
-						width: calc(100% - 40px);
-						z-index: 2;
-						background: #FFF;
-						max-height: 250px;
-						overflow: auto;
-						border: 1px solid #EEE;
-						box-shadow: 0 20px 20px -10px rgba( 0, 0, 0, .29 );
-						
-						.choices-list {
-							padding: 0;
-							li {
-								width: 100%;
-								margin: 0;
-								border-radius: 0;
-								box-shadow: none;
-								
-								&.is-group .choice-group-label {
-									font-size: .8em;
-									opacity: .6;
-									padding: 10px;
-									border-bottom: 1px solid #eee;
-									width: 100%;
-								}
-								li:not(.is-group) {
-									
-								}
-
-								button.choice-item {
-									border-radius: 0;
-									.choice-text--container {
-										display: flex;
-										flex-direction: row;
-										align-items: center;
-										width: 100%;
-										flex-wrap: wrap;
-										span.description {
-											order: 2;
-											width: 100%;
-										}										
-									}
-
-									i.mkl-pc-thumbnail {
-										height: 50px;
-										width: 50px;
-										margin-top: -0.5em;
-										margin-bottom: -0.5em;									
-									}
-									.choice-text {
-										flex: 1;
-									}
-									span.choice-price {
-										text-align: right;
-									}
-									span.text.choice-name {
-										position: relative;
-										display: flex;
-										text-align: left;
-										justify-content: space-between;
-									}
-									&:hover, 
-									&:focus {
-										background: color( light-gray );
-										span.description {
-											color: color( choices_button_text_color );
-										}										
-									} 
-								}
-
-								&.active {
-									background: var(--mkl_pc_color-primary);
-								}
-
-							}
-						}
-						
-	
-					}
-				}				
+				@import '../../themes-common/scss/dropdown';
+							
 				@media( max-width: $small_screen_width ) {
 					position: absolute;
 					top: 0;
@@ -1461,6 +1380,13 @@ body.configurator_is_inline .mkl_pc {
 			}
 		}
 	
+	}
+	.layer_choices.swatches-size--medium {
+		--mkl_pc_color_thumnail_size: 43px;
+	}
+	
+	.layer_choices.swatches-size--large {
+		--mkl_pc_color_thumnail_size: 69px;
 	}
 }
 

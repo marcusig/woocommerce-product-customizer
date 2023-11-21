@@ -90,9 +90,10 @@ class Themes {
 	 * @param string $theme
 	 * @return array
 	 */
-	public function get_theme_info( $theme ) {
+	public function get_theme_info( $theme = false ) {
 		static $themes = array();
 
+		if ( ! $theme ) return $themes;
 		if ( isset( $themes[$theme] ) ) return $themes[$theme];
 
 		$theme_location = $this->get( $theme );
@@ -107,9 +108,25 @@ class Themes {
 			get_file_data( trailingslashit( $theme_location ) . 'style.css', array(
 				'Name'        => 'Theme Name',
 				'Description' => 'Description',
-				'Tags'        => 'Tags'
+				'Tags'        => 'Tags',
+				'Supports'    => 'Supports'
 			), 'mkl_pc_theme' )
 		);
 		return $themes[$theme];
+	}
+
+	public function get_current_theme() {
+		return mkl_pc( 'settings' )->get_theme();
+	}
+
+	public function current_theme_supports( $feature ) {
+		$theme = $this->get_current_theme();
+		// $supports = get_transient( 'mkl_pc_theme__' . $theme . '__supports__' . $feature );
+		// if ( $supports ) return $supports;
+		$theme_info = $this->get_theme_info( $theme );
+		if ( ! isset( $theme_info['Supports'] ) ) return false;
+		$supports = explode( ',', $theme_info['Supports'] );
+		$supports = array_map( 'trim', $supports );
+		return in_array( $feature, $supports );
 	}
 }

@@ -2,6 +2,7 @@
 Theme Name:   La Pomme
 Description:  A Silicon Valley inspired theme
 Tags:         right selector, right sidebar
+Supports: color_swatches, steps
 */
 
 // COLORS
@@ -705,6 +706,14 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 			}
 		}
 	
+	}
+
+	.layer_choices.swatches-size--medium {
+		--mkl_pc_color_thumnail_size: 43px;
+	}
+	
+	.layer_choices.swatches-size--large {
+		--mkl_pc_color_thumnail_size: 69px;
 	}
 }
 

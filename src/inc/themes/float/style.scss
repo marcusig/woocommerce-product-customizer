@@ -2,6 +2,7 @@
 Theme Name:   Float
 Description:  Floating sections and fullwidth background
 Tags:         right selector, drawers, accordion, right sidebar
+Supports: columns, color_swatches, steps
 */
 
 // COLORS
@@ -916,172 +917,25 @@ $inner_space: 1em;
 						display: none;
 					}
 
+					&.columns-1 > li.choices-list > ul li.choice:not(.is-group) {
+						width: calc(100% - .6em);
+					}
+					&.columns-2 > li.choices-list > ul li.choice:not(.is-group) {
+						width: calc(50% - .6em);
+						@media(max-screen: $small_screen_width) {
+							width: calc(100% - .6em);
+						}
+					}
+					&.columns-4 > li.choices-list > ul li.choice:not(.is-group) {
+						width: calc(25% - .6em);
+						@media(max-screen: $small_screen_width) {
+							width: calc(50% - .6em);
+						}
+					}
+
 				}
 
-				li.display-mode-dropdown, .layer_choices li.display-mode-dropdown {
-					padding: 10px;
-					> button.layer-item {
-						padding-top: 10px;
-						padding-bottom: 10px;
-						padding-left: 10px;
-						border: 1px solid #EEE;
-						border-radius: 5px;
-						&::after {
-							width: 8px;
-							height: 8px;
-							transform: translateY(-50%) rotate(45deg);
-						}
-						&:focus, &:hover {
-							padding-left: 10px;
-							&::after {
-								transform: translateY(-50%) rotate(225deg);
-							}
-						}
-					}
-
-					&.has-thumbnail {
-						> button.layer-item {
-							padding-left: 60px;
-							&:focus, &:hover {
-								padding-left: 60px;
-								i {
-									transform: translateY(-50%);
-								}
-							}
-						}
-					}
-
-					&.dropdown-move-label-outside {
-						> button.layer-item {
-							span.selected-choice {
-								font-size: 1rem;
-								text-transform: inherit;
-								opacity: 1;
-								padding-top: 10px;
-								padding-bottom: 10px;
-							}
-						}
-					}
-
-					.layer_choices.display-mode-dropdown {
-						position: absolute;
-						top: calc(100% - 11px);
-						width: calc(100% - 20px);
-						z-index: 2;
-						background: #FFF;
-						max-height: 250px;
-						overflow: auto;
-						border: 1px solid #EEE;
-						box-shadow: 0 20px 20px -10px rgba( 0, 0, 0, .29 );
-						
-						> .choices-list {
-							padding: 6px;
-							li {
-								width: 100%;
-								margin: 0;
-								border-radius: 0;
-								box-shadow: none;
-								
-								li.is-group .choice-group-label {
-									font-size: .8em;
-									opacity: .6;
-								}
-
-								button.choice-item {
-									border-radius: 5px;
-									padding: 8px;
-									padding-left: 22px;
-									.choice-text--container {
-										display: flex;
-										flex-direction: row;
-										align-items: center;
-										width: 100%;
-										flex-wrap: wrap;
-										span.description {
-											order: 2;
-											width: 100%;
-											margin-top: 6px;
-										}										
-									}
-
-									i.mkl-pc-thumbnail {
-										height: 35px;
-										width: 35px;
-										margin-top: -0.5em;
-										margin-bottom: -0.5em;
-										margin-right: 5px;								
-									}
-									.choice-text {
-										flex: 1;
-									}
-									span.text.choice-name {
-										position: relative;
-										display: flex;
-										text-align: left;
-										justify-content: space-between;
-									}
-									span.choice-price {
-										text-align: right;
-									}
-								}
-								&.has-thumbnail {
-									button.choice-item {
-										min-height: 40px;
-									}
-								}
-								&.has-advanced-description {
-									button.choice-item {
-										padding-right: 22px;
-									}
-									&:hover, &:focus-within {
-										a.mkl-pc-show-description {
-											svg use, svg path {
-												fill: #FFF;
-											}
-										}
-									}
-								}
-
-								&.active {
-									> button.choice-item {
-										color: color(primary);
-										background: transparent;
-										&::before {
-											content: '';
-											display: block;
-											position: absolute;
-											left: 6px;
-											top: 50%;
-											width: 8px;
-											height: 5px;
-											border-left: 2px solid #000;
-											border-bottom: 2px solid #000;
-											transform: translateY(-50%) rotate( -45deg );
-										}
-										&:hover, 
-										&:focus {
-											&::before {
-												border-color: #FFF;
-											}
-										}
-									}
-								}
-
-								button.choice-item {
-									&:hover, 
-									&:focus {
-										background: color( primary );
-										color: #FFF;
-										span.description, span.choice-price {
-											color: #FFF;
-											opacity: .75;
-										}
-									} 
-								}
-							}
-						}
-					}
-				}
+				@import '../../themes-common/scss/dropdown';
 
 				@media( max-width: $small_screen_width ) {
 					position: absolute;
@@ -1603,6 +1457,14 @@ body.configurator_is_inline .mkl_pc {
 			}
 		}
 	
+	}
+
+	.layer_choices.swatches-size--medium {
+		--mkl_pc_color_thumnail_size: 43px;
+	}
+	
+	.layer_choices.swatches-size--large {
+		--mkl_pc_color_thumnail_size: 69px;
 	}
 }
 
