@@ -428,6 +428,35 @@
 
 
 		}
+
+		&.columns-1 > li.choices-list > ul li.choice:not(.is-group) {
+			width: 100%;
+			border-right: none;
+		}
+		&.columns-3 > li.choices-list > ul li.choice:not(.is-group) {
+			width: calc(100% / 3);
+			border-right: 1px solid color( border-color );
+			&:nth-child( 3n+0 ) {
+				border-right: none;
+			}
+			@media(max-screen: $small_screen_width) {
+				width: calc(100%);
+				border-right: none;
+			}
+		}
+		&.columns-4 > li.choices-list > ul li.choice:not(.is-group) {
+			width: 25%;
+			border-right: 1px solid color( border-color );
+			&:nth-child( 4n+0 ) {
+				border-right: none;
+			}
+			@media(max-screen: $small_screen_width) {
+				width: 50%;
+				&:nth-child( 2n+0 ) {
+					border-right: none;
+				}
+			}
+		}		
 	}
 	// > ul {
 	// 	position: absolute;

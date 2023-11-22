@@ -2,6 +2,7 @@
 Theme Name: Clean
 Description: A clean and modern theme
 Tags: Left  
+Supports: columns, color_swatches, steps
 */
 
 @import 'scss/vars';
@@ -545,128 +546,147 @@ a.save-your-design--pdf {
 }
 
 /* Color mode */
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar ul.display-mode-colors li.choices-list {
-	padding: 1em;
-	ul {
-		flex-wrap: wrap;
-		--mkl_pc_icon_border_radius: 50%;
-		li.is-group {
-			width: 100%;
-		}
-
-		li:not(.is-group) {
-			padding: 5px;
-			width: auto;
-			--mkl_pc_choice_min_height: 0;
-			&:nth-child(odd) {
-				border: none;
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar ul.display-mode-colors {
+	li.choices-list {
+		padding: 1em;
+		ul {
+			flex-wrap: wrap;
+			--mkl_pc_icon_border_radius: 50%;
+			li.is-group {
+				width: 100%;
 			}
-			button {
-				padding: 0;
-				border: none;
-				&:hover, &:focus {
-					outline: none;
-					background: transparent;
-					i {
-						box-shadow: 0 3px 20px 8px rgba(0, 0, 0, .1);
-						outline-color: #FFF;
-						outline-offset: 2px;
-						outline-style: solid;				
-					}
+
+			li:not(.is-group) {
+				padding: 5px;
+				width: auto;
+				--mkl_pc_choice_min_height: 0;
+				&:nth-child(odd) {
+					border: none;
 				}
-			}
-
-			i.mkl-pc-thumbnail {
-				width: 44px;
-				height: 44px;
-				position: relative;
-				top: auto;
-				transform: none;
-				right: auto;
-				overflow: visible;
-				border: none;
-			}
-			
-			i.mkl-pc-thumbnail span {
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				box-shadow: none;
-				overflow: visible;
-				border-radius: 50%;
-				img {
-					border-radius: 50%;
-				}
-			}
-
-			&.active button {
-				background: transparent;
-				i.mkl-pc-thumbnail {
-					border-color: color( active_choice_button_bg_color );
-				}
-				i.mkl-pc-thumbnail span {
-					img {
-						box-shadow: 0 6px 15px -4px #00000091;
+				button {
+					padding: 0;
+					border: none;
+					box-shadow: none;
+					.text.choice-name {
+						display: none;
 					}
-					&::before {
-						content: ' ';
-						display: block;
-						width: 20px;
-						height: 20px;
-						background: #FFF;
-						position: absolute;
-						top: -5px;
-						right: -5px;
-						z-index: 1;
-						border-radius: 3px;
-						box-shadow: 0 3px 8px #0000004a;
-					}
-					&::after {
-						content: ' ';
-						/* color: green; */
-						position: absolute;
-						top: 0;
-						right: -1px;
-						display: block;
-						width: 10px;
-						height: 4px;
-						border-bottom: 2px solid #179608;
-						border-left: 2px solid #179608;
-						transform: rotate(-45deg);
-						z-index: 2;
-						box-sizing: content-box;
-					}
-				}			
-				
-			}
-
-			&.out-of-stock {
-				i.mkl-pc-thumbnail {
-					svg {
-						display: block;
-						width: 100%;
-						height: 100%;
-						position: absolute;
-						top: 0;
-						left: 0;
-						z-index: 1;
-					
-						line.cls-1 {
-							stroke: #FFF;
-							stroke-width: 4px;
+					&:hover, &:focus {
+						outline: none;
+						background: transparent;
+						box-shadow: none;
+						i {
+							box-shadow: 0 3px 20px 8px rgba(0, 0, 0, .1);
+							outline-color: #FFF;
+							outline-offset: 2px;
+							outline-style: solid;				
 						}
 					}
 				}
-				button:focus,
-				button:hover {
+
+				i.mkl-pc-thumbnail {
+					width: var( --mkl_pc_color_thumnail_size, 44px );
+					height: var( --mkl_pc_color_thumnail_size, 44px );
+					position: relative;
+					top: auto;
+					transform: none;
+					right: auto;
+					overflow: visible;
+					border: none;
+				}
+				
+				i.mkl-pc-thumbnail span {
+					top: 0;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					box-shadow: none;
+					overflow: visible;
+					border-radius: 50%;
+					img {
+						border-radius: 50%;
+					}
+				}
+
+				&.active button {
+					background: transparent;
 					i.mkl-pc-thumbnail {
-						outline-style: dashed;
+						border-color: color( active_choice_button_bg_color );
+					}
+					i.mkl-pc-thumbnail span {
+						img {
+							box-shadow: 0 6px 15px -4px #00000091;
+						}
+						&::before {
+							content: ' ';
+							display: block;
+							width: 20px;
+							height: 20px;
+							background: #FFF;
+							position: absolute;
+							top: -5px;
+							right: -5px;
+							z-index: 1;
+							border-radius: 3px;
+							box-shadow: 0 3px 8px #0000004a;
+						}
+						&::after {
+							content: ' ';
+							/* color: green; */
+							position: absolute;
+							top: 0;
+							right: -1px;
+							display: block;
+							width: 10px;
+							height: 4px;
+							border-bottom: 2px solid #179608;
+							border-left: 2px solid #179608;
+							transform: rotate(-45deg);
+							z-index: 2;
+							box-sizing: content-box;
+						}
+					}			
+					
+				}
+
+				&.out-of-stock {
+					i.mkl-pc-thumbnail {
+						svg {
+							display: block;
+							width: 100%;
+							height: 100%;
+							position: absolute;
+							top: 0;
+							left: 0;
+							z-index: 1;
+						
+							line.cls-1 {
+								stroke: #FFF;
+								stroke-width: 4px;
+							}
+						}
+					}
+					button:focus,
+					button:hover {
+						i.mkl-pc-thumbnail {
+							outline-style: dashed;
+						}
 					}
 				}
 			}
 		}
 	}
+
+	&.layer_choices.swatches-size--small {
+		--mkl_pc_color_thumnail_size: 35px;
+	}
+
+	&.layer_choices.swatches-size--medium {
+		--mkl_pc_color_thumnail_size: 50px;
+	}
+	
+	&.layer_choices.swatches-size--large {
+		--mkl_pc_color_thumnail_size: 74px;
+	}	
 }
 
 
