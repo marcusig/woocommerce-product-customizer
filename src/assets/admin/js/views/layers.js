@@ -382,8 +382,7 @@ TODO:
 		initialize: function( options ) {
 			if ( this.pre_init ) this.pre_init( options );
 			this.listenTo( this.model, 'destroy', this.remove ); 
-			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required' ), this.render );
-			
+			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode' ), this.render );
 		},
 		events: {
 			// 'click' : 'edit',

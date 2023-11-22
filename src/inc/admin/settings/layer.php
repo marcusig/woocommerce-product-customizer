@@ -28,7 +28,8 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 		 * @return array
 		 */
 		public function get_default_settings() {
-			return apply_filters('mkl_pc_layer_default_settings', array(
+			
+			$settings = array(
 				'type' => array(
 					'label' => __( 'Layer type', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
@@ -65,7 +66,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => 'dropdown',
 						],
 						[
-							'label' => __( 'Small color choices', 'product-configurator-for-woocommerce' ),
+							'label' => __( 'Color swatches', 'product-configurator-for-woocommerce' ),
 							'value' => 'colors',
 						],
 					],
@@ -144,7 +145,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				'required_info' => array(
 					'label' => __( 'Info', 'product-configurator-for-woocommerce' ),
 					'type' => 'html',
-					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
+					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If "Require a choice" is enabled "Default selection" is set to "Select the first choice by default", the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
 					'condition' => 'data.required && ( "select_first" == data.default_selection || ! data.default_selection)',
 					'priority' => 40,
 				),
@@ -177,8 +178,62 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'text',
 					'priority' => 500,
 				),
-	
-			));
+			);
+
+			if ( mkl_pc( 'themes' )->current_theme_supports( 'columns' ) ) {
+				$settings['columns'] = array(
+					'label' => __( 'Number of columns', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'choices' => [
+						[
+							'label' => __( 'Default', 'product-configurator-for-woocommerce' ),
+							'value' => 'default'
+						],
+						[
+							'label' => __( '4', 'product-configurator-for-woocommerce' ),
+							'value' => '4',
+						],
+						[
+							'label' => __( '3', 'product-configurator-for-woocommerce' ),
+							'value' => '3',
+						],
+						[
+							'label' => __( '2', 'product-configurator-for-woocommerce' ),
+							'value' => '2',
+						],
+						[
+							'label' => __( '1', 'product-configurator-for-woocommerce' ),
+							'value' => '1',
+						],
+					],
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && "default" == data.display_mode',
+					'priority' => 8,
+				);
+			}
+
+			if ( mkl_pc( 'themes' )->current_theme_supports( 'color_swatches' ) ) {
+				$settings['color_swatch_size'] = array(
+					'label' => __( 'Color swatch size', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'choices' => [
+						[
+							'label' => __( 'Small', 'product-configurator-for-woocommerce' ),
+							'value' => 'small'
+						],
+						[
+							'label' => __( 'Medium', 'product-configurator-for-woocommerce' ),
+							'value' => 'medium',
+						],
+						[
+							'label' => __( 'Color swatches', 'product-configurator-for-woocommerce' ),
+							'value' => 'large',
+						],
+					],
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && "colors" == data.display_mode',
+					'priority' => 8,
+				);
+			}
+			return apply_filters( 'mkl_pc_layer_default_settings', $settings );
 		}
 	}
 }

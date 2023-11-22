@@ -90,7 +90,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				);
 				if ( $sku = $this->get_sku( $configurator_data ) ) {
 					$item->add_meta_data(
-						mkl_pc( 'settings')->get( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
+						mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
 						$sku
 					);
 
