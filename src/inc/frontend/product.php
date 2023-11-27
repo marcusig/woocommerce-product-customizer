@@ -224,6 +224,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 									echo $qty_input;
 								?>
 							<# } #>
+							<?php do_action( 'mkl_pc_frontend_configurator_cart_form' ); ?>
 						</form>
 					<# } #>
 
