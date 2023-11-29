@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.4
-Stable tag: 1.2.56
+Stable tag: 1.2.57
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,8 +114,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.57 - 29/Nov/2023 = 
+
+* FEATURE: Added Supports Swatch size and number of columns on a selection of themes
 * TWEAK: Prevent potential fatal error when editing an order in the admin
 * TWEAK: Prevent zindex conflict with third party plugins in the admin
+* FIX: compatibility issue with Blocksy
 
 = 1.2.56 - 2/Nov/2023 = 
 
@@ -557,4 +561,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.55 Tested up to 6.4, various improvements to themes (design tweaks) and other tweaks
+* 1.2.57 Possibility to choose number of columns and swatch sizes on some themes, various tweaks
