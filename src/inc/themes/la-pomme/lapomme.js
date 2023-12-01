@@ -56,8 +56,12 @@
 	wp.hooks.addFilter( 'mkl-pc-configurator-layer-item.with.button', 'MKL/PC/Themes/lapomme', function( use_button, data ) {
 		if ( 'dropdown' == data.display_mode ) return true;
 		return false;
-			
 	}, 20 );
+
+	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/float', function( position, $nav ) {
+		$nav.insertAfter( PC.fe.modal.footer.$( '.price-container' ) );
+		return PC.fe.modal.toolbar.$el;
+	} );
 
 	// Scroll to newly opened layer, when onening it using conditional logic
 	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/float', function( model ) {

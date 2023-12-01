@@ -103,7 +103,7 @@
 				-webkit-animation: slide-in-top 0.2s ease-out;
 				animation: slide-in-top 0.2s ease-out;
 
-				&.type-group {
+				&.type-group:not( .type-step ) {
 					border: 1px solid color(border);
 					padding: 20px;
 					border-radius: 12px;
