@@ -58,6 +58,8 @@ PC.fe.views.form = Backbone.View.extend({
 			}
 		}
 
+		wp.hooks.doAction( 'PC.fe.render_form', this );
+
 		return this.$el;
 	},
 
@@ -197,6 +199,5 @@ PC.fe.views.form = Backbone.View.extend({
 				if ( 'button' === PC.fe.trigger_el[0].type ) $( PC.fe.trigger_el[0] ).remove();
 			}
 		}
-
 	},
 } );
