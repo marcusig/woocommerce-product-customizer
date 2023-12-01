@@ -303,8 +303,10 @@ $inner_space: 1em;
 			padding-top: 4px;
 		}
 
-		button.configurator-add-to-cart {
+		button.configurator-add-to-cart,
+		.mkl-pc--steps button {
 			background: color(primary);
+			border: 1px solid color(primary);
 			color: #FFF;
 			font-size: 1rem;
 			padding: 10px 25px;
@@ -316,22 +318,45 @@ $inner_space: 1em;
 			// }
 
 			svg {
-				display: none;
-				// @media (min-width: $small_screen_width) {
-				// }
-				// @media (max-width: $small_screen_width) {
-				// 	path {
-				// 	   fill: #36383a;
-				// 	}
-				// 	max-width: 25px;
-				// }
-			}
-			span {
-				// @media (max-width: $small_screen_width) {
-				// 	display: none;
-				// }
+				display: inline-block;
+				width: 20px;
+				height: 20px;
+				transform: translateX(10px);
+				path {
+					fill: #FFF;
+				}
 			}
 		}
+
+		button.configurator-add-to-cart {
+			svg {
+				display: none;
+			}
+		}
+
+		.mkl-pc--steps button.step-previous {
+			background: #F5F5F7;
+			color: color(primary);
+			border: 1px solid color(primary);
+			padding: 10px 15px;
+			span {
+				display: none;
+			}
+			svg {
+				transform: translateX( 0 );
+				path {
+					fill: color(primary);
+				}
+			}
+			&:disabled {
+				color: #B7B7B7;
+				border-color: #d2d2d7;
+				svg path {
+					fill: #B7B7B7;
+				}
+			}
+		}
+
 
 		@media (max-width: $small_screen_width) {
 
@@ -831,7 +856,6 @@ a.save-your-design span {
 }
 
 a.save-your-design svg {
-    transform: translateY(-5px);
     fill: color(primary);
 	margin-right: 0;
 }
@@ -839,14 +863,22 @@ a.save-your-design svg {
 a.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
 a.save-your-design--pdf svg path {
-	fill: transparent;
-    stroke-width: 3px;
-    stroke: var(--mkl_pc_color-primary);
+	fill: color(primary);
 }
 
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
+}
+
+@import '../../themes-common/scss/steps';
+
+nav.mkl-pc--steps {
+    justify-content: space-between;
+	div {
+		margin-right: 5px;
+		margin-left: 5px;
+	}
 }
 
 @media (max-width: 660px) {
