@@ -106,6 +106,7 @@ class Ajax {
 							$data = get_transient( 'mkl_pc_data_init_' . $id );
 						}
 					}
+
 					if ( ! $data ) {
 						$data = $this->db->get_front_end_data( $id );
 						$data = $this->db->escape( $data );
