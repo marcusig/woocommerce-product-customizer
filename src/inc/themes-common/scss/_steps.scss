@@ -1,0 +1,23 @@
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.type-step:not(.active) {
+    display: none;
+}
+
+nav.mkl-pc--steps {
+    display: flex;
+    flex-direction: row;
+}
+
+.mkl_pc.has-steps:not(.last-step) .mkl_pc_container .form .pc_configurator_form {
+    display: none;
+}
+
+.mkl_pc.has-steps.last-step {
+    nav.mkl-pc--steps .step-next {
+		display: none;
+	}
+}
+// .mkl_pc.has-steps.first-step {
+//     nav.mkl-pc--steps .step-previous {
+// 		display: none;
+// 	}
+// }

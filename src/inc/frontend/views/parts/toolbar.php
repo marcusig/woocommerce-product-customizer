@@ -20,3 +20,25 @@
 	</div>
 	<?php do_action( 'mkl_pc_frontend_configurator_footer_after' ); ?>
 </script>
+
+<script type="text/html" id="tmpl-mkl-pc-configurator-step--previous" data-wg-notranslate>
+	<?php
+		$classes = mkl_pc( 'settings' )->get_label( 'button_classes', 'primary button btn btn-primary' );
+	?>
+	<button type="button" class="step-previous <?php echo esc_attr( $classes ); ?>">
+		<?php do_action( 'mkl_pc/previous_step/before' ); ?>
+		<span><?php _e( 'Previous', 'product-configurator-for-woocommerce' ); ?></span>
+		<?php do_action( 'mkl_pc/previous_step/after' ); ?>
+	</button>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-configurator-step--next" data-wg-notranslate>
+	<?php
+		$classes = mkl_pc( 'settings' )->get_label( 'button_classes', 'primary button btn btn-primary' );
+	?>
+	<button type="button" class="step-next <?php echo esc_attr( $classes ); ?>">
+		<?php do_action( 'mkl_pc/next_step/before' ); ?>
+		<span><?php _e( 'Next', 'product-configurator-for-woocommerce' ); ?></span>
+		<?php do_action( 'mkl_pc/next_step/after' ); ?>
+	</button>
+</script>

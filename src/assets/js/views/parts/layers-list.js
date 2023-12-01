@@ -13,19 +13,20 @@ PC.fe.views.layers_list = Backbone.View.extend({
 	events: {
 	}, 
 	render: function() {
-		this.options.parent.$selection.append( this.$el ); 
+		this.options.parent.$selection.append( this.$el );
 		this.add_all( PC.fe.layers );
 		return this.$el;
-	}, 
+	},
 	add_all: function( collection ) { 
-		this.$el.empty(); 
+		this.$el.empty();
 		this.items = [];
 		collection.orderBy = 'order';
 		collection.sort();
-		collection.each( this.add_one, this ); 
+		PC.fe.steps.setup_steps();
+		collection.each( this.add_one, this );
 		wp.hooks.doAction( 'PC.fe.layers_list.layers.added', this );
 	},
-	add_one: function( model ){
+	add_one: function( model ) {
 		var new_layer;
 
 		if ( ! model.attributes.not_a_choice ) {
