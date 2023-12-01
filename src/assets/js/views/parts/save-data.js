@@ -28,8 +28,16 @@ PC.fe.save_data = {
 	is_layer_valid: function( layer ) {
 		this.reset_errors();
 		PC.fe.errors = [];
-		this.parse_choices( layer );
+		this.validate_layer( layer );
 		return ! PC.fe.errors.length;
+	},
+	validate_layer: function( layer ) {
+		if ( 'group' == layer.get( 'type' ) ) {
+			var children = layer.collection.where( { parent: layer.id } );
+			_.each( children, this.validate_layer.bind( this ) );
+			return;
+		}
+		this.parse_choices( layer );
 	},
 	// get choices for one layer 
 	parse_choices: function( model ) {
