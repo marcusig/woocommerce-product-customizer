@@ -1523,6 +1523,15 @@ a.save-your-design svg path,
 	z-index: 100000;
 }
 
+@import '../../themes-common/scss/steps';
+
+nav.mkl-pc--steps {
+    width: 100%;
+    padding: 2em;
+    padding-top: 0;
+    justify-content: space-between;
+}
+
 @media (max-width: 660px) {
 	.mkl_pc.no-form-modal .mkl_pc_container {
 		.mkl-pc-show-form {

@@ -713,6 +713,41 @@
 		}				
 	}
 
+	.layers-list-item.type-step {
+
+		height: 100%;
+		overflow-x: hidden;
+
+		> .layer-item {
+			display: block;
+			padding: 10px;
+			.layer-name {
+				display: block;
+				font-size: 1.3em;
+				font-weight: bold;
+			}
+			.selected-choice {
+				display: block;
+				font-size: .85em;
+				text-transform: uppercase
+			}
+		}
+		> .layer_choices {
+			position: relative;
+			left: auto;
+			background: transparent;
+			box-shadow: none;
+			.layer-choices-title {
+				display: none;
+			}
+		}
+	}
+
+	.layers-list-item.type-step:not(.active) {
+		display: none;
+	}
+
+
 	@media( max-width: $small_screen_width ) {
 		@at-root .mkl_pc.showing-choices {
 			--mkl_pc_toolbar_width: 250px;

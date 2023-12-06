@@ -33,6 +33,19 @@ function mkl_pc_float_theme_add_mobile_form_button() {
 add_action( 'mkl_pc_frontend_configurator_footer_form_before', 'mkl_pc_float_theme_add_mobile_form_button', 20 );
 
 /**
+ * Wrap product and extra price elements
+ */
+function mkl_pc_float_price_wrapper_before() {
+	echo '<div class="pc-total-price--container">';
+}
+add_action( 'mkl_pc_frontend_configurator_footer_form', 'mkl_pc_float_price_wrapper_before', 8 );
+
+function mkl_pc_float_price_wrapper_after() {
+	echo '</div>';
+}
+add_action( 'mkl_pc_frontend_configurator_footer_form', 'mkl_pc_float_price_wrapper_after', 16 );
+
+/**
  * Remove unused colors from the customizer
  *
  * @param array $colors

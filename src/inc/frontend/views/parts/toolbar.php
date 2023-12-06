@@ -23,11 +23,12 @@
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-step--previous" data-wg-notranslate>
 	<?php
-		$classes = mkl_pc( 'settings' )->get_label( 'button_classes', 'primary button btn btn-primary' );
+		$classes = apply_filters( 'mkl_pc/previous_step/button_classes', '' );
+		$label = mkl_pc( 'settings' )->get_label( 'previous_step_label', __( 'Previous', 'product-configurator-for-woocommerce' ) );
 	?>
-	<button type="button" class="step-previous <?php echo esc_attr( $classes ); ?>">
+	<button type="button" class="step-previous <?php echo esc_attr( $classes ); ?>" title="<?php esc_attr( $label ); ?>">
 		<?php do_action( 'mkl_pc/previous_step/before' ); ?>
-		<span><?php _e( 'Previous', 'product-configurator-for-woocommerce' ); ?></span>
+		<span><?php echo $label; ?></span>
 		<?php do_action( 'mkl_pc/previous_step/after' ); ?>
 	</button>
 </script>
@@ -35,10 +36,12 @@
 <script type="text/html" id="tmpl-mkl-pc-configurator-step--next" data-wg-notranslate>
 	<?php
 		$classes = mkl_pc( 'settings' )->get_label( 'button_classes', 'primary button btn btn-primary' );
+		$classes = apply_filters( 'mkl_pc/next_step/button_classes', '' );
+		$label = mkl_pc( 'settings' )->get_label( 'next_step_label', __( 'Next', 'product-configurator-for-woocommerce' ) );
 	?>
 	<button type="button" class="step-next <?php echo esc_attr( $classes ); ?>">
 		<?php do_action( 'mkl_pc/next_step/before' ); ?>
-		<span><?php _e( 'Next', 'product-configurator-for-woocommerce' ); ?></span>
+		<span><?php echo $label; ?></span>
 		<?php do_action( 'mkl_pc/next_step/after' ); ?>
 	</button>
 </script>

@@ -86,22 +86,12 @@ function mkl_pc_lapomme_syd_icon() {
 add_filter( 'PC.syd.svg.icon', 'mkl_pc_lapomme_syd_icon' );
 
 function mkl_pc_clean_add_reset_icon() {
-	echo file_get_contents( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/reset.svg' );
+	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' );
 }
 add_action( 'mkl_pc/reset_button/before_label', 'mkl_pc_clean_add_reset_icon' );
 
 function mkl_pc_lapomme_save_pdf_icon() {
-	echo file_get_contents( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/download.svg' );
+	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/download.svg' );
 }
 add_action( 'PC.syd.pdf_download.svg.icon', 'mkl_pc_lapomme_save_pdf_icon' );
-
-function mkl_pc_lapomme_previous_step_icon() {
-	echo file_get_contents( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/arrow-left.svg' );
-}
-add_action( 'mkl_pc/previous_step/before', 'mkl_pc_lapomme_previous_step_icon' );
-
-function mkl_pc_lapomme_next_step_icon() {
-	echo file_get_contents( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/arrow-right.svg' );
-}
-add_action( 'mkl_pc/next_step/after', 'mkl_pc_lapomme_next_step_icon' );
 

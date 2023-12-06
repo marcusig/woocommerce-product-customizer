@@ -384,6 +384,7 @@ class Frontend_Woocommerce {
 				'swipe_to_change_view' => ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ),
 				'choice_groups_toggle' => ( bool ) mkl_pc( 'settings')->get( 'choice_groups_toggle', false ),
 				'auto_close_siblings_in_groups' => ( bool ) mkl_pc( 'settings')->get( 'auto_close_siblings_in_groups', false ),
+				'use_steps' => ( bool ) mkl_pc( 'settings')->get( 'use_steps', false ) && mkl_pc( 'themes' )->current_theme_supports( 'steps' ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),

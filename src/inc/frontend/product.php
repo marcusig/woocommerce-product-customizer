@@ -326,5 +326,15 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			return $selectors;
 		}
 
+		/**
+		 * SETTINGS:
+		 * - show previous button
+		 * - Next button label: Custom label or Step name (layer name)
+		 * 
+		 * REQUIREMENTS:
+		 * - Validate contents of a step before being able to proceed
+		 * - Update steps when checking conditional logic
+		 */
+
 	}
 }

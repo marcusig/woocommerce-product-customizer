@@ -39,6 +39,7 @@ $inner_space: 1em;
 		--mkl_pc_color-#{$name}: #{$color};
 	}
 	--mkl_pc_toolbar_width: 400px;
+	--mkl_pc_footer_height: 80px;
 }
 
 @-webkit-keyframes sk-scaleout {
@@ -207,6 +208,7 @@ $inner_space: 1em;
 			left: 0;
 			right: 0;
 			bottom: 0;
+			--mkl_pc_footer_height: 70px;
 		}
 
 		.mkl_pc_bg {
@@ -214,12 +216,9 @@ $inner_space: 1em;
 			left: var(--mkl_pc_toolbar_width);
 			top: 0;
 			right: 0;
-			bottom: $footer_height;
+			bottom: var(--mkl_pc_footer_height);
 			background-position: 50%;
 			background-size: cover;
-			@media( max-width: $medium_screen_width ) {
-				bottom: $footer_height_small_screen;
-			}
 			@media( max-width: $small_screen_width ) {
 				left: 0;
 				top: 0;
@@ -233,11 +232,8 @@ $inner_space: 1em;
 			left: var(--mkl_pc_toolbar_width); 
 			top: 0;
 			right: 0;
-			bottom: $footer_height;
+			bottom: var(--mkl_pc_footer_height);
 
-			@media( max-width: $medium_screen_width ) {
-				bottom: $footer_height_small_screen;
-			}
 			@media( max-width: $small_screen_width ) {
 				left: 0;
 				bottom: 50%;
@@ -417,7 +413,7 @@ $inner_space: 1em;
 			background: #fff;
 			left: 0;
 			top: 0;
-			bottom: $footer_height;
+			bottom: var(--mkl_pc_footer_height);
 			//box-shadow: 3px 0px 15px rgba(0,0,0,0.2);
 			
 			display: flex;
@@ -633,8 +629,8 @@ $inner_space: 1em;
 							padding: 0;
 							position: relative; 
 							&.active li {
-								-webkit-animation: slide-in-left 1.0s ease-out;
-								animation: slide-in-left 1.0s ease-out;
+								-webkit-animation: slide-in-left .3s cubic-bezier(0.22, 0.61, 0.36, 1);
+								animation: slide-in-left .3s cubic-bezier(0.22, 0.61, 0.36, 1);
 							}
 							
 							li.choice.active {
@@ -823,7 +819,7 @@ $inner_space: 1em;
 							}
 						}
 
-						&.has-thumbnail > button {
+						&.choice.has-thumbnail > button {
 							padding: 10px 14px;
 						}
 
@@ -1125,6 +1121,41 @@ $inner_space: 1em;
 						}
 					}
 				}
+
+				.layers-list-item.type-step {
+
+					height: 100%;
+					overflow-x: hidden;
+
+					> .layer-item {
+						display: block;
+						padding: 10px;
+						.layer-name {
+							display: block;
+							font-size: 1.3em;
+							font-weight: bold;
+						}
+						.selected-choice {
+							display: block;
+							font-size: .85em;
+							text-transform: uppercase
+						}
+					}
+					> .layer_choices {
+						position: relative;
+						left: auto;
+						background: transparent;
+						box-shadow: none;
+						.layer-choices-title {
+							display: none;
+						}
+					}
+				}
+
+				.layers-list-item.type-step:not(.active) {
+					display: none;
+				}
+
 				@media( max-width: $small_screen_width ) {
 					position: absolute;
 					top: 0;
@@ -1136,13 +1167,9 @@ $inner_space: 1em;
 				}				
 			}
 
-			@media (max-width: $medium_screen_width) {
-				bottom: $footer_height_small_screen;
-			}
 			@media( max-width: $small_screen_width ) {
 				width: 100%;
 				top: 50%;
-				bottom: $footer_height_small_screen;
 			}
 
 		}
@@ -1154,7 +1181,7 @@ $inner_space: 1em;
 			bottom: 0;
 			left: 0;
 			width: 100%;
-			height: $footer_height;
+			height: var(--mkl_pc_footer_height);
 			z-index: 2; 
 			padding: $inner_space; 
 			
@@ -1270,7 +1297,9 @@ $inner_space: 1em;
 
 			@media (max-width: $medium_screen_width) {
 				text-align: center;
-				height: $footer_height_small_screen;
+				.footer__section-center {
+					display: flex;
+				}
 			}
 			@media (max-width: $small_screen_width) {
 				box-shadow: 0 -10px 20px rgba(0,0,0,.2);
@@ -1372,6 +1401,37 @@ $inner_space: 1em;
 		}		
 	}
 
+}
+
+nav.mkl-pc--steps {
+    display: inline-flex;
+    flex-direction: row;
+}
+
+.mkl_pc.has-steps:not(.last-step) .mkl_pc_container .form .pc_configurator_form {
+    display: none;
+}
+
+.mkl_pc.has-steps.last-step {
+    nav.mkl-pc--steps .step-next {
+		display: none;
+	}
+}
+
+.mkl_pc.has-steps:not(.right) {
+	footer {
+		.footer__section-left {
+			order: 3;
+		}
+		
+		.footer__section-right {
+			order: 1;
+		}
+		
+		.footer__section-center {
+			order: 2;
+		}
+	}
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choices-list li.has-qty.active {
