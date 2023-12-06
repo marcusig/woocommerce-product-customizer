@@ -37,6 +37,7 @@ $inner_space: 1em;
 
 :root {
 	--toolbar_width: 400px;
+	--mkl_pc-float-spacing: 26px;
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
@@ -372,12 +373,13 @@ $inner_space: 1em;
 				h3 {
 					text-align: right;
 					text-transform: uppercase;
-					font-size: 1em;
+					font-size: 18px;
+					line-height: 1.2;
 					margin: 0;
 					padding: 0.5em;
 					font-weight: 500;
-					padding-top: 2em;
-					padding-right: 2em;
+					padding-top: var(--mkl_pc-float-spacing);
+					padding-right: var(--mkl_pc-float-spacing);
 					&::after {
 						content: '';
 						display: block;
@@ -462,11 +464,11 @@ $inner_space: 1em;
 				height: 100%;
 				overflow-x: hidden;
 				overflow-y: auto;
-				padding: 2em;
+				padding: var(--mkl_pc-float-spacing);
 
 				& + .form {
 					position: relative;
-					padding-top: 2em;
+					padding-top: 20px;
 					// &::after {
 					// 	content: '';
 					// 	transition: .2s all;
@@ -508,12 +510,24 @@ $inner_space: 1em;
 						padding: 0;
 						line-height: 2;
 						position: relative;
-
-						background: #FFF;
-						margin-bottom: 1em;
 						border: none;
-						box-shadow: 0 15px 30px rgba(63, 67, 74, .10);
-						border-radius: 8px;
+
+						&:not( .type-step ),
+						&.type-step > .layer_choices > .choices-list > ul > li.layers-list-item {
+							background: #FFF;
+							margin-bottom: 1em;
+							box-shadow: 0 15px 30px rgba(63, 67, 74, .10);
+							border-radius: 8px;
+						}
+
+						&.type-step {
+							> span.layer-item .layer-name {
+								display: block;
+								font-size: 18px;
+								text-transform: uppercase;
+								line-height: 1.2;
+							}
+						}
 						// -webkit-animation: slide-in-top 0.2s ease-out;
 						// animation: slide-in-top 0.2s ease-out;
 
@@ -873,6 +887,7 @@ $inner_space: 1em;
 									}
 								}
 							}
+							
 							&.choices-list {
 								padding: 3px;
 								box-sizing: border-box;
@@ -969,8 +984,8 @@ $inner_space: 1em;
 		}
 
 		.form.form-cart {
-			padding: 1em 2em;
-			padding-bottom: 2em;
+			padding: 1em var(--mkl_pc-float-spacing);
+			padding-bottom: var(--mkl_pc-float-spacing);
 			text-align: right;
 			.pc_configurator_form {
 				> * {
@@ -986,6 +1001,10 @@ $inner_space: 1em;
 				margin-bottom: .5em;
 				text-align: right;
 				width: 100%;
+			}
+			.pc-total-price--container {
+				width: 100%;
+				padding: var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) 0 var(--mkl_pc-float-spacing);
 			}
 			.pc-total-price {
 				width: 100%;
@@ -1091,10 +1110,10 @@ $inner_space: 1em;
 				position: fixed;
 				bottom: -100%;
 				transition: .3s all cubic-bezier(0.22, 0.61, 0.36, 1);
-				width: calc(100% - 2em);
+				width: calc(100% - var(2em));
 				left: 1em;
 				background: #FFF;
-				padding: 2em;
+				padding: var(--mkl_pc-float-spacing);
 				// height: calc(100vh - #{$footer_height_small_screen} - 2em);
 				box-sizing: border-box;
 				border-radius: 1em;
@@ -1599,6 +1618,61 @@ a.save-your-design svg path,
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
 }
+
+@import '../../themes-common/scss/steps';
+
+.mkl_pc.has-steps .mkl_pc_container {
+	section.choices + .form.form-cart {
+		display: flex;
+		flex-wrap: wrap;
+		padding: 0;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.pc_configurator_form {
+		display: inline-flex;
+		width: auto;
+		padding: 8px var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) 0;
+	}	
+}
+
+nav.mkl-pc--steps {
+    width: auto;
+    padding: 8px 0 var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing);
+	display: inline-flex;
+    justify-content: space-between;
+
+	button.step-previous {
+		background: transparent;
+		appearance: none;
+		box-shadow: none;
+		border: none;
+		span {
+			display: none;
+		}
+		svg {
+			width: 32px;
+			height: 32px;
+		}
+	
+	}
+
+
+	button.step-next svg {
+		margin-left: 10px;
+		width: 20px;
+		height: 20px;
+	}
+}
+
+.mkl_pc.has-steps:not(.last-step) .mkl_pc_container {
+	nav.mkl-pc--steps {
+		width: 100%;
+		padding: 8px var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing);
+	}
+}
+
 
 @media (max-width: 660px) {
 	.mkl_pc.no-form-modal .mkl_pc_container {

@@ -3,7 +3,8 @@
 	var scrollStartPost;
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/float', function( view ) {
 		// duplicate the form to have a different one on mobile or desktop views
-		var clone = view.footer.form.$el.clone().appendTo( view.toolbar.$el );
+		var clone = view.footer.form.$el.clone().insertAfter( view.toolbar.$selection );
+
 		view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 		view.$el.addClass( 'float' );
 		if ( PC_config.config.no_form_modal ) {
@@ -28,6 +29,14 @@
 
 	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/float', function( view ) {
 		view.$el.removeClass( 'mobile-show-form' );
+	} );
+
+	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/float', function( position, $nav ) {
+		if ( PC.utils._isMobile() ) {
+			return position;
+		}
+		PC.fe.modal.toolbar.$( '.pc_configurator_form' ).before( $nav );
+		return PC.fe.modal.toolbar.$el;
 	} );
 
 	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/float', function( where ) {

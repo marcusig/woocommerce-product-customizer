@@ -2,7 +2,7 @@
 Theme Name: Clean
 Description: A clean and modern theme
 Tags: Left  
-Supports: columns, color_swatches, steps
+Supports: columns, color_swatches
 */
 
 @import 'scss/vars';
@@ -857,6 +857,40 @@ body:not(.is-mobile) .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices >
 	left: 0;
 	&::after {
 		left: 52px;
+	}
+}
+
+nav.mkl-pc--steps {
+    display: inline-flex;
+    flex-direction: row;
+}
+
+.mkl_pc.has-steps:not(.last-step) .mkl_pc_container .form .pc_configurator_form {
+    display: none;
+}
+
+.mkl_pc.has-steps .mkl_pc_container .mkl_pc_toolbar section.choices .layers.opened {
+	transform: none;
+}
+.mkl_pc.has-steps.last-step {
+    nav.mkl-pc--steps .step-next {
+		display: none;
+	}
+}
+
+.mkl_pc.has-steps:not(.right) {
+	footer {
+		.footer__section-left {
+			order: 3;
+		}
+		
+		.footer__section-right {
+			order: 1;
+		}
+		
+		.footer__section-center {
+			order: 2;
+		}
 	}
 }
 

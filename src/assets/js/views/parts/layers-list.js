@@ -22,7 +22,7 @@ PC.fe.views.layers_list = Backbone.View.extend({
 		this.items = [];
 		collection.orderBy = 'order';
 		collection.sort();
-		PC.fe.steps.setup_steps();
+		if ( PC_config.config.use_steps ) PC.fe.steps.setup_steps();
 		collection.each( this.add_one, this );
 		wp.hooks.doAction( 'PC.fe.layers_list.layers.added', this );
 	},

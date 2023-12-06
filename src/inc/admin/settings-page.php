@@ -766,6 +766,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'default' => 30000
 				]
 			);
+			
+			if ( mkl_pc( 'themes' )->current_theme_supports( 'steps' ) ) {
+				add_settings_field(
+					'use_steps',
+					__( 'Use steps if possible', 'product-configurator-for-woocommerce' ),
+					[ $this, 'callback_checkbox' ],
+					'mlk_pc_settings', 
+					'general_settings',
+					[ 
+						'setting_name' => 'use_steps',
+						'description'  => '<a href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/general-usage/using-the-steps-feature/" target="_blank">' . __( 'Check the documentation on how to use the steps feature', 'product-configurator-for-woocommerce' ) . '</a>',
+					]
+				);
+			}
 
 			/*
 				LABELS
@@ -871,6 +885,30 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				[
 					'setting_name' => 'angle_switch_label',
 					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Change angle', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'previous_step_label',
+				__( 'Previous step label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'previous_step_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Previous', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'next_step_label',
+				__( 'Next step label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'next_step_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Next', 'product-configurator-for-woocommerce' )
 				]
 			);
 

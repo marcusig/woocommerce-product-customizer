@@ -49,6 +49,13 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 								'disabled' => 'disabled'
 							]
 						],
+						[
+							'label' => __( 'Form', 'product-configurator-for-woocommerce' ),
+							'value' => 'form',
+							'attributes' => [
+								'disabled' => 'disabled'
+							]
+						],
 					],
 					'condition' => '!data.not_a_choice',
 					'priority' => 5,
@@ -132,14 +139,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => 'select_nothing'
 						]
 					],
-					'priority' => 40,
+					'priority' => 40.1,
 					'help' => __( 'Choose whether a choice should be selected by default', 'product-configurator-for-woocommerce' ),
 				),
 				'required' => array(
 					'label' => __( 'Require a choice', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
-					'priority' => 40,
+					'priority' => 40.2,
 					// 'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
 				),
 				'required_info' => array(
@@ -147,7 +154,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'html',
 					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If "Require a choice" is enabled "Default selection" is set to "Select the first choice by default", the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
 					'condition' => 'data.required && ( "select_first" == data.default_selection || ! data.default_selection)',
-					'priority' => 40,
+					'priority' => 40.3,
 				),
 
 				'can_deselect' => array(

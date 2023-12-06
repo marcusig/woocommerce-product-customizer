@@ -215,7 +215,9 @@ PC.actionParameter = 'pc_get_data';
 
 		if ( PC_config.config.open_first_layer ) {
 			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
-				configurator.$( '.layer-item:visible' ).first().trigger( 'click' );
+				var $first = configurator.$( '.layer-item:visible' ).first();
+				if ( $first.parent().is( '.display-mode-dropdown' ) ) return;
+				$first.trigger( 'click' );
 			}, 60 );
 		}
 

@@ -105,6 +105,9 @@ TODO:
 			}
 		},
 		add_one: function( layer ) {
+			// Skip groups when reordering images
+			//if ( 'image_order' == this.orderAttr && 'group' == layer.get( 'type' ) ) return;
+
 			var singleView = this.single_view();
 			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col, orderAttr: this.orderAttr });
 			this.items.push( new_layer );

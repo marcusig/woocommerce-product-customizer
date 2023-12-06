@@ -191,6 +191,17 @@ function mkl_pc_frontend_configurator_choice_description() {
 }
 add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_description', 50 );
 
+function mkl_pc_frontend_configurator_previous_step_icon() {
+	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-left.svg' );
+}
+add_action( 'mkl_pc/previous_step/before', 'mkl_pc_frontend_configurator_previous_step_icon' );
+
+function mkl_pc_frontend_configurator_next_step_icon() {
+	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-right.svg' );
+}
+add_action( 'mkl_pc/next_step/after', 'mkl_pc_frontend_configurator_next_step_icon' );
+
+
 $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 
 	array(

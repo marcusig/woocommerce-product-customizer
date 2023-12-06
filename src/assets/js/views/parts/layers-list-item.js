@@ -78,9 +78,17 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		}
 
 		var where = PC.fe.config.where;
-		if ( this.model.get( 'parent' ) && this.model.collection.get( this.model.get( 'parent' ) ) && 'group' === this.model.collection.get( this.model.get( 'parent' ) ).get( 'type' ) ) {
+		if ( this.model.get( 'parent' ) ) {
+			var parent = this.model.collection.get( this.model.get( 'parent' ) );
+			if ( parent && 'group' === parent.get( 'type' ) && ! parent.get( 'is_step' ) ) {
+				where = 'in';
+			}
+		}
+
+		if ( this.model.get( 'is_step' ) ) {
 			where = 'in';
 		}
+
 		where = wp.hooks.applyFilters( 'PC.fe.choices.where', where, this );
 		if( ! where || 'out' == where ) {
 			this.options.parent.after( this.choices.$el );
@@ -112,7 +120,8 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 					model.set( 'active' , false );
 				});
 			} else {
-				if ( PC_config.config.auto_close_siblings_in_groups ) {
+				var parent = this.model.collection.get( this.model.get( 'parent' ) );
+				if ( PC_config.config.auto_close_siblings_in_groups || parent.get( 'is_step' ) ) {
 					// Toggle any siblings
 					_.each( this.model.collection.where( { 'parent': this.model.get( 'parent' ) } ), function( model ) {
 						model.set( 'active' , false );
