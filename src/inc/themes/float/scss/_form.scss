@@ -175,9 +175,13 @@ nav.mkl-pc--steps {
 			width: 32px;
 			height: 32px;
 		}
+		&:disabled {
+			svg {
+				opacity: .2;
+			}
+		}
 		@media (max-width: $small_screen_width) {
-			padding-right: 10px;
-			padding-left: 10px;
+			padding: 0 10px;
 		}
 	}
 
