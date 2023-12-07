@@ -64,8 +64,10 @@ PC.fe.steps = {
 		}
 		
 		if ( PC_config.config.open_first_layer ) {
-			var $first = PC.fe.modal.$( '.type-step.active button.layer-item:visible' ).first();
-			if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
+			setTimeout( function() {
+				var $first = PC.fe.modal.$( '.type-step.active button.layer-item:visible' ).first();
+				if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
+			}, 50 );
 		}
 		wp.hooks.doAction( 'PC.fe.steps.display_step' );
 	},
