@@ -22,7 +22,7 @@ $colors: (
 }
 
 // DIMENSIONS / DISTANCES / SPACE
-$medium_screen_width: 760px;
+$medium_screen_width: 860px;
 $small_screen_width: 660px;
 
 $distance: 0;
@@ -31,13 +31,12 @@ $toolbar_width: 350px;
 $toolbar_width_medium: 280px;
 $toolbar_width_small: 110px;
 
-$footer_height: 5em;
-$footer_height_small_screen: 4em;
 $inner_space: 1em;
 
 :root {
 	--toolbar_width: 400px;
 	--mkl_pc-float-spacing: 26px;
+	--mkl_pc-footer-height: 5em;
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
@@ -127,6 +126,8 @@ $inner_space: 1em;
 	}
 }
 
+@import '../../themes-common/scss/steps';
+
 /* CUSTOMIZER */
 .mkl_pc {
 	position: fixed;
@@ -204,155 +205,9 @@ $inner_space: 1em;
 			bottom: 0;
 			background-position: 50%;
 			background-size: cover;
-		}		
-		.mkl_pc_viewer {
-			position: absolute;
-			z-index: 1;
-			left: 0; 
-			top: 0;
-			right: $toolbar_width;
-			right: var(--toolbar_width);;
-			bottom: 0;
+		}
 
-			@media( max-width: $medium_screen_width ) {
-				right: $toolbar_width_medium;
-			}
-			@media( max-width: $small_screen_width ) {
-				right: 0;
-				top: 0;
-				bottom: 50%;
-			}
-
-			.angles-select {
-				position: absolute;
-				left: 4em;
-				top: 2em;
-				z-index: 2;
-				> a {
-					display: none;
-				}
-				ul{
-					padding: 0;
-					margin: 0;
-					list-style-type: none;
-				}
-
-				li {
-					display: inline-block;
-					margin-right: 0.5em;
-					a {
-						display: block;
-						padding: 0;
-						padding-bottom: 6px;
-						text-align: center;
-						color: black;
-						text-decoration: none;
-						text-transform: uppercase;
-						font-size: 0.9em;
-						
-						span.angle-image {
-							width: 25px;
-							height: 25px;
-							display: inline-block;
-							vertical-align: middle;
-							transform: translateY(-2px);
-							img {
-								width: auto;
-								max-width: 100%;
-								height: auto;
-								display: block;
-							}
-						}						
-					}
-					
-					&.active a {
-						border-bottom: 2px solid;
-					}
-
-				}
-				@media (max-width: $small_screen_width) {
-					left: 1.5em;
-					top: 1.5em;
-	
-					> a span {
-						display: none;
-					}
-					> a::before {
-						margin-right: 0;
-					}
-					> a::before {
-						margin-right: 0;
-					}
-					&:hover > a span,
-					&:focus-within > a span,
-					& > a:focus span {
-						display: inline-block;
-						margin-left: 1em;
-					}
-				}
-			}
-			.mkl_pc_layers {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				text-align: center;
-				user-select: none;
-
-				img {
-					transition: .2s all;
-					&:not(.active), &.loading {
-						opacity: 0;
-					}
-					position: absolute;
-					left: 50%;
-					top: 50%;
-					transform: translateX(-50%) translateY(-50%);
-					max-height: 100%;
-					-webkit-user-drag: none;
-				}
-				svg {
-					transition: .2s all;
-					position: absolute;
-					left: 50%;
-					top: 50%;
-					transform: translateX(-50%) translateY(-50%);
-					max-height: 100%;
-				}
-
-				.custom-html {
-					position: absolute;
-					width: 100%;
-					top: 0;
-					left: 0;
-					height: 100%;
-
-					&:not(.active) {
-						display: none;
-					}
-				}
-				.images-loading {
-					display: none;
-					width: 30px;
-					height: 30px;
-					background: color(primary);
-					position: absolute;
-					left: 2em;
-					bottom: 2em;
-					opacity: 0;
-					transition: all .2s;
-					border-radius: 50%;
-					-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
-					animation: sk-scaleout 1.0s infinite ease-in-out;
-				}
-
-				img.loading ~ .images-loading {
-					display: block;
-					opacity: 1;
-				}				
-			}
-		} 
+		@import 'scss/viewer';
 
 		// TOOLBAR
 		.mkl_pc_toolbar {
@@ -466,33 +321,6 @@ $inner_space: 1em;
 				overflow-y: auto;
 				padding: var(--mkl_pc-float-spacing);
 
-				& + .form {
-					position: relative;
-					padding-top: 20px;
-					// &::after {
-					// 	content: '';
-					// 	transition: .2s all;
-					// 	display: block;
-					// 	height: 0;
-					// 	width: 100%;
-					// 	position: absolute;
-					// 	z-index: 4;
-					// 	bottom: 100%;
-					// 	left: 0;
-					// 	background: linear-gradient(to top, #ededed, #ededed00);
-					// }
-					&::before {
-						content: '';
-						display: block;
-						position: absolute;
-						top: 0;
-						right: 0;
-						width: 60px;
-						background: #000;
-						height: 2px;
-					}
-				}
-
 				// &.scrolled + .form {
 				// 	&::after {
 				// 		height: 60px;
@@ -518,14 +346,22 @@ $inner_space: 1em;
 							margin-bottom: 1em;
 							box-shadow: 0 15px 30px rgba(63, 67, 74, .10);
 							border-radius: 8px;
+							&.not-a-choice {
+								box-shadow: none;
+								border-radius: 0;
+							}
 						}
 
 						&.type-step {
-							> span.layer-item .layer-name {
+							> span.layer-item {
 								display: block;
-								font-size: 18px;
-								text-transform: uppercase;
-								line-height: 1.2;
+								margin-bottom: 15px;
+								.layer-name {
+									display: block;
+									font-size: 18px;
+									text-transform: uppercase;
+									line-height: 1.2;
+								}
 							}
 						}
 						// -webkit-animation: slide-in-top 0.2s ease-out;
@@ -738,7 +574,7 @@ $inner_space: 1em;
 						padding-top: 1em;
 						margin: 0;
 						li {
-							box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.1);
+							box-shadow: 0 0px 0px 1px rgba(0, 0, 0, 0.2);
 							border-radius: 6px;
 							position: relative;
 							margin: .3em;
@@ -953,13 +789,13 @@ $inner_space: 1em;
 				@import '../../themes-common/scss/dropdown';
 
 				@media( max-width: $small_screen_width ) {
-					position: absolute;
-					top: 0;
-					bottom: 0;
-					left: 0;
-					right: 0;
+					// position: absolute;
+					// top: 0;
+					// bottom: 0;
+					// left: 0;
+					// right: 0;
+					// box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
 					height: 100%;
-					box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
 					padding: 1em;
 				}				
 			}
@@ -970,282 +806,16 @@ $inner_space: 1em;
 
 			@media( max-width: $small_screen_width ) {
 				width: 100%;
-				top: 50%;
-				bottom: $footer_height_small_screen;
-				.form.form-cart {
-					display: none;
-				}
+				top: 40%;
+				bottom: var(--mkl_pc-footer-height);
 			}
 
 		}
 		
-		.single_add_to_cart_button {
-			visibility: visible; 
-		}
-
-		.form.form-cart {
-			padding: 1em var(--mkl_pc-float-spacing);
-			padding-bottom: var(--mkl_pc-float-spacing);
-			text-align: right;
-			.pc_configurator_form {
-				> * {
-					vertical-align: middle;
-				}
-				form.cart {
-					margin: 0;
-				}
-
-			}
-
-			p {
-				margin-bottom: .5em;
-				text-align: right;
-				width: 100%;
-			}
-			.pc-total-price--container {
-				width: 100%;
-				padding: var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) 0 var(--mkl_pc-float-spacing);
-			}
-			.pc-total-price {
-				width: 100%;
-				text-align: right;
-			}
-			span[class*="-label"] {
-				text-transform: uppercase;
-				font-size: .7em;
-				color: color(light-gray);
-			}
-			.mkl_pc_toolbar & {
-				@media (max-width: $small_screen_width ) {
-					display: none;
-				}
-			}
-		}
-
-		form {
-			display: inline-block;
-		}
-
-		.quantity {
-			display: inline-block;
-			input.qty {
-				background: #fff;
-				@media (max-width: $small_screen_width) {
-					border: 2px solid #36383a;
-				}
-			}
-		}
-		form.cart {
-			margin: 0;
-		}
-		.extra-cost {
-			visibility: hidden;
-			position: fixed;
-			margin-bottom: 0;
-		}
-		.extra-cost.show {
-			visibility: visible;
-			position: relative;
-			padding: 0;
-			margin: 0;
-			margin-bottom: .5em;
-			height: auto;
-			display: block !important;
-		}
-		span.pc-total-price {
-			font-weight: bold;
-			display: block; 
-			font-size: 1.6em;
-			line-height: 1;
-			margin-bottom: .5em;
-		}
-
-		button.configurator-add-to-cart {
-			svg {
-				display: none;
-			}
-		}
-
-		.mkl-pc-show-form {
-			display: none;
-			background: transparent;
-			font-size: 12px;
-			border: 2px solid color( primary );
-			padding: 6px 10px;
-			margin-right: 5px;
-			color: color( primary );
-			border-radius: 8px;
-			svg {
-				vertical-align: middle;
-				width: 16px;
-				margin-right: 5px;
-				path {
-					fill: color( primary );
-				}
-			}
-			span {
-				vertical-align: middle;
-			}
-		}
-
-		@media (max-width: $small_screen_width) {
-			.mkl-pc-show-form {
-				display: inline-block;
-				&::before {
-					content: '';
-					width: 100vw;
-					height: 100vh;
-					position: fixed;
-					background: #dcdcdc;
-					top: 0;
-					left: 0;
-					z-index: 2;
-					opacity: 0;
-					visibility: hidden;
-					transition: .2s all;
-				}
-			}
-			
-			footer .form.form-cart {
-				position: fixed;
-				bottom: -100%;
-				transition: .3s all cubic-bezier(0.22, 0.61, 0.36, 1);
-				width: calc(100% - var(2em));
-				left: 1em;
-				background: #FFF;
-				padding: var(--mkl_pc-float-spacing);
-				// height: calc(100vh - #{$footer_height_small_screen} - 2em);
-				box-sizing: border-box;
-				border-radius: 1em;
-				box-shadow: 0 10px 50px #33333373;
-				
-				display: flex;
-				align-items: center;
-				flex-direction: column;
-				justify-content: flex-end;
-				z-index: 3;
-
-				.pc_configurator_form {
-					display: flex;
-					align-items: center;
-					flex-direction: column;
-					width: 100%;
-					.quantity,
-					.quantity input[type="number"],
-					.quantity input[type="text"] {
-						width: 100%;
-					}
-					
-					button {
-						border-radius: 6px;
-						margin-top: 1em;
-						width: 100%;
-						font-size: 1.2em;
-					}
-
-				}
-			}
-		}
+		@import 'scss/form';
 	
 		// FOOTER
-		footer {
-
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			right: $toolbar_width;
-			right: var(--toolbar_width);
-			height: $footer_height;
-			z-index: 2; 
-			padding: $inner_space; 
-			
-			background: transparent;
-			z-index: 2;
-
-			display: flex;
-			justify-content: space-between;
-			@media (min-width: $small_screen_width) {
-				justify-content: left;
-			}
-			align-items: center;
-			box-sizing: border-box;
-			
-			button.reset-configuration {
-				margin: 0;
-				padding: 0;
-				background: transparent;
-				color: inherit;
-				appearance: none;
-				box-shadow: none;
-				border:  none;
-				&:hover, &:focus {
-					opacity: .5;
-				}
-				@media (max-width: $small_screen_width) {
-					font-size: 12px;
-				}
-			}
-
-			h3.product-name {
-				line-height: 1;
-				margin: 0;
-				@media (max-width: $small_screen_width) {
-					display: none;
-				}
-			}
-
-			.footer__section-left:empty {
-				display: none;
-			}
-
-			.footer__section-center {
-				flex: 1;
-				display: flex;			
-			}
-
-			.mkl-pc-syd-modal {
-				left: 0;
-				&::after {
-					left: 40px;
-				}
-			}
-
-			@media (max-width: $medium_screen_width) {
-				text-align: center;
-				height: $footer_height_small_screen;
-			}
-			@media (max-width: $small_screen_width) {
-				border-top: 1px solid rgba(0,0,0,.2);
-				padding: 0;
-				right: 0;
-			}
-
-			@media (min-width: $small_screen_width) {
-				.form.form-cart {
-					display: none;
-				}
-			}
-
-
-		}
-	}
-
-	&.mobile-show-form {
-		footer {
-			background: #FFF;
-			.form.form-cart {
-				bottom: 1em;
-			}
-		}
-		.mkl-pc-show-form {
-			&::before {
-				opacity: 0.8;
-				visibility: visible;
-			}
-		}
-		.mkl_pc_toolbar, .mkl_pc_viewer {
-			filter: blur(.3em);
-		}
+		@import 'scss/footer';
 	}
 
 	&.opened {
@@ -1597,14 +1167,20 @@ body.configurator_is_inline .mkl_pc {
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
-a.save-your-design svg {
-    transform: translateY(-3px);
-    fill: color(primary);
+a.save-your-design, a.save-your-design--pdf {
+	svg {
+		transform: translateY(0);
+		fill: color(primary);
+	}
+	@media( max-width: $small_screen_width ) {
+		width: 40px;
+	}
 }
 
 a.save-your-design svg path,
-.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path {
-    fill: var(--mkl_pc_color-primary);
+.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
+.save-your-design--pdf svg path {
+    fill: color(primary);
 }
 
 /* hide_in_configurator */
@@ -1619,62 +1195,10 @@ a.save-your-design svg path,
 	z-index: 100000;
 }
 
-@import '../../themes-common/scss/steps';
-
-.mkl_pc.has-steps .mkl_pc_container {
-	section.choices + .form.form-cart {
-		display: flex;
-		flex-wrap: wrap;
-		padding: 0;
-		justify-content: space-between;
-		align-items: center;
+@media (max-width: $small_screen_width) {
+	.mkl_pc {
+		--mkl_pc-footer-height: 35px;
 	}
-
-	.pc_configurator_form {
-		display: inline-flex;
-		width: auto;
-		padding: 8px var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) 0;
-	}	
-}
-
-nav.mkl-pc--steps {
-    width: auto;
-    padding: 8px 0 var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing);
-	display: inline-flex;
-    justify-content: space-between;
-
-	button.step-previous {
-		background: transparent;
-		appearance: none;
-		box-shadow: none;
-		border: none;
-		span {
-			display: none;
-		}
-		svg {
-			width: 32px;
-			height: 32px;
-		}
-	
-	}
-
-
-	button.step-next svg {
-		margin-left: 10px;
-		width: 20px;
-		height: 20px;
-	}
-}
-
-.mkl_pc.has-steps:not(.last-step) .mkl_pc_container {
-	nav.mkl-pc--steps {
-		width: 100%;
-		padding: 8px var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing);
-	}
-}
-
-
-@media (max-width: 660px) {
 	.mkl_pc.no-form-modal .mkl_pc_container {
 		.mkl-pc-show-form {
 			display: none;
@@ -1712,5 +1236,19 @@ nav.mkl-pc--steps {
 			margin-right: 5px;
 			font-size: 1rem;
 		}    
+	}
+	.mkl_pc.no-sticky-footer .mkl_pc_container {
+		.form.form-cart {
+			box-shadow: none;
+		}
+
+		.mkl_pc_toolbar {
+			section.choices {
+				height: auto;
+				overflow: unset;
+			}	
+			overflow: auto;
+			overflow-x: hidden;
+		}
 	}
 }

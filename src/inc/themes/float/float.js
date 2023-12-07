@@ -2,17 +2,13 @@
 	if ( ! wp || ! wp.hooks ) return;
 	var scrollStartPost;
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/float', function( view ) {
-		// duplicate the form to have a different one on mobile or desktop views
-		var clone = view.footer.form.$el.clone().insertAfter( view.toolbar.$selection );
+		// Move the form to the toolbar
+		view.footer.form.$el.insertAfter( view.toolbar.$selection );
 
-		view.footer.form_2 = new PC.fe.views.form( { el: clone } );
+		// view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 		view.$el.addClass( 'float' );
-		if ( PC_config.config.no_form_modal ) {
-			view.$el.addClass( 'no-form-modal' );
-		}
-		view.$el.on( 'click', '.mkl-pc-show-form', function(e) {
-			view.$el.toggleClass( 'mobile-show-form' );
-		} );
+
+		if ( PC_config.config.disable_sticky_footer ) view.$el.addClass( 'no-sticky-footer' );
 
 		// view.$('.layer-item').first().trigger('click');
 		view.toolbar.$el.find('section.choices').on('scroll', function(e) {
@@ -27,14 +23,7 @@
 		);
 	}, 20 ); 
 
-	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/float', function( view ) {
-		view.$el.removeClass( 'mobile-show-form' );
-	} );
-
 	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/float', function( position, $nav ) {
-		if ( PC.utils._isMobile() ) {
-			return position;
-		}
 		PC.fe.modal.toolbar.$( '.pc_configurator_form' ).before( $nav );
 		return PC.fe.modal.toolbar.$el;
 	} );
