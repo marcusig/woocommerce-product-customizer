@@ -38,6 +38,7 @@ $inner_space: 1em;
 
 :root {
 	--toolbar_width: 400px;
+	--mkl_pc-float-spacing: 26px;
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
@@ -102,6 +103,8 @@ $inner_space: 1em;
 .configurator_is_opened:not(.configurator_is_inline) {
 	overflow: hidden;
 }
+
+@import '../../themes-common/scss/steps';
 
 .is_configurable {
 	// div.product form.cart {
@@ -209,148 +212,8 @@ $inner_space: 1em;
 				bottom: 50%;
 			}
 		}		
-		.mkl_pc_viewer {
-			position: absolute;
-			z-index: 1;
-			left: 0; 
-			top: 0;
-			right: $toolbar_width;
-			right: var(--toolbar_width);
-			bottom: 0;
-
-			@media( max-width: $medium_screen_width ) {
-				right: $toolbar_width_medium;
-			}
-			@media( max-width: $small_screen_width ) {
-				right: 0;
-				top: 0;
-				bottom: 50%;
-			}
-
-			.angles-select {
-				position: absolute;
-				left: 2em;
-				top: 2em;
-				z-index: 2;
-				> a {
-					display: none;
-				}
-				ul{
-					padding: 0;
-					margin: 0;
-					list-style-type: none;
-				}
-
-				li {
-					display: inline-block;
-					margin-right: 0.5em;
-					a {
-						display: block;
-						padding: 0;
-						padding-bottom: 6px;
-						text-align: center;
-						color: black;
-						text-decoration: none;
-						text-transform: uppercase;
-						font-size: 0.9em;
-
-						span.angle-image {
-							width: 25px;
-							height: 25px;
-							display: inline-block;
-							vertical-align: middle;
-							transform: translateY(-2px);
-							img {
-								width: auto;
-								max-width: 100%;
-								height: auto;
-								display: block;
-							}
-						}
-						
-
-					}
-					
-					&.active a {
-						border-bottom: 2px solid;
-					}
-
-				}
-				@media (max-width: $small_screen_width) {
-					left: 1.5em;
-					top: 1.5em;
-
-					> a span {
-						display: none;
-					}
-					> a::before {
-						margin-right: 0;
-					}
-					> a::before {
-						margin-right: 0;
-					}
-					&:hover > a span,
-					&:focus-within > a span,
-					& > a:focus span {
-						display: inline-block;
-						margin-left: 1em;
-					}
-				}
-			}
-			.mkl_pc_layers {
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				text-align: center;
-				user-select: none;
-
-				img {
-					transition: .2s all;
-					&:not(.active), &.loading {
-						opacity: 0;
-					}
-					position: absolute;
-					left: 50%;
-					top: 50%;
-					transform: translateX(-50%) translateY(-50%);
-					max-height: 100%;
-					-webkit-user-drag: none;
-				}
-
-				.custom-html {
-					position: absolute;
-					width: 100%;
-					top: 0;
-					left: 0;
-					height: 100%;
-					&:not(.active) {
-						display: none;
-					}
-				}
-
-				.images-loading {
-					display: none;
-					width: 30px;
-					height: 30px;
-					background: color(primary);
-					position: absolute;
-					left: 2em;
-					bottom: 2em;
-					opacity: 0;
-					transition: all .2s;
-					border-radius: 50%;
-					-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
-					animation: sk-scaleout 1.0s infinite ease-in-out;
-				}
-
-				img.loading ~ .images-loading {
-					display: block;
-					opacity: 1;
-				}				
-			}
-		} 
+		
+		@import 'scss/viewer';
 
 		// TOOLBAR
 		.mkl_pc_toolbar {
@@ -370,10 +233,8 @@ $inner_space: 1em;
 					text-transform: uppercase;
 					font-size: 1em;
 					margin: 0;
-					padding: 1.5em;
+					padding: var(--mkl_pc-float-spacing);;
 					font-weight: 500;
-					padding-top: 1.8em;
-					padding-right: 2em;
 				}
 				// padding: $inner_space;
 				> .cancel {
@@ -442,6 +303,7 @@ $inner_space: 1em;
 				}
 
 			}
+
 			section.choices {
 				position: relative;
 				height: 100%;
@@ -455,7 +317,6 @@ $inner_space: 1em;
 
 				& + .form {
 					position: relative;
-					padding-top: 2em;
 				}
 				> ul {
 					list-style-type: none;
@@ -474,6 +335,22 @@ $inner_space: 1em;
 						border: none;
 						-webkit-animation: slide-in-top 0.2s ease-out;
 						animation: slide-in-top 0.2s ease-out;
+
+						&.type-step {
+							> span.layer-item {
+								display: block;
+								padding: 15px;
+								border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+								.layer-name {
+									display: block;
+									font-size: 20px;
+									text-transform: uppercase;
+									font-weight: bold;
+									color: #222324;
+									line-height: 1.2;
+								}
+							}
+						}
 
 						button {
 							border: none;
@@ -876,11 +753,11 @@ $inner_space: 1em;
 				@import '../../themes-common/scss/dropdown';
 							
 				@media( max-width: $small_screen_width ) {
-					position: absolute;
-					top: 0;
-					bottom: 0;
-					left: 0;
-					right: 0;
+					// position: absolute;
+					// top: 0;
+					// bottom: 0;
+					// left: 0;
+					// right: 0;
 					height: 100%;
 					box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
 				}				
@@ -891,294 +768,17 @@ $inner_space: 1em;
 			}
 			@media( max-width: $small_screen_width ) {
 				width: 100%;
-				top: 50%;
-				bottom: $footer_height_small_screen;
-				.form.form-cart {
-					display: none;
-				}
+				top: 40%;
+				bottom: var(--mkl_pc-footer-height);
 			}
 
 		}
-		
-		.single_add_to_cart_button {
-			visibility: visible; 
-		}
 
-		.form.form-cart {
-			padding: 1em 2em;
-			padding-bottom: 2em;
-			text-align: right;
-			.pc_configurator_form {
-				> * {
-					vertical-align: middle;
-				}
-				form.cart {
-					margin: 0;
-				}
-			}
-
-			p {
-				margin-bottom: .5em;
-				text-align: right;
-				width: 100%;
-			}
-			.pc-total-price {
-				width: 100%;
-				text-align: right;
-			}
-			span[class*="-label"] {
-				text-transform: uppercase;
-				font-size: .7em;
-				color: color(light-gray);
-			}
-			.mkl_pc_toolbar & {
-				@media (max-width: $small_screen_width ) {
-					display: none;
-				}
-			}
-		}
-		form {
-			display: inline-block;
-		}
-
-		.quantity {
-			display: inline-block;
-			input.qty {
-				background: #fff;
-				@media (max-width: $small_screen_width) {
-					border: 2px solid #36383a;
-				}
-			}
-		}
-		form.cart {
-			margin: 0;
-		}
-		.extra-cost {
-			visibility: hidden;
-			position: fixed;
-			margin-bottom: 0;
-		}
-		.extra-cost.show {
-			visibility: visible;
-			position: relative;
-			padding: 0;
-			margin: 0;
-			margin-bottom: .5em;
-			height: auto;
-			display: block !important;
-		}
-		span.pc-total-price {
-			font-weight: bold;
-			display: block; 
-			font-size: 1.6em;
-			line-height: 1;
-			margin-bottom: .5em;
-		}
-
-		button.configurator-add-to-cart {
-			// @media (max-width: $small_screen_width) {
-			// 	background: transparent !important;
-			// }
-
-			svg {
-				display: none;
-				// @media (min-width: $small_screen_width) {
-				// }
-				// @media (max-width: $small_screen_width) {
-				// 	path {
-				// 	   fill: #36383a;
-				// 	}
-				// 	max-width: 25px;
-				// }
-			}
-			span {
-				// @media (max-width: $small_screen_width) {
-				// 	display: none;
-				// }
-			}
-		}
-		.mkl-pc-show-form {
-			display: none;
-			background: transparent;
-			font-size: 12px;
-			border: 2px solid color( primary );
-			padding: 6px 10px;
-			margin-right: 5px;
-			color: color( primary );
-			border-radius: 8px;
-			svg {
-				vertical-align: middle;
-				width: 16px;
-				margin-right: 5px;
-				path {
-					fill: color( primary );
-				}
-			}
-			span {
-				vertical-align: middle;
-			}
-		}
-
-		@media (max-width: $small_screen_width) {
-			.mkl-pc-show-form {
-				display: inline-block;
-				&::before {
-					content: '';
-					width: 100vw;
-					height: calc(100vh - #{$footer_height_small_screen});
-					position: fixed;
-					background: #dcdcdc;
-					top: 0;
-					left: 0;
-					z-index: 2;
-					opacity: 0;
-					visibility: hidden;
-					transition: .2s all;
-				}
-			}
-			footer .form.form-cart {
-				position: fixed;
-				bottom: -100%;
-				transition: .3s all cubic-bezier(0.22, 0.61, 0.36, 1);
-				width: calc(100% - 2em);
-				left: 1em;
-				background: #FFF;
-				padding: 2em;
-				// height: calc(100vh - #{$footer_height_small_screen} - 2em);
-				box-sizing: border-box;
-				border-radius: 1em;
-				box-shadow: 0 10px 50px #33333373;
-				
-				display: flex;
-				align-items: center;
-				flex-direction: column;
-				justify-content: flex-end;
-				z-index: 3;
-
-				.pc_configurator_form {
-					display: flex;
-					align-items: center;
-					flex-direction: column;
-					width: 100%;
-
-					form.cart {
-						display: inline-block;
-					}
-					
-					.quantity,
-					.quantity input[type="number"],
-					.quantity input[type="text"] {
-						width: 100%;
-					}
-					
-					button {
-						border-radius: 6px;
-						margin-top: 1em;
-						width: 100%;
-						font-size: 1.2em;
-					}
-
-				}
-			}
-		}
+		@import 'scss/form';
 	
 		// FOOTER
-		footer {
+		@import 'scss/footer';
 
-			position: absolute;
-			bottom: 0;
-			left: 0;
-			right: $toolbar_width;
-			right: var(--toolbar_width);
-			height: $footer_height;
-			z-index: 2; 
-			padding: $inner_space; 
-			
-			background: transparent;
-			z-index: 2;
-
-			display: flex;
-			justify-content: space-between;
-			@media (min-width: $small_screen_width) {
-				justify-content: left;
-			}			
-			align-items: center;
-			box-sizing: border-box;
-
-			button.reset-configuration {
-				margin: 0;
-				padding: 0;
-				background: transparent;
-				color: inherit;
-				appearance: none;
-				box-shadow: none;
-				border:  none;
-				&:hover, &:focus {
-					opacity: .5;
-				}
-				@media (max-width: $small_screen_width) {
-					font-size: 12px;
-				}
-			}
-
-			h3.product-name {
-				line-height: 1;
-				margin: 0;
-				@media (max-width: $small_screen_width) {
-					display: none;
-				}
-			}
-
-			.footer__section-left:empty {
-				display: none;
-			}
-
-			.footer__section-center {
-				flex: 1;
-				display: flex;			
-			}
-
-			@media (max-width: $medium_screen_width) {
-				text-align: center;
-				height: $footer_height_small_screen;
-			}
-
-			@media (max-width: $small_screen_width) {
-				border-top: 1px solid rgba(0,0,0,.2);
-				padding: 0;
-				right: 0;
-				background: #FFF;
-			}
-
-			.form.form-cart {
-				@media (min-width: $small_screen_width) {
-					display: none;
-				}
-			}
-
-			.mkl-pc-syd-modal {
-				left: 0;
-				&::after {
-					left: 40px;
-				}
-			}
-
-		}
-	}
-
-	&.mobile-show-form {
-		footer .form.form-cart {
-			bottom: calc(#{$footer_height_small_screen} + 1em);
-		}
-		.mkl-pc-show-form {
-			&::before {
-				opacity: 0.8;
-				visibility: visible;
-			}
-		}
-		.mkl_pc_toolbar, .mkl_pc_viewer {
-			filter: blur(.3em);
-		}
 	}
 
 	&.opened {
@@ -1193,6 +793,7 @@ $inner_space: 1em;
 			transform: none;
 		}
 	}
+
 	@at-root {
 		body.admin-bar:not(.configurator_is_inline) & {
 			top: 45px;
@@ -1508,14 +1109,20 @@ body.configurator_is_inline .mkl_pc {
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
-a.save-your-design svg {
-    transform: translateY(-3px);
-    fill: color(primary);
+a.save-your-design, a.save-your-design--pdf {
+	svg {
+		transform: translateY(0);
+		fill: color(primary);
+	}
+	@media( max-width: $small_screen_width ) {
+		width: 40px;
+	}
 }
 
 a.save-your-design svg path,
-.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path {
-    fill: var(--mkl_pc_color-primary);
+.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
+.save-your-design--pdf svg path {
+    fill: color(primary);
 }
 
 /* Divi fix */
@@ -1523,52 +1130,23 @@ a.save-your-design svg path,
 	z-index: 100000;
 }
 
-@import '../../themes-common/scss/steps';
+@media ( max-width: $small_screen_width ) {
+	.mkl_pc {
+		--mkl_pc-footer-height: 35px;
+	}
 
-nav.mkl-pc--steps {
-    width: 100%;
-    padding: 2em;
-    padding-top: 0;
-    justify-content: space-between;
-}
-
-@media (max-width: 660px) {
-	.mkl_pc.no-form-modal .mkl_pc_container {
-		.mkl-pc-show-form {
-			display: none;
-		}
-		footer .form.form-cart {
-			position: relative;
-			padding: 0;
-			background: transparent;
+	.mkl_pc.no-sticky-footer .mkl_pc_container {
+		.form.form-cart {
 			box-shadow: none;
-			border-radius: 0;
-			bottom: auto;
-			width: auto;
-			flex-direction: row;
-			align-items: center;
-			left: auto;
-			padding-right: 5px;
 		}
 
-		footer .form.form-cart .pc_configurator_form button {
-			margin: 0;
-			font-size: .9rem;
+		.mkl_pc_toolbar {
+			section.choices {
+				height: auto;
+				overflow: unset;
+			}	
+			overflow: auto;
+			overflow-x: hidden;
 		}
-
-		footer button.reset-configuration {
-			width: auto;
-			font-size: 12px;
-			display: inline-block;
-			max-width: 110px;
-			white-space: normal;
-			line-height: 1.2;
-		}
-
-		.form.form-cart .pc-total-price {
-			margin: 0;
-			margin-right: 5px;
-			font-size: 1rem;
-		}    
 	}
 }
