@@ -20,6 +20,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 	render: function() {
 
 		if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
+			this.$el.addClass( 'not-a-choice custom' );
 			this.$el.append( $( this.model.get( 'custom_html' ) ) );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			wp.hooks.doAction( 'PC.fe.layer.render', this );
