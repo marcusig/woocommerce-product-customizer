@@ -55,8 +55,5 @@ function mkl_pc_float_theme_filter_colors( $colors ) {
 }
 add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_float_theme_filter_colors' );
 
-require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-no-form-modal.php';
-new MKL_PC_Theme__no_form_modal( 'float' );
-
 require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-sticky-footer.php';
 new MKL_PC_Theme__disable_sticky_footer( 'float' );
