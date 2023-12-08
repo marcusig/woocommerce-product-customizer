@@ -25,6 +25,12 @@
 			} );
 
 		}
+
+		// Move SYD on small screen
+		if ( view.el.clientWidth <= 660 ) {
+			var syd = PC.fe.modal.$( '.save-your-design-modal-container' );
+			if ( syd.length ) syd.prependTo( view.$( '.footer__section-center' ) );
+		}
 		
 	});
 
