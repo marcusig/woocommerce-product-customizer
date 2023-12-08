@@ -37,7 +37,9 @@ $inner_space: 1em;
 
 :root {
 	--toolbar_width: 400px;
-	--footer_height: 5em;
+	--mkl_pc_footer_height: 5em;
+	--mkl_pc_choice--border-radius: 8px;
+
 	// each item in color map
 	@each $name, $color in $colors {
 		--mkl_pc_color-#{$name}: #{$color};
@@ -68,7 +70,7 @@ $inner_space: 1em;
 	}
 	
 	@media( max-width: $small_screen_width ) {
-		--footer_height: 110px;
+		--mkl_pc_footer_height: 110px;
 		button.configure-product {
 			font-size: 1.4em;
 			display: block;
@@ -127,13 +129,13 @@ $inner_space: 1em;
 		position: absolute;
 		width: auto;
 		height: auto;
-		padding-bottom: var( --footer_height );
+		padding-bottom: var( --mkl_pc_footer_height );
 
 		&:not( body.configurator_is_inline & ) {
 			top: $distance;
 			left: $distance;
 			right: $distance;
-			bottom: var( --footer_height );
+			bottom: var( --mkl_pc_footer_height );
 			padding-bottom: 0;
 			@media (max-width: $medium_screen_width) {
 				top: 0;
@@ -240,9 +242,12 @@ $inner_space: 1em;
 	}
 }
 
-.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices button.choice-item:focus {
-	outline: 4px solid rgba(color(primary_rgb), 0.2);
-	outline-offset: 1px;
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices {
+	button.choice-item:focus, 
+	button.choice-group-label:focus {
+		outline: 4px solid rgba(color(primary_rgb), 0.2);
+		outline-offset: 1px;
+	}
 }
 
 body.configurator_is_inline .mkl_pc {
@@ -300,7 +305,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 */
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul ul.layer_choices.display-mode-colors {
 	.choices-list li {
-		box-shadow: none;
+		box-shadow: none !important;
 		width: auto;
 		padding: 4px;
 		button.choice-item {
@@ -351,7 +356,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 		}
 		
 		&.active {
-			box-shadow: none;
+			box-shadow: none !important;
 			button.choice-item,
 			button.choice-item:hover, 
 			button.choice-item:focus {
