@@ -63,7 +63,7 @@ PC.fe.steps = {
 			this.previous_button.$( 'button' ).prop( 'disabled', false );
 		}
 		
-		if ( PC_config.config.open_first_layer ) {
+		if ( PC_config.config.open_first_layer && PC.fe.modal.$el.is( '.float, .wsb' ) ) {
 			setTimeout( function() {
 				var $first = PC.fe.modal.$( '.type-step.active button.layer-item:visible' ).first();
 				if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
