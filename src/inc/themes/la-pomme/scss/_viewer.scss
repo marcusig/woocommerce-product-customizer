@@ -3,7 +3,7 @@
 	z-index: 1;
 	width: 50%;
 	top: 0;
-	min-height: calc( 100vh - var(--footer_height ) );
+	min-height: calc( 100vh - var(--mkl_pc_footer_height ) );
 	
 	@media( max-width: $medium_screen_width ) {
 		right: $toolbar_width_medium;
