@@ -45,6 +45,35 @@ $toolbar_width_small: 110px;
 
 $inner_space: 1em;
 
+@mixin scrollbar {
+	&::-webkit-scrollbar {
+		width: var( --mkl_pc_scrollbar-width );
+		height: 6px;
+	}
+	
+	/* Track */
+	&::-webkit-scrollbar-track {
+		background: color(dark);
+	}
+	
+	/* Handle */
+	&::-webkit-scrollbar-thumb {
+		background: var( --mkl_pc_color-srollbar-thumb, var(--mkl_pc_color-ll4) );
+		border-radius: 6px
+	}
+	&::-webkit-scrollbar-button {
+		width: var( --mkl_pc_scrollbar-width );
+		height: var( --mkl_pc_scrollbar-width );
+		background: var( --mkl_pc_color-srollbar-button, var(--mkl_pc_color-ll2) );
+		display: none;
+	}
+	
+	/* Handle on hover */
+	&::-webkit-scrollbar-thumb:hover {
+		background: var( --mkl_pc_color-srollbar-thumb-hover, var(--mkl_pc_color-ll3) );
+	}	
+}
+
 :root {
 	// each item in color map
 	@each $name, $color in $colors {
@@ -52,7 +81,9 @@ $inner_space: 1em;
 	}
 	--mkl_pc_footer_height: 80px;
 	--mkl_pc_toolbar_width: 350px;
+	--mkl_pc_scrollbar-width: 6px;
 }
+
 
 @-webkit-keyframes sk-scaleout {
 	0% { -webkit-transform: scale(0) }
@@ -504,6 +535,9 @@ $inner_space: 1em;
 				height: 100%;
 				overflow: hidden;
 				overflow-y: auto;
+
+				@include scrollbar;
+				
 				// font-size: 0.8em;
 				// &::before {
 				// 	content: '';
@@ -525,6 +559,8 @@ $inner_space: 1em;
 					left: 0;
 					right: 0;
 					overflow: auto;	
+
+					@include scrollbar;
 
 					li {
 						display: block; 
@@ -1030,6 +1066,9 @@ $inner_space: 1em;
 
 					height: 100%;
 					overflow-x: hidden;
+					overflow-y: auto;
+					
+					@include scrollbar;
 
 					> .layer-item {
 						display: block;
@@ -1052,6 +1091,24 @@ $inner_space: 1em;
 						box-shadow: none;
 						.layer-choices-title {
 							display: none;
+						}
+					}
+					&.has-thumbnail {
+						> .layer-item {
+							padding-left: 60px;
+							position:relative;
+							min-height: 70px;
+							display: flex;
+							flex-direction: column;
+							justify-content:center;
+							i {
+								position: absolute;
+								height: 40px;
+								width: 40px;
+								left: 8px;
+								top: 50%;
+								transform: translateY(-50%);
+							}
 						}
 					}
 				}
