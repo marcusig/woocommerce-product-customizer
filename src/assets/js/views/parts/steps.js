@@ -24,7 +24,7 @@ PC.fe.steps = {
 			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
-				console.log( errors );
+				console.log( 'Validation errors:', errors );
 				var messages = [];
 				_.each( errors, function( error ) {
 					if ( error.choice ) {

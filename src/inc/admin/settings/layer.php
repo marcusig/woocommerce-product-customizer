@@ -108,14 +108,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'help' => __('Useful if you only need to show this in the configurator, but do not need to display it in the order', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'priority' => 30,
-					'condition' => '!data.not_a_choice && "group" != data.type',
+					'condition' => '!data.not_a_choice && "summary" != data.type',
 				),
 				'hide_in_configurator' => array(
 					'label' => __('Hide this layer in the menu', 'product-configurator-for-woocommerce' ),
 					'help' => __('Useful if you only need to show this in the order, but do not need to display it in the configurator menu', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'priority' => 31,
-					'condition' => '!data.not_a_choice && "group" != data.type',
+					'condition' => '!data.not_a_choice && "summary" != data.type',
 				),
 				'custom_html' => array(
 					'label' => __( 'Custom HTML', 'product-configurator-for-woocommerce' ),
@@ -238,6 +238,13 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && "colors" == data.display_mode',
 					'priority' => 8,
+				);
+			}
+
+			if ( mkl_pc( 'themes' )->current_theme_supports( 'steps' ) ) {
+				$settings['type']['choices'][] = array(
+					'label' => __( 'Summary', 'product-configurator-for-woocommerce' ),
+					'value' => 'summary'
 				);
 			}
 			return apply_filters( 'mkl_pc_layer_default_settings', $settings );
