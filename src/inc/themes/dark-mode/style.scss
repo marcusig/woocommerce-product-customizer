@@ -1059,6 +1059,9 @@ $inner_space: 1em;
 
 					&.form > .choices-list > ul {
 						padding-bottom: 20px;
+						.uploads-list li.uploads-list--item a.delete-upload {
+							color: #FFF;
+						}
 					} 
 				}
 
@@ -1474,6 +1477,22 @@ body.configurator_is_inline .mkl_pc {
     display: inline-block;
 }
 
+@import '../../themes-common/scss/summary';
+
+.mkl_pc_summary {
+	.mkl_pc_summary_item_group h5 {
+		color: color(ll2);
+	}
+
+	// Group titles
+	> .mkl_pc_summary_item_group.group > h5 {
+		color: var(--mkl_pc_color-ll1);
+	}
+
+	.mkl_pc_summary_item_group.group + .group {
+		border-top: 1px solid #ffffff1b;
+	}
+}
 
 /* YITH Added to cart popup compat */
 
