@@ -8,7 +8,6 @@ PC.fe.views.choices = Backbone.View.extend({
 	initialize: function( options ) { 
 		this.options = options || {}; 
 		return this.render();
-
 	},
 	events: {
 		'click .layer-choices-title a.close': 'close_choices'

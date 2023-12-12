@@ -9,6 +9,7 @@ PC.fe.views.summary = Backbone.View.extend( {
 			wp.hooks.addAction( 'mkl_checked_conditions', 'mkl/pc/summary', this.render.bind( this ), 1000 );
 		} 
 		wp.hooks.addAction( 'PC.fe.choice.set_choice', 'mkl/pc/summary', this.render.bind( this ), 1000 );
+		wp.hooks.addAction( 'PC.fe.form.item.change', 'mkl/pc/summary', this.render.bind( this ), 1000 );
 		return this; 
 	},
 	render: function() {
@@ -28,14 +29,23 @@ PC.fe.views.summary = Backbone.View.extend( {
 				}
 			}
 
+			// if ( ! choice ) console.log( item.layer_id, item.choice_id );
 			if ( choice ) {
+				if ( 'calculation' == choice.get( 'text_field_type' ) ) return;
 				var view = new PC.fe.views.summary_item( { model: choice } );
 				this.layers[ item.layer_id ].$el.append( view.$el );
 			}
 
 		}.bind( this ) );
-		
-		// this.$el.html( this.template() );
+
+		// Cleanup
+		this.$( '.mkl_pc_summary_item_group.group' ).each( function( i, item ) {
+			if ( ! $( item ).find( '.mkl_pc_summary_item_group' ).length ) {
+				$( item ).remove()
+			}
+		} );
+
+		return this.$el;
 	},
 	clear: function() {
 		if ( this.layers.length ) {
@@ -73,8 +83,27 @@ PC.fe.views.summary_item = Backbone.View.extend( {
 		return this; 
 	},
 	render: function() {
-		this.$el.html( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.model.attributes ) ) );
+		// Apply PC.fe.configurator.choice_data filter, used for language mostly, at order 2000
+		var attributes = JSON.parse( JSON.stringify( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.model.attributes ) ) );
+		attributes = wp.hooks.applyFilters( 'PC.fe.summary_item.attributes', attributes, this.model );
+		this.$el.html( this.template( attributes, this.model ) );
+		if ( 'form' == this.model.collection.layer_type || this.model.get( 'has_text_field' ) ) {
+			this.$el.addClass( 'has-form-field field-' + this.model.get( 'text_field_type' ) );
+		}
 		wp.hooks.doAction( 'PC.fe.configurator.summary-item.render.after-template', this );
 	}
 } );
+
+wp.hooks.addFilter( 'PC.fe.summary_item.attributes', 'test', function( data, model ) {
+	if ( 'form' !== model.collection.layer_type && ! model.get( 'has_text_field' ) ) return data;
+	if ( model && model.get( 'text_field_type' ) && model.get( 'field_value' ) ) {
+		if ( 'file' == model.get( 'text_field_type' ) ) {
+			var value = JSON.parse( model.get( 'field_value' ) );
+		} else {
+			var value = model.get( 'field_value' );
+		}
+		data.name += '<span class="form-field--value ' + model.get( 'text_field_type' ) + '">' + value + '</span>';
+	}
+	return data;
+} )
 

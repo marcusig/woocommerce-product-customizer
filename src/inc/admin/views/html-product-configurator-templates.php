@@ -184,18 +184,22 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 		<?php do_action('mkl_pc_layer_settings') ?>
 	</div>
-	<div class="attachment-display-settings">
-		<h2><?php _e('Layer\'s icon', 'product-configurator-for-woocommerce' ) ?></h2>
-		<div class="thumbnail thumbnail-image">
+
+	<# if ( 'summary' != data.type ) { #>
+		<div class="attachment-display-settings">
+			<h2><?php _e('Layer\'s icon', 'product-configurator-for-woocommerce' ) ?></h2>
+			<div class="thumbnail thumbnail-image">
+				<# if ( data.image.url != '' ) { #>
+					<img src="{{data.image.url}}" height="40" class="layer-img" />
+				<# } #>
+			</div>
+			<a class="edit-attachment" href="#"><?php _e('Add / Change picture', 'product-configurator-for-woocommerce' ) ?></a>
 			<# if ( data.image.url != '' ) { #>
-				<img src="{{data.image.url}}" height="40" class="layer-img" />
+				| <a class="remove-attachment" href="#"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></a>
 			<# } #>
 		</div>
-		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', 'product-configurator-for-woocommerce' ) ?></a>
-		<# if ( data.image.url != '' ) { #>
-			| <a class="remove-attachment" href="#"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></a>
-		<# } #>
-	</div>
+	<# } #>
+	
 </script>
 <?php 
 /*

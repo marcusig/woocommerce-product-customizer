@@ -29,7 +29,9 @@ PC.fe.views.layers_list = Backbone.View.extend({
 	add_one: function( model ) {
 		var new_layer;
 
-		if ( ! model.attributes.not_a_choice ) {
+		if ( 'summary' == model.get( 'type' ) ) {
+			new_layer = new PC.fe.views.summary( { model: model, parent: this.$el } ); 
+		} else if ( ! model.attributes.not_a_choice ) {
 			var choices = PC.fe.getLayerContent( model.id ); 
 			if ( choices.length || 'group' == model.get( 'type' ) ) {
 				new_layer = new PC.fe.views.layers_list_item( { model: model, parent: this.$el } ); 
