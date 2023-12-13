@@ -53,6 +53,8 @@ $inner_space: 1em;
 	overflow: hidden;
 }
 
+
+
 .is_configurable {
 	// div.product form.cart {
 	// display: none;
@@ -510,4 +512,11 @@ nav.mkl-pc--steps {
 		margin-right: 5px;
 		margin-left: 5px;
 	}
+}
+
+@import '../../themes-common/scss/summary';
+
+.mkl_pc_summary {
+	width: 100%;
+	margin-top: 30px;
 }

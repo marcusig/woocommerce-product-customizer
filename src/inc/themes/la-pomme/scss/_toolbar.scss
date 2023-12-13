@@ -103,6 +103,18 @@
 				-webkit-animation: slide-in-top 0.2s ease-out;
 				animation: slide-in-top 0.2s ease-out;
 
+				&.type-step {
+					& > .layer-item {
+						padding: 0;
+						.layer-text {
+							font-size: 24px;
+							line-height: 1.3;
+							.selected-choice {
+								font-size: 16px;
+							}
+						}
+					}
+				}
 				&.type-group:not(.type-step) {
 					border: 1px solid color(border);
 					padding: 20px;
@@ -218,7 +230,7 @@
 					}								
 				}
 
-				i:not(:empty) + .layer-text {
+				i:not(:empty) ~ .layer-text {
 					padding-left: 60px;
 					display: block;
 				}

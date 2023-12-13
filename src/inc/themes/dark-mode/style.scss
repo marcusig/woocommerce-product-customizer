@@ -1480,6 +1480,7 @@ body.configurator_is_inline .mkl_pc {
 @import '../../themes-common/scss/summary';
 
 .mkl_pc_summary {
+	padding: 20px;
 	.mkl_pc_summary_item_group h5 {
 		color: color(ll2);
 	}
