@@ -65,10 +65,12 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 PC.fe.views.layers_list_item_selection_image = Backbone.View.extend({
 	tagName: 'i',
 	className: 'selected-choice-image',
-	initialize: function() {
+	initialize: function( options ) {
 		this.choices = PC.fe.getLayerContent( this.model.id );
+		this.parent = options.parent;
 		if ( ! this.choices ) return;
 		this.listenTo( this.choices, 'change:active', this.render );
+		this.has_thumbnail = this.parent.$el.is( '.has-thumbnail' );
 		this.render();
 	},
 	render: function( choice_model, activated ) {
@@ -80,6 +82,9 @@ PC.fe.views.layers_list_item_selection_image = Backbone.View.extend({
 				html_content += '<img src="' + image + '">';
 			}
 		} );
+		if ( ! this.has_thumbnail ) {
+			this.parent.$el.toggleClass( 'has-thumbnail', !! html_content );
+		}
 		this.$el.html( html_content );
 	}		
 } );

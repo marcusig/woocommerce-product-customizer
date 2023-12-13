@@ -39,7 +39,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		}
 
 		if ( PC.fe.config.show_active_choice_image_in_layer ) {
-			var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model } );
+			var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model, parent: this } );
 			this.$( '.layer-item' ).prepend( selection.$el );
 		}
 
