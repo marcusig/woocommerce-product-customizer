@@ -72,10 +72,10 @@ PC.fe.views.form = Backbone.View.extend({
 			var messages = [];
 			_.each( errors, function( error ) {
 				if ( error.choice ) {
-					error.choice.set( 'has_error', error );
+					error.choice.set( 'has_error', error.message );
 				}
 				if ( error.layer ) {
-					error.layer.set( 'has_error', error );
+					error.layer.set( 'has_error', error.message );
 				}
 				messages.push( error.message );
 			} );
