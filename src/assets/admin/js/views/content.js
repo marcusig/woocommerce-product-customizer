@@ -66,7 +66,7 @@ PC.views = PC.views || {};
 		},
 
 		add_one: function( model ) {
-			if ( 'group' == model.get( 'type' ) ) return;
+			if ( 'group' == model.get( 'type' ) || 'summary' == model.get( 'type' ) ) return;
 
 			var options = _.defaults( this.options );
 			var content = this.product.get('content');
