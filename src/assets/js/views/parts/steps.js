@@ -31,7 +31,7 @@ PC.fe.steps = {
 						error.choice.set( 'has_error', error );
 					}
 					if ( error.layer ) {
-						error.layer.set( 'has_error', error );
+						error.layer.set( 'has_error', error.message );
 					}
 					messages.push( error.message );
 				} );
@@ -48,6 +48,7 @@ PC.fe.steps = {
 		this.display_step();
 	},
 	display_step: function() {
+		PC.fe.save_data.reset_errors();
 		var steps = this.get_steps();
 		var current_index = this.get_index( this.current_step );
 
