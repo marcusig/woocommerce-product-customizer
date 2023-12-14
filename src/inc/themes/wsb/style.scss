@@ -108,6 +108,7 @@ $inner_space: 1em;
 
 .mkl_pc .mkl_pc_container nav.mkl-pc--steps button.step-previous {
 	padding: 6px 0;
+	padding-left: var(--mkl_pc-float-spacing);
 	width: 60px;
 }
 
