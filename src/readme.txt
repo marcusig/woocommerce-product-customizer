@@ -114,6 +114,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
+* FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
 * COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
 * TWEAK: Added timeout setting for admin requests
 * TWEAK: Ajax add to cart support, for themes and plugins using the `adding_to_cart` and `added_to_cart` events
