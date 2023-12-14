@@ -28,7 +28,7 @@ PC.fe.steps = {
 				var messages = [];
 				_.each( errors, function( error ) {
 					if ( error.choice ) {
-						error.choice.set( 'has_error', error );
+						error.choice.set( 'has_error', error.message );
 					}
 					if ( error.layer ) {
 						error.layer.set( 'has_error', error.message );
