@@ -231,7 +231,7 @@ PC.actionParameter = 'pc_get_data';
 		 * Launch the configurator after click
 		 */
 		if ( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
-			$( '.configure-product-simple' ).trigger( 'click' );
+			$( '.configure-product-simple' ).first().trigger( 'click' );
 		}
 	} );
 
