@@ -32,6 +32,7 @@
 	.pc-total-price--container {
 		width: 100%;
 		padding: var(--mkl_pc-float-spacing);
+		padding-bottom: calc( var(--mkl_pc-float-spacing) / 2 );
 	}
 	.pc-total-price {
 		width: 100%;
