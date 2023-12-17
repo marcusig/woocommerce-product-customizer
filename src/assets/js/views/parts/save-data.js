@@ -3,7 +3,6 @@ PC.fe.errors = [];
 PC.fe.save_data = {
 	choices: [],
 	save: function() {
-		PC.fe.errors = [];
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
@@ -24,10 +23,10 @@ PC.fe.save_data = {
 				}
 			} );
 		}
+		PC.fe.errors = [];
 	},
 	is_layer_valid: function( layer ) {
 		this.reset_errors();
-		PC.fe.errors = [];
 		this.validate_layer( layer );
 		return ! PC.fe.errors.length;
 	},
