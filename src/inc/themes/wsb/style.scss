@@ -319,6 +319,25 @@ $inner_space: 1em;
 
 			}
 
+			section.choices .layers {
+				@import '../../themes-common/scss/dropdown';
+			}
+
+			li.display-mode-dropdown, .layer_choices li.display-mode-dropdown {
+				&.has-thumbnail {
+					> button.layer-item {
+						padding-left: 10px;
+						&:focus, &:hover {
+							padding-left: 10px;
+						}
+					}
+				}
+			}
+
+			li.display-mode-dropdown > button.layer-item > .selected-choice-image {
+				display: none;
+			}
+
 			section.choices {
 				position: relative;
 				height: 100%;
@@ -333,6 +352,7 @@ $inner_space: 1em;
 				& + .form {
 					position: relative;
 				}
+
 				> ul {
 					list-style-type: none;
 					display: block;
@@ -368,6 +388,17 @@ $inner_space: 1em;
 							}
 							> .layer_choices > .choices-list {
 								padding: var(--mkl_pc-float-spacing);
+								> ul > li.layers-list-item {
+									margin: 0;
+									& + li.layers-list-item {
+										margin-top: 30px;
+										&:not(.display-mode-dropdown) {
+											.choices-list {
+												padding: 0;
+											}
+										}
+									}
+								}
 							}
 							&.has-thumbnail {
 								> .layer-item {
@@ -385,6 +416,13 @@ $inner_space: 1em;
 										top: 50%;
 										transform: translateY(-50%);
 									}
+								}
+							}
+							li.layers-list-item.display-mode-dropdown {
+								padding: 0;
+								.layer_choices.display-mode-dropdown {
+									width: 100%;
+									top: calc( 100% - 1px );
 								}
 							}
 						}
@@ -476,54 +514,74 @@ $inner_space: 1em;
 				.layers {
 					> li {
 					}
-					button {
+					.layer-item {
+						display: block;
+						position: relative;
+						line-height: 1.6;
+						padding: 15px 0;
+
+						.description {
+							display: block;
+							font-size: .9em;
+							color: color(light-gray);
+						}
+
+						span.selected-choice {
+							display: block;
+							font-size: 0.8em;
+							text-transform: uppercase;
+							opacity: 0.5;
+						}
+
+						i {
+							position: absolute;
+							display: block;
+							width: 30px;
+							left: 0px;
+							top: 50%;
+							transform: translateY(-50%);
+							transition: .2s all;
+							opacity: 1;
+							text-align: center;
+							@media( max-width: $small_screen_width ) {
+								width: 30px;
+							}
+
+							img {
+								width: auto;
+								max-width: 100%;
+								height: auto;
+								display: block;
+							}
+
+							&.selected-choice-image {
+								&:not(:empty) + i {
+									display: none;
+								}									
+								img ~ img {
+									display: none;
+								}
+							}								
+						}
+					}
+
+					.has-thumbnail > .layer-item {
+						padding-left: 60px;
+					}
+
+					span.layer-item {
+						font-size: 1.2em;
+						font-weight: bold;
+					}
+					.has-thumbnail > span.layer-item {
+						padding-left: 45px;
+					}
+
+					button.layer-item {
 						padding-left: 60px;
 						&.layer-item {
 							padding-right: 50px;
-							i {
-								position: absolute;
-								display: block;
-								width: 30px;
-								left: 17px;
-								top: 50%;
-								transform: translateY(-50%);
-								transition: .2s all;
-								opacity: 0.5;
-								text-align: center;
-								@media( max-width: $small_screen_width ) {
-									width: 30px;
-								}
-
-								img {
-									width: auto;
-									max-width: 100%;
-									height: auto;
-									display: block;
-								}
-	
-								&.selected-choice-image {
-									&:not(:empty) + i {
-										display: none;
-									}									
-									img ~ img {
-										display: none;
-									}
-								}								
-							}
-
 							transition: .2s all;
-							.description {
-								display: block;
-								font-size: .8em;
-								color: color(light-gray);
-							}
-
-							span.selected-choice {
-								display: block;
-								font-size: 0.6rem;
-								text-transform: uppercase;
-								opacity: 0.5;
-							}
 
 							&::after {
 								transition: .2s all;
@@ -537,6 +595,10 @@ $inner_space: 1em;
 								transform: translateY(-50%) rotate(-45deg);
 								border-right: 1px solid #36383a55;
 								border-bottom: 1px solid #36383a55;
+							}
+
+							i {
+								left: 17px;
 							}
 
 							&:focus, &:hover {
@@ -594,7 +656,6 @@ $inner_space: 1em;
 
 							span.text.choice-name {
 								display: block;
-								font-size: .8em;
 								text-transform: uppercase;
 								text-align: center;
 							}
@@ -672,6 +733,7 @@ $inner_space: 1em;
 								width: 100%;
 								padding: 0;
 								margin: 0;
+
 								box-shadow: none;
 								.choice-group-label {
 									padding-left: 3px;
@@ -721,9 +783,6 @@ $inner_space: 1em;
 									}
 								}
 								
-								& + .is-group {
-									margin-top: .2em;
-								}
 
 								&:not( .show-group-content ) {
 									button.choice-group-label {
@@ -736,7 +795,12 @@ $inner_space: 1em;
 										}
 									}
 								}
-							}							
+							}
+
+							& + .is-group {
+								margin-top: .2em;
+							}
+
 						}
 						ul li.layers-list-item {
 							width: 100%;
@@ -772,6 +836,34 @@ $inner_space: 1em;
 
 					&.columns-1 > li.choices-list > ul li.choice:not(.is-group) {
 						width: calc(100% - .6em);
+						
+						> button.choice-item {
+							padding: 10px;
+							span.choice-text--container {
+								display: flex;
+								flex-wrap: wrap;
+								justify-content: flex-start;
+								align-items: center;
+
+								span.choice-text {
+									flex: 1;
+									text-align: left;
+								}
+								
+								span.text.choice-name {
+									text-align: left;
+								}
+								
+								span.description {
+									text-align: left;
+									width: 100%;
+									text-transform: none;
+									font-size: 1em;
+									padding: 10px 5px 0 5px;
+									order: 6;
+								}
+							}
+						}
 					}
 					&.columns-2 > li.choices-list > ul li.choice:not(.is-group) {
 						width: calc(50% - .6em);
@@ -785,12 +877,6 @@ $inner_space: 1em;
 							width: calc(50% - .6em);
 						}
 					}
-				}
-
-				@import '../../themes-common/scss/dropdown';
-
-				li.display-mode-dropdown > button.layer-item > .selected-choice-image {
-					display: none;
 				}
 				
 				@media( max-width: $small_screen_width ) {
