@@ -70,7 +70,7 @@ PC.fe.steps = {
 				if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
 			}, 50 );
 		}
-		wp.hooks.doAction( 'PC.fe.steps.display_step' );
+		wp.hooks.doAction( 'PC.fe.steps.display_step', this );
 	},
 	get_steps: function() {
 		if ( ! this.steps ) {
