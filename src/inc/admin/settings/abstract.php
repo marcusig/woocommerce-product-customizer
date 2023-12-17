@@ -84,12 +84,12 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			if ( 'html' === $options['type'] ) {
 				$output = '
-				<div class="setting html ' . esc_attr( $options['id'] ) . '">
+				<div class="setting html setting-id-' . esc_attr( $options['id'] ) . '">
 					<span class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</span>
 					';
 			} else {
 				$output = '
-					<label class="setting ' . esc_attr( $options['type'] ) . ' ' . esc_attr( $options['id'] ) . '">
+					<label class="setting ' . esc_attr( $options['type'] ) . ' setting-id-' . esc_attr( $options['id'] ) . '">
 						<span class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</span>
 						';
 			}
