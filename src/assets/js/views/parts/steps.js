@@ -54,15 +54,7 @@ PC.fe.steps = {
 
 		PC.fe.modal.$el.toggleClass( 'last-step', !! ( current_index == steps.length - 1 ) );
 
-		var is_first_step = 0 == current_index;
-
-		PC.fe.modal.$el.toggleClass( 'first-step', is_first_step );
-
-		if ( is_first_step ) {
-			this.previous_button.$( 'button' ).prop( 'disabled', true );
-		} else {
-			this.previous_button.$( 'button' ).prop( 'disabled', false );
-		}
+		PC.fe.modal.$el.toggleClass( 'first-step', 0 == current_index );
 		
 		if ( PC_config.config.open_first_layer && PC.fe.modal.$el.is( '.float, .wsb' ) ) {
 			setTimeout( function() {
@@ -70,6 +62,7 @@ PC.fe.steps = {
 				if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
 			}, 50 );
 		}
+
 		wp.hooks.doAction( 'PC.fe.steps.display_step', this );
 	},
 	get_steps: function() {
@@ -95,6 +88,7 @@ PC.fe.steps = {
 		// Because of conditional logic, the index of an item can change.
 		return _.indexOf( this.get_steps(), step );
 	},
+	
 	deactivate_all_layers: function() {
 		PC.fe.layers.each( function( model ) {
 			model.set( 'active' , false );
@@ -149,10 +143,19 @@ PC.fe.steps = {
 			'click button.step-previous ': 'previous'
 		},
 		initialize: function() {
+			wp.hooks.addAction( 'PC.fe.steps.display_step', 'mkl/pc/steps', this.render.bind( this ) );
+			if ( 'undefiled' != typeof PC.conditionalLogic ) this.listenTo( PC.fe.steps.steps, 'change:cshow', this.render );
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template() );
+			this.$el.html( this.template({}) );
+			var current_index = PC.fe.steps.get_index( PC.fe.steps.current_step );
+			if ( 0 == current_index ) {
+				this.$( 'button' ).prop( 'disabled', true );
+			} else {
+				this.$( 'button' ).prop( 'disabled', false );
+			}
+	
 		},
 		previous: function( e ) {
 			e.preventDefault();
@@ -166,10 +169,24 @@ PC.fe.steps = {
 			'click button.step-next ': 'next'
 		},
 		initialize: function() {
+			wp.hooks.addAction( 'PC.fe.steps.display_step', 'mkl/pc/steps', this.render.bind( this ) );
+			if ( 'undefiled' != typeof PC.conditionalLogic ) {
+				this.listenTo( PC.fe.steps.steps, 'change:cshow', this.render );
+			}
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template() );
+			var label = '';
+			if ( PC.fe.config.steps_use_layer_name ) {
+				var steps = PC.fe.steps.get_steps();
+				var current_index = PC.fe.steps.get_index( PC.fe.steps.current_step );
+				if ( current_index < steps.length - 1 ) {
+					var next_step = steps[current_index + 1];
+					label = next_step.get( 'next_step_button_label' ) || next_step.get( 'name' );
+				}
+			} 
+
+			this.$el.html( this.template({ label: label }) );
 		},
 		next: function( e ) {
 			e.preventDefault();
