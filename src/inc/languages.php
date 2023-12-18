@@ -57,6 +57,8 @@ class Languages {
 			'view_configuration' => _x( 'View configuration', 'Label of the link to view a configuration, in the cart or an order', 'product-configurator-for-woocommerce' ),
 			'configuration_costs_label' => __( 'Configuration costs:', 'mkl-pc-extra-price' ),
 			'adv_desc_close_label' => __( 'Close', 'mkl-pc-advanced-description' ),
+			'previous_step_label' => _x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' ),
+			'next_step_label' => _x( 'Next', 'Next step button label', 'product-configurator-for-woocommerce' ),
 		] );		
 	}
 	/**
