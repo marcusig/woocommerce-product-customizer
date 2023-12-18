@@ -779,6 +779,16 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						'description'  => '<a href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/general-usage/using-the-steps-feature/" target="_blank">' . __( 'Check the documentation on how to use the steps feature', 'product-configurator-for-woocommerce' ) . '</a>',
 					]
 				);
+				add_settings_field(
+					'steps_use_layer_name',
+					__( 'Use layer names for previous and next button labels', 'product-configurator-for-woocommerce' ),
+					[ $this, 'callback_checkbox' ],
+					'mlk_pc_settings', 
+					'general_settings',
+					[ 
+						'setting_name' => 'steps_use_layer_name',
+					]
+				);
 			}
 
 			/*
@@ -896,7 +906,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'labels',
 				[
 					'setting_name' => 'previous_step_label',
-					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Previous', 'product-configurator-for-woocommerce' )
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . _x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' )
 				]
 			);
 
@@ -908,7 +918,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'labels',
 				[
 					'setting_name' => 'next_step_label',
-					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Next', 'product-configurator-for-woocommerce' )
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . _x( 'Next', 'Next step button label', 'product-configurator-for-woocommerce' )
 				]
 			);
 
