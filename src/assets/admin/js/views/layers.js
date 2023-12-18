@@ -407,7 +407,19 @@ TODO:
 			'click .mkl-pc--action': 'trigger_custom_action',
 		},
 		render: function() {
-			this.$el.html( this.template( this.model.attributes ) );
+			var data = this.model.attributes;
+			
+			if ( 
+				'group' == this.model.get( 'type' ) 
+				&& ( 
+					! this.model.get( 'parent' )
+					|| ! this.model.collection.get( this.model.get( 'parent' ) )
+				) 
+			) {
+				data = _.extend( {}, data, { maybe_step: true } );
+			}
+
+			this.$el.html( this.template( data ) );
 			this.delete_btns = {
 				prompt: this.$('.delete-layer'),
 				confirm: this.$('.prompt-delete'),
