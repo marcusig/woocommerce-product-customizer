@@ -243,6 +243,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'angles_no_delete_message' => __( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
+					'use_steps' => mkl_pc( 'settings' )->get( 'use_steps', false ),
 					'is_rest_enabled' => true,
 					'rest_url' => get_rest_url(),
 					'timeout' => (int) mkl_pc( 'settings' )->get( 'admin_save_timeout', 30000, true ),

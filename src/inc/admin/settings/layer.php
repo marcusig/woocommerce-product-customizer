@@ -246,6 +246,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'label' => __( 'Summary', 'product-configurator-for-woocommerce' ),
 					'value' => 'summary'
 				);
+				if ( mkl_pc( 'settings' )->get( 'steps_use_layer_name', false ) ) {
+					$settings['next_step_button_label'] = array(
+						'label' => __( 'Next step button label', 'product-configurator-for-woocommerce' ),
+						'type' => 'text',
+						'condition' => 'data.maybe_step',
+						'priority' => 15,
+					);
+				}
 			}
 			return apply_filters( 'mkl_pc_layer_default_settings', $settings );
 		}
