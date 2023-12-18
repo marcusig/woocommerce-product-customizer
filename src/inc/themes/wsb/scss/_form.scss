@@ -4,7 +4,7 @@
 
 .form.form-cart {
 	position: relative;
-	padding: 1em var(--mkl_pc-float-spacing);
+	padding: 1em var(--mkl_pc-wsb-spacing);
 	text-align: right;
 	
 	@media( max-width: $small_screen_width ) {
@@ -31,8 +31,8 @@
 	}
 	.pc-total-price--container {
 		width: 100%;
-		padding: var(--mkl_pc-float-spacing);
-		padding-bottom: calc( var(--mkl_pc-float-spacing) / 2 );
+		padding: var(--mkl_pc-wsb-spacing);
+		padding-bottom: 0;
 	}
 	.pc-total-price {
 		width: 100%;
@@ -99,10 +99,10 @@
 		width: 100%;
 	}
 	.form.form-cart {
-		--mkl_pc-float-spacing: 5px;
+		--mkl_pc-wsb-spacing: 5px;
 		position: relative;
 		background: #FFF;
-		padding: var(--mkl_pc-float-spacing);
+		padding: var(--mkl_pc-wsb-spacing);
 		box-sizing: border-box;
 
 		display: flex;
@@ -133,7 +133,7 @@
 	.form.form-cart .pc_configurator_form {
 		display: inline-flex;
 		width: calc(100% - 60px);
-		padding: 8px var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) 0;
+		padding: 8px var(--mkl_pc-wsb-spacing) var(--mkl_pc-wsb-spacing) 0;
 		justify-content: end;
 	}
 
@@ -150,7 +150,7 @@
 
 nav.mkl-pc--steps {
     width: auto;
-    padding: 8px 0 var(--mkl_pc-float-spacing) 0;
+    padding: 8px 0 var(--mkl_pc-wsb-spacing) 0;
 	display: inline-flex;
     justify-content: space-between;
 
@@ -190,6 +190,6 @@ nav.mkl-pc--steps {
 	}
 	nav.mkl-pc--steps {
 		width: 100%;
-		padding: 8px var(--mkl_pc-float-spacing) var(--mkl_pc-float-spacing) 0;
+		padding: 8px var(--mkl_pc-wsb-spacing) var(--mkl_pc-wsb-spacing) 0;
 	}
 }
