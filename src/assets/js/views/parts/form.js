@@ -150,8 +150,11 @@ PC.fe.views.form = Backbone.View.extend({
 
 		this.populate_form_input( data, e );
 
+		wp.hooks.doAction( 'PC.fe.add_to_quote.before', this );
+
 		if ( PC.fe.debug_configurator_data ) {
 			console.log( 'debug_configurator_data', data );
+			return;
 		}
 
 		// Woocommerce Add To Quote plugin
