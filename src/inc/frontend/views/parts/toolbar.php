@@ -45,3 +45,7 @@
 		<?php do_action( 'mkl_pc/next_step/after' ); ?>
 	</button>
 </script>
+
+<script type="text/html" id="tmpl-mkl-pc-configurator-steps-progress--item" data-wg-notranslate>
+	<a class="step-link" href="#">{{{data.name}}}</a>
+</script>
