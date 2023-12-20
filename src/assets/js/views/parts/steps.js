@@ -4,6 +4,53 @@ PC.fe.steps = {
 	previous_button: null,
 	next_button: null,
 	steps: null,
+	setup_steps: function() {
+		if ( ! this.steps_possible() ) {
+			PC.fe.use_steps = false;
+			return;
+		}
+
+		PC.fe.use_steps = true;
+
+		this.get_steps();
+
+		PC.fe.modal.$el.addClass( 'has-steps' );
+
+		// add buttons
+		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator/steps', function( modal ) {
+			this.current_step = this.get_steps()[0];
+			this.current_step.set( 'active', true );
+			this.previous_button = new this.view_prev();
+			this.next_button = new this.view_next();
+			var $nav = $( '<nav class="mkl-pc--steps" />' );
+			$nav.append( this.previous_button.$el );
+			$nav.append( this.next_button.$el );
+
+			var nav_position = wp.hooks.applyFilters( 'PC.fe.steps_position', null, $nav );
+			if ( ! nav_position ) modal.footer.$( '.pc_configurator_form' ).before( $nav );
+
+			this.breadcrumb = new PC.fe.views.stepsProgress();
+			var breadcrumb_position = wp.hooks.applyFilters( 'PC.fe.breadcrumb_position', null, this.breadcrumb );
+			if ( ! breadcrumb_position ) modal.toolbar.$( '.layers' ).before( this.breadcrumb.$el );
+
+			this.display_step();
+		}.bind( this ), 20 );
+
+	},
+	steps_possible: function() {
+		var steps = PC.fe.layers.filter( function( model ) {
+			// A valid step is visible, has a type of Group, and doesn't have a parent (only root elements can be steps ) 
+			return 'group' == model.get( 'type' ) && ( ! model.get( 'parent' ) || ( model.get( 'parent' ) && ! PC.fe.layers.get( model.get( 'parent' ) ) ) );
+		} );
+
+		var all_root_layers = PC.fe.layers.filter( function( model ) {
+			// A valid step is visible, has a type of Group, and doesn't have a parent (only root elements can be steps ) 
+			return ( ! model.get( 'parent' ) || ( model.get( 'parent' ) && ! PC.fe.layers.get( model.get( 'parent' ) ) ) );
+		} );
+
+		// ALL root layers must be groups for the steps to work.
+		return steps.length && steps.length == all_root_layers.length;
+	},	
 	previous_step: function() {
 		var current_index = this.get_index( this.current_step );
 		if ( 0 === current_index ) return;
@@ -88,53 +135,10 @@ PC.fe.steps = {
 		// Because of conditional logic, the index of an item can change.
 		return _.indexOf( this.get_steps(), step );
 	},
-	
 	deactivate_all_layers: function() {
 		PC.fe.layers.each( function( model ) {
 			model.set( 'active' , false );
 		});
-	},
-	setup_steps: function() {
-		if ( ! this.steps_possible() ) {
-			PC.fe.use_steps = false;
-			return;
-		}
-
-		PC.fe.use_steps = true;
-
-		this.get_steps();
-
-		PC.fe.modal.$el.addClass( 'has-steps' );
-
-		// add buttons
-		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator/steps', function( modal ) {
-			this.current_step = this.get_steps()[0];
-			this.current_step.set( 'active', true );
-			this.previous_button = new this.view_prev();
-			this.next_button = new this.view_next();
-			var $nav = $( '<nav class="mkl-pc--steps" />' );
-			$nav.append( this.previous_button.$el );
-			$nav.append( this.next_button.$el );
-
-			var nav_position = wp.hooks.applyFilters( 'PC.fe.steps_position', null, $nav );
-			if ( ! nav_position ) modal.footer.$( '.pc_configurator_form' ).before( $nav );
-			this.display_step();
-		}.bind( this ), 20 );
-
-	},
-	steps_possible: function() {
-		var steps = PC.fe.layers.filter( function( model ) {
-			// A valid step is visible, has a type of Group, and doesn't have a parent (only root elements can be steps ) 
-			return 'group' == model.get( 'type' ) && ( ! model.get( 'parent' ) || ( model.get( 'parent' ) && ! PC.fe.layers.get( model.get( 'parent' ) ) ) );
-		} );
-
-		var all_root_layers = PC.fe.layers.filter( function( model ) {
-			// A valid step is visible, has a type of Group, and doesn't have a parent (only root elements can be steps ) 
-			return ( ! model.get( 'parent' ) || ( model.get( 'parent' ) && ! PC.fe.layers.get( model.get( 'parent' ) ) ) );
-		} );
-
-		// ALL root layers must be groups for the steps to work.
-		return steps.length && steps.length == all_root_layers.length;
 	},
 	view_prev: Backbone.View.extend( {
 		template: wp.template( 'mkl-pc-configurator-step--previous' ),
