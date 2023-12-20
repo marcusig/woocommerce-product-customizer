@@ -89,7 +89,7 @@ PC.fe.views.form = Backbone.View.extend({
 			if ( $cart_item_field ) $cart_item_field.val( PC.fe.config.cart_item_key );
 		}
 
-		this.$input.val( data );
+		$( 'input[name=pc_configurator_data]' ).val( data );
 	},
 
 	add_to_cart: function( e ) {
@@ -149,6 +149,10 @@ PC.fe.views.form = Backbone.View.extend({
 		}
 
 		this.populate_form_input( data, e );
+
+		if ( PC.fe.debug_configurator_data ) {
+			console.log( 'debug_configurator_data', data );
+		}
 
 		// Woocommerce Add To Quote plugin
 		if ( $( '.afrfqbt_single_page' ).length ) {
