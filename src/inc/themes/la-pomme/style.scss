@@ -39,6 +39,7 @@ $inner_space: 1em;
 	--toolbar_width: 400px;
 	--mkl_pc_footer_height: 5em;
 	--mkl_pc_choice--border-radius: 8px;
+	--mkl_pc_lapomme-spacing: 2em;
 
 	// each item in color map
 	@each $name, $color in $colors {
@@ -505,6 +506,16 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 }
 
 @import '../../themes-common/scss/steps';
+
+@include steps-progress( var(--mkl_pc_lapomme-spacing) );
+
+.mkl_pc_toolbar .steps-progress--container {
+	--mkl_pc-steps-gap: 30px;
+	width: calc( 100% - ( var(--mkl_pc_lapomme-spacing) * 2 ) );
+	padding: 0;
+	margin-left: var(--mkl_pc_lapomme-spacing);
+	margin-right: var(--mkl_pc_lapomme-spacing);
+}
 
 nav.mkl-pc--steps {
     justify-content: space-between;
