@@ -33,7 +33,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 		this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', data ) ) ); 
 
-		if ( PC.fe.config.show_active_choice_in_layer ) {
+		if ( PC.fe.config.show_active_choice_in_layer && ! this.model.get( 'is_step' ) ) {
 			var selection = new PC.fe.views.layers_list_item_selection( { model: this.options.model } );
 			this.$( '.layer-item .layer-name' ).after( selection.$el );
 		}
@@ -45,7 +45,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		if ( this.model.get( 'is_step' ) ) this.$el.addClass( 'type-step' );
 		if ( layer_image && layer_image.url ) this.$el.addClass( 'has-thumbnail' );
 
-		if ( PC.fe.config.show_active_choice_image_in_layer ) {
+		if ( PC.fe.config.show_active_choice_image_in_layer && ! this.model.get( 'is_step' ) ) {
 			var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model, parent: this } );
 			this.$( '.layer-item' ).prepend( selection.$el );
 		}
