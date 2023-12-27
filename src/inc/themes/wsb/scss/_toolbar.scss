@@ -171,14 +171,14 @@
 			display: block;
 			margin: 0;
 			padding: 0;
-
-			> li { // .layers-list-item
+			li { // .layers-list-item
 				display: block; 
 				margin: 0;
 				padding: 0;
-				line-height: 2;
+				line-height: 1.3;
 				position: relative;
-
+			}
+			> li { // .layers-list-item
 				margin-bottom: 4px;
 				border: none;
 				-webkit-animation: slide-in-top 0.2s ease-out;
