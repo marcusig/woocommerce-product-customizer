@@ -6,6 +6,12 @@ nav.mkl-pc--steps {
     display: flex;
     flex-direction: row;
     align-items: center;
+
+    button.step-next, button.step-next span, button.step-next svg,
+    button.step-previous, button.step-previous span, button.step-previous svg {
+        vertical-align: middle;
+    }
+
 }
 
 .mkl_pc.has-steps:not(.last-step) .mkl_pc_container .form .pc_configurator_form {
