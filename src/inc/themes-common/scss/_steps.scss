@@ -28,3 +28,61 @@ nav.mkl-pc--steps {
 // 		display: none;
 // 	}
 // }
+
+
+.mkl_pc_toolbar .steps-progress--container {
+	padding: 0 var(--mkl_pc-wsb-spacing);
+	width: 100%;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+
+	ol.steps-progress {
+		display: grid;
+		grid-auto-flow: column;
+		grid-gap: 20px;
+		overflow: hidden;
+		overflow-x: auto;    
+		width: 100%;
+		padding: var(--mkl_pc-wsb-spacing) 0;
+		margin: 0;
+		position: relative;
+		counter-reset: steps-progress;
+
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+		&::-webkit-scrollbar {
+			display: none
+		}
+
+		> li.steps-progress--item {
+			counter-increment: steps-progress;
+			display: block;
+			padding: 0;
+			white-space: nowrap;
+			font-size: 16px;
+			a {
+				font-weight: bold;
+				white-space: nowrap;
+				&::before {
+					content: counter(steps-progress) '. ';
+				}
+			}
+			&.active ~ li.steps-progress--item a {
+				color: #B7B7B7;
+				font-weight: normal;
+			}
+			&.hidden {
+				display: none;
+			}
+		}
+	
+		> li.steps-progress--active-marker {
+			position: absolute;
+			bottom: 0;
+			height: 0;
+			width: var( --mkl_pc-steps-marker-width, 0 );
+			left: var( --mkl_pc-steps-marker-pos, 0 );
+			border-bottom: 2px solid color(primary);
+		}
+		
+	}
+}
