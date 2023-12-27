@@ -38,7 +38,9 @@ nav.mkl-pc--steps {
         ol.steps-progress {
             display: grid;
             grid-auto-flow: column;
-            grid-gap: 20px;
+            grid-gap: var(--mkl_pc-steps-gap, 20px);
+            justify-items: start;
+            justify-content: start;
             overflow: hidden;
             overflow-x: auto;    
             width: 100%;
@@ -82,6 +84,7 @@ nav.mkl-pc--steps {
                 width: var( --mkl_pc-steps-marker-width, 0 );
                 left: var( --mkl_pc-steps-marker-pos, 0 );
                 border-bottom: 2px solid color(primary);
+                transition: .5s all ease-out;
             }
             
         }
