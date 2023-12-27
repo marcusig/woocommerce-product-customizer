@@ -114,6 +114,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Ajax add to cart support, for themes and plugins using the `adding_to_cart` and `added_to_cart` events
+
 = 1.2.57 - 29/Nov/2023 = 
 
 * FEATURE: Added Supports Swatch size and number of columns on a selection of themes

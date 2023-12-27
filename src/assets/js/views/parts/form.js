@@ -4,6 +4,7 @@
 PC.fe.views.form = Backbone.View.extend({
 	initialize: function( options ) {
 		this.parent = options.parent || PC.fe;
+		$( document.body ).on( 'added_to_cart', this.on_added_to_cart.bind( this ) );
 		this.render();
 		return this; 
 	},
@@ -120,6 +121,7 @@ PC.fe.views.form = Backbone.View.extend({
 		 * @param object  $cart - The jQuery object
 		 */
 		if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
+			$( document.body ).one( 'adding_to_cart', this.on_adding_to_cart );
 			$( e.currentTarget ).addClass( 'adding-to-cart' );
 			if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
 				var btn = this.$cart.find( 'button[name=add-to-cart]' );
@@ -140,6 +142,31 @@ PC.fe.views.form = Backbone.View.extend({
 
 		if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 	},
+
+	/**
+	 * Add compatibility with Ajax Add to cart 
+	 * @param {*} e       Event
+	 * @param {*} $button button object
+	 * @param {*} data    The data sent
+	 */
+	on_adding_to_cart: function( e, $button, data ) {
+		PC.fe.modal.$el.addClass( 'adding-to-cart' );
+		if ( ! data.pc_configurator_data ) {
+			data.pc_configurator_data = $( 'input[name=pc_configurator_data]' ).val();
+		}
+	},
+
+	/**
+	 * Add compatibility with Ajax Add to cart - Remove adding to cart class
+	 * @param {*} e         Event
+	 * @param {*} fragments Cart fragments
+	 * @param {*} cart_hash Cart hash
+	 * @param {*} $button   button object
+	 */
+	on_added_to_cart: function( e, fragments, cart_hash, $button ) {
+		PC.fe.modal.$el.removeClass( 'adding-to-cart' );
+	},
+	
 	add_to_quote: function( e ) {
 
 		var data = this.validate_configuration();
