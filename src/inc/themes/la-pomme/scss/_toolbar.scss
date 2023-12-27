@@ -84,12 +84,12 @@
 
 	section.choices {
 		position: relative;
-		padding: 2em;
+		padding: var(--mkl_pc_lapomme-spacing);
 		padding-bottom: 6em;
 		
 		& + .form {
 			position: relative;
-			padding-top: 2em;
+			padding-top: var(--mkl_pc_lapomme-spacing);
 		}
 
 		> ul {
