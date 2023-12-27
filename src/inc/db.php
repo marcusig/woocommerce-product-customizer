@@ -222,10 +222,6 @@ class DB {
 		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_' . $component );
 		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
 		
-		if ( function_exists( 'wp_cache_flush' ) ) {
-			wp_cache_flush();
-		}
-		
 		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 
