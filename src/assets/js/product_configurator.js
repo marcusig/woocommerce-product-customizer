@@ -516,8 +516,11 @@ PC.utils = PC.utils || {
 		var isTouchDevice = navigator.userAgent.match(/(iPhone|iPod|iPad|Android|playbook|silk|BlackBerry|BB10|Windows Phone|Tizen|Bada|webOS|IEMobile|Opera Mini)/);
 		return !! isTouchDevice;
 	},
-	formatMoney: function ( amount ) {
-		amount = this.maybeConvertAmountToCurrency( amount );
+	formatMoney: function ( amount, convert ) {
+		if ( 'undefined' === typeof convert ) convert = true;
+		if ( convert ) {
+			amount = this.maybeConvertAmountToCurrency( amount );
+		}
 		if ( 'undefined' === typeof accounting ) return amount;
 		return accounting.formatMoney( amount, {
 			precision: PC_config.lang.money_precision,
