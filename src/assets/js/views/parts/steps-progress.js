@@ -44,26 +44,30 @@ PC.fe.views.stepsProgressItem = Backbone.View.extend( {
 		this.$el.html( this.template( this.model.attributes ) );
 		if ( this.model.get( 'active' ) ) {
 			setTimeout( function() {
-				var t = this.$el
-					, e = t.closest(".steps-progress")
-					, n = e.outerWidth()
-					, i = e.scrollLeft() + t.position().left - n / 2 + t.outerWidth() / 2;
-					e.animate({
-						scrollLeft: i
-					}, 320)
+				var $item = this.$el, 
+					$container = $item.closest( '.steps-progress' ),
+					width = $container.outerWidth(),
+					position = $container.scrollLeft() + $item.position().left - width / 2 + $item.outerWidth() / 2;
 
-				$( '.steps-progress--active-marker' ).animate( {
-						width: t.width() + "px",
-						left: t.get(0).offsetLeft + "px"
-					}, 320
-				);
+				$container.animate( {
+					scrollLeft: position
+				}, 320)
+
+				$container.css( {
+					'--mkl_pc-steps-marker-width': $item.width() + "px",
+					'--mkl_pc-steps-marker-pos': $item.get(0).offsetLeft + "px"
+				} );
 			}.bind( this ), 10 );
 		}
 
 	},
 	on_click: function( e ) {
 		e.preventDefault();
-
+		if ( this.model.get( 'active' ) ) return;
+		var current_index = PC.fe.steps.get_index( PC.fe.steps.current_step );
+		if ( PC.fe.steps.get_index( this.model ) < current_index ) {
+			PC.fe.steps.display_step( PC.fe.steps.get_index( this.model ) );
+		}
 	}
 } );
 

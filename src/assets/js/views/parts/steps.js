@@ -56,10 +56,7 @@ PC.fe.steps = {
 		if ( 0 === current_index ) return;
 		var steps = this.get_steps();
 		// steps[this.current_step].set( 'active', false );
-		this.deactivate_all_layers();
-		steps[current_index - 1].set( 'active', true );
-		this.current_step = steps[current_index - 1];
-		this.display_step();
+		this.display_step( current_index - 1 );
 	},
 	next_step: function() {
 		var steps = this.get_steps();
@@ -87,17 +84,20 @@ PC.fe.steps = {
 			}
 		}
 
-		this.deactivate_all_layers();
-
-		// steps[this.current_step].set( 'active', false );
-		this.current_step = steps[current_index + 1];
-		this.current_step.set( 'active', true );
-		this.display_step();
+		this.display_step( current_index + 1 );
 	},
-	display_step: function() {
+	display_step: function( ind ) {
 		PC.fe.save_data.reset_errors();
 		var steps = this.get_steps();
 		var current_index = this.get_index( this.current_step );
+
+		// Change step
+		if ( 'undefined' != typeof ind && current_index != ind && steps[ind] ) {
+			this.deactivate_all_layers();
+			this.current_step = steps[ind];
+			this.current_step.set( 'active', true );
+			current_index = ind;
+		}
 
 		PC.fe.modal.$el.toggleClass( 'last-step', !! ( current_index == steps.length - 1 ) );
 
