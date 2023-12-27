@@ -106,6 +106,8 @@ $inner_space: 1em;
 
 @import '../../themes-common/scss/steps';
 
+@include steps-progress( var(--mkl_pc-wsb-spacing) );
+
 .mkl_pc .mkl_pc_container nav.mkl-pc--steps button.step-previous {
 	padding: 6px 0;
 	padding-left: var(--mkl_pc-wsb-spacing);

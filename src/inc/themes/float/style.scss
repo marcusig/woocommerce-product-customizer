@@ -128,6 +128,12 @@ $inner_space: 1em;
 
 @import '../../themes-common/scss/steps';
 
+@include steps-progress( var(--mkl_pc-float-spacing) );
+
+.mkl_pc_toolbar .steps-progress--container {
+	border-bottom: none;
+}
+
 .mkl_pc .mkl_pc_container nav.mkl-pc--steps button.step-previous {
 	padding: 6px 0;
 	width: 60px;
