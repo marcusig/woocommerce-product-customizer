@@ -79,4 +79,13 @@
 		}
 	} );
 
+	/**
+	 * Display step: scroll back to the top
+	 */
+	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/float', function( steps ) {
+		var scrollable = PC.fe.modal.$( 'section.choices' );
+		if ( scrollable.length ) scrollable[0].scrollTo( 0, 0 );
+	} );
+	
+
 })( jQuery, PC._us || window._ );
