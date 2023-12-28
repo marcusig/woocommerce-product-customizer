@@ -1484,12 +1484,12 @@ body.configurator_is_inline .mkl_pc {
 	.mkl_pc_summary_item_group h5 {
 		color: color(ll2);
 	}
-
+	
 	// Group titles
 	> .mkl_pc_summary_item_group.group > h5 {
 		color: var(--mkl_pc_color-ll1);
 	}
-
+	
 	.mkl_pc_summary_item_group.group + .group {
 		border-top: 1px solid #ffffff1b;
 	}
@@ -1637,6 +1637,9 @@ body.configurator_is_inline .mkl_pc {
 
 }
 
+
+@import '../../themes-common/scss/steps';
+
 nav.mkl-pc--steps {
     display: inline-flex;
     flex-direction: row;
@@ -1645,10 +1648,12 @@ nav.mkl-pc--steps {
 	button.step-next svg {
 		width: 20px;
 		height: 20px;
+		fill: currentColor;
 	}
 	button.step-previous {
 		padding: 0 10px;
 		background: transparent;
+		border: none;
 		svg {
 			width: 32px;
 			height: 32px;
@@ -1681,6 +1686,18 @@ nav.mkl-pc--steps {
     nav.mkl-pc--steps .step-next {
 		display: none;
 	}
+}
+
+@include steps-progress( 10px );
+
+.mkl_pc_toolbar .steps-progress--container ol.steps-progress > li.steps-progress--item a {
+	color: color(ll1);	
+}
+.mkl_pc_toolbar .steps-progress--container ol.steps-progress > li.steps-progress--item.active ~ li.steps-progress--item a {
+	color: color(ll4);
+}
+.mkl_pc_toolbar .steps-progress--container ol.steps-progress > li.steps-progress--active-marker {
+	--mkl_pc_color-primary: #000;
 }
 
 @media(min-width: $small_screen_width) {
