@@ -1690,12 +1690,19 @@ nav.mkl-pc--steps {
 
 @include steps-progress( 10px );
 
+.mkl_pc_toolbar .steps-progress--container {
+	border-bottom-color: #000;
+	--mkl_pc-steps-gap: 30px;
+}
+
 .mkl_pc_toolbar .steps-progress--container ol.steps-progress > li.steps-progress--item a {
 	color: color(ll1);	
+	font-size: 14px;
 }
 .mkl_pc_toolbar .steps-progress--container ol.steps-progress > li.steps-progress--item.active ~ li.steps-progress--item a {
 	color: color(ll4);
 }
+
 .mkl_pc_toolbar .steps-progress--container ol.steps-progress > li.steps-progress--active-marker {
 	--mkl_pc_color-primary: #000;
 }
