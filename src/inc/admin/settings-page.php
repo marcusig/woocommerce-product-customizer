@@ -249,6 +249,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'mlk_pc_settings'
 			);
 
+			add_settings_field(
+				'configurator_images',
+				__( 'Configurator images', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_html' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'html' => '',
+					'class' => 'heading'
+				]
+			);
+
 			$sizes = array_merge( [ 'full' ], get_intermediate_image_sizes() );
 			add_settings_field(
 				'preview_image_size',
@@ -294,6 +306,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'display_options',
+				__( 'Display options', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_html' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'html' => '',
+					'class' => 'heading'
+				]
+			);
+
+			add_settings_field(
 				'show_price_in_configurator',
 				__( 'Show the product\'s price in the configurator', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
@@ -334,134 +358,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'general_settings',
 				[ 
 					'setting_name' => 'show_layer_description',
-				]
-			);
-
-			add_settings_field(
-				'show_angle_image',
-				__( 'Show angle/view image', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'show_angle_image',
-				]
-			);
-
-			add_settings_field(
-				'show_angle_name',
-				__( 'Show angle/view name', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'show_angle_name',
-				]
-			);
-
-			add_settings_field(
-				'use_current_angle_in_cart_image',
-				__( 'Use the active angle to generate the image in the cart', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'use_current_angle_in_cart_image',
-				]
-			);
-
-			add_settings_field(
-				'swipe_to_change_view',
-				__( 'The user can swipe right or left to change view', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'swipe_to_change_view',
-				]
-			);
-
-			if ( ! Utils::check_image_requirements() ) {
-				add_settings_field(
-					'image_warning',
-					__( 'Configuration image generation', 'product-configurator-for-woocommerce' ),
-					function() {
-						echo '<div class="notice error below-h2">
-							<p>PHP Fileinfo extension must be installed/enabled for the plugin to be able to generate the images.</p>
-						</div>';
-					},
-					'mlk_pc_settings', 
-					'general_settings',
-					[ 
-						'setting_name' => 'image_warning',
-					]
-				);
-				// "PHP Fileinfo extension must be installed/enabled to use Intervention Image."
-			}
-
-			add_settings_field(
-				'show_image_in_cart',
-				__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'show_image_in_cart',
-				]
-			);
-
-			add_settings_field(
-				'cart_thumbnail_size',
-				__( 'Image size in the cart / checkout / order', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_select' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'options' => $sizes,
-					'default' => 'woocommerce_thumbnail',
-					'setting_name' => 'cart_thumbnail_size',
-					'no_value' => true,
-				]
-			);			
-
-			add_settings_field(
-				'save_images', 
-				__( 'Image mode', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_radio' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'save_images',
-					'options' => [
-						'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
-						'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
-					],
-					'help' => [
-						'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
-						'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
-					],
-				]
-			);
-
-			add_settings_field(
-				'force_image_in_checkout',
-				__( 'Add product image to the checkout', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'force_image_in_checkout',
-				]
-			);
-
-			add_settings_field(
-				'force_image_in_email',
-				__( 'Add product image to the email', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'force_image_in_email',
 				]
 			);
 
@@ -552,25 +448,211 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
-				'enable_default_add_to_cart',
-				__( 'Allow adding the product to cart without configuring', 'product-configurator-for-woocommerce' ),
+				'show_reset_button',
+				__( 'Show a reset button in the configurator', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
-					'setting_name' => 'enable_default_add_to_cart',
+					'setting_name' => 'show_reset_button',
 				]
 			);
 
 			add_settings_field(
-				'disable_caching',
-				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
+				'open_first_layer',
+				__( 'Automatically open the first layer when starting the configurator', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
-					'setting_name' => 'disable_caching',
-					'description'  => __( 'Can be usefull when using CDNs such as CloudFlare', 'mkl-pc-stock-management' ),
+					'setting_name' => 'open_first_layer',
+				]
+			);
+
+			add_settings_field(
+				'auto_scroll',
+				__( 'Automatically scroll to the top of the opened layer (Supported themes only) ', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'auto_scroll',
+				]
+			);
+
+			add_settings_field(
+				'choice_groups_toggle',
+				__( 'Enable toggling of the choice groups', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'choice_groups_toggle',
+				]
+			);
+
+			add_settings_field(
+				'display_options_angles',
+				__( 'Angle display options', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_html' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'html' => '',
+					'class' => 'heading'
+				]
+			);
+
+			add_settings_field(
+				'show_angle_image',
+				__( 'Show angle/view image', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_angle_image',
+				]
+			);
+
+			add_settings_field(
+				'show_angle_name',
+				__( 'Show angle/view name', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_angle_name',
+				]
+			);
+
+			add_settings_field(
+				'use_current_angle_in_cart_image',
+				__( 'Use the active angle to generate the image in the cart', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'use_current_angle_in_cart_image',
+				]
+			);
+
+			add_settings_field(
+				'swipe_to_change_view',
+				__( 'The user can swipe right or left to change view', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'swipe_to_change_view',
+				]
+			);
+
+			add_settings_field(
+				'image_gen_options',
+				__( 'Image generation options', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_html' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'html' => '',
+					'class' => 'heading'
+				]
+			);
+
+			if ( ! Utils::check_image_requirements() ) {
+				add_settings_field(
+					'image_warning',
+					__( 'Configuration image generation', 'product-configurator-for-woocommerce' ),
+					function() {
+						echo '<div class="notice error below-h2">
+							<p>PHP Fileinfo extension must be installed/enabled for the plugin to be able to generate the images.</p>
+						</div>';
+					},
+					'mlk_pc_settings', 
+					'general_settings',
+					[ 
+						'setting_name' => 'image_warning',
+					]
+				);
+				// "PHP Fileinfo extension must be installed/enabled to use Intervention Image."
+			}
+
+			add_settings_field(
+				'show_image_in_cart',
+				__( 'Show configuration image in cart and checkout', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_image_in_cart',
+				]
+			);
+
+			add_settings_field(
+				'cart_thumbnail_size',
+				__( 'Image size in the cart / checkout / order', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => $sizes,
+					'default' => 'woocommerce_thumbnail',
+					'setting_name' => 'cart_thumbnail_size',
+					'no_value' => true,
+				]
+			);			
+
+			add_settings_field(
+				'save_images', 
+				__( 'Image mode', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_radio' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'save_images',
+					'options' => [
+						'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
+						'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
+					],
+					'help' => [
+						'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
+						'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
+					],
+				]
+			);
+
+			add_settings_field(
+				'force_image_in_checkout',
+				__( 'Add product image to the checkout', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'force_image_in_checkout',
+				]
+			);
+
+			add_settings_field(
+				'force_image_in_email',
+				__( 'Add product image to the email', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'force_image_in_email',
+				]
+			);
+
+
+			add_settings_field(
+				'sku_options',
+				__( 'SKU', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_html' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'html' => '',
+					'class' => 'heading'
 				]
 			);
 
@@ -626,46 +708,37 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
-				'show_reset_button',
-				__( 'Show a reset button in the configurator', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
+				'misc_options',
+				__( 'Miscelaneous', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_html' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
-					'setting_name' => 'show_reset_button',
+					'html' => '',
+					'class' => 'heading'
 				]
 			);
 
 			add_settings_field(
-				'open_first_layer',
-				__( 'Automatically open the first layer when starting the configurator', 'product-configurator-for-woocommerce' ),
+				'enable_default_add_to_cart',
+				__( 'Allow adding the product to cart without configuring', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
-					'setting_name' => 'open_first_layer',
+					'setting_name' => 'enable_default_add_to_cart',
 				]
 			);
 
 			add_settings_field(
-				'auto_scroll',
-				__( 'Automatically scroll to the top of the opened layer (Supported themes only) ', 'product-configurator-for-woocommerce' ),
+				'disable_caching',
+				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
-					'setting_name' => 'auto_scroll',
-				]
-			);
-
-			add_settings_field(
-				'choice_groups_toggle',
-				__( 'Enable toggling of the choice groups', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'choice_groups_toggle',
+					'setting_name' => 'disable_caching',
+					'description'  => __( 'Can be usefull when using CDNs such as CloudFlare', 'mkl-pc-stock-management' ),
 				]
 			);
 
@@ -826,6 +899,11 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			</div>
 			<p><a href="<?php echo add_query_arg( [ 'autofocus[section]' => 'mlk_pc', 'return' => urlencode( esc_url_raw( remove_query_arg( wp_removable_query_args(), wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) ) ], wp_customize_url() ); ?>"><?php _e( 'Edit the theme settings in the customizer', 'product-configurator-for-woocommerce' ); ?></a></p>
 			<?php
+		}
+
+		public function callback_html( $field_options = [] ) {
+			if ( ! isset( $field_options[ 'html' ] ) ) return;
+			echo wp_kses_post( $field_options[ 'html' ] );
 		}
 
 		public function callback_text_field( $field_options = [] ) {

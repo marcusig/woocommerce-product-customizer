@@ -508,6 +508,13 @@ button.mkl-settings-toggle-images-in-library[data-mode="show"] .hide-configurati
 	box-shadow: 0 -20px 25px -25px #0000003d;
 }
 
+.settings_page_mkl_pc_settings tr.heading {
+    border-bottom: 1px solid #CCC;
+}
+.settings_page_mkl_pc_settings tr.heading th {
+    text-transform: uppercase;
+}
+
 @media (max-width: 1100px) {
 	.mkl-pc-themes {
 		min-height: 90vh;
