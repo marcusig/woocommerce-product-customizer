@@ -245,7 +245,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
 					'is_rest_enabled' => true,
-					'rest_url' => get_rest_url()
+					'rest_url' => get_rest_url(),
+					'timeout' => (int) mkl_pc( 'settings' )->get( 'admin_save_timeout', 30000, true ),
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );

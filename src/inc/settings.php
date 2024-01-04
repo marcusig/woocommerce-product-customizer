@@ -24,7 +24,7 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 			) );
 		}
 
-		public function get( $setting = '', $default = false ) {
+		public function get( $setting = '', $default = false, $return_default_if_empty = false ) {
 			$settings = wp_parse_args( get_option( 'mkl_pc__settings' ), $this->get_defaults() );
 			if ( $setting ) {
 				if ( isset( $settings[ $setting ] ) ) {
@@ -48,6 +48,9 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 								return pll__( $setting_value );
 							}
 						}
+					}
+					if ( ! $settings[ $setting ] && $return_default_if_empty ) {
+						return apply_filters( 'mkl/pc/setting/' . $setting, $default );
 					}
 					return apply_filters( 'mkl/pc/setting/' . $setting, $settings[ $setting ] );
 				}

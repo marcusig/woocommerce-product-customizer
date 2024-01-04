@@ -126,6 +126,7 @@ PC.toJSON = function( item ) {
 			this.saving--;
 			if ( this.saving == 0 ) {
 				state.state_saved( 1 );
+				console.log( key, this.errors, state, a, error_message );
 				alert( this.errors.join( "/n" ) );
 			}
 		},
@@ -166,7 +167,8 @@ PC.toJSON = function( item ) {
 
 			options = options || {};
 			options.context = this;
-			options.timeout = 24000;
+			options.timeout = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin.save_timeout', PC_lang.timeout || 30000 ) );
+			console.log( options.timeout );
 			
 			// Set the action and ID.
 			options.data = _.extend( options.data || {}, {

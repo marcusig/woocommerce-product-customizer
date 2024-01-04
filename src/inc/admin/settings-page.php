@@ -753,6 +753,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'admin_save_timeout', 
+				__( 'Timeout when saving the configuration in the admin', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'general_settings',
+				[ 
+					'setting_name' => 'admin_save_timeout',
+					'placeholder' => 'Default: 30000 (milliseconds)',
+					'type' => 'number',
+					'default' => 30000
+				]
+			);
+
 			/*
 				LABELS
 			*/
