@@ -44,6 +44,7 @@ TODO:
 			this.listenTo( this.col, 'change:type', this.add_all );
 			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
 			this.listenTo( this.col, 'simple-selection', this.edit_simple );
+			this.listenTo( this.col, 'changed-order', this.update_sorting );
 			this.listenTo( this.col, 'destroy', this.removed_model );
 
 			this.render();
@@ -690,6 +691,7 @@ TODO:
 			} else if ( this.collection instanceof PC.choices ) {
 				new_group.set( 'is_group', true );
 			}
+			this.collection.trigger( 'changed-order' );
 		}
 	});
 

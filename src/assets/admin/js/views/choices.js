@@ -36,6 +36,7 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'change', this.choices_changed);
 			this.listenTo( this.col, 'change:is_group', this.render);
 			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
+			this.listenTo( this.col, 'changed-order', this.update_sorting );
 			this.listenTo( this.col, 'simple-selection', this.edit_simple );
 
 			this.render(); 
