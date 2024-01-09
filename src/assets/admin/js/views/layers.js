@@ -459,6 +459,10 @@ TODO:
 					this.delete_btns.confirm.removeClass('hidden');
 					break;
 				case 'confirm':
+					// Do not allow deleting the last Angle
+					if ( 'angles' === this.collectionName && 1 === this.model.collection.length ) {
+						alert( PC_lang.angles_no_delete_message );
+					}
 					this.model.destroy();
 					break;
 				case 'cancel':

@@ -135,6 +135,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
 				<div class="prompt-delete hidden notice">
 					<p><?php _e( 'Do you realy want to delete this angle?', 'product-configurator-for-woocommerce' ); ?></p>
+					<p><?php _e( 'Images and thumbnails in the content which are associated with this angle will also be deleted', 'product-configurator-for-woocommerce' ); ?></p>
 					<p>
 						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
 						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
