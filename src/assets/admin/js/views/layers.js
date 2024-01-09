@@ -608,7 +608,6 @@ TODO:
 			var first_in_list = PC.selection.first().get( 'view' );
 			var previous = first_in_list.$el.prev();
 
-			console.log( 'next', next, 'prev', previous );
 
 			var order = this.collection.orderBy || 'order';
 
