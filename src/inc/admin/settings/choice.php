@@ -154,6 +154,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'label' => __('Weight', 'product-configurator-for-woocommerce' ) . ' (' . get_option( 'woocommerce_weight_unit' ) . ')',
 							'type' => 'number',
 							'priority' => 60,
+							'condition' => '!data.not_a_choice && !data.is_group',
 						),
 						'class_name' => array(
 							'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
