@@ -282,15 +282,21 @@ Supports: columns, color_swatches
 					height: auto;
 					width: auto;
 
-					&::before {
-						content: 'x';
-						position: absolute;
-						left: 10px;
-						top: 50%;
-						transform: translateY( calc(-50% - 2px) );
-						line-height: 1;
-						color: color( primary );
-					}					
+					// &::before {
+					// 	content: 'x';
+					// 	position: absolute;
+					// 	left: 10px;
+					// 	top: 50%;
+					// 	transform: translateY( calc(-50% - 2px) );
+					// 	line-height: 1;
+					// 	color: color( primary );
+					// }
+
+					@media (max-width: $medium_screen_width) {
+						[class*=minus], [class*=plus] {
+							display: none !important;
+						}
+					}
 				}
 				
 				.quantity input.qty {
@@ -358,6 +364,9 @@ Supports: columns, color_swatches
 				&:focus,
 				&:active {
 					color: color( primary_hover );
+				}
+				@media (max-width: $medium_screen_width) {
+					display: none;
 				}
 			}
 			
