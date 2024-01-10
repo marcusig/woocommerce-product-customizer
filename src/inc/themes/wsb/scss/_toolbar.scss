@@ -19,6 +19,16 @@
 			border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 			margin: 0;
 			padding: var(--mkl_pc-wsb-spacing);
+			@media( max-width: $medium_screen_width ) {
+				padding-top: 10px;
+				padding-bottom: 10px;
+				font-size: 1rem;
+			}	
+			@media( max-height: 500px ) and (orientation: landscape) {
+				padding-top: 10px;
+				padding-bottom: 10px;
+				font-size: 1rem;
+			}
 		}
 		// padding: $inner_space;
 		> .cancel {
@@ -52,10 +62,12 @@
 			&::after {
 				transform:rotate(-45deg);
 			}
-		}
-		@media( max-width: $medium_screen_width ) {
-			left: $toolbar_width_medium;
-			width: calc( 100% - #{$toolbar_width_medium} );
+			@media( max-height: 500px ) and (orientation: landscape) {
+				top: 5px;
+				right: 5px;
+				width: 30px;
+				height: 30px;
+			}
 		}
 
 		@media( max-width: $small_screen_width ) {
