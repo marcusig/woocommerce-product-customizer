@@ -24,6 +24,11 @@
 		}
 	}
 
+	@media (max-height: 500px) and (orientation: landscape) {
+		--mkl_pc-float-spacing: 5px;
+		padding: var(--mkl_pc-float-spacing);
+	}
+
 	.pc_configurator_form {
 		> * {
 			vertical-align: middle;
@@ -92,6 +97,9 @@
 		margin-bottom: .5em;
 		@media (max-width: $small_screen_width) {
 			margin-bottom: 0;
+		}
+		@media (max-height: 500px) and (orientation: landscape) {
+			font-size: 16px;
 		}
 	}
 

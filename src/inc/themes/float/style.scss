@@ -28,7 +28,7 @@ $small_screen_width: 660px;
 $distance: 0;
 
 $toolbar_width: 350px;
-$toolbar_width_medium: 280px;
+$toolbar_width_medium: 50%;
 $toolbar_width_small: 110px;
 
 $inner_space: 1em;
@@ -260,7 +260,13 @@ $inner_space: 1em;
 						position: absolute;
 						right: 0em;
 						top: 0;						
+						@media( max-width: $small_screen_width ) {
+							display: none;
+						}
 					}
+					@media( max-width: $medium_screen_width ) {
+						font-size: 1rem;
+					}	
 				}
 				// padding: $inner_space;
 				> .cancel {
@@ -294,10 +300,6 @@ $inner_space: 1em;
 					&::after {
 						transform:rotate(-45deg);
 					}
-				}
-				@media( max-width: $medium_screen_width ) {
-					left: $toolbar_width_medium;
-					width: calc( 100% - #{$toolbar_width_medium} );
 				}
 
 				@media( max-width: $small_screen_width ) {
@@ -348,10 +350,13 @@ $inner_space: 1em;
 					margin: 0;
 					padding: 0;
 
-					> li {
-						display: block; 
-						margin: 0;
+					li {
 						padding: 0;
+						margin: 0;
+					}
+
+					> li {
+						display: block;
 						line-height: 2;
 						position: relative;
 						border: none;
@@ -1213,6 +1218,11 @@ a.save-your-design, a.save-your-design--pdf {
 	}
 	@media( max-width: $small_screen_width ) {
 		width: 40px;
+	}
+	@media (max-height: 500px) and (orientation: landscape) {
+		span {
+			display: none;
+		}
 	}
 }
 
