@@ -28,9 +28,12 @@ footer {
 		box-shadow: none;
 		border:  none;
 		&:hover, &:focus {
-			opacity: .5;
+			opacity: .6;
 		}
-		@media (max-width: $small_screen_width) {
+		@media (max-width: $medium_screen_width) {
+			font-size: 12px;
+		}
+		@media( max-height: 500px ) and (orientation: landscape) {
 			font-size: 12px;
 		}
 	}
@@ -38,7 +41,10 @@ footer {
 	h3.product-name {
 		line-height: 1;
 		margin: 0;
-		@media (max-width: $small_screen_width) {
+		@media (max-width: $medium_screen_width) {
+			display: none;
+		}
+		@media (max-height: 500px) and (orientation: landscape) {
 			display: none;
 		}
 	}
@@ -77,24 +83,5 @@ footer {
 		.form.form-cart {
 			display: none;
 		}
-	}
-}
-
-
-&.mobile-show-form {
-	footer {
-		background: #FFF;
-		.form.form-cart {
-			bottom: 1em;
-		}
-	}
-	.mkl-pc-show-form {
-		&::before {
-			opacity: 0.8;
-			visibility: visible;
-		}
-	}
-	.mkl_pc_toolbar, .mkl_pc_viewer {
-		filter: blur(.3em);
 	}
 }

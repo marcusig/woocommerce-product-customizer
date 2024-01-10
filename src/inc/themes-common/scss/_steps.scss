@@ -35,6 +35,9 @@ nav.mkl-pc--steps {
         width: 100%;
         border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 
+        @media(max-height: 500px) and (orientation: landscape) {
+            display: none;
+        }
         ol.steps-progress {
             display: grid;
             grid-auto-flow: column;

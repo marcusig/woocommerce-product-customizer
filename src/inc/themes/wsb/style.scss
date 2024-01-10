@@ -29,8 +29,7 @@ $small_screen_width: 660px;
 $distance: 0;
 
 $toolbar_width: 350px;
-$toolbar_width_medium: 280px;
-$toolbar_width_small: 110px;
+$toolbar_width_medium: 50%;
 
 $footer_height: 5em;
 $footer_height_small_screen: 4em;
@@ -572,9 +571,19 @@ a.save-your-design, a.save-your-design--pdf {
 		transform: translateY(0);
 		fill: color(primary);
 	}
-	@media( max-width: $small_screen_width ) {
+	@media( max-width: $medium_screen_width ) {
 		width: 40px;
+		span {
+			display: none;
+		}
 	}
+	@media( max-height: 500px ) and (orientation: landscape) {
+		width: 40px;
+		span {
+			display: none;
+		}
+	}
+
 }
 
 a.save-your-design svg path,

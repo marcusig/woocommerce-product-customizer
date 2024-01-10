@@ -84,6 +84,9 @@
 		@media (max-width: $small_screen_width) {
 			margin-bottom: 0;
 		}
+		@media( max-height: 500px ) and (orientation: landscape) {
+			font-size: 16px;
+		}
 	}
 
 	button.configurator-add-to-cart {
@@ -126,6 +129,12 @@
 			}
 
 		}
+	}
+}
+
+@media( max-height: 500px ) and (orientation: landscape) {
+	.form.form-cart {
+		--mkl_pc-wsb-spacing: 5px;
 	}
 }
 
