@@ -461,8 +461,9 @@ TODO:
 					break;
 				case 'confirm':
 					// Do not allow deleting the last Angle
-					if ( 'angles' === this.collectionName && 1 === this.model.collection.length ) {
+					if ( this.collectionName && 'angles' === this.collectionName && 1 === this.model.collection.length ) {
 						alert( PC_lang.angles_no_delete_message );
+						return;
 					}
 					this.model.destroy();
 					break;
