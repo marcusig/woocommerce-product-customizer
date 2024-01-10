@@ -27,12 +27,10 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		private function _hooks() {
 			// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
-			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 20, 1 );
-			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 20, 1 );
+			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 100, 1 );
+			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 100, 1 );
 			// woocommerce_ajax_save_product_variations
-			add_action( 'woocommerce_after_product_object_save', function( $obj ) {
-				$this->write_configuration_cache( $obj->get_id() );
-			}, 20, 1 );
+			add_action( 'woocommerce_after_product_object_save', array( $this, 'write_configuration_cache_on_product_save' ), 100, 1 );
 
 			// add the checkbox to activate configurator on the product
 			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
@@ -329,5 +327,16 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			if ( ! mkl_pc_is_configurable( $id ) ) return;
 			Plugin::instance()->cache->save_config_file( $id );
 		}
+
+		/**
+		 * Write the configuration to the cache when saving a product
+		 *
+		 * @param WC_Product $obj
+		 * @return void
+		 */
+		public function write_configuration_cache_on_product_save( $obj ) {
+			$this->write_configuration_cache( $obj->get_id() );
+		}
+
 	}
 }
