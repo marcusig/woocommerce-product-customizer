@@ -12,6 +12,9 @@ form.cart {
 	@media( max-width: $small_screen_width ) {
 		flex-wrap: wrap;
 	}
+	@media (max-height: 500px) and (orientation: landscape) {
+		align-items: center;
+	}
 }
 
 .single_add_to_cart_button {
