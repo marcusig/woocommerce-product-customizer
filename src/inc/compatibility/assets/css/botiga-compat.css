@@ -1,0 +1,14 @@
+.mkl_pc .mkl_pc_container .form.form-cart .quantity {
+    width: auto;
+    margin-bottom: 0;
+    display: inline-flex;
+    height: 54px;
+}
+
+.mkl_pc .mkl_pc_container .form.form-cart .quantity .botiga-quantity-plus, .mkl_pc .mkl_pc_container .form.form-cart .quantity .botiga-quantity-minus {
+    width: 40px;
+}
+
+.mkl_pc .mkl_pc_container .form.form-cart .quantity .qty {
+	width: 3ch;
+}
