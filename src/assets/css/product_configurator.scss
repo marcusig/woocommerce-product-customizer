@@ -1239,6 +1239,10 @@ $inner_space: 1em;
 			h3.product-name {
 				line-height: 1;
 				margin: 0;
+				max-width: 33%;
+				@media (max-height: 500px) and (orientation: landscape) {
+					font-size: 16px;
+				}
 				@media (max-width: $small_screen_width) {
 					display: none;
 				}
@@ -1294,12 +1298,16 @@ $inner_space: 1em;
 				}
 			}
 			
-
 			@media (max-width: $medium_screen_width) {
 				text-align: center;
 				.footer__section-center {
 					display: flex;
 				}
+
+				[class*=save-your-design] ~ .reset-configuration {
+					display: none;
+				}
+	
 			}
 			@media (max-width: $small_screen_width) {
 				box-shadow: 0 -10px 20px rgba(0,0,0,.2);
@@ -1473,6 +1481,17 @@ body.configurator_is_inline .mkl_pc {
     width: 100%;
     height: 100%;
     z-index: 3;
+}
+
+/* Landscape */
+@media( max-height: 500px ) and ( orientation: landscape ) {
+	// Hide some items on mobile - landscape
+	.mkl_pc .mkl_pc_container footer {
+		[class*=save-your-design] ~ .reset-configuration, 
+		a.save-your-design span, a.save-your-design--pdf span {
+			display: none;
+		}
+	}
 }
 
 /* Color mode */
