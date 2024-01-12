@@ -251,6 +251,8 @@ html .media-modal.pc-modal {
 		@media (min-width: 900px) {
 			margin-left: 34%;
 			padding: 1em;
+			padding-bottom: 0;
+			margin-bottom: 0;
 		}
 	}
 
@@ -757,7 +759,7 @@ CONTENT
 		visibility: visible;
 	}
 	.choice-details {
-		// transform: translateX(0);
+		transform: translateX(0);
 		visibility: visible;
 	}
 }
