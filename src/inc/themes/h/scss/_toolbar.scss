@@ -641,7 +641,9 @@
 			}
 
 			&.is-child-layer {
-				display: flex;
+				&.active {
+					display: flex;
+				}
 				li.layer-choices-title {
 					display: block;
 					min-width: 0;
