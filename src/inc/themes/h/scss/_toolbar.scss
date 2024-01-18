@@ -543,6 +543,7 @@
 							line-height: 1.2;
 							opacity: .5;
 							color: color( choices_button_text_color );
+							min-width: var(--choice-item-width);
 							i.mkl-pc-thumbnail {
 								height: 38px;
 								margin: 0;
