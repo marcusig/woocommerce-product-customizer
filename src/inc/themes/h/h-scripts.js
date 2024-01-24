@@ -6,10 +6,7 @@
 		var clone = view.footer.form.$el.clone().appendTo( view.toolbar.$el );
 		view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 		
-		view.toolbar.$( 'button.cancel.close-mkl-pc' ).appendTo( view.$el ).on( 'click', function( e ) {
-			e.preventDefault();
-			view.close();
-		} );
+		view.toolbar.$( 'button.cancel.close-mkl-pc' ).appendTo( view.$el );
 
 		view.$( '.mkl-pc-show-form span.screen-reader-text' ).removeClass( 'screen-reader-text' );
 		
