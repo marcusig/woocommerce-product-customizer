@@ -1,18 +1,18 @@
 li.display-mode-dropdown, .layer_choices li.display-mode-dropdown {
 	padding: 10px;
 	> button.layer-item {
-		padding-top: 10px;
-		padding-bottom: 10px;
-		padding-left: 10px;
-		border: 1px solid #EEE;
-		border-radius: 5px;
+		padding-top: var(--mkl_pc-dropdown-padding, 10px);
+		padding-bottom: var(--mkl_pc-dropdown-padding, 10px);
+		padding-left: var(--mkl_pc-dropdown-padding, 10px);
+		border: 1px solid var(--mkl_pc-dropdown-border-color, #EEE);
+		border-radius: var(--mkl_pc-dropdown-border-radius, 5px);
 		&::after {
 			width: 8px;
 			height: 8px;
 			transform: translateY(-50%) rotate(45deg);
 		}
 		&:focus, &:hover {
-			padding-left: 10px;
+			padding-left: var(--mkl_pc-dropdown-padding, 10px);
 			&::after {
 				transform: translateY(-50%) rotate(225deg);
 			}
@@ -51,7 +51,7 @@ li.display-mode-dropdown, .layer_choices li.display-mode-dropdown {
 		background: #FFF;
 		max-height: 250px;
 		overflow: auto;
-		border: 1px solid #EEE;
+		border: 1px solid var(--mkl_pc-dropdown-border-color, #EEE);;
 		box-shadow: 0 20px 20px -10px rgba( 0, 0, 0, .29 );
 		
 		> .choices-list {
@@ -153,10 +153,10 @@ li.display-mode-dropdown, .layer_choices li.display-mode-dropdown {
 				button.choice-item {
 					&:hover, 
 					&:focus {
-						background: color( primary );
-						color: #FFF;
+						background: var(--mkl_pc-dropdown-choice-hover-bg-color, #{color(primary)} );
+						color: var(--mkl_pc-dropdown-choice-hover-color, #FFF);
 						span.description, span.choice-price {
-							color: #FFF;
+							color: var(--mkl_pc-dropdown-choice-hover-color, #FFF);
 							opacity: .75;
 						}
 					} 
