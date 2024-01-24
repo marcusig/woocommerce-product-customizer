@@ -12,7 +12,6 @@ PC.fe.views.toolbar = Backbone.View.extend({
 	},
 
 	events: {
-		'click .close-mkl-pc': 'close_configurator',
 		'click .cancel': 'close_configurator',
 		// 'click .configurator-add-to-cart': 'add_to_cart'
 	},

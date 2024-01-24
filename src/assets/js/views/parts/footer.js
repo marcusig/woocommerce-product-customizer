@@ -11,7 +11,6 @@ PC.fe.views.footer = Backbone.View.extend({
 	},
 
 	events: {
-		'click .close-mkl-pc': 'close_configurator',
 		'click .reset-configuration': 'reset_configurator',
 	},
 
@@ -26,10 +25,6 @@ PC.fe.views.footer = Backbone.View.extend({
 		} ) );
 		this.form = new PC.fe.views.form( { el: this.$( '.form' ) } );
 		return this.$el; 
-	},
-
-	close_configurator: function( event ) {
-		this.parent.close(); 
 	},
 
 	reset_configurator: function( event ) {
