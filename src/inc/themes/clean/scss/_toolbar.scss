@@ -439,7 +439,7 @@
 			&:nth-child( 3n+0 ) {
 				border-right: none;
 			}
-			@media(max-screen: $small_screen_width) {
+			@media(max-width: $small_screen_width) {
 				width: calc(100%);
 				border-right: none;
 			}
@@ -450,7 +450,7 @@
 			&:nth-child( 4n+0 ) {
 				border-right: none;
 			}
-			@media(max-screen: $small_screen_width) {
+			@media(max-width: $small_screen_width) {
 				width: 50%;
 				&:nth-child( 2n+0 ) {
 					border-right: none;
