@@ -619,7 +619,7 @@ $inner_space: 1em;
 							position: relative;
 							margin: .3em;
 							width: calc(33% - .6em);
-							@media(max-screen: $small_screen_width) {
+							@media(max-width: $small_screen_width) {
 								width: calc(50% - .6em);
 							}
 
@@ -813,13 +813,13 @@ $inner_space: 1em;
 					}
 					&.columns-2 > li.choices-list > ul li.choice:not(.is-group) {
 						width: calc(50% - .6em);
-						@media(max-screen: $small_screen_width) {
+						@media(max-width: $small_screen_width) {
 							width: calc(100% - .6em);
 						}
 					}
 					&.columns-4 > li.choices-list > ul li.choice:not(.is-group) {
 						width: calc(25% - .6em);
-						@media(max-screen: $small_screen_width) {
+						@media(max-width: $small_screen_width) {
 							width: calc(50% - .6em);
 						}
 					}
