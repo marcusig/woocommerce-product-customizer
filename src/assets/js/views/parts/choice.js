@@ -62,6 +62,8 @@ PC.fe.views.choice = Backbone.View.extend({
 			},
 			this );
 
+			tooltip_options = wp.hooks.applyFilters( 'PC.fe.choice.tooltip.options', tooltip_options, this );
+
 			if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) {
 				tippy( this.el, tooltip_options );
 			}
