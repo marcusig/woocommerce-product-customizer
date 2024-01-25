@@ -1130,7 +1130,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<h4>{{data.Name}}</h4>
 						<p>{{data.Description}}</p>
 						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change' ); ?></button>
-						<button type="button" class="button mkl-pc--reset-theme button-link"><?php _e( 'Reset' ); ?></button>
 					</div>
 				<# } else { #>
 						<p class="no-theme"><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
