@@ -25,3 +25,6 @@
 	width: 3ch;
 }
 
+.mkl_pc .mkl_pc_container form.cart .quantity {
+	max-width: 100%;
+}

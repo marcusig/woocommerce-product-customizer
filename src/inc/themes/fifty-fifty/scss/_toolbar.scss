@@ -3,11 +3,14 @@
 	
 	background: color(toolbar_bg);
 	--mkl_pc-choice-spacing: .8em;
+	@media( min-width: $small_screen_width ) {
+		min-height: 100%;
+	}
 	section.choices {
 		position: relative;
 		padding: var(--mkl_pc_fiftyfifty-spacing);
-		padding-bottom: 6em;
-
+		padding-bottom: 2em;
+		flex: 1;
 		> ul {
 
 			> li.layers-list-item {

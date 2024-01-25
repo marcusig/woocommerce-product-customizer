@@ -40,20 +40,9 @@ footer {
 		&:empty {
 			display: none;
 		}
-		@media (max-width: $small_screen_width) {
-			flex: auto;
-			width: 100%;
-			padding-left: 10px;
-		}
 	}
 	.footer__section-right {
 		width: auto;
-		@media (max-width: $small_screen_width) {
-			flex: auto;
-			width: 100%;
-			padding-top: 10px;
-			padding-right: 10px;
-		}
 	}
 
 	@media (max-width: $small_screen_width) {
