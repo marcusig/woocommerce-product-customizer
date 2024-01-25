@@ -422,17 +422,14 @@ class Frontend_Woocommerce {
 
 		}
 
-		$stylesheet = MKL_PC_ASSETS_URL . 'css/product_configurator.css';
-		$version = filemtime( MKL_PC_ASSETS_PATH . 'css/product_configurator.css' );
-		$theme_id = apply_filters( 'mkl/pc/theme_id', mkl_pc( 'settings' )->get( 'mkl_pc__theme' ) );
+		$theme_id = mkl_pc( 'settings' )->get_theme();
 		if ( $theme_id && mkl_pc( 'themes' )->get( $theme_id ) ) {
 			$theme_info = mkl_pc( 'themes' )->get_theme_info( $theme_id );
 			$stylesheet = $theme_info['base_url'] . 'style.css';
 			$version = filemtime( trailingslashit( mkl_pc( 'themes' )->get( $theme_id ) ) . 'style.css' );
+			wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
+			wp_enqueue_style( 'mlk_pc/css' );
 		}
-		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
-
-		wp_enqueue_style( 'mlk_pc/css' );
 
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );

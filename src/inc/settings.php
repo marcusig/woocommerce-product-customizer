@@ -60,7 +60,7 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 		}
 
 		public function get_theme() {
-			return apply_filters( 'mkl/pc/theme_id', $this->get( 'mkl_pc__theme' ) );
+			return apply_filters( 'mkl/pc/theme_id', $this->get( 'mkl_pc__theme', 'default', true ) );
 		}
 
 		public function get_label( $setting, $default ) {

@@ -114,10 +114,13 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+
+* FEATURE: Added an new theme Fiftyfifty
 * FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
 * FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
-* TWEAK: Removed "add to cart modal" from WSB anf Float, and changed the layout to accomodate all the content
 * COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
+* TWEAK: Default theme is now part of the themes list
+* TWEAK: Removed "add to cart modal" from WSB anf Float, and changed the layout to accomodate all the content
 * TWEAK: Added timeout setting for admin requests
 * TWEAK: Ajax add to cart support, for themes and plugins using the `adding_to_cart` and `added_to_cart` events
 

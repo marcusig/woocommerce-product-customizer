@@ -40,7 +40,6 @@
 			template: wp.template( 'mkl-pc-themes-setting-view' ),
 			events: {
 				'click button.mkl-pc--change-theme': 'open_selector',
-				'click button.mkl-pc--reset-theme': 'reset_theme',
 			},
 			initialize: function() {
 				this.listenTo( Themes.selected_theme, 'change', this.render ); 
@@ -57,10 +56,6 @@
 			open_selector: function() {
 				Themes.show_selector();
 			},
-			reset_theme: function() {
-				Themes.selected_theme.set( 'theme_id', null );
-				Themes.data.get( Themes.selection ).set( 'selected', false );
-			}
 		}),
 		selectorView: Backbone.View.extend({
 			tagName: 'div',
