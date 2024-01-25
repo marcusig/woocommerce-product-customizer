@@ -233,12 +233,6 @@ $inner_space: 1em;
 					}
 				}
 			}
-			.mkl_pc_viewer {
-				@media( max-width: $small_screen_width ) {
-					top: 40px;
-				}
-			}
-
 		}
 	}
 
@@ -364,10 +358,15 @@ $inner_space: 1em;
 
 nav.mkl-pc--steps {
     justify-content: space-between;
+	padding-top: 20px;
 	div {
-		margin-right: 5px;
-		margin-left: 5px;
+		margin-right: 0;
+		margin-left: 0;
 	}
+}
+
+.mkl_pc:not(.last-step) nav.mkl-pc--steps {
+	width: 100%;
 }
 
 @import '../../themes-common/scss/summary';

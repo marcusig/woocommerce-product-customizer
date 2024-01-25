@@ -7,7 +7,7 @@ form.cart {
 	display: flex;
 	align-items: flex-start;
 	flex-direction: row;
-	justify-content: flex-end;
+	justify-content: space-between;
 	flex-wrap: wrap;
 	position: relative;
 	background: #EFEFEF;
@@ -85,7 +85,15 @@ span.pc-total-price {
 	padding-top: 20px;
 	display: flex;
     gap: 5px;
+	@at-root {
+		.mkl_pc:not(.has-steps) .pc_configurator_form {
+			width: 100%;
+			justify-content: flex-end;
+		}
+	}
 }
+
+
 button.configurator-add-to-cart,
 .mkl-pc--steps button {
 	background: #000;
