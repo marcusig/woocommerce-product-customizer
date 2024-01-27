@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.4
-Stable tag: 1.2.57
+Stable tag: 1.2.58
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,6 +114,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.2.58 - 27/Jan/2024 = 
+
+* TWEAK: Added warning when deleting views, and prevent deleting the last one
+* TWEAK: Updated the Format money to not systematically convert currency
 * COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
 * TWEAK: Added timeout setting for admin requests
 * TWEAK: Ajax add to cart support, for themes and plugins using the `adding_to_cart` and `added_to_cart` events
@@ -565,4 +569,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.57 Possibility to choose number of columns and swatch sizes on some themes, various tweaks
+* 1.2.58 Various tweaks and improvements
