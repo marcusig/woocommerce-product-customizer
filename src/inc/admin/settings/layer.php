@@ -27,7 +27,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 		 *
 		 * @return array
 		 */
-		public function get_default_settings() {
+		public function get_settings_list() {
 			
 			$display_modes = [
 				[
@@ -59,6 +59,41 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 			$display_modes = apply_filters( 'mkl_pc_display_modes', $display_modes );
 
 			$settings = array(
+				'name' => array(
+					'label' => __('Layer name', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 10,
+					'section' => 'layer',
+					'classes' => 'col-half',
+				),
+				'admin_label' => array(
+					'label' => __('Admin label', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 11,
+					'section' => 'layer',
+					'classes' => 'col-half',
+				),
+
+				'not_a_choice' => array(
+					'label' => __('This layer does not have choices', 'product-configurator-for-woocommerce' ),
+					'help' => __('For exemple if the layer is a shadow, a static element or custom HTML', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 20,
+					'condition' => '"simple" == data.type',
+					'section' => 'layer',
+				),
+				
+				// 'not_a_choice_separator' => array(
+				// 	'label' => 'separator',
+				// 	'type' => 'html',
+				// 	'priority' => 2,
+				// 	'condition' => '!data.not_a_choice',
+				// 	'section' => 'display',
+				// 	'html' => '<hr class="mkl-pc-separator">',
+				// 	'classes' => 'separator',
+				// 	'hide_label' => true,
+				// ),				
+
 				'type' => array(
 					'label' => __( 'Layer type', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
@@ -88,36 +123,25 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'condition' => '!data.not_a_choice',
 					'priority' => 5,
-				),
-				'display_mode' => array(
-					'label' => __( 'Display mode', 'product-configurator-for-woocommerce' ),
-					'type' => 'select',
-					'choices' => $display_modes,
-					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
-					'priority' => 7,
-				),
-				'name' => array(
-					'label' => __('Layer name', 'product-configurator-for-woocommerce' ),
-					'type' => 'text',
-					'priority' => 10,
-				),
-				'admin_label' => array(
-					'label' => __('Admin label', 'product-configurator-for-woocommerce' ),
-					'type' => 'text',
-					'priority' => 15,
+					'classes' => 'col-half',
+					'section' => 'general',
 				),
 				'description' => array(
 					'label' => __('Description', 'product-configurator-for-woocommerce' ),
 					'type' => 'textarea',
 					'priority' => 20,
 					'condition' => '!data.not_a_choice',
+					'section' => 'general',
 				),
-				'not_a_choice' => array(
-					'label' => __('This layer does not have choices', 'product-configurator-for-woocommerce' ),
-					'help' => __('For exemple if the layer is a shadow, a static element or custom HTML', 'product-configurator-for-woocommerce' ),
-					'type' => 'checkbox',
-					'priority' => 30,
-					'condition' => '"simple" == data.type',
+
+
+				'display_mode' => array(
+					'label' => __( 'Display mode', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'choices' => $display_modes,
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
+					'priority' => 7,
+					'section' => 'display',
 				),
 				'hide_in_cart' => array(
 					'label' => __('Hide this layer in the cart / checkout / order', 'product-configurator-for-woocommerce' ),
@@ -125,6 +149,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'checkbox',
 					'priority' => 30,
 					'condition' => '!data.not_a_choice && "summary" != data.type',
+					'section' => 'display',
 				),
 				'hide_in_configurator' => array(
 					'label' => __('Hide this layer in the menu', 'product-configurator-for-woocommerce' ),
@@ -132,15 +157,10 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'checkbox',
 					'priority' => 31,
 					'condition' => '!data.not_a_choice && "summary" != data.type',
+					'section' => 'display',
 				),
-				'custom_html' => array(
-					'label' => __( 'Custom HTML', 'product-configurator-for-woocommerce' ),
-					'type' => 'textarea',
-					'priority' => 32,
-					'condition' => 'data.not_a_choice',
-					'classes' => 'code',
-					'help' => __( 'Content entered here will be rendered in the configurator menu.', 'product-configurator-for-woocommerce' ) . ' ' . __('To add HTML to the viewer, add it to the custom HTML field in the content section.', 'product-configurator-for-woocommerce' ),
-				),
+
+
 				'default_selection' => array(
 					'label' => __( 'Default selection', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
@@ -157,12 +177,15 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'priority' => 40.1,
 					'help' => __( 'Choose whether a choice should be selected by default', 'product-configurator-for-woocommerce' ),
+					'section' => 'selection',
 				),
 				'required' => array(
 					'label' => __( 'Require a choice', 'product-configurator-for-woocommerce' ),
 					'type' => 'checkbox',
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
 					'priority' => 40.2,
+					'section' => 'selection',
+
 					// 'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
 				),
 				'required_info' => array(
@@ -171,6 +194,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If "Require a choice" is enabled "Default selection" is set to "Select the first choice by default", the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
 					'condition' => 'data.required && ( "select_first" == data.default_selection || ! data.default_selection)',
 					'priority' => 40.3,
+					'section' => 'selection',
 				),
 
 				'can_deselect' => array(
@@ -178,6 +202,16 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type' => 'checkbox',
 					'priority' => 42,
 					'condition' => '!data.not_a_choice && "simple" == data.type',
+					'section' => 'selection',
+				),
+				'custom_html' => array(
+					'label' => __( 'Custom HTML', 'product-configurator-for-woocommerce' ),
+					'type' => 'textarea',
+					'priority' => 32,
+					'condition' => 'data.not_a_choice',
+					'input_classes' => 'code',
+					'help' => __( 'Content entered here will be rendered in the configurator menu.', 'product-configurator-for-woocommerce' ) . ' ' . __('To add HTML to the viewer, add it to the custom HTML field in the content section.', 'product-configurator-for-woocommerce' ),
+					'section' => 'advanced',
 				),
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
@@ -190,16 +224,20 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 						],
 					],
 					'priority' => 50,
+					'section' => 'advanced',
 				),
+
 				'class_name' => array(
 					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
 					'priority' => 500,
+					'section' => 'advanced',
 				),
 				'html_id' => array(
 					'label' => __('ID', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
 					'priority' => 500,
+					'section' => 'advanced',
 				),
 			);
 
@@ -231,6 +269,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && ( "default" == data.display_mode || ! data.display_mode )' ,
 					'priority' => 8,
+					'section' => 'display',
 				);
 			}
 
@@ -254,6 +293,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					],
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && "colors" == data.display_mode',
 					'priority' => 8,
+					'section' => 'display',
 				);
 			}
 
@@ -268,10 +308,78 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 						'type' => 'text',
 						'condition' => 'data.maybe_step',
 						'priority' => 15,
+						'section' => 'general',
 					);
 				}
 			}
+
 			return apply_filters( 'mkl_pc_layer_default_settings', $settings );
+		}
+
+		/**
+		 * Get the setting sections
+		 *
+		 * @return array
+		 */
+		public function get_sections() {
+			$sections = [
+
+				'_layer' => array(
+					'id' => 'layer',
+					'label' => __( 'Layer', 'product-configurator-for-woocommerce' ),
+					'priority' => 5,
+					'fields' => [
+					],
+				),
+
+				'_general' => array(
+					'id' => 'general',
+					'label' => __( 'General', 'product-configurator-for-woocommerce' ),
+					'priority' => 10,
+					'collapsible' => true,
+					'fields' => [
+					],
+				),
+
+				'_display' => array(
+					'id' => 'display',
+					'label' => __( 'Display settings', 'product-configurator-for-woocommerce' ),
+					'priority' => 15,
+					'collapsible' => true,
+					'fields' => [
+					],
+				),
+				'_selection' => array(
+					'id' => 'selection',
+					'label' => __( 'Selection settings', 'product-configurator-for-woocommerce' ),
+					'priority' => 25,
+					'collapsible' => true,
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
+					'fields' => [
+					]
+				),
+				'_advanced' => array(
+					'id' => 'advanced',
+					'label' => __( 'Advanced settings', 'product-configurator-for-woocommerce' ),
+					'priority' => 150,
+					'collapsible' => true,
+					'fields' => [
+					]
+				),				
+			];
+
+			$languages = mkl_pc( 'languages' )->get_languages();
+			if ( ! empty( $languages ) ) {
+				$sections[ '_translations' ] = array(
+					'id' => 'translations',
+					'label' => __( 'Translations', 'product-configurator-for-woocommerce' ),
+					'priority' => 140,
+					'collapsible' => true,
+					'fields' => []
+				);
+			}
+			
+			return apply_filters( 'mkl_pc_layer_settings_sections', $sections );
 		}
 	}
 }

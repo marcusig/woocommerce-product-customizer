@@ -276,6 +276,7 @@ PC.views = PC.views || {};
 		collectionName: 'content',
 		initialize: function( options ) {
 			this.admin = PC.app.get_admin(); 
+			this.toggled_status.init();
 			this.angles = this.admin.angles; 
 			this.layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
 			this.listenTo( this.model, 'destroy', this.remove );
@@ -285,10 +286,10 @@ PC.views = PC.views || {};
 		},
 		events: {
 			// 'click' : 'edit',
-			'click .delete-layer': 'delete_choice',
-			'click .confirm-delete-layer': 'delete_choice',
-			'click .cancel-delete-layer': 'delete_choice',
-			'click .duplicate-choice': 'duplicate_choice',
+			'click .delete-item': 'delete_choice',
+			'click .confirm-delete': 'delete_choice',
+			'click .cancel-delete': 'delete_choice',
+			'click .duplicate-item': 'duplicate_choice',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'input .setting input': 'form_change',
@@ -297,6 +298,7 @@ PC.views = PC.views || {};
 			'change .setting select': 'form_change',
 			'click [type="checkbox"]': 'form_change',
 			'click .mkl-pc--action': 'trigger_custom_action',
+			'click button.components-panel__body-toggle': 'toggle_section',
 		},
 		render: function() {
 			var args;
@@ -321,14 +323,14 @@ PC.views = PC.views || {};
 			}
 
 			this.delete_btns = {
-				prompt: this.$('.delete-layer'),
+				prompt: this.$('.delete-item'),
 				confirm: this.$('.prompt-delete'),
 			};
 
 			this.populate_angles_list();
 
+			// Hide empty groups
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
-			
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;
@@ -447,7 +449,27 @@ PC.views = PC.views || {};
 					}, this );
 				}.bind( this ) )
 			}
+		},
+		toggled_status: {
+			init: function() {
+				this.statuses = JSON.parse( localStorage.getItem( 'choice_toggle_status' ) ) || {};
+			},
+			set: function( key, value ) {
+				this.statuses[key] = value;
+				localStorage.setItem( 'choice_toggle_status', JSON.stringify( this.statuses ) );
+			},
+			get: function( key ) {
+				if ( this.statuses.hasOwnProperty( key ) ) return this.statuses[key];
+				return 'opened'
+			}
+		},		
+		toggle_section: function( e ) {
+			var $el = $( e.currentTarget ).closest( '.setting-section' );
+			var section = $el.data( 'section' );
+			$el.toggleClass( 'is-opened' );
+			this.toggled_status.set( section, $el.is( '.is-opened' ) ? 'opened' : 'closed' );
 		}
+
 	});
 		
 	PC.views.choice_picture = Backbone.View.extend({
