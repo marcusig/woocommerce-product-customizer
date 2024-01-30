@@ -153,8 +153,12 @@ PC.fe.views.form = Backbone.View.extend({
 	 */
 	on_adding_to_cart: function( e, $button, data ) {
 		PC.fe.modal.$el.addClass( 'adding-to-cart' );
-		if ( ! data.pc_configurator_data ) {
+		if ( 'object' == typeof data && ! data.pc_configurator_data ) {
 			data.pc_configurator_data = $( 'input[name=pc_configurator_data]' ).val();
+		}
+
+		if ( 'string' == typeof data && -1 == data.search( 'pc_configurator_data' ) ) {
+			data += '&pc_configurator_data=' + $( 'input[name=pc_configurator_data]' ).val();
 		}
 	},
 
