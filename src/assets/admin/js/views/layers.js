@@ -66,7 +66,7 @@ TODO:
 			this.col.sort();
 			this.$el.append( this.template({ input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
 			this.$list = this.$('.layers'); 
-			this.$form = this.$('.media-sidebar'); 
+			this.$form = this.$('.pc-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
 			this.add_all(); 
 			
@@ -382,18 +382,31 @@ TODO:
 		tagName: 'div',
 		className: 'layer-form',
 		template: wp.template('mkl-pc-structure-layer-form'),
-
+		toggled_status: {
+			init: function() {
+				this.statuses = JSON.parse( localStorage.getItem( 'layers_toggle_status' ) ) || {};
+			},
+			set: function( key, value ) {
+				this.statuses[key] = value;
+				localStorage.setItem( 'layers_toggle_status', JSON.stringify( this.statuses ) );
+			},
+			get: function( key ) {
+				if ( this.statuses.hasOwnProperty( key ) ) return this.statuses[key];
+				return 'opened'
+			}
+		},
 		initialize: function( options ) {
 			if ( this.pre_init ) this.pre_init( options );
+			this.toggled_status.init();
 			this.listenTo( this.model, 'destroy', this.remove ); 
 			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode' ), this.render );
 		},
 		events: {
 			// 'click' : 'edit',
-			'click .delete-layer': 'delete_layer',
-			'click .confirm-delete-layer': 'delete_layer',
-			'click .cancel-delete-layer': 'delete_layer',
-			'click .duplicate-layer': 'duplicate_layer',
+			'click .delete-item': 'delete_layer',
+			'click .confirm-delete': 'delete_layer',
+			'click .cancel-delete': 'delete_layer',
+			'click .duplicate-item': 'duplicate_layer',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
@@ -405,6 +418,7 @@ TODO:
 			'click .remove-attachment': 'select_attachment',
 			'select-media': 'select_attachment',
 			'click .mkl-pc--action': 'trigger_custom_action',
+			'click button.components-panel__body-toggle': 'toggle_section',
 		},
 		render: function() {
 			var data = this.model.attributes;
@@ -419,12 +433,15 @@ TODO:
 				data = _.extend( {}, data, { maybe_step: true } );
 			}
 
+			data = _.extend( {}, data, { toggled_status: this.toggled_status.statuses } );
 			this.$el.html( this.template( data ) );
 			this.delete_btns = {
-				prompt: this.$('.delete-layer'),
+				prompt: this.$('.delete-item'),
 				confirm: this.$('.prompt-delete'),
 				// cancel: this.$('.cancel-delete-layer'),
 			};
+			// Hide empty groups
+			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
 			this.populate_angles_list();
 			PC.currentEditedItem = this.model;
 			return this;
@@ -551,6 +568,12 @@ TODO:
 				PC.actions[action](el, this);
 			}
 		},
+		toggle_section: function( e ) {
+			var $el = $( e.currentTarget ).closest( '.setting-section' );
+			var section = $el.data( 'section' );
+			$el.toggleClass( 'is-opened' );
+			this.toggled_status.set( section, $el.is( '.is-opened' ) ? 'opened' : 'closed' );
+		}
 	});
 
 	PC.views.layer_img = Backbone.View.extend({

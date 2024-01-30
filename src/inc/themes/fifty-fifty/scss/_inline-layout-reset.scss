@@ -30,7 +30,9 @@ body.configurator_is_inline .mkl_pc {
 
 		}
 		.mkl_pc_viewer {
-			min-height: 60vh;
+			min-height: 50vh;
+			height: 100%;
+			max-height: 95vh;
 		}
 	}
 }

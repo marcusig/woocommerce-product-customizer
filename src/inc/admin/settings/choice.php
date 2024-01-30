@@ -27,143 +27,237 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 		 *
 		 * @return array
 		 */
-		public function get_default_settings() {
-			return apply_filters( 'mkl_pc_choice_default_settings', array(
+		public function get_settings_list() {
+			$fields = array(
+				'name' => array(
+					'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 1,
+					'classes' => 'col-half',
+					'section' => 'general',
+				),
+				// 'actions' => array(
+				// 	'label' => __('Actions', 'product-configurator-for-woocommerce' ),
+				// 	'type' => 'actions',
+				// 	'priority' => 2,
+				// 	'classes' => 'col-half',
+				// 	'section' => 'general',
+				// ),
+				'admin_label' => array(
+					'label' => __('Admin label', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 2,
+					'classes' => 'col-half',
+					'section' => 'general',
+				),
+				'is_group' => array(
+					'label' => __('Use as group', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 5,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice',
+				),
+				'show_group_label_in_cart' => array(
+					'label' => __('Show group name in the cart / order', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 6,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice && data.is_group'
+				),
+				'sku' => array(
+					'label' => ( 'individual' == mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ) ? __('SKU', 'product-configurator-for-woocommerce' ) : __('SKU part', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 9,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice && !data.is_group'
+				),
+				'color' => array(
+					'label' => __('Color hex code', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'attributes' => array(
+						'placeholder' => __('E.g. #EEFF00', 'product-configurator-for-woocommerce'),
+					),
+					'priority' => 14,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice && !data.is_group && "colors" == data.layer.display_mode',
+				),
+				'description' => array(
+					'label' => __('Description', 'product-configurator-for-woocommerce' ),
+					'type' => 'textarea',
+					'priority' => 20,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice',
+				),
+				'custom_html' => array(
+					'label' => __( 'Custom html', 'product-configurator-for-woocommerce' ),
+					'type' => 'textarea',
+					'priority' => 20,
+					'help' => __( 'Any content / HTML entered here will be added in the configurator viewer.', 'product-configurator-for-woocommerce' ),
+					'input_classes' => 'code',
+					'section' => 'general',
+					'condition' => 'data.not_a_choice || PC_lang.enable_html_layers',
+				),
+				'is_default' => array(
+					'label' => __('Set as default choice', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 20,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice && !data.is_group'
+				),
+				'hide_in_cart' => array(
+					'label' => __('Hide the layer in the cart if this choice is selected', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'priority' => 20,
+					'section' => 'general',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)'
+				),				
+				'extra_price' => array(
+					'label' => __('Extra price', 'product-configurator-for-woocommerce' ),
+					'type' => 'number',
+					'attributes' => array(
+						'disabled' => 'disabled',
+						'placeholder' => __('Extra Price is available as an addon', 'product-configurator-for-woocommerce'),
+					),
+					'priority' => 30,
+					'section' => 'extra_price_settings',
+					'condition' => '!data.is_group',
+				),
+				
+				'angle_switch' => array(
+					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'condition' => '!data.not_a_choice',
+					'choices' => [
+						[
+							'label' => _x( 'No', 'Automatic angle switch - Choose an angle, or no switch', 'product-configurator-for-woocommerce' ),
+							'value' => 'no'
+						],
+					],
+					'attributes' => array(
+						'data-label_prefix' => __('Switch to', 'product-configurator-for-woocommerce'),
+					),
+					'section' => 'advanced',
+					'priority' => 50,
+				),
+				'choice_groups_toggle' => array(
+					'label' => __( 'Content of this group is hidden by default, toggled when clicking the title', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'condition' => '!data.not_a_choice && data.is_group',
+					'choices' => [
+						[
+							'label' => __( 'Use global setting', 'product-configurator-for-woocommerce' ),
+							'value' => 'inherit'
+						],
+						[
+							'label' => __( 'Yes', 'product-configurator-for-woocommerce' ),
+							'value' => 'enabled'
+						],
+						[
+							'label' => _x( 'No', 'Content of this group is hidden by default - Yes, No, Inherit', 'product-configurator-for-woocommerce' ),
+							'value' => 'disabled'
+						],
+					],
+					'priority' => 55,
+					'section' => 'advanced',
+				),
+				'weight' => array(
+					'label' => __('Weight', 'product-configurator-for-woocommerce' ) . ' (' . get_option( 'woocommerce_weight_unit' ) . ')',
+					'type' => 'number',
+					'priority' => 60,
+					'section' => 'advanced',
+					'condition' => '!data.not_a_choice && !data.is_group',
+				),
+				'class_name' => array(
+					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 150,
+					'section' => 'advanced',
+				),
+			);
+
+			if ( ! class_exists( 'MKL_PC_Form_Builder_Admin' ) ) {
+				$fields['form_field_placeholder'] = array(
+					'label' => 'Form fields',
+					'type'=> 'html',
+					'priority' => 10,
+					'section' => 'form_fields',
+					'html' => 'Add form fields to your choices. Learn more here.',
+				);
+			}
+
+			if ( ! class_exists( 'MKL_PC_Stock_Management__Admin' ) ) {
+				$fields['form_field_placeholder'] = array(
+					'label' => 'Stock management and linked product',
+					'type'=> 'html',
+					'priority' => 10,
+					'section' => 'stock_management',
+					'html' => 'Manage stock, add a linked product to the cart. Learn more here.',
+				);
+			}
+
+			return apply_filters( 'mkl_pc_choice_default_settings', $fields );
+		}
+
+		/**
+		 * Get the setting sections
+		 *
+		 * @return array
+		 */
+		public function get_sections() {
+			$sections = [
 				'_general' => array(
 					'id' => 'general',
-					'label' => __( 'General' ),
-					'priority' => 5,
-					'fields' => array(
-						'is_group' => array(
-							'label' => __('Use as group', 'product-configurator-for-woocommerce' ),
-							'type' => 'checkbox',
-							'priority' => 5,
-							'condition' => '!data.not_a_choice'
-						),
-						'show_group_label_in_cart' => array(
-							'label' => __('Show group name in the cart / order', 'product-configurator-for-woocommerce' ),
-							'type' => 'checkbox',
-							'priority' => 6,
-							'condition' => '!data.not_a_choice && data.is_group'
-						),
-						'sku' => array(
-							'label' => ( 'individual' == mkl_pc( 'settings')->get( 'sku_mode', 'individual' ) ) ? __('SKU', 'product-configurator-for-woocommerce' ) : __('SKU part', 'product-configurator-for-woocommerce' ),
-							'type' => 'text',
-							'priority' => 9,
-							'condition' => '!data.not_a_choice && !data.is_group'
-						),
-						'name' => array(
-							'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
-							'type' => 'text',
-							'priority' => 10,
-						),
-						'color' => array(
-							'label' => __('Color hex code', 'product-configurator-for-woocommerce' ),
-							'type' => 'text',
-							'attributes' => array(
-								'placeholder' => __('E.g. #EEFF00', 'product-configurator-for-woocommerce'),
-							),
-							'condition' => '!data.not_a_choice && !data.is_group && "colors" == data.layer.display_mode',
-							'priority' => 10,
-						),
-						'admin_label' => array(
-							'label' => __('Admin label', 'product-configurator-for-woocommerce' ),
-							'type' => 'text',
-							'priority' => 15,
-						),
-						'description' => array(
-							'label' => __('Description', 'product-configurator-for-woocommerce' ),
-							'type' => 'textarea',
-							'priority' => 20,
-							'condition' => '!data.not_a_choice'
-						),
-						'custom_html' => array(
-							'label' => __( 'Custom html', 'product-configurator-for-woocommerce' ),
-							'type' => 'textarea',
-							'priority' => 20,
-							'condition' => 'data.not_a_choice || PC_lang.enable_html_layers',
-							'help' => __( 'Any content / HTML entered here will be added in the configurator viewer.', 'product-configurator-for-woocommerce' ),
-							'classes' => 'code',
-						),
-						'is_default' => array(
-							'label' => __('Set as default choice', 'product-configurator-for-woocommerce' ),
-							'type' => 'checkbox',
-							'priority' => 20,
-							'condition' => '!data.not_a_choice && !data.is_group'
-						),
-						'hide_in_cart' => array(
-							'label' => __('Hide the layer in the cart if this choice is selected', 'product-configurator-for-woocommerce' ),
-							'type' => 'checkbox',
-							'priority' => 20,
-							'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)'
-						),				
-						'extra_price' => array(
-							'label' => __('Extra price', 'product-configurator-for-woocommerce' ),
-							'type' => 'number',
-							'attributes' => array(
-								'disabled' => 'disabled',
-								'placeholder' => __('Extra Price is available as an addon', 'product-configurator-for-woocommerce'),
-							),
-							'priority' => 30,
-							'condition' => '!data.is_group'
-
-						)
-					),
+					'label' => __( 'General', 'product-configurator-for-woocommerce' ),
+					'priority' => 10,
+					'fields' => [
+					],
 				),
+				'_extra_price_settings' => array(
+					'id' => 'extra_price_settings',
+					'label' => __( 'Extra price', 'product-configurator-for-woocommerce' ),
+					'priority' => 30,
+					'collapsible' => true,
+					'fields' => [
+					],
+				),
+				'_stock_management' => array(
+					'id' => 'stock_management',
+					'label' => __( 'Stock management' ),
+					'priority' => 40,
+					'collapsible' => true,
+					'fields' => [],
+				),
+				'_form_fields' => array(
+					'id' => 'form_fields',
+					'label' => __( 'Form fields', 'product-configurator-for-woocommerce' ),
+					'priority' => 46,
+					'collapsible' => true,
+					'fields' => [
+					],
+				),
+
 				'_advanced' => array(
 					'id' => 'advanced',
-					'label' => __( 'Advanced' ),
+					'label' => __( 'Advanced settings', 'product-configurator-for-woocommerce' ),
 					'priority' => 150,
-					'fields' => array(
-						'angle_switch' => array(
-							'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
-							'type' => 'select',
-							'condition' => '!data.not_a_choice',
-							'choices' => [
-								[
-									'label' => _x( 'No', 'Automatic angle switch - Choose an angle, or no switch', 'product-configurator-for-woocommerce' ),
-									'value' => 'no'
-								],
-							],
-							'attributes' => array(
-								'data-label_prefix' => __('Switch to', 'product-configurator-for-woocommerce'),
-							),
-							'priority' => 50,
-						),
-						'choice_groups_toggle' => array(
-							'label' => __( 'Content of this group is hidden by default, toggled when clicking the title', 'product-configurator-for-woocommerce' ),
-							'type' => 'select',
-							'condition' => '!data.not_a_choice && data.is_group',
-							'choices' => [
-								[
-									'label' => __( 'Use global setting', 'product-configurator-for-woocommerce' ),
-									'value' => 'inherit'
-								],
-								[
-									'label' => __( 'Yes', 'product-configurator-for-woocommerce' ),
-									'value' => 'enabled'
-								],
-								[
-									'label' => _x( 'No', 'Content of this group is hidden by default - Yes, No, Inherit', 'product-configurator-for-woocommerce' ),
-									'value' => 'disabled'
-								],
-							],
-							'priority' => 55,
-						),
-						'weight' => array(
-							'label' => __('Weight', 'product-configurator-for-woocommerce' ) . ' (' . get_option( 'woocommerce_weight_unit' ) . ')',
-							'type' => 'number',
-							'priority' => 60,
-							'condition' => '!data.not_a_choice && !data.is_group',
-						),
-						'class_name' => array(
-							'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
-							'type' => 'text',
-							'priority' => 150,
-						),
-					)
-				),
-			) );
+					'collapsible' => true,
+					'fields' => [
+					]
+				),				
+			];
+			$languages = mkl_pc( 'languages' )->get_languages();
+			if ( ! empty( $languages ) ) {
+				$sections[ '_translations' ] = array(
+					'id' => 'translations',
+					'label' => __( 'Translations', 'product-configurator-for-woocommerce' ),
+					'priority' => 140,
+					'collapsible' => true,
+					'fields' => []
+				);
+			}
+				
+			return apply_filters( 'mkl_pc_choice_settings_sections', $sections );
+
 		}
 	}
 }

@@ -31,8 +31,20 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			foreach( $settings as $id => $options ) {
 				// Setting sections
 				if ( '_' == substr( $id, 0, 1 ) && isset( $options[ 'fields' ] ) ) {
-					echo '<div class="setting setting-section" data-section="'.$options[ 'id' ].'">';
-					echo '<h4>' . $options[ 'label' ] . '</h4>';
+					$is_opened = ( ! isset( $options[ 'collapsible' ] ) || ! $options[ 'collapsible' ] ) 
+						? 'is-opened' 
+						: '<# if ( data.toggled_status && data.toggled_status["' . $options[ 'id' ] .'"] && "closed" == data.toggled_status["' . $options[ 'id' ] .'"] ) { #>is-closed<# } else { #>is-opened<# } #>';
+
+					echo '<div class="components-panel__body ' . $is_opened . ' setting setting-section" data-section="'.$options[ 'id' ].'">';
+					if ( ! isset( $options[ 'collapsible' ] ) || ! $options[ 'collapsible' ] ) {
+						echo '<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle">' . $options[ 'label' ] . '</span></h2>';
+					} else {
+						echo '<h2 class="components-panel__body-title"><button class="components-button components-panel__body-toggle" type="button">'
+							. '<span aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="components-panel__arrow" aria-hidden="true" focusable="false"><path d="M17.5 11.6L12 16l-5.5-4.4.9-1.2L12 14l4.5-3.6 1 1.2z"></path></svg></span>' 
+							. $options[ 'label' ] 
+							. '</button>'
+							. '</h2>';
+					}
 					echo '<div class="section-fields">';
 					uasort( $options[ 'fields' ], array( $this, 'sort_settings' ) );
 					foreach( $options['fields'] as $_id => $item ) {
@@ -80,74 +92,98 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				'classes' => '',
 			));
 
-			if ( empty($options['id'] ) || empty( $options['label'] ) ) throw new \Exception( 'Setting options must have and `id` and `label` fields' );
+			if ( ( empty($options['id'] ) || empty( $options['label'] ) ) && 'separator' != $options['type'] ) {
+				$output = '<div class="error">Setting options must have and `id` and `label` fields</div>';
+				$output .= '<pre>' . print_r( $options, true ) . '</pre>';
 
-			if ( 'html' === $options['type'] ) {
-				$output = '
-				<div class="setting html setting-id-' . esc_attr( $options['id'] ) . '">
-					<span class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</span>
-					';
-			} else {
-				$output = '
-					<label class="setting ' . esc_attr( $options['type'] ) . ' setting-id-' . esc_attr( $options['id'] ) . '">
-						<span class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</span>
-						';
+				if ($echo) {
+					echo $output;
+				} else {
+					return $output;
+				}
 			}
+
+			$classes = isset( $options['classes'] ) ? $options['classes'] . ' ' : '';
+
+			$output = '
+				<div class="setting ' . esc_attr( $classes ) . esc_attr( $options['type'] ) . ' setting-id-' . esc_attr( $options['id'] ) . '">
+			';
+
 			switch ($options['type']) {
 				case 'html':
 				case 'custom':
-					$output .= $options['html'];
+					$field = $options['html'];
+					break;
+				case 'actions':
+					$field = '<div class="actions-container">
+						<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+						'<button type="button" class="button-link duplicate duplicate-item">' . __('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
+						'<div class="prompt-delete hidden mkl-pc-setting--warning">' .
+							'<p>' . __( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
+							'<p>' .
+								'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+								'<button type="button" class="button cancel-delete" data-delete="cancel">' . __('Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
+							'</p>' .
+						'</div>' .
+					'</div>';
 					break;
 				case 'textarea':
-					$output .= '<textarea class="'.esc_attr( $options[ 'classes' ] ).'" type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
+					$field = '<textarea class="' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
 					break;
 				case 'checkbox':
-					$output .= '<input '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" <# if(data.'.esc_attr($options['id']).' == true || data.'.esc_attr($options['id']).' == "true") { #> checked="checked" <# } #>>';
+					$field = '<span class="components-checkbox-control__input-container">
+						<input class="components-checkbox-control__input ' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" <# if(data.'.esc_attr($options['id']).' == true || data.'.esc_attr($options['id']).' == "true") { #> checked="checked" <# } #>>
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" role="presentation" class="components-checkbox-control__checked" aria-hidden="true" focusable="false"><path d="M16.7 7.1l-6.3 8.5-3.3-2.5-.9 1.2 4.5 3.4L17.9 8z"></path></svg>
+						</span>';
 					break;
 				case 'select':
 					if ( is_array($options['choices'] ) ) {
-						$output .= '<select '.$this->field_attributes($options['attributes']).' data-setting="'.esc_attr($options['id']).'">';
+						$field = '<select class="components-select-control__input ' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" '.$this->field_attributes($options['attributes']).' data-setting="'.esc_attr($options['id']).'">';
 						foreach( $options['choices'] as $choice ) {
 							// Prepare any choice specific attributes
 							$attributes = isset($choice['attributes']) && is_array($choice['attributes']) ? ' ' . $this->field_attributes($choice['attributes']) : '';
 							// Outputs the select
 
 							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
-								$output .= '<# if ( ' . $choice[ 'condition' ] . ' ) { #>';
+								$field .= '<# if ( ' . $choice[ 'condition' ] . ' ) { #>';
 							}
 							
-							$output .= '<option'.$attributes.' value="'.$choice['value'].'" <# if("'.$choice['value'].'" == data.'.esc_attr($options['id']).') { #> selected <# } #>>';
-							$output .= $choice['label'];
-							$output .= '</option>';
+							$field .= '<option'.$attributes.' value="'.$choice['value'].'" <# if("'.$choice['value'].'" == data.'.esc_attr($options['id']).') { #> selected <# } #>>';
+							$field .= $choice['label'];
+							$field .= '</option>';
 
 							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
-								$output .= '<# } #>';
+								$field .= '<# } #>';
 							}
 						}
-						$output .= '</select>';
+						$field .= '</select>';
 					}
 					break;
 	
 				case 'text':
 				case 'number':
 				default:
-					$output .= '<input '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" value="<# if ( "undefined" != typeof data.'.esc_attr($options['id']).' ) { #>{{data.'.esc_attr($options['id']).'}}<# } #>">';
+					$field = '<input class="components-select-control__input ' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" '.$this->field_attributes($options['attributes']).' type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'" value="<# if ( "undefined" != typeof data.'.esc_attr($options['id']).' ) { #>{{data.'.esc_attr($options['id']).'}}<# } #>">';
 					break;
+			}
+
+			if ( 'checkbox' == $options['type'] ) {
+				$output .= '<label class="components-checkbox-control__label name '.esc_attr($options['id']).'"><span>' . $field . '</span>' . wp_kses_post($options['label']).'</label>';
+			} elseif ( 'separator' !== $options['type'] ) {
+				if ( ! isset( $options['hide_label'] ) || ! $options['hide_label'] ) {
+					$output .= '<label class="name '.esc_attr($options['id']).'">'.wp_kses_post($options['label']).'</label>';
+				}
+				$output .= $field;
 			}
 
 			if ( $options['help'] ) {
 				$output .= '<p class="help">' . $options['help'] . '</p>';
 			}
 
-			if ( 'html' === $options['type'] ) {
-				$output .= '
-					</div>
-				';
-			} else {
-				$output .= '
-					</label>
-				';
-			}
+			
+			$output .= '
+				</div>
+			';
 
 			$condition = 'true';
 			if ( $options['condition'] ) $condition = $options['condition'];
@@ -161,11 +197,53 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		}
 
 		/**
+		 * Gets the default sections
+		 *
+		 * @return array
+		 */
+		public abstract function get_sections();
+
+		/**
+		 * Gets the settings
+		 *
+		 * @return array
+		 */
+		public abstract function get_settings_list();
+
+		/**
 		 * Gets the default settings
 		 *
 		 * @return array
 		 */
-		public abstract function get_default_settings();
+		public function get_default_settings() {
+			$sections = $this->get_sections();
+			$settings = $this->get_settings_list();
+			foreach( $settings as $id => $option ) {
+				if ( '_' == substr( $id, 0, 1 ) ) {
+
+					// Merge both sections
+					if ( isset( $sections[$id], $sections[$id]['fields'], $option['fields'] ) ) {
+						$sections[$id]['fields'] = array_merge( $sections[$id]['fields'], $option['fields'] );
+						continue;
+					}
+
+					// Add the section, if it doesn't exist yet
+					if ( ! isset( $sections[$id] ) && isset( $option['fields'] ) ) {
+						$sections[$id] = $option;
+						continue;
+					}
+				} 
+				
+				if ( isset( $option['section'], $sections['_'.$option['section']] ) ) {
+					// Add settigns to their sections
+					$sections['_'.$option['section']]['fields'][$id] = $option;
+				} else {
+					// Default to the general section
+					$sections['_general']['fields'][$id] = $option;
+				}
+			}
+			return $sections;
+		}
 
 		/**
 		 * Print the attributes
