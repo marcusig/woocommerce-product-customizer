@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.4
-Stable tag: 1.2.58
+Stable tag: 1.2.59
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -113,6 +113,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.2.59 - 31/Jan/2024 = 
+
+* FIX: Ajax add to cart support, for themes and plugins using the `adding_to_cart` when the data is a string and not an object (e.g. Woodmart theme)
 
 = 1.2.58 - 27/Jan/2024 = 
 
