@@ -19,7 +19,7 @@ class Update {
 			'1.2.17' => [ [ $this, 'set_default_setting_value_v1_2_17' ] ],
 			'1.2.35' => [ [ $this, 'set_default_setting_value_v1_2_35' ] ],
 			'1.2.41' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
-			'1.2.58' => [ [ $this, 'set_default_setting_value_v1_2_58' ] ],
+			'1.3.00' => [ [ $this, 'set_default_setting_value_v1_3_00' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -99,7 +99,7 @@ class Update {
 	 *
 	 * @return void
 	 */
-	private function set_default_setting_value_v1_2_58() {
+	private function set_default_setting_value_v1_3_00() {
 		$theme = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
 		if ( ! empty( $theme ) ) return;
 		mkl_pc( 'settings' )->set( 'mkl_pc__theme', 'default' );
