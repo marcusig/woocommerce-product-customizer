@@ -411,6 +411,7 @@ TODO:
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
 			'change .setting select': 'form_change',
+			'change .setting [type="radio"]': 'form_change',
 			'click [type="checkbox"]': 'form_change',
 			'click [type="checkbox"][data-setting="not_a_choice"]': 'on_change_not_a_choice',
 
@@ -444,6 +445,14 @@ TODO:
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
 			this.populate_angles_list();
 			PC.currentEditedItem = this.model;
+			if ( this.current_focus ) {
+				var focus_to = this.$( '[data-setting="'+ this.current_focus + '"]' );
+				if ( 1 === focus_to.length ) focus_to.trigger( 'focus' );
+				if ( 1 < focus_to.length ) {
+					focus_to = this.$( '[data-setting="'+ this.current_focus + '"]:checked' );
+					if ( 1 === focus_to.length ) focus_to.trigger( 'focus' );
+				}
+			}
 			return this;
 		},
 		on_change_not_a_choice: function( event ) {
@@ -452,14 +461,16 @@ TODO:
 			this.model.set( 'not_a_choice', new_val );
 		},
 		form_change: function( event ) {
-
 			var input = $(event.currentTarget);
 			var setting = input.data('setting');
-
-			if ( 'click' === event.type ) {
+			this.current_focus = setting;
+			if ( 'checkbox' === event.currentTarget.type ) {
 				// checkbox
-				var new_val = input.prop('checked'); 
-				
+				if ( 'click' === event.type ) {
+					var new_val = input.prop('checked'); 
+				} else {
+					return;
+				}
 			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
 				// text + textarea
 				var new_val = input.val().trim();

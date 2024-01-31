@@ -296,6 +296,59 @@ html .media-modal.pc-modal {
 			// 		background: #FFF;
 			// 	}
 			// }
+
+			.mkl-pc-image-select {
+				display: grid;
+				grid-template-columns: repeat(5, minmax(0px, 1fr));
+				gap: calc(16px) calc(8px);
+				padding-bottom: 20px;
+			}
+			
+			.mkl-pc-image-select--item {
+				display: flex;
+				width: 100%;
+				border-radius: 3px;
+
+				&:focus-within {
+					box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--wp-admin-theme-color);	
+				}
+				label {
+					display: flex;
+					flex-direction: column;
+					padding: 20px 10px;
+					text-align: center;
+					box-shadow: 0 0 0 1px inset #CCC;
+					border-radius: 5px;
+					height: 100%;
+					width: 100%;
+					justify-content: center;
+					align-items: center;
+					box-sizing: border-box;
+					svg, img {
+						max-width: 100%;
+						margin-bottom: 10px;
+					}
+				}
+				
+				input {
+					width: 0;
+					height: 0;
+					appearance: none;
+					border: none;
+					opacity: 0;
+					overflow: hidden;
+					position: absolute;
+				}
+				
+				input:checked + label {
+					box-shadow: 0 0 0 2px inset var( --wp-admin-theme-color, #007cba );
+				}
+				input:focus + label {
+					
+					box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--wp-admin-theme-color), 0 0 0 2px inset var( --wp-admin-theme-color, #007cba );
+				}
+			}
+
 		}
 
 		header {

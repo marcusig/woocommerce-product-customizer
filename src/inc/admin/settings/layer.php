@@ -32,24 +32,28 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 			$display_modes = [
 				[
 					'label' => __( 'Default', 'product-configurator-for-woocommerce' ),
-					'value' => 'default'
+					'value' => 'default',
 				],
 				[
 					'label' => __( 'Drop down', 'product-configurator-for-woocommerce' ),
 					'value' => 'dropdown',
+					'image' => MKL_PC_ASSETS_URL . 'admin/images/ui/display-dropdown.svg',
 				],
 				[
 					'label' => __( 'Color swatches', 'product-configurator-for-woocommerce' ),
 					'value' => 'colors',
+					'image' => MKL_PC_ASSETS_URL . 'admin/images/ui/display-colors.svg',
 				],
 			];
 
 			if ( mkl_pc( 'themes' )->current_theme_supports( 'display mode: compact list' ) ) {
 				$display_modes[] = [
 					'label' => __( 'Compact list', 'product-configurator-for-woocommerce' ),
-					'value' => 'compact-list'
+					'value' => 'compact-list',
+					'image' => MKL_PC_ASSETS_URL . 'admin/images/ui/display-compact-list.svg',
 				];
 			}
+
 			/**
 			 * Filters the display modes available for a given layer
 			 *
@@ -137,7 +141,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 
 				'display_mode' => array(
 					'label' => __( 'Display mode', 'product-configurator-for-woocommerce' ),
-					'type' => 'select',
+					'type' => 'image_select',
 					'choices' => $display_modes,
 					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type )',
 					'priority' => 7,
