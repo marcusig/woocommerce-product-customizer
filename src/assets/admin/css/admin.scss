@@ -207,6 +207,9 @@ html .media-modal.pc-modal {
 		.setting-section.is-opened .section-fields {
 			display: grid;
 			grid-template-columns: repeat(2, minmax(0px, 1fr));
+			@media(max-width: 960px) {
+				grid-template-columns: repeat(1, minmax(0px, 1fr));
+			}
 			gap: calc(16px) calc(8px);
 			margin-top: -1px;
 		}
@@ -300,6 +303,12 @@ html .media-modal.pc-modal {
 			.mkl-pc-image-select {
 				display: grid;
 				grid-template-columns: repeat(5, minmax(0px, 1fr));
+				@media(max-width: 1024px) {
+					grid-template-columns: repeat(4, minmax(0px, 1fr));
+				}
+				@media(max-width: 780px) {
+					grid-template-columns: repeat(2, minmax(0px, 1fr));
+				}
 				gap: calc(16px) calc(8px);
 				padding-bottom: 20px;
 			}
