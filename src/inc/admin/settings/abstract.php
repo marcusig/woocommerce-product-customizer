@@ -159,6 +159,51 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 						$field .= '</select>';
 					}
 					break;
+				case 'image_select':
+					if ( is_array($options['choices'] ) ) {
+						$field = '<div class="mkl-pc-image-select">';
+						foreach( $options['choices'] as $choice ) {
+							// Prepare any choice specific attributes
+							$attributes = isset($choice['attributes']) && is_array($choice['attributes']) ? ' ' . $this->field_attributes($choice['attributes']) : '';
+							
+							// Outputs the radios
+							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
+								$field .= '<# if ( ' . $choice[ 'condition' ] . ' ) { #>';
+							}
+							$field_id = sanitize_title( $options['id'] . '-' . $choice['value'] );
+							$field .= '<div class="mkl-pc-image-select--item">';
+							$field .= '<input'
+								.$attributes
+								.' type="radio" 
+								id="'.$field_id.'"
+								value="'.$choice['value'].'" 
+								class="components-select-control__input ' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" 
+								data-setting="'.esc_attr($options['id']).'"
+								<# if("'.$choice['value'].'" == data.'.esc_attr($options['id']).') { #> checked <# } #>
+								name="img-select-'.esc_attr($options['id']).'"
+								>';
+
+							$field .= '<label for="' . $field_id . '">';
+							if ( isset( $choice['image'] ) ) {
+								// possible SVG usage
+								if ( strpos( $choice['image'], 'viewBox' ) ) {
+									$field .= $choice['image'];
+								} elseif ( esc_url_raw( $choice['image'] ) ) {
+									$field .= '<img src="'. esc_url_raw( $choice['image'] ) . '" alt="">';
+								}
+							}
+							$field .= $choice['label'];
+							$field .= '</label>';
+							$field .= '</div>';
+
+							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
+								$field .= '<# } #>';
+							}
+						}
+						$field .= '</div>';
+
+					}
+					break;
 	
 				case 'text':
 				case 'number':
