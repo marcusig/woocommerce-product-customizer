@@ -119,6 +119,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
 * FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
 * COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
+* NEW: Updated the admin UI
 * TWEAK: Default theme is now part of the themes list
 * TWEAK: Removed "add to cart modal" from WSB anf Float, and changed the layout to accomodate all the content
 * TWEAK: Added timeout setting for admin requests
