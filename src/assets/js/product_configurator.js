@@ -138,9 +138,6 @@ PC.actionParameter = 'pc_get_data';
 		 	}
 		}
 
-		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
-		wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
-
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 
 			$( 'form.cart button[name="add-to-cart"]' ).prop( 'disabled', false );
@@ -160,6 +157,9 @@ PC.actionParameter = 'pc_get_data';
 
 			// Reset config
 			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
+
+			wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
+			wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
 
 			// Swipe
 			if ( PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
