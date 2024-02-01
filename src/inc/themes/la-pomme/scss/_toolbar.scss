@@ -673,7 +673,11 @@
 						> button {
 							border-radius: 0;
 							height: 100%;
-
+							.choice-text--container {
+								@media( max-width: $small_screen_width ) {
+									flex-direction: column;
+								}
+							}
 						}
 						
 						&:first-of-type, &:first-of-type > button {
@@ -693,14 +697,14 @@
 		}
 		@media( max-width: $small_screen_width ) {
 			box-shadow: 0 -10px 11px -6px rgba(0, 0, 0, 0.2);
-			body:not(.configurator_is_inline) & {
-				position: absolute;
-				top: 0;
-				bottom: 0;
-				left: 0;
-				right: 0;
-				height: 100%;
-			}
+			// body:not(.configurator_is_inline) & {
+			// 	position: absolute;
+			// 	top: 0;
+			// 	bottom: 0;
+			// 	left: 0;
+			// 	right: 0;
+			// 	height: 100%;
+			// }
 		}
 	}
 
