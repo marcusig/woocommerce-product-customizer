@@ -828,9 +828,9 @@ $inner_space: 1em;
 
 				@import '../../themes-common/scss/dropdown';
 
-				li.display-mode-dropdown > button.layer-item > .selected-choice-image {
-					display: none;
-				}
+				// li.display-mode-dropdown > button.layer-item > .selected-choice-image {
+				// 	display: none;
+				// }
 
 				@media( max-width: $small_screen_width ) {
 					// position: absolute;

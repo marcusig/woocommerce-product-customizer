@@ -115,9 +115,9 @@
 		}
 	}
 
-	li.display-mode-dropdown > button.layer-item > .selected-choice-image {
-		display: none;
-	}
+	// li.display-mode-dropdown > button.layer-item > .selected-choice-image {
+	// 	display: none;
+	// }
 
 	section.choices {
 		position: relative;
@@ -324,6 +324,7 @@
 					position: absolute;
 					display: block;
 					width: 30px;
+					height: 30px;
 					left: 0px;
 					top: 50%;
 					transform: translateY(-50%);

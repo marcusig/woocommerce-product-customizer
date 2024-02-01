@@ -316,6 +316,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 			text-align: left;
 			height: auto;
 			border: none;
+			min-height: 0;
 			span.choice-text,
 			span.choice-price {
 				display: none;

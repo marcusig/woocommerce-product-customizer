@@ -8,6 +8,9 @@
 		box-shadow: none !important;
 		width: auto;
 		padding: 0;
+		&.is-group {
+			width: 100%;
+		}
 
 		button.choice-item {
 			padding: 0;
