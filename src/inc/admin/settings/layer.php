@@ -206,7 +206,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => '1',
 						],
 					],
-					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && "default" == data.display_mode',
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && ( "default" == data.display_mode || ! data.display_mode )' ,
 					'priority' => 8,
 				);
 			}
