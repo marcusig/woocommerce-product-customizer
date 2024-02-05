@@ -66,6 +66,30 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		
 		// Add display-mode class to the choices element
 		if ( this.choices && this.choices.$el && this.model.get( 'display_mode' ) ) this.choices.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
+		if ( 'dropdown' == this.model.get( 'display_mode' ) && window.Popper ) {
+			this.popper = Popper.createPopper( 
+				this.$( '> button.layer-item' )[0], 
+				this.$( '> .layer_choices' )[0], 
+				{
+					placement: 'bottom',
+					modifiers: [
+						{
+							name: 'eventListeners',
+							options: {
+							scroll: true,
+							resize: true
+							},
+						},
+						{
+							name: 'flip',
+							options: {
+							fallbackPlacements: [ 'top' ]
+							}
+						}
+					]
+				}
+			);
+		}
 		return this.$el;
 	},
 	add_choices: function() {
@@ -162,6 +186,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			$( document ).off( 'click.mkl-pc' );
 			wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 		}
+		if ( this.popper ) this.popper.update();
 	},
 	hide_in_configurator: function( model, should_hide ) {
 		this.$el.toggleClass( 'hide_in_configurator', !! should_hide );
