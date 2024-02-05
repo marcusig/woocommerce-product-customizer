@@ -378,7 +378,7 @@ TODO:
 	} );
 
 	// LAYER EDITING VIEW
-	PC.views.layer_form = Backbone.View.extend({
+	PC.views.layer_form = Backbone.View.extend( {
 		tagName: 'div',
 		className: 'layer-form',
 		template: wp.template('mkl-pc-structure-layer-form'),
