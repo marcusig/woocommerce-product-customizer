@@ -17,7 +17,7 @@
 			text-align: left;
 			height: auto;
 			border: none;
-
+			min-height: 0;
 			span.choice-text--container {
 				display: none;
 			}
@@ -38,7 +38,7 @@
 				left: 2px;
 				right: 2px;
 				bottom: 2px;
-				overflow: visible;
+				overflow: hidden;
 				border-radius: var( --mkl_pc_color_thumnail_border_radius, var( --mkl_pc_choice--border-radius ) );
 			}
 
