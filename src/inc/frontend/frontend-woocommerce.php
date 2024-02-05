@@ -152,10 +152,7 @@ class Frontend_Woocommerce {
 			$tag_name_close = 'button';
 		}
 
-		$data_attributes = array( 
-			'price' => $this->product->get_product_price( $product_id ),
-			'product_id' => $product_id,
-		);
+		$data_attributes = $this->get_configurator_element_attributes( $product );
 
 		if ( isset( $atts[ 'product_id' ] ) ) {
 			$data_attributes['force_form'] = 1;
@@ -167,12 +164,35 @@ class Frontend_Woocommerce {
 	}
 
 	/**
+	 * Get the attributes for the configurator trigger element. Button or inline div
+	 *
+	 * @param WC_Product $product
+	 * @return array
+	 */
+	public function get_configurator_element_attributes( $product ) {
+		$data_attributes = array( 
+			'price' => $this->product->get_product_price( $product->get_id() ),
+			'product_id' => $product->get_id(),
+			'is_on_sale'    => $product->is_on_sale(),
+			'regular_price' => wc_get_price_to_display( $product, array( 'price' => $product->get_regular_price() ) ),
+		);
+		/**
+		 * Filters the list of attributes added to the configurator trigger element.
+		 *
+		 * @param array $data_attributes The attributes
+		 * @param WC_Product $product The configurable product
+		 * @return array
+		 */
+		return apply_filters( 'get_configurator_element_attributes', $data_attributes, $product );
+	}
+
+	/**
 	 * Format the data attributes
 	 *
 	 * @param array $data
 	 * @return array
 	 */
-	private function _output_data_attributes( $data ) {
+	public function _output_data_attributes( $data ) {
 		$data_attributes_string = array_map( function( $key, $value ) {
 			return ' data-' . $key . '="' . esc_attr( $value ) . '"';
 		}, array_keys( $data ), $data );
@@ -218,11 +238,9 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		$data_attributes = array( 
-			'price' => $this->product->get_product_price( $product_id ),
-			'product_id' => $product_id,
-			'loading' => mkl_pc( 'settings' )->get_label( 'loading_configurator_message', __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ) ),
-		);
+		$data_attributes = $this->get_configurator_element_attributes( $product );
+
+		$data_attributes['loading'] = mkl_pc( 'settings' )->get_label( 'loading_configurator_message', __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ) );
 
 		if ( isset( $atts[ 'product_id' ] ) ) {
 			$data_attributes['force_form'] = 1;
