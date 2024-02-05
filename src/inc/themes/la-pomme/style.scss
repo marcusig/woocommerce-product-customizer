@@ -311,6 +311,9 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 		box-shadow: none !important;
 		width: auto;
 		padding: 4px;
+		&.is-group {
+			width: 100%;
+		}
 		button.choice-item {
 			padding: 0;
 			text-align: left;
@@ -338,7 +341,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 				left: 2px;
 				right: 2px;
 				bottom: 2px;
-				overflow: visible;
+				overflow: hidden;
 				border-radius: var( --mkl_pc_color_thumnail_border_radius, 50px );
 				box-shadow: 0 2px 2px inset rgba(0, 0, 0, 0.13);
 			}
