@@ -249,6 +249,8 @@ PC.actionParameter = 'pc_get_data';
 		PC.fe.product_type = this.currentProductData.product_info.product_type;
 		if ( $element && $element.data( 'price' ) ) {
 			this.currentProductData.product_info.price = $element.data( 'price' );
+			this.currentProductData.product_info.regular_price = $element.data( 'regular_price' );
+			this.currentProductData.product_info.is_on_sale = ( 1 == $element.data( 'is_on_sale' ) );
 		} else {
 			this.currentProductData.product_info.price = 0;
 		}

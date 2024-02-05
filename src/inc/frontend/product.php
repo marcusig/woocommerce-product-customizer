@@ -110,7 +110,9 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					echo '<!-- Product configurator - The current product is not purchasable or has no available variations -->';
 					return;
 				}
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" data-price="'.esc_attr( $this->get_product_price( get_the_id() ) ).'" data-product_id="'.get_the_id().'" type="button">'. $label .'</button>' );
+				$attributes = mkl_pc()->frontend->get_configurator_element_attributes( $product );
+				$attributes = implode( ' ', mkl_pc()->frontend->_output_data_attributes( $attributes ) );
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . $this->button_class . '" ' . $attributes . ' type="button">'. $label .'</button>' );
 			}
 		}
 
@@ -178,6 +180,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			$price = $product && is_a( $product, 'WC_Product' ) ? $product->get_price_html() : '';
 			if ( $price ) $price = preg_replace( '/<script.*?\/script>/s', '', $price );
 		?>
+			<# if ( data.formated_regular_price ) { #><del class="pc-total--regular-price">{{{data.formated_regular_price}}}</del><# } #>
 			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
 		<?php 
 		}
