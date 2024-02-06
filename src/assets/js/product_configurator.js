@@ -128,6 +128,7 @@ PC.actionParameter = 'pc_get_data';
 		 */
 		function auto_angle_switch( view ) {
 			if ( view.model.get( 'angle_switch' ) && 'no' != view.model.get( 'angle_switch' ) )  {
+				if ( false === view.model.get( 'cshow' ) ) return;
 				var new_angle = PC.fe.angles.get( view.model.get( 'angle_switch' ) );
 				if ( new_angle && ! new_angle.get( 'active' ) ) {
 					new_angle.collection.each( function( model ) {
@@ -157,9 +158,6 @@ PC.actionParameter = 'pc_get_data';
 
 			// Reset config
 			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
-
-			wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
-			wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
 
 			// Swipe
 			if ( PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
@@ -206,6 +204,14 @@ PC.actionParameter = 'pc_get_data';
 				}
 			}, 300 );
 		}, 50 );
+
+		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
+			setTimeout( function() {
+				wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
+				wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );	
+			}, 310 );
+		}, 55 );
+
 
 		if ( PC_config.config.open_first_layer ) {
 			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
