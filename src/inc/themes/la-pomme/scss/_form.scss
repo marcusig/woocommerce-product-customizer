@@ -70,6 +70,10 @@ span.pc-total-price {
 	padding-top: 4px;
 }
 
+del.pc-total--regular-price + span.pc-total-price {
+	display: inline-block;
+}
+
 button.configurator-add-to-cart,
 .mkl-pc--steps button {
 	background: color(primary);
