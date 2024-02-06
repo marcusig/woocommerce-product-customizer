@@ -217,7 +217,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			);
 
 			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) ) {
-				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
+				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], filemtime( MKL_PC_ASSETS_PATH . 'admin/css/admin.css' ) );
 			}
 
 			if ( $this->_current_screen_is( 'product' ) ) {
