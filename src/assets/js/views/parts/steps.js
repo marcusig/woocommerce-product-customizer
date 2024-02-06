@@ -64,7 +64,9 @@ PC.fe.steps = {
 		
 		if ( current_index == steps.length - 1 ) return;
 
-		if ( ! PC.fe.save_data.is_layer_valid( this.current_step ) ) {
+		var urlParams = new URLSearchParams( location.search );
+		var proceed = urlParams.has( 'pc-presets-admin' );
+		if ( ! proceed && ! PC.fe.save_data.is_layer_valid( this.current_step ) ) {
 			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
