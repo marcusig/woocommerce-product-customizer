@@ -38,7 +38,7 @@
 			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 		} else {
-			if ( 'dropdown' == view.model.get( 'display_mode' ) ) {
+			if ( 'dropdown' === view.model.get( 'display_mode' ) ) {
 				view.$el.find( '.layer_choices' ).first().delay(40).slideDown( 100 );
 			} else {
 				view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { duration: 100, step: function() {
