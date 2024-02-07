@@ -1128,7 +1128,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					</div>
 					<div class="content">
 						<h4>{{data.Name}}</h4>
-						<p>{{data.Description}}</p>
+						<p>{{{data.Description}}}</p>
 						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change' ); ?></button>
 					</div>
 				<# } else { #>
@@ -1151,7 +1151,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<script type="template/html" id="tmpl-mkl-pc-theme-item">
 				<div class="text">
 					<h4>{{data.Name}}</h4>
-					<div class="desc">{{data.Description}}</div>
+					<div class="desc">{{{data.Description}}}</div>
 					<div class="tags">{{data.Tags}}</div>
 				</div>
 				<div class="theme-preview">
