@@ -1,7 +1,7 @@
 (function($) {
-	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/fiftyfifty', function( view ) {
+	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/lebolide', function( view ) {
 
-		view.$el.addClass( 'fiftyfifty' );
+		view.$el.addClass( 'lebolide' );
 		// Move header (product name and close button) to viewer
 		view.toolbar.$( 'header' ).appendTo( view.viewer.$el );
 		view.footer.form.$el.insertAfter( view.toolbar.$selection );
@@ -43,15 +43,15 @@
 		} );
 	}, 30);
 
-	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/fiftyfifty', function( view ) {
+	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/lebolide', function( view ) {
 		// view.$el.removeClass( 'mobile-show-form' );
 	}); 
 
-	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/fiftyfifty', function( where ) {
+	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/lebolide', function( where ) {
 		return 'in';
 	} );
 
-	wp.hooks.addAction( 'PC.fe.layer.render', 'MKL/PC/Themes/fiftyfifty', function( layer ) {
+	wp.hooks.addAction( 'PC.fe.layer.render', 'MKL/PC/Themes/lebolide', function( layer ) {
 		if ( 'dropdown' == layer.model.get( 'display_mode' ) && window.Popper ) {
 			layer.popper = Popper.createPopper( 
 				layer.$( '> button.layer-item' )[0], 
@@ -78,31 +78,31 @@
 		}
 	} );
 
-	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/fiftyfifty', function( view ) {
+	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/lebolide', function( view ) {
 		if ( view.popper ) view.popper.update();
 	} );
 
-	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/fiftyfifty', function( view ) {
+	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/lebolide', function( view ) {
 		if ( view.popper ) view.popper.update();
 	} );
 
 	// Conditional logic: do not show / hide choices list visibility
-	wp.hooks.addFilter( 'mkl_pc_conditionals.toggle_choices', 'MKL/PC/Themes/fiftyfifty', function( where ) {
+	wp.hooks.addFilter( 'mkl_pc_conditionals.toggle_choices', 'MKL/PC/Themes/lebolide', function( where ) {
 		return false;
 	} );
 	
-	wp.hooks.addFilter( 'mkl-pc-configurator-layer-item.with.button', 'MKL/PC/Themes/fiftyfifty', function( use_button, data ) {
+	wp.hooks.addFilter( 'mkl-pc-configurator-layer-item.with.button', 'MKL/PC/Themes/lebolide', function( use_button, data ) {
 		if ( 'dropdown' == data.display_mode ) return true;
 		return false;
 	}, 20 );
 
-	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/fiftyfifty', function( position, $nav ) {
+	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/lebolide', function( position, $nav ) {
 		$nav.insertAfter( PC.fe.modal.footer.$( '.price-container' ) );
 		return PC.fe.modal.toolbar.$el;
 	} );
 
 	// Scroll to newly opened layer, when onening it using conditional logic
-	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/fiftyfifty', function( model ) {
+	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/lebolide', function( model ) {
 		var scrollToView = null;
 		// _.each( PC.fe.modal.toolbar.layers.items, function( view ) {
 		// 	if ( view.model.id == model.id ) {
@@ -120,7 +120,7 @@
 	/**
 	 * Display step: scroll back to the top
 	 */
-	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/fiftyfifty', function( steps ) {
+	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/lebolide', function( steps ) {
 		var scrollable = PC.fe.modal.$( '.mkl_pc_container' );
 		if ( scrollable.length ) scrollable[0].scrollTo( 0, 0 );
 	} );

@@ -11,7 +11,7 @@ form.cart {
 	flex-wrap: wrap;
 	position: relative;
 	background: #EFEFEF;
-	padding: 20px var(--mkl_pc_fiftyfifty-spacing, 25px);
+	padding: 20px var(--mkl_pc_lebolide-spacing, 25px);
 
 	@media( min-width: $small_screen_width ) {
 		position: sticky;

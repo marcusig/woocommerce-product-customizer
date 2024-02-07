@@ -55,7 +55,7 @@ class Themes {
 				'float' => MKL_PC_INCLUDE_PATH . 'themes/float',
 				'wsb' => MKL_PC_INCLUDE_PATH . 'themes/wsb',
 				'la-pomme' => MKL_PC_INCLUDE_PATH . 'themes/la-pomme',
-				'fifty-fifty' => MKL_PC_INCLUDE_PATH . 'themes/fifty-fifty',
+				'lebolide' => MKL_PC_INCLUDE_PATH . 'themes/lebolide',
 				'clean' => MKL_PC_INCLUDE_PATH . 'themes/clean',
 				'dark-mode' => MKL_PC_INCLUDE_PATH . 'themes/dark-mode',
 				'h' => MKL_PC_INCLUDE_PATH . 'themes/h',

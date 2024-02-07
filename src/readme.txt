@@ -115,7 +115,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 
-* FEATURE: Added an new theme Fiftyfifty
+* FEATURE: Added an new theme Le Bolide
 * FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
 * FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
 * COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	

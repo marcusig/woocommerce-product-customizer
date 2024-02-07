@@ -1,6 +1,6 @@
 /*!
-Theme Name:   Fifty fifty
-Description:  A modern theme, with 2 columns of 50% width
+Theme Name:   Le Bolide
+Description:  A modern theme, with 2 columns of 50% width. Inspired by the cargo E-Bike Bolide, by <a href="https://kino.bike">kino.bike</a>
 Tags:         right selector, right sidebar
 Supports: color_swatches, steps, columns, display mode: compact list
 */
@@ -36,8 +36,8 @@ $inner_space: 1em;
 	--toolbar_width: 400px;
 	--mkl_pc_footer_height: 5em;
 	--mkl_pc_choice--border-radius: 8px;
-	--mkl_pc_fiftyfifty-spacing: 25px;
-	--mkl_pc_fiftyfifty-toolbar-width: 50%;
+	--mkl_pc_lebolide-spacing: 25px;
+	--mkl_pc_lebolide-toolbar-width: 50%;
 
 	// each item in color map
 	@each $name, $color in $colors {
@@ -75,7 +75,7 @@ $inner_space: 1em;
 	}
 	
 	@media( min-width: 1300px ) {
-		--mkl_pc_fiftyfifty-spacing: 40px;
+		--mkl_pc_lebolide-spacing: 40px;
 	}
 
 	@media( max-width: $small_screen_width ) {
@@ -346,14 +346,14 @@ $inner_space: 1em;
 
 @import '../../themes-common/scss/steps';
 
-@include steps-progress( var(--mkl_pc_fiftyfifty-spacing) );
+@include steps-progress( var(--mkl_pc_lebolide-steps-spacing, 20px) );
 
 .mkl_pc_toolbar .steps-progress--container {
 	--mkl_pc-steps-gap: 30px;
-	width: calc( 100% - ( var(--mkl_pc_fiftyfifty-spacing) * 2 ) );
+	width: calc( 100% - ( var(--mkl_pc_lebolide-spacing) * 2 ) );
 	padding: 0;
-	margin-left: var(--mkl_pc_fiftyfifty-spacing);
-	margin-right: var(--mkl_pc_fiftyfifty-spacing);
+	margin-left: var(--mkl_pc_lebolide-spacing);
+	margin-right: var(--mkl_pc_lebolide-spacing);
 }
 
 nav.mkl-pc--steps {
