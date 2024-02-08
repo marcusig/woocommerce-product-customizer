@@ -114,7 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-
+* TWEAK: Add live preview to the Cutstomizer options
 * FEATURE: Added an new theme Le Bolide
 * FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
 * FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
