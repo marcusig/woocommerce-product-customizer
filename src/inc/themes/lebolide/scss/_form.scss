@@ -10,7 +10,7 @@ form.cart {
 	justify-content: space-between;
 	flex-wrap: wrap;
 	position: relative;
-	background: #EFEFEF;
+	background: color( form_background );
 	padding: 20px var(--mkl_pc_lebolide-spacing, 25px);
 
 	@media( min-width: $small_screen_width ) {

@@ -75,19 +75,33 @@ function mkl_pc_lebolide_choice_thumbnail( ) {
 	add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_thumbnail', 2 );
 }
 
-// function mkl_pc_lebolide_theme_filter_colors( $colors ) {
-// 	$remove = [ 'active_layer_button_bg_color', 'active_layer_button_text_color', 'active_choice_button_bg_color', 'active_choice_button_text_color' ];
-// 	foreach( $remove as  $r ) {
-// 		if ( isset( $colors[ $r ] ) ) unset( $colors[ $r ] );
-// 	}
-// 	// $colors['toolbar_bg'] = [
-// 	// 	'default' => '#FFF',
-// 	// 	'label' => __( 'Sidebar background', 'product-configurator-for-woocommerce' )
-// 	// ];
+function mkl_pc_lebolide_theme_filter_colors( $colors ) {
+	$remove = [ 'active_layer_button_bg_color', 'active_layer_button_text_color', 'active_choice_button_bg_color', 'active_choice_button_text_color' ];
 
-// 	return $colors;
-// }
-// add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_lebolide_theme_filter_colors' );
+	foreach( $remove as  $r ) {
+		if ( isset( $colors[ $r ] ) ) unset( $colors[ $r ] );
+	}
+
+	$colors['border'] = [
+		'default' => '#d2d2d7',
+		'label' => __( 'Choice border color', 'product-configurator-for-woocommerce' )
+	];
+	$colors['border_active'] = [
+		'default' => '#454545',
+		'label' => __( 'Active choice border color', 'product-configurator-for-woocommerce' )
+	];
+	$colors['main_background'] = [
+		'default' => '#DFDFDF',
+		'label' => __( 'Viewer background', 'product-configurator-for-woocommerce' )
+	];
+	$colors['form_background'] = [
+		'default' => '#EFEFEF',
+		'label' => __( 'Add to cart section background', 'product-configurator-for-woocommerce' )
+	];
+
+	return $colors;
+}
+add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_lebolide_theme_filter_colors' );
 
 function mkl_pc_lebolide_syd_icon() {
 	// Icon bookmark-simple from https://phosphoricons.com/

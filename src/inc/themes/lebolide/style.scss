@@ -8,12 +8,13 @@ Supports: color_swatches, steps, columns, display mode: compact list
 // COLORS
 $colors: (
 	light-gray: #171f1c,
-	primary: rgb(0, 213, 209),
-	primary_rgb: unquote("0, 213, 209"),
+	primary: rgb(0, 0, 0),
+	primary_rgb: unquote("0, 0, 0"),
 	primary_hover: #00626d,
 	layers_button_text_color: #000000,
 	choices_button_text_color: #000000,
 	main_background: #DFDFDF,
+	form_background: #EFEFEF,
 	border: #d2d2d7,
 	border_active: #454545,
 	overlay_bg: #000000,
@@ -244,14 +245,23 @@ $inner_space: 1em;
 	}
 }
 
-.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices {
-	button.choice-item:focus, 
-	button.choice-group-label:focus {
+.keyboard-navigation .mkl_pc .mkl_pc_container {
+
+	.mkl_pc_toolbar section.choices {
+		button.choice-item:focus, 
+		button.choice-group-label:focus {
+			outline: 4px solid rgba(color(primary_rgb), 0.2);
+			outline-offset: 1px;
+		}
+	}
+	
+	button.cancel:focus,
+	.mkl-pc--steps button:focus {
 		outline: 4px solid rgba(color(primary_rgb), 0.2);
 		outline-offset: 1px;
 	}
-}
 
+}
 @import 'scss/inline-layout-reset';
 
 @import 'scss/display-mode-colors';

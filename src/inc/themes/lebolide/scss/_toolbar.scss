@@ -94,8 +94,6 @@
 		}
 		
 		.layers {
-			
-			
 			li.layers-list-item.type-group:not(.type-step):not(.display-mode-dropdown) {
 				> .layer-item {
 					border-bottom: 1px solid color(border);
@@ -108,6 +106,7 @@
 				display: block;
 				width: 100%;
 				text-align: left;
+				color: color( layers_button_text_color );
 
 				.layer-name {
 					font-size: 20px;

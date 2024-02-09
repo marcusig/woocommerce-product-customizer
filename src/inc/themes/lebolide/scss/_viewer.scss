@@ -97,7 +97,7 @@
 				height:2px;
 				background: #000;
 				position: absolute;
-				top: 50%; 
+				top: calc(50% - 1px);
 				left: 5px;
 				transform-origin: 50%;
 				transform: rotate(45deg);
