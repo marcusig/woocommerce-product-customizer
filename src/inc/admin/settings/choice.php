@@ -111,18 +111,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'section' => 'general',
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)'
 				),				
-				'extra_price' => array(
-					'label' => __('Extra price', 'product-configurator-for-woocommerce' ),
-					'type' => 'number',
-					'attributes' => array(
-						'disabled' => 'disabled',
-						'placeholder' => __('Extra Price is available as an addon', 'product-configurator-for-woocommerce'),
-					),
-					'priority' => 30,
-					'section' => 'extra_price_settings',
-					'condition' => '!data.is_group',
-				),
-				
+
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
@@ -175,23 +164,54 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 				),
 			);
 
-			if ( ! class_exists( 'MKL_PC_Form_Builder_Admin' ) ) {
-				$fields['form_field_placeholder'] = array(
-					'label' => 'Form fields',
-					'type'=> 'html',
-					'priority' => 10,
-					'section' => 'form_fields',
-					'html' => 'Add form fields to your choices. Learn more here.',
-				);
-			}
-
-			if ( ! class_exists( 'MKL_PC_Stock_Management__Admin' ) ) {
-				$fields['form_field_placeholder'] = array(
-					'label' => 'Stock management and linked product',
+			if ( ! class_exists( 'MKL_PC_Stock_Management__Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__stock_management_placeholder', true ) ) {
+				$fields['stock_management_placeholder'] = array(
+					'label' => __( 'Stock management and linked product', 'product-configurator-for-woocommerce' ),
 					'type'=> 'html',
 					'priority' => 10,
 					'section' => 'stock_management',
-					'html' => 'Manage stock, add a linked product to the cart. Learn more here.',
+					'html' => '<div class="addon-setting-info">' 
+						. '<p>' . sprintf( _x( '%s is available as %san add-on%s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Stock management and linked product', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/stock-management-and-linked-product/" target="_blank" class="mkl-pc-link--external">', '</a>' ) . '</p>'
+						. '<p>' . __( 'Manage stock, add a linked product to the cart.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '<p>' . __( 'Create complex composite products, and easily export your order data to third party services and ERP platforms.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '<p><a href="#" class="hide-addon-placeholder">' . __( 'Hide this notice', 'product-configurator-for-woocommerce' ) . '</a>'
+						. '</div>',
+					'condition' => '!data.is_group && ! localStorage.getItem( "mkl_pc_settings_hide__stock_management_placeholder" )',
+					'classes' => 'add-on-placeholder',
+				);
+			}
+
+			if ( ! class_exists( 'MKL_PC_Extra_Price' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__extra_price_placeholder', true ) ) {
+				$fields['extra_price_placeholder'] = array(
+					'label' => __( 'Extra price', 'product-configurator-for-woocommerce' ),
+					'type' => 'html',
+					'priority' => 31,
+					'html' => '<div class="addon-setting-info">' 
+						. '<p>' . sprintf( _x( '%s is available as %san add-on%s', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Extra price', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/extra-price/" target="_blank" class="mkl-pc-link--external">', '</a>' ) . '</p>'
+						. '<p>' . __( 'Add a price to your choices.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '<p>' . ' ' . __( 'Together with the Form fields add-on, calculate complex prices.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '<p><a href="#" class="hide-addon-placeholder">' . __( 'Hide this notice', 'product-configurator-for-woocommerce' ) . '</a>'
+						. '</div>',
+					'section' => 'extra_price_settings',
+					'condition' => '!data.is_group && ! localStorage.getItem( "mkl_pc_settings_hide__extra_price_placeholder" )',
+					'classes' => 'add-on-placeholder',
+				);
+			}
+
+			if ( ! class_exists( 'MKL_PC_Form_Builder_Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__form_field_placeholder', true ) ) {
+				$fields['form_field_placeholder'] = array(
+					'label' => __( 'Form fields', 'product-configurator-for-woocommerce' ),
+					'type'=> 'html',
+					'priority' => 10,
+					'section' => 'form_fields',
+					'html' => '<div class="addon-setting-info">' 
+						. '<p>' . sprintf( _x( '%s is available as %san add-on%s', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Form fields', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/form-fields/" target="_blank" class="mkl-pc-link--external">', '</a>' ) . '</p>'
+						. '<p>' . __( 'Add form fields to your choices: text, number, files and more.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '<p>' . ' ' . __( 'Together with the Extra price add-on, calculate complex prices.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '<p><a href="#" class="hide-addon-placeholder">' . __( 'Hide this notice', 'product-configurator-for-woocommerce' ) . '</a>'
+						. '</div>',
+					'condition' => '!data.is_group && ! localStorage.getItem( "mkl_pc_settings_hide__form_field_placeholder" )',
+					'classes' => 'add-on-placeholder',
 				);
 			}
 

@@ -299,6 +299,7 @@ PC.views = PC.views || {};
 			'click [type="checkbox"]': 'form_change',
 			'click .mkl-pc--action': 'trigger_custom_action',
 			'click button.components-panel__body-toggle': 'toggle_section',
+			'click .hide-addon-placeholder' : 'hide_addon',
 		},
 		render: function() {
 			var args;
@@ -468,10 +469,36 @@ PC.views = PC.views || {};
 			var section = $el.data( 'section' );
 			$el.toggleClass( 'is-opened' );
 			this.toggled_status.set( section, $el.is( '.is-opened' ) ? 'opened' : 'closed' );
+		},
+		hide_addon: function( e ) {
+			e.preventDefault();
+			var $setting = $( e.currentTarget ).closest( '.setting' );
+			var $section = $setting.closest( '.setting-section' );
+			var regex = /setting-id-(.+)/i;
+			var matches = regex.exec( $setting[0].className );
+			if ( ! matches ) return;
+			var setting_name = matches[1];
+			
+			// hide item
+			$section.remove();
+
+			// Save in local storage
+			localStorage.setItem( 'mkl_pc_settings_hide__' + setting_name, true );
+
+			// Save in user settings, for next session
+			wp.ajax.post( {
+				action: 'mkl_pc_hide_addon_setting',
+				setting: setting_name,
+				security: PC_lang.user_preferences_nonce
+			} );
 		}
 
 	});
-		
+
+	
+	/**
+	 * Pictures
+	 */
 	PC.views.choice_picture = Backbone.View.extend({
 		template: wp.template('mkl-pc-content-choice-pictures'),
 		className: 'view',

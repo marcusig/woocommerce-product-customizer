@@ -78,26 +78,6 @@ html .media-modal.pc-modal {
 			outline: none;
 		}
 	}
-	
-	.multiple-edit--action {
-		border-bottom: 1px solid #e8e8e8;
-		padding: 16px;
-		h3 {
-			padding: 0;
-			padding-bottom: 16px;
-		}
-		.order {
-			display: flex;
-			flex-direction: column;
-			width: 50px;
-		}
-		.order .button {
-			margin-bottom: 3px;
-		}
-		.order .button i.dashicons {
-			transform: translateY(4px);
-		}
-	}	
 
 }
 
@@ -185,6 +165,26 @@ html .media-modal.pc-modal {
 		}
 
 	}
+
+	.multiple-edit--action {
+		border-bottom: 1px solid #e8e8e8;
+		padding: 16px;
+		.form-details h3 {
+			padding: 0;
+			padding-bottom: 16px;
+		}
+		.order {
+			display: flex;
+			flex-direction: column;
+			width: 50px;
+		}
+		.order .button {
+			margin-bottom: 3px;
+		}
+		.order .button i.dashicons {
+			transform: translateY(4px);
+		}
+	}	
 	.loading-screen {
 		display: none;
 		position: absolute;
@@ -1124,4 +1124,24 @@ CONTENT
 			margin: 0;
 		}
 	}
+}
+
+.add-on-placeholder {
+    label { display: none !important; }
+}
+
+a.mkl-pc-link--external::before {
+    content: '';
+    font-family: dashicons;
+    font-size: 18px;
+    vertical-align: middle;
+}
+
+.addon-setting-info {
+    padding: 5px 5px 5px 20px;
+    border: 1px solid #c0cbc5;
+    border-left: 4px solid #73ce99;
+	p {
+		margin: 5px 0;
+	}	
 }
