@@ -114,6 +114,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Generated image in the cart defaults to product image when generation fails
 * TWEAK: Add live preview to the Cutstomizer options
 * FEATURE: Added an new theme Le Bolide
 * FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
