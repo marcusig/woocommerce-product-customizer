@@ -55,8 +55,10 @@ class Configuration {
 		$this->upload_dir_url = $wp_upload_dir['baseurl'] .'/mkl-pc-config-images'; 
 
 		// Add an empty index to prevent directory listing if the server doesn't prevent it
-		if ( ! file_exists( $this->upload_dir_path . '/index.php' ) ) {
-			$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . '/index.php', 'w' );
+		if ( ! file_exists( $this->upload_dir_path . '/index.html' ) ) {
+			// Delete existing php file
+			if ( file_exists( $this->upload_dir_path . '/index.php' ) ) unlink( $this->upload_dir_path . '/index.php' );
+			$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . '/index.html', 'w' );
 			if ( $file_handle ) {
 				fclose( $file_handle );
 			}
@@ -305,7 +307,9 @@ class Configuration {
 			}
 
 			if ( ! empty( $lazy_url ) ) {
+				if ( ! file_exists( $this->upload_dir_path . '/' . $lazy_url ) ) return '';
 				$default_attr['data-generate_image'] = $lazy_url;
+				if ( $this->product_id ) $default_attr['data-product_id'] = $this->product_id;
 			}
 
 			$attr = wp_parse_args( $attr, $default_attr );

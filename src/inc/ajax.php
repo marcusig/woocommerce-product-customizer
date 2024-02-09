@@ -345,13 +345,20 @@ class Ajax {
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'generate-image-from-temp-file' ) ) wp_send_json_error( 'Unauthorized action', 403 );
 		
 		$config = new Configuration();
-		$config->image_name = rtrim( $_REQUEST['data'] , '-temp-' . $nonce );
+		$config->image_name = sanitize_file_name( rtrim( $_REQUEST['data'] , '-temp-' . $nonce ) );
 		$image_id = $config->save_image( $_REQUEST['data'] );
 		if ( $image_id ) {
 			$image = wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' );
 			if ( $image ) wp_send_json_success( [ 'url' => $image ] );
 		}
-		wp_send_json_error( 'Image generation failed.' );
+		if ( isset( $_REQUEST['product_id'] ) ) {
+			$product = wc_get_product( intval( $_REQUEST['product_id'] ) );
+			if ( $product ) {
+				$image = $product->get_image( 'woocommerce_thumbnail' );
+				if ( $image ) wp_send_json_success( [ 'url' => $image, 'format' => 'html' ] );
+			}
+		}		
+		wp_send_json_success( [ 'url' => '' ] );
 	}
 	
 	/**
