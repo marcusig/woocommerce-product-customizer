@@ -1003,6 +1003,11 @@ body.configurator_is_inline .mkl_pc {
 	.choices-list li.choice {
 		box-shadow: none;
 		width: auto;
+
+		&.is-group {
+			width: 100%;
+		}
+
 		button.choice-item {
 			padding: 0;
 			text-align: left;
