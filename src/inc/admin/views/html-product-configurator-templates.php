@@ -117,6 +117,19 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		</div>
 	</div>
 </script>
+
+<?php if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) ) : ?>
+<script type="text/html" id="tmpl-mkl-pc-conditional-placeholder">
+	<div class="media-frame-content conditional">
+		<div class="tab_content">
+			<p><?php printf( _x( '%s is available as %san add-on%s', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Conditional logic', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/conditional-logic/" target="_blank" class="mkl-pc-link--external">', '</a>' ); ?></p>
+			<p><?php _e( 'Create complex configurations with the ability, among others, to show, hide or select items depending on various actions.', 'product-configurator-for-woocommerce' ) ?></p>
+			<p><a href="#" class="hide-notice"><?php _e( "Please don't show this again.", 'product-configurator-for-woocommerce' ) ?></a></p>
+		</div>
+	</div>
+</script>
+<?php endif; ?>
+
 <script type="text/html" id="tmpl-mkl-pc-structure-layer">
 	<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
 	<button type="button">
