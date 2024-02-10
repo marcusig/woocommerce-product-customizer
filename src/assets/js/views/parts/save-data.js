@@ -3,6 +3,7 @@ PC.fe.errors = [];
 PC.fe.save_data = {
 	choices: [],
 	save: function() {
+		this.reset_errors();
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
