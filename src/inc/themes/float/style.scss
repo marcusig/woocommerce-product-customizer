@@ -1223,7 +1223,10 @@ a.save-your-design, a.save-your-design--pdf {
 	}
 	@media( max-width: $small_screen_width ) {
 		width: 40px;
-	}
+		svg {
+			transform: none;
+		}
+}
 	@media (max-height: 500px) and (orientation: landscape) {
 		span {
 			display: none;
