@@ -38,6 +38,11 @@ nav.mkl-pc--steps {
         @media(max-height: 500px) and (orientation: landscape) {
             display: none;
         }
+
+        @media(max-height: 800px) and (orientation: portrait) {
+            display: none;
+        }
+
         ol.steps-progress {
             display: grid;
             grid-auto-flow: column;
