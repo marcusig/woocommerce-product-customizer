@@ -42,7 +42,9 @@
 				text-decoration: none;
 				text-transform: uppercase;
 				font-size: 0.9em;
-				
+				@media (max-width: $small_screen_width) {
+					font-size: 12px;
+				}
 				span.angle-image {
 					width: 25px;
 					height: 25px;
@@ -64,8 +66,8 @@
 
 		}
 		@media (max-width: $small_screen_width) {
-			left: 1.5em;
-			top: 1.5em;
+			left: 10px;
+			top: 10px;
 
 			> a span {
 				display: none;

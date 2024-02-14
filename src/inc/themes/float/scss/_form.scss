@@ -103,7 +103,10 @@
 			font-size: 16px;
 		}
 	}
-
+	del.pc-total--regular-price + span.pc-total-price {
+		display: inline-block;
+		width: auto;
+	}
 	button.configurator-add-to-cart {
 		svg {
 			display: none;

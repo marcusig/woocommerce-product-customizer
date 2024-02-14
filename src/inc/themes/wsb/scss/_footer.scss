@@ -37,7 +37,9 @@ footer {
 		&:hover, &:focus {
 			opacity: .5;
 		}
-		@media (max-width: $small_screen_width) {
+	}
+	@media (max-width: $small_screen_width) {
+		a.save-your-design, a.save-your-design--pdf {
 			width: 40px;
 			svg {
 				transform: none;
