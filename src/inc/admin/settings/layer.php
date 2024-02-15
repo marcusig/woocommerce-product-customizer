@@ -111,14 +111,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => 'group'
 						],
 						[
-							'label' => __( 'Multiple choice (available as an add-on)', 'product-configurator-for-woocommerce' ),
+							'label' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ) . ( class_exists( 'MKL_PC_Multiple_Choice' ) ? '' : ' ' . __( '(available as an add-on)', 'product-configurator-for-woocommerce' ) ),
 							'value' => 'multiple',
 							'attributes' => [
 								'disabled' => 'disabled'
 							]
 						],
 						[
-							'label' => __( 'Form (available as an add-on)', 'product-configurator-for-woocommerce' ),
+							'label' => __( 'Form', 'product-configurator-for-woocommerce' ) . ( class_exists( 'MKL_PC_Form_Builder' ) ? '' : ' ' . __( '(available as an add-on)', 'product-configurator-for-woocommerce' ) ),
 							'value' => 'form',
 							'attributes' => [
 								'disabled' => 'disabled'
