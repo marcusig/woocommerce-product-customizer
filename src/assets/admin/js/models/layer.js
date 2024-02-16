@@ -16,6 +16,7 @@ PC.layer = Backbone.Model.extend({
 		},
 		not_a_choice: false,
 		type: 'simple',
+		display_mode: 'default',
 	},
 	initialize: function(m) {
 		if ( 'boolean' != typeof m.not_a_choice ) {

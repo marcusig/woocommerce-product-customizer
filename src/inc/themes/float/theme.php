@@ -25,12 +25,18 @@ function mkl_pc_float_theme_remove_title() {
 }
 add_action( 'mkl_pc_frontend_templates_before', 'mkl_pc_float_theme_remove_title', 20 );
 
-function mkl_pc_float_theme_add_mobile_form_button() {
-	$span_classes = apply_filters( 'mkl_pc/show_add_to_cart_button/classes', '' );
-	$label = mkl_pc( 'frontend' )->product->get_add_to_cart_label();
-	echo '<button class="mkl-pc-show-form">' . mkl_pc( 'frontend' )->product->get_cart_icon() .'<span class="' . $span_classes . '">' . $label . '</span></button>';
+/**
+ * Wrap product and extra price elements
+ */
+function mkl_pc_float_price_wrapper_before() {
+	echo '<div class="pc-total-price--container">';
 }
-add_action( 'mkl_pc_frontend_configurator_footer_form_before', 'mkl_pc_float_theme_add_mobile_form_button', 20 );
+add_action( 'mkl_pc_frontend_configurator_footer_form', 'mkl_pc_float_price_wrapper_before', 8 );
+
+function mkl_pc_float_price_wrapper_after() {
+	echo '</div>';
+}
+add_action( 'mkl_pc_frontend_configurator_footer_form', 'mkl_pc_float_price_wrapper_after', 16 );
 
 /**
  * Remove unused colors from the customizer
@@ -49,5 +55,5 @@ function mkl_pc_float_theme_filter_colors( $colors ) {
 }
 add_filter( 'mkl_pc_theme_color_settings', 'mkl_pc_float_theme_filter_colors' );
 
-require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-no-form-modal.php';
-new MKL_PC_Theme__no_form_modal( 'float' );
+require_once MKL_PC_INCLUDE_PATH . 'themes-common/customizer-sticky-footer.php';
+new MKL_PC_Theme__disable_sticky_footer( 'float' );

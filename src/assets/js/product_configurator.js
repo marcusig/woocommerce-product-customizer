@@ -215,7 +215,9 @@ PC.actionParameter = 'pc_get_data';
 
 		if ( PC_config.config.open_first_layer ) {
 			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
-				configurator.$( '.layer-item:visible' ).first().trigger( 'click' );
+				var $first = configurator.$( '.layer-item:visible' ).first();
+				if ( $first.parent().is( '.display-mode-dropdown' ) ) return;
+				$first.trigger( 'click' );
 			}, 60 );
 		}
 
@@ -229,7 +231,7 @@ PC.actionParameter = 'pc_get_data';
 		 * Launch the configurator after click
 		 */
 		if ( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
-			$( '.configure-product-simple' ).trigger( 'click' );
+			$( '.configure-product-simple' ).first().trigger( 'click' );
 		}
 	} );
 
@@ -255,6 +257,8 @@ PC.actionParameter = 'pc_get_data';
 		PC.fe.product_type = this.currentProductData.product_info.product_type;
 		if ( $element && $element.data( 'price' ) ) {
 			this.currentProductData.product_info.price = $element.data( 'price' );
+			this.currentProductData.product_info.regular_price = $element.data( 'regular_price' );
+			this.currentProductData.product_info.is_on_sale = ( 1 == $element.data( 'is_on_sale' ) );
 		} else {
 			this.currentProductData.product_info.price = 0;
 		}

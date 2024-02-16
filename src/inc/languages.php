@@ -57,6 +57,8 @@ class Languages {
 			'view_configuration' => _x( 'View configuration', 'Label of the link to view a configuration, in the cart or an order', 'product-configurator-for-woocommerce' ),
 			'configuration_costs_label' => __( 'Configuration costs:', 'mkl-pc-extra-price' ),
 			'adv_desc_close_label' => __( 'Close', 'mkl-pc-advanced-description' ),
+			'previous_step_label' => _x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' ),
+			'next_step_label' => _x( 'Next', 'Next step button label', 'product-configurator-for-woocommerce' ),
 		] );		
 	}
 	/**
@@ -300,32 +302,19 @@ class Languages {
 				if ( $default != $l ) {
 					// Replace dashes by underscores
 					$l = str_replace( '-', '_', $l );
-					if ( isset( $settings[ '_general' ] ) && isset( $settings[ '_general' ][ 'fields' ] ) ) {
-						$settings[ '_general' ][ 'fields' ]['name_'.$l] = array(
-							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l,
-							'type' => 'text',
-							'priority' => 11,
-						);
-						$settings[ '_general' ][ 'fields' ]['description_'.$l] = array(
-							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l,
-							'type' => 'textarea',
-							'priority' => 21,
-							'condition' => '!data.not_a_choice',
-						);
-	
-					} else {
-						$settings['name_'.$l] = array(
-							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">': __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l,
-							'type' => 'text',
-							'priority' => 11,
-						);
-						$settings['description_'.$l] = array(
-							'label' => $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">': __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l,
-							'type' => 'textarea',
-							'priority' => 21,
-							'condition' => '!data.not_a_choice',
-						);
-					}
+					$settings['name_'.$l] = array(
+						'label' => __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . ( $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : '' ),
+						'type' => 'text',
+						'priority' => 11,
+						'section' => 'translations',
+					);
+					$settings['description_'.$l] = array(
+						'label' => __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . ( $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : '' ),
+						'type' => 'textarea',
+						'priority' => 21,
+						'condition' => '!data.not_a_choice',
+						'section' => 'translations',
+					);
 				}
 			}
 		}

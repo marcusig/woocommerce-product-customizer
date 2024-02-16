@@ -316,14 +316,14 @@
 	background: #FFF;
 	margin-right: 1em;
 	margin-bottom: 1em;
-	padding: 1em;
+	padding: 2px;
 	border-radius: 6px;
 	position: relative;
 	overflow: hidden;
 }
 
 .themes-list .mkl-pc__theme.selected {
-	box-shadow: 0 0 0 3px #eaeaea, 0 0 0 5px #009688;
+	box-shadow: 0 0 0 3px #eaeaea, 0 0 0 5px #2271b1;
 }
 
 .themes-list .mkl-pc__theme .trigger {

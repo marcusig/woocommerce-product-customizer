@@ -1,0 +1,54 @@
+.mkl_pc_viewer {
+	position: sticky;
+	z-index: 1;
+	width: calc( 100% - var(--mkl_pc_lebolide-toolbar-width));
+	top: 0;
+	min-height: 100vh;
+	@at-root {
+		body.admin-bar & {
+			min-height: calc(100vh - 32px);
+			@media(max-width: 782px) {
+				min-height: calc(100vh - 46px);
+			}
+		}
+	}
+
+	@media( max-width: $small_screen_width ) {
+		width: 100%;
+		position: relative;
+		right: auto;
+		left: auto;
+		bottom: auto;
+		body:not(.configurator_is_inline) & {
+			position: absolute;
+			bottom: 60%;
+			left: 0;
+			right: 0;
+			min-height: 0;
+		}
+	}
+}
+
+.mkl_pc_toolbar {
+	position: relative;
+	z-index: 2;
+	width: var(--mkl_pc_lebolide-toolbar-width);
+	display: flex;
+	flex-direction: column;
+	@media( max-width: $small_screen_width ) {
+		width: 100%;
+		body:not(.configurator_is_inline) & {
+			position: absolute;
+			top: 40%;
+			bottom: 0;
+			overflow: auto;
+		}
+	}
+	
+}
+
+footer {
+	position: relative;
+	// height: var( --mkl_pc_footer_height );
+	padding: $inner_space; 
+}

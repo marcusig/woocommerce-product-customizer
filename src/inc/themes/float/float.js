@@ -2,16 +2,13 @@
 	if ( ! wp || ! wp.hooks ) return;
 	var scrollStartPost;
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/float', function( view ) {
-		// duplicate the form to have a different one on mobile or desktop views
-		var clone = view.footer.form.$el.clone().appendTo( view.toolbar.$el );
-		view.footer.form_2 = new PC.fe.views.form( { el: clone } );
+		// Move the form to the toolbar
+		view.footer.form.$el.insertAfter( view.toolbar.$selection );
+
+		// view.footer.form_2 = new PC.fe.views.form( { el: clone } );
 		view.$el.addClass( 'float' );
-		if ( PC_config.config.no_form_modal ) {
-			view.$el.addClass( 'no-form-modal' );
-		}
-		view.$el.on( 'click', '.mkl-pc-show-form', function(e) {
-			view.$el.toggleClass( 'mobile-show-form' );
-		} );
+
+		if ( PC_config.config.disable_sticky_footer ) view.$el.addClass( 'no-sticky-footer' );
 
 		// view.$('.layer-item').first().trigger('click');
 		view.toolbar.$el.find('section.choices').on('scroll', function(e) {
@@ -26,8 +23,9 @@
 		);
 	}, 20 ); 
 
-	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/float', function( view ) {
-		view.$el.removeClass( 'mobile-show-form' );
+	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/float', function( position, $nav ) {
+		PC.fe.modal.toolbar.$( '.pc_configurator_form' ).before( $nav );
+		return PC.fe.modal.toolbar.$el;
 	} );
 
 	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/float', function( where ) {
@@ -40,7 +38,7 @@
 			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 		} else {
-			if ( 'dropdown' == view.model.get( 'display_mode' ) ) {
+			if ( 'dropdown' === view.model.get( 'display_mode' ) ) {
 				view.$el.find( '.layer_choices' ).first().delay(40).slideDown( 100 );
 			} else {
 				view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { duration: 100, step: function() {
@@ -80,5 +78,14 @@
 			}, 150 );
 		}
 	} );
+
+	/**
+	 * Display step: scroll back to the top
+	 */
+	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/float', function( steps ) {
+		var scrollable = PC.fe.modal.$( 'section.choices' );
+		if ( scrollable.length ) scrollable[0].scrollTo( 0, 0 );
+	} );
+	
 
 })( jQuery, PC._us || window._ );

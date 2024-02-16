@@ -18,7 +18,7 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__main_container() {
 ?>
 	<div class="mkl_pc_container">
-		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg' ) )  : ?>
+		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg' ) || is_customize_preview() )  : ?>
 			<div class="mkl_pc_bg<# if ( data.bg_image && '<?php echo MKL_PC_ASSETS_URL.'images/default-bg.jpg'; ?>' == data.bg_image ) { #> default-bg<# } #>"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 		<?php endif; ?>
 	</div>
@@ -190,6 +190,17 @@ function mkl_pc_frontend_configurator_choice_description() {
 	<?php
 }
 add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_description', 50 );
+
+function mkl_pc_frontend_configurator_previous_step_icon() {
+	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-left.svg' );
+}
+add_action( 'mkl_pc/previous_step/before', 'mkl_pc_frontend_configurator_previous_step_icon' );
+
+function mkl_pc_frontend_configurator_next_step_icon() {
+	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-right.svg' );
+}
+add_action( 'mkl_pc/next_step/after', 'mkl_pc_frontend_configurator_next_step_icon' );
+
 
 $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 

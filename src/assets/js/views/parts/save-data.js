@@ -3,7 +3,7 @@ PC.fe.errors = [];
 PC.fe.save_data = {
 	choices: [],
 	save: function() {
-		PC.fe.errors = [];
+		this.reset_errors();
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
@@ -24,12 +24,20 @@ PC.fe.save_data = {
 				}
 			} );
 		}
+		PC.fe.errors = [];
 	},
 	is_layer_valid: function( layer ) {
 		this.reset_errors();
-		PC.fe.errors = [];
-		this.parse_choices( layer );
+		this.validate_layer( layer );
 		return ! PC.fe.errors.length;
+	},
+	validate_layer: function( layer ) {
+		if ( 'group' == layer.get( 'type' ) ) {
+			var children = layer.collection.where( { parent: layer.id } );
+			_.each( children, this.validate_layer.bind( this ) );
+			return;
+		}
+		this.parse_choices( layer );
 	},
 	// get choices for one layer 
 	parse_choices: function( model ) {

@@ -11,7 +11,6 @@ PC.fe.views.footer = Backbone.View.extend({
 	},
 
 	events: {
-		'click .close-mkl-pc': 'close_configurator',
 		'click .reset-configuration': 'reset_configurator',
 	},
 
@@ -22,14 +21,11 @@ PC.fe.views.footer = Backbone.View.extend({
 			is_in_stock: parseInt( PC.fe.currentProductData.product_info.is_in_stock ),
 			product_id: parseInt( PC.fe.active_product ),
 			show_qty: parseInt( PC.fe.currentProductData.product_info.show_qty ),
-			formated_price: this.get_price()
+			formated_price: this.get_price(),
+			formated_regular_price: ( PC.fe.currentProductData.product_info.is_on_sale && PC.fe.currentProductData.product_info.regular_price ) ? PC.utils.formatMoney( parseFloat( PC.fe.currentProductData.product_info.regular_price ) ) : false,
 		} ) );
 		this.form = new PC.fe.views.form( { el: this.$( '.form' ) } );
 		return this.$el; 
-	},
-
-	close_configurator: function( event ) {
-		this.parent.close(); 
 	},
 
 	reset_configurator: function( event ) {

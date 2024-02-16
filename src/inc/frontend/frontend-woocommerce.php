@@ -152,10 +152,7 @@ class Frontend_Woocommerce {
 			$tag_name_close = 'button';
 		}
 
-		$data_attributes = array( 
-			'price' => $this->product->get_product_price( $product_id ),
-			'product_id' => $product_id,
-		);
+		$data_attributes = $this->get_configurator_element_attributes( $product );
 
 		if ( isset( $atts[ 'product_id' ] ) ) {
 			$data_attributes['force_form'] = 1;
@@ -167,12 +164,35 @@ class Frontend_Woocommerce {
 	}
 
 	/**
+	 * Get the attributes for the configurator trigger element. Button or inline div
+	 *
+	 * @param WC_Product $product
+	 * @return array
+	 */
+	public function get_configurator_element_attributes( $product ) {
+		$data_attributes = array( 
+			'price' => $this->product->get_product_price( $product->get_id() ),
+			'product_id' => $product->get_id(),
+			'is_on_sale'    => $product->is_on_sale(),
+			'regular_price' => wc_get_price_to_display( $product, array( 'price' => $product->get_regular_price() ) ),
+		);
+		/**
+		 * Filters the list of attributes added to the configurator trigger element.
+		 *
+		 * @param array $data_attributes The attributes
+		 * @param WC_Product $product The configurable product
+		 * @return array
+		 */
+		return apply_filters( 'get_configurator_element_attributes', $data_attributes, $product );
+	}
+
+	/**
 	 * Format the data attributes
 	 *
 	 * @param array $data
 	 * @return array
 	 */
-	private function _output_data_attributes( $data ) {
+	public function _output_data_attributes( $data ) {
 		$data_attributes_string = array_map( function( $key, $value ) {
 			return ' data-' . $key . '="' . esc_attr( $value ) . '"';
 		}, array_keys( $data ), $data );
@@ -218,11 +238,9 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
-		$data_attributes = array( 
-			'price' => $this->product->get_product_price( $product_id ),
-			'product_id' => $product_id,
-			'loading' => mkl_pc( 'settings' )->get_label( 'loading_configurator_message', __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ) ),
-		);
+		$data_attributes = $this->get_configurator_element_attributes( $product );
+
+		$data_attributes['loading'] = mkl_pc( 'settings' )->get_label( 'loading_configurator_message', __( 'Loading the configurator...', 'product-configurator-for-woocommerce' ) );
 
 		if ( isset( $atts[ 'product_id' ] ) ) {
 			$data_attributes['force_form'] = 1;
@@ -384,6 +402,8 @@ class Frontend_Woocommerce {
 				'swipe_to_change_view' => ( bool ) mkl_pc( 'settings')->get( 'swipe_to_change_view', false ),
 				'choice_groups_toggle' => ( bool ) mkl_pc( 'settings')->get( 'choice_groups_toggle', false ),
 				'auto_close_siblings_in_groups' => ( bool ) mkl_pc( 'settings')->get( 'auto_close_siblings_in_groups', false ),
+				'use_steps' => ( bool ) mkl_pc( 'settings')->get( 'use_steps', false ) && mkl_pc( 'themes' )->current_theme_supports( 'steps' ),
+				'steps_use_layer_name' => ( bool ) mkl_pc( 'settings')->get( 'steps_use_layer_name', false ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
@@ -420,17 +440,14 @@ class Frontend_Woocommerce {
 
 		}
 
-		$stylesheet = MKL_PC_ASSETS_URL . 'css/product_configurator.css';
-		$version = filemtime( MKL_PC_ASSETS_PATH . 'css/product_configurator.css' );
-		$theme_id = apply_filters( 'mkl/pc/theme_id', mkl_pc( 'settings' )->get( 'mkl_pc__theme' ) );
+		$theme_id = mkl_pc( 'settings' )->get_theme();
 		if ( $theme_id && mkl_pc( 'themes' )->get( $theme_id ) ) {
 			$theme_info = mkl_pc( 'themes' )->get_theme_info( $theme_id );
 			$stylesheet = $theme_info['base_url'] . 'style.css';
 			$version = filemtime( trailingslashit( mkl_pc( 'themes' )->get( $theme_id ) ) . 'style.css' );
+			wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
+			wp_enqueue_style( 'mlk_pc/css' );
 		}
-		wp_register_style( 'mlk_pc/css', apply_filters( 'mkl_pc/css/product_configurator.css', $stylesheet ), array(), $version );
-
-		wp_enqueue_style( 'mlk_pc/css' );
 
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );

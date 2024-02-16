@@ -1,0 +1,387 @@
+/*!
+Theme Name:   Le Bolide
+Description:  A modern theme, with 2 columns of 50% width. Inspired by the cargo E-Bike Bolide, by <a href="https://kino.bike">kino.bike</a>
+Tags:         right selector, right sidebar
+Supports: color_swatches, steps, columns, display mode: compact list
+*/
+
+// COLORS
+$colors: (
+	light-gray: #171f1c,
+	primary: rgb(0, 0, 0),
+	primary_rgb: unquote("0, 0, 0"),
+	primary_hover: #00626d,
+	layers_button_text_color: #000000,
+	choices_button_text_color: #000000,
+	main_background: #DFDFDF,
+	form_background: #EFEFEF,
+	border: #d2d2d7,
+	border_active: #454545,
+	overlay_bg: #000000,
+	toolbar_bg: #FFF,
+	active_bg: #FFF
+);
+
+@function color($color-name) {
+	@return var(--mkl_pc_color-#{$color-name});
+}
+
+// DIMENSIONS / DISTANCES / SPACE
+$medium_screen_width: 760px;
+$small_screen_width: 660px;
+
+$distance: 0;
+$inner_space: 1em;
+
+:root {
+	--toolbar_width: 400px;
+	--mkl_pc_footer_height: 5em;
+	--mkl_pc_choice--border-radius: 8px;
+	--mkl_pc_lebolide-spacing: 25px;
+	--mkl_pc_lebolide-toolbar-width: 50%;
+
+	// each item in color map
+	@each $name, $color in $colors {
+		--mkl_pc_color-#{$name}: #{$color};
+	}
+
+	--mkl_pc-dropdown-border-color: #{color(border)};
+	--mkl_pc-dropdown-border-rarius: var(--mkl_pc_choice--border-radius);
+	--mkl_pc-dropdown-padding: 15px;
+}
+
+@import 'scss/animation';
+
+/* Woocommerce  */
+.configurator_is_opened:not(.configurator_is_inline) {
+	overflow: hidden;
+}
+
+
+
+.is_configurable {
+	// div.product form.cart {
+	// display: none;
+	div.product form.cart {
+		border: none;
+	}
+
+	&:not(.enable-add-to-cart):not(.configurator_is_inline) {
+		div.product form.cart {
+			// .variations_button
+			.quantity, .single_add_to_cart_button {
+				display: none;
+			}
+		}
+	}
+	
+	@media( min-width: 1300px ) {
+		--mkl_pc_lebolide-spacing: 40px;
+	}
+
+	@media( max-width: $small_screen_width ) {
+		--mkl_pc_footer_height: 110px;
+		button.configure-product {
+			font-size: 1.4em;
+			display: block;
+			width: 100%;
+		}
+	}
+}
+
+/* CUSTOMIZER */
+.mkl_pc {
+	position: fixed;
+	top:0;
+	left:0;
+	bottom: 0;
+	width: 100%; 
+	z-index: 10000;
+	.loader {
+		display: none;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		text-align: center;
+		transform: translate(-50%, -50%);
+
+		.header {
+			font-size: 1.5em;
+			font-weight: bold;
+			color: #FFF;
+			text-shadow: 0 2px 14px rgba(0, 0, 0, 0.62);
+		}
+		.spinner {
+			width: 40px;
+			height: 40px;
+			margin: 30px auto;
+			background-color: #FFF;
+
+			border-radius: 100%;  
+			-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+			animation: sk-scaleout 1.0s infinite ease-in-out;
+		}
+
+	}
+
+	&.loading {
+		.loader {
+			display: block;
+		}
+		.mkl_pc_container {
+			transform: translateY(-30px);
+			opacity: 0;
+		}
+	}
+
+	.mkl_pc_container {
+		position: absolute;
+		width: auto;
+		height: auto;
+		background: color(main_background);
+
+		&:not( body.configurator_is_inline & ) {
+			top: $distance;
+			left: $distance;
+			right: $distance;
+			bottom: $distance;
+			padding-bottom: 0;
+			@media (max-width: $medium_screen_width) {
+				top: 0;
+				left: 0;
+				right: 0;
+			}
+		}
+
+		display: flex;
+		overflow: auto;
+		flex-wrap: wrap;
+		visibility: hidden;
+		align-items: flex-start;
+		opacity: 0;
+		transform: translateY(-30px);
+		transition: all 0.5s;
+
+
+		.mkl_pc_bg {
+			display: none;
+		}
+
+		@import 'scss/reset';
+
+		@import 'scss/layout';
+
+		@import 'scss/viewer';
+
+		@import 'scss/toolbar';
+
+		@import 'scss/form';
+
+		@import 'scss/footer';
+	}
+
+	&.opened {
+		visibility: visible;
+		.overlay {
+			visibility: visible;
+			opacity: 1;
+		}
+		.mkl_pc_container {
+			visibility: visible;
+			opacity: 1;
+			transform: none;
+		}
+	}
+	@at-root {
+		body.admin-bar:not(.configurator_is_inline) & {
+			top: 45px;
+			.mkl_pc_toolbar {
+				> header {
+					@media( min-width: 600px ) and ( max-width: $small_screen_width ) {
+						position: fixed;
+						left: 0;
+						top: 45px;
+						z-index: 9;
+					}
+					@media ( max-width: 600px ) {
+						position: fixed;
+						left: 0;
+						top: 0;
+						z-index: 9;
+					}
+					> .cancel {
+						@media (min-width: $small_screen_width) {
+							top: 62px;
+						}
+					}					
+				}
+			}
+			@media (max-width: 600px) {
+				top: 0;
+				z-index: 100000;
+			}
+			@media (min-width: $small_screen_width) {
+				top: 32px;
+			}
+		}
+		body:not(.configurator_is_inline) & {
+			.mkl_pc_toolbar {
+				> header {
+					@media( max-width: $small_screen_width ) {
+						position: fixed;
+						left: 0;
+						top: 0;
+					}
+				}
+			}
+		}
+	}
+
+	form.save-my-design__login_form { padding: 1em; }
+	form.save-my-design__login_form > .message{ 
+		margin-top: -1em;
+		margin-left: -1em;
+		margin-right: -1em;
+	}
+}
+
+.keyboard-navigation .mkl_pc .mkl_pc_container {
+
+	.mkl_pc_toolbar section.choices {
+		button.choice-item:focus, 
+		button.choice-group-label:focus {
+			outline: 4px solid rgba(color(primary_rgb), 0.2);
+			outline-offset: 1px;
+		}
+	}
+	
+	button.cancel:focus,
+	.mkl-pc--steps button:focus {
+		outline: 4px solid rgba(color(primary_rgb), 0.2);
+		outline-offset: 1px;
+	}
+
+}
+@import 'scss/inline-layout-reset';
+
+@import 'scss/display-mode-colors';
+
+
+.mkl_pc.no-toggle .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices:not( .display-mode-dropdown ) {
+	display: block;
+}
+
+.tippy-box {
+	border-radius: 12px;
+	padding: 10px;
+}
+.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
+    display: block;
+}
+
+.tippy-content span.choice-price {
+    font-size: .8em;
+    opacity: .6;
+
+}
+
+
+/* Elementor fix */
+.woocommerce div.product.elementor .mkl_pc .mkl_pc_container .pc_configurator_form form.cart {
+	display: inline-flex;
+}
+
+/* YITH Added to cart popup compat */
+
+.mkl_pc.opened.adding-to-cart::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+	background: rgba(255, 255, 255, 0.79);
+}
+
+#yith-wacp-popup .yith-wacp-overlay {
+	z-index: 10001;
+}
+
+.configurator_is_inline {
+	.mkl_pc.opened.adding-to-cart .mkl_pc_container {
+		opacity: .4;
+	}	
+}
+
+/*
+	Form fields
+*/
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer_choices li.choices-list li.form-item,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer_choices li.choices-list li:not(.is-group).form-item {
+	padding-right: 0;
+	padding-left: 0;
+}
+
+/* hide_in_configurator */
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.hide_in_configurator.layers-list-item,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.hide_in_configurator.layers-list-item {
+    display: none !important;
+}
+
+/* Loading Screen */
+
+.mkl-configurator-inline.is-shortcode.configure-product:empty {
+	height: 60vh;
+}
+
+.mkl-configurator-inline.is-shortcode.configure-product:empty::after {
+	content: attr(data-loading);
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	-webkit-animation: configurator-load 1.0s infinite ease-in-out;
+	animation: configurator-load 1.0s infinite ease-in-out; 
+}
+
+/* Divi fix */
+.et_divi_theme:not(.configurator_is_inline) .mkl_pc {
+	z-index: 100000;
+}
+
+@import '../../themes-common/scss/steps';
+
+@include steps-progress( var(--mkl_pc_lebolide-steps-spacing, 20px) );
+
+.mkl_pc_toolbar .steps-progress--container {
+	--mkl_pc-steps-gap: 30px;
+	width: calc( 100% - ( var(--mkl_pc_lebolide-spacing) * 2 ) );
+	padding: 0;
+	margin-left: var(--mkl_pc_lebolide-spacing);
+	margin-right: var(--mkl_pc_lebolide-spacing);
+}
+
+nav.mkl-pc--steps {
+    justify-content: space-between;
+	padding-top: 20px;
+	div {
+		margin-right: 0;
+		margin-left: 0;
+	}
+}
+
+.mkl_pc:not(.last-step) nav.mkl-pc--steps {
+	width: 100%;
+}
+
+@import '../../themes-common/scss/summary';
+
+.mkl_pc_summary {
+	width: 100%;
+	margin-top: 30px;
+}

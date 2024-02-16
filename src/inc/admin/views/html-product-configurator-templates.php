@@ -3,6 +3,20 @@ global $is_IE;
 $class = 'media-modal wp-core-ui pc-modal';
 if ( $is_IE && strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 7') !== false )
 	$class .= ' ie7';
+
+function mkl_pc_get_admin_actions() {
+	return '<div class="actions-container">
+		<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+		'<button type="button" class="button-link duplicate duplicate-item">' . __('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
+		'<div class="prompt-delete hidden mkl-pc-setting--warning">' .
+			'<p>' . __( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
+			'<p>' .
+				'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+				'<button type="button" class="button cancel-delete" data-delete="cancel">' . __('Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
+			'</p>' .
+		'</div>' .
+	'</div>';
+}
 ?>
 <?php 
 /*
@@ -92,7 +106,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				</div>
 			<# } #>
 		</div>
-		<div class="media-sidebar visible">
+		<div class="pc-sidebar visible">
 		</div>
 	</div>
 </script>
@@ -103,8 +117,21 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		</div>
 	</div>
 </script>
+
+<?php if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) ) : ?>
+<script type="text/html" id="tmpl-mkl-pc-conditional-placeholder">
+	<div class="media-frame-content conditional">
+		<div class="tab_content">
+			<p><?php printf( _x( '%s is available as %san add-on%s', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Conditional logic', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/conditional-logic/" target="_blank" class="mkl-pc-link--external">', '</a>' ); ?></p>
+			<p><?php _e( 'Create complex configurations with the ability, among others, to show, hide or select items depending on various actions.', 'product-configurator-for-woocommerce' ) ?></p>
+			<p><a href="#" class="hide-notice"><?php _e( "Please don't show this again.", 'product-configurator-for-woocommerce' ) ?></a></p>
+		</div>
+	</div>
+</script>
+<?php endif; ?>
+
 <script type="text/html" id="tmpl-mkl-pc-structure-layer">
-	<div class="tips sort ui-sortable-handle"></div>
+	<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
 	<button type="button">
 		<h3></h3>
 	</button>
@@ -126,27 +153,18 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure-angle-form">
 	<div class="form-details">
-		<h2>
-			<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
-		</h2>
+		<header>
+			<h2>
+				<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
+			</h2>
+			<?php echo mkl_pc_get_admin_actions(); ?>
+		</header>
 
-		<div class="form-info">
-			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete this angle?', 'product-configurator-for-woocommerce' ); ?></p>
-					<p><?php _e( 'Images and thumbnails in the content which are associated with this angle will also be deleted', 'product-configurator-for-woocommerce' ); ?></p>
-					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
-					</p>
-				</div>
-			</div>
-		</div>
 		<?php do_action('mkl_pc_angle_fields') ?>
 		<?php do_action('mkl_pc_angle_settings') ?>
 	</div>
-	<div class="attachment-display-settings">
+
+	<div class="mkl-pc-image-settings">
 		<h2><?php _e('Angles\'s picture', 'product-configurator-for-woocommerce' ) ?></h2>
 		<div class="thumbnail thumbnail-image">
 			<# if ( data.image.url != '' ) { #>
@@ -162,40 +180,31 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure-layer-form">
 	<div class="form-details">
-		<h2>
-			<?php _e('Details', 'product-configurator-for-woocommerce' ) ?>
-		</h2>
-
-		<div class="form-info">
-			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-				<button type="button" class="button-link duplicate duplicate-layer"><?php _e('Duplicate', 'product-configurator-for-woocommerce' ) ?></button>
-				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete this layer?', 'product-configurator-for-woocommerce' ); ?></p>
-					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
-					</p>
-				</div>
-			</div>
-		</div>
+		<header>
+			<h2><?php _e('Details', 'product-configurator-for-woocommerce' ) ?></h2>
+			<?php echo mkl_pc_get_admin_actions(); ?>
+		</header>
 
 		<?php do_action('mkl_pc_layer_fields') ?>
 
 		<?php do_action('mkl_pc_layer_settings') ?>
 	</div>
-	<div class="attachment-display-settings">
-		<h2><?php _e('Layer\'s icon', 'product-configurator-for-woocommerce' ) ?></h2>
-		<div class="thumbnail thumbnail-image">
+
+	<# if ( 'summary' != data.type ) { #>
+		<div class="mkl-pc-image-settings">
+			<h2><?php _e('Layer\'s icon', 'product-configurator-for-woocommerce' ) ?></h2>
+			<div class="thumbnail thumbnail-image">
+				<# if ( data.image.url != '' ) { #>
+					<img src="{{data.image.url}}" height="40" class="layer-img" />
+				<# } #>
+			</div>
+			<a class="edit-attachment" href="#"><?php _e('Add / Change picture', 'product-configurator-for-woocommerce' ) ?></a>
 			<# if ( data.image.url != '' ) { #>
-				<img src="{{data.image.url}}" height="40" class="layer-img" />
+				| <a class="remove-attachment" href="#"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></a>
 			<# } #>
 		</div>
-		<a class="edit-attachment" href="#"><?php _e('Add / Change picture', 'product-configurator-for-woocommerce' ) ?></a>
-		<# if ( data.image.url != '' ) { #>
-			| <a class="remove-attachment" href="#"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></a>
-		<# } #>
-	</div>
+	<# } #>
+	
 </script>
 <?php 
 /*
@@ -209,7 +218,7 @@ CONTENT TEMPLATES
 	<div class="media-frame-content content">
 		<div class="content-col content-layers-list"></div>
 		<div class="content-col content-choices-list"></div>
-		<div class="content-col content-choice media-sidebar choice-details "></div>
+		<div class="content-col content-choice pc-sidebar choice-details "></div>
 	</div>
 </script>
 
@@ -252,7 +261,7 @@ CONTENT TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-list-item">
-	<div class="tips sort ui-sortable-handle"></div>
+<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
 	<button type="button">
 		<h3><# if ( data.display_label ) { #>{{data.name}}<# } #></h3>
 	</button>
@@ -271,28 +280,18 @@ CONTENT TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-form">
 	<div class="form-details">
-		<h3><?php _e('Choice informations', 'product-configurator-for-woocommerce' ) ?> ({{data._id}})</h3>
-		<div class="form-info">
-			<div class="details">
-				<button type="button" class="button-link delete delete-layer" data-delete="prompt"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-				<button type="button" class="button-link duplicate duplicate-choice"><?php _e('Duplicate', 'product-configurator-for-woocommerce' ) ?></button>
-				<div class="prompt-delete hidden notice">
-					<p><?php _e( 'Do you realy want to delete this choice?', 'product-configurator-for-woocommerce' ); ?></p>
-					<p>
-						<button type="button" class="button button-primary delete confirm-delete-layer" data-delete="confirm"><?php _e('Delete', 'product-configurator-for-woocommerce' ) ?></button>
-						<button type="button" class="button cancel-delete-layer" data-delete="cancel"><?php _e('Cancel', 'product-configurator-for-woocommerce' ) ?></button>
-					</p>
-				</div>
-			</div>
-		</div>
+		<header>
+			<h2><?php _e('Choice informations', 'product-configurator-for-woocommerce' ) ?> [ID: {{data._id}}]</h2>
+			<?php echo mkl_pc_get_admin_actions(); ?>
+		</header>
+
 		<div class="options">
-			<h3>Informations</h3>
 			<?php do_action('mkl_pc_choice_fields') ?>
 			<div class="clear"></div>
 		</div>
 
 		<# if ( wp.hooks.applyFilters( 'PC.admin.show_choice_images', true, data ) ) { #>
-			<div class="options">
+			<div class="options mkl-pc-image-settings">
 				<# if ( data.is_group ) { #>
 					<h3><?php _e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
 				<# } else if ( 'text-overlay' == data.layer_type ) { #>

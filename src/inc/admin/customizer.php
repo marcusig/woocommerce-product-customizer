@@ -17,7 +17,18 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 		const PREFIX = 'mkl_pc_theme_';
 		public function __construct() {
 			add_action( 'customize_register', array( $this, 'customize_register' ), 10 );
+			add_action( 'customize_preview_init', array( $this, 'customizer_init' ), 10 );
 			add_action( 'mkl_pc_scripts_product_page_after', array( $this, 'output_css' ), 40 );
+		}
+
+		/**
+		 * Customizer init - enqueue the customizer specific JS
+		 *
+		 * @return void
+		 */
+		public function customizer_init() {
+			wp_enqueue_script( 'mkl_pc/customizer', MKL_PC_ASSETS_URL . 'admin/js/customizer.js', [ 'jquery', 'customize-base' ], filemtime( MKL_PC_ASSETS_PATH . 'admin/js/customizer.js' ) );
+			wp_localize_script( 'mkl_pc/customizer', 'mkl_pc_theme_colors', array_keys( $this->get_colors() ) );
 		}
 
 		/**
@@ -95,6 +106,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 						'type' => 'option', 
 						'capability' =>  'edit_theme_options',
 						'sanitize_callback' => 'sanitize_hex_color',
+						'transport' => 'postMessage',
 					)
 				);
 
@@ -121,6 +133,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 					'default'    => true,
 					'type'       => 'option',
 					'capability' => 'edit_theme_options',
+					'transport' => 'postMessage',
 				)
 			);
 
@@ -141,6 +154,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 					'default' => MKL_PC_ASSETS_URL.'images/default-bg.jpg',
 					'type' => 'option', 
 					'capability' =>  'edit_theme_options',
+					'transport' => 'postMessage',
 					// 'sanitize_callback' => 'esc_url',
 				)
 			);

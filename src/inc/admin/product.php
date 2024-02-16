@@ -29,6 +29,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
 			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 100, 1 );
 			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 100, 1 );
+			add_action( 'wp_ajax_mkl_pc_hide_addon_setting', array( $this, 'hide_addon_setting' ) );
 			// woocommerce_ajax_save_product_variations
 			add_action( 'woocommerce_after_product_object_save', array( $this, 'write_configuration_cache_on_product_save' ), 100, 1 );
 
@@ -243,9 +244,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'angles_no_delete_message' => __( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
+					'use_steps' => mkl_pc( 'settings' )->get( 'use_steps', false ),
 					'is_rest_enabled' => true,
 					'rest_url' => get_rest_url(),
 					'timeout' => (int) mkl_pc( 'settings' )->get( 'admin_save_timeout', 30000, true ),
+					'user_preferences_nonce' => wp_create_nonce( 'mkl_pc_user_preferences' ),
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
@@ -336,6 +339,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function write_configuration_cache_on_product_save( $obj ) {
 			$this->write_configuration_cache( $obj->get_id() );
+		}
+
+		/**
+		 * Saves the user setting when hidding the add-on adverts from within the choices' admin
+		 *
+		 * @return void
+		 */
+		public function hide_addon_setting() {
+			if ( ! wp_verify_nonce( sanitize_key( $_REQUEST['security'] ), 'mkl_pc_user_preferences' ) ) wp_send_json_error('', 401 );
+			$setting_name = sanitize_key( $_REQUEST[ 'setting' ] );
+			delete_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name );
+			update_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name, 1 );
+			wp_send_json_success();
 		}
 
 	}

@@ -62,6 +62,8 @@ PC.fe.views.choice = Backbone.View.extend({
 			},
 			this );
 
+			tooltip_options = wp.hooks.applyFilters( 'PC.fe.choice.tooltip.options', tooltip_options, this );
+
 			if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) {
 				tippy( this.el, tooltip_options );
 			}
@@ -89,7 +91,7 @@ PC.fe.views.choice = Backbone.View.extend({
 		}
 	},
 	get_description: function() {
-		if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) ) {
+		if ( 'colors' == this.model.collection.layer.get( 'display_mode' ) && ! this.model.get( 'is_group' ) ) {
 			this.update_tippy_on_price_update = true;
 			var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
 			if ( this.$( '.choice-price' ).length ) {

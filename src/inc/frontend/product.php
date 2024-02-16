@@ -110,7 +110,9 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					echo '<!-- Product configurator - The current product is not purchasable or has no available variations -->';
 					return;
 				}
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' '. $this->button_class .'" data-price="'.esc_attr( $this->get_product_price( get_the_id() ) ).'" data-product_id="'.get_the_id().'" type="button">'. $label .'</button>' );
+				$attributes = mkl_pc()->frontend->get_configurator_element_attributes( $product );
+				$attributes = implode( ' ', mkl_pc()->frontend->_output_data_attributes( $attributes ) );
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . esc_attr( $this->button_class ) . '" ' . $attributes . ' type="button">'. $label .'</button>' );
 			}
 		}
 
@@ -178,6 +180,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			$price = $product && is_a( $product, 'WC_Product' ) ? $product->get_price_html() : '';
 			if ( $price ) $price = preg_replace( '/<script.*?\/script>/s', '', $price );
 		?>
+			<# if ( data.formated_regular_price ) { #><del class="pc-total--regular-price">{{{data.formated_regular_price}}}</del><# } #>
 			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
 		<?php 
 		}
@@ -228,7 +231,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 						</form>
 					<# } #>
 
-					<button type="button" class="<?php echo $this->button_class ?> configurator-add-to-cart">
+					<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
 						<span><?php echo $add_to_cart; ?></span>
 					</button>
@@ -246,7 +249,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function add_edit_configuration_from_cart() {
 			if ( ! isset( $_REQUEST[ 'edit_config_from_cart' ] ) ) return;
 			?>
-			<button type="button" class="<?php echo $this->button_class ?> edit-cart-item configurator-add-to-cart">
+			<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> edit-cart-item configurator-add-to-cart">
 				<span><?php
 					/**
 					 * Filters the button text "Edit item in cart"
@@ -263,7 +266,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function add_add_to_quote_button() {
 			if ( ! class_exists( 'Addify_Request_For_Quote' ) ) return;
 			?>
-			<button type="button" class="<?php echo $this->button_class ?> add-to-quote">
+			<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> add-to-quote">
 				<span><?php _e( 'Add to Quote', 'addify_rfq' ); ?></span>
 			</button>
 			<?php
@@ -325,6 +328,16 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			$selectors .= ',.mkl_pc form.cart';
 			return $selectors;
 		}
+
+		/**
+		 * SETTINGS:
+		 * - show previous button
+		 * - Next button label: Custom label or Step name (layer name)
+		 * 
+		 * REQUIREMENTS:
+		 * - Validate contents of a step before being able to proceed
+		 * - Update steps when checking conditional logic
+		 */
 
 	}
 }

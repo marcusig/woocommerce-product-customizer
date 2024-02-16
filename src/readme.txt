@@ -114,6 +114,18 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Generated image in the cart defaults to product image when generation fails
+* TWEAK: Add live preview to the Cutstomizer options
+* FEATURE: Added an new theme Le Bolide
+* FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
+* FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
+* COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
+* NEW: Updated the admin UI
+* TWEAK: Default theme is now part of the themes list
+* TWEAK: Removed "add to cart modal" from WSB anf Float, and changed the layout to accomodate all the content
+* TWEAK: Added timeout setting for admin requests
+* TWEAK: Ajax add to cart support, for themes and plugins using the `adding_to_cart` and `added_to_cart` events
+
 = 1.2.59 - 31/Jan/2024 = 
 
 * FIX: Ajax add to cart support, for themes and plugins using the `adding_to_cart` when the data is a string and not an object (e.g. Woodmart theme)
@@ -122,9 +134,6 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 * TWEAK: Added warning when deleting views, and prevent deleting the last one
 * TWEAK: Updated the Format money to not systematically convert currency
-* COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
-* TWEAK: Added timeout setting for admin requests
-* TWEAK: Ajax add to cart support, for themes and plugins using the `adding_to_cart` and `added_to_cart` events
 
 = 1.2.57 - 29/Nov/2023 = 
 

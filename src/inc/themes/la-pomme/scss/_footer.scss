@@ -1,0 +1,185 @@
+footer {
+
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: var( --mkl_pc_footer_height );
+	padding: $inner_space; 
+	
+	background: #F5F5F7;
+	border-top: 1px solid #d2d2d7;
+	z-index: 4;
+
+	display: flex;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	align-items: center;
+	box-sizing: border-box;
+
+	@media (min-width: $small_screen_width) {
+		justify-content: left;
+	}
+
+	@media (max-width: $small_screen_width) {
+		align-items: start;
+		align-content: baseline;
+		padding: 0;
+		padding-top: 10px;
+		right: 0;
+	}
+
+	h3.product-name {
+		line-height: 1;
+		margin: 0;
+		@media (max-width: $small_screen_width) {
+			display: none;
+		}
+	}
+
+	.footer__section-left:empty {
+		display: none;
+	}
+
+	.footer__section-center {
+		flex: 1;
+		display: flex;
+		&:empty {
+			display: none;
+		}
+		@media (max-width: $small_screen_width) {
+			flex: auto;
+			width: 100%;
+			padding-left: 10px;
+		}
+	}
+	.footer__section-right {
+		width: auto;
+		@media (max-width: $small_screen_width) {
+			flex: auto;
+			width: 100%;
+			padding-top: 10px;
+			padding-right: 10px;
+		}
+	}
+
+	@media (max-width: $small_screen_width) {
+		text-align: center;
+		// height: $footer_height_small_screen;
+		.pc_configurator_form {
+			display: flex;
+			justify-content: end;
+			@at-root .mkl_pc.has-steps .pc_configurator_form {
+				width: calc( 100% - 75px );
+			}
+		}
+	}
+
+	a.save-your-design--pdf,
+	button.reset-configuration {
+		margin: 0;
+		padding: 4px 9px;
+		background: transparent;
+		color: inherit;
+		text-transform: none;
+		font-size: 1em;
+		text-transform: none;
+		font-weight: normal;
+
+		appearance: none;
+		box-shadow: none;
+		border:  none;
+		color: var(--mkl_pc_color-primary);
+		svg {
+			height: 23px;
+			fill: currentColor;
+			width: 23px;
+			margin-right: 6px;
+			vertical-align: middle;					
+		}
+		&.icon-only {
+			span {
+				display: none;
+			}
+			svg {
+				margin-right: 0;
+			}
+		}
+		&:hover, &:focus {
+			opacity: .5;
+		}
+		@media (max-width: $small_screen_width) {
+			font-size: 12px;
+			width: auto;
+
+			svg {
+				transform: none;
+			}
+		}
+	}
+
+	.mkl-pc-syd-modal {
+		right: 0;
+		left: auto;
+		border-radius: 15px;
+
+		&::after {
+			left: auto;
+			right: 10px;
+			width: 15px;
+			height: 15px;
+			bottom: -5px;
+		}
+		.mkl-pc-modal-list h4 {
+			background: #f5f5f7;
+			border-radius: 15px 15px 0 0;
+		}
+
+	}
+
+	span.save-your-design-modal-container {
+		@media(min-width: $small_screen_width) {
+			padding-right: 5px;
+			padding-left: 5px;
+			padding-top: 4px;
+		}
+
+		a.save-your-design {
+			span {
+				display: none;
+			}
+			svg {
+				fill: color(primary);
+				margin-right: 0;
+				@media(max-width: $small_screen_width) {
+					transform: none;
+				}
+			}
+			@media(max-width: $small_screen_width) {
+				width: auto;
+			}
+		}
+	}
+
+	.footer__section-center {
+		.mkl-pc-syd-modal {
+			left: 0;
+			right: auto;
+	
+			&::after {
+				left: 10px;
+				right: auto;
+				width: 15px;
+				height: 15px;
+				bottom: -5px;
+			}
+		}	
+	}
+
+
+	a.save-your-design svg path,
+	.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
+	a.save-your-design--pdf svg path {
+		fill: color(primary);
+	}
+}

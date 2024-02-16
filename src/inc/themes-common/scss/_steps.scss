@@ -1,0 +1,100 @@
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.type-step:not(.active) {
+    display: none;
+}
+
+nav.mkl-pc--steps {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    button.step-next, button.step-next span, button.step-next svg,
+    button.step-previous, button.step-previous span, button.step-previous svg {
+        vertical-align: middle;
+    }
+
+}
+
+.mkl_pc.has-steps:not(.last-step) .mkl_pc_container .form .pc_configurator_form {
+    display: none;
+}
+
+.mkl_pc.has-steps.last-step {
+    nav.mkl-pc--steps .step-next {
+		display: none;
+	}
+}
+// .mkl_pc.has-steps.first-step {
+//     nav.mkl-pc--steps .step-previous {
+// 		display: none;
+// 	}
+// }
+
+@mixin steps-progress( $spacing ) {
+    .mkl_pc_toolbar .steps-progress--container {
+        padding: 0 $spacing;
+        width: 100%;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+
+        @media(max-height: 500px) and (orientation: landscape) {
+            display: none;
+        }
+
+        @media(max-height: 800px) and (orientation: portrait) {
+            display: none;
+        }
+
+        ol.steps-progress {
+            display: grid;
+            grid-auto-flow: column;
+            grid-gap: var(--mkl_pc-steps-gap, 20px);
+            justify-items: start;
+            justify-content: start;
+            overflow: hidden;
+            overflow-x: auto;    
+            width: 100%;
+            padding: $spacing 0;
+            margin: 0;
+            position: relative;
+            counter-reset: steps-progress;
+
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            &::-webkit-scrollbar {
+                display: none
+            }
+
+            > li.steps-progress--item {
+                counter-increment: steps-progress;
+                display: block;
+                padding: 0;
+                white-space: nowrap;
+                font-size: 16px;
+                a {
+                    font-weight: bold;
+                    white-space: nowrap;
+                    &::before {
+                        content: counter(steps-progress) '. ';
+                    }
+                }
+                &.active ~ li.steps-progress--item a {
+                    color: #B7B7B7;
+                    font-weight: normal;
+                }
+                &.hidden {
+                    display: none;
+                }
+            }
+        
+            > li.steps-progress--active-marker {
+                position: absolute;
+                bottom: 0;
+                height: 0;
+                width: var( --mkl_pc-steps-marker-width, 0 );
+                left: var( --mkl_pc-steps-marker-pos, 0 );
+                border-bottom: 2px solid color(primary);
+                transition: .5s all ease-out;
+            }
+            
+        }
+    }
+}

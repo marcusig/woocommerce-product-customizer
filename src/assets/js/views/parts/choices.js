@@ -8,7 +8,6 @@ PC.fe.views.choices = Backbone.View.extend({
 	initialize: function( options ) { 
 		this.options = options || {}; 
 		return this.render();
-
 	},
 	events: {
 		'click .layer-choices-title a.close': 'close_choices'
@@ -18,7 +17,7 @@ PC.fe.views.choices = Backbone.View.extend({
 		this.$el.addClass( this.model.get( 'type' ) );
 		if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 		if ( this.model.get( 'parent' ) ) this.$el.addClass( 'is-child-layer' );
-		if ( this.model.get( 'columns' ) ) this.$el.addClass( 'columns-' + this.model.get( 'columns' ) );
+		if ( 'compact-list' != this.model.get( 'display_mode' ) && this.model.get( 'columns' ) ) this.$el.addClass( 'columns-' + this.model.get( 'columns' ) );
 		if ( this.model.get( 'color_swatch_size' ) ) this.$el.addClass( 'swatches-size--' + this.model.get( 'color_swatch_size' ) );
 
 		this.$list = this.$el.find('.choices-list ul'); 

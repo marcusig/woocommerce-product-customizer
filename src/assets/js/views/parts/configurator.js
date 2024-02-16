@@ -26,6 +26,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 	events: {
 		'content-is-loaded': 'start',
+		'click .close-mkl-pc': 'close',
 	},
 	render: function() {
 		if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {

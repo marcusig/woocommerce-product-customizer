@@ -58,6 +58,8 @@ PC.fe.views.form = Backbone.View.extend({
 			}
 		}
 
+		wp.hooks.doAction( 'PC.fe.render_form', this );
+
 		return this.$el;
 	},
 
@@ -70,10 +72,10 @@ PC.fe.views.form = Backbone.View.extend({
 			var messages = [];
 			_.each( errors, function( error ) {
 				if ( error.choice ) {
-					error.choice.set( 'has_error', error );
+					error.choice.set( 'has_error', error.message );
 				}
 				if ( error.layer ) {
-					error.layer.set( 'has_error', error );
+					error.layer.set( 'has_error', error.message );
 				}
 				messages.push( error.message );
 			} );
@@ -201,6 +203,5 @@ PC.fe.views.form = Backbone.View.extend({
 				if ( 'button' === PC.fe.trigger_el[0].type ) $( PC.fe.trigger_el[0] ).remove();
 			}
 		}
-
 	},
 } );

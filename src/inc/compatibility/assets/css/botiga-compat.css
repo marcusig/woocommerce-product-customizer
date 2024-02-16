@@ -5,10 +5,26 @@
     height: 54px;
 }
 
+.mkl_pc.lapomme .mkl_pc_container .form.form-cart .quantity {
+    height: 46px;
+}
+
+@media(max-width: 660px) {
+	.mkl_pc .mkl_pc_container .quantity input.qty {
+		border: none!important;
+	}
+	.mkl_pc.old-default .mkl_pc_container .form.form-cart .quantity ~ button {
+		padding: 15px;
+	}
+}
 .mkl_pc .mkl_pc_container .form.form-cart .quantity .botiga-quantity-plus, .mkl_pc .mkl_pc_container .form.form-cart .quantity .botiga-quantity-minus {
     width: 40px;
 }
 
 .mkl_pc .mkl_pc_container .form.form-cart .quantity .qty {
 	width: 3ch;
+}
+
+.mkl_pc .mkl_pc_container form.cart .quantity {
+	max-width: 100%;
 }

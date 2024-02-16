@@ -20,6 +20,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 	render: function() {
 
 		if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
+			this.$el.addClass( 'not-a-choice custom' );
 			this.$el.append( $( this.model.get( 'custom_html' ) ) );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			wp.hooks.doAction( 'PC.fe.layer.render', this );
@@ -32,21 +33,23 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 		this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', data ) ) ); 
 
-		if ( PC.fe.config.show_active_choice_in_layer ) {
+		if ( PC.fe.config.show_active_choice_in_layer && ! this.model.get( 'is_step' ) ) {
 			var selection = new PC.fe.views.layers_list_item_selection( { model: this.options.model } );
 			this.$( '.layer-item .layer-name' ).after( selection.$el );
-		}
-
-		if ( PC.fe.config.show_active_choice_image_in_layer ) {
-			var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model } );
-			this.$( '.layer-item' ).prepend( selection.$el );
 		}
 
 		// Add classes
 		if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 		if ( this.model.get( 'display_mode' ) ) this.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
 		if ( this.layer_type ) this.$el.addClass( 'type-' + this.layer_type );
+		if ( this.model.get( 'is_step' ) ) this.$el.addClass( 'type-step' );
 		if ( layer_image && layer_image.url ) this.$el.addClass( 'has-thumbnail' );
+
+		if ( PC.fe.config.show_active_choice_image_in_layer && ! this.model.get( 'is_step' ) ) {
+			var selection = new PC.fe.views.layers_list_item_selection_image( { model: this.options.model, parent: this } );
+			this.$( '.layer-item' ).prepend( selection.$el );
+		}
+
 		this.hide_in_configurator( this.model, this.model.get( 'hide_in_configurator' ) );
 
 		// Add ID
@@ -77,9 +80,17 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		}
 
 		var where = PC.fe.config.where;
-		if ( this.model.get( 'parent' ) && this.model.collection.get( this.model.get( 'parent' ) ) && 'group' === this.model.collection.get( this.model.get( 'parent' ) ).get( 'type' ) ) {
+		if ( this.model.get( 'parent' ) ) {
+			var parent = this.model.collection.get( this.model.get( 'parent' ) );
+			if ( parent && 'group' === parent.get( 'type' ) && ! parent.get( 'is_step' ) ) {
+				where = 'in';
+			}
+		}
+
+		if ( this.model.get( 'is_step' ) ) {
 			where = 'in';
 		}
+
 		where = wp.hooks.applyFilters( 'PC.fe.choices.where', where, this );
 		if( ! where || 'out' == where ) {
 			this.options.parent.after( this.choices.$el );
@@ -111,7 +122,8 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 					model.set( 'active' , false );
 				});
 			} else {
-				if ( PC_config.config.auto_close_siblings_in_groups ) {
+				var parent = this.model.collection.get( this.model.get( 'parent' ) );
+				if ( PC_config.config.auto_close_siblings_in_groups || parent.get( 'is_step' ) ) {
 					// Toggle any siblings
 					_.each( this.model.collection.where( { 'parent': this.model.get( 'parent' ) } ), function( model ) {
 						model.set( 'active' , false );

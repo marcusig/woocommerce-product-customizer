@@ -108,6 +108,27 @@ class DB {
 			),
 		);
 
+		if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__conditional_placeholder', true )  ) {
+			$default_menu[] = array(
+				'type' 	=> 'separator',
+				'order' => 100,
+			);
+	
+			$default_menu[] = array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'conditional_placeholder',
+				'label' => __( 'Conditional settings', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Conditional settings ', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel', 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Define the conditions for displaying or not the choices / layers', 'mkl-pc-conditional-logic' ),
+				'order' => 101,
+			);			
+		}
 		$this->menu = $default_menu;
 
 		// Add tne import section at the end of the menu

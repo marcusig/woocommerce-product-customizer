@@ -1,0 +1,149 @@
+form.cart {
+	display: inline-block;
+	margin: 0;
+}
+
+.form.form-cart {
+	display: flex;
+	align-items: flex-start;
+	flex-direction: row;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	position: relative;
+	background: color( form_background );
+	padding: 20px var(--mkl_pc_lebolide-spacing, 25px);
+
+	@media( min-width: $small_screen_width ) {
+		position: sticky;
+		bottom: 0;
+		z-index: 3;
+	}
+
+	@media( max-width: $small_screen_width ) {
+	}
+	@media (max-height: 500px) and (orientation: landscape) {
+		align-items: center;
+	}
+}
+
+.single_add_to_cart_button {
+	visibility: visible; 
+}
+
+.quantity {
+	display: inline-block;
+	input.qty {
+		background: #fff;
+		@media (max-width: $small_screen_width) {
+			border: 2px solid #36383a;
+		}
+	}
+}
+
+.price-container {
+	text-align: right;
+	width: 100%;
+	border-bottom: 1px solid #D3D3D3;
+	padding-bottom: 20px;
+	@media( max-width: $small_screen_width ) {
+		// padding-right: 10px;
+		// position: absolute;
+		// top: -40px;
+		// right: 0;
+	}
+}
+.extra-cost {
+	visibility: hidden;
+	position: fixed;
+	margin-bottom: 0;
+	padding-right: 15px;
+	@media( max-width: $small_screen_width ) {
+		display: none !important;
+	}
+}
+.extra-cost.show {
+	visibility: visible;
+	position: relative;
+	padding: 0;
+	margin: 0;
+	height: auto;
+	display: block !important;
+	font-size: 0.8rem;
+	text-align: right;
+	@media( max-width: $small_screen_width ) {
+		display: none !important;
+	}
+}
+span.pc-total-price {
+	font-weight: bold;
+	display: block; 
+	font-size: 1.3em;
+	line-height: 1;
+	padding-top: 4px;
+}
+.pc_configurator_form {
+	padding-top: 20px;
+	display: flex;
+    gap: 5px;
+	@at-root {
+		.mkl_pc:not(.has-steps) .pc_configurator_form {
+			width: 100%;
+			justify-content: flex-end;
+		}
+	}
+}
+
+
+button.configurator-add-to-cart,
+.mkl-pc--steps button {
+	background: #000;
+	border: 1px solid #000;
+	color: #FFF;
+	font-size: 1rem;
+	padding: 10px 25px;
+	border-radius: 0;
+	font-weight: 400;
+
+	// @media (max-width: $small_screen_width) {
+	// 	background: transparent !important;
+	// }
+
+	svg {
+		display: inline-block;
+		width: 20px;
+		height: 20px;
+		transform: translateX(10px);
+		path {
+			fill: #FFF;
+		}
+	}
+}
+
+button.configurator-add-to-cart {
+	svg {
+		display: none;
+	}
+}
+
+.mkl-pc--steps button.step-previous {
+	background: transparent;
+	color: color(primary);
+	border: none;
+	padding: 10px 15px;
+	span {
+		display: none;
+	}
+	svg {
+		transform: translateX( 0 );
+		path {
+			fill: #000;
+		}
+	}
+	&:disabled {
+		color: #B7B7B7;
+		border-color: #d2d2d7;
+		svg path {
+			fill: #B7B7B7;
+		}
+	}
+}

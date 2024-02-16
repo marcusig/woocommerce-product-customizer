@@ -13,7 +13,7 @@ class Choice {
 
 	public $is_choice = true; 
 	public $layer_id; 
-	public $choice_id;  
+	public $choice_id;
 	public $angle_id; 
 	public $product_id; 
 	public $variation_id; 

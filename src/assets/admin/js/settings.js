@@ -40,7 +40,6 @@
 			template: wp.template( 'mkl-pc-themes-setting-view' ),
 			events: {
 				'click button.mkl-pc--change-theme': 'open_selector',
-				'click button.mkl-pc--reset-theme': 'reset_theme',
 			},
 			initialize: function() {
 				this.listenTo( Themes.selected_theme, 'change', this.render ); 
@@ -57,10 +56,6 @@
 			open_selector: function() {
 				Themes.show_selector();
 			},
-			reset_theme: function() {
-				Themes.selected_theme.set( 'theme_id', null );
-				Themes.data.get( Themes.selection ).set( 'selected', false );
-			}
 		}),
 		selectorView: Backbone.View.extend({
 			tagName: 'div',
@@ -228,6 +223,7 @@
 			} );
 
 			this.init_stock_management();
+			this.init_steps_options();
 		},
 		init_stock_management: function() {
 			if ( $( '#mkl_pc__settings-stock_link_type' ).length ) {
@@ -236,6 +232,15 @@
 				} );
 	
 				$( 'input[name="mkl_pc__settings[extra_price_overrides_product_price]"], input[name="mkl_pc__settings[hide_linked_products]"]' ).closest( 'tr' ).toggle( 'add_to_cart' == $( '#mkl_pc__settings-stock_link_type' ).val() );
+			}
+		},
+		init_steps_options: function() {
+			if ( $( 'input[name="mkl_pc__settings[use_steps]"' ).length ) {
+				$( 'input[name="mkl_pc__settings[use_steps]"' ).on( 'change', function( e ) {
+					$( 'input[name="mkl_pc__settings[steps_use_layer_name]"]' ).closest( 'tr' ).toggle( $( this ).prop( 'checked' ) );
+				} );
+	
+				$( 'input[name="mkl_pc__settings[steps_use_layer_name]"]' ).closest( 'tr' ).toggle( $( 'input[name="mkl_pc__settings[use_steps]"' ).prop( 'checked' ) );
 			}
 		},
 		get_configurable_products: function() {

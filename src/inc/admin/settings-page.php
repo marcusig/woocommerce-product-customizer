@@ -766,6 +766,30 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'default' => 30000
 				]
 			);
+			
+			if ( mkl_pc( 'themes' )->current_theme_supports( 'steps' ) ) {
+				add_settings_field(
+					'use_steps',
+					__( 'Use steps if possible', 'product-configurator-for-woocommerce' ),
+					[ $this, 'callback_checkbox' ],
+					'mlk_pc_settings', 
+					'general_settings',
+					[ 
+						'setting_name' => 'use_steps',
+						'description'  => '<a href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/general-usage/using-the-steps-feature/" target="_blank">' . __( 'Check the documentation on how to use the steps feature', 'product-configurator-for-woocommerce' ) . '</a>',
+					]
+				);
+				add_settings_field(
+					'steps_use_layer_name',
+					__( 'Use layer names for previous and next button labels', 'product-configurator-for-woocommerce' ),
+					[ $this, 'callback_checkbox' ],
+					'mlk_pc_settings', 
+					'general_settings',
+					[ 
+						'setting_name' => 'steps_use_layer_name',
+					]
+				);
+			}
 
 			/*
 				LABELS
@@ -871,6 +895,30 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				[
 					'setting_name' => 'angle_switch_label',
 					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Change angle', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'previous_step_label',
+				__( 'Previous step label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'previous_step_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . _x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' )
+				]
+			);
+
+			add_settings_field(
+				'next_step_label',
+				__( 'Next step label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'next_step_label',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . _x( 'Next', 'Next step button label', 'product-configurator-for-woocommerce' )
 				]
 			);
 
@@ -1080,9 +1128,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					</div>
 					<div class="content">
 						<h4>{{data.Name}}</h4>
-						<p>{{data.Description}}</p>
+						<p>{{{data.Description}}}</p>
 						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change' ); ?></button>
-						<button type="button" class="button mkl-pc--reset-theme button-link"><?php _e( 'Reset' ); ?></button>
 					</div>
 				<# } else { #>
 						<p class="no-theme"><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
@@ -1104,7 +1151,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<script type="template/html" id="tmpl-mkl-pc-theme-item">
 				<div class="text">
 					<h4>{{data.Name}}</h4>
-					<div class="desc">{{data.Description}}</div>
+					<div class="desc">{{{data.Description}}}</div>
 					<div class="tags">{{data.Tags}}</div>
 				</div>
 				<div class="theme-preview">

@@ -25,6 +25,12 @@
 			} );
 
 		}
+
+		// Move SYD on small screen
+		if ( view.el.clientWidth <= 660 ) {
+			var syd = PC.fe.modal.$( '.save-your-design-modal-container' );
+			if ( syd.length ) syd.prependTo( view.$( '.footer__section-center' ) );
+		}
 		
 	});
 
@@ -36,17 +42,40 @@
 		return 'in';
 	} );
 
-	// wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/lapomme', function( view ) {
-	// 	if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
-	// 	view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { step: function() {
-	// 		if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
-	// 	} } );
-	// } );
+	wp.hooks.addAction( 'PC.fe.layer.render', 'MKL/PC/Themes/lapomme', function( layer ) {
+		if ( 'dropdown' == layer.model.get( 'display_mode' ) && window.Popper ) {
+			layer.popper = Popper.createPopper( 
+				layer.$( '> button.layer-item' )[0], 
+				layer.$( '> .layer_choices' )[0], 
+				{
+					placement: 'bottom',
+					modifiers: [
+						{
+							name: 'eventListeners',
+							options: {
+							scroll: true,
+							resize: true
+							},
+						},
+						{
+							name: 'flip',
+							options: {
+							fallbackPlacements: [ 'top' ]
+							}
+						}
+					]
+				}
+			);
+		}
+	} );
 
-	// wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/lapomme', function( view ) {
-	// 	if ( PC_config.config.no_toggle && 'dropdown' != view.model.get( 'display_mode' ) ) return;
-	// 	view.$el.find( '.layer_choices' ).first().slideUp(200);
-	// } );
+	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/lapomme', function( view ) {
+		if ( view.popper ) view.popper.update();
+	} );
+
+	wp.hooks.addAction( 'PC.fe.layer.deactivate', 'MKL/PC/Themes/lapomme', function( view ) {
+		if ( view.popper ) view.popper.update();
+	} );
 
 	// Conditional logic: do not show / hide choices list visibility
 	wp.hooks.addFilter( 'mkl_pc_conditionals.toggle_choices', 'MKL/PC/Themes/lapomme', function( where ) {
@@ -56,11 +85,15 @@
 	wp.hooks.addFilter( 'mkl-pc-configurator-layer-item.with.button', 'MKL/PC/Themes/lapomme', function( use_button, data ) {
 		if ( 'dropdown' == data.display_mode ) return true;
 		return false;
-			
 	}, 20 );
 
+	wp.hooks.addFilter( 'PC.fe.steps_position', 'MKL/PC/Themes/lapomme', function( position, $nav ) {
+		$nav.insertAfter( PC.fe.modal.footer.$( '.price-container' ) );
+		return PC.fe.modal.toolbar.$el;
+	} );
+
 	// Scroll to newly opened layer, when onening it using conditional logic
-	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/float', function( model ) {
+	wp.hooks.addAction( 'conditional.selected_layer', 'MKL/PC/Themes/lapomme', function( model ) {
 		var scrollToView = null;
 		// _.each( PC.fe.modal.toolbar.layers.items, function( view ) {
 		// 	if ( view.model.id == model.id ) {
@@ -74,5 +107,14 @@
 		// 	}, 150 );
 		// }
 	} );
+
+	/**
+	 * Display step: scroll back to the top
+	 */
+	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/lapomme', function( steps ) {
+		var scrollable = PC.fe.modal.$( '.mkl_pc_container' );
+		if ( scrollable.length ) scrollable[0].scrollTo( 0, 0 );
+	} );
+	
 
 })( jQuery );
