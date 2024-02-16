@@ -19,11 +19,14 @@
 		padding: 10px 0 3px 0;
 	}
 
-	.mkl_pc_summary_item_group.simple {
+	.mkl_pc_summary_item_group:not(.group) {
 		display: flex;
     	align-items: baseline;
+		flex-wrap: wrap;
+		margin-bottom: 10px;
 		h5 {
 			margin-right: 5px;
+			width: 100%;
 			&::after {
 				content:':';
 			}

@@ -21,7 +21,7 @@
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-summary--item" data-wg-notranslate>
-	<span class="summary-item--name">{{{data.name}}}</span>
+	<span class="summary-item--name"><# if ( data.parent_name ) { #> <span class="summary-item--parent-name">{{{data.parent_name}}},</span> <# } #>{{{data.name}}}</span>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-summary--item-group" data-wg-notranslate>
