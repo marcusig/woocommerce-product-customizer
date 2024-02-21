@@ -88,7 +88,7 @@ PC.fe.views.summary_item = Backbone.View.extend( {
 		var attributes = JSON.parse( JSON.stringify( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.model.attributes ) ) );
 		if ( this.model.get( 'parent' ) ) {
 			var parent = this.model.collection.get( this.model.get( 'parent' ) );
-			if ( parent ) attributes.parent_name = parent.get_name();
+			if ( parent && parent.get( 'show_group_label_in_cart' ) ) attributes.parent_name = parent.get_name();
 		}
 		attributes = wp.hooks.applyFilters( 'PC.fe.summary_item.attributes', attributes, this.model );
 		this.$el.html( this.template( attributes, this.model ) );
