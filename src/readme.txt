@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 4.2
 Tested up to: 6.4
-Stable tag: 1.2.59
+Stable tag: 1.3.0
 Requires PHP: 7.0
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -114,13 +114,15 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Generated image in the cart defaults to product image when generation fails
-* TWEAK: Add live preview to the Cutstomizer options
+= 1.3.0 - 17/Feb/2024 = 
+
 * FEATURE: Added an new theme Le Bolide
 * FEATURE: Added the possibility for step by step progression for a selection of configurator themes. 
 * FEATURE: Added the possibility to change the layout in some configurator themes. Whether the number of columns or the size of color swatches.
-* COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
 * NEW: Updated the admin UI
+* COMPATIBILITY: Botiga compatibility: quantity input layout, and +/- buttons 	
+* TWEAK: Generated image in the cart defaults to product image when generation fails
+* TWEAK: Add live preview to the Cutstomizer options
 * TWEAK: Default theme is now part of the themes list
 * TWEAK: Removed "add to cart modal" from WSB anf Float, and changed the layout to accomodate all the content
 * TWEAK: Added timeout setting for admin requests
@@ -582,4 +584,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.2.58 Various tweaks and improvements
+* 1.3.0 Introduces a new Steps feature, a refreshed design admin, a new theme and many other changes
