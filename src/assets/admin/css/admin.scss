@@ -285,6 +285,7 @@ html .media-modal.pc-modal {
 					padding-top: 0;					
 				}
 			}
+			
 			.selection {
 				padding: 8px 9px;
 				border: 1px solid #00000014;
@@ -508,10 +509,6 @@ html .pc-modal-container {
 
 .pc-modal-opened .mkl_pc span.select2-container {
 	z-index: 1500000;
-}
-
-.mkl-list {
-
 }
 
 .mkl-list-item {
@@ -754,9 +751,6 @@ CONTENT
 				display: block;
 				padding: $modal-spacing;
 				border-bottom: 1px solid $light-border-color;
-				.icon {
-
-				}
 			}
 			&.active {
 				> a {
