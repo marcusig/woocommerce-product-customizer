@@ -19,9 +19,24 @@ Give your customers a great experience, and make your life easy: no need to crea
 
 Instead, export your layers from Photoshop, a 3D render, or any other source, and allow the user to configure their product using those.
 
+Easily add a product configurator to WordPress, with the plugin Product Configurator for Woo!
+
 <a href="http://demos.mklacroix.com/">Check out the demos here</a>
 
 You can report bugs or suggestions on the <a href="https://github.com/marcusig/woocommerce-product-customizer/issues">github repository</a> or the <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">support forum</a>.
+
+**Features**
+
+* Layers: The configurator viewer uses transparent images as layers to create the final product image
+* Multiple views: Display the different parts of your products using the multiple views feature
+* Multiple steps: Selling complex products? Split your configurator in different steps to make the process easier to understand for your customers.
+* Price per option: Charge an additional price for each option that requires it (requires an add-on).
+* Form fields: Let your user input data such as text or numbers, as well as send files with their configuration (requires an add-on).
+* Calculate complex prices with custom formulas (requires Extra-price and Form fields add-ons)
+* Conditional logic: Build complex products, hide or show elements dynamically depending on previous selection or other parameters (requires an add-on).
+* Stock management: Manage stock of your configurator items, directly in the configurator, or by linking other products in the shop (requires an add-on).
+* Linked products: Link other products in your shop to choices in the configurator. They can be added to the cart to build bundles or complex composite products. Useful for example when linking to an external ERP software (requires an add-on).
+* Developer friendly: The configurator and the add-ons all have plenty hooks to extend or modify or add features. While the dev documentation is currently limited, the code source is commented, and you are welcome to open a support request to get guidance would you require.
 
 **Available shortcodes**
 
