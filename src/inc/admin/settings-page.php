@@ -709,7 +709,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 			add_settings_field(
 				'misc_options',
-				__( 'Miscelaneous', 'product-configurator-for-woocommerce' ),
+				__( 'Miscellaneous', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_html' ],
 				'mlk_pc_settings', 
 				'general_settings',
