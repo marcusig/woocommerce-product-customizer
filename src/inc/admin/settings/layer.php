@@ -193,9 +193,9 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					// 'help' => __( 'If Default selection is set to first choice, the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ),
 				),
 				'required_info' => array(
-					'label' => __( 'Info', 'product-configurator-for-woocommerce' ),
+					'label' => 'Info',
 					'type' => 'html',
-					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If "Require a choice" is enabled "Default selection" is set to "Select the first choice by default", the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
+					'html' => '<div class="mkl-pc-setting--warning">' . __( 'If "Require a choice" is enabled and "Default selection" is set to "Select the first choice by default", the first choice will be considered as null (the user will need to select an other one)', 'product-configurator-for-woocommerce' ) . '</div>',
 					'condition' => 'data.required && ( "select_first" == data.default_selection || ! data.default_selection)',
 					'priority' => 40.3,
 					'section' => 'selection',
