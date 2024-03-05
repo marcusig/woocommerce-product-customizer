@@ -188,7 +188,7 @@ class DB {
 			 * Filters the data fetched using the Get method
 			 * 
 			 * @param $data    - The data filtered
-			 * @param $slug    - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
+			 * @param $that    - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
 			 * @param $product_id - The product ID
 			 */
 			return apply_filters( 'mkl_pc/db/get', $data, $that, $post_id ); 
