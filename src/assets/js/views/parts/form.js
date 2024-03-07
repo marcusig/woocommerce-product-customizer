@@ -125,18 +125,23 @@ PC.fe.views.form = Backbone.View.extend({
 		if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
 			$( document.body ).one( 'adding_to_cart', this.on_adding_to_cart );
 			$( e.currentTarget ).addClass( 'adding-to-cart' );
+
+			var btn;
 			if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
-				var btn = this.$cart.find( 'button[name=add-to-cart]' );
-				if ( btn.is( '.ajax_add_to_cart' ) ) {
-					btn.data( 'pc_configurator_data', data );
-				}
-				this.$cart.find( 'button[name=add-to-cart]' ).trigger( 'click' );
+				btn = this.$cart.find( 'button[name=add-to-cart]' );
 			} else if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
-				var btn = this.$cart.find( 'button[name=add-to-cart]' );
+				btn = this.$cart.find( '.single_add_to_cart_button' );
+			}
+
+			if ( btn ) {
 				if ( btn.is( '.ajax_add_to_cart' ) ) {
 					btn.data( 'pc_configurator_data', data );
-				}					
-				this.$cart.find( '.single_add_to_cart_button' ).trigger( 'click' );
+					// Edit item in the cart
+					if ( btn.is( '.edit-cart-item' ) ) {
+						btn.data( 'pc_cart_item_key', PC.fe.config.cart_item_key );
+					}
+				}
+				btn.trigger( 'click' );
 			} else {
 				this.$cart.trigger( 'submit' );
 			}
