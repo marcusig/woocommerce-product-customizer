@@ -1,7 +1,10 @@
 <?php if (!defined('ABSPATH')) exit; ?>
 <script type="text/html" id="tmpl-mkl-pc-configurator-viewer" data-wg-notranslate>
+	<?php do_action( 'mkl_pc_layers_before' ); ?>
 	<div class="mkl_pc_layers">
+		<?php do_action( 'mkl_pc_layers' ); ?>
 	</div>
+	<?php do_action( 'mkl_pc_layers_after' ); ?>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-angles-list">
