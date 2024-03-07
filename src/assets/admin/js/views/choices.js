@@ -314,7 +314,8 @@ PC.views = PC.views || {};
 			} else {
 				args = {};
 			}
-			this.$el.html( this.template( _.defaults( args, this.model.attributes ) ) );
+			var data = _.extend( {}, _.defaults( args, this.model.attributes ), { toggled_status: this.toggled_status.statuses } );
+			this.$el.html( this.template( data ) );
 			this.$pictures = this.$('.views');
 
 			if ( this.model.get( 'is_group' ) )  {
