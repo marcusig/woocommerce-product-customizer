@@ -186,6 +186,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function load_scripts() {
 			$this->init_product_data();
+			wp_enqueue_script( 'wp-hooks' );
 			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
 
 			$scripts = array(
