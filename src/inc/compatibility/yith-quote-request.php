@@ -53,7 +53,7 @@ class Compat_Yith_Raq {
 	}
 
 	public function yith_raq_updated() {
-		$is_adding_configured_item = isset( $_POST['action'] ) && 'yith_ywraq_action' == $_POST['action'] && isset( $_POST['ywraq_action'] ) && 'add_item' == $_POST['ywraq_action'] && isset(  $_POST['pc_configurator_data'] );
+		$is_adding_configured_item = isset( $_POST['action'] ) && 'yith_ywraq_action' === $_POST['action'] && isset( $_POST['ywraq_action'] ) && 'add_item' === $_POST['ywraq_action'] && isset(  $_POST['pc_configurator_data'] );
 		if ( ! $is_adding_configured_item ) return;
 		static $added = false;
 		if ( $added ) return;
@@ -74,7 +74,7 @@ class Compat_Yith_Raq {
 			$data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) );
 			if ( ! $data ) {
 				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( $_POST['pc_configurator_data'] );
-				$data = json_decode( stripcslashes( urldecode( $_POST['pc_configurator_data'] ) ) );
+				$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
 			}
 			if ( $data ) {
 				$data = mkl_pc( 'db' )->sanitize( $data );
