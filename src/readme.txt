@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FIX: Compatibilty with YITH Quote request, where the configurator data would not be added in some instances.
+
 = 1.3.0 - 17/Feb/2024 = 
 
 * FEATURE: Added an new theme Le Bolide
