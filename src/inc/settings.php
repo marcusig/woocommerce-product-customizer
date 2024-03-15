@@ -54,7 +54,7 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 					}
 					return apply_filters( 'mkl/pc/setting/' . $setting, $settings[ $setting ] );
 				}
-				return $default;
+				return apply_filters( 'mkl/pc/setting/' . $setting, $default );
 			} 
 			return $settings;
 		}
