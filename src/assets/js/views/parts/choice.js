@@ -134,7 +134,7 @@ PC.fe.views.choice = Backbone.View.extend({
 
 		// Maybe close the choice list
 		if ( wp.hooks.applyFilters( 'PC.fe.close_choices_after_selection', close_choices, this.model ) ) {
-			if ( layer ) layer.set('active', false);
+			if ( layer ) layer.set( 'active', false );
 		}
 		PC.fe.last_clicked = this;
 		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
