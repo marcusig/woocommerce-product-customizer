@@ -26,7 +26,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'woocommerce_order_again_cart_item_data', array( $this, 'wc_order_again_cart_item_data' ), 10, 3 ); 
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
-			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
+			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );			
 			add_filter( 'woocommerce_cart_item_permalink', array( $this, 'cart_item_permalink' ), 30, 3 );
 			add_filter( 'woocommerce_cart_item_name', array( $this, 'add_image_to_review_order_checkout' ), 100, 3 );
 
@@ -223,6 +223,12 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @return string
 		 */
 		public function cart_item_permalink( $permalink, $cart_item, $cart_item_key ) {
+			/**
+			 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
+			 * @return boolean
+			 */
+			if ( ! apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) ) return $permalink;
+			
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
 				return $permalink ? add_query_arg( [ 'load_config_from_cart' => $cart_item_key, 'open_configurator' => 1 ], $permalink ) : $permalink;
 			} else {
