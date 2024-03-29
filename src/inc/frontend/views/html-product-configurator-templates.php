@@ -21,6 +21,7 @@ function mkl_pc_frontend_configurator__main_view__main_container() {
 		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg' ) || is_customize_preview() )  : ?>
 			<div class="mkl_pc_bg<# if ( data.bg_image && '<?php echo MKL_PC_ASSETS_URL.'images/default-bg.jpg'; ?>' == data.bg_image ) { #> default-bg<# } #>"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 		<?php endif; ?>
+		<?php do_action( 'mkl_pc_container' ); ?>
 	</div>
 <?php
 }
