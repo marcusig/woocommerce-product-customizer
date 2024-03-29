@@ -250,6 +250,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'rest_url' => get_rest_url(),
 					'timeout' => (int) mkl_pc( 'settings' )->get( 'admin_save_timeout', 30000, true ),
 					'user_preferences_nonce' => wp_create_nonce( 'mkl_pc_user_preferences' ),
+					'languages' => mkl_pc( 'languages' )->get_languages(),
+					'default_language' => mkl_pc( 'languages' )->get_default_language(),
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
