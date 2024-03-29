@@ -29,9 +29,11 @@ PC.fe.steps = {
 			var nav_position = wp.hooks.applyFilters( 'PC.fe.steps_position', null, $nav );
 			if ( ! nav_position ) modal.footer.$( '.pc_configurator_form' ).before( $nav );
 
-			this.breadcrumb = new PC.fe.views.stepsProgress();
-			var breadcrumb_position = wp.hooks.applyFilters( 'PC.fe.breadcrumb_position', null, this.breadcrumb );
-			if ( ! breadcrumb_position ) modal.toolbar.$( 'section.choices' ).before( this.breadcrumb.$el );
+			if ( wp.hooks.applyFilters( 'PC.fe.steps.display_breadcrumb', true ) ) {
+				this.breadcrumb = new PC.fe.views.stepsProgress();
+				var breadcrumb_position = wp.hooks.applyFilters( 'PC.fe.breadcrumb_position', null, this.breadcrumb );
+				if ( ! breadcrumb_position ) modal.toolbar.$( 'section.choices' ).before( this.breadcrumb.$el );
+			}
 
 			this.display_step();
 		}.bind( this ), 20 );
