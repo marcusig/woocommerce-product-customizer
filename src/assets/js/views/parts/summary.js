@@ -32,6 +32,7 @@ PC.fe.views.summary = Backbone.View.extend( {
 			// if ( ! choice ) console.log( item.layer_id, item.choice_id );
 			if ( choice ) {
 				if ( 'calculation' == choice.get( 'text_field_type' ) ) return;
+				if ( layer.get( 'hide_in_configurator') ) return;
 				if ( 'form' == layer.get( 'type' ) && ( 'undefined' === typeof choice.get( 'field_value' ) || '' === choice.get( 'field_value' ) ) ) return;
 				var view = new PC.fe.views.summary_item( { model: choice } );
 				this.layers[ item.layer_id ].$el.append( view.$el );
