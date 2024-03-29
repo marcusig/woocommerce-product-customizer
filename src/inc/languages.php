@@ -303,13 +303,13 @@ class Languages {
 					// Replace dashes by underscores
 					$l = str_replace( '-', '_', $l );
 					$settings['name_'.$l] = array(
-						'label' => __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . ( $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : '' ),
+						'label' => __( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . $l . ( $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . esc_attr__( 'Name', 'product-configurator-for-woocommerce' ) . ' ' . esc_attr( $l ) . '">' : '' ),
 						'type' => 'text',
 						'priority' => 11,
 						'section' => 'translations',
 					);
 					$settings['description_'.$l] = array(
-						'label' => __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . ( $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . '">' : '' ),
+						'label' => __( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . $l . ( $flag_url ? '<img src="' . esc_url( $flag_url ) . '" alt="' . esc_attr__( 'Description', 'product-configurator-for-woocommerce' ) . ' ' . esc_attr( $l ) . '">' : '' ),
 						'type' => 'textarea',
 						'priority' => 21,
 						'condition' => '!data.not_a_choice',
