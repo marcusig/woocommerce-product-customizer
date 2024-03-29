@@ -69,12 +69,19 @@ class Configuration {
 		}
 
 		if ( null != $ID && intval( $ID ) ) {
-			$this->ID = absint( intval( $ID ) );
+			$this->ID = absint( $ID );
 			$conf_post = get_post( $this->ID );
+
+			if ( ! $conf_post ) return new WP_Error( '400', __( 'Configuration not found', 'product-configurator-for-woocommerce' ) );
 			if ( 'private' === $this->get_visibility() && $conf_post->post_author != get_current_user_id() && ! current_user_can( 'manage_woocommerce' ) ) {
 				return new WP_Error( '403', __( 'Unauthorized action, author issue', 'product-configurator-for-woocommerce' ) );
 			}
 			$this->post = $conf_post;
+			if ( ! $this->configuration_type ) {
+				$this->configuration_type = $conf_post->post_status;
+			} elseif ( $this->configuration_type != $conf_post->post_status ) {
+				return new WP_Error( '400', __( 'The configuration type does not match the requested item', 'product-configurator-for-woocommerce' ) );
+			}
 			// if ( ! $this->post ) return false;
 		} else {
 			$this->ID = 0;
@@ -267,6 +274,9 @@ class Configuration {
 	 * @param array  $attr - The image attributes
 	 */
 	public function get_image( $size = 'woocommerce_thumbnail', $attr = array(), $lazy = true ) {
+		if ( $this->get_the_post() && $attachment = get_post_thumbnail_id( $this->get_the_post() ) ) {
+			return wp_get_attachment_image( $attachment, $size, false, $attr );
+		}
 
 		if ( $single_image = $this->content_has_single_image( 'id' ) ) {
 			return wp_get_attachment_image( $single_image, $size, false, $attr );
