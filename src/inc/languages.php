@@ -48,6 +48,7 @@ class Languages {
 			'sku_label' => __( 'SKU', 'product-configurator-for-woocommerce' ),
 			'mc_max_items_message' => __( 'You have reached the maximum number of selectable items', 'product-configurator-for-woocommerce' ),
 			'mc_max_items_message_global' => __( 'You have reached the maximum number of selectable items for this product', 'product-configurator-for-woocommerce' ),
+			'mc_min_items_required_message' => __( 'Select at least %i items in %s', 'product-configurator-for-woocommerce' ),
 			'reset_configuration_label' => __( 'Reset configuration', 'product-configurator-for-woocommerce' ),
 			'edit_configuration_label' => __( 'Edit configuration', 'product-configurator-for-woocommerce' ),
 			'edit_item_in_cart' => __( 'Edit item in cart', 'product-configurator-for-woocommerce' ),
