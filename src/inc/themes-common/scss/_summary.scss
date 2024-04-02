@@ -44,7 +44,8 @@
 		display: flex;
 		justify-content: space-between;
 		line-height: 1.2;
-		flex: 1;
+		flex: auto;
+		width: 100%;
 		
 		&.has-form-field .summary-item--name {
 			font-weight: 500;
