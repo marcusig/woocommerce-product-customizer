@@ -2,8 +2,8 @@
 Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
-Requires at least: 4.2
-Tested up to: 6.4
+Requires at least: 5.5
+Tested up to: 6.5
 Stable tag: 1.3.0
 Requires PHP: 7.0
 License: GPLv2+
@@ -129,6 +129,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* Tested up to 6.5
+* Bump minimum WordPress required version
+* TWEAK: Ignore groups with no selected item when adding to cart
+* TWEAK: Summary: Hide in configurator
+* TWEAK: added filter PC.fe.steps.display_breadcrumb to prevent display of breadcrumb in the steps mode
+* TWEAK: added filter PC.fe.steps.display_breadcrumb to prevent display of breadcrumb in the steps mode
 * FIX: Compatibilty with YITH Quote request, where the configurator data would not be added in some instances.
 
 = 1.3.0 - 17/Feb/2024 = 
