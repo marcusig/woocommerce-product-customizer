@@ -113,7 +113,11 @@
 	 */
 	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/lapomme', function( steps ) {
 		var scrollable = PC.fe.modal.$( '.mkl_pc_container' );
-		if ( scrollable.length ) scrollable[0].scrollTo( 0, 0 );
+		if ( scrollable.length && scrollable[0].scrollHeight == scrollable[0].clientHeight ) {
+			scrollable[0].scrollTo( 0, 0 );
+		} else {
+			document.scrollingElement.scrollTop = PC.fe.modal.$( '.mkl_pc_toolbar' ).offset().top;
+		}
 	} );
 	
 
