@@ -73,6 +73,10 @@ footer {
 		box-shadow: none;
 		border:  none;
 		color: var(--mkl_pc_color-primary);
+		&::before {
+			content: unset;
+			display: none;
+		}
 		svg {
 			height: 23px;
 			fill: currentColor;
@@ -130,7 +134,7 @@ footer {
 			right: auto;
 	
 			&::after {
-				left: 10px;
+				left: 35px;
 				right: auto;
 				width: 15px;
 				height: 15px;
