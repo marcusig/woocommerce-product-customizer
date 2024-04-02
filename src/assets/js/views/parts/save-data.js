@@ -39,12 +39,37 @@ PC.fe.save_data = {
 		}
 		this.parse_choices( layer );
 	},
+	count_selected_choices_in_group: function( group_id ) {
+		var children = PC.fe.layers.filter( function( layer ) {
+			return group_id == layer.get( 'parent' ) && false !== layer.get( 'cshow' );
+		} );
+		var selected = 0;
+		_.each( children, function( child_layer ) {
+			var type = child_layer.get( 'type' )
+			if ( 'group' === type ) {
+				selected += this.count_selected_choices_in_group( child_layer.id );
+				return;
+			}
+			if ( 'simple' === type || multiple === type ) {
+				var selection = PC.fe.getLayerContent( child_layer.id ).filter( function( choice ) {
+					return choice.get( 'active' ) && false !== choice.get( 'cshow' );
+				} );
+				selected += selection.length;
+			}
+		}.bind( this ) );
+		return selected;
+	},
 	// get choices for one layer 
 	parse_choices: function( model ) {
 		var is_required = parseInt( model.get( 'required' ) );
 		var default_selection = model.get( 'default_selection' ) || 'select_first';
 		var type = model.get( 'type' );
+
+		// If the layer is hidden, ignore it
+		if ( false === model.get( 'cshow' ) ) return;
+
 		if ( 'form' == type || 'group' == type ) is_required = false;
+
 		if ( PC.fe.config.angles.save_current ) {
 			var angle = PC.fe.angles.findWhere( 'active', true );
 		} else {
@@ -58,6 +83,7 @@ PC.fe.save_data = {
 		var angle_id = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.angle_id', angle.id );
 
 		if ( 'group' == type ) {
+			if ( ! this.count_selected_choices_in_group( model.id ) ) return;
 			if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_layer_group', true, model ) ) this.choices.push( 
 				wp.hooks.applyFilters(
 					'PC.fe.save_data.parse_choices.added_group_layer',
@@ -78,8 +104,6 @@ PC.fe.save_data = {
 		var require_error = false;
 		var choices = PC.fe.getLayerContent( model.id );
 		if ( ! choices ) return;
-		// Check if the layer is hidden:
-		if ( false === model.get( 'cshow' ) ) return;
 		if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.parent_is_hidden && PC.conditionalLogic.parent_is_hidden( model ) ) return;
 		var first_choice = choices.first().id;
 		if ( ! model.attributes.not_a_choice ) {
