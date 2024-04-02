@@ -50,9 +50,19 @@ PC.fe.save_data = {
 				selected += this.count_selected_choices_in_group( child_layer.id );
 				return;
 			}
-			if ( 'simple' === type || multiple === type ) {
-				var selection = PC.fe.getLayerContent( child_layer.id ).filter( function( choice ) {
+			
+			var choices = PC.fe.getLayerContent( child_layer.id );
+			if ( ! choices ) return;
+
+			if ( 'simple' === type || 'multiple' === type ) {
+				var selection = choices.filter( function( choice ) {
 					return choice.get( 'active' ) && false !== choice.get( 'cshow' );
+				} );
+				selected += selection.length;
+			}
+			if ( 'form' === type ) {
+				var selection = PC.fe.getLayerContent( child_layer.id ).filter( function( choice ) {
+					return false !== choice.get( 'cshow' ) && ! choice.get( 'is_group' );
 				} );
 				selected += selection.length;
 			}
