@@ -256,7 +256,8 @@ class Configuration {
 		}
 
 		$image_file_name = 'product_'. $this->product_id . '-conf';
-
+		
+		if ( empty( $this->content ) ) return '';
 
 		foreach ($this->content as $layer) {
 			$image_file_name .= '-'.$layer->image;
@@ -350,6 +351,7 @@ class Configuration {
 	public function get_image_url( $lazy = false, $size = 'woocommerce_thumbnail' ) {
 		
 		if ( $this->configuration_image_exists() ) {
+			if ( ! $this->get_configuration_image_name() ) return '';
 			return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
 		}
 	
@@ -374,8 +376,11 @@ class Configuration {
 		} else { // on_the_fly
 			
 			$images = array();
+
+			if ( empty( $this->content ) ) return '';
+
 			// collect images
-			foreach ($this->content as $layer) {
+			foreach ( $this->content as $layer ) {
 				$images[] = $layer->image;
 			}
 
