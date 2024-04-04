@@ -289,7 +289,7 @@ PC.actionParameter = 'pc_get_data';
 			return;
 		}
 
-		if ( product_id != PC.fe.active_product && this.modal && PC.fe.inline != true ) {
+		if ( product_id != PC.fe.active_product && this.modal ) {
 			this.modal.remove();
 			this.modal = null;
 			wp.hooks.doAction( 'PC.fe.reset_product' );
