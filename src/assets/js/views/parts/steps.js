@@ -4,30 +4,39 @@ PC.fe.steps = {
 	previous_button: null,
 	next_button: null,
 	steps: null,
+	$nav: null,
+	initialized: false,
 	setup_steps: function() {
 		if ( ! this.steps_possible() ) {
 			PC.fe.use_steps = false;
+			this.clean_existing_steps();
 			return;
 		}
 
 		PC.fe.use_steps = true;
+
+		/* Maybe reset elements */
+		this.clean_existing_steps();
 
 		this.get_steps();
 
 		PC.fe.modal.$el.addClass( 'has-steps' );
 
 		// add buttons
+		if ( this.initialized ) return;
+
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator/steps', function( modal ) {
+			if  ( ! PC.fe.use_steps || ! this.steps ) return;
 			this.current_step = this.get_steps()[0];
 			this.current_step.set( 'active', true );
 			this.previous_button = new this.view_prev();
 			this.next_button = new this.view_next();
-			var $nav = $( '<nav class="mkl-pc--steps" />' );
-			$nav.append( this.previous_button.$el );
-			$nav.append( this.next_button.$el );
+			this.$nav = $( '<nav class="mkl-pc--steps" />' );
+			this.$nav.append( this.previous_button.$el );
+			this.$nav.append( this.next_button.$el );
 
-			var nav_position = wp.hooks.applyFilters( 'PC.fe.steps_position', null, $nav );
-			if ( ! nav_position ) modal.footer.$( '.pc_configurator_form' ).before( $nav );
+			var nav_position = wp.hooks.applyFilters( 'PC.fe.steps_position', null, this.$nav );
+			if ( ! nav_position ) modal.footer.$( '.pc_configurator_form' ).before( this.$nav );
 
 			if ( wp.hooks.applyFilters( 'PC.fe.steps.display_breadcrumb', true ) ) {
 				this.breadcrumb = new PC.fe.views.stepsProgress();
@@ -37,7 +46,27 @@ PC.fe.steps = {
 
 			this.display_step();
 		}.bind( this ), 20 );
+		this.initialized = true;
 
+	},
+	clean_existing_steps: function() {
+		if ( this.steps ) this.steps = null;
+		PC.fe.modal.$el.removeClass( 'has-steps' );
+		PC.fe.modal.$el.removeClass( 'last-step' );
+		PC.fe.modal.$el.removeClass( 'first-step' );
+		if ( this.previous_button ) {
+			this.$nav.remove();
+			this.$nav = null;
+			this.previous_button.remove();
+			this.previous_button = null;
+			this.next_button.remove();
+			this.next_button = null;
+		}
+
+		if ( this.breadcrumb ) {
+			this.breadcrumb.remove();
+			this.breadcrumb = null;
+		}
 	},
 	steps_possible: function() {
 		var steps = PC.fe.layers.filter( function( model ) {
