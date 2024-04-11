@@ -48,7 +48,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function register() {
-			$page_title = 'MKL Product Configurator for WooCommerce';
+			$page_title = __( 'Configurator settings', 'product-configurator-for-woocommerce' );
 			$menu_title = 'Product Configurator';
 			$capability = 'manage_options';
 			$menu_slug = 'mkl_pc_settings';
