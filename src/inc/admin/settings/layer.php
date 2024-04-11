@@ -291,7 +291,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => 'medium',
 						],
 						[
-							'label' => __( 'Color swatches', 'product-configurator-for-woocommerce' ),
+							'label' => __( 'Large', 'product-configurator-for-woocommerce' ),
 							'value' => 'large',
 						],
 					],
