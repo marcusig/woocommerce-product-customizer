@@ -354,7 +354,7 @@ class Configuration {
 			if ( ! $this->get_configuration_image_name() ) return '';
 			return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
 		}
-	
+
 		$mode = mkl_pc( 'settings' )->get( 'save_images' );
 		if ( 'save_to_disk' === $mode ) {
 			if ( $lazy ) {
