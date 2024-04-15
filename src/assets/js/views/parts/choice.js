@@ -132,10 +132,19 @@ PC.fe.views.choice = Backbone.View.extend({
 			|| PC.fe.config.close_choices_when_selecting_choice_desktop
 			|| 'dropdown' == layer.get( 'display_mode' );
 
-		// Maybe close the choice list
-		if ( wp.hooks.applyFilters( 'PC.fe.close_choices_after_selection', close_choices, this.model ) ) {
-			if ( layer ) layer.set( 'active', false );
+		if ( layer ) {
+			// Maybe close the choice list
+			if ( wp.hooks.applyFilters( 'PC.fe.close_choices_after_selection', close_choices, this.model ) ) {
+				layer.set( 'active', false );
+			} else if ( ! layer.get( 'active' ) ) {
+				// Maybe set the current layer to active
+				var current = layer.collection.findWhere( { active: true } );
+				if ( current ) current.set( 'active', false );
+				layer.set( 'active', true );
+			}
 		}
+
+
 		PC.fe.last_clicked = this;
 		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 	},
