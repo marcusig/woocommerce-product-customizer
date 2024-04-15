@@ -69,11 +69,11 @@ class Compat_Yith_Raq {
 
 		if ( isset( $rq->raq_content[ $item_id ] ) ) {
 			$raq = $rq->raq_content[ $item_id ];
-			$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = $_POST['pc_configurator_data'];
+			$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = wp_unslash( $_POST['pc_configurator_data'] );
 
-			$data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) );
+			$data = json_decode( wp_unslash( $_POST['pc_configurator_data'] ) );
 			if ( ! $data ) {
-				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( $_POST['pc_configurator_data'] );
+				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( wp_unslash( $_POST['pc_configurator_data'] ) );
 				$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
 			}
 			if ( $data ) {
