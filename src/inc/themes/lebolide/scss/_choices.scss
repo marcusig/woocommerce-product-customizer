@@ -223,6 +223,7 @@
 
 				button.choice-group-label {
 					border: 1px solid color(border);
+					height: auto;
 					&::after,
 					&::before {
 						content: '';
