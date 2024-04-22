@@ -47,7 +47,17 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 								name = parent.get_name() + ' - ' + name;
 							}
 						}
-						if ( this.should_display( item ) ) choices_names.push( name );
+						if ( this.should_display( item ) ) {
+							choices_names.push( 
+								/**
+								 * Filter PC.fe.selected_choice.name - Filters the selected choice name
+								 * @param string name - The name
+								 * @param object item - Choice model
+								 * @return string
+								 */
+								wp.hoops.applyFilters( 'PC.fe.selected_choice.name', name, item ) 
+							);
+						}
 					}.bind( this ) );
 				}
 			}.bind( this ) );
