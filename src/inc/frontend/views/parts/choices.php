@@ -7,4 +7,10 @@
 	<li class="choices-list"><ul data-layer-id="{{data._id}}">
 		
 	</ul></li>
+	<?php 
+		/**
+		 * Action mkl-pc-configurator-choices--after executed at the end of the choices list template
+		 */
+		do_action( 'mkl-pc-configurator-choices--after' ); 
+	?>
 </script>
