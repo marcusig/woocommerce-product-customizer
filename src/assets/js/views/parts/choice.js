@@ -138,8 +138,10 @@ PC.fe.views.choice = Backbone.View.extend({
 				layer.set( 'active', false );
 			} else if ( ! layer.get( 'active' ) ) {
 				// Maybe set the current layer to active
-				var current = layer.collection.findWhere( { active: true } );
-				if ( current ) current.set( 'active', false );
+				var current = layer.collection.filter( function( item ) {
+					return item.get( 'active' ) && false !== item.get( 'cshow' ) && 'group' != item.get( 'type' );
+				} );
+				if ( current.length ) current[0].set( 'active', false );
 				layer.set( 'active', true );
 			}
 		}
