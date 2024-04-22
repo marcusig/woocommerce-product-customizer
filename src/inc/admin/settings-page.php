@@ -767,7 +767,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 			
-			if ( mkl_pc( 'themes' )->current_theme_supports( 'steps' ) ) {
+			// if ( mkl_pc( 'themes' )->current_theme_supports( 'steps' ) ) {
 				add_settings_field(
 					'use_steps',
 					__( 'Use steps if possible', 'product-configurator-for-woocommerce' ),
@@ -789,7 +789,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						'setting_name' => 'steps_use_layer_name',
 					]
 				);
-			}
+				add_settings_field(
+					'steps_progress_enable_click_all',
+					__( 'Make all steps clickable in the breadcrumb', 'product-configurator-for-woocommerce' ),
+					[ $this, 'callback_checkbox' ],
+					'mlk_pc_settings', 
+					'general_settings',
+					[ 
+						'setting_name' => 'steps_progress_enable_click_all',
+					]
+				);
+			// }
 
 			/*
 				LABELS

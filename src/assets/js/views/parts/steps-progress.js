@@ -65,7 +65,7 @@ PC.fe.views.stepsProgressItem = Backbone.View.extend( {
 		e.preventDefault();
 		if ( this.model.get( 'active' ) ) return;
 		var current_index = PC.fe.steps.get_index( PC.fe.steps.current_step );
-		if ( PC.fe.steps.get_index( this.model ) < current_index ) {
+		if ( PC.fe.steps.get_index( this.model ) < current_index || PC.fe.config.steps_progress_enable_click_all ) {
 			PC.fe.steps.display_step( PC.fe.steps.get_index( this.model ) );
 		}
 	}

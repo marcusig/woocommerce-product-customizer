@@ -238,9 +238,11 @@
 			if ( $( 'input[name="mkl_pc__settings[use_steps]"' ).length ) {
 				$( 'input[name="mkl_pc__settings[use_steps]"' ).on( 'change', function( e ) {
 					$( 'input[name="mkl_pc__settings[steps_use_layer_name]"]' ).closest( 'tr' ).toggle( $( this ).prop( 'checked' ) );
+					$( 'input[name="mkl_pc__settings[steps_progress_enable_click_all]"]' ).closest( 'tr' ).toggle( $( this ).prop( 'checked' ) );
 				} );
 	
 				$( 'input[name="mkl_pc__settings[steps_use_layer_name]"]' ).closest( 'tr' ).toggle( $( 'input[name="mkl_pc__settings[use_steps]"' ).prop( 'checked' ) );
+				$( 'input[name="mkl_pc__settings[steps_progress_enable_click_all]"]' ).closest( 'tr' ).toggle( $( 'input[name="mkl_pc__settings[use_steps]"' ).prop( 'checked' ) );
 			}
 		},
 		get_configurable_products: function() {

@@ -404,6 +404,7 @@ class Frontend_Woocommerce {
 				'auto_close_siblings_in_groups' => ( bool ) mkl_pc( 'settings')->get( 'auto_close_siblings_in_groups', false ),
 				'use_steps' => ( bool ) mkl_pc( 'settings')->get( 'use_steps', false ) && mkl_pc( 'themes' )->current_theme_supports( 'steps' ),
 				'steps_use_layer_name' => ( bool ) mkl_pc( 'settings')->get( 'steps_use_layer_name', false ),
+				'steps_progress_enable_click_all' => ( bool ) mkl_pc( 'settings')->get( 'steps_progress_enable_click_all', false ),
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
