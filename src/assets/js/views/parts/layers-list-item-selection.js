@@ -30,7 +30,7 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 						name = parent.get_name() + ' - ' + name;
 					}
 				}
-				if ( this.should_display( item ) ) choices_names.push( name );
+				if ( this.should_display( item ) ) choices_names.push( wp.hooks.applyFilters( 'PC.fe.selected_choice.name', name, item ) );
 			}.bind( this ) );
 		}
 
@@ -55,7 +55,7 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 								 * @param object item - Choice model
 								 * @return string
 								 */
-								wp.hoops.applyFilters( 'PC.fe.selected_choice.name', name, item ) 
+								wp.hooks.applyFilters( 'PC.fe.selected_choice.name', name, item ) 
 							);
 						}
 					}.bind( this ) );
