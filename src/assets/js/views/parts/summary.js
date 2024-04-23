@@ -21,6 +21,7 @@ PC.fe.views.summary = Backbone.View.extend( {
 			if ( ! layer ) return;
 			if ( 'simple' == layer.get( 'type' ) && layer.get( 'not_a_choice' ) ) return;
 			if ( layer.get( 'hide_in_configurator') ) return;
+			if ( layer.get( 'hide_in_cart') ) return;
 			if ( ! this.layers[ item.layer_id ] ) {
 				this.layers[ item.layer_id ] = new PC.fe.views.summary_item_group( { model: layer } );
 				if ( layer.get( 'parent' ) && this.$( '[data-layer_id="' + layer.get( 'parent' ) + '"]' ).length ) {
