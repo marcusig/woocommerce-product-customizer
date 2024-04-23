@@ -619,4 +619,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.0 Introduces a new Steps feature, a refreshed design admin, a new theme and many other changes
+* 1.3.2 Maintenance release with various fixes and improvements
