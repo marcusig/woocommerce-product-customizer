@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.5
 Tested up to: 6.5
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -128,6 +128,16 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.3.2 - 23/Apr/2024 = 
+
+* TWEAK: Hide the layer in the summary, following the settings "Hide in cart" and "Hide in the menu"
+* TWEAK: Add setting "Make all steps clickable in the breadcrumb"
+* DEV: Added filter (JS) PC.fe.selected_choice.name, which allows overriding the name displayed
+* DEV: Added action (PHP) mkl-pc-configurator-choices--after, executed at the end of the choices list template
+* FIX: YITH add to quote not working with single quotes, needed to wp_unslash the raw data
+* FIX: Large color swatch label
+* FIX: Issue with configurator when 
 
 = 1.3.1 - 2/Apr/2024 = 
 
