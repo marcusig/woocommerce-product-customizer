@@ -118,7 +118,7 @@ class Choice {
 	}
 
 	public function get_image( $type = 'image' ) {
-		if ( ! $this->images ) return '';
+		if ( ! $this->images || ! is_array(  $this->images ) || ! isset( $this->images[ $type ] ) ) return '';
 		return $this->images[ $type ];
 	}
 
