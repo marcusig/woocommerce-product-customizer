@@ -127,7 +127,7 @@ PC.fe.save_data = {
 				}
 
 				// Simple layer without a selection (e.g. all items are out of stock)
-				if ( ! is_required && ! selected_choices.length && 'simple' == type && 'select_first' == default_selection ) {
+				if ( ! is_required && ! selected_choices.length && 'simple' == type && 'select_first' == default_selection && ! model.get( 'can_deselect' ) ) {
 					require_error = true;
 				}
 
