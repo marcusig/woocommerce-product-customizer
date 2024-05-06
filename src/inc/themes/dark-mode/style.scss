@@ -933,10 +933,7 @@ $inner_space: 1em;
 						top: 0;
 						z-index: 2;
 						text-transform: uppercase;
-
-						@media( max-width: $small_screen_width ) {
-							background: color(darkest);
-						}
+						background: color(darkest);
 
 						> span { 
 							font-weight: bold;
