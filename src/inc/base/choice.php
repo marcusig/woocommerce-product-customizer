@@ -93,7 +93,7 @@ class Choice {
 		if ( $this->choice_id && $content ) {
 			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
 			$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ), $this ); 
-			$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ), $this ); 
+			$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', $this->choice ? Utils::get_array_item( ['images'], 'angleId', $this->angle_id ) : false, $this ); 
 		} else {
 			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', [], $this ); 
 			$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', false, $this ); 
