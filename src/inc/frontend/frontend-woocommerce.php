@@ -171,10 +171,13 @@ class Frontend_Woocommerce {
 	 */
 	public function get_configurator_element_attributes( $product ) {
 		$data_attributes = array( 
-			'price' => $this->product->get_product_price( $product->get_id() ),
 			'product_id' => $product->get_id(),
-			'is_on_sale'    => $product->is_on_sale(),
+			'price' => $this->product->get_product_price( $product->get_id() ),
 			'regular_price' => wc_get_price_to_display( $product, array( 'price' => $product->get_regular_price() ) ),
+			'is_on_sale'    => $product->is_on_sale(),
+			'settings' => [
+				'convert_base_price' => apply_filters( 'configurator_convert_base_price', false, $product ),
+			]
 		);
 		/**
 		 * Filters the list of attributes added to the configurator trigger element.
@@ -194,6 +197,7 @@ class Frontend_Woocommerce {
 	 */
 	public function _output_data_attributes( $data ) {
 		$data_attributes_string = array_map( function( $key, $value ) {
+			if ( ! is_scalar( $value ) && ! is_null( $value ) ) $value = wp_json_encode( $value );
 			return ' data-' . $key . '="' . esc_attr( $value ) . '"';
 		}, array_keys( $data ), $data );
 		return $data_attributes_string;
