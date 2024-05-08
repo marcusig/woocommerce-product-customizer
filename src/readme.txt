@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Reset steps when reseting configurator
+
 = 1.3.3 - 23/Apr/2024 = 
 
 * FIX: Typo in function causing JS error in some cases

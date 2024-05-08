@@ -46,8 +46,12 @@ PC.fe.steps = {
 
 			this.display_step();
 		}.bind( this ), 20 );
-		this.initialized = true;
 
+		wp.hooks.addAction( 'PC.fe.reset_configurator', 'mkl/product_configurator/steps', function() {
+			this.display_step( 0 );
+		}.bind( this ) );
+
+		this.initialized = true;
 	},
 	clean_existing_steps: function() {
 		if ( this.steps ) this.steps = null;
