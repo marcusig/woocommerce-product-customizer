@@ -173,7 +173,7 @@ class Frontend_Woocommerce {
 		$data_attributes = array( 
 			'product_id' => $product->get_id(),
 			'price' => $this->product->get_product_price( $product->get_id() ),
-			'regular_price' => wc_get_price_to_display( $product, array( 'price' => $product->get_regular_price() ) ),
+			'regular_price' => $this->product->get_product_price( $product->get_id(), 'regular_price' ),
 			'is_on_sale'    => $product->is_on_sale(),
 			'settings' => [
 				'convert_base_price' => apply_filters( 'configurator_convert_base_price', false, $product ),

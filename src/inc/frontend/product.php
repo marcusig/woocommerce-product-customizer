@@ -122,15 +122,24 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 * @param integer $product_id
 		 * @return float
 		 */
-		public function get_product_price( $product_id ) {
+		public function get_product_price( $product_id, $price_type = 'price' ) {
 			$product = wc_get_product( $product_id ); 
 			$base_currency = get_option( 'woocommerce_currency' );
-			$price = wc_get_price_to_display( $product );
-
 			global $WOOCS;
+
+			$process_woocs = false;
 			if ( $WOOCS && ! isset( $_REQUEST['woocs_block_price_hook'] ) ) {
+				$process_woocs = true;
 				$_REQUEST['woocs_block_price_hook'] = 1;
+			}
+
+			if ( 'regular_price' == $price_type ) {
+				$price = wc_get_price_to_display( $product, array( 'price' => $product->get_regular_price() ) );
+			} else {
 				$price = wc_get_price_to_display( $product );
+			}
+
+			if ( $process_woocs ) {
 				unset( $_REQUEST['woocs_block_price_hook'] );
 			}
 
@@ -144,7 +153,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			}
 			
 			// Aelia
-			$price = apply_filters( 'wc_aelia_cs_get_product_price', $price, $product_id, $base_currency );
+			$price = apply_filters( 'wc_aelia_cs_get_product_price', $price, $product_id, $base_currency, $price_type );
 
 			// Woo Multi Currency
 			if ( function_exists( 'wmc_revert_price' ) ) {
