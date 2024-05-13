@@ -160,16 +160,16 @@ class DB {
 	 * Getter
 	 *
 	 * @param string  $that
-	 * @param integer $post_id
+	 * @param integer $product_id
 	 * @return boolean|array
 	 */
-	public function get( $that, $post_id ) {
+	public function get( $that, $product_id ) {
 
 		if ( ! is_string( $that ) ) return false;
 
-		if ( ! $this->is_product( $post_id ) ) return false;
+		if ( ! $this->is_product( $product_id ) ) return false;
 
-		$product = wc_get_product( $post_id );
+		$product = wc_get_product( $product_id );
 
 		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return false;
 
@@ -187,11 +187,11 @@ class DB {
 			/**
 			 * Filters the data fetched using the Get method
 			 * 
-			 * @param $data    - The data filtered
-			 * @param $that    - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
+			 * @param $data       - The data filtered
+			 * @param $that       - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
 			 * @param $product_id - The product ID
 			 */
-			return apply_filters( 'mkl_pc/db/get', $data, $that, $post_id ); 
+			return apply_filters( 'mkl_pc/db/get', $data, $that, $product_id ); 
 		}
 	}
 
