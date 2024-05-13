@@ -367,6 +367,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 				$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
 				if ( ! $product_permalink ) return;
+				if ( isset( $cart_item['context'] ) ) $product_permalink = add_query_arg( [ 'context' => esc_attr( $cart_item['context'] ) ], $product_permalink );
 				$product_permalink = add_query_arg( [ 'edit_config_from_cart' => 1 ], $product_permalink );
 				return '<a href="' . esc_url( $product_permalink ) . '" class="mkl-pc--edit-configuration">' . apply_filters( 'mkl_pc_edit_configuration_label', mkl_pc( 'settings' )->get_label( 'edit_configuration_label', __( 'Edit configuration', 'product-configurator-for-woocommerce' ) ) ) . '</a>';
 			}
