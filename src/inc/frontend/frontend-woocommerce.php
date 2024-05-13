@@ -482,13 +482,14 @@ class Frontend_Woocommerce {
 	}
 
 	/**
-	 * Undocumented function
+	 * Get the configuration to preload in the configurator
 	 *
-	 * @return void
+	 * @return array
 	 */
 	private function get_saved_configuration_content() {
+		$configuration_to_load = [];
 		if ( isset( $_REQUEST['load_config_from_cart'] ) ) {
-			
+
 			$wc_cart = WC()->cart;
 			$cart_item = $wc_cart->get_cart_item($_REQUEST['load_config_from_cart']);
 
@@ -501,8 +502,10 @@ class Frontend_Woocommerce {
 			}
 
 			if ( $cart_item && isset( $cart_item['configurator_data_raw'] ) ) {
-				return $cart_item['configurator_data_raw'];
+				$configuration_to_load = $cart_item['configurator_data_raw'];
 			}
+
+
 		}
 
 		if ( isset( $_REQUEST['load_config_from_order'] ) ) {
@@ -523,17 +526,24 @@ class Frontend_Woocommerce {
 			 */
 			if ( apply_filters( 'mkl_pc/current_user_can_view_order_config', $current_user_can_view_config ) ) {
 				$config = wc_get_order_item_meta( (int) $_REQUEST['load_config_from_order'], '_configurator_data_raw', true );
-				if ( $config ) return $config;
+				if ( $config ) $configuration_to_load = $config;
 			}
 		}
 
 		if ( isset( $_REQUEST['load-preset'] ) ) {
 			$p = get_post( (int) $_REQUEST['load-preset'] );
 			if ( $p && 'mkl_pc_configuration' === $p->post_type && 'preset' === $p->post_status ) {
-				return json_decode( $p->post_content );
+				$configuration_to_load = json_decode( $p->post_content );
 			}
 		}
-		return false;
+
+		/**
+		 * Filters the configuration to add to cart
+		 *
+		 * @param array $configuration_to_load
+		 * @return array The configuration data, or empty array
+		 */
+		return apply_filters( 'mkl_pc_get_saved_configuration_content', $configuration_to_load );
 	}
 
 	/**
