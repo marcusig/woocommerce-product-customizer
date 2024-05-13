@@ -344,6 +344,9 @@ PC.actionParameter = 'pc_get_data';
 			modified: false, 
 		}, 
 		parse: function( response ) {
+			
+			wp.hooks.doAction( 'PC.fe.setContent.parse.before', response );
+
 			// var response = null;
 			var content = new PC.content_list();
 			if( ! response instanceof Object ) {
@@ -361,6 +364,7 @@ PC.actionParameter = 'pc_get_data';
 				}
 				// content.add({ key = new PC.choices(value);
 			});
+
 			// this.set('content', content);
 			return { content: content };
 			// this.set()
