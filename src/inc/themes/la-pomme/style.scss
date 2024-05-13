@@ -144,6 +144,7 @@ $inner_space: 1em;
 				top: 0;
 				left: 0;
 				right: 0;
+				bottom: 0; /* Fix issue on mobile, where the footer would be hidden */
 			}
 
 		}
@@ -225,8 +226,10 @@ $inner_space: 1em;
 						position: fixed;
 						left: 0;
 						top: 0;
+						z-index: 2;
 					}
 				}
+				padding-bottom: 30px;
 			}
 			.mkl_pc_viewer {
 				@media( max-width: $small_screen_width ) {
