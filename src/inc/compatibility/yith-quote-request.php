@@ -21,6 +21,8 @@ class Compat_Yith_Raq {
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		// add_filter( 'yith_ywraq_product_subtotal_html', [ $this, 'apply_extra_price' ], 20, 3 );
 		add_action( 'ywraq_quote_adjust_price', [ $this, 'apply_extra_price' ], 20, 2 );
+
+		add_filter( 'mkl_pc_get_saved_configuration_content', [ $this, 'load_quote_configuration_in_configurator' ] );
 	}
 
 	public function config( $config ) {
@@ -52,6 +54,11 @@ class Compat_Yith_Raq {
 		);
 	}
 
+	/**
+	 * Main action used to add the configuration to the quote
+	 *
+	 * @return void
+	 */
 	public function yith_raq_updated() {
 		$is_adding_configured_item = isset( $_POST['action'] ) && 'yith_ywraq_action' === $_POST['action'] && isset( $_POST['ywraq_action'] ) && 'add_item' === $_POST['ywraq_action'] && isset(  $_POST['pc_configurator_data'] );
 		if ( ! $is_adding_configured_item ) return;
@@ -102,7 +109,8 @@ class Compat_Yith_Raq {
 				$temp_item_data = array_merge(
 					$temp_item_data,
 					array(
-						'key'          => 'configuration_to_yithraq',
+						'key'          => $item_id,
+						'context'      => 'configuration_to_yithraq',
 						'product_id'   => $product_id,
 						'variation_id' => $variation_id,
 						'variation'    => false,
@@ -203,6 +211,25 @@ class Compat_Yith_Raq {
 		<?php
 
 	}
+
+	/**
+	 * Load the configuration saved in the quote item when going back to the configurator
+	 *
+	 * @param array $config_data
+	 * @return array
+	 */
+	public function load_quote_configuration_in_configurator( $config_data ) {
+		if ( $config_data || ! isset( $_REQUEST['load_config_from_cart'], $_REQUEST['context'] ) || 'configuration_to_yithraq' != $_REQUEST['context'] ) return $config_data;
+		$rq = YITH_Request_Quote();
+		$item_id = $_REQUEST['load_config_from_cart'];
+		// logdebug( $rq->raq_content );
+		if ( isset( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] ) ) {
+			$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
+			if ( $data ) return $data;
+		}
+		return $config_data;
+	}
+
 }
 
 return new Compat_Yith_Raq();
