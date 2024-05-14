@@ -26,7 +26,11 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'woocommerce_order_again_cart_item_data', array( $this, 'wc_order_again_cart_item_data' ), 10, 3 ); 
 			// add_filter( 'woocommerce_add_cart_item', array( $this, 'woocommerce_add_cart_item' ), 10, 3 ); 
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
-			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );			
+
+			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
+			add_filter( 'woocommerce_get_cart_contents', array( $this, 'block_cart_item_thumbnail' ), 20 );
+			add_filter( 'wp_get_attachment_image_src', array( $this, 'wp_get_attachment_image_src' ), 120, 3 );
+
 			add_filter( 'woocommerce_cart_item_permalink', array( $this, 'cart_item_permalink' ), 30, 3 );
 			add_filter( 'woocommerce_cart_item_name', array( $this, 'add_image_to_review_order_checkout' ), 100, 3 );
 
@@ -247,23 +251,69 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function cart_item_thumbnail( $image, $cart_item, $cart_item_key ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
-				$configurator_data = $cart_item['configurator_data'];
-				$choices = array(); 
-				usort( $configurator_data, [ $this, '_order_images' ] );
-				foreach ( $configurator_data as $layer ) {
-					if ( ! $layer ) continue;
-					if ( $choice_image = $layer->get_image_id( 'image' ) ) {
-						$choices[] = [ 'image' => $choice_image ];
-					}
-				}
-
-				$configuration = new Configuration( NULL, array( 'product_id' => $cart_item['product_id'], 'content' => json_encode( $choices ) ) );
+				$configuration = $this->_get_configuration_for_cart_item( $cart_item );
 				$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 				$img = $configuration->get_image( $size );
 
 				if ( $img ) return $img;
 			}
 
+			return $image;
+		}
+
+		/**
+		 * Filter the cart content in order to replace the thumbnail.
+		 *
+		 * @param [type] $cart_content
+		 * @return void
+		 */
+		public function block_cart_item_thumbnail( $cart_content ) {
+			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $cart_content;
+			$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
+			foreach ( $cart_content as $key => $cart_item ) {
+				if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
+					$configuration = $this->_get_configuration_for_cart_item( $cart_item );
+					$img_url = $configuration->get_image_url( false, $size );
+
+					if ( ! $img_url || ! is_string( $img_url ) ) continue;
+					$attachment_id = Utils::get_image_id( $img_url );
+
+					// If we have an attachment ID, set the ID and move to the next item
+					if ( $attachment_id ) {
+						$cart_content[ $key ]['data']->set_image_id( $attachment_id );
+						continue;
+					}
+					if ( strpos( $cart_content[ $key ]['data']->get_image_id(), '-replace-with-' ) ) continue;
+					$cart_content[ $key ]['data']->set_image_id( $cart_content[ $key ]['data']->get_image_id() . '-replace-with-' . $img_url );
+				}
+			}
+		
+			return $cart_content;
+		}
+
+		/**
+		 * Replace the image
+		 *
+		 * @param string $image
+		 * @param mixed $attachment_id
+		 * @param [type] $size
+		 * @return string
+		 */
+		public function wp_get_attachment_image_src( $image, $attachment_id, $size ) {
+			if ( is_string( $attachment_id ) && $pos = strpos( $attachment_id, '-replace-with-' ) ) {
+				$url = substr( $attachment_id, $pos + 14 );
+				$parts = parse_url( $url );
+				$query = [];
+				if ( isset( $parts['query'] ) ) {
+					parse_str( $parts['query'], $query );
+				}
+				return [
+					$url,
+					$query['width'] ?? 300,
+					$query['height'] ?? 300,
+					false
+				];
+			}
 			return $image;
 		}
 
@@ -404,7 +454,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 
 		private function _get_cart_item_context() {
-			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 5 );
+			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
 			foreach( $trace as $call ) {
 				// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
 				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
@@ -412,6 +462,26 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				}
 			}
 			return 'default';
+		}
+
+		/**
+		 * Get the configuration object for a given cart_item
+		 *
+		 * @param array $cart_item
+		 * @return Configuration
+		 */
+		private function _get_configuration_for_cart_item( $cart_item ) {
+			$configurator_data = $cart_item['configurator_data'];
+			$choices = array(); 
+			usort( $configurator_data, [ $this, '_order_images' ] );
+			foreach ( $configurator_data as $layer ) {
+				if ( ! $layer ) continue;
+				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
+					$choices[] = [ 'image' => $choice_image ];
+				}
+			}
+
+			return new Configuration( NULL, array( 'product_id' => $cart_item['product_id'], 'content' => json_encode( $choices ) ) );
 		}
 
 		// public function pc_price_change( $cart_object ) {
