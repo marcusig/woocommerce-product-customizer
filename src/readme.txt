@@ -129,6 +129,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Configuration image added to the block cart
 * TWEAK: Multi currency: regular_price to be stored in main currency
 * TWEAK: Reset steps when reseting configurator
 
