@@ -222,7 +222,6 @@ class Compat_Yith_Raq {
 		if ( $config_data || ! isset( $_REQUEST['load_config_from_cart'], $_REQUEST['context'] ) || 'configuration_to_yithraq' != $_REQUEST['context'] ) return $config_data;
 		$rq = YITH_Request_Quote();
 		$item_id = $_REQUEST['load_config_from_cart'];
-		// logdebug( $rq->raq_content );
 		if ( isset( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] ) ) {
 			$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
 			if ( $data ) return $data;
