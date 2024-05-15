@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.5
 Tested up to: 6.5
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,9 +129,17 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.3.4 - 15/May/2024 = 
+
+* TWEAK: Add fallback dimensions when generating the configurator image and the image size is set to 0x0
+* FIX: Link to edit configuration in the YITH Request a quote form to actually load the configuration
+* TWEAK: Added JS action 'PC.fe.setContent.parse.before'
 * TWEAK: Configuration image added to the block cart
 * TWEAK: Multi currency: regular_price to be stored in main currency
 * TWEAK: Reset steps when reseting configurator
+* TWEAK: Do not trigger a Required error when "The user can deselect the current choice" is enabled and Required is not selected
+* TWEAK: Prevent Warning in image generation
+* FIX: Fix layer name background color on Dark mode theme
 
 = 1.3.3 - 23/Apr/2024 = 
 
