@@ -392,7 +392,12 @@ class Configuration {
 			}
 
 			if ( is_array( $size ) ) {
-				$size = "width=" . $size['width'] . "&height=" . $size['height']; 
+				// Add fallback dimensions, as 0x0 will generate a fatal error
+				if ( 0 == $size['width'] && 0 == $size['width']) {
+					$size['width'] = 251;
+					$size['height'] = 251;
+				}
+				$size = "width=" . $size['width'] . "&height=" . $size['height'];
 			} else {
 				$size = '';
 			}
