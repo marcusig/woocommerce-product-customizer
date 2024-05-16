@@ -351,6 +351,10 @@ class Configuration {
 	public function get_image_url( $lazy = false, $size = 'woocommerce_thumbnail' ) {
 		
 		if ( $this->configuration_image_exists() ) {
+
+			if ( $single_image = $this->content_has_single_image( 'id' ) ) {
+				return wp_get_attachment_image_url( $single_image, $size );
+			}
 			if ( ! $this->get_configuration_image_name() ) return '';
 			return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
 		}
