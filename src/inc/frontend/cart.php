@@ -39,6 +39,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			// add_action( 'woocommerce_before_calculate_totals', array( &$this, 'pc_price_change' ) ); 
 			// Addify Ad to quote
 			add_filter( 'addify_add_quote_item_data', array( $this, 'addify_add_quote_item_data' ), 20, 5 );
+
+			// Attach short description filter.
+			add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
 		}
 
 		/**
@@ -492,5 +495,74 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		//     }
 		// }
 
+		/**
+		 * Filter store API responses to add edit link
+		 * 
+		 * Props to Kathy D who shared this on Slack. Hopefully WooCommerce soon has a proper method to add this type of thing.
+		 *
+		 * @param  $response  WP_REST_Response
+		 * @param  $server    WP_REST_Server
+		 * @param  $request   WP_REST_Request
+		 * @return WP_REST_Response
+		 */
+		public function filter_cart_item_data( $response, $server, $request ) {
+
+			if ( is_wp_error( $response ) ) {
+				return $response;
+			}
+
+			if ( strpos( $request->get_route(), 'wc/store' ) === false ) {
+				return $response;
+			}
+
+			$data = $response->get_data();
+
+			if ( empty( $data['items'] ) ) {
+				return $response;
+			}
+
+			$cart = WC()->cart->get_cart();
+
+			foreach ( $data['items'] as &$item_data ) {
+
+				$cart_item_key = $item_data['key'];
+				$cart_item     = isset( $cart[ $cart_item_key ] ) ? $cart[ $cart_item_key ] : null;
+
+				if ( is_null( $cart_item ) ) {
+					continue;
+				}
+
+				$this->filter_container_cart_item_short_description( $item_data, $cart_item );
+
+			}
+
+			$response->set_data( $data );
+
+			return $response;
+		}
+
+
+		/**
+		 * Filter container cart item permalink to support cart editing.
+		 *
+		 *
+		 * @param array  $item_data
+		 * @param array  $cart_item
+		 */
+		public function filter_container_cart_item_short_description( &$item_data, $cart_item ) {
+
+				$_product = $cart_item['data'];
+
+				$trimmed_short_description = '';
+
+				if ( $item_data['short_description'] ) {
+					$trimmed_short_description = '<p class="wc-block-components-product-metadata__description-text">' . wp_trim_words( $item_data['short_description'], 12 ) . '</p>';
+				}
+
+				$edit_in_cart_link = $item_data['permalink'];
+				$my_button         = '<p class="wc-block-cart-item__edit"><a class="wc-block-components-button mkl-pc-edit-link" href="' . esc_url( $edit_in_cart_link ) . '"><span class="wc-block-components-button__text">' . esc_html__( 'Edit configuration', 'product-configurator-for-woocommerce' ) . '</span></a></p>';
+				
+				$item_data['short_description'] = $trimmed_short_description . $my_button;
+		}
 	}
 }
