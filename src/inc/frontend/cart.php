@@ -555,6 +555,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				$trimmed_short_description = '';
 
+				if ( ! $item_data['permalink'] || ! strpos( $item_data['permalink'], 'load_config_from_cart' ) ) return;
+
 				if ( $item_data['short_description'] ) {
 					$trimmed_short_description = '<p class="wc-block-components-product-metadata__description-text">' . wp_trim_words( $item_data['short_description'], 12 ) . '</p>';
 				}
