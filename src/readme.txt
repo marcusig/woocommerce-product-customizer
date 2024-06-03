@@ -129,6 +129,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix scroll to top in Le Bolide + Steps
 * TWEAK: Added setting to hide layer in the summary
 
 = 1.3.4 - 15/May/2024 = 

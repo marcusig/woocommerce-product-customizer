@@ -121,12 +121,22 @@
 	 * Display step: scroll back to the top
 	 */
 	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/lebolide', function( steps ) {
-		var scrollable = PC.fe.modal.$( '.mkl_pc_container' );
+		// On mobile, the toolbar is scrollable
+		var scrollable = PC.fe.modal.$( '.mkl_pc_toobar' );
 		if ( scrollable.length && scrollable[0].scrollHeight != scrollable[0].clientHeight ) {
 			scrollable[0].scrollTo( 0, 0 );
-		} else {
-			document.scrollingElement.scrollTop = PC.fe.modal.$( '.mkl_pc_toolbar' ).offset().top;
-		}
+			return;
+		} 
+
+		// On desktop, the whole container is scrollable
+		scrollable = PC.fe.modal.$( '.mkl_pc_container' );
+		if ( scrollable.length && scrollable[0].scrollHeight != scrollable[0].clientHeight ) {
+			scrollable[0].scrollTo( 0, 0 );
+			return;
+		} 
+		
+		// inline configurator
+		document.scrollingElement.scrollTop = PC.fe.modal.$( '.mkl_pc_toolbar' ).offset().top;
 	} );
 	
 })( jQuery );
