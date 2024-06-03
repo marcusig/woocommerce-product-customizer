@@ -212,7 +212,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			echo '<div class="pc_configurator_form">';
 
 			echo '<# if ( data.is_in_stock ) { #>';
-				echo '<# if ( ! data.show_form ) { #>';
+				echo '<# if ( ! data.show_form && data.show_qty ) { #>';
 				if ( $product && is_a( $product, 'WC_Product' ) && ! $product->is_sold_individually() ) {
 					$qty_input = woocommerce_quantity_input( array(
 						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
