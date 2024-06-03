@@ -303,7 +303,7 @@ class Frontend_Woocommerce {
 		
 		if ( ! $this->load_configurator_on_page() ) return;
 
-		wp_enqueue_script( 'wp-api' );
+		// wp_enqueue_script( 'wp-api' );
 		$wp_scripts = wp_scripts();
 		if ( ! $wp_scripts->query( 'wp-hooks' ) ) {
 			//WP.hooks, if it's included in WP core.
