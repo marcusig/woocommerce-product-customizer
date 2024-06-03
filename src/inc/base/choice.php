@@ -20,6 +20,8 @@ class Choice {
 	public $layer_data; 
 	public $choice;
 	public $images;
+	public $option_label;
+	public $field_value;
 	private $db = null;
 
 	public function __wakeup() {
@@ -92,6 +94,9 @@ class Choice {
 
 		if ( $this->choice_id && $content ) {
 			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
+		}
+
+		if ( $this->choices ) {
 			$this->choice  = apply_filters( 'mkl_pc_choice_set_selected_choice__choice', Utils::get_array_item( $this->choices['choices'], '_id', $this->choice_id ), $this ); 
 			$this->images  = apply_filters( 'mkl_pc_choice_set_selected_choice__images', ( $this->choice ? Utils::get_array_item( $this->choice['images'], 'angleId', $this->angle_id ) : false ), $this ); 
 		} else {
