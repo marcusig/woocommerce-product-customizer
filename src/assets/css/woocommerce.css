@@ -99,8 +99,13 @@ table span.choice-thumb.color {
     display: none !important;
 }
 
-/* Block cart item hide */
+/* Block cart, linked item - hidden */
 tr.wc-block-cart-items__row.configurator-hidden,
 .wc-block-components-order-summary-item.configurator-hidden {
     display: none !important;
+}
+
+/* Block cart, linked item - hide badges */
+tr.wc-block-cart-items__row.configurator-linked-product .wc-block-components-product-badge.wc-block-components-sale-badge {
+    display: none;
 }
