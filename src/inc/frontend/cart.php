@@ -16,6 +16,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function __construct() {
 			$this->_hooks();
 		}
+
 		private function _hooks() {
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 
@@ -279,7 +280,12 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					$img_url = $configuration->get_image_url( false, $size );
 
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
-					$attachment_id = Utils::get_image_id( $img_url );
+
+					$attachment_id = 0;
+
+					if ( 'save_to_disk' === mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ) ) {
+						$attachment_id = Utils::get_image_id( $img_url );
+					}
 
 					// If we have an attachment ID, set the ID and move to the next item
 					if ( $attachment_id ) {
