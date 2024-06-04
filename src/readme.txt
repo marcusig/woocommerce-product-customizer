@@ -2,9 +2,9 @@
 Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
-Requires at least: 5.5
+Requires at least: 5.9
 Tested up to: 6.5
-Stable tag: 1.3.4
+Stable tag: 1.3.5
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.3.5 - 3/Jun/2024 = 
+
 * FIX: Performance issue in block cart compatibility
 * TWEAK: Fix scroll to top in Le Bolide + Steps
 * TWEAK: Added setting to hide layer in the summary
@@ -186,4 +188,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.2 Maintenance release with various fixes and improvements
+* 1.3.5 Fix performance issue when adding to the cart and going to checkout, added in 1.3.4
