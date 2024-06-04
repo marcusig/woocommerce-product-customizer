@@ -29,7 +29,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'woocommerce_get_item_data', array( $this, 'wc_cart_get_item_data' ), 10, 2 ); 
 
 			add_filter( 'woocommerce_cart_item_thumbnail', array( $this, 'cart_item_thumbnail' ), 30, 3 );
-			add_filter( 'woocommerce_get_cart_contents', array( $this, 'block_cart_item_thumbnail' ), 20 );
+			add_filter( 'woocommerce_get_cart_contents', array( $this, 'block_cart_item_thumbnail' ), 120 );
 			add_filter( 'wp_get_attachment_image_src', array( $this, 'wp_get_attachment_image_src' ), 120, 3 );
 
 			add_filter( 'woocommerce_cart_item_permalink', array( $this, 'cart_item_permalink' ), 30, 3 );
@@ -272,6 +272,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @return void
 		 */
 		public function block_cart_item_thumbnail( $cart_content ) {
+			static $ran_filter;
+			if ( $ran_filter ) return $cart_content;
+			$ran_filter = true;
+
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $cart_content;
 			$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 			foreach ( $cart_content as $key => $cart_item ) {
@@ -281,18 +285,17 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
 
-					$attachment_id = 0;
-
 					if ( 'save_to_disk' === mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ) ) {
 						$attachment_id = Utils::get_image_id( $img_url );
+
+						// If we have an attachment ID, set the ID and move to the next item
+						if ( $attachment_id ) {
+							$cart_content[ $key ]['data']->set_image_id( $attachment_id );
+							continue;
+						}
 					}
 
-					// If we have an attachment ID, set the ID and move to the next item
-					if ( $attachment_id ) {
-						$cart_content[ $key ]['data']->set_image_id( $attachment_id );
-						continue;
-					}
-					if ( strpos( $cart_content[ $key ]['data']->get_image_id(), '-replace-with-' ) ) continue;
+					if ( str_contains( $cart_content[ $key ]['data']->get_image_id(), '-replace-with-' ) ) continue;
 					$cart_content[ $key ]['data']->set_image_id( $cart_content[ $key ]['data']->get_image_id() . '-replace-with-' . $img_url );
 				}
 			}
@@ -309,7 +312,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @return string
 		 */
 		public function wp_get_attachment_image_src( $image, $attachment_id, $size ) {
-			if ( is_string( $attachment_id ) && $pos = strpos( $attachment_id, '-replace-with-' ) ) {
+			if ( is_string( $attachment_id ) && str_contains( $attachment_id, '-replace-with-' ) ) {
+				$pos = strpos( $attachment_id, '-replace-with-' );
 				$url = substr( $attachment_id, $pos + 14 );
 				$parts = parse_url( $url );
 				$query = [];
@@ -463,6 +467,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 
 		private function _get_cart_item_context() {
+			if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
+				return 'block';
+			}
+
 			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
 			foreach( $trace as $call ) {
 				// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
