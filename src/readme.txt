@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FIX: Fix CSS issue in Dark mode, where the viewer would disappear at a certain screen size
+
 = 1.3.5 - 3/Jun/2024 = 
 
 * FIX: Performance issue in block cart compatibility

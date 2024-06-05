@@ -238,10 +238,10 @@ $inner_space: 1em;
 			--mkl_pc_footer_height: 120px;
 		}
 		@media( max-width: $medium_screen_width ) {
-			--mkl_pc_toolbar_width: $toolbar_width_medium;
+			--mkl_pc_toolbar_width: #{$toolbar_width_medium};
 		}
 		@media( max-width: $small_screen_width ) {
-			--mkl_pc_toolbar_width: $toolbar_width_small;
+			--mkl_pc_toolbar_width: #{$toolbar_width_small};
 		}
 
 		.mkl_pc_bg {
