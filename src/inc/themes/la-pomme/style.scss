@@ -56,7 +56,7 @@ $inner_space: 1em;
 
 
 
-.is_configurable {
+.is_configurable, .configurator_is_opened {
 	// div.product form.cart {
 	// display: none;
 	div.product form.cart {
@@ -72,6 +72,9 @@ $inner_space: 1em;
 		}
 	}
 	
+	@media( max-width: $medium_screen_width ) {
+		--mkl_pc_footer_height: auto;
+	}
 	@media( max-width: $small_screen_width ) {
 		--mkl_pc_footer_height: 110px;
 		button.configure-product {
@@ -80,6 +83,7 @@ $inner_space: 1em;
 			width: 100%;
 		}
 	}
+
 }
 
 /* CUSTOMIZER */
@@ -404,7 +408,7 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 	}
 }
 
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description,
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choice > button span.description,
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > button.choice-item span.text.choice-name,
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > span.out-of-stock {
 	display: none;
