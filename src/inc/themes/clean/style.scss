@@ -466,7 +466,7 @@ Supports: columns, color_swatches
 
 }
 
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description {
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choice > button span.description {
 	display: none;
 }
 

@@ -451,7 +451,7 @@ body.configurator_is_inline .mkl_pc {
 	}
 }
 
-.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li > button span.description,
+.mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choice > button span.description,
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > button.choice-item span.text.choice-name,
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layers li.display-mode-colors .layer_choices li > span.out-of-stock {
 	display: none;
