@@ -23,6 +23,8 @@ class Compat_Yith_Raq {
 		add_action( 'ywraq_quote_adjust_price', [ $this, 'apply_extra_price' ], 20, 2 );
 
 		add_filter( 'mkl_pc_get_saved_configuration_content', [ $this, 'load_quote_configuration_in_configurator' ] );
+		add_action( 'ywraq_request_quote_email_view_item_after_title', [ $this, 'quote_from_cart_compat' ], 20, 3 );
+		add_action( 'ywraq_from_cart_to_order_item', [ $this, 'raq_on_create_order' ], 20, 4 );
 	}
 
 	public function config( $config ) {
@@ -227,6 +229,55 @@ class Compat_Yith_Raq {
 			if ( $data ) return $data;
 		}
 		return $config_data;
+	}
+
+	/**
+	 * Ouput configurator data when receiving a quote from Cart
+	 *
+	 * @param mixed $item
+	 * @param array $raq_data
+	 * @param mixed $key
+	 * @return void
+	 */
+	public function quote_from_cart_compat( $item, $raq_data, $key ) {
+		if ( ! isset( $raq_data['sent_from_cart'] ) || ! $raq_data['sent_from_cart'] ) return;
+
+		/* Added From cart with Order */ 
+		if ( is_a( $item, 'WC_Order_Item_Product' ) ) {
+			$key = apply_filters( 'mkl_pc/order_created/saved_data/label', mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $item );
+			if ( $config = $item->get_meta( $key ) ) {
+				echo '<div class="configurator-label"><strong>' . wp_kses_post( $key ) . '</strong></div>';
+				echo '<small style="line-height: 1em">';
+				echo wp_kses_post( $config );
+				echo '</small>';
+			}
+
+		/* Added From cart without Order */
+		} elseif ( is_array( $item ) && isset( $item[ 'configurator_data' ] ) ) {
+			$data = mkl_pc( 'frontend' )->cart->wc_cart_get_item_data( [], $item );
+			if ( count( $data ) ) {
+				$configuration = $data[0];
+				echo '<div class="configurator-label"><strong>' . wp_kses_post( $configuration['key'] ) . '</strong></div>';
+				echo '<small style="line-height: 1em">';
+				echo wp_kses_post( $configuration['value'] );
+				echo '</small>';
+			}
+		}
+	}
+
+	/**
+	 * Add the configurator data to the order created by YITH
+	 *
+	 * @param array     $values
+	 * @param string    $cart_item_key
+	 * @param int       $item_id
+	 * @param \WC_Order $order
+	 * @return void
+	 */
+	public function raq_on_create_order( $values, $cart_item_key, $item_id, \WC_Order $order ) {
+		$order_item = $order->get_item( $item_id );
+		mkl_pc( 'frontend' )->order->save_data( $order_item, $cart_item_key, $values, $order );
+		$order_item->save();
 	}
 
 }
