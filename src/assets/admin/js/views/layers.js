@@ -453,6 +453,7 @@ TODO:
 					if ( 1 === focus_to.length ) focus_to.trigger( 'focus' );
 				}
 			}
+			wp.hooks.doAction( 'PC.admin.layer_form.render', this );
 			return this;
 		},
 		on_change_not_a_choice: function( event ) {
