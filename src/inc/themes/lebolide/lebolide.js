@@ -122,7 +122,7 @@
 	 */
 	wp.hooks.addAction( 'PC.fe.steps.display_step', 'MKL/PC/Themes/lebolide', function( steps ) {
 		// On mobile, the toolbar is scrollable
-		var scrollable = PC.fe.modal.$( '.mkl_pc_toobar' );
+		var scrollable = PC.fe.modal.$( '.mkl_pc_toolbar' );
 		if ( scrollable.length && scrollable[0].scrollHeight != scrollable[0].clientHeight ) {
 			scrollable[0].scrollTo( 0, 0 );
 			return;
