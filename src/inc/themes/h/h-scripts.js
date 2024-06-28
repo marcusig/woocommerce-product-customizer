@@ -76,7 +76,7 @@
 
 	var resize_layer_choices = function( resized ) {
 		var cow = $( '.mkl_pc.opened .mkl_pc_container' ).outerWidth();
-		var choice_el_width = 220;
+		var choice_el_width = pc_h_config.choice_width || 220;
 		var layer_el_width = 190;
 
 		if ( 330 > cow ) {

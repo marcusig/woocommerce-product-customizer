@@ -4,7 +4,8 @@ function mkl_pc_float_theme_scripts() {
 	wp_enqueue_script( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.min.js" );
 	wp_enqueue_script( 'mkl/pc/themes/h', plugin_dir_url( __FILE__ ) . 'h-scripts.js', [ 'flexslider' ], MKL_PC_VERSION, true );
 	wp_localize_script( 'mkl/pc/themes/h', 'pc_h_config', [
-		'color_mode' => get_option( MKL\PC\Customizer::PREFIX . 'color_mode', 'dark' )
+		'color_mode' => get_option( MKL\PC\Customizer::PREFIX . 'color_mode', 'dark' ),
+		'choice_width' => get_option( MKL\PC\Customizer::PREFIX . 'choice_width' ),
 	] );	
 }
 
