@@ -206,13 +206,14 @@ add_action( 'mkl_pc/next_step/after', 'mkl_pc_frontend_configurator_next_step_ic
 $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 
 	array(
-		array( 'path' => $root, 'file' =>'main-view.php' ),
-		array( 'path' => $root, 'file' =>'toolbar.php' ),
-		array( 'path' => $root, 'file' =>'product-viewer.php' ),
-		array( 'path' => $root, 'file' =>'layer-item.php' ),
-		array( 'path' => $root, 'file' =>'choices.php' ),
-		array( 'path' => $root, 'file' =>'choice-item.php' ),
-		array( 'path' => $root, 'file' =>'summary.php' ),
+		array( 'path' => $root, 'file' => 'main-view.php' ),
+		array( 'path' => $root, 'file' => 'toolbar.php' ),
+		array( 'path' => $root, 'file' => 'product-viewer.php' ),
+		array( 'path' => $root, 'file' => 'layer-item.php' ),
+		array( 'path' => $root, 'file' => 'choices.php' ),
+		array( 'path' => $root, 'file' => 'choice-item.php' ),
+		array( 'path' => $root, 'file' => 'summary.php' ),
+		array( 'path' => $root, 'file' => 'svg-sprite.php' ),
 	)
 );
 
