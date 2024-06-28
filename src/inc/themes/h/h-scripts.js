@@ -74,6 +74,14 @@
 		return false;
 	} );
 
+	/**
+	 * Move Tippy element in body, instead of parent which is cropped
+	*/
+	wp.hooks.addFilter( 'PC.fe.tooltip.options', 'MKL/PC/Themes/H', function( options ) {
+		options.appendTo = () => document.body;
+		return options;
+	} );
+
 	var resize_layer_choices = function( resized ) {
 		var cow = $( '.mkl_pc.opened .mkl_pc_container' ).outerWidth();
 		var choice_el_width = pc_h_config.choice_width || 220;
