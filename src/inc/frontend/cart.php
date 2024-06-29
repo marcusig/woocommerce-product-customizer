@@ -166,7 +166,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
 						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => '<span class="mkl_pc-choice-value">' . $choice_image . $item_data['value'] . '</span>', 'layer' => $layer ], $layer, $cart_item );
 
-						if ( $compound_sku && $layer->get_choice( 'sku' ) ) {
+						if ( $compound_sku && ! is_null( $layer->get_choice( 'sku' ) ) ) {
 							$sku[] = $layer->get_choice( 'sku' );
 						}
 						//apply_filters( 'mkl_pc_cart_get_item_data_choice_name', $choice_image . ' ' . $layer->get_choice( 'name' ), $layer ); 
