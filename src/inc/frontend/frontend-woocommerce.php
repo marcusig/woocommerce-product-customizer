@@ -303,6 +303,8 @@ class Frontend_Woocommerce {
 		
 		if ( ! $this->load_configurator_on_page() ) return;
 
+		wp_enqueue_style( 'mlk_pc/css/common', MKL_PC_ASSETS_URL . 'css/configurator-common.css' , false, filemtime( MKL_PC_ASSETS_PATH . 'css/configurator-common.css' ) );
+
 		// wp_enqueue_script( 'wp-api' );
 		$wp_scripts = wp_scripts();
 		if ( ! $wp_scripts->query( 'wp-hooks' ) ) {

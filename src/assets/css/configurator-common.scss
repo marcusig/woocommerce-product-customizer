@@ -1,0 +1,71 @@
+.mkl-pc-choice-qty--container {
+    display: none;
+    width: auto;
+    max-width: 120px;
+    border: 1px solid #CCC;
+    background: #FFF;
+    justify-content: space-between;
+    margin: 13px;
+    border-radius: 4px;
+
+	& > * {
+		flex-grow: 1;
+	}
+	
+	&:focus-within {
+		border-color: var(--mkl_pc_color-primary, #777);
+	}
+
+	input.mkl-pc-choice-qty, 
+	input.mkl-pc-choice-qty:focus {
+		border: none;
+		color: #000;
+		background: transparent;
+		box-shadow: none;
+		padding: 0;
+		width: auto;
+		max-width: 2ch;
+		text-align: center;
+		-moz-appearance: textfield;
+	}
+
+	input.mkl-pc-choice-qty::-webkit-outer-spin-button,
+	input.mkl-pc-choice-qty::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.active > .mkl-pc-choice-qty--container,
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.active > .mkl_quantity .mkl-pc-choice-qty--container {
+    display: flex;
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li .mkl-pc-choice-qty--btn {
+    padding: 4px;
+    margin: 0;
+    display: block;
+    border: none;
+    text-align: center;
+    font-size: 15px;
+    font-family: sans-serif;
+    color: #000;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li .mkl-pc-choice-qty--btn{
+	svg {
+		vertical-align: middle;
+		width: 15px;
+		use {
+			fill: #000;
+		}
+	}
+	
+	&:hover svg use,
+	&:focus svg use {
+		fill: var(--mkl_pc_color-primary);
+	}
+} 
