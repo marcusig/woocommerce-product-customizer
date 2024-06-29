@@ -21,7 +21,11 @@
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-summary--item" data-wg-notranslate>
-	<span class="summary-item--name"><# if ( data.parent_name ) { #> <span class="summary-item--parent-name">{{{data.parent_name}}},</span> <# } #><span class="summary-item--choice-name">{{{data.name}}}</span></span>
+	<span class="summary-item--name">
+		<# if ( data.parent_name ) { #> <span class="summary-item--parent-name">{{{data.parent_name}}},</span> <# } #>
+		<span class="summary-item--choice-name">{{{data.name}}}</span>
+		<# if ( data.summary_after_name ) { #>{{{data.summary_after_name}}}</span><# } #>
+	</span>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-summary--item-group" data-wg-notranslate>
