@@ -30,13 +30,14 @@ PC.views = PC.views || {};
 				this.col = this.content.get( this.model.id );
 			}
 			this.state = this.options.state; 
-			this.listenTo( this.col, 'add', this.add_one);
+			this.listenTo( this.col, 'add', this.add_one );
 			this.listenTo( this.col, 'add', this.mark_collection_as_modified);
 			this.listenTo( this.col, 'remove', this.remove_one);
 			this.listenTo( this.col, 'change', this.choices_changed);
 			this.listenTo( this.col, 'change:is_group', this.render);
 			this.listenTo( this.col, 'multiple-selection', this.edit_multiple );
 			this.listenTo( this.col, 'changed-order', this.update_sorting );
+			this.listenTo( this.col, 'duplicated-item', this.duplicated_item );
 			this.listenTo( this.col, 'simple-selection', this.edit_simple );
 
 			this.render(); 
@@ -52,6 +53,10 @@ PC.views = PC.views || {};
 		},
 		cleanup_on_remove: function() {
 			this.remove_views();	
+		},
+		duplicated_item: function() {
+			this.render();
+			this.update_sorting();
 		},
 		render: function() {
 			this.$el.empty();
@@ -225,6 +230,8 @@ PC.views = PC.views || {};
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},		
 		render: function() {
+			this.$el.addClass( 'choice' );
+			this.$el.toggleClass( 'is-group', !! this.model.get( 'is_group' ) );
 			this.$el.data( 'view', this );
 			this.$el.html( this.template( this.model.attributes ) );
 			if ( ! this.label ) {
@@ -396,7 +403,8 @@ PC.views = PC.views || {};
 			}
 			this.model.collection.create( PC.toJSON( new_choice ) );
 			PC.app.modified_choices.push( new_choice.get( 'layerId' ) + '_' + new_choice.id );
-
+			this.model.set( 'active', false );
+			this.model.collection.trigger( 'duplicated-item' );
 		},
 		add_angle: function( angle ) {
 			// this.model
