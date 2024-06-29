@@ -154,7 +154,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type' => 'number',
 					'priority' => 60,
 					'section' => 'advanced',
-					'condition' => '!data.not_a_choice && !data.is_group',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 				),
 				'class_name' => array(
 					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
