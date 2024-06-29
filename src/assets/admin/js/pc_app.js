@@ -254,10 +254,9 @@ PC.toJSON = function( item ) {
 		select: function( item_view ) {
 			if ( this.adding_group ) return;
 			var item = item_view.model;
-			if ( item.get( 'active' ) && ! this.get( item.id ) ) {
+			this.remove( this.get( item.id ) );
+			if ( item.get( 'active' ) ) {
 				this.add( { _id: item.id, view: item_view, order: item.get( 'order' ) } );
-			} else if ( ! item.get( 'active' ) ) {
-				this.remove( this.get( item.id ) );
 			}
 		},
 	} );
