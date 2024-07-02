@@ -579,13 +579,13 @@ html .pc-modal-container {
 		border-radius: 8px;
 		transition: box-shadow .2s;
 		.mkl-list-item:first-child {
-			button {
+			> button {
 				border-radius: 8px 8px 0 0;
 			}
 		}
 		.mkl-list-item:last-child {
 			border-bottom: none;
-			button {
+			&:not(.is-group) > button {
 				border-radius: 0 0 8px 8px;
 			}
 		}
@@ -607,6 +607,10 @@ html .pc-modal-container {
 
 	&.active {
 		position: relative;
+		&.is-group {
+			outline: 2px solid #0073aa;
+			border-radius: 8px;
+		}
 		& > button {
 			background-color: #0073aa;
 			color: #fff;
@@ -615,18 +619,18 @@ html .pc-modal-container {
 			}
 		}
 		
-		&::after {
-			right: 0;
-			border: solid 8px transparent;
-			content: " ";
-			height: 0;
-			width: 0;
-			position: absolute;
-			pointer-events: none;
-			border-right-color: #ffffff;
-			top: 50%;
-			margin-top: -8px;						
-		}
+		// &::after {
+		// 	right: 0;
+		// 	border: solid 8px transparent;
+		// 	content: " ";
+		// 	height: 0;
+		// 	width: 0;
+		// 	position: absolute;
+		// 	pointer-events: none;
+		// 	border-right-color: #ffffff;
+		// 	top: 50%;
+		// 	margin-top: -8px;						
+		// }
 		> .sort svg {
 			fill: #FFF;
 		}
