@@ -100,16 +100,3 @@ PC.fe.views.summary_item = Backbone.View.extend( {
 		wp.hooks.doAction( 'PC.fe.configurator.summary-item.render.after-template', this );
 	}
 } );
-
-wp.hooks.addFilter( 'PC.fe.summary_item.attributes', 'test', function( data, model ) {
-	if ( 'form' !== model.collection.layer_type && ! model.get( 'has_text_field' ) ) return data;
-	if ( model && model.get( 'text_field_type' ) && model.get( 'field_value' ) ) {
-		if ( 'file' == model.get( 'text_field_type' ) ) {
-			var value = JSON.parse( model.get( 'field_value' ) );
-		} else {
-			var value = model.get( 'field_value' );
-		}
-		data.name += '<span class="form-field--value ' + model.get( 'text_field_type' ) + '">' + value + '</span>';
-	}
-	return data;
-} )
