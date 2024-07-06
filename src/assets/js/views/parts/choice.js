@@ -120,6 +120,10 @@ PC.fe.views.choice = Backbone.View.extend({
 				return;
 			}
 		}
+
+		if ( event.type == 'mousedown' && event.button ) return;
+
+		// console.log( event );
 		
 		// If the element is disabled, exit.
 		if ( $( event.currentTarget ).prop( 'disabled' ) ) return;
