@@ -125,6 +125,11 @@ html .media-modal.pc-modal {
 	}
 
 	.media-frame-content{
+
+		.mkl-list {
+			padding-bottom: 40px;
+		}
+
 		&.structure {
 			.pc-sidebar {
 				position: absolute;
@@ -1143,3 +1148,70 @@ a.mkl-pc-link--external::before {
 		margin: 5px 0;
 	}	
 }
+
+/* Floating add button */
+.floating-add {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    left: 0;
+    z-index: 10;	
+	&::before {
+		content: '';
+		width: 100%;
+		height: 2px;
+		display: block;
+		background: var(--wp-admin-theme-color, #007cba);
+		visibility: hidden;
+		opacity: 0;
+		transition: .2s all;
+	}
+	
+	button.mkl-floating-add-item {
+		transition: .2s all;
+		display: block;
+		position: absolute;
+		visibility: hidden;
+		opacity: 0;
+		top: 50%;
+		left: 50%;
+		transform: translateY(-50%) translateX(-50%);
+		border: 1px solid var(--wp-admin-theme-color, #007cba);
+		background: var(--wp-admin-theme-color, #007cba);
+		color: #FFF;
+		line-height: 28px;
+		height: 28px;
+		width: 28px;
+		padding: 0;
+		i {
+			vertical-align: middle;
+			border-radius: 3px;
+		}
+	}
+	&.showing {
+		&::before {
+			visibility: visible;
+			opacity: 1;	
+		}
+		button.mkl-floating-add-item {
+			visibility: visible;
+			opacity: 1;	
+		}
+	}
+}
+
+@keyframes mkl-slide-down {
+    0% {
+        transform: translateY(-25px) scaleY( 0 );
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0) scaleY( 1 );
+        opacity: 1;
+    }
+}
+
+.layer.mkl-list-item.active.just-added {
+    animation: mkl-slide-down .2s;
+}
+

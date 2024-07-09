@@ -93,9 +93,15 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
-				<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
+				<button type="button" class="button-primary add-layer"><span><?php _e( 'Add' ); ?></span></button>
 			</div>
 			<div class="mkl-list layers ui-sortable sortable-list">
+			</div>
+			<div class="floating-add">
+				<button class="mkl-floating-add-item">
+					<i class="dashicons dashicons-plus-alt2"></i>
+					<span class="screen-reader-text"><?php _e( 'Add item here' ); ?></span>
+				</button>
 			</div>
 			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
 				<div class="order-toolbar">

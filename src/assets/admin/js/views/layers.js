@@ -68,8 +68,8 @@ TODO:
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.pc-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
+			this.floating_add = new PC.views.floating_add_button( { el: this.$( '.floating-add' ).first(), list: this.$list, parent: this } );
 			this.add_all(); 
-			
 			return this;
 		},
 		mark_collection_as_modified: function() {
@@ -155,7 +155,6 @@ TODO:
 				opacity:              0.65,
 				connectWith: '.sortable-list',
 				stop: function(event, s) {
-					console.log( 'stop' );
 					if ( 'order' == this.orderAttr ) {
 						this.update_sorting();
 					} else {
@@ -346,7 +345,6 @@ TODO:
 			if( this.model.get('active') === true ) {
 				this.model.set('active', false);
 			}
-			console.log( 'DROP');
 
 			// Update the order for all elements in the list
 			this.$el.siblings().addBack().trigger( 'update-sort' );
@@ -744,5 +742,94 @@ TODO:
 			this.collection.trigger( 'changed-order' );
 		}
 	});
+
+	PC.views.floating_add_button = Backbone.View.extend( {
+		initialize: function( options ) {
+			this.list = options.list;
+			this.parent = options.parent;
+			this.$el.on( 'mouseenter', function() {
+				this.active = true;
+			}.bind( this ) );
+			this.$el.on( 'mouseleave', function() {
+				this.active = false;
+			}.bind( this ) );
+			this.render();
+		},
+		render: function() {
+			this.list.on( 'mouseenter', function( e ) {
+				this.list.on( 'mousemove', this.calculate_position.bind( this ) );
+			}.bind( this ) );
+			this.list.on( 'mouseleave', function( e ) {
+				this.list.off( 'mousemove', this.calculate_position );
+				setTimeout( function() {
+					if ( ! this.active ) this.$el.removeClass( 'showing' );
+				}.bind( this ), 60 );
+			}.bind( this ) );
+		},
+		calculate_position: _.debounce( function( e ) {
+			var $el = $( e.target ).closest( '.mkl-list-item' );
+			if ( ! $el.length ) return;
+			var item_dimensions = $el[0].getBoundingClientRect();
+			var list_position = this.list[0].getBoundingClientRect();
+			var pos = item_dimensions.y - list_position.y + this.list.position().top;
+			this.list_item = $el;
+			if ( e.clientY < item_dimensions.y + 20 ) {
+				this.$el.css( {
+					'transform': 'translateY(' + pos + 'px)',
+					'width': item_dimensions.width,
+					'left': item_dimensions.x - list_position.x
+				} );
+				this.where = 'before';
+				this.$el.addClass( 'showing' );
+			} else if ( e.clientY > ( item_dimensions.y + item_dimensions.height - 20 ) ) {
+				this.where = 'after';
+				this.$el.css( {
+					'transform': 'translateY(' + ( pos + item_dimensions.height ) + 'px)',
+					'width': item_dimensions.width,
+					'left': item_dimensions.x - list_position.x
+				} );
+
+				this.$el.addClass( 'showing' );
+				this.$el.css( 'width', item_dimensions.width );
+			} else {
+				if ( ! this.active ) this.$el.removeClass( 'showing' );
+			}
+		}, 100 ),
+		events: {
+			'click .mkl-floating-add-item': 'create',
+		},
+		create: function() {
+			var item_view = this.list_item.data( 'view' );
+			var order = item_view.model.get( 'order' );
+			var attrs = PC.app.new_attributes( item_view.collection, { name: 'New item' } );
+			if ( item_view.model.get( 'parent' ) ) attrs.parent = item_view.model.get( 'parent' );
+			if ( 'before' === this.where ) order = order - 0.5;
+			if ( 'after' === this.where ) order = order + 0.5;
+			attrs.order = order;
+
+			if ( item_view.collection instanceof PC.choices ) {
+				// attrs.is_group = true;
+				attrs.layerId = item_view.collection.layer.id;
+			}
+
+			// Create the new item
+			var new_item = item_view.collection.add( attrs );
+			var new_item_el = this.list.find( '.mkl-list-item' ).last();
+			if ( new_item_el.data( 'view' ).model === new_item ) {
+				if ( 'before' === this.where ) {
+					new_item_el.insertBefore( this.list_item );
+				} else {
+					new_item_el.insertAfter( this.list_item );
+				}
+				new_item_el.addClass( 'just-added' );
+				setTimeout( function() {
+					new_item_el.removeClass( 'just-added' );
+				}, 300 );
+			}
+		},
+		show: function( $el ) {
+
+		}
+	} );
 
 })(jQuery, PC._us || window._);
