@@ -71,7 +71,14 @@ PC.fe.views.viewer = Backbone.View.extend({
 			var layer = new PC.fe.views.viewer_static_layer( { model: choice, parent: this } );
 			this.$layers.append( layer.$el );
 			if ( choice.get( 'custom_html' ) ) {
-				this.$layers.append( $( choice.get( 'custom_html' ) ) );
+				var content;
+				try {
+					content = $( choice.get( 'custom_html' ) );
+				} catch( e ) {
+					content = $( '<div class="mkl-custom-html--container" />' );
+					content.html( choice.get( 'custom_html' ) )
+				}
+				this.$layers.append( content );
 			}
 		} else {
 			choices.each( this.add_single_choice, this );
