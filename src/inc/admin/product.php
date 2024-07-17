@@ -16,6 +16,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 		public $ID;
 		private $_product;
+		private $should_update_cache = false;
 		public function __construct() {
 			$this->_hooks();
 		}
@@ -32,6 +33,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_action( 'wp_ajax_mkl_pc_hide_addon_setting', array( $this, 'hide_addon_setting' ) );
 			// woocommerce_ajax_save_product_variations
 			add_action( 'woocommerce_after_product_object_save', array( $this, 'write_configuration_cache_on_product_save' ), 100, 1 );
+			add_action( 'woocommerce_before_product_object_save', array( $this, 'check_before_product_save' ), 100, 1 );
 
 			// add the checkbox to activate configurator on the product
 			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
@@ -341,7 +343,25 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function write_configuration_cache_on_product_save( $obj ) {
-			$this->write_configuration_cache( $obj->get_id() );
+			if ( $this->should_update_cache ) {
+				$this->should_update_cache = false;
+				$this->write_configuration_cache( $obj->get_id() );
+			}
+		}
+
+		/**
+		 * Check for changes to enable cache updating or not
+		 *
+		 * @param WC_Product $obj
+		 * @return void
+		 */
+		public function check_before_product_save( $obj ) {
+			if ( $obj->get_id() ) {
+				$changes = $obj->get_changes();
+				if ( ! empty( $changes ) ) {
+					$this->should_update_cache = true;
+				}
+			}
 		}
 
 		/**
