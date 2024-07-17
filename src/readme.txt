@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.6
-Stable tag: 1.3.5
+Stable tag: 1.3.6
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,12 +129,15 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.3.6 - 17/Jul/2024 = 
+
 * Tested with WP 6.6
 * TWEAK: Choices: Do not save angle data in the choices
 * TWEAK: Maybe wrap custom_html when rendering the content
 * TWEAK: Do not limit summary usage to themes supporting steps
 * TWEAK: Move PC.fe.summary_item.attributes filter to Form fields addon
 * TWEAK: Only have weight on normal choices, not form field choices
+* TWEAK: [Admin] Possibility to add layers between others (Beta)
 * TWEAK: [Admin] render choices when duplicating items, to display in the right order
 * TWEAK: [Admin] tweak multiple selection
 * TWEAK: Fix SKU not showing if it's set to 0
@@ -203,4 +206,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.5 Fix performance issue when adding to the cart and going to checkout, added in 1.3.4
+* 1.3.6 Various tweaks and improvements
