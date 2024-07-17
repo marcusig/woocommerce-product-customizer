@@ -564,7 +564,7 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.empty();
 
-			var data = _.defaults(this.model.attributes);
+			var data = _.defaults( {}, this.model.attributes);
 			data.is_group = this.options.choice.get( 'is_group' );
 			data.angle_name = this.options.angle.get('name');
 			this.$el.append( this.template( data ) );
