@@ -103,13 +103,19 @@ PC.toJSON = function( item ) {
 					state.$toolbar.addClass('saving');
 					state.$el.addClass('saving');
 				}
+				var count = 0;
+				var total = _.filter( _.values( this.is_modified ), function( a ) { return a === true } ).length;
 				$.each( this.is_modified, function( key, val ) {
+					count++;
 					if ( val == true ) {
 						this.saving ++;
 						this.save( key, this.get_collection( key ), {
 							// success: 'successfuil'
 							success: _.bind( this.saved_all, this, key, state, options ),
-							error: _.bind( this.error_saving, this, key, state, options )
+							error: _.bind( this.error_saving, this, key, state, options ),
+							data: {
+								saveCache: count === total
+							}
 						} );
 					}
 
@@ -168,7 +174,6 @@ PC.toJSON = function( item ) {
 			options = options || {};
 			options.context = this;
 			options.timeout = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin.save_timeout', PC_lang.timeout || 30000 ) );
-			console.log( options.timeout );
 			
 			// Set the action and ID.
 			options.data = _.extend( options.data || {}, {
@@ -191,7 +196,7 @@ PC.toJSON = function( item ) {
 						options.data[what][index] = ( value instanceof Backbone.Collection ) ? JSON.stringify( value ) : value;
 					});
 				} else if ( collection instanceof Backbone.Collection ) {
-					options.data[what] = JSON.stringify(collection);
+					options.data[what] = JSON.stringify( collection );
 				}
 				if ( 'content' == what ) {
 					options.data.modified_choices = PC.app.modified_choices;
