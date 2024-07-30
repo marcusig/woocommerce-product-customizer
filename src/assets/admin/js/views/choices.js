@@ -424,7 +424,6 @@ PC.views = PC.views || {};
 			} 
 
 			data.model = images.get(angle.id);
-			// data.
 			var angle_view = new PC.views.choice_picture(data);
 
 			this.$pictures.append( angle_view.render().el );
