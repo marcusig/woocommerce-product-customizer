@@ -759,11 +759,16 @@ TODO:
 			this.list.on( 'mouseenter', function( e ) {
 				this.list.on( 'mousemove', this.calculate_position.bind( this ) );
 			}.bind( this ) );
+
 			this.list.on( 'mouseleave', function( e ) {
 				this.list.off( 'mousemove', this.calculate_position );
 				setTimeout( function() {
 					if ( ! this.active ) this.$el.removeClass( 'showing' );
 				}.bind( this ), 60 );
+			}.bind( this ) );
+
+			this.list.on( 'scroll', function( e ) {
+				this.$el.removeClass( 'showing' );
 			}.bind( this ) );
 		},
 		calculate_position: _.debounce( function( e ) {
