@@ -185,7 +185,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		 */
 		public function configurator_price() {
 			global $product;
-			if ( ! isset( $this->options['show_price_in_configurator'] ) || 'on' != $this->options['show_price_in_configurator'] ) return;
+			if ( 'on' !== mkl_pc( 'settings' )->get( 'show_price_in_configurator' ) ) return;
 			$price = $product && is_a( $product, 'WC_Product' ) ? $product->get_price_html() : '';
 			if ( $price ) $price = preg_replace( '/<script.*?\/script>/s', '', $price );
 		?>
