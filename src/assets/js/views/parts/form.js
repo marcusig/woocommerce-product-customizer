@@ -77,14 +77,14 @@ PC.fe.views.form = Backbone.View.extend({
 				if ( error.layer ) {
 					error.layer.set( 'has_error', error.message );
 				}
-				messages.push( error.message );
+				messages.push( PC.utils.strip_html( error.message ) );
 			} );
 			alert( messages.join( "\n" ) );
 			return false;
 		}
 		return data;
 	},
-
+	
 	populate_form_input: function( data, e ) {
 
 		if ( PC.fe.config.cart_item_key && $( e.currentTarget ).is( '.edit-cart-item' ) ) {
