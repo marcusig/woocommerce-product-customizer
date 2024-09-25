@@ -585,6 +585,11 @@ PC.utils = PC.utils || {
 		wp.hooks.addFilter( 'PC.fe.configurator.layer_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
 		wp.hooks.addFilter( 'PC.fe.configurator.choice_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
 		wp.hooks.addFilter( 'PC.fe.configurator.angle_data', 'mkl/product_configurator', maybe_change_name_and_description, 10 );
-	}	
+	},
+	strip_html: function( html ) {
+		let doc = new DOMParser().parseFromString(html, 'text/html');
+		return doc.body.textContent || "";
+	},
+
 
 };
