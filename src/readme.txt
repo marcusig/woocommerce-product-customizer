@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Enable "Color hex code" field on all display modes, instead of only Color swatches
+
 = 1.3.6 - 17/Jul/2024 = 
 
 * Tested with WP 6.6
