@@ -10,7 +10,7 @@ PC.fe.views.choices = Backbone.View.extend({
 		return this.render();
 	},
 	events: {
-		'click .layer-choices-title a.close': 'close_choices'
+		'click .choices-close': 'close_choices'
 	},
 	render: function() {
 		this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', this.model.attributes ) ) ); 

@@ -134,7 +134,8 @@ PC.fe.views.choice = Backbone.View.extend({
 			PC.fe.config.close_choices_when_selecting_choice 
 			&& ( $( 'body' ).is('.is-mobile' ) || PC.utils._isMobile() ) 
 			|| PC.fe.config.close_choices_when_selecting_choice_desktop
-			|| 'dropdown' == layer.get( 'display_mode' );
+			|| 'dropdown' == layer.get( 'display_mode' )
+			|| ( 'full-screen' == layer.get( 'display_mode' ) && 'simple' == layer.get( 'type' ) );
 
 		if ( layer ) {
 			// Maybe close the choice list
