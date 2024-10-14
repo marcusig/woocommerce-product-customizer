@@ -104,7 +104,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 								$choice = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
 								$layers[] = $choice;
 								if ( $weight = $choice->get_choice( 'weight' ) ) {
-									$item_weight += floatval( $weight );
+									$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $choice );
 								}
 								do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$data ) );
 							}
