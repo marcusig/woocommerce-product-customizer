@@ -193,7 +193,7 @@ if ( ! class_exists('MKL\PC\Customizer') ) {
 
 			if ( ! empty ( apply_filters( 'mkl_pc_them_color_variables', $rules ) ) ) {
 				$css .= '
-				.mkl_pc {' .
+				.mkl_pc, body > .layer_choices.display-mode-full-screen {' .
 					implode( "\n", $rules )
 				. '}
 				';
