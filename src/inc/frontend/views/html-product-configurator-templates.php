@@ -202,6 +202,15 @@ function mkl_pc_frontend_configurator_next_step_icon() {
 }
 add_action( 'mkl_pc/next_step/after', 'mkl_pc_frontend_configurator_next_step_icon' );
 
+add_action( 'mkl-pc-configurator-choices--after', 'mkl_pc_frontend_configurator_display_mode_fullscreen', 20 );
+function mkl_pc_frontend_configurator_display_mode_fullscreen() { ?>
+	<# if ( data.display_mode && 'full-screen' === data.display_mode ) { #>
+		<li class="choices-list--footer">
+			<button type="button" class="choices-close"><span><?php _e( 'Confirm selection and continue configuring the product', 'product-configurator-for-woocommerce' ) ?></span></button>
+		</li>
+	<# } #>
+<?php
+}
 
 $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 
