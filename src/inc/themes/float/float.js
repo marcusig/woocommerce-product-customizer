@@ -28,9 +28,14 @@
 		return PC.fe.modal.toolbar.$el;
 	} );
 
-	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/float', function( where ) {
+	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/float', function( where, view ) {
+		if ( 'full-screen' === view.model.get( 'display_mode' ) ) {
+			if ( PC.fe.inline ) return 'body';
+			return 'out';
+		}
 		return 'in';
 	} );
+	
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/float', function( view ) {
 		if ( ! wp.hooks.applyFilters( 'pc.themes.float.toggle_choices', true, view ) ) return;
 		if ( PC.fe.inline ) {

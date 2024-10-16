@@ -54,6 +54,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				];
 			}
 
+			if ( mkl_pc( 'themes' )->current_theme_supports( 'display mode: full screen' ) ) {
+				$display_modes[] = [
+					'label' => __( 'Full screen', 'product-configurator-for-woocommerce' ),
+					'value' => 'full-screen',
+					'image' => MKL_PC_ASSETS_URL . 'admin/images/ui/display-full-screen.svg',
+				];
+			}
+
 			/**
 			 * Filters the display modes available for a given layer
 			 *
@@ -278,7 +286,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 							'value' => '1',
 						],
 					],
-					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && ( "default" == data.display_mode || ! data.display_mode )' ,
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type ) && ( "default" == data.display_mode || "full-screen" == data.display_mode || ! data.display_mode )' ,
 					'priority' => 8,
 					'section' => 'display',
 				);

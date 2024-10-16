@@ -129,6 +129,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Added Full screen display mode (only available in the Float theme to start with)
+* TWEAK: Added filter mkl_pc/wc_cart_get_item_data/display_choice_image
+* TWEAK: Enable "Color hex code" field on all display modes, instead of only Color swatches
+
 = 1.3.6 - 17/Jul/2024 = 
 
 * Tested with WP 6.6
