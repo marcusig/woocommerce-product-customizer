@@ -79,7 +79,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					),
 					'priority' => 14,
 					'section' => 'general',
-					'condition' => '!data.not_a_choice && !data.is_group && "colors" == data.layer.display_mode',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 				),
 				'description' => array(
 					'label' => __('Description', 'product-configurator-for-woocommerce' ),
@@ -109,9 +109,8 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type' => 'checkbox',
 					'priority' => 20,
 					'section' => 'general',
-					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)'
-				),				
-
+					'condition' => '!data.not_a_choice && !data.is_group && ("simple" == data.layer_type || "multiple" == data.layer_type)'
+				),
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',

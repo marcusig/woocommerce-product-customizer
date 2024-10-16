@@ -211,7 +211,18 @@ PC.actionParameter = 'pc_get_data';
 				wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );	
 			}, 310 );
 		}, 55 );
+		
+		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', function( view ) {
+			if ( 'full-screen' === view.model.get( 'display_mode' ) ) {
+				$( 'body' ).addClass( 'pc-full-screenlayer--opened' );
+			}
+		} );
 
+		wp.hooks.addAction( 'PC.fe.layer.deactivate', 'mkl/product_configurator', function( view ) {
+			if ( 'full-screen' === view.model.get( 'display_mode' ) ) {
+				$( 'body' ).removeClass( 'pc-full-screenlayer--opened' );
+			}
+		} );
 
 		if ( PC_config.config.open_first_layer ) {
 			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
