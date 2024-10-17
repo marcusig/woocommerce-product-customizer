@@ -3,8 +3,8 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
-Tested up to: 6.6
-Stable tag: 1.3.6
+Tested up to: 6.7
+Stable tag: 1.3.7
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,8 +129,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.3.7 - 17/Oct/2024 = 
+
 * FEATURE: Added Full screen display mode (only available in the Float theme to start with)
-* TWEAK: Added filter mkl_pc/wc_cart_get_item_data/display_choice_image
+* TWEAK: Added filter mkl_pc/wc_cart_add_item_data/choice_weight - allows changing the weight of a single choice. Used by the Form field add-on
+* TWEAK: Added filter mkl_pc/wc_cart_get_item_data/display_choice_image - allows disabling the choice thumbnails in the cart and checkout
 * TWEAK: Enable "Color hex code" field on all display modes, instead of only Color swatches
 
 = 1.3.6 - 17/Jul/2024 = 
@@ -210,4 +213,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.6 Various tweaks and improvements
+* 1.3.7 Various tweaks and improvements, added Full screen display mode (only available in the Float theme to start with)
