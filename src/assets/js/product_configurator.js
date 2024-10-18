@@ -212,12 +212,14 @@ PC.actionParameter = 'pc_get_data';
 			}, 310 );
 		}, 55 );
 		
+		/* Display mode Full Screen - on activate layer */
 		wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', function( view ) {
 			if ( 'full-screen' === view.model.get( 'display_mode' ) ) {
 				$( 'body' ).addClass( 'pc-full-screenlayer--opened' );
 			}
 		} );
 
+		/* Display mode Full Screen - on deactivate layer */
 		wp.hooks.addAction( 'PC.fe.layer.deactivate', 'mkl/product_configurator', function( view ) {
 			if ( 'full-screen' === view.model.get( 'display_mode' ) ) {
 				$( 'body' ).removeClass( 'pc-full-screenlayer--opened' );
