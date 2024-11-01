@@ -216,6 +216,7 @@ $root = plugin_dir_path( __FILE__ ) . 'parts/' ;
 $parts = apply_filters( 'mkl_pc_frontend_templates_parts', 
 	array(
 		array( 'path' => $root, 'file' => 'main-view.php' ),
+		array( 'path' => $root, 'file' => 'add-to-cart-modal.php' ),
 		array( 'path' => $root, 'file' => 'toolbar.php' ),
 		array( 'path' => $root, 'file' => 'product-viewer.php' ),
 		array( 'path' => $root, 'file' => 'layer-item.php' ),

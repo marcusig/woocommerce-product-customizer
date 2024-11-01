@@ -123,7 +123,7 @@ PC.fe.views.form = Backbone.View.extend({
 		 * @param object  $cart - The jQuery object
 		 */
 		if ( wp.hooks.applyFilters( 'PC.fe.trigger_add_to_cart', true, this.$cart ) ) {
-			$( document.body ).one( 'adding_to_cart', this.on_adding_to_cart );
+
 			$( e.currentTarget ).addClass( 'adding-to-cart' );
 
 			var btn;
@@ -132,6 +132,84 @@ PC.fe.views.form = Backbone.View.extend({
 			} else if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
 				btn = this.$cart.find( '.single_add_to_cart_button' );
 			}
+
+			if ( PC_config.config.enable_configurator_ajax_add_to_cart ) {
+
+				if ( ! PC.fe.add_to_cart_modal ) PC.fe.add_to_cart_modal = new PC.fe.views.add_to_cart_modal();
+
+				/*
+					Prepare data 
+				*/
+				if ( this.$cart.find( '[name="add-to-cart"]' ).length ) {
+					// var request_body = new FormData( this.$cart[0], this.$cart.find( '[name="add-to-cart"]' )[0] );
+				} else {
+				}
+				var request_body = new FormData( this.$cart[0] );
+
+				var data = {
+					product_id: PC.fe.active_product,
+					mkl_pc_ajax: 1
+				};
+				if ( btn ) {
+					$.each( btn.data(), function( key, value ) {
+						data[ key ] = value;
+					});
+		
+					// Fetch data attributes in $thisbutton. Give preference to data-attributes because they can be directly modified by javascript
+					// while `.data` are jquery specific memory stores.
+					$.each( btn[0].dataset, function( key, value ) {
+						data[ key ] = value;
+					});
+
+					$( document.body ).trigger( 'adding_to_cart', [ btn, data ] );
+				}
+
+				$.each( data, function( key, value ) {
+					if ( ! request_body.has( key ) ) {
+						request_body.append( key, value );
+					}
+				});
+
+				/* 
+					Add to cart request
+				*/
+				fetch(
+					wc_add_to_cart_params.ajax_url + '?action=pc_add_to_cart', {
+						method: 'POST',
+						body: request_body
+					}
+				)
+				.then( response => response.json() )
+				.then( data => {
+
+					if ( data.error ) {
+						if ( data.product_url ) {
+							window.location = data.product_url;
+							return;
+						}
+
+						$( document.body ).trigger( 'not_added_to_cart_with_error', [ data ] );
+						return;
+					}
+
+					// Redirect to cart option
+					if ( 'yes' === wc_add_to_cart_params.cart_redirect_after_add ) {
+						$( document.body ).trigger( 'added_to_cart_with_redirection' );
+						window.location = wc_add_to_cart_params.cart_url;
+						return;
+					}
+					
+					$( document.body ).trigger( 'added_to_cart', [ data.fragments, data.cart_hash, false, data] );
+				} )
+				.catch( error => {
+					console.error( error );
+					alert( 'Error submitting form' );
+				} );
+
+				return;
+			}
+
+			$( document.body ).one( 'adding_to_cart', this.on_adding_to_cart );
 
 			if ( btn ) {
 				if ( btn.is( '.ajax_add_to_cart' ) ) {

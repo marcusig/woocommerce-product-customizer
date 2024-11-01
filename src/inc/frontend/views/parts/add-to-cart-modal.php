@@ -1,0 +1,47 @@
+<?php
+if (!defined('ABSPATH')) exit; 
+
+$checkout_url = wc_get_checkout_url();
+
+?>
+
+<script type="text/html" id="tmpl-mkl-pc-configurator-add-to-cart--modal" data-wg-notranslate> 
+	<?php do_action( 'tmpl-mkl-pc-configurator-add-to-cart--modal' ); ?>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-atc-adding" data-wg-notranslate> 
+	<div class="adding-to-cart--adding">
+		<div class="header"><?php _e( 'Adding to the cart', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="spinner"></div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-atc-added" data-wg-notranslate> 
+	<div class="adding-to-cart--added has-box">
+		<div class="header"><?php _e( 'Done!', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="messages">{{{data.messages}}}</div>
+		<div class="adding-to-cart--adding-cta">
+			<button class="button continue-shopping"><?php _e( 'Continue shopping', 'product-configurator-for-woocommerce' ); ?></button>
+			<span class="or"><?php _e( 'or', 'product-configurator-for-woocommerce' ); ?></span>
+			<a href="<?php echo esc_url( $checkout_url ); ?>" class="button view-cart"><?php _e( 'Checkout', 'woocommerce' ); ?></a>
+		</div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-atc-added-redirect" data-wg-notranslate> 
+	<div class="adding-to-cart--added-with-redirection has-box">
+		<div class="header"><?php _e( 'Done!', 'product-configurator-for-woocommerce' ); ?> </div>
+		<p><?php _e( 'Redirecting you to the cart...', 'product-configurator-for-woocommerce' ); ?> </p>
+		<div class="spinner"></div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-atc-not-added" data-wg-notranslate> 
+	<div class="adding-to-cart--not-added has-box">
+		<div class="header"><?php _e( 'Error', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="error messages">{{{data.messages}}}</div>
+		<div class="adding-to-cart--adding-cta">
+			<button class="button continue-shopping"><?php _e( 'Close', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+	</div>
+</script>

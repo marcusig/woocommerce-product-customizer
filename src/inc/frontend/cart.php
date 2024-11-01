@@ -82,6 +82,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		// Filter data that's saved in the cart, and add the configurator data
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
+				throw new \Exception( 'That didnot work' );
 
 				if ( isset( $_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
 
