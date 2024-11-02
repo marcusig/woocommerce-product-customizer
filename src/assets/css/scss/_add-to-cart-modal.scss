@@ -83,6 +83,31 @@ body.show-add-to-cart-modal .adding-to-cart--modal {
         margin-left: 100%;
     }
 }
+
+@keyframes anim-circle {
+    0% {
+        stroke-dashoffset: -170;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes anim-tick {
+    0% {
+        stroke-dashoffset: 52;
+    }
+    25% {
+        stroke-dashoffset: 52;
+    }
+    75% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
 .adding-to-cart--modal .spinner {
     height: 4px;
     background: red;
@@ -92,4 +117,27 @@ body.show-add-to-cart-modal .adding-to-cart--modal {
     animation: loading-spinner;
     animation-duration: 1s;
     animation-iteration-count: infinite;
+}
+
+.adding-to-cart--modal svg {
+    max-width: 70px;
+    * {
+        vector-effect: non-scaling-stroke;
+        stroke-linecap: round;
+        fill:none;
+        stroke:#63c800;
+        stroke-miterlimit:10;
+        stroke-width:2px;
+    }
+    circle {
+        stroke-dasharray: 170;
+        animation: anim-circle .5s;
+        animation-timeline: auto;
+        animation-direction: normal;
+    }
+
+    polyline {
+        stroke-dasharray: 52;
+        animation: anim-tick .75s;
+    }
 }
