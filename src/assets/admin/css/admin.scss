@@ -174,7 +174,7 @@ html .media-modal.pc-modal {
 	.multiple-edit--action {
 		border-bottom: 1px solid #e8e8e8;
 		padding: 16px;
-		.form-details h3 {
+		> h3, .form-details h3 {
 			padding: 0;
 			padding-bottom: 16px;
 		}
@@ -798,6 +798,13 @@ CONTENT
 			position: sticky;
 			top: 0;
 			z-index: 3;
+		}
+		.paste {
+			position: sticky;
+			bottom: 0;
+			background: #ffffff;
+			padding: 5px;
+			text-align: center;
 		}
 	}
 

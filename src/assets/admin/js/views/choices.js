@@ -45,6 +45,7 @@ PC.views = PC.views || {};
 		events: {
 			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
+			'click .paste-items': 'paste_items',
 			'keypress .structure-toolbar input': 'create',
 			'remove': 'cleanup_on_remove', 
 		},
@@ -58,9 +59,14 @@ PC.views = PC.views || {};
 			this.render();
 			this.update_sorting();
 		},
+		has_clipboard_data: function() {
+			return !! PC.clipboard_data;
+		},
 		render: function() {
+			console.log( 'saclcl', this.has_clipboard_data() );
+
 			this.$el.empty();
-			this.$el.html( this.template( this.model.attributes ) );
+			this.$el.html( this.template( _.extend( { has_clipboard_data: this.has_clipboard_data() }, this.model.attributes ) ) );
 			this.remove_views();
 
 			this.$active_layer = this.$('.active-layer');
@@ -178,6 +184,40 @@ PC.views = PC.views || {};
 			PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
 
 			this.$new_input.val('');
+		},
+
+		paste_items: function( e ) {
+			var $target = $( e.currentTarget );
+			if ( PC.clipboard_data ) {
+				var data = JSON.parse( PC.clipboard_data );
+				if ( ! data ) {
+					alert( 'data is not JSON object' );
+					return;
+				}
+
+
+				var parents = [];
+				_.each( data, function( item ) {
+					var original_id = item._id;
+					item._id = PC.app.get_new_id( this.col );
+					item.layerId = this.model.id;
+					item.order = this.col.nextOrder();
+					if ( item.parent ) {
+						var t = _.findWhere( parents, { original_id: item.parent } );
+						if ( t ) {
+							item.parent = t.new_id;
+						}
+					}
+					var new_item = this.col.add( JSON.parse( JSON.stringify( item ) ) );
+					if ( item.is_group ) {
+						parents.push( { original_id: original_id, new_id: new_item.id } );
+					}
+					PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
+
+				}.bind( this ) );
+
+				if ( parents.length ) this.duplicated_item();
+			}
 		},
 
 		new_attributes: function( name ) {
