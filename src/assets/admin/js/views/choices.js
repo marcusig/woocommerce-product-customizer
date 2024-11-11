@@ -52,6 +52,11 @@ PC.views = PC.views || {};
 			item.remove();
 		},
 		cleanup_on_remove: function() {
+			// Deactivate choice
+			this.col.each( function( item ) {
+				item.set( 'active', false );
+			} );
+			// Remove views
 			this.remove_views();	
 		},
 		duplicated_item: function() {
