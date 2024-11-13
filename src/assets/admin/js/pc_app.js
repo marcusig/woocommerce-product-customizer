@@ -52,8 +52,21 @@ PC.toJSON = function( item ) {
 				});
 				this.admin = new PC.views.admin({ model: this.admin_data });
 			}
-			return this.admin;
 
+			$( window ).on( 'focus', function( e ) {
+				
+				navigator.clipboard.readText().then( content => {
+					if ( ! content.startsWith( 'PCCOPY-' ) ) return;
+					var data = content.substring( 7 );
+					$( document.body ).trigger( 'clipboard-has-configuration', data );
+				} );
+			} );
+
+			$( document.body ).on( 'clipboard-has-configuration', function( e, data ) {
+				PC.clipboard_data = data;
+			} );
+
+			return this.admin;
 		},
 		start: function( options ) {
 
@@ -245,6 +258,14 @@ PC.toJSON = function( item ) {
 			} );
 			return m;
 		},
+
+		get_data_from_clipboard: function() {
+			// PCCOPY-choices-
+			navigator.clipboard.readText()
+			.then( content => {
+				
+			} )
+		}
 	};
 
 	PC.selection_collection = Backbone.Collection.extend( {

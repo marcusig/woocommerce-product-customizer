@@ -612,6 +612,7 @@ TODO:
 			'click .order .up': 'move_items',
 			'click .order .down': 'move_items',
 			'click .group button': 'group_items',
+			'click .copy button': 'copy_items',
 		},
 		render: function() {
 			this.$el.html( this.template( { render_group: ! ( this.collection instanceof PC.angles ) } ) );
@@ -740,7 +741,20 @@ TODO:
 				new_group.set( 'is_group', true );
 			}
 			this.collection.trigger( 'changed-order' );
-		}
+		},
+		copy_items: function() {
+			var models = [];
+
+			PC.selection.each( item => {
+				models.push( item.get( 'view' ).model.toJSON() )
+			} );
+
+			navigator.clipboard.writeText( 'PCCOPY-' + JSON.stringify( models ) )
+				.then( c => {
+					$( document.body ).trigger( 'clipboard-has-configuration', JSON.stringify( models ) );
+				} );
+			
+		},
 	});
 
 	PC.views.floating_add_button = Backbone.View.extend( {

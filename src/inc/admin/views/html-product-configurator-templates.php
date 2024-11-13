@@ -264,6 +264,11 @@ CONTENT TEMPLATES
 	</div>
 	<div class="mkl-list choices ui-sortable sortable-list">
 	</div>
+	<# if ( data.has_clipboard_data ) { #> 
+	<div class="paste">
+		<button type="button" class="button-primary paste-items"><span><?php _e( 'Paste' ); ?></span></button>
+	</div>
+	<# } #> 
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-list-item">
@@ -333,6 +338,12 @@ CONTENT TEMPLATES
 					<div class="order">
 						<button class="button up" type="button"><i class="dashicons dashicons-arrow-up-alt2"></i></button>
 						<button class="button down" type="button"><i class="dashicons dashicons-arrow-down-alt2"></i></button>
+					</div>
+				</div>
+				<div class="multiple-edit--action">
+					<h3><?php _e( 'Copy the selected items', 'product-configurator-for-woocommerce' ) ?></h3>
+					<div class="copy">
+						<button type="button" class="button button-primary"><?php _e( 'Copy items', 'product-configurator-for-woocommerce' ) ?></button>
 					</div>
 				</div>
 				<# if ( data.render_group ) { #>
@@ -587,10 +598,6 @@ IMPORT / EXPORT
 	<# } #>
 </script>
 
-<script type="text/html" id="tmpl-mkl-pc-importer--file">
-Importing 2
-</script>
-
 <script type="text/html" id="tmpl-mkl-pc-importer--selector">
 	<ul class="available">
 	</ul>
@@ -607,10 +614,6 @@ Importing 2
 		<# } #>
 		{{data.name}} <# if ( data.image.urls ) { #><img src="{{data.image.url}}" alt=""><# } #>
 	</a>
-</script>
-
-<script type="text/html" id="tmpl-mkl-pc-exporter">
-Exportin
 </script>
 
 <?php do_action('mkl_pc_admin_templates_after') ?>
