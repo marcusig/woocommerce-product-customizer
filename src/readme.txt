@@ -129,6 +129,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Possibility to copy and paste content from one layer to an other, or to an other product
 * Float theme: Fix toggled display when steps are enabled
 * Admin - Cleanup selection when editing a different set of choices, to prevent issues when grouping / copying items
 * Fix out of stock label in tooltip (Float theme)
