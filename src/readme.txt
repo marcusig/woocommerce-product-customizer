@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.3.7
+Stable tag: 1.3.8
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,6 +129,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.3.8 - 13/Nov/2024 = 
+
+* Tested with WP 6.7
 * FEATURE: Possibility to copy and paste content from one layer to an other, or to an other product
 * Float theme: Fix toggled display when steps are enabled
 * Admin - Cleanup selection when editing a different set of choices, to prevent issues when grouping / copying items
@@ -218,4 +221,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.7 Various tweaks and improvements, added Full screen display mode (only available in the Float theme to start with)
+* 1.3.8 Various tweaks and improvements, Possibility to copy and paste content from one layer to an other, or to an other product
