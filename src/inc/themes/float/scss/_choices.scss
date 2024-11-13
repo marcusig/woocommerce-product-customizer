@@ -3,7 +3,7 @@
 		display: none;
 		position: relative;
 		transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
-		ul {
+		> li > ul {
 			list-style-type: none;
 			display: flex;
 			flex-wrap: wrap;

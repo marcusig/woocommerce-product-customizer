@@ -129,6 +129,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* Float theme: Fix toggled display when steps are enabled
+* Admin - Cleanup selection when editing a different set of choices, to prevent issues when grouping / copying items
+* Fix out of stock label in tooltip (Float theme)
+
 = 1.3.7 - 17/Oct/2024 = 
 
 * FEATURE: Added Full screen display mode (only available in the Float theme to start with)

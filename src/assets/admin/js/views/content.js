@@ -117,7 +117,11 @@ PC.views = PC.views || {};
 		},
 		toggleLayer: function(e) {
 			e.preventDefault();
+			// Remove existing active layer
 			if ( this.state.active_layer ) this.state.active_layer.remove();
+			// Reset the selection collection, to prevent cross-layer issues
+			PC.selection.reset();
+			// Setup the new view
 			this.state.active_layer = new PC.views.choices({ model: this.model, state: this.state });
 			this.state.$choices.append( this.state.active_layer.$el );
 			this.state.$el.addClass('show-choices');
