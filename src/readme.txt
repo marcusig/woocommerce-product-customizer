@@ -129,6 +129,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Custom Ajax Add to cart 
 * FIX: display issue in fullscreen layer with groups (Float theme)
 
 = 1.3.8 - 13/Nov/2024 = 
