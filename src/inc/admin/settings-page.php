@@ -731,6 +731,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'enable_configurator_ajax_add_to_cart',
+				__( 'Enable Ajax Add to cart in the configurator', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'enable_configurator_ajax_add_to_cart',
+				]
+			);
+
+			add_settings_field(
 				'disable_caching',
 				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

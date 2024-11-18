@@ -230,6 +230,10 @@ PC.fe.save_data = {
 		}
 
 		wp.hooks.doAction( 'PC.fe.save_data.parse_choices.after', model, this );
+	},
+
+	ajax_add_to_cart: function() {
+		
 	}
 
 };
