@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Ajax add to cart - Log error instead of alerting it
+
 = 1.3.9 - 18/Nov/2024 = 
 
 * FEATURE: Custom Ajax Add to cart 

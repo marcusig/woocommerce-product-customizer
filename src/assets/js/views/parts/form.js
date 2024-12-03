@@ -202,8 +202,8 @@ PC.fe.views.form = Backbone.View.extend({
 					$( document.body ).trigger( 'added_to_cart', [ data.fragments, data.cart_hash, false, data] );
 				} )
 				.catch( error => {
+					console.error( 'Configurator: Error in form submission' );
 					console.error( error );
-					alert( 'Error submitting form' );
 				} );
 
 				return;
