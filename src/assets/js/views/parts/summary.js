@@ -94,8 +94,10 @@ PC.fe.views.summary_item = Backbone.View.extend( {
 		}
 		attributes = wp.hooks.applyFilters( 'PC.fe.summary_item.attributes', attributes, this.model );
 		this.$el.html( this.template( attributes, this.model ) );
+		if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 		if ( 'form' == this.model.collection.layer_type || this.model.get( 'has_text_field' ) ) {
 			this.$el.addClass( 'has-form-field field-' + this.model.get( 'text_field_type' ) );
+			if ( this.model.get( 'text_field_id' ) ) this.$el.attr( 'data-field-id', this.model.get( 'text_field_id' ) );
 		}
 		wp.hooks.doAction( 'PC.fe.configurator.summary-item.render.after-template', this );
 	}
