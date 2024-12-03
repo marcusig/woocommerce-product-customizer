@@ -129,6 +129,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Clean: word break
 * TWEAK: Summary - add choice class and form item field-id as data attribute
 * TWEAK: Ajax add to cart - Log error instead of alerting it
 
