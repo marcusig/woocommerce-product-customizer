@@ -33,7 +33,7 @@ define( 'MKL_PC_PLUGIN_BASE_NAME', plugin_basename( __FILE__ ) );
 
 require_once MKL_PC_INCLUDE_PATH . 'plugin.php';
 
-add_action( 'plugins_loaded', 'mkl_pc_load_plugin_textdomain', 30 );
+add_action( 'init', 'mkl_pc_load_plugin_textdomain', 30 );
 add_action( 'plugins_loaded', 'mkl_pc_init', 90 );
 
 /**
