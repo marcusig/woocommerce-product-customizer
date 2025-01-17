@@ -366,6 +366,9 @@ class Frontend_Woocommerce {
 
 		$deps = apply_filters( 'mkl_pc/js/product_configurator/dependencies', $deps );
 		$configurator_deps = apply_filters( 'mkl_pc/js/configurator/dependencies', array('jquery', 'backbone', 'wp-util', 'wp-hooks' ) );
+		if ( mkl_pc( 'settings')->get( 'enable_configurator_ajax_add_to_cart', false ) ) {
+			$configurator_deps[] = 'wc-add-to-cart';
+		}
 
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator' . $file_suffix . '.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator' . $file_suffix . '.js' ) , true );
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator' . $file_suffix . '.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator' . $file_suffix . '.js' ) , true );

@@ -25,6 +25,10 @@
 				box-shadow: inset 0 0 0 1px var( --choice-border-color, #{color(border)} );
 				transition: .2s all;
 
+				@media(max-width: 990px) {
+					width: 100%;
+				}
+
 				&::before {
 					content: '';
 					position: absolute;
