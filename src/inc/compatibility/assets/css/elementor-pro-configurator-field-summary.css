@@ -1,0 +1,15 @@
+.elementor-configuration-field-summary .mkl_pc_summary_item_group {
+    display: flex;
+    align-content: center;
+    gap: 15px;
+    padding-bottom: 6px;
+}
+.elementor-configuration-field-summary .mkl_pc_summary_item_group > h5 {
+    font-weight: 700;
+}
+.elementor-configuration-field-summary .mkl_pc_summary_item_group > * {
+    margin: 0;
+    padding: 0;
+    font-size: 1em;
+    line-height: 1.5;
+}
