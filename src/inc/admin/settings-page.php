@@ -14,6 +14,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 		public $licenses;
 		private $settings_id = 'mkl-pc-configurator';
+		public $addons;
+		public $themes_url;
 
 		function __construct() {
 			add_action( 'admin_menu', array( $this, 'register' ) );
