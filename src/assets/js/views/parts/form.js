@@ -146,6 +146,9 @@ PC.fe.views.form = Backbone.View.extend({
 				}
 				var request_body = new FormData( this.$cart[0] );
 
+				// Remove 'add-to-cart' to prevent triggering default WC's actions
+				request_body.delete( 'add-to-cart' );
+
 				var data = {
 					product_id: PC.fe.active_product,
 					mkl_pc_ajax: 1
@@ -161,8 +164,9 @@ PC.fe.views.form = Backbone.View.extend({
 						data[ key ] = value;
 					});
 
-					$( document.body ).trigger( 'adding_to_cart', [ btn, data ] );
 				}
+				
+				$( document.body ).trigger( 'adding_to_cart', [ btn, data ] );
 
 				$.each( data, function( key, value ) {
 					if ( ! request_body.has( key ) ) {
