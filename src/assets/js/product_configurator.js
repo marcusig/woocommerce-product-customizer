@@ -466,7 +466,7 @@ PC.actionParameter = 'pc_get_data';
 				}
 				wp.hooks.doAction( 'PC.fe.setConfig.setItem', config_item, PC.fe.getLayerContent( config_item.layer_id ) );
 			} catch ( err ) {
-				console.log('Product configurator - setConfig: Could not set this layer:', config_item.layer_id, err);
+				console.log('Product configurator - setConfig: Could not set this layer:', config_item.layer_id, config_item, err);
 			}
 		} );
 
