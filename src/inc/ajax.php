@@ -441,7 +441,12 @@ class Ajax {
 	public function add_to_cart() {
 		ob_start();
 		if ( ! isset( $_POST['product_id'] ) ) {
-			return;
+			$data = array(
+				'error'       => true,
+				// 'product_url' => apply_filters( 'woocommerce_cart_redirect_after_error', get_permalink( $product_id ), $product_id ),
+				'messages' => wc_print_notices( true )
+			);
+			wp_send_json( $data );
 		}
 
 		$product_id        = apply_filters( 'woocommerce_add_to_cart_product_id', absint( $_POST['product_id'] ) );
