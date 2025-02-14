@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.3.9
+Stable tag: 1.3.10
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,7 +129,14 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-* TWEAK: Clean: word break
+= 1.3.10 - 14/Feb/2025 = 
+
+* BETA FEATURE: Elementor configuration fields
+* FIX: Compatibility with Astra and other themes with 2 cart forms on the page, which might add the product to the cart twice when using Ajax 
+* TWEAK: load_plugin_textdomain at init instead of plugins_loaded
+* TWEAK: Fix issue with ajax add to cart not working on shortcodes
+* TWEAK: Better log when setConfig fails
+* TWEAK: Clean: word break on buttons
 * TWEAK: Summary - add choice class and form item field-id as data attribute
 * TWEAK: Ajax add to cart - Log error instead of alerting it
 
