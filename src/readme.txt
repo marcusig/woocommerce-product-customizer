@@ -130,6 +130,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 * FIX: Error when adding to the cart in some situations
+* TWEAK: Base styling for themes which adds +/- buttons
 
 = 1.3.10 - 14/Feb/2025 = 
 

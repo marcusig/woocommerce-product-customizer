@@ -52,6 +52,9 @@
 				border: 2px solid #36383a;
 			}
 		}
+		&.buttons_added {
+			display: inline-flex;
+		}
 	}
 	.extra-cost {
 		visibility: hidden;
