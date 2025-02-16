@@ -20,9 +20,15 @@ PC.fe.views.form = Backbone.View.extend({
 			this.$el.addClass( 'edit-cart-item-is-displayed');
 		}
 
-		var atc = $( '[name=add-to-cart][value=' + PC.fe.active_product + ']' );
-		var input = PC.fe.modal.$( 'input[name=pc_configurator_data]' );
-		
+		if ( 'variable' === PC.fe.product_type ) {
+			var atc = $( '[name=variation_id][value=' + PC.fe.active_product + ']' );
+			if ( ! atc.length ) atc = $( '[name=add-to-cart][value=' + PC.fe.active_product + ']' );
+		} else {
+			var atc = $( '[name=add-to-cart][value=' + PC.fe.active_product + ']' );
+		}
+
+		var input = this.$( 'input[name=pc_configurator_data]' );
+
 		if ( ! input.length && ! atc.length ) return;
 
 		if ( input.length ) {
@@ -36,7 +42,7 @@ PC.fe.views.form = Backbone.View.extend({
 		}
 
 		// If the input isn't in the page, check in this view
-		if ( ! this.$input.length || PC.fe.currentProductData.product_info.force_form ) this.$input = this.$( 'input[name=pc_configurator_data]' );
+		// if ( ! this.$input.length || PC.fe.currentProductData.product_info.force_form ) this.$input = this.$( 'input[name=pc_configurator_data]' );
 
 		if ( ! this.$cart.find( '[name=add-to-cart]' ).length ) {
 			this.$( '.configurator-add-to-cart' ).remove();
@@ -68,7 +74,6 @@ PC.fe.views.form = Backbone.View.extend({
 		}
 
 		wp.hooks.doAction( 'PC.fe.render_form', this );
-
 		return this.$el;
 	},
 
