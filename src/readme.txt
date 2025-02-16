@@ -237,4 +237,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.9 Built in Ajax add to cart, Possibility to copy and paste content from one layer to an other, or to an other product
+* 1.3.10 Various tweaks and fixes
