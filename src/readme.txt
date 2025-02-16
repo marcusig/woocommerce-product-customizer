@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.7
-Stable tag: 1.3.10
+Stable tag: 1.3.11
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -128,6 +128,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.3.11 - 16/Feb/2025 = 
 
 * FIX: Error when adding to the cart in some situations
 * TWEAK: Base styling for themes which adds +/- buttons
