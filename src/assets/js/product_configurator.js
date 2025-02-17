@@ -92,6 +92,10 @@ PC.actionParameter = 'pc_get_data';
 				PC.fe.initial_preset = $target.data( 'preset' );
 			}
 
+			if ( $target.data( 'view' ) ) {
+				PC.fe.initial_view = $target.data( 'view' );
+			}
+
 			if ( 'mkl/pc/inline-init' == event.type ) {
 				PC.fe.inline = true;
 				PC.fe.inlineTarget = event.target;
@@ -197,10 +201,31 @@ PC.actionParameter = 'pc_get_data';
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 			setTimeout( function() {
+				var view_identifier = PC.fe.initial_view || false;
 				if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
 					PC.fe.setConfig( PC_config.config.load_config_content );
 				} else if ( PC.fe.initial_preset ) {
 					PC.fe.setConfig( PC.fe.initial_preset );
+				}
+				if ( window.location.hash ) {
+					var hash_match = window.location.hash.match(/view=([^,]+)/)
+					if ( hash_match.length > 1 ) {
+						view_identifier = hash_match[1];
+					}
+				}
+				if ( view_identifier ) {
+					if ( isNaN( view_identifier ) ) {
+						var new_angle = PC.fe.angles.findWhere( { name: view_identifier } );
+					} else {
+						var new_angle = PC.fe.angles.get( parseInt( view_identifier ) );
+					}
+
+					if ( new_angle && ! new_angle.get( 'active' ) ) {
+						new_angle.collection.each( function( model ) {
+							model.set( 'active', false ); 
+						});		
+						new_angle.set( 'active', true );
+					}
 				}
 			}, 300 );
 		}, 50 );
@@ -208,7 +233,7 @@ PC.actionParameter = 'pc_get_data';
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 			setTimeout( function() {
 				wp.hooks.addAction( 'PC.fe.layer.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
-				wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );	
+				wp.hooks.addAction( 'PC.fe.choice.activate', 'mkl/product_configurator', auto_angle_switch, 20 );
 			}, 310 );
 		}, 55 );
 		

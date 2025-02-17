@@ -158,8 +158,12 @@ class Frontend_Woocommerce {
 			$data_attributes['force_form'] = 1;
 		}
 
-		$data_attributes = apply_filters( 'mkl_configurator_button_data_attributes', $data_attributes, $product_id, $atts );
+		if ( isset( $atts[ 'view' ] ) ) {
+			$data_attributes['view'] = $atts[ 'view' ];
+		}
+
 		
+		$data_attributes = apply_filters( 'mkl_configurator_button_data_attributes', $data_attributes, $product_id, $atts );
 		return '<' . $tag_name . ' class="'.$button_class.' is-shortcode configure-product-simple configure-product '.$shortcode_class.'" ' . implode( ' ', $this->_output_data_attributes( $data_attributes ) ) . '>'.$content.'</' . $tag_name_close . '>';
 	}
 
@@ -248,6 +252,10 @@ class Frontend_Woocommerce {
 
 		if ( isset( $atts[ 'product_id' ] ) ) {
 			$data_attributes['force_form'] = 1;
+		}
+
+		if ( isset( $atts[ 'view' ] ) ) {
+			$data_attributes['view'] = $atts[ 'view' ];
 		}
 
 		$data_attributes = apply_filters( 'mkl_configurator_data_attributes', $data_attributes, $product_id, $atts );
