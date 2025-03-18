@@ -59,6 +59,7 @@ footer {
 
 	a.save-your-design--pdf,
 	a.save-your-design,
+	a.share-your-design,
 	button.reset-configuration {
 		margin: 0;
 		padding: 4px 9px;
@@ -117,7 +118,8 @@ footer {
 			height: 15px;
 			bottom: -5px;
 		}
-		.mkl-pc-modal-list h4 {
+		.mkl-pc-modal-list h4,
+		.mkl-pc-modal > h4 {
 			background: #f5f5f7;
 			border-radius: 15px 15px 0 0;
 		}
