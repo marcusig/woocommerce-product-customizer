@@ -11,6 +11,7 @@ class Update {
 
 	public function check_update() {
 
+		do_action( 'mkl_pc_before_check_update' );
 		$updates_list = [
 			'1.1.0' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.1.2' => [ [ $this, 'update_wrong_layer_ids' ], [ mkl_pc( 'cache' ), 'purge' ] ],
