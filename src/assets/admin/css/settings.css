@@ -515,6 +515,10 @@ button.mkl-settings-toggle-images-in-library[data-mode="show"] .hide-configurati
     text-transform: uppercase;
 }
 
+.mkl-settings-content fieldset.checkboxes label {
+	display: block
+}
+
 @media (max-width: 1100px) {
 	.mkl-pc-themes {
 		min-height: 90vh;

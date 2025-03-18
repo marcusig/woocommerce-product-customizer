@@ -986,6 +986,30 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<?php
 		}
 
+		public function callback_multiple_checkboxes_setting( $field_options = [] ) {
+			$options = get_option( 'mkl_pc__settings' );
+			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+
+			$default = [];
+			if ( isset( $field_options[ 'default' ] ) ) {
+				$default = $field_options[ 'default' ];
+			}
+
+			$value = array_keys( $this->get_setting( $field_options[ 'setting_name' ], $default ) );
+			?>
+			<fieldset class="checkboxes">
+			
+			<?php foreach ( $field_options[ 'options' ] as $key => $label ) {
+				printf( '<label><input name="mkl_pc__settings[' . esc_attr( $field_options[ 'setting_name' ] ) .'][' . esc_attr( $key ) .']" id="mkl_pc__settings-' . esc_attr( $field_options['setting_name'] ) . '-' . esc_attr( $key ) .'" type="checkbox" value="%s"%s>%s</label>', 'on', checked( in_array( $key, $value ), true, false ), $label );
+			} ?>
+
+			</fieldset>
+			<?php
+			if ( isset( $field_options['description'] ) ) { ?>
+				<span class="field-description"><?php echo $field_options['description']; ?></span>
+			<?php }
+		}
+
 		public function callback_html( $field_options = [] ) {
 			if ( ! isset( $field_options[ 'html' ] ) ) return;
 			echo wp_kses_post( $field_options[ 'html' ] );
