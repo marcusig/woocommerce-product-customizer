@@ -22,8 +22,10 @@ class Configuration {
 	public $image_name         = '';
 	public $save_image_async   = false;
 	public $product_id;
+	public $variation_id;
 	public $content            = null;
 	public $image_path         = null;
+	public $layers             = null;
 	public $configuration_visibility = 'private';
 	private $post 	           = null;
 
@@ -38,12 +40,14 @@ class Configuration {
 
 		$default_args = array(
 			'product_id' => 0,
+			'variation_id' => 0,
 			'content'    => []
 		);
 
 		$args = wp_parse_args( $args, $default_args );
 
-		$this->product_id = $args['product_id'];
+		$this->product_id =  (int) $args['product_id'];
+		$this->variation_id = (int) $args['variation_id'];
 
 		// if we have a new content, update it
 		if ( ! empty( $args['content'] ) ) {
@@ -198,7 +202,12 @@ class Configuration {
 	 */
 	public function set_content( $content ) {
 		if ( isset( $this->content ) ) return;
-		$this->content = json_decode( stripcslashes( $content ) );
+		$content = json_decode( stripcslashes( $content ) );
+		if ( ! $content ) {
+			$this->content = [];
+			return;
+		}
+		$this->content = mkl_pc( 'db' )->sanitize( $content );
 	}
 
 	public function update( $args ) {
@@ -541,10 +550,9 @@ class Configuration {
 		}
 	}
 
-	private function get_visibility() {
-		return apply_filters( 'mkl_pc_configuration_visibility', $this->configuration_visibility, $this );
-	}
-
+	/**
+	 * Save the image as attachment
+	 */
 	public function save_attachment( $filename, $parent_post_id ) {
 
 		global $wpdb;
@@ -574,6 +582,76 @@ class Configuration {
 		return $attach_id;
 	}
 
+	/**
+	 * Get item data for the current configuration, formatted for the cart
+	 *
+	 * @return array
+	 */
+	public function get_item_data( $context = 'cart' ) {
+		$item_id = $this->variation_id ? md5( $this->product_id . $this->variation_id ) : md5( $this->product_id );
+		$layers = $this->get_layers();
+		if ( $this->variation_id ) {
+			$_product = wc_get_product( $this->variation_id );
+		} else { 
+			$_product = wc_get_product( $this->product_id );
+		}
+
+		if ( ! $_product ) return [];
+
+		$temp_item_data['configurator_data'] = $layers;
+		$temp_item_data = array_merge(
+			$temp_item_data,
+			array(
+				'key'          => $item_id,
+				'context'      => $context,
+				'product_id'   => $this->product_id,
+				'variation_id' => $this->variation_id,
+				'variation'    => false,
+				'quantity'     => 1,
+				'data'         => $_product,
+				'data_hash'    => '',
+			)
+		);
+		return apply_filters( 'woocommerce_get_item_data', [], $temp_item_data );
+	}
+
+	/**
+	 * Get the layers
+	 *
+	 * @return array Array of \MKL\PC\Choice instances
+	 */
+	public function get_layers() {
+		if ( $this->layers ) return $this->layers;
+		$layers = array();
+		$ep = 0;
+		if ( is_array( $this->content ) ) { 
+			foreach( $this->content as $layer_data ) {
+				$choice = new Choice( $this->product_id, $this->variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
+				if ( $item_price = $choice->get_choice( 'extra_price' ) ) {
+					$ep += $item_price;
+				}
+				$layers[] = $choice;
+				do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$this->content ) );
+			}
+		}
+		$this->layers = $layers;
+		return $this->layers;
+	}
+
+	/**
+	 * Get the visibility of the current configuration
+	 *
+	 * @return string
+	 */
+	private function get_visibility() {
+		return apply_filters( 'mkl_pc_configuration_visibility', $this->configuration_visibility, $this );
+	}
+
+	/**
+	 * Get the image manager instance
+	 *
+	 * @return MKL\PC\Images
+	 */
 	private function _get_image_manager() {
 		static $im;
 		if ( ! $im && Utils::check_image_requirements() ) {
@@ -581,7 +659,6 @@ class Configuration {
 			$im = new Images();
 		}
 		return $im;
-
 	}
 
 }
