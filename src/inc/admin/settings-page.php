@@ -804,7 +804,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				);
 				add_settings_field(
 					'steps_progress_enable_click_all',
-					__( 'Make all steps clickable in the breadcrumb', 'product-configurator-for-woocommerce' ),
+					__( 'Make all steps clickable in the breadcrumb instead of the completed ones', 'product-configurator-for-woocommerce' ),
 					[ $this, 'callback_checkbox' ],
 					'mlk_pc_settings', 
 					'general_settings',
