@@ -27,12 +27,12 @@ PC.fe.views.choice = Backbone.View.extend({
 		 */
 		wp.hooks.doAction( 'PC.fe.configurator.choice-item.before.render', this );
 		
-		var data = _.extend({
+		var data = _.extend( {
 			thumbnail: this.model.get_image( 'thumbnail' ),
 			disable_selection: ! this.model.get( 'available' ) && ! PC.fe.config.enable_selection_when_outofstock
-		}, this.options.model.attributes );
+		}, wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', this.model.attributes ) );
 		
-		this.$el.html( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.choice_data', data ) ) );
+		this.$el.html( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.template_choice_data', data ) ) );
 
 		wp.hooks.doAction( 'PC.fe.configurator.choice-item.render.after-template', this );
 
