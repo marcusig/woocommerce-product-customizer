@@ -468,7 +468,7 @@ class Ajax {
 			do_action( 'woocommerce_ajax_added_to_cart', $product_id );
 
 			if ( 'yes' === get_option( 'woocommerce_cart_redirect_after_add' ) ) {
-				$messages = 'Successfully added to cart, now redirecting...';
+				$messages = __( 'Successfully added to cart, now redirecting...', 'product-configurator-for-woocommerce' );
 				wc_add_to_cart_message( array( $product_id => $quantity ), true );
 			} else {
 				$messages = wc_add_to_cart_message( array( $product_id => $quantity ), true, true );
