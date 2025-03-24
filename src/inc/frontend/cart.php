@@ -181,7 +181,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					);
 				}
 
-				if ( 'block' == $this->_get_cart_item_context() ) {
+				if ( 'block' == $this->_get_cart_item_context( $cart_item ) ) {
 					$value = '&nbsp;';
 				} else {
 					$value = $this->get_choices_html( $choices );
@@ -196,7 +196,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					'value' => $value
 				);
 
-				if ( 'block' == $this->_get_cart_item_context() ) {
+				if ( 'block' == $this->_get_cart_item_context( $cart_item ) ) {
 
 					$data = array_merge( $data, array_map( function( $item ) {
 						if ( isset( $item['choice'] ) ) unset( $item['choice'] );
@@ -466,18 +466,28 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 
-		private function _get_cart_item_context() {
-			if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
-				return 'block';
-			}
-
-			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
-			foreach( $trace as $call ) {
-				// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
-				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
+		private function _get_cart_item_context( $cart_item = false ) {
+			if ( 
+				( is_cart() || is_checkout() ) 
+				|| (
+					$cart_item && isset( $cart_item['context'] ) && 'cart' == $cart_item['context']
+				)
+			) {
+				if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
 					return 'block';
 				}
+
+				$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
+				foreach( $trace as $call ) {
+					// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
+					if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
+						return 'block';
+					}
+				}
+				return 'default';
 			}
+			
+			if ( $cart_item && isset( $cart_item['context'] ) ) return $cart_item['context'];
 			return 'default';
 		}
 
