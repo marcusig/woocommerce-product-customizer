@@ -195,11 +195,14 @@ Supports: columns, color_swatches
 			box-sizing: border-box;
 
 			.footer__section-left {
-				display: none;
+				h3 {
+					display: none;
+				}
 			}
 
 			.footer__section-center {
 				display: flex;
+				align-items: center;
 			}
 
 			.single_add_to_cart_button {
@@ -208,7 +211,8 @@ Supports: columns, color_swatches
 			.form,
 			form,
 			.quantity {
-				display: inline-block;
+				display: inline-flex;
+				padding: 0;
 				input.qty {
 					background: #fff;
 					@media (max-width: $small_screen_width) {
@@ -218,6 +222,13 @@ Supports: columns, color_swatches
 			}
 			form.cart {
 				margin: 0;
+			}
+			form.save-form {
+				display: block;
+			}
+			.sent-email form.save-form,
+			.sending-email form.save-form {
+				display: none;
 			}
 			.extra-cost {
 				visibility: hidden;
@@ -273,6 +284,7 @@ Supports: columns, color_swatches
 
 				.quantity {
 					border: 2px solid color( primary );
+					border-radius: 0;
 					border-top-left-radius: 12px;
 					border-bottom-left-radius: 12px;
 					padding-right: 0;
@@ -503,10 +515,12 @@ body.configurator_is_inline .mkl_pc {
     z-index: 3;
 }
 
-.save-your-design-modal-container {
+.save-your-design-modal-container,
+.share-your-design-modal-container {
 	a {
-		&.save-your-design {
+		&.syd-action-button {
 			display: block;
+			text-decoration: none;
 		}
 		color: color( primary );
 		&:hover,
@@ -516,7 +530,7 @@ body.configurator_is_inline .mkl_pc {
 		}
 	}
 
-	a.save-your-design {
+	a.syd-action-button {
 		span {
 			display: block;
 			font-size: 10px;
@@ -529,11 +543,26 @@ body.configurator_is_inline .mkl_pc {
 			margin-left: auto;
 			display: block;			
 		}
-	}	
+	}
+}
+
+.mkl_pc .icon-only {
+	width: 44px;
+	span {
+		clip: rect(1px, 1px, 1px, 1px);
+		clip-path: inset(50%);
+		height: 1px;
+		width: 1px;
+		margin: -1px;
+		overflow: hidden;
+		padding: 0;
+		position: absolute;
+	}
 }
 
 a.save-your-design--pdf {
 	color: color( primary );
+	text-decoration: none;
 	&:hover,
 	&:focus,
 	&:active {
@@ -866,6 +895,12 @@ body:not(.is-mobile) .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices >
 	left: 0;
 	&::after {
 		left: 52px;
+	}
+	@media (max-width: $medium_screen_width) {
+		left: calc( -1 * var( --container-offset, 0 ) );
+		&::after {
+			left: calc( 24px + var( --container-offset, 0 ) );
+		}
 	}
 }
 

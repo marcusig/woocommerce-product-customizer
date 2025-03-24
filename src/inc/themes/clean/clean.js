@@ -3,6 +3,28 @@
 
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/clean', function( view ) {
 		view.$el.addClass( 'clean' );
+		if ( window.tippy && PC.utils._isMobile() ) {
+
+			var btns = view.$( '.reset-configuration, .save-your-design, .save-your-design--pdf, .share-your-design' );
+			btns.each( function( index, btn ) {
+				/**
+				 * 
+				 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
+				 */
+				var tooltip_options = {
+					content: $( btn ).find( 'span' ).html(),
+					allowHTML: true,
+					placement: 'top',
+					zIndex: 100001
+				};
+			
+				if ( tooltip_options.content && tooltip_options.content.length ) {
+					$( btn ).addClass( 'icon-only' );
+					tippy( btn, tooltip_options );
+				}
+			} );
+
+		}
 	}, 20 );
 
 	wp.hooks.addAction( 'PC.fe.before_open', 'MKL/PC/Themes/clean', function() {
@@ -26,9 +48,9 @@
 			// if ( parent && 'group' === parent.get( 'type' ) && ! parent.get( 'is_step' ) ) {
 			// 	return 'in';
 			// }
-			// if (  original_view.model.get( 'is_step' ) ) {
-			// 	return 'in';
-			// }
+			if (  original_view.model.get( 'is_step' ) ) {
+				return 'in';
+			}
 		}
 
 
