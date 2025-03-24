@@ -375,7 +375,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$classes = $choice[ 'className' ];
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . esc_attr( $classes ) . '"' : '' ) . '>', $choice['choice'] );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice['choice'] );
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . stripslashes( $choice['key'] ) .'</strong><span class="semicol">:</span> ' . stripslashes( $choice['value'] ) . $after, $choice['key'], $choice['value'], $before, $after );
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . stripslashes( $choice['key'] ) .'</strong>' . ( $choice['key'] ? '<span class="semicol">:</span> ' : ' ' ) . stripslashes( $choice['value'] ) . $after, $choice['key'], $choice['value'], $before, $after );
 			}
 
 			return $output;
