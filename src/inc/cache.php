@@ -63,10 +63,11 @@ class Cache {
 		));
 	}
 
-	public function save_config_file( $product_id ) {
-		$config_data = Plugin::instance()->db->escape( Plugin::instance()->db->get_front_end_data( $product_id ) );
-
-		$config_data = apply_filters( 'mkl_pc_get_configurator_data', $config_data, $product_id );
+	public function save_config_file( $product_id, $config_data = null ) {
+		if ( ! $config_data ) {
+			$config_data = Plugin::instance()->db->escape( Plugin::instance()->db->get_front_end_data( $product_id ) );
+			$config_data = apply_filters( 'mkl_pc_get_configurator_data', $config_data, $product_id );
+		}
 
 		$data =  'var PC = PC || {};'.PHP_EOL;
 		$data .= 'PC.productData = PC.productData || {};'.PHP_EOL;
