@@ -22,7 +22,7 @@ form.cart {
 }
 
 .quantity {
-	display: inline-block;
+	display: inline-flex;
 	input.qty {
 		background: #fff;
 		@media (max-width: $small_screen_width) {

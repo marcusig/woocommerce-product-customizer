@@ -583,6 +583,8 @@ $inner_space: 1em;
 							background-color: transparent;
 							position: relative; 
  							line-height: 1.3; 
+ 							height: auto; 
+							border-radius: 0;
 							color: color(layers_button_text_color);
 							font-weight: normal;
  							&:hover, &:focus {
@@ -626,6 +628,16 @@ $inner_space: 1em;
 							> button {
 								background: color(active_layer_button_bg_color);
 							}
+							& > .mkl-pc-choice-qty--container,
+							& > .text-field .mkl-pc-choice-qty--container,
+							& > .mkl_quantity .mkl-pc-choice-qty--container {
+								background: var(--mkl_pc_color-ll4);
+								border-color: var(--mkl_pc_color-ll3);
+								.mkl-pc-choice-qty--btn {
+									background: transparent;
+								}
+							}
+
 						}
 						ul {
 							list-style-type: none;
@@ -725,6 +737,8 @@ $inner_space: 1em;
 							background: transparent;
 							transition: 0.2s all;
 							color: color(choices_button_text_color);
+							height: auto;
+							border-radius: 0;
 							span.choice-price {
 								display: inline-block;
 								padding: 0 6px;
@@ -1192,6 +1206,10 @@ $inner_space: 1em;
 				display: inline-block;
 			}
 
+			form.save-form {
+				display: block;
+			}
+
 			.quantity {
 				background: #ffffff17;
 			}
@@ -1268,7 +1286,8 @@ $inner_space: 1em;
 				
 			}
 			button.reset-configuration,
-			a.save-your-design, a.save-your-design--pdf {
+			a.save-your-design, a.save-your-design--pdf,
+			a.syd-action-button {
 				margin: 0;
 				text-transform: none;
 				font-size: 14px;

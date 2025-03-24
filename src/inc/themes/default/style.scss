@@ -1220,6 +1220,14 @@ $inner_space: 1em;
 			form.cart {
 				margin: 0;
 			}
+			form.save-form {
+				display: block;
+			}
+			.sent-email form.save-form,
+			.sending-email form.save-form {
+				display: none;
+			}
+			
 			.extra-cost {
 				visibility: hidden;
 				position: fixed;
