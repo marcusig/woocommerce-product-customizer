@@ -1271,44 +1271,37 @@ $inner_space: 1em;
 			}
 
 			button.reset-configuration {
-				svg {
-					height: 23px;
-					width: 23px;
-					fill: currentColor;
-					margin-right: 10px;
-					vertical-align: middle;
-				}
 				@media (max-width: $medium_screen_width) {
 					span {
 						display: none;
 					}
 				}
-				
 			}
+
 			button.reset-configuration,
 			a.save-your-design, a.save-your-design--pdf,
-			a.syd-action-button {
-				margin: 0;
-				text-transform: none;
-				font-size: 14px;
-				font-weight: 400;
-				display: inline-block;
-				padding: 6px 12px;
-				background: transparent;
-				color: color(ll2);
-				appearance: none;
-				box-shadow: none;
-				border:  none;
-				text-decoration: none;
-				&:hover, &:focus {
-					opacity: .5;
-				}
-				@media (max-width: $small_screen_width) {
-					width: 40px;
-					svg {
-						transform: none;
-					}
-				}
+			a.mkl-footer--action-button {
+				// margin: 0;
+				// text-transform: none;
+				// font-size: 14px;
+				// font-weight: 400;
+				// display: inline-block;
+				// padding: 6px 12px;
+				// background: transparent;
+				// color: color(ll2);
+				// appearance: none;
+				// box-shadow: none;
+				// border:  none;
+				// text-decoration: none;
+				// &:hover, &:focus {
+				// 	opacity: .5;
+				// }
+				// @media (max-width: $small_screen_width) {
+				// 	width: 40px;
+				// 	svg {
+				// 		transform: none;
+				// 	}
+				// }
 			}
 
 			@media (max-height: 500px) and (orientation: landscape) {

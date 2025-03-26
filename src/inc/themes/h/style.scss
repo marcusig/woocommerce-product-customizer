@@ -215,6 +215,7 @@ $inner_space: 1em;
 					text-align: left;
 					padding: 6px 20px;
 					line-height: 1.5;
+					height: auto;
 					text-transform: uppercase;
 					background-color: color(add_to_cart_bg_color);
 					color: color(add_to_cart_text_color);
@@ -248,6 +249,7 @@ $inner_space: 1em;
 					display: flex;
 
 					.quantity {
+						border-radius: 4px;
 						input.qty {
 							margin-right: 0;
 							height: 100%;
@@ -286,9 +288,13 @@ $inner_space: 1em;
 		form {
 			display: inline-block;
 		}
+		form.save-form {
+			display: block;
+		}
 
 		.quantity {
-			display: inline-block;
+			display: inline-flex;
+			align-items
 			input.qty {
 				background: var(--mkl_pc_color-default-bg);
 				@media (max-width: $small_screen_width) {
@@ -462,9 +468,7 @@ $inner_space: 1em;
 				}
 			}
 
-			a.save-your-design,
-			a.save-your-design--pdf,
-			button.reset-configuration {
+			.mkl-footer--action-button {
 				margin: 0;
 				text-transform: none;
 				font-size: 14px;

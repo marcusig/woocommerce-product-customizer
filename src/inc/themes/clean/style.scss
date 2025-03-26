@@ -518,7 +518,7 @@ body.configurator_is_inline .mkl_pc {
 .save-your-design-modal-container,
 .share-your-design-modal-container {
 	a {
-		&.syd-action-button {
+		&.mkl-footer--action-button {
 			display: block;
 			text-decoration: none;
 		}
@@ -530,7 +530,7 @@ body.configurator_is_inline .mkl_pc {
 		}
 	}
 
-	a.syd-action-button {
+	a.mkl-footer--action-button {
 		span {
 			display: block;
 			font-size: 10px;

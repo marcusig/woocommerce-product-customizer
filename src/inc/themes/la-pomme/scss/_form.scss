@@ -1,3 +1,9 @@
+.pc_configurator_form {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
 form.cart {
 	display: inline-block;
 	margin: 0;
@@ -5,7 +11,7 @@ form.cart {
 
 .form.form-cart {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	flex-direction: row;
 	justify-content: flex-end;
 	position: relative;
@@ -23,6 +29,7 @@ form.cart {
 
 .quantity {
 	display: inline-flex;
+	align-items: center;
 	input.qty {
 		background: #fff;
 		@media (max-width: $small_screen_width) {

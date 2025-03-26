@@ -568,13 +568,14 @@ $inner_space: 1em;
 						button {
 							display: block;
 							width: 100%;
+							height: auto;
 							text-align: left; 
 							padding: 30px 14px; 
 							border: none;
+							border-radius: 0;
 							border-bottom: 1px solid color(light-gray); 
 							background-color: transparent;
 							position: relative; 
-							height: auto;
  							line-height: 1.3; 
 							color: color(layers_button_text_color);
 							font-weight: normal;
@@ -1206,15 +1207,13 @@ $inner_space: 1em;
 			.form,
 			form,
 			.quantity {
-				display: inline-block;
+				display: inline-flex;
+				align-items: center;
 				input.qty {
 					background: #fff;
-					@media (max-width: $small_screen_width) {
-						border: 2px solid #36383a;
-					}
-				}
-				&.buttons_added {
-					display: inline-flex;
+					// @media (max-width: $small_screen_width) {
+					// 	border: 2px solid #36383a;
+					// }
 				}
 			}
 			form.cart {
@@ -1302,38 +1301,13 @@ $inner_space: 1em;
 				}
 			}
 
-			button.reset-configuration,
-			a.save-your-design, a.save-your-design--pdf, a.share-your-design {
-				margin: 0;
-				text-transform: none;
-				font-size: 14px;
-				font-weight: 400;
-				display: inline-block;
-				padding: 6px 12px;
-				line-height: 1.2;
-				background: transparent;
-				appearance: none;
-				box-shadow: none;
-				border:  none;
-				color: inherit;
-				text-decoration: none;
-				&:hover, &:focus {
-					opacity: .5;
-				}
-				@media (max-width: $small_screen_width) {
-					width: 40px;
-					svg {
-						transform: none;
-					}
-				}
+			.footer__section-center {
+				display: flex;
+				align-items: center;
 			}
 
 			@media (max-width: $medium_screen_width) {
 				text-align: center;
-				.footer__section-center {
-					display: flex;
-				}
-
 				[class*=save-your-design] ~ .reset-configuration {
 					display: none;
 				}
