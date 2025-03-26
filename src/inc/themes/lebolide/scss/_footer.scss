@@ -37,6 +37,7 @@ footer {
 	.footer__section-center {
 		flex: 1;
 		display: flex;
+		align-items: center;
 		&:empty {
 			display: none;
 		}
@@ -57,32 +58,16 @@ footer {
 		}
 	}
 
-	a.save-your-design--pdf,
-	a.save-your-design,
-	a.share-your-design,
-	button.reset-configuration {
-		margin: 0;
-		padding: 4px 9px;
-		background: transparent;
-		color: inherit;
-		text-transform: none;
-		font-size: 1em;
-		text-transform: none;
-		font-weight: normal;
-
-		appearance: none;
-		box-shadow: none;
-		border:  none;
+	.mkl-footer--action-button {
 		color: var(--mkl_pc_color-primary);
 		&::before {
 			content: unset;
 			display: none;
 		}
 		svg {
-			height: 23px;
+			height: 24px;
 			fill: currentColor;
-			width: 23px;
-			margin-right: 6px;
+			width: 24px;
 			vertical-align: middle;					
 		}
 		&.icon-only {
@@ -107,16 +92,18 @@ footer {
 	}
 
 	.mkl-pc-syd-modal {
-		right: 0;
-		left: auto;
 		border-radius: 15px;
+		@media( min-width: 720px) {
+			left: 0;
+			right: auto;
 
-		&::after {
-			left: auto;
-			right: 10px;
-			width: 15px;
-			height: 15px;
-			bottom: -5px;
+			&::after {
+				left: 24px;
+				right: auto;
+				width: 15px;
+				height: 15px;
+				bottom: -5px;
+			}
 		}
 		.mkl-pc-modal-list h4,
 		.mkl-pc-modal > h4 {
@@ -130,25 +117,88 @@ footer {
 		padding-right: 0;
 	}
 
-	.footer__section-center {
-		.mkl-pc-syd-modal {
-			left: 0;
-			right: auto;
-	
-			&::after {
-				left: 35px;
-				right: auto;
-				width: 15px;
-				height: 15px;
-				bottom: -5px;
-			}
-		}	
-	}
-
-
 	a.save-your-design svg path,
 	.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
 	a.save-your-design--pdf svg path {
 		fill: color(primary);
+	}
+}
+
+& > .share-your-design--container {
+	display: none;
+	position: absolute;
+	z-index: 400;
+	.mkl-pc-syd-modal {
+		z-index: 2;
+		border-radius: 15px 15px 0 0;
+		left: 0;
+		right: auto;
+		top: auto;
+		bottom: 0;
+
+		.mkl-pc-modal-list h4,
+		.mkl-pc-modal > h4 {
+			background: #f5f5f7;
+			border-radius: 15px 15px 0 0;
+		}
+	}
+
+}
+
+&.opened  > .share-your-design--container {
+	display: block;
+    height: 100%;
+    width: 100%;
+	.mkl-pc-syd-modal {
+		visibility: visible;
+		opacity: 1;
+		transform: none;
+	}
+	&::before {
+		content: '';
+		display: block;
+		height: 100%;
+		width: 100%;
+		position: absolute;
+		top: 0;
+		left: 0;
+		background: #000000cc;
+	}
+}
+
+a.syd-share-close {
+    position: absolute;
+    top: -60px;
+    width: 40px;
+    height: 40px;
+    left: calc(50% - 20px);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgb(255, 255, 255);
+	color: #000;
+}
+
+@at-root body.syd-modal-opened & {
+	&::before {
+		content: '';
+		display: block;
+		height: 100%;
+		width: 100%;
+		position: absolute;
+		top: 0;
+		left: 0;
+		background: #000000cc;
+		z-index: 10;
+	}
+	> .mkl-pc-syd-modal {
+		visibility: visible;
+		opacity: 1;
+		transform: none;
+		top: auto;
+		bottom: 0;
+		border-radius: 15px 15px 0 0;
+		z-index: 20;
 	}
 }

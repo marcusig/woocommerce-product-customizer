@@ -37,15 +37,33 @@
 			if ( syd.length ) syd.prependTo( view.$( '.footer__section-center' ) );
 		}
 
-		view.$main_window.on( 'scroll', function( e ) {
+		// view.$main_window.on( 'scroll', function( e ) {
 			// console.log( 'scroll', e.target.scrollTop, $( e.target ).offset().top );
 			// console.log( $( 'ul[data-layer-id="2"' ).offset().top - $( e.target ).offset().top );
-		} );
+		// } );
 	}, 30);
 
-	wp.hooks.addAction( 'PC.fe.open', 'MKL/PC/Themes/lebolide', function( view ) {
-		// view.$el.removeClass( 'mobile-show-form' );
-	}); 
+	/* Share your design */
+	wp.hooks.addAction( 'PC.fe.syd.share.modal.init', 'MKL/PC/Themes/lebolide', function( view ) {
+		if ( PC.utils._isMobile() && PC.fe.modal.$el.outerWidth() <= 720 ) {
+			view.$el.appendTo( PC.fe.modal.$main_window );
+			view.insertTarget = PC.fe.modal.$main_window;
+			const close_btn = $( '<a href="#" title="Close" class="syd-share-close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="m13.06 12 6.47-6.47-1.06-1.06L12 10.94 5.53 4.47 4.47 5.53 10.94 12l-6.47 6.47 1.06 1.06L12 13.06l6.47 6.47 1.06-1.06L13.06 12Z"></path></svg></a>' );
+			close_btn.on( 'click', function( e ) {
+				e.preventDefault();
+				view.close();
+			} );
+			view.$( '.mkl-pc-modal' ).append( close_btn );
+		}
+	} );
+
+	/* Save your design */
+	wp.hooks.addAction( 'PC.fe.syd.modal.init', 'MKL/PC/Themes/lebolide', function( view ) {
+		if ( PC.utils._isMobile() && PC.fe.modal.$el.outerWidth() <= 720 ) {
+			view.$el.appendTo( PC.fe.modal.$main_window );
+			view.insertTarget = PC.fe.modal.$main_window;
+		}
+	} );
 
 	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/lebolide', function( where ) {
 		return 'in';
