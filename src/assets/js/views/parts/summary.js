@@ -1,10 +1,13 @@
 PC.fe.views.summary = Backbone.View.extend( {
-	tagName: 'div',
-	className: 'mkl_pc_summary',
+	tagName: 'li',
+	className: 'layers-list-item mkl_pc_summary type-summary',
 	template: wp.template( 'mkl-pc-configurator-summary' ),
 	layers: [],
 	initialize: function() {
 		this.render();
+		console.log( this.tagName );
+		console.log( this.className );
+		
 		if ( PC.conditionalLogic ) {
 			wp.hooks.addAction( 'mkl_checked_conditions', 'mkl/pc/summary', this.render.bind( this ), 1000 );
 		} 
