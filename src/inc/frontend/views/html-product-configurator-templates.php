@@ -75,7 +75,7 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_fr
  */
 function mkl_pc_frontend_configurator_footer_add_reset_button() {
 	if ( ! ( bool ) mkl_pc( 'settings')->get( 'show_reset_button' ) ) return;
-	$classes = apply_filters( 'mkl_pc_reset_button_classes' , [ 'reset-configuration' ] );
+	$classes = array_merge( apply_filters( 'mkl_pc_reset_button_classes' , [ 'mkl-footer--action-button' ] ), [ 'reset-configuration' ] );
 	?>
 		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 			<?php do_action( 'mkl_pc/reset_button/before_label' ); ?>
