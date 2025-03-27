@@ -195,11 +195,13 @@ Supports: columns, color_swatches
 			box-sizing: border-box;
 
 			.footer__section-left {
+				display: none;
 				h3 {
 					display: none;
 				}
 			}
 
+			
 			.footer__section-center {
 				display: flex;
 				align-items: center;
@@ -320,6 +322,8 @@ Supports: columns, color_swatches
 					width: 60px;
 					padding-left: 15px;
 					padding-right: 12px;
+					padding-top: 0;
+					padding-bottom: 0;
 					color: color( primary );
 					box-sizing: content-box;
 				}
@@ -894,7 +898,7 @@ body:not(.is-mobile) .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices >
 .mkl-pc-syd-modal {
 	left: 0;
 	&::after {
-		left: 52px;
+		left: 24px;
 	}
 	@media (max-width: $medium_screen_width) {
 		left: calc( -1 * var( --container-offset, 0 ) );
