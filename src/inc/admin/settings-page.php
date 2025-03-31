@@ -945,6 +945,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'add_to_cart_success__redirection',
+				__( 'Redirection message after Successfully adding to the cart', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings',
+				'labels',
+				[
+					'setting_name' => 'add_to_cart_success__redirection',
+					'placeholder' => __( 'Default:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Successfully added to cart, now redirecting...', 'product-configurator-for-woocommerce' )
+				]
+			);
+
 			// Translatepress options
 			if ( function_exists( 'trp_translate' ) ) {
 				add_settings_section(
