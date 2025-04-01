@@ -202,6 +202,10 @@ class Configuration {
 	 */
 	public function set_content( $content ) {
 		if ( isset( $this->content ) ) return;
+		if ( is_array( $content ) ) {
+			$this->content = $content;
+			return;
+		}
 		$content = json_decode( stripcslashes( $content ) );
 		if ( ! $content ) {
 			$this->content = [];
