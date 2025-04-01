@@ -59,14 +59,16 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $form_data['pc_configurator_data'] ) || '' == $form_data['pc_configurator_data'] ) return $quote_item_data;
 			if ( $data = json_decode( stripcslashes( $form_data['pc_configurator_data'] ) ) ) {
 				$data = Plugin::instance()->db->sanitize( $data );
-				$layers = array();
-				if ( is_array( $data ) ) { 
-					foreach( $data as $layer_data ) {
-						$layers[] = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
-					}
-				}
-				$quote_item_data['configurator_data'] = $layers; 
-				$quote_item_data['configurator_data_raw'] = $data;
+				$configuration = new Configuration( 
+					null,
+					[
+						'product_id' => $product_id, 
+						'variation_id' => $variation_id,
+						'content' => $data
+					] 
+				);
+				$quote_item_data['configurator_data'] = $configuration->get_layers(); 
+				$quote_item_data['configurator_data_raw'] = $configuration->content;
 			}
 
 			// if ( $data = json_decode( stripcslashes( $form_data['pc_configurator_data'] ) ) ) {
@@ -100,21 +102,25 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$item_weight = 0;
 						$layers = array();
 						if ( is_array( $data ) ) { 
-							foreach( $data as $layer_data ) {
-								$choice = new Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
-								$layers[] = $choice;
-								if ( $weight = $choice->get_choice( 'weight' ) ) {
-									$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $choice );
+							$configuration = new Configuration( null, [
+								'content' => $data, 
+								'product_id' => $product_id, 
+								'variation_id'=> $variation_id 
+							] );
+							$layers = $configuration->get_layers();
+
+							foreach( $configuration->get_layers() as $layer ) {
+								if ( $weight = $layer->get_choice( 'weight' ) ) {
+									$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
 								}
-								do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$data ) );
 							}
 						}
 
 						if ( $item_weight ) {
 							$cart_item_data['configuration_weight'] = $item_weight; 
 						}
-						$cart_item_data['configurator_data'] = $layers; 
-						$cart_item_data['configurator_data_raw'] = $data;
+						$cart_item_data['configurator_data'] = $layers;
+						$cart_item_data['configurator_data_raw'] = $configuration->content;
 					}
 				} 
 			} 
