@@ -567,6 +567,7 @@ body.configurator_is_inline .mkl_pc {
 a.save-your-design--pdf {
 	color: color( primary );
 	text-decoration: none;
+	display: block;
 	&:hover,
 	&:focus,
 	&:active {
