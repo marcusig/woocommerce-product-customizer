@@ -431,7 +431,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 			$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
 
-			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $cart_item['configurator_data'] ) ) return '';
+			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $cart_item['configurator_data_raw'] ) ) return '';
 
 			if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 				$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
@@ -456,7 +456,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 			return $cart_item;
 		}
-
+		
 		/**
 		 * Maybe add the extra weight to the original item
 		 *
