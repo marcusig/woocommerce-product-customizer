@@ -1,0 +1,16 @@
+span.mkl-license-expired {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #fff0f0;
+    color: red;
+    border: 1px solid red;
+    border-left-width: 4px;
+}
+
+span.mkl-license-expire-soon {
+    display: inline-block;
+    padding: 4px;
+    background: #fcf9e8;
+    border: 1px solid #c3c4c7;
+    border-left: 4px solid #dba618;
+}

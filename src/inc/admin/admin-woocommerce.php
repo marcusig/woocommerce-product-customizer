@@ -36,6 +36,7 @@ class Admin_Woocommerce {
 		$this->angle_settings = new Angle_Settings();
 
 		add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
+		add_filter( 'udmupdater_you_are_connected', [ $this, 'updater_message' ], 20, 3 );
 	}
 
 	/**
@@ -52,48 +53,6 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}
-
-	// public function get_editor_menu( $structure ) {
-		
-	// 	if( !is_array($structure) ) return false;
-	// 	$menu = '';
-
-
-	// 	<div class="pc-editor">
-	// 		<div class="list-elements"></div>
-	// 		<div class="list-choices"></div>
-	// 		<div class="choice-form"></div>
-	// 	</div>
-
-	// 	foreach ($structure as $index => $element) {
-
-	// 		if( $element['name'] != '' && is_array($element['choice']) ) {
-	// 			$menu .= '<li>';
-	// 			$menu .= '<a href="#"> '. $element['name'] .'</a>';
-	// 			$menu .= '<ul class="wc-pc-tabs-sub">';
-	// 			foreach( $element['choice'] as $choice ) {
-	// 				$menu .= '<li>';
-	// 				$menu .= '<a href="#"> '. $choice .'</a>';
-	// 				$menu .= '
-	// 				<div class="image-selectors">
-	// 					<a href="#" class="image-selector" data-select-image="main">'.__('Choose an image for ').$choice.'</a><br>
-	// 					<a href="#" class="image-selector" data-select-image="thumbnail">'.__('Choose a thumbnail').'</a>
-	// 				</div>';
-	// 				$menu .= '</li>';
-	// 			}
-	// 			$menu .= '</ul>';
-	// 			$menu .= '</li>';
-	// 		}
-	// 	}
-		
-
-
-	// 	if( $menu != '' ) { 
-	// 		return '<ul class="wc-pc-tabs">'. $menu .'</ul><div class="wc-pc-tabs-sub-container" id="pc_tabs_submenu"></div><div id="pc_img_selectors"></div>';
-	// 	} else {
-	// 		return false;
-	// 	}
-	// }
 
 	/**
 	 * Get a template part
@@ -114,6 +73,16 @@ class Admin_Woocommerce {
 	}
 
 	public function admin_enqueue_scripts() {
+
+		global $pagenow;
+
+		/**
+		 * Enqueue styles and scripts for plugins and update screen
+		 */
+		if ( 'plugins.php' == $pagenow || 'update-core.php' == $pagenow ) {
+			wp_enqueue_style( 'mlk_pc/admin/updates', MKL_PC_ASSETS_URL.'admin/css/updates.css' , [], filemtime( MKL_PC_ASSETS_PATH . 'admin/css/updates.css' ) );
+		}
+
 		/**
 		 * Add styles for the addify quotes admin
 		 */
@@ -128,4 +97,30 @@ class Admin_Woocommerce {
 			}
 		' );
 	}
-} // END CLASS
+
+	/**
+	 * Add expiry indication to connected message
+	 *
+	 * @param string $message
+	 * @param array  $plugin_data
+	 * @param string $slug
+	 * @return string
+	 */
+	public function updater_message( $message, $plugin_data, $slug ) {
+
+		if ( false === strpos( $slug, 'mkl-pc' ) ) return $message;
+
+		$op = get_option( 'external_updates-' . $slug );
+
+		if ( $op && is_object( $op ) && isset( $op->update, $op->update->extraProperties, $op->update->extraProperties['x-spm-expiry'] ) ) {
+			if ( 'expired' === $op->update->extraProperties['x-spm-expiry'] ) {
+				$message = '<span class="mkl-license-expired">License expired</span> ' . $message;
+			}
+			if ( 'soon' === $op->update->extraProperties['x-spm-expiry'] ) {
+				$message = '<span class="mkl-license-expire-soon">License will expire soon</span> ' . $message;
+			}
+		}
+		return $message;
+	}
+
+}
