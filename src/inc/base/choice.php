@@ -18,17 +18,14 @@ class Choice {
 	public $angle_id; 
 	public $product_id; 
 	public $variation_id; 
+	public $content_id; // The product ID used to store the content
 	public $layer_data; 
 	public $choice;
 	public $images;
 	public $option_label;
 	public $field_value;
-	private $db = null;
 
 	public function __wakeup() {
-		$this->db = Plugin::instance()->db;
-		$this->set_layer(); 
-		$this->set_selected_choice();
 		do_action( 'mkl_pc/choice/wakeup', $this );
 		do_action( 'mkl_pc/choice/init', $this, $this->layer_data );
 		// $this->set_selected_choice();
@@ -42,7 +39,8 @@ class Choice {
 			'layer_id',
 			'choice_id',
 			'angle_id',
-			'layer_data'
+			'layer_data',
+			'content_id'
 		], $this );
 	}
 
@@ -54,10 +52,14 @@ class Choice {
 		$this->set_selected_choice();
 	}
 
+	public function maybe_set_things_up() {
+		if ( null === $this->layer ) $this->set_layer(); 
+		if ( null === $this->choice ) $this->set_selected_choice();
+	}
+
 	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id, $layer_data = false ) { 
 
 		if ( !intval( $product_id ) || !intval( $layer_id ) || !intval( $angle_id ) ) return false;
-		$this->db = Plugin::instance()->db;
 		$this->product_id   = (int) $product_id;
 		$this->variation_id = (int) $variation_id;
 		$this->layer_id 	= (int) $layer_id;
@@ -78,9 +80,9 @@ class Choice {
 	}
 
 	private function set_layer() {
-		
+		// $this->maybe_set_things_up();
 		// get all layers
-		$layers = $this->db->get( 'layers', $this->product_id );
+		$layers = $this->get_db()->get( 'layers', $this->product_id );
 		$this->layer = Utils::get_array_item( $layers, '_id', $this->layer_id );
 		// have to do benchmark here: 
 		// either use above functions either database
@@ -90,8 +92,9 @@ class Choice {
 	private function set_selected_choice(  ) {
 		// $product = wc_get_product( $this->product_id );
 
-		$product_id = $this->db->get_product_id_for_content( $this->product_id, $this->variation_id );
-		$content = $this->db->get( 'content', $product_id ); 
+		// if ( ! $this->content_id ) $this->content_id = $this->get_db()->get_product_id_for_content( $this->product_id, $this->variation_id );
+		$product_id = $this->product_id;
+		$content = $this->get_db()->get( 'content', $product_id ); 
 
 		if ( $this->choice_id && $content ) {
 			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
@@ -108,11 +111,12 @@ class Choice {
 	}
 
 	public function get_layer( $item ) {
+		$this->maybe_set_things_up();
 		return isset( $this->layer[ $item ] ) ? $this->layer[ $item ] : null;
 	}
 
 	public function get_choice( $item ) {
-
+		$this->maybe_set_things_up();
 		return property_exists( $this, 'choice' ) && isset( $this->choice[ $item ] ) ? $this->choice[ $item ] : null;
 	}
 
@@ -124,6 +128,7 @@ class Choice {
 	}
 
 	public function get_image( $type = 'image' ) {
+		$this->maybe_set_things_up();
 		if ( ! $this->images || ! is_array(  $this->images ) || ! isset( $this->images[ $type ] ) ) return '';
 		return $this->images[ $type ];
 	}
@@ -139,6 +144,7 @@ class Choice {
 	}
 
 	public function get_choice_by_id( $id ) {
+		$this->maybe_set_things_up();
 		return Utils::get_array_item( $this->choices['choices'], '_id', $id );
 	}
 	
@@ -157,6 +163,10 @@ class Choice {
 		if ( ! empty( $this->layer_data ) ) return;
 		$this->layer_data = $layer_data;
 		do_action( 'mkl_pc/choice/init', $this, $this->layer_data );
+	}
+
+	private function get_db() {
+		return Plugin::instance()->db;
 	}
 
 }
