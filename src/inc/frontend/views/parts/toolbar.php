@@ -36,7 +36,7 @@
 <script type="text/html" id="tmpl-mkl-pc-configurator-step--next" data-wg-notranslate>
 	<?php
 		$classes = mkl_pc( 'settings' )->get_label( 'button_classes', 'primary button btn btn-primary' );
-		$classes = apply_filters( 'mkl_pc/next_step/button_classes', '' );
+		$classes = apply_filters( 'mkl_pc/next_step/button_classes', $classes );
 		$label = mkl_pc( 'settings' )->get_label( 'next_step_label', _x( 'Next', 'Next step button label', 'product-configurator-for-woocommerce' ) );
 	?>
 	<button type="button" class="step-next <?php echo esc_attr( $classes ); ?>">
