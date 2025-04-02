@@ -751,7 +751,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'general_settings',
 				[ 
 					'setting_name' => 'disable_caching',
-					'description'  => __( 'Can be usefull when using CDNs such as CloudFlare', 'mkl-pc-stock-management' ),
+					'description'  => __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' ),
 				]
 			);
 
