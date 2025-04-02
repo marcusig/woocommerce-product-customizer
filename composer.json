@@ -1,6 +1,7 @@
 {
 	"require": {
-		"intervention/image": "^2.7"
+		"intervention/image": "^2.7",
+		"davidanderson684/simba-plugin-manager-updater": "1.9.*"
 	},
 	"prefer-stable" : true
 }
