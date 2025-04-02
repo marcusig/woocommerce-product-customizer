@@ -369,7 +369,8 @@ $inner_space: 1em;
 							margin-bottom: 1em;
 							box-shadow: 0 15px 30px rgba(63, 67, 74, .10);
 							border-radius: 8px;
-							&.not-a-choice {
+							&.not-a-choice,
+							&.type-summary {
 								box-shadow: none;
 								border-radius: 0;
 							}
