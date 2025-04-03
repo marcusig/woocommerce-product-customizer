@@ -3,8 +3,8 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
-Tested up to: 6.7
-Stable tag: 1.3.11
+Tested up to: 6.8
+Stable tag: 1.4.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,6 +129,15 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.4.0 - 2/Apr/2025 = 
+
+* DEV: Compatibility with Save your design new "Share" feature
+* DEV: Include updater class for access by the addons
+* PERFORMANCE: Attempt at reducing memory usage in cart: only load content in class when required when unserializing MKL\PC\Choice
+* TWEAK: Made string 'Successfully added to cart, now redirecting...' translatable, and added a setting to override it
+* TWEAK: Changed setting label "Make all steps clickable..." for more clarity
+* FEATURE: Add view parameter to URL and shortcode
+
 = 1.3.11 - 16/Feb/2025 = 
 
 * FIX: Error when adding to the cart in some situations
@@ -242,4 +251,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.3.10 Various tweaks and fixes
+* 1.4.0 Numerous style changes, compatibility with Save your design new Share feature
