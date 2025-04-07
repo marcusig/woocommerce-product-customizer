@@ -86,6 +86,8 @@ class Configuration {
 			} elseif ( $this->configuration_type != $conf_post->post_status ) {
 				return new WP_Error( '400', __( 'The configuration type does not match the requested item', 'product-configurator-for-woocommerce' ) );
 			}
+			$this->product_id = $this->post->post_parent;
+			$this->set_content( $this->post->post_content );
 			// if ( ! $this->post ) return false;
 		} else {
 			$this->ID = 0;
@@ -175,7 +177,6 @@ class Configuration {
 
 		if ( is_wp_error( $this->ID ) ) {
 			return array( 'saved' => false, 'error' => 'Could not save... ' . $this->ID->get_error_message() );
-
 		}
 
 		if ( $this->should_save_image && isset( $this->content ) ) {
@@ -256,9 +257,19 @@ class Configuration {
 	 */
 	public function content_has_single_image( $return = 'bool' ) {
 		if ( ! property_exists( $this, 'content' ) || ! is_array( $this->content ) || empty( $this->content ) ) return false;
-		$item = array_values( $this->content )[0];
-		if ( 1 === count( $this->content ) && $image = wp_get_attachment_url( $item->image ) ) {
-			return 'bool' == $return ? true : $item->image;
+
+		$images = [];
+		foreach ( $this->content as $layer ) {
+			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+			if ( $image ) {
+				$images[] = $image;
+			}
+		}
+
+		if ( 1 === count( $images ) && $image_url = wp_get_attachment_url( $images[0] ) ) {
+			if ( 'id' == $return ) return $images[0];
+			if ( 'url' == $return ) return $image_url;
+			return true;
 		}
 		return false;
 	}
@@ -272,7 +283,7 @@ class Configuration {
 		
 		if ( empty( $this->content ) ) return '';
 
-		foreach ($this->content as $layer) {
+		foreach ( $this->content as $layer ) {
 			$image_file_name .= '-'.$layer->image;
 		}
 		$image_file_name .= '.png'; 
@@ -435,15 +446,14 @@ class Configuration {
 		}
 		return $dimensions;
 	}
+
 	/**
 	 * Save image to the disk
 	 *
 	 * @param 
 	 * @return integer - The image ID
 	 */
-	public function save_image( $content, $transient = null ) {
-
-		$image_manager = $this->_get_image_manager();
+	public function save_image( $content = null, $config_id = null ) {
 		if ( is_string( $content ) ) {
 			$content = sanitize_file_name( $content );
 			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
@@ -460,7 +470,7 @@ class Configuration {
 		}
 
 		// The image already exists
-		if ( $content && is_null( $transient ) && $this->configuration_exists() ) {
+		if ( $content && is_null( $config_id ) && $this->configuration_exists() ) {
 			$attach_id = $this->content_has_single_image( 'id' );
 			if ( ! $attach_id ) {
 				$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
@@ -468,30 +478,24 @@ class Configuration {
 			if ( $attach_id && $this->ID ) set_post_thumbnail( $this->ID, $attach_id );
 			return $attach_id;
 		} else {
-			// if is async and has no transient
-			if ( $this->save_image_async && is_null( $transient ) ) {
-				// file name
-				$image_file_name = $this->get_configuration_image_name();
+			// if is async and config has not been saved
+			if ( $this->save_image_async && is_null( $config_id ) ) {
+
+				// Check if we have images
 				$images = array();
-				// collect images
 				foreach ($content as $layer) {
 					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
-					$images[] = $image;
-					
+					if ( $image ) {
+						$images[] = $image;
+					}
 				}
+
 				if ( count( $images ) > 1 ) {
-					// if there are images to process
-					$store_data = array(
-						'image_file_name' => $image_file_name,
-						'images' => $images,
-						);
-					set_transient( '_temp_image_data_conf_'.$this->ID, $store_data, HOUR_IN_SECONDS );
 					// prepare return values 
 					$save_image = array(
 						'should_save' => true,
 						'config_id'     => $this->ID,
 					);
-
 					return $save_image;
 
 				} elseif ( count( $images ) == 1 ) {
@@ -504,33 +508,25 @@ class Configuration {
 					// if there is none
 					return false;
 				}
-				// 
-				
-			} elseif ( absint( $transient ) ) {
-				// if we have a transient, get it
-				$config = get_transient( '_temp_image_data_conf_'.absint( $transient ) );
-				if ( !isset( $config['image_file_name'] ) || !isset( $config['images'] ) )
-					return false;
-
-				$image_file_name = $config['image_file_name'];
-				$this->image_name = $image_file_name;
-				$images = $config['images'];
-				
-				if ( $this->configuration_exists() ) return Utils::get_image_id( $this->upload_dir_url . '/' . $image_file_name );
-
 			} else {
 				$image_file_name = $this->get_configuration_image_name();
-				$images = array();
+				
+				if ( ! $content ) $content = $this->content;
+
 				// collect images
+				$images = array();
 				foreach ($content as $layer) {
 					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
-					$images[] = $image;
+					if ( $image ) {
+						$images[] = $image;
+					}
 				}
 			}
 
 			if ( count( $images ) > 1 && Utils::check_image_requirements() ) {
+				$image_manager = $this->_get_image_manager();
 				$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
-			} elseif ( count( $images ) == 1 ) {
+			} elseif ( 1 == count( $images ) ) {
 				$fimage = $images[0];
 			} else {
 				return false;
