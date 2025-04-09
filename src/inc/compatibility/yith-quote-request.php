@@ -62,7 +62,7 @@ class Compat_Yith_Raq {
 	 * @return void
 	 */
 	public function yith_raq_updated() {
-		$is_adding_configured_item = isset( $_POST['action'] ) && 'yith_ywraq_action' === $_POST['action'] && isset( $_POST['ywraq_action'] ) && 'add_item' === $_POST['ywraq_action'] && isset(  $_POST['pc_configurator_data'] );
+		$is_adding_configured_item = isset( $_POST['action'] ) && 'yith_ywraq_action' === $_POST['action'] && isset( $_POST['ywraq_action'] ) && 'add_item' === $_POST['ywraq_action'] && isset( $_POST['pc_configurator_data'] );
 		if ( ! $is_adding_configured_item ) return;
 		static $added = false;
 		if ( $added ) return;
@@ -132,6 +132,7 @@ class Compat_Yith_Raq {
 					$rq->raq_content[ $item_id ][ 'variations' ][$variation['key']] = $variation['value'];
 				}
 				$added = true;
+				do_action_ref_array( 'mkl_pc/yith-raq/added_product', array( &$rq->raq_content, $item_id, $layers ) );
 				$rq->set_session( $rq->raq_content );
 			}
 			// $rq->update_item( $item_id, 'pc_configurator_data', $_POST['pc_configurator_data'] );
@@ -139,7 +140,7 @@ class Compat_Yith_Raq {
 	}
 
 	public function view_item_data( $item_data, $raq, $_product ) {
-		if ( isset( $raq[ 'pc_configurator_data' ] ) ) {	
+		if ( isset( $raq[ 'pc_configurator_data' ] ) ) {
 			$item_data = array_merge( $item_data, $raq[ 'pc_configurator_data' ] );
 		}
 		return $item_data;
