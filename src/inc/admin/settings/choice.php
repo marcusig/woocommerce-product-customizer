@@ -153,7 +153,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type' => 'number',
 					'priority' => 60,
 					'section' => 'advanced',
-					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type  || ( "form" == data.layer_type && ( "number" == data.text_field_type || "mkl_quantity" == data.text_field_type )))',
 				),
 				'class_name' => array(
 					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
