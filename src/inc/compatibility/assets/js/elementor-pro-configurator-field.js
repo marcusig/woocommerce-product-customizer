@@ -24,10 +24,17 @@
 
 		var the_choices = PC.fe.save_data.get_choices();
 		var items = [];
+		var images = [];
 		_.each( the_choices, function( item ) {
 			if ( ! item.is_choice ) return;
 			var layer = PC.fe.layers.get( item.layer_id );
 			if ( ! layer ) return;
+			if ( item.image ) {
+				images.push({
+					id: item.image,
+					order: layer.get( 'image_order' ) || layer.get( 'order' )
+				} );
+			}
 			var choice = PC.fe.get_choice_model( item.layer_id, item.choice_id );
 			if ( choice && 'calculation' == choice.get( 'text_field_type' ) ) return;
 			if ( layer.get( 'hide_in_summary' ) || layer.get( 'hide_in_configurator' ) ) return;
@@ -41,6 +48,14 @@
 		} );
 
 		popupDoc.$element.find( '.elementor-field-type-configuration input.elementor-field-configuration-summary' ).val( items.join( ', ' ) );
+		popupDoc.$element.find( '#form-field-mkl_configuration' ).val( items.join( ', ' ) );
+		popupDoc.$element.find( '#form-field-mkl_configuration_price' ).val( PC.fe.modal.$( '.pc-total-price' ).text() );
+		if ( popupDoc.$element.find( '#form-field-mkl_configuration_image' ).length && images.length ) {
+			var image_list = _.sortBy( images, 'order' ).map( item => item.id ).join( '-' );
+			var t = PC_config.image_endpoint + `${PC.fe.active_product}/${image_list}/?width=500&height=500`;
+			popupDoc.$element.find( '#form-field-mkl_configuration_image' ).val( t );
+		}
+
 		// Set field data with Raw configuration
 		popupDoc.$element.find( '.elementor-field-type-configuration input[name="configurator_data_raw"]' ).val( JSON.stringify( the_choices ) );
 		popupDoc.$element.find( '.elementor-field-type-configuration input[name="configured_product_id"]' ).val( PC.fe.active_product );
