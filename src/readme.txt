@@ -129,12 +129,15 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.4.0 - 2/Apr/2025 = 
+= 1.4.0 - 14/Apr/2025 = 
 
+* DEV: Added action 'mkl_pc/yith-raq/added_product' (Yith RAQ compatibility)
+* DEV: Do not use transients when saving image
 * DEV: Compatibility with Save your design new "Share" feature
 * DEV: Include updater class for access by the addons
 * PERFORMANCE: Attempt at reducing memory usage in cart: only load content in class when required when unserializing MKL\PC\Choice
 * TWEAK: Made string 'Successfully added to cart, now redirecting...' translatable, and added a setting to override it
+* TWEAK: Show weight on number and quantity fields
 * TWEAK: Changed setting label "Make all steps clickable..." for more clarity
 * FEATURE: Add view parameter to URL and shortcode
 
