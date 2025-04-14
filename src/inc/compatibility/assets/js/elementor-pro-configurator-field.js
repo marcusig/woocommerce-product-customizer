@@ -1,10 +1,13 @@
 ( function( $ ) {
 	var modalId;
+	var button_label;
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Elementor', function( configurator ) {
 		// Get the modal ID 
 		var modal_container = $( '.js-mkl-pc-elementor-configuration-modal--container' );
 		if ( ! modal_container.length ) return;
 		modalId = parseInt( modal_container.data( 'modal-id' ) );
+		button_label = modal_container.data( 'button-label' );
+
 		if ( ! modalId ) return;
 		// Add button view, with the modal ID to open
 		configurator.$( '.pc_configurator_form' ).append( new button_view().$el );
@@ -51,6 +54,7 @@
 
 	var button_view = Backbone.View.extend( {
 		tagName: 'button',
+		className: 'button btn btn-secondary e-open-modal',
 		events: {
 			'click': 'on_click',
 		},
@@ -58,7 +62,7 @@
 			this.render();
 		},
 		render: function() {
-			this.$el.html( 'Open modal' );
+			this.$el.html( button_label );
 		},
 		on_click: function( e ) {
 			elementorProFrontend.modules.popup.showPopup( { id: modalId } )

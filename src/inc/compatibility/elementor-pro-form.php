@@ -27,10 +27,11 @@ class Compat_ElementorPro_Form {
 		$form_fields_registrar->register( new \Elementor_Configuration_Field_Image() );
 		$form_fields_registrar->register( new \Elementor_Configuration_Field_Price() );
 	}
-	
+
 	public function output_form() {
 		if ( $modal_id = get_post_meta( get_the_ID(), 'elementor_configuration_modal_id', true ) ) {
-			echo '<div class="js-mkl-pc-elementor-configuration-modal--container" data-modal-id="' . esc_attr( intval( $modal_id ) ) . '">' . do_shortcode( '[elementor-template id="' . intval( $modal_id ) . '"]' ) . '</div>';
+			$button_label = get_post_meta( get_the_ID(), 'elementor_configuration_modal_button_label', true );
+			echo '<div class="js-mkl-pc-elementor-configuration-modal--container" data-button-label="' . esc_attr( $button_label ? $button_label : __( 'Request a quote', 'product-configurator-for-woocommerce' ) ) . '" data-modal-id="' . esc_attr( intval( $modal_id ) ) . '">' . do_shortcode( '[elementor-template id="' . intval( $modal_id ) . '"]' ) . '</div>';
 		}
 	}
 
