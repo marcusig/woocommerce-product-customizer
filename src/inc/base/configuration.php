@@ -62,7 +62,7 @@ class Configuration {
 		if ( ! file_exists( $this->upload_dir_path . '/index.html' ) ) {
 			// Delete existing php file
 			if ( file_exists( $this->upload_dir_path . '/index.php' ) ) unlink( $this->upload_dir_path . '/index.php' );
-			$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . '/index.html', 'w' );
+			$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . 'index.html', 'w' );
 			if ( $file_handle ) {
 				fclose( $file_handle );
 			}
