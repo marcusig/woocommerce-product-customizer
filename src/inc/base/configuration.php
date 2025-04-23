@@ -568,6 +568,9 @@ class Configuration {
 		// Insert the attachment.
 		$attach_id = wp_insert_attachment( $attachment, $filename, $parent_post_id );
 
+		if ( ! function_exists( 'wp_generate_attachment_metadata' ) && file_exists( ABSPATH . 'wp-admin/includes/image.php') ){
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+		}
 		// Generate the metadata for the attachment, and update the database record.
 		$attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
 		wp_update_attachment_metadata( $attach_id, $attach_data );
