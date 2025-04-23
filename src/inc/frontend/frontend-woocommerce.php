@@ -142,7 +142,7 @@ class Frontend_Woocommerce {
 		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 
 		$options = get_option( 'mkl_pc__settings' );
-		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
+		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary wp-element-button';
 
 		if ( isset( $atts['tag'] ) && ( 'a' === $atts['tag'] || 'link' === $atts['tag'] ) ) {
 			$tag_name = 'a href="#" ';

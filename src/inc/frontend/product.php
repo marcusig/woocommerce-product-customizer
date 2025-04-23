@@ -21,7 +21,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		public function __construct() {
 			$this->options = get_option( 'mkl_pc__settings' );
 			$this->_hooks();
-			$this->button_class = isset( $this->options['mkl_pc__button_classes'] ) && ! empty( $this->options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $this->options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary';
+			$this->button_class = isset( $this->options['mkl_pc__button_classes'] ) && ! empty( $this->options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $this->options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary wp-element-button';
 		}
 
 		/**
