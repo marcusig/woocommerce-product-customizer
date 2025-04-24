@@ -1,7 +1,7 @@
 const gulp = require('gulp')
 // const runSequence = require('run-sequence')
 const zip = require('gulp-zip')
-const sass = require('gulp-sass');
+const sass = require('gulp-sass')(require('sass'));
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
@@ -9,6 +9,7 @@ const colorize = require('chalk');
 const clean = require('gulp-clean');
 const gutil = require('gulp-util');
 const concat = require('gulp-concat-util');
+const { exec } = require('child_process');
 
 // const replace = require('gulp-replace');
 var plumber = require('gulp-plumber');
@@ -82,6 +83,22 @@ gulp.task('js', function(done) {
 		.pipe(rename({suffix: '.min'}))
 		.pipe(gulp.dest('dist'))
 		.on('end', done);
+});
+
+gulp.task('build-blocks', (cb) => {
+	exec('npx wp-scripts build --output-path=dist/build/configurator', (err, stdout, stderr) => {
+	  console.log(stdout);
+	  console.error(stderr);
+	  cb(err);
+	});
+});
+
+gulp.task('watch-blocks', (cb) => {
+	exec('npx wp-scripts start --output-path=dist/build/configurator', (err, stdout, stderr) => {
+		console.log(stdout);
+		console.error(stderr);
+		cb(err);
+	});
 });
 
 // gulp.task('js_min', function() {
@@ -159,7 +176,8 @@ gulp.task('watch', function() {
 // ran with gulp build
 gulp.task('default', 
 	gulp.series(
-		'build', 'watch'
+		'build', 
+		gulp.parallel( 'watch-blocks', 'watch' )
 	)
 );
 
@@ -216,7 +234,7 @@ gulp.task('clean_zip', function(done) {
 
 // Normal zip gulp
 gulp.task('zip', gulp.series(
-	'build', 'copy_for_zip', 'build_zip', 'clean_zip',
+	'build', 'build-blocks', 'copy_for_zip', 'build_zip', 'clean_zip',
 	function(done) {
 		done();
 	}
