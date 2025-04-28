@@ -1,0 +1,58 @@
+.mkl-configurator-flag {
+    position: absolute;
+	display: none;
+    top: 0;
+	right: 0;
+    transform: translateY(-100%);
+    font-size: 12px;
+    text-transform: uppercase;
+    padding: 4px;
+    border: 1px solid #000;
+	border-bottom: none;
+	
+}
+
+.wp-block-mkl-product-configurator {
+	border: 1px dashed #ccc;
+	&.is-active, &.has-child-selected {
+		.mkl-configurator-flag {
+			display: block;
+		}
+		outline: 2px dashed green;
+		outline-offset: -4px;
+		background: rgba(0, 124, 186, 0.05);
+		padding: 8px
+	}
+}
+
+
+.mkl-layout-picker {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+	gap: 8px;
+}
+.mkl-layout-option {
+	background: #f0f0f0;
+	border: 2px solid transparent;
+	padding: 8px;
+	text-align: center;
+	cursor: pointer;
+}
+.mkl-layout-option.is-selected {
+	border-color: green;
+}
+.mkl-preview {
+	height: 40px;
+	background-size: cover;
+	background-position: center;
+}
+.mkl-preview-viewerLeft {
+	background-image: url('icons/layout-left.svg');
+}
+.mkl-preview-viewerRight {
+	background-image: url('icons/layout-right.svg');
+}
+.mkl-preview-noViewer {
+	background-image: url('icons/layout-no-viewer.svg');
+}
+

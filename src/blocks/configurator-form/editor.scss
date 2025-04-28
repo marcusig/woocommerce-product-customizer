@@ -1,0 +1,15 @@
+.wp-block-mkl-product-configurator-form {
+    display: flex;
+    justify-content: flex-end;
+
+	.quantity {
+		display: block;
+	}
+
+	.quantity .qty {
+		padding: 3px;
+		width: 4.7em;
+		height: 100%;
+		display: block;
+	}
+}

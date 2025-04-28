@@ -1,0 +1,48 @@
+{
+	"apiVersion": 2,
+	"name": "mkl/product-configurator",
+	"title": "Product Configurator",
+	"category": "widgets",
+	"icon": "admin-customizer",
+	"description": "The main container for the Product Configurator layout.",
+	"supports": {
+	  "html": false,
+	  "align": ["full"],
+	  "layout": true,
+	  "innerBlocks": true
+	},
+	"attributes": {
+		"layout": {
+			"type": "string",
+			"default": "viewerLeft"
+		}
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"template": [
+    [
+      "core/columns",
+      {
+        "style": {
+          "spacing": {
+            "blockGap": "0"
+          }
+        }
+      },
+      [
+        ["core/column", {}, [["mkl/product-configurator-viewer"]]],
+        ["core/column", {}, [["mkl/product-configurator-toolbar"]]]
+      ]
+    ],
+    [
+      "core/columns",
+      {},
+      [
+        ["core/column", {}, [["core/heading", { "level": 3, "placeholder": "Product name" }]]],
+        ["core/column", {}, [["mkl/product-configurator-actions"]]],
+        ["core/column", {}, [["mkl/product-configurator-form"]]]
+      ]
+    ]
+  ]
+  }  

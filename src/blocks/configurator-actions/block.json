@@ -1,0 +1,21 @@
+{
+	"apiVersion": 2,
+	"name": "mkl/product-configurator-actions",
+	"title": "Product Configurator Actions",
+	"category": "widgets",
+	"icon": "admin-customizer",
+	"description": "The Product Configurator actions zone. E.g. Reset button, save button, etc.",
+	"keywords": [
+		"product",
+		"configurator",
+		"actions"
+	],
+	"supports": {
+	  "html": false
+	},
+	"attributes": {},	
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+  }
+  

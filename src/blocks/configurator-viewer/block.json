@@ -1,0 +1,16 @@
+{
+	"apiVersion": 2,
+	"name": "mkl/product-configurator-viewer",
+	"title": "Product Configurator viewer",
+	"category": "widgets",
+	"icon": "admin-customizer",
+	"description": "The Product Configurator viewer.",
+	"supports": {
+	  "html": false
+	},
+	"attributes": {},	
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+  }
+  
