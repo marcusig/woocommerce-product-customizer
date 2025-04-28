@@ -132,16 +132,17 @@ $inner_space: 1em;
 /* CUSTOMIZER */
 .mkl_pc {
 
-	@media (max-width: $medium_screen_width) {
-		--mkl_pc_toolbar_width: 220px;
-	}
-
 	position: fixed;
 	top:0;
 	left:0;
 	bottom: 0;
 	width: 100%; 
 	z-index: 10000;
+	
+	@media (max-width: $medium_screen_width) {
+		--mkl_pc_toolbar_width: 220px;
+	}
+
 	.loader {
 		display: none;
 		position: absolute;
@@ -186,7 +187,6 @@ $inner_space: 1em;
 		height: 100%; 
 		width: 100%; 
 
-		background: transparentize($overlay_bg, 0.2); 
 		visibility: hidden;
 		opacity: 0;
 		transition: all 0.3s;
@@ -257,7 +257,7 @@ $inner_space: 1em;
 				z-index: 2;
 				box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 				border-radius: 3px;
-				background: transparentize(#fff, 0.06);
+				background: #fff;
 				> a {
 					display: block;
 					padding: 4px 10px;
@@ -297,7 +297,7 @@ $inner_space: 1em;
 					transform: translateY(0);
 				}
 				li {
-					background: transparentize(#fff, 0.06);
+					background: #fff;
 					a {
 						display: block;						
 						padding: 3px 11px; 

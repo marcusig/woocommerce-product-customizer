@@ -222,11 +222,11 @@ html .media-modal.pc-modal {
 		.setting-section.is-opened .section-fields {
 			display: grid;
 			grid-template-columns: repeat(2, minmax(0px, 1fr));
+			gap: calc(16px) calc(8px);
+			margin-top: -1px;
 			@media(max-width: 960px) {
 				grid-template-columns: repeat(1, minmax(0px, 1fr));
 			}
-			gap: calc(16px) calc(8px);
-			margin-top: -1px;
 		}
 		.components-panel__body-toggle.components-button {
 			background: linear-gradient(180deg, #FFF, transparent);
@@ -322,14 +322,14 @@ html .media-modal.pc-modal {
 			.mkl-pc-image-select {
 				display: grid;
 				grid-template-columns: repeat(5, minmax(0px, 1fr));
+				gap: calc(16px) calc(8px);
+				padding-bottom: 20px;
 				@media(max-width: 1024px) {
 					grid-template-columns: repeat(4, minmax(0px, 1fr));
 				}
 				@media(max-width: 780px) {
 					grid-template-columns: repeat(2, minmax(0px, 1fr));
 				}
-				gap: calc(16px) calc(8px);
-				padding-bottom: 20px;
 			}
 			
 			.mkl-pc-image-select--item {
@@ -372,7 +372,6 @@ html .media-modal.pc-modal {
 					box-shadow: 0 0 0 2px inset var( --wp-admin-theme-color, #007cba );
 				}
 				input:focus + label {
-					
 					box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--wp-admin-theme-color), 0 0 0 2px inset var( --wp-admin-theme-color, #007cba );
 				}
 			}
@@ -465,17 +464,17 @@ html .pc-modal-container {
 	}
 	.state.home {
 		.tab_content {
+			height: 100%;
+			padding: 0;
 			@media ( min-width: 800px ) {
 				display: flex;
 			}
-			height: 100%;
-			padding: 0;
 			.instructions {
 				overflow: auto;
+				padding: 20px;
 				@media ( min-width: 800px ) {
 					width: calc( 100% - 400px );
 				}
-				padding: 20px;
 			}
 			.more {
 				padding: 20px;
