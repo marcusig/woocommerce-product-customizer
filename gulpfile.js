@@ -177,7 +177,8 @@ gulp.task('watch', function() {
 gulp.task('default', 
 	gulp.series(
 		'build', 
-		gulp.parallel( 'watch' )
+		'watch'
+		// gulp.parallel( 'watch-blocks' ,'watch' )
 	)
 );
 
@@ -234,7 +235,9 @@ gulp.task('clean_zip', function(done) {
 
 // Normal zip gulp
 gulp.task('zip', gulp.series(
-	'build', 'build-blocks', 'copy_for_zip', 'build_zip', 'clean_zip',
+	'build', 
+	// 'build-blocks', 
+	'copy_for_zip', 'build_zip', 'clean_zip',
 	function(done) {
 		done();
 	}
