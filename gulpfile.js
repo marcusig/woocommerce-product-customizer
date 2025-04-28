@@ -86,7 +86,7 @@ gulp.task('js', function(done) {
 });
 
 gulp.task('build-blocks', (cb) => {
-	exec('npx wp-scripts build --output-path=dist/build/configurator', (err, stdout, stderr) => {
+	exec('npx wp-scripts build --output-path=dist/build', (err, stdout, stderr) => {
 	  console.log(stdout);
 	  console.error(stderr);
 	  cb(err);
@@ -94,7 +94,7 @@ gulp.task('build-blocks', (cb) => {
 });
 
 gulp.task('watch-blocks', (cb) => {
-	exec('npx wp-scripts start --output-path=dist/build/configurator', (err, stdout, stderr) => {
+	exec('npx wp-scripts start --output-path=dist/build', (err, stdout, stderr) => {
 		console.log(stdout);
 		console.error(stderr);
 		cb(err);
@@ -177,7 +177,7 @@ gulp.task('watch', function() {
 gulp.task('default', 
 	gulp.series(
 		'build', 
-		gulp.parallel( 'watch-blocks', 'watch' )
+		gulp.parallel( 'watch' )
 	)
 );
 
