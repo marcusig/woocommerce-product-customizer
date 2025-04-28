@@ -154,6 +154,13 @@ class Plugin {
 		$this->languages = new Languages();
 		$this->frontend = new Frontend_Woocommerce();
 		$this->customizer = new Customizer();
+		add_action( 'init', function() {
+			register_block_type( MKL_PC_PLUGIN_PATH . '/build/blocks/configurator-actions' );
+			register_block_type( MKL_PC_PLUGIN_PATH . '/build/blocks/configurator-form' );
+			register_block_type( MKL_PC_PLUGIN_PATH . '/build/blocks/configurator-toolbar' );
+			register_block_type( MKL_PC_PLUGIN_PATH . '/build/blocks/configurator-viewer' );
+			register_block_type( MKL_PC_PLUGIN_PATH . '/build/blocks/configurator' );
+		} );
 		
 		if( is_admin() ) {
 			$this->admin = new Admin_Woocommerce();
