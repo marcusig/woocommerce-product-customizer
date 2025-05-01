@@ -3,6 +3,8 @@ Theme Name:   Default
 Description:  Default theme, with sliding menu
 */
 
+
+
 // COLORS
 $colors: (
 	light-gray: #e3e3e3,
@@ -16,6 +18,7 @@ $colors: (
 	active_choice_button_bg_color: #eaeaea,
 	active_choice_button_text_color: #000000
 );
+
 
 @function color($color-name) {
 	@return var(--mkl_pc_color-#{$color-name});
@@ -1226,22 +1229,31 @@ $inner_space: 1em;
 			.sending-email form.save-form {
 				display: none;
 			}
-			
-			.extra-cost {
-				visibility: hidden;
-				position: fixed;
-				margin-bottom: 0;
-			}
-			.extra-cost.show {
-				visibility: visible;
-				position: relative;
+			.pc-total-price--container {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: end;
 				padding-right: 10px;
-				display: inline-block !important;
-			}
-			span.pc-total-price {
-				font-weight: bold;
-				display: inline-block; 
-				margin-right: .5em;
+				text-align: right;
+
+				.extra-cost {
+					visibility: hidden;
+					position: fixed;
+					margin-bottom: 0;
+					font-size: 1rem;
+					width: 100%;
+				}
+				.extra-cost.show {
+					visibility: visible;
+					position: relative;
+					padding: 0;
+					display: inline-block !important;
+					height: auto !important;
+				}
+				span.pc-total-price {
+					font-weight: bold;
+					display: inline-block; 
+				}
 			}
 
 			.pc_configurator_form {
