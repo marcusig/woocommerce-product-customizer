@@ -1649,3 +1649,10 @@ body.configurator_is_inline .mkl_pc {
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
 }
+
+@import '../../themes-common/scss/summary';
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.layers-list-item.mkl_pc_summary.type-summary {
+    font-size: 1rem;
+    padding: 19px;
+}
