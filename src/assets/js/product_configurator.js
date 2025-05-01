@@ -629,15 +629,13 @@ PC.utils = PC.utils || {
 		return doc.body.textContent || "";
 	},
 
-	escapeHtml: function(str) {
+	escape_html: function(str) {
 		return String(str).replace(/[&<>"']/g, s => (
 		  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[s]
 		));
 	},
-	safeInterpolate: function(template, vars) {
-		console.log( template, vars );
-
-		return template.replace(/{{(.*?)}}/g, (_, key) => PC.utils.escapeHtml(vars[key.trim()] ?? ''));
+	get_message_with_vars: function(template, vars) {
+		return template.replace(/{{(.*?)}}/g, (_, key) => PC.utils.escape_html(vars[key.trim()] ?? ''));
 	}
 
 };
