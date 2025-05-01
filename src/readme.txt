@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -128,6 +128,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+= 1.4.1 - 1/May/2025 = 
+
+* FIX: Possible Fatal error when wp_generate_attachment_metadata did not exist
+* TWEAK: Configuration image generation does not use transients anymore
 
 = 1.4.0 - 14/Apr/2025 = 
 
