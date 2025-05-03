@@ -146,7 +146,6 @@
 				$submenu.html( titles.join( '' ) );
 				$submenu.prependTo( $( '.mkl-settings-content[data-content="settings"]' ) );
 				$submenu.on( 'click', 'a', function( e ) {
-					console.log( 'clicked a ', $(this) );
 					e.preventDefault();
 					// Deactivate current
 					$submenu.find( 'a' ).removeClass( 'active' );
@@ -154,10 +153,23 @@
 
 					// Activate this
 					$( this ).addClass( 'active' );
-					$( '#' + $( this ).data( 'item' ) ).addClass( 'active' );
+					const nav_item = $( this ).data( 'item' );
+					$( '#' + nav_item ).addClass( 'active' );
+
+					history.pushState( null, '', '#' + nav_item );
+				   
 				} );
 				// Activate the first item
-				$submenu.find( 'a' ).first().trigger( 'click' );
+				if ( location.hash && $submenu.find( 'a[href="' + location.hash + '"]' ).length ) {
+					$submenu.find( 'a[href="' + location.hash + '"]' ).trigger( 'click' );
+				} else {
+					$submenu.find( 'a' ).first().trigger( 'click' );
+				}
+
+				// On hash change (browser back/forward)
+				$( window ).on( 'hashchange', function() {
+					$submenu.find( 'a[href="' + location.hash + '"]' ).trigger( 'click' );
+				});
 			}
 
 			// Primary tabs nav
@@ -169,6 +181,14 @@
 				var content = $( this ).data( 'content' );
 				$( '.mkl-settings-content[data-content=' + content + ']' ).addClass( 'active' );
 				if ( 'tools' == content && ! settings.fetched_products ) settings.get_configurable_products();
+
+				// Get the current URL
+  				const url = new URL( window.location );
+				 // Set or update the `tab` query parameter
+				url.searchParams.set( 'tab', content );
+
+				// Update the browser's address bar
+				history.pushState( {}, '', url );
 			});
 
 			if ( $( '.mkl-nav-tab-wrapper a.nav-tab-active' ).length ) {
