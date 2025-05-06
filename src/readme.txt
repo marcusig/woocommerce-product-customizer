@@ -129,6 +129,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added navigation history in the settings page, to allow staying on the same setting section when saving / refreshing
+
 = 1.4.2 - 6/May/2025 = 
 
 * FIX: Compatibility issue with Variable products, where selected data was not visible in the cart
