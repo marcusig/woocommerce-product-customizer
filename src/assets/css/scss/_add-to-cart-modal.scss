@@ -16,6 +16,10 @@ body.show-add-to-cart-modal .adding-to-cart--modal {
     background: rgba(255, 255, 255, 0.9);
 }
 
+body.show-add-to-cart-modal.configurator_is_inline .adding-to-cart--modal {
+    position: fixed;
+}
+
 .adding-to-cart--modal {
     .has-box {
         display: block;
