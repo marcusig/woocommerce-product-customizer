@@ -90,11 +90,10 @@ class Choice {
 	}
 
 	private function set_selected_choice(  ) {
-		// $product = wc_get_product( $this->product_id );
 
-		// if ( ! $this->content_id ) $this->content_id = $this->get_db()->get_product_id_for_content( $this->product_id, $this->variation_id );
-		$product_id = $this->product_id;
-		$content = $this->get_db()->get( 'content', $product_id ); 
+		if ( ! $this->content_id ) $this->content_id = $this->get_db()->get_product_id_for_content( $this->product_id, $this->variation_id );
+
+		$content = $this->get_db()->get( 'content', $this->content_id );
 
 		if ( $this->choice_id && $content ) {
 			$this->choices = apply_filters( 'mkl_pc_choice_set_selected_choice__choices', Utils::get_array_item( $content, 'layerId', $this->layer_id ), $this ); 
