@@ -28,7 +28,7 @@ class Images {
 				$the_image = Image::make( $image );
 			} else {
 				// Add the following images
-				$the_image->insert( $image );
+				$the_image->insert( $image, 'center-center' );
 			}
 		}
 
