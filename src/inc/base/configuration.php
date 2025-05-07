@@ -262,7 +262,7 @@ class Configuration {
 		foreach ( $this->content as $layer ) {
 			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
 			if ( $image ) {
-				$images[] = $image;
+				$images[] = $layer->image;
 			}
 		}
 
@@ -501,6 +501,7 @@ class Configuration {
 				} elseif ( count( $images ) == 1 ) {
 					// if there is only 1 image, no need to process
 					$fimage = $images[0];
+					// Should it be set_post_thumbnail( $this->ID, $attach_id ); instead?
 					return $this->save_attachment( $fimage, $this->ID );
 					// return $fimage;
 
