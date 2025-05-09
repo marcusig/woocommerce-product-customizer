@@ -616,4 +616,55 @@ IMPORT / EXPORT
 	</a>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-setting--repeater">
+	<div class="options-list"></div>
+	<?php do_action( 'tmpl-mkl-pc-setting--repeater' ); ?>
+	<button class="button add-option" type="button"><i class="dashicons dashicons-plus"></i> <?php _e( 'Add option', 'product-configurator-for-woocommerce' ); ?></button>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-setting--repeater-option">
+	<div class="order">
+		<button class="button up" type="button"><i class="dashicons dashicons-arrow-up-alt2"></i></button>
+		<button class="button down" type="button"><i class="dashicons dashicons-arrow-down-alt2"></i></button>
+	</div>
+	<?php 
+		$languages = mkl_pc( 'languages' )->get_languages();
+		$language_data = [];
+		if ( ! empty( $languages ) ) {
+			$default = mkl_pc( 'languages' )->get_default_language();
+			$language_data['default'] = $default;
+			$language_data['list'] = [];
+			foreach( $languages as $l ) {
+				if ( $default == $l ) continue;
+				$flag_url = mkl_pc( 'languages' )->get_flag( $l );
+				$language_sufix = str_replace( '-', '_', $l );
+				$language_data[$language_sufix] = [
+					'flag'  => esc_url( $flag_url ),
+				];
+			}
+		}
+	?>
+	<# const language_data = <?php echo json_encode( $language_data ); ?>; #>
+	<# _.each( data.fields, ( field, key ) => { #>
+		<label>
+			{{field.label}}
+			<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}">
+		</label>
+		<# if ( field.translatable ) { #>
+				<# 
+				_.each( data.language_data, ( language, language_key ) => { 
+					const slug = key + '_' + language_key;
+				#>
+				<label>
+					<# if ( language.flag ) { #> <img src="{{language.flag}}" alt="{{field.label}} {{language_key}}"><# } #>{{field.label}}
+					<input name="{{slug}}" type="text" value="{{data[slug] || ''}}">
+				</label>
+			<# } ); #>
+		<# } #>
+	<# } ); #>
+
+	<?php do_action( 'tmpl-mkl-pc-setting--repeater-option' ); ?>
+	<button class="button remove-option" type="button"><i class="dashicons dashicons-remove"></i><span><?php _e( 'Remove option', 'product-configurator-for-woocommerce' ); ?></span></button>
+</script>
+
 <?php do_action('mkl_pc_admin_templates_after') ?>

@@ -1209,6 +1209,73 @@ a.mkl-pc-link--external::before {
 	}
 }
 
+.pc-sidebar .setting .field-repeater {
+	
+	border: 1px solid #CCC;
+
+	button {
+		.dashicons {
+			vertical-align: middle;
+		}		
+		&.remove-option span {
+			display: none;
+		}
+		
+		&.add-option {
+			margin: 10px;
+		}
+	}
+	
+	.field-repeater--option {
+		display: flex;
+		align-items: end;
+		padding: 8px;
+		border-bottom: 1px solid #e0e0e0;
+
+		label {
+			flex: 1;
+			margin-right: 5px;
+			input {
+				display: block;
+				width: 100%;
+				float: none;
+			}
+			
+		}
+		.remove-option {
+			border: none;
+			i.dashicons {
+				transform: translateY(-3px);
+				& + span {
+					display: none;
+				}
+			} 
+		}		
+		.order {
+			display: flex;
+			flex-direction: column;
+			margin-right: 3px;
+			button.button {
+				border: none;
+				padding-right: 3px;
+				padding-left: 3px;
+				font-size: 10px;
+				line-height: 1;
+				height: auto;
+				min-height: 20px;
+				.dashicons {
+					font-size: 14px;
+					width: 14px;
+					height: 14px;
+					line-height: 1;
+				}
+			}
+			
+		}
+	}
+	
+}
+
 @keyframes mkl-slide-down {
     0% {
         transform: translateY(-25px) scaleY( 0 );

@@ -123,6 +123,9 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 						'</div>' .
 					'</div>';
 					break;
+				case 'repeater':
+					$field = '<div class="field-repeater" data-setting="' . esc_attr( $options['id'] ) . '" data-fields="' . esc_attr( json_encode( $options['fields'] ) ) . '"></div>';
+					break;
 				case 'textarea':
 					$field = '<textarea class="' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
 					break;

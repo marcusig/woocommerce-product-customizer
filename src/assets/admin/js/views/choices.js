@@ -68,7 +68,6 @@ PC.views = PC.views || {};
 			return !! PC.clipboard_data;
 		},
 		render: function() {
-			console.log( 'saclcl', this.has_clipboard_data() );
 
 			this.$el.empty();
 			this.$el.html( this.template( _.extend( { has_clipboard_data: this.has_clipboard_data() }, this.model.attributes ) ) );
