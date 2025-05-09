@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,6 +129,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.4.3 - 9/May/2025 = 
+
+* FIX: In some cases, when the configuration contains only one image, the attachment would be saved again and again. Not duplicating the file, but the post.
 * TWEAK: Added navigation history in the settings page, to allow staying on the same setting section when saving / refreshing
 
 = 1.4.2 - 6/May/2025 = 
