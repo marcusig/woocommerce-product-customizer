@@ -486,7 +486,7 @@ class Configuration {
 				foreach ($content as $layer) {
 					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
 					if ( $image ) {
-						$images[] = $image;
+						$images[] =  $layer->image;
 					}
 				}
 
@@ -501,10 +501,9 @@ class Configuration {
 				} elseif ( count( $images ) == 1 ) {
 					// if there is only 1 image, no need to process
 					$fimage = $images[0];
-					// Should it be set_post_thumbnail( $this->ID, $attach_id ); instead?
-					return $this->save_attachment( $fimage, $this->ID );
-					// return $fimage;
-
+					// Add image as attachment to configuration ID
+					if ( $this->ID ) set_post_thumbnail( $this->ID, $fimage );
+					return $fimage;
 				} else {
 					// if there is none
 					return false;
@@ -516,25 +515,24 @@ class Configuration {
 
 				// collect images
 				$images = array();
+
 				foreach ($content as $layer) {
 					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
 					if ( $image ) {
-						$images[] = $image;
+						$images[$layer->image] = $image;
 					}
 				}
+
+				if ( count( $images ) > 1 && Utils::check_image_requirements() ) {
+					$image_manager = $this->_get_image_manager();
+					$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
+					return $this->save_attachment( $fimage, $this->ID );
+				} elseif ( 1 == count( $images ) ) {
+					return array_keys( $images )[0];
+				} else {
+					return false;
+				}
 			}
-
-			if ( count( $images ) > 1 && Utils::check_image_requirements() ) {
-				$image_manager = $this->_get_image_manager();
-				$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
-			} elseif ( 1 == count( $images ) ) {
-				$fimage = $images[0];
-			} else {
-				return false;
-			}
-
-			return $this->save_attachment( $fimage, $this->ID );
-
 		}
 	}
 
@@ -555,7 +553,6 @@ class Configuration {
 	 * Save the image as attachment
 	 */
 	public function save_attachment( $filename, $parent_post_id ) {
-
 		global $wpdb;
 		$filetype = wp_check_filetype( basename( $filename ), null );
 
