@@ -50,6 +50,10 @@
 		color: color(light-gray);
 	}
 
+	.pc_configurator_form {
+		display: flex;
+		justify-content: flex-end;
+	}
 
 	form {
 		display: inline-block;
@@ -61,8 +65,13 @@
 	.quantity {
 		display: inline-flex;
 		align-items: center;
+		box-sizing: border-box;
+		margin-right: 8px;
 		input.qty {
 			background: #fff;
+			height: 100%;
+			box-sizing: border-box;
+		
 			@media (max-width: $small_screen_width) {
 				border: 2px solid #36383a;
 			}
@@ -86,6 +95,7 @@
 	.pc-total-price--container {
 		width: 100%;
 		padding: var(--mkl_pc-float-spacing);
+		box-sizing: border-box;
 	}
 	
 	span.pc-total-price {
