@@ -38,6 +38,7 @@ PC.fe.views.angle = Backbone.View.extend({
 		this.options = options || {};
 		this.render(); 
 		this.listenTo( this.model, 'change active', this.activate ); 
+		wp.hooks.doAction( 'PC.fe.angle_view.init', this );
 		return this;
 	},
 
