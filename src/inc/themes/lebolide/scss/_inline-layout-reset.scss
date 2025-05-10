@@ -16,6 +16,7 @@ body.configurator_is_inline .mkl_pc {
 			display: none;
 		}
 		.mkl_pc_toolbar {
+			align-self: stretch;
 			> header {
 				display: none;
 			}
@@ -59,6 +60,7 @@ body.configurator_is_inline .mkl_pc {
 				max-height: calc(100vh - 40px);
 				min-height: calc(100vh - 40px);
 			}
+
 		}
 	}
 }
