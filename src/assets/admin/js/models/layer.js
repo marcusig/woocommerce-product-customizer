@@ -34,6 +34,7 @@ PC.layer = Backbone.Model.extend({
 					break;
 			} 
 		}
+		wp.hooks.doAction( 'PC.fe.models.layer.init', this );
 	},
 	sync: function( method, model, options ) {
 	},
