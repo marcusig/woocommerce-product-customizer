@@ -632,8 +632,6 @@ IMPORT / EXPORT
 		$language_data = [];
 		if ( ! empty( $languages ) ) {
 			$default = mkl_pc( 'languages' )->get_default_language();
-			$language_data['default'] = $default;
-			$language_data['list'] = [];
 			foreach( $languages as $l ) {
 				if ( $default == $l ) continue;
 				$flag_url = mkl_pc( 'languages' )->get_flag( $l );
@@ -652,7 +650,7 @@ IMPORT / EXPORT
 		</label>
 		<# if ( field.translatable ) { #>
 				<# 
-				_.each( data.language_data, ( language, language_key ) => { 
+				_.each( language_data, ( language, language_key ) => { 
 					const slug = key + '_' + language_key;
 				#>
 				<label>
