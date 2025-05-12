@@ -129,6 +129,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Bolide inline style tweaks
+* TWEAK: Float theme CSS tweaks
+* DEV: Add repeater field type in layer / choice settings
+* DEV: Add JS action `PC.fe.models.layer.init`
+* DEV: Add JS action `PC.fe.angle_view.init` to trigger in Conditional logic
+
 = 1.4.3 - 9/May/2025 = 
 
 * FIX: In some cases, when the configuration contains only one image, the attachment would be saved again and again. Not duplicating the file, but the post.
