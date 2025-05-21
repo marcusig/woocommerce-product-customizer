@@ -129,6 +129,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Automatic purge with WP-Optimize and WP-Rocket purging
 * TWEAK: Bolide inline style tweaks
 * TWEAK: Float theme CSS tweaks
 * DEV: Add repeater field type in layer / choice settings
