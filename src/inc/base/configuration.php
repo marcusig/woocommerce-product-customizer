@@ -78,24 +78,30 @@ class Configuration {
 
 			if ( ! $conf_post ) return new WP_Error( '400', __( 'Configuration not found', 'product-configurator-for-woocommerce' ) );
 			if ( 'private' === $this->get_visibility() && $conf_post->post_author != get_current_user_id() && ! current_user_can( 'manage_woocommerce' ) ) {
-				return new WP_Error( '403', __( 'Unauthorized action, author issue', 'product-configurator-for-woocommerce' ) );
+				$this->post = new WP_Error( '403', __( 'Unauthorized action, author issue', 'product-configurator-for-woocommerce' ) );
+				return;
 			}
-			$this->post = $conf_post;
 			if ( ! $this->configuration_type ) {
 				$this->configuration_type = $conf_post->post_status;
 			} elseif ( $this->configuration_type != $conf_post->post_status ) {
-				return new WP_Error( '400', __( 'The configuration type does not match the requested item', 'product-configurator-for-woocommerce' ) );
+				$this->post = new WP_Error( '400', __( 'The configuration type does not match the requested item', 'product-configurator-for-woocommerce' ) );
+				return;
 			}
+			$this->post = $conf_post;
 			$this->product_id = $this->post->post_parent;
 			$this->set_content( $this->post->post_content );
-			// if ( ! $this->post ) return false;
 		} else {
 			$this->ID = 0;
 		}
 	}
 
+	/**
+	 * Get the configuration post if set
+	 *
+	 * @return WP_Post|false
+	 */
 	public function get_the_post() {
-		if ( ! $this->post ) return false;
+		if ( ! $this->post || is_wp_error( $this->post ) ) return false;
 		return $this->post;
 	}
 
@@ -225,7 +231,7 @@ class Configuration {
 	}
 
 	public function delete() {
-		if ( $this->ID && $this->post ) {
+		if ( $this->ID && $this->get_the_post() ) {
 			$user_id = get_current_user_id();
 			if ( $this->post->post_type != $this->post_type ) {
 				return false;
@@ -510,7 +516,7 @@ class Configuration {
 				}
 			} else {
 				$image_file_name = $this->get_configuration_image_name();
-				
+
 				if ( ! $content ) $content = $this->content;
 
 				// collect images
