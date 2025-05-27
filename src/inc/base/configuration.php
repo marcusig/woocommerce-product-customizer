@@ -516,7 +516,7 @@ class Configuration {
 				// collect images
 				$images = array();
 
-				foreach ($content as $layer) {
+				foreach ( $content as $layer ) {
 					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
 					if ( $image ) {
 						$images[$layer->image] = $image;
