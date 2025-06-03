@@ -42,7 +42,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'addify_add_quote_item_data', array( $this, 'addify_add_quote_item_data' ), 20, 5 );
 
 			// Attach short description filter.
-			add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
+			// add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
 		}
 
 		/**
