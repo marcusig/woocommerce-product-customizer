@@ -13,7 +13,8 @@ PC.fe.views.summary = Backbone.View.extend( {
 		} 
 		wp.hooks.addAction( 'PC.fe.choice.set_choice', 'mkl/pc/summary', this.render.bind( this ), 1000 );
 		wp.hooks.addAction( 'PC.fe.form.item.change', 'mkl/pc/summary', this.render.bind( this ), 1000 );
-		return this; 
+		wp.hooks.addAction( 'PC.fe.text_overlay.item.change', 'mkl/pc/summary', this.render.bind( this ), 1000 );
+		return this;
 	},
 	render: function() {
 		this.clear();
