@@ -16,7 +16,8 @@ PC.fe.views.summary = Backbone.View.extend( {
 		wp.hooks.addAction( 'PC.fe.text_overlay.item.change', 'mkl/pc/summary', this.render.bind( this ), 1000 );
 		return this;
 	},
-	render: function() {
+	render: function () {
+		
 		this.clear();
 		var choices = PC.fe.save_data.get_choices();
 		_.each( choices, function( item ) {
