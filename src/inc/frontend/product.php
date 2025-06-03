@@ -160,15 +160,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				$price = wmc_revert_price( $price );
 			}
 
-			if ( class_exists( '\WWP_Wholesale_Prices' ) && is_callable( '\WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3' ) ) {
-				$user_role_class = \WWP_Wholesale_Roles::getInstance();
-				if ( ! empty( $user_role_class->getUserWholesaleRole() ) ) {
-					$price_arr = \WWP_Wholesale_Prices::get_product_wholesale_price_on_shop_v3( $product_id, $user_role_class->getUserWholesaleRole() );
-					if ( isset( $price_arr['wholesale_price'] ) && $price_arr['wholesale_price'] ) return $price_arr['wholesale_price'];
-				}
-			}
-
-			return $price;
+			return apply_filters( 'mkl_pc/get_product_price', $price, $product );
 		}
 
 		public function add_configure_hidden_field() {
