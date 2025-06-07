@@ -512,6 +512,32 @@ html .pc-modal-container {
 		padding: 16px;
 		box-sizing: border-box;
 	}
+
+	/* Color picker settings */
+	.setting > .wp-picker-container {
+		position: relative;
+		display: block;
+		width: 100%;
+
+		.wp-picker-input-wrap {
+			display: flex !important;
+			width: 100%;
+		}
+		.wp-picker-input-wrap label {
+			display: block;
+			width: 100%;
+		}
+		input.components-select-control__input.color-hex.wp-color-picker {
+			width: 100%;
+			padding-left: 40px;
+		}
+		span.wp-color-result-text {
+			display: none;
+		}
+		.wp-color-result.button {
+			position: absolute;
+		}
+	}
 }
 
 .pc-modal-opened .mkl_pc span.select2-container {

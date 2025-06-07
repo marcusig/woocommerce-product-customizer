@@ -232,7 +232,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
 				$scripts = apply_filters( 'mkl_pc_admin_scripts', $scripts );
 
-				// wp_enqueue_script( 'jquery-ui-accordion' );
+				wp_enqueue_style( 'wp-color-picker' );
+				wp_enqueue_script( 'wp-color-picker' );
+
 				// LOAD BACKBONE SCRIPTS
 				foreach($scripts as $script) {
 					list( $key, $file ) = $script;

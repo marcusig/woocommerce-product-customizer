@@ -351,6 +351,11 @@ PC.views = PC.views || {};
 			'click .mkl-pc--action': 'trigger_custom_action',
 			'click button.components-panel__body-toggle': 'toggle_section',
 			'click .hide-addon-placeholder' : 'hide_addon',
+			'focus input.color-hex': 'toggle_iris',
+			'remove': 'on_remove'
+		},
+		on_remove: function ( e ) {
+			this.$( '.wp-picker-container.wp-picker-active input.color-hex' ).wpColorPicker( 'close' );
 		},
 		render: function() {
 			var args;
@@ -381,6 +386,23 @@ PC.views = PC.views || {};
 			};
 
 			this.populate_angles_list();
+			
+			this.$( 'input.color-hex' ).wpColorPicker( {
+				change: function( event, ui ) {
+					// Update value manually (optional, just in case)
+					const $input = $( event.target );
+					$input.val( ui.color.toString() );
+
+					// Trigger native input event
+					$input.trigger( 'input' );
+				},
+				clear: function( a, b ) {
+					const $input = $( this ).closest( '.wp-picker-container' ).find( 'input[type="text"]' );
+
+					$input.val( '' );         // Clear value explicitly (just in case)
+					$input.trigger( 'input' ); // Trigger input event
+				}
+			});
 
 			// Hide empty groups
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
@@ -543,8 +565,16 @@ PC.views = PC.views || {};
 				setting: setting_name,
 				security: PC_lang.user_preferences_nonce
 			} );
-		}
+		},
+		toggle_iris: function ( e ) {
+			const $input = $( e.target );
+			const $parent = $input.closest( '.wp-picker-container' );
+			const $button = $parent.find( 'button.wp-color-result' );
 
+			if ( ! $parent.is( '.wp-picker-active' ) ) {
+				$button.trigger( 'click' );
+			}
+		}
 	});
 
 	

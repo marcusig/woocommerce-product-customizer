@@ -79,6 +79,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					),
 					'priority' => 14,
 					'section' => 'general',
+					'input_classes' => 'color-hex',
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 				),
 				'description' => array(
