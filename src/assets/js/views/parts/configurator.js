@@ -80,8 +80,8 @@ PC.fe.views.configurator = Backbone.View.extend({
 		if ( this.toolbar ) this.toolbar.remove();
 		if ( this.viewer ) this.viewer.remove();
 		if ( this.footer ) this.footer.remove();
-
-		this.viewer = new PC.fe.views.viewer( { parent: this } );
+		const Viewer_View = wp.hooks.applyFilters( 'PC.fe.viewer.main_view', PC.fe.views.viewer );
+		this.viewer = new Viewer_View( { parent: this } );
 		this.$main_window.append( this.viewer.render() );
 		
 		if ( ! PC.fe.angles.length || ! PC.fe.layers.length || ! PC.fe.contents.content.length ) {
