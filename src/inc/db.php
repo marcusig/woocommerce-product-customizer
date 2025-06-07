@@ -470,6 +470,14 @@ class DB {
 					'sanitize' => 'intval',
 					'escape' => 'intval',
 				],
+				'rotation' => [ 
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
+				'leading' => [
+					'sanitize' => 'intval',
+					'escape' => 'intval',
+				],
 				'weight' => [ 
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',
