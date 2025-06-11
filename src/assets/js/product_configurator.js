@@ -209,7 +209,7 @@ PC.actionParameter = 'pc_get_data';
 				}
 				if ( window.location.hash ) {
 					var hash_match = window.location.hash.match(/view=([^,]+)/)
-					if ( hash_match.length > 1 ) {
+					if ( hash_match && hash_match.length > 1 ) {
 						view_identifier = hash_match[1];
 					}
 				}
