@@ -5,8 +5,6 @@ PC.fe.views.summary = Backbone.View.extend( {
 	layers: [],
 	initialize: function() {
 		this.render();
-		console.log( this.tagName );
-		console.log( this.className );
 		
 		if ( PC.conditionalLogic ) {
 			wp.hooks.addAction( 'mkl_checked_conditions', 'mkl/pc/summary', this.render.bind( this ), 1000 );
