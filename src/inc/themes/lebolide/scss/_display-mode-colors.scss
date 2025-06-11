@@ -126,6 +126,20 @@
 	&.swatches-size--large {
 		--mkl_pc_color_thumnail_size: 70px;
 	}
+
+	.choices-list .colors {
+		li.choice {
+			button.choice-item {
+				span.choice-text--container {
+					display: block;
+					padding-left: 0;
+				}
+				.choice-text {
+					display: none;
+				}
+			}
+		}
+	}
 }
 
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices li.choice > button span.description,

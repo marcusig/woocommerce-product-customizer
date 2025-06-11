@@ -593,6 +593,7 @@ a.save-your-design--pdf {
 	li.choices-list {
 		padding: 1em;
 		ul {
+			display: flex;
 			flex-wrap: wrap;
 			--mkl_pc_icon_border_radius: 50%;
 			li.is-group {
