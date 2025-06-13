@@ -73,7 +73,7 @@ var PC = PC || {};
 				// console.log( 'Set multiple', is_active, activate, choice.get( 'name' ) );
 				// Multiple choice: toggle the current state
 				if ( ! is_active && ( activate || 'undefined' == typeof activate ) ) {
-					if ( wp.hooks.applyFilters( 'PC.choices.canSelectChoice', true, choice, this ) ) {
+					if ( wp.hooks.applyFilters( 'PC.choices.canSelectChoice', true, choice, this, 'choice' ) ) {
 						choice.set( 'active', true );
 					} else {
 						console.log('Collections > choices > selectChoice - The choice (multiple) can not be selected');
