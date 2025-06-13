@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -129,10 +129,16 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.4.4 - 13/Jun/2025 = 
+
+* COMPATIBILITY: prepared compatibility with upcoming text overlay add-on
+* COMPATIBILITY: improved compatibility with WooCommerce Wholesale pricing
+* TWEAK: Add color picker to Color field
 * TWEAK: Automatic purge with WP-Optimize and WP-Rocket purging
 * TWEAK: Bolide inline style tweaks
 * TWEAK: Float theme CSS tweaks
 * DEV: Add repeater field type in layer / choice settings
+* DEV: Add JS filter `PC.fe.viewer.main_view`
 * DEV: Add JS action `PC.fe.models.layer.init`
 * DEV: Add JS action `PC.fe.angle_view.init` to trigger in Conditional logic
 
@@ -275,4 +281,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.4.0 Numerous style changes, compatibility with Save your design new Share feature
+* 1.4.4 Wholesale pricing compatibility improvements, various tweaks and improvements, including CSS changes to some of the themes
