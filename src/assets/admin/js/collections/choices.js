@@ -20,7 +20,8 @@ var PC = PC || {};
 		comparator: wp.hooks.applyFilters( 'PC.choices.comparator', function( choice ) {
 			return choice.get( 'order' );
 		} ),
-		deactivateAll: function() {
+		deactivateAll: function () {
+			if ( !this.layer.should_reset ) return;
 			this.each(function( choice ) {
 				choice.set('active', false);
 			});

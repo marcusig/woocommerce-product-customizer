@@ -4,6 +4,7 @@ var PC = PC || {};
 
 PC.layer = Backbone.Model.extend({ 
 	idAttribute: '_id',
+	should_reset: true,
 	defaults: {
 		_id: 0,
 		name: '',
