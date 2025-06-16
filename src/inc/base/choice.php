@@ -109,6 +109,11 @@ class Choice {
 		}
 	}
 
+	public function set_layer_value( $key, $value ) {
+		if ( ! $this->layer ) return false;
+		$this->layer[ $key ] = $value;
+	}
+
 	public function get_layer( $item ) {
 		$this->maybe_set_things_up();
 		return isset( $this->layer[ $item ] ) ? $this->layer[ $item ] : null;
