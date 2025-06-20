@@ -531,6 +531,14 @@ class DB {
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',
 				],
+				'price' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'price_excl_tax' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
 				'name' => [ 
 					'sanitize' => [ $this, 'sanitize_description' ],
 					'escape' => [ $this, 'escape_description' ],
