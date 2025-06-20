@@ -84,4 +84,6 @@
 		}
 	} );
 
+	window.mkl_pc_elementor = window.mkl_pc_elementor || {};
+	window.mkl_pc_elementor.open_modal_button = button_view;
 } )( jQuery );
