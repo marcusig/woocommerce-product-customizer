@@ -264,7 +264,7 @@ class Ajax {
 	 * Purge the configurations cache
 	 */
 	public function purge_config_cache() {
-		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+		if ( ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) || ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
 		Plugin::instance()->cache->purge();
 		wp_send_json_success();
 	}
