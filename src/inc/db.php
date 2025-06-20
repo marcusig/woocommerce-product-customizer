@@ -439,6 +439,8 @@ class DB {
 		if( 'simple' == $product_type ) {
 			// the configurator content
 			$init_data['content'] = $this->get( 'content', $id );
+			$init_data['product_info']['price'] = (float) $product->get_price();
+			$init_data['product_info']['price_excl_tax'] = (float) wc_get_price_excluding_tax( $product ); 
 		}
 
 		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
