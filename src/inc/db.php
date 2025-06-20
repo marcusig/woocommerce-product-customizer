@@ -167,6 +167,11 @@ class DB {
 
 		if ( ! is_string( $that ) ) return false;
 
+		$cache_key = "mkl_pc_data_{$that}_{$product_id}";
+		$cached = wp_cache_get( $cache_key, 'mkl_pc' );
+		if ( false !== $cached ) {
+			return $cached;
+		}
 		if ( ! $this->is_product( $product_id ) ) return false;
 
 		$product = wc_get_product( $product_id );
@@ -191,7 +196,9 @@ class DB {
 			 * @param $that       - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
 			 * @param $product_id - The product ID
 			 */
-			return apply_filters( 'mkl_pc/db/get', $data, $that, $product_id ); 
+			$data = apply_filters( 'mkl_pc/db/get', $data, $that, $product_id );
+			wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
+			return $data; 
 		}
 	}
 
