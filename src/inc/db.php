@@ -202,6 +202,32 @@ class DB {
 		}
 	}
 
+	public function get_indexed( $type, $key, $product_id ) {
+		static $cache = [];
+
+		$cache_key = "{$type}_{$key}_{$product_id}";
+
+		if ( isset( $cache[ $cache_key ] ) ) {
+			return $cache[ $cache_key ];
+		}
+
+		$data = $this->get( $type, $product_id );
+
+		$indexed = [];
+
+		if ( is_array( $data ) ) {
+			foreach ( $data as $item ) {
+				if ( isset( $item[ $key ] ) ) {
+					$indexed[ $item[ $key ] ] = $item;
+				}
+			}
+		}
+
+		$cache[ $cache_key ] = $indexed;
+
+		return $indexed;
+	}
+
 	/**
 	 * Set Data
 	 *
