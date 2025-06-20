@@ -1,5 +1,5 @@
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.type-step:not(.active) {
-    display: none;
+    display: none !important;
 }
 
 nav.mkl-pc--steps {
