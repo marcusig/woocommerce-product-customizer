@@ -279,6 +279,9 @@ class DB {
 		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 
+		// On product save or meta update:
+		wp_cache_delete( "mkl_pc_data_{$component}_{$id}", 'mkl_pc' );
+
 		return $data;
 	}
 
