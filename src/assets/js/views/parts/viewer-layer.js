@@ -68,6 +68,7 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 		var that = this;
 		this.empty_img = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 		this.parent = options.parent || PC.fe;
+		this.layer = PC.fe.layers.get( this.model.get( 'layerId' ) );
 		this.is_loaded = false;
 		this.listenTo( this.model, 'change:active', this.change_layer );
 		this.listenTo( this.model, 'preload-image', this.preload_image );
@@ -88,7 +89,7 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 		
 		classes.push( this.model.collection.getType() );
 		
-		var layer_class = PC.fe.layers.get( this.model.get( 'layerId' ) ).get( 'class_name' );
+		var layer_class = this.layer.get( 'class_name' );
 		if ( layer_class ) classes.push( layer_class );
 		if ( this.model.get( 'class_name' ) ) classes.push( this.model.get( 'class_name' ) );
 		/**
@@ -124,6 +125,10 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 
 		this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
 
+		this.$el.attr( 'data-layer', this.layer.get( 'admin_label' ) || this.layer.get( 'name' ) );
+		this.$el.attr( 'data-choice', this.model.get( 'admin_label' ) || this.model.get( 'name' ) );
+		this.$el.attr( 'data-layer_id', this.layer.id );
+		this.$el.attr( 'data-choice_id', this.model.id );
 		return this.$el; 
 	},
 	// get_image_url: function( choice_id, image ) {
