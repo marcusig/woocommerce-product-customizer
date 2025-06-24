@@ -20,6 +20,7 @@ class Frontend_Woocommerce {
 	public $ID = NULL;
 	public $frontend = NULL;
 	public $product = NULL;
+	public $product_variable = NULL;
 	public $cart = NULL;
 	public $order = NULL;
 	public function __construct() {
@@ -29,9 +30,11 @@ class Frontend_Woocommerce {
 		$this->product = new Frontend_Product();
 		$this->cart = new Frontend_Cart();
 		$this->order = new Frontend_Order();
+		$this->product_variable = new Frontend_Product_Variable();
 	}
 	private function _includes() {
 		include( MKL_PC_INCLUDE_PATH . 'frontend/product.php' );
+		include( MKL_PC_INCLUDE_PATH . 'frontend/product-variable.php' );
 		include( MKL_PC_INCLUDE_PATH . 'frontend/order.php' );
 		include( MKL_PC_INCLUDE_PATH . 'frontend/cart.php' );
 	}
@@ -348,6 +351,10 @@ class Frontend_Woocommerce {
 		// To include potential other scripts BEFORE the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_before' );
 
+		if ( $prod && is_a( $prod, 'WC_Product' ) && 'variable' === $prod->get_type() ) {
+			wp_enqueue_script( 'mkl_pc_variable/frontend', MKL_PC_ASSETS_URL . 'js/variable.js', array( 'jquery' ), filemtime( MKL_PC_ASSETS_PATH .'js/variable.js' ), true );
+		}
+
 		wp_register_script( 'mkl_pc/js/vendor/popper', MKL_PC_ASSETS_URL . 'js/vendor/popper.min.js', [], '2', true );
 		wp_register_script( 'mkl_pc/js/vendor/tippy', MKL_PC_ASSETS_URL . 'js/vendor/tippy-bundle.umd.min.js', [ 'mkl_pc/js/vendor/popper' ], '6.3.7', true );
 		wp_register_script( 'mkl_pc/js/vendor/as', MKL_PC_ASSETS_URL . 'js/vendor/adaptive-scale.min.js', [], '1.0.0', true );
@@ -450,7 +457,6 @@ class Frontend_Woocommerce {
 
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
-		// $version = $product
 		if ( $prod ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 			// Add JSON for Weglot compatibility

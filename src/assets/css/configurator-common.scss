@@ -1,3 +1,23 @@
+/* Variable products */
+button.variations_button.disabled,
+.variations_button.disabled button.single_add_to_cart_button {
+	display: none;
+}
+
+.is_configurable div.product form.cart .variations_button:not(.disabled),
+.is_configurable:not(.enable-add-to-cart):not(.configurator_is_inline) div.product form.cart .variations_button:not(.disabled) {
+	.quantity, .single_add_to_cart_button {
+		display: block !important;
+	}
+}
+.is_configurable.current-variation-is-configurable:not(.enable-add-to-cart):not(.configurator_is_inline) div.product form.cart .variations_button.disabled {
+	.quantity {
+		display: none !important;
+	}
+}
+
+
+
 .mkl-pc-choice-qty--container {
     display: none;
     width: auto;
