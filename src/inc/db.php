@@ -396,6 +396,21 @@ class DB {
 			),
 			'product_info' => array()
 		);
+		
+		if ( 'variable' === $product->get_type()) {
+			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+			$init_data['product_info']['variations'] = array(); 
+			$variations = $product->get_available_variations();
+			foreach( $variations as $variation ) {
+				$init_data['product_info']['variations'][ $variation['variation_id'] ] = array (
+					'is_configurable' => $variation['is_configurable'],
+					'price' => $variation['display_price'],
+					// 'price_excl_tax' =>
+					'regular_price' => $variation['display_regular_price'],
+					'is_on_sale' => $variation['display_price'] < $variation['display_regular_price'],
+				);
+			}
+		}
 
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $product );
 	}

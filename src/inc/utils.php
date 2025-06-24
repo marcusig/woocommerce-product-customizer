@@ -112,7 +112,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			// Check if the product type is registered
 //			global $product;
-			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array( 'simple' ) );
+			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array( 'simple', 'variable' ) );
 
 			// if ( is_object( $product ) ) {
 

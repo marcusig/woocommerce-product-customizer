@@ -16,9 +16,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 		public $ID;
 		private $_product;
+		private $variable;
 		private $should_update_cache = false;
 		public function __construct() {
 			$this->_hooks();
+			$this->variable = new Admin_Variable_Product();
 		}
 
 		/**
@@ -51,7 +53,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function init() {
 			// Supported product types
-			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array('simple') );
+			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array('simple', 'variable') );
 			foreach( $product_types as $product_type ) {
 				add_action( 'woocommerce_process_product_meta_' . $product_type, array( $this, 'save_product_setting' ) );
 			}
@@ -218,6 +220,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/views/field_repeater', 'views/field-repeater.js'),
 				//APP
 				array('backbone/app', 'pc_app.js'), 
+				// COMPATIBILITY
+				array('mlk_pc_variable/admin', 'variable-product.js'), 
 				// array('backbone', 'admin.js'),
 			);
 
