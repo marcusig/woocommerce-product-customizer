@@ -141,9 +141,9 @@ PC.fe.views.form = Backbone.View.extend({
 			$( e.currentTarget ).addClass( 'adding-to-cart' );
 
 			var btn;
-			if ( this.$cart.find( 'button[name=add-to-cart]' ).length ) {
+			if ( this.$cart?.find( 'button[name=add-to-cart]' ).length ) {
 				btn = this.$cart.find( 'button[name=add-to-cart]' );
-			} else if ( this.$cart.find( '.single_add_to_cart_button' ).length ) {
+			} else if ( this.$cart?.find( '.single_add_to_cart_button' ).length ) {
 				btn = this.$cart.find( '.single_add_to_cart_button' );
 			}
 
