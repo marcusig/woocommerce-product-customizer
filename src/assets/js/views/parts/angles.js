@@ -13,6 +13,8 @@ PC.fe.views.angles = Backbone.View.extend({
 	render: function() { 
 		this.$el.append( this.template() );
 		this.$list = this.$el.find( 'ul' );
+		// a11y - angles are not relevant for voice over 
+		this.$el.attr( 'aria-hidden', 'true' );
 		this.add_all(); 
 		return this.$el; 
 	},
@@ -60,10 +62,13 @@ PC.fe.views.angle = Backbone.View.extend({
 		this.model.set('active', true); 
 	},
 	activate: function() {
-		if( this.model.get('active') )
-			this.$el.addClass('active');
-		else
+		if ( this.model.get( 'active' ) ) {			
+			this.$el.addClass( 'active' );
+			this.$( 'a' ).attr( 'aria-pressed', 'true' );
+		} else {
+			this.$( 'a' ).attr( 'aria-pressed', 'false' );
 			this.$el.removeClass('active');
+		}
 
 		if ( this.model.get( 'class_name' ) ) {
 			PC.fe.modal.$el.toggleClass( this.model.get( 'class_name' ), this.model.get( 'active' ) );

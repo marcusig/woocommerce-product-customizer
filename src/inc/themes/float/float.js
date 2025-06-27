@@ -36,19 +36,38 @@
 		return 'in';
 	} );
 	
+	function maybe_focus( view ) {
+		if ( !view.choices ) return;
+		// Steps
+		if ( view.model.get( 'is_step' ) ) {
+			view.choices.$( '.layers-list-item > button.layer-item:visible' ).first().trigger( 'focus' );
+			return;
+		}
+		view.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
+	}
+
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/float', function( view ) {
 		if ( ! wp.hooks.applyFilters( 'pc.themes.float.toggle_choices', true, view ) ) return;
 		if ( PC.fe.inline ) {
 			view.$el.find( '.layer_choices' ).first().show();
+			maybe_focus( view );
 			if ( PC_config.config.auto_scroll ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
 			// if ( scrollStartPost ) $(document).scrollTop(scrollStartPost);
 		} else {
 			if ( 'dropdown' === view.model.get( 'display_mode' ) ) {
-				view.$el.find( '.layer_choices' ).first().delay(40).slideDown( 100 );
+				view.$el.find( '.layer_choices' ).first().delay( 40 ).slideDown( 100, () => {
+					maybe_focus( view );
+				} );
 			} else {
-				view.$el.find( '.layer_choices' ).first().delay(40).slideDown( { duration: 100, step: function() {
-					if ( PC_config.config.auto_scroll && view.el.offsetParent ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
-				} } );
+				view.$el.find( '.layer_choices' ).first().delay( 40 ).slideDown( {
+					duration: 100,
+					step: function () {
+						if ( PC_config.config.auto_scroll && view.el.offsetParent ) view.el.offsetParent.scrollTo( 0, view.el.offsetTop );
+					},
+					complete: () => {
+						maybe_focus( view );
+					}
+				} );
 			}
 		}
 			
@@ -60,6 +79,9 @@
 			view.$el.find( '.layer_choices' ).first().hide();
 		} else {
 			view.$el.find( '.layer_choices' ).first().slideUp(100);
+		}
+		if ( 'full-screen' == view.model.get( 'display_mode' ) ) {
+			view.$( '> button.layer-item' ).focus();
 		}
 	} );
 

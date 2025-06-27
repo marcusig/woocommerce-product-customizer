@@ -165,10 +165,12 @@ PC.fe.views.choice = Backbone.View.extend({
 	},
 	activate: function() {
 		if( this.model.get('active') === true ) {
-			this.$el.addClass('active');
+			this.$el.addClass( 'active' );
+			this.$( '> button.choice-item' ).attr( 'aria-pressed', 'true' );
 			wp.hooks.doAction( 'PC.fe.choice.activate', this );
 		} else {
-			this.$el.removeClass('active');
+			this.$el.removeClass( 'active' );
+			this.$( '> button.choice-item' ).attr( 'aria-pressed', 'false' );
 			wp.hooks.doAction( 'PC.fe.choice.deactivate', this );
 		}
 	},

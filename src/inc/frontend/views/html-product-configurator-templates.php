@@ -17,7 +17,7 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 
 function mkl_pc_frontend_configurator__main_view__main_container() {
 ?>
-	<div class="mkl_pc_container">
+	<div class="mkl_pc_container" tabindex="0" aria-role="document" aria-label="<?php echo esc_attr_x( 'Product configurator application - tab to the first configuration item', 'Aria label for the ', 'product-configurator-for-woocommerce' ); ?>">
 		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg' ) || is_customize_preview() )  : ?>
 			<div class="mkl_pc_bg<# if ( data.bg_image && '<?php echo MKL_PC_ASSETS_URL.'images/default-bg.jpg'; ?>' == data.bg_image ) { #> default-bg<# } #>"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 		<?php endif; ?>
@@ -114,7 +114,7 @@ function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
 	<header>
 		<h3 class="product-name">{{{data.name}}}</h3>
-		<button class="cancel close-mkl-pc" type="button"><span><?php _e( 'Cancel' ); ?></span></button>
+		<button class="cancel close-mkl-pc" type="button" aria-label="<?php echo esc_attr_x( 'Close the configurator app', 'Aria label of the main configurator close button', 'product-configurator-for-woocommerce' ); ?>"><span><?php _e( 'Cancel' ); ?></span></button>
 	</header>
 <?php
 }

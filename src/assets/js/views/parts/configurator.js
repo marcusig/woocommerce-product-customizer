@@ -44,7 +44,11 @@ PC.fe.views.configurator = Backbone.View.extend({
 		}
 
 		this.$el.append( this.template( { bg_image: wp.hooks.applyFilters( 'PC.fe.config.bg_image', PC.fe.config.bg_image, this ) } ) ); 
-		this.$main_window = this.$el.find( '.mkl_pc_container' ); 
+		this.$main_window = this.$el.find( '.mkl_pc_container' );
+
+		if ( !PC.fe.inline ) {
+			this.$main_window.attr( 'aria-modal', 'true' );
+		}
 
 		return this.$el; 
 	},
@@ -59,7 +63,8 @@ PC.fe.views.configurator = Backbone.View.extend({
 				this.$el.find('.layers .layer-item').first().trigger( 'focus' );
 			}.bind(this), 300);
 		}
-		
+		// A11y: set focus to the modal when opening it
+		if ( !PC.fe.inline ) this.$main_window.trigger( 'focus' );
 		wp.hooks.doAction( 'PC.fe.open', this ); 
 	},
 	close: function() {

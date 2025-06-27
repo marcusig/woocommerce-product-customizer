@@ -17,7 +17,7 @@ PC.fe.views.toolbar = Backbone.View.extend({
 	},
 
 	render: function() {
-		this.$el.append( this.template( { name:this.parent.options.title } ) );
+		this.$el.append( this.template( { name: this.parent.options.title } ) );
 		this.$selection = this.$el.find('.choices'); 
 		// this.get_cart(); 
 		this.layers = new PC.fe.views.layers_list( { parent: this } );

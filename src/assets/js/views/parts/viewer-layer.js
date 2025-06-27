@@ -40,6 +40,9 @@ PC.fe.views.viewer_static_layer = Backbone.View.extend({
 		if ( layer_class ) classes.push( layer_class );
 		if ( this.model.get( 'class_name' ) ) classes.push( this.model.get( 'class_name' ) );
 		
+		// a11y - hide images from being read
+		this.$el.attr( 'aria-hidden', 'true' );
+
 		/**
 		 * Filter the classes applied to the image
 		 */
@@ -122,7 +125,9 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			}
 			this.$el.removeClass( 'active' );
 		}
-
+		// a11y - hide images from being read
+		this.$el.attr( 'aria-hidden', 'true' );
+		
 		this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
 
 		this.$el.attr( 'data-layer', this.layer.get( 'admin_label' ) || this.layer.get( 'name' ) );
