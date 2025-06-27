@@ -79,7 +79,8 @@
 		render: function() {
 			this.$el.html( button_label );
 		},
-		on_click: function( e ) {
+		on_click: function ( e ) {
+			e.preventDefault();
 			elementorProFrontend.modules.popup.showPopup( { id: modalId } )
 		}
 	} );
