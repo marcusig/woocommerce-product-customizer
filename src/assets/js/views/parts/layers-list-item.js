@@ -137,7 +137,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				});
 			} else {
 				var parent = this.model.collection.get( this.model.get( 'parent' ) );
-				if ( PC_config.config.auto_close_siblings_in_groups || parent.get( 'is_step' ) ) {
+				if ( PC_config.config.auto_close_siblings_in_groups || ( parent && parent.get( 'is_step' ) ) ) {
 					// Toggle any siblings
 					_.each( this.model.collection.where( { 'parent': this.model.get( 'parent' ) } ), function( model ) {
 						model.set( 'active' , false );

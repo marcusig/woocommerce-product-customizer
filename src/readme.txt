@@ -53,6 +53,7 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 This plugin comes without limitations. But if you need more functionalities, look at the available addons: 
 
 * <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
+* <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/save-your-design/">Save your design</a> - Get your customers engaged by enabling them to save the design they’ve made.
 * <a target="_blank" href="https://wc-product-configurator.com/product/variable-products/">Variable products</a> - Use the product configurator with variable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/multiple-choice/">Multiple choices</a> - Enables multiple choices per layer Ideal for a product’s options, or when having several individual options.
@@ -129,6 +130,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 17. Configurator theme - WSB
 
 == Changelog ==
+
+* TWEAK: Prevent error when a parent group was deleted without removing children first
 
 = 1.4.4 - 13/Jun/2025 = 
 
