@@ -373,4 +373,35 @@ PC.toJSON = function( item ) {
 
 	};
 
+	PC.show_notice = function( msg, type = 'success' ) {
+		const el = document.createElement( 'div' );
+		const target = PC.app.get_product().editor.$( '.notice-container' )[ 0 ];
+		if ( !target ) return;
+		el.className = `pc-notice notice-${type}`;
+		el.innerText = msg;
+		const icon = document.createElement( 'span' );
+		if ( 'success' == type ) {
+			icon.className = 'dashicons dashicons-saved';
+			el.prepend( icon );
+		}
+		if ( 'error' == type ) {
+			icon.className = 'dashicons dashicons-no';
+			el.prepend( icon );
+		}
+		if ( 'saved' == type ) {
+			icon.className = 'dashicons dashicons-saved';
+			el.prepend( icon );
+			if ( $( '#sample-permalink' ).length ) {
+				const a = $( '#sample-permalink a' ).first();
+				const view_link = document.createElement( 'a' );
+				view_link.href = a[ 0 ].href;
+				view_link.className = 'view-product';
+				view_link.target = "_blank";
+				el.append( view_link );
+			}
+		}
+		target.appendChild(el);
+		setTimeout(() => el.remove(), 5000);
+	}
+
 } ) ( jQuery, PC._us || window._ );
