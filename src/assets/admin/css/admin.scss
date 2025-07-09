@@ -55,7 +55,7 @@ html .media-modal.pc-modal {
 		color: #a00;
 	}
 
-	.form-details button.duplicate {
+	.form-details .actions-container button + button {
 		margin-left: 6px;
 	}
 
@@ -163,7 +163,7 @@ html .media-modal.pc-modal {
 	.media-frame-content{
 
 		.mkl-list {
-			padding-bottom: 40px;
+			padding-bottom: 80px;
 		}
 
 		&.structure {
