@@ -114,6 +114,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 					$field = '<div class="actions-container">
 						<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
 						'<button type="button" class="button-link duplicate duplicate-item">' . __('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
+						'<button type="button" class="button-link copy copy-item">' . __('Copy', 'product-configurator-for-woocommerce' ) . '</button>' .
 						'<div class="prompt-delete hidden mkl-pc-setting--warning">' .
 							'<p>' . __( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
 							'<p>' .

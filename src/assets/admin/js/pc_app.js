@@ -53,18 +53,26 @@ PC.toJSON = function( item ) {
 				this.admin = new PC.views.admin({ model: this.admin_data });
 			}
 
-			$( window ).on( 'focus', function( e ) {
-				
-				navigator.clipboard.readText().then( content => {
-					if ( ! content.startsWith( 'PCCOPY-' ) ) return;
-					var data = content.substring( 7 );
-					$( document.body ).trigger( 'clipboard-has-configuration', data );
-				} );
-			} );
+			// document.addEventListener( 'paste', ( e ) => {
+			// 	if ( !app.configuratorView?.isVisible() ) return;
 
-			$( document.body ).on( 'clipboard-has-configuration', function( e, data ) {
-				PC.clipboard_data = data;
-			} );
+			// 	const text = e.clipboardData.getData( 'text/plain' );
+			// 	if ( !text.startsWith( 'PCCOPY-' ) ) return;
+				
+			// } );
+			
+			// $( window ).on( 'focus', function( e ) {
+				
+			// 	navigator.clipboard.readText().then( content => {
+			// 		if ( ! content.startsWith( 'PCCOPY-' ) ) return;
+			// 		var data = content.substring( 7 );
+			// 		$( document.body ).trigger( 'clipboard-has-configuration', data );
+			// 	} );
+			// } );
+
+			// $( document.body ).on( 'clipboard-has-configuration', function( e, data ) {
+			// 	PC.clipboard_data = data;
+			// } );
 
 			return this.admin;
 		},
@@ -261,10 +269,6 @@ PC.toJSON = function( item ) {
 
 		get_data_from_clipboard: function() {
 			// PCCOPY-choices-
-			navigator.clipboard.readText()
-			.then( content => {
-				
-			} )
 		}
 	};
 
@@ -373,6 +377,41 @@ PC.toJSON = function( item ) {
 
 	};
 
+	PC.copy_items = function( view ) {
+		var data = {
+			type: null,
+			models: []
+		};
+
+		if ( view.collection instanceof PC.layers ) {
+			data.type = 'layers';
+		} else if ( view.collection instanceof PC.choices ) {
+			data.type = 'choices';
+		}
+		if ( !data.type ) return;
+
+		// Parse the selection
+		PC.selection.each( item => {
+			// Layers: include content data
+			if ( 'layers' == data.type ) {
+				const content = PC.app.get_layer_content( item.get( 'view' )?.model?.id );
+				var item_data = {
+					layer: item.get( 'view' ).model.toJSON(),
+					content: content ? content.toJSON() : []
+				}
+				data.models.push( item_data );
+			} else {
+				// Choices: individual models only
+				data.models.push( item.get( 'view' ).model.toJSON() );
+			}
+		} );
+
+		navigator.clipboard.writeText( JSON.stringify( data ) )
+			.then( c => {
+				PC.show_notice( 'Configuration copied to clipboard' );
+			} );
+	};
+
 	PC.show_notice = function( msg, type = 'success' ) {
 		const el = document.createElement( 'div' );
 		const target = PC.app.get_product().editor.$( '.notice-container' )[ 0 ];
@@ -403,5 +442,6 @@ PC.toJSON = function( item ) {
 		target.appendChild(el);
 		setTimeout(() => el.remove(), 5000);
 	}
+
 
 } ) ( jQuery, PC._us || window._ );
