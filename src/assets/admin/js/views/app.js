@@ -19,11 +19,25 @@ PC.views = PC.views || {};
 		initialize: function() {
 
 			this.products = new PC.products();
+			document.addEventListener( 'paste', this.on_paste.bind( this ) );
 
 			// Layers and Angles are common to a simple product, or to variations.
 			// this.layers = new PC.layers();
 			// this.listenTo( this.products, 'change:', this.update );
-		}, 
+		},
+		on_paste( event ) {
+			
+			const text = event.clipboardData?.getData( 'text/plain' );
+			try {
+				const json = JSON.parse(text);
+				if (!json || ! json.type ) return;
+				this.trigger( 'pasted-data', json );
+			} catch ( error ) {
+				console.warn( 'The pasted data is not a valid json object' );
+				console.log( text );
+				console.log( error );
+			}
+		},
 		open: function( options ) { 
 			if( options.product_id === undefined) {
 				throw( { name: 'Error', message: 'product_id parameter is missing to start the configurator.' } );

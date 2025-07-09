@@ -46,7 +46,8 @@ TODO:
 			this.listenTo( this.col, 'simple-selection', this.edit_simple );
 			this.listenTo( this.col, 'changed-order', this.update_sorting );
 			this.listenTo( this.col, 'destroy', this.removed_model );
-
+			
+			this.listenTo( PC.app.admin, 'pasted-data', this.on_paste );
 			this.render();
 		},
 		single_view: function() { return PC.views.layer; },
@@ -60,6 +61,7 @@ TODO:
 		}, 
 		cleanup_on_remove: function() {
 			_.each( this.items, this.remove_item );
+			this.stopListening();
 		},
 		render: function( ) {
 			this.col.orderBy = 'order';
@@ -226,6 +228,42 @@ TODO:
 			this.col.sort( { silent: true } );
 			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
 		},
+		on_paste( json ) {
+			
+			if (!json || json.type !== 'layers' || !json.models) return;
+
+			const id_map = []; // { original_id, new_id }
+			const new_layers = [];
+
+			// Step 1: Create all layers and store ID mapping
+			_.each( json.models, ( item ) => {
+				if ( !item.layer ) return;
+				const original_id = item.layer._id;
+				const new_layer = duplicate_or_paste_layer( {
+					layer_data: item.layer,
+					choices_data: item.content,
+					is_cloning: false,
+					collection: this.col
+				} );
+				id_map[original_id] = new_layer.id;
+				new_layers.push( new_layer );
+			} );
+
+			// Step 2: Fix parenting
+			new_layers.forEach( layer => {
+				const original_parent_id = layer.get( 'parent' );
+				if ( !original_parent_id ) return;
+
+				if ( id_map[ original_parent_id ] ) {
+					// ✅ Update to new ID if parent was also pasted
+					layer.set( 'parent', id_map[ original_parent_id ] );
+				} else {
+					// ❌ Remove parent if parent not included
+					layer.unset( 'parent' );
+				}
+			} );
+		}
+
 	} );
 
 	
@@ -396,6 +434,7 @@ TODO:
 		initialize: function( options ) {
 			if ( this.pre_init ) this.pre_init( options );
 			this.toggled_status.init();
+			this.collection = this.model.collection;
 			this.listenTo( this.model, 'destroy', this.remove ); 
 			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode' ), this.render );
 		},
@@ -405,6 +444,7 @@ TODO:
 			'click .confirm-delete': 'delete_layer',
 			'click .cancel-delete': 'delete_layer',
 			'click .duplicate-item': 'duplicate_layer',
+			'click .copy-item': 'copy_layer',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
@@ -519,28 +559,20 @@ TODO:
 		},
 		duplicate_layer: function( event ) {
 			// Duplicate the layer
-			var cl = this.model.clone();
-			cl.set( 'name', cl.get( 'name' ) + ' (Copy)' );
-			var new_layer = this.model.collection.create( this.model.collection.create_layer( PC.toJSON( cl ) ) );
-			if ( cl.get( 'admin_label' ) ) {
-				new_layer.set( 'admin_label', cl.get( 'admin_label' ) + ' (Copy)' );
-			}
-			
-			// Duplicate the layer content
-			var product = PC.app.get_product();
-			var content = product.get( 'content' );
-			if ( content.get( this.model.id ) ) {
-				var col = content.get( this.model.id ).get( 'choices' );
-				var new_choices = new PC.choices([], { layer: new_layer } );
-				content.add( { layerId: new_layer.id, choices: new_choices } );
-				col.each( function( model ) {
-					var new_choice = model.clone();
-					new_choice.set( 'layerId', new_layer.id );
-					var new_item = new_choices.create( PC.toJSON( new_choice ) );
-					PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
-				} );
-				PC.app.is_modified['content'] = true;
-			}
+			const layer_data = PC.toJSON( this.model );
+
+			const content = PC.app.get_product().get( 'content' );
+			const choices_data = content.get( this.model.id )?.get( 'choices' ).models || null;
+
+			duplicate_or_paste_layer( {
+				layer_data,
+				choices_data,
+				is_cloning: true,
+				collection: this.collection
+			} );
+		},
+		copy_layer: function () {
+			PC.copy_items( this );
 		},
 		edit_attachment: function(e) {
 			e.preventDefault();
@@ -743,17 +775,7 @@ TODO:
 			this.collection.trigger( 'changed-order' );
 		},
 		copy_items: function() {
-			var models = [];
-
-			PC.selection.each( item => {
-				models.push( item.get( 'view' ).model.toJSON() )
-			} );
-
-			navigator.clipboard.writeText( 'PCCOPY-' + JSON.stringify( models ) )
-				.then( c => {
-					$( document.body ).trigger( 'clipboard-has-configuration', JSON.stringify( models ) );
-				} );
-			
+			PC.copy_items( this );
 		},
 	});
 
@@ -850,5 +872,42 @@ TODO:
 
 		}
 	} );
+
+	const duplicate_or_paste_layer = function ( { layer_data, choices_data = null, is_cloning = false, collection } ) {
+		const layers = collection;
+		const content = PC.app.get_product().get( 'content' );
+
+		// Create the new layer model
+		const new_layer_model = new PC.layer( layer_data );
+
+		// Tweak name/admin label if we're cloning
+		if ( is_cloning ) {
+			new_layer_model.set( 'name', new_layer_model.get( 'name' ) + ' (Copy)' );
+			if ( new_layer_model.get( 'admin_label' ) ) {
+				new_layer_model.set( 'admin_label', new_layer_model.get( 'admin_label' ) + ' (Copy)' );
+			}
+		}
+
+		// Actually add the new layer to the collection
+		const new_layer = layers.create( layers.create_layer( PC.toJSON( new_layer_model ) ) );
+
+		// Choices duplication
+		if ( choices_data && Array.isArray( choices_data ) ) {
+			const new_choices = new PC.choices( [], { layer: new_layer } );
+			content.add( { layerId: new_layer.id, choices: new_choices } );
+
+			choices_data.forEach( choice_data => {
+				const choice_model = is_cloning ? choice_data.clone() : new PC.choice( choice_data );
+				choice_model.set( 'layerId', new_layer.id );
+				const new_item = new_choices.create( PC.toJSON( choice_model ) );
+				PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
+			} );
+
+			PC.app.is_modified[ 'content' ] = true;
+		}
+
+		return new_layer;
+	};
+
 
 })(jQuery, PC._us || window._);

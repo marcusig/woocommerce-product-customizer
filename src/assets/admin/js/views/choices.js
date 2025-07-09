@@ -39,13 +39,14 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'changed-order', this.update_sorting );
 			this.listenTo( this.col, 'duplicated-item', this.duplicated_item );
 			this.listenTo( this.col, 'simple-selection', this.edit_simple );
-
+			this.listenTo( PC.app.admin, 'pasted-data', this.on_paste );
+			
 			this.render(); 
 		},
 		events: {
 			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
-			'click .paste-items': 'paste_items',
+			// 'click .paste-items': 'paste_items',
 			'keypress .structure-toolbar input': 'create',
 			'remove': 'cleanup_on_remove', 
 		},
@@ -58,7 +59,9 @@ PC.views = PC.views || {};
 				item.set( 'active', false );
 			} );
 			// Remove views
-			this.remove_views();	
+			this.remove_views();
+			this.stopListening();
+
 		},
 		duplicated_item: function() {
 			this.render();
@@ -190,39 +193,39 @@ PC.views = PC.views || {};
 			this.$new_input.val('');
 		},
 
-		paste_items: function( e ) {
-			var $target = $( e.currentTarget );
-			if ( PC.clipboard_data ) {
-				var data = JSON.parse( PC.clipboard_data );
-				if ( ! data ) {
-					alert( 'data is not JSON object' );
-					return;
-				}
+		// paste_items: function( e ) {
+		// 	var $target = $( e.currentTarget );
+		// 	if ( PC.clipboard_data ) {
+		// 		var data = JSON.parse( PC.clipboard_data );
+		// 		if ( ! data ) {
+		// 			alert( 'data is not JSON object' );
+		// 			return;
+		// 		}
 
 
-				var parents = [];
-				_.each( data, function( item ) {
-					var original_id = item._id;
-					item._id = PC.app.get_new_id( this.col );
-					item.layerId = this.model.id;
-					item.order = this.col.nextOrder();
-					if ( item.parent ) {
-						var t = _.findWhere( parents, { original_id: item.parent } );
-						if ( t ) {
-							item.parent = t.new_id;
-						}
-					}
-					var new_item = this.col.add( JSON.parse( JSON.stringify( item ) ) );
-					if ( item.is_group ) {
-						parents.push( { original_id: original_id, new_id: new_item.id } );
-					}
-					PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
+		// 		var parents = [];
+		// 		_.each( data, function( item ) {
+		// 			var original_id = item._id;
+		// 			item._id = PC.app.get_new_id( this.col );
+		// 			item.layerId = this.model.id;
+		// 			item.order = this.col.nextOrder();
+		// 			if ( item.parent ) {
+		// 				var t = _.findWhere( parents, { original_id: item.parent } );
+		// 				if ( t ) {
+		// 					item.parent = t.new_id;
+		// 				}
+		// 			}
+		// 			var new_item = this.col.add( JSON.parse( JSON.stringify( item ) ) );
+		// 			if ( item.is_group ) {
+		// 				parents.push( { original_id: original_id, new_id: new_item.id } );
+		// 			}
+		// 			PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
 
-				}.bind( this ) );
+		// 		}.bind( this ) );
 
-				if ( parents.length ) this.duplicated_item();
-			}
-		},
+		// 		if ( parents.length ) this.duplicated_item();
+		// 	}
+		// },
 
 		new_attributes: function( name ) {
 			return {
@@ -244,7 +247,46 @@ PC.views = PC.views || {};
 		},
 		edit_simple: function() {
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
-		}		
+		},
+		on_paste( json ) {
+			if (!json || json.type !== 'choices' || !json.models) return;
+
+			const id_map = []; // { original_id, new_id }
+			const new_choices = [];
+			
+			// Step 1: Create all layers and store ID mapping
+			_.each( json.models, ( item ) => {
+				const original_id = item._id;
+				item._id = PC.app.get_new_id( this.col );
+				item.layerId = this.model.id;
+				item.order = this.col.nextOrder();
+
+				const new_choice = this.col.create( item );
+				PC.app.modified_choices.push( new_choice.get( 'layerId' ) + '_' + new_choice.id );
+				if ( 1 === json.models.length ) this.model.set( 'active', false );
+				id_map[original_id] = new_choice.id;
+				new_choices.push( new_choice );
+			} );
+
+			// Step 2: Fix parenting
+			let parents = 0;
+			new_choices.forEach( choice => {
+				const original_parent_id = choice.get( 'parent' );
+				if ( !original_parent_id ) return;
+
+				if ( id_map[ original_parent_id ] ) {
+					// ✅ Update to new ID if parent was also pasted
+					choice.set( 'parent', id_map[ original_parent_id ] );
+					parents++;
+				} else {
+					// ❌ Remove parent if parent not included
+					choice.unset( 'parent' );
+				}
+			} );
+
+			// If we pasted groups, re-render the list
+			if ( parents ) this.duplicated_item();
+		}
 	});
 
 	PC.views.choiceLabel = Backbone.View.extend( {
@@ -341,6 +383,7 @@ PC.views = PC.views || {};
 			'click .confirm-delete': 'delete_choice',
 			'click .cancel-delete': 'delete_choice',
 			'click .duplicate-item': 'duplicate_choice',
+			'click .copy-item': 'copy_choice',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'input .setting input': 'form_change',
@@ -472,6 +515,9 @@ PC.views = PC.views || {};
 			this.model.set( 'active', false );
 			this.model.collection.trigger( 'duplicated-item' );
 		},
+		copy_choice: function() {
+			PC.copy_items();
+		},		
 		add_angle: function( angle ) {
 			// this.model
 			var data = {
