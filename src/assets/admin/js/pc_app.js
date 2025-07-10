@@ -387,13 +387,15 @@ PC.toJSON = function( item ) {
 			data.type = 'layers';
 		} else if ( view.collection instanceof PC.choices ) {
 			data.type = 'choices';
+		} else if ( view.collection instanceof PC.angles ) {
+			data.type = 'angles';
 		}
 		if ( !data.type ) return;
 
 		// Parse the selection
 		PC.selection.each( item => {
 			// Layers: include content data
-			if ( 'layers' == data.type ) {
+			if ( 'layers' == data.type || 'angles' == data.type ) {
 				const content = PC.app.get_layer_content( item.get( 'view' )?.model?.id );
 				var item_data = {
 					layer: item.get( 'view' ).model.toJSON(),
@@ -408,7 +410,7 @@ PC.toJSON = function( item ) {
 
 		navigator.clipboard.writeText( JSON.stringify( data ) )
 			.then( c => {
-				PC.show_notice( 'Configuration copied to clipboard' );
+				PC.show_notice( 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + v" to paste.' );
 			} );
 	};
 

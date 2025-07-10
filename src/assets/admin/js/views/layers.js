@@ -230,7 +230,7 @@ TODO:
 		},
 		on_paste( json ) {
 			
-			if (!json || json.type !== 'layers' || !json.models) return;
+			if ( !json || json.type !== this.collectionName || !json.models ) return;
 
 			const id_map = []; // { original_id, new_id }
 			const new_layers = [];
@@ -874,7 +874,6 @@ TODO:
 	} );
 
 	const duplicate_or_paste_layer = function ( { layer_data, choices_data = null, is_cloning = false, collection } ) {
-		const layers = collection;
 		const content = PC.app.get_product().get( 'content' );
 
 		// Create the new layer model
@@ -889,7 +888,16 @@ TODO:
 		}
 
 		// Actually add the new layer to the collection
-		const new_layer = layers.create( layers.create_layer( PC.toJSON( new_layer_model ) ) );
+		let item_data;
+		if ( collection.create_layer ) {
+			item_data = collection.create_layer( PC.toJSON( new_layer_model ) );
+		} else {
+			item_data = PC.toJSON( new_layer_model );
+			item_data.order = collection.nextOrder();
+			item_data._id = PC.app.get_new_id( collection );
+		}
+
+		const new_layer = collection.create( item_data );
 
 		// Choices duplication
 		if ( choices_data && Array.isArray( choices_data ) ) {
