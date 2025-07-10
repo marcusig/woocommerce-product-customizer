@@ -14,3 +14,14 @@ span.mkl-license-expire-soon {
     border: 1px solid #c3c4c7;
     border-left: 4px solid #dba618;
 }
+
+tr[data-slug*="mkl-pc"] + tr.plugin-update-tr {
+    transform: translateY(-1px);
+}
+
+div[class*="udmupdater_box_woocommerce-mkl-pc"] {
+    padding: 10px;
+    background: #00356b0f;
+    border-radius: 6px;
+    margin-top: 0 !important;
+}

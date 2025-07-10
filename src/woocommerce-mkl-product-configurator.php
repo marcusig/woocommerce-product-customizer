@@ -35,6 +35,7 @@ require_once MKL_PC_INCLUDE_PATH . 'plugin.php';
 
 add_action( 'init', 'mkl_pc_load_plugin_textdomain', 30 );
 add_action( 'plugins_loaded', 'mkl_pc_init', 90 );
+add_action( 'plugins_loaded', 'mkl_pc_maybe_deactivate_variable_addon', 5 );
 
 /**
  * Initialize the plugin and check if the requirements are met (PHP version and WooCommerce install)
@@ -99,3 +100,56 @@ add_action( 'before_woocommerce_init', function() {
 		\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'product_block_editor', __FILE__, false );
 	}
 } );
+
+
+add_filter( 'plugin_row_meta', 'mkl_pc_addon_row_meta_note', 10, 2 );
+function mkl_pc_addon_row_meta_note( $links, $plugin_file ) {
+	if ( $plugin_file === 'woocommerce-mkl-pc-for-variable-products/woocommerce-mkl-pc-for-variable-products.php' ) {
+		$links[] = '<span style="color: #d63638;"><strong>This plugin is no longer needed and can be deleted.</strong></span>';
+	}
+	return $links;
+}
+
+add_action( 'after_plugin_row_meta', function( $file, $data ) {
+	echo 'coucou';
+}, 20, 2);
+
+add_action( 'after_plugin_row_woocommerce-mkl-pc-for-variable-products/woocommerce-mkl-pc-for-variable-products.php', 'mkl_pc_addon_plugin_row_notice' );
+function mkl_pc_addon_plugin_row_notice() {
+	// // Only show on the plugins admin screen
+	// if ( ! is_admin() || ! function_exists( 'get_current_screen' ) ) {
+	// 	return;
+	// }
+
+	// $screen = get_current_screen();
+	// if ( ! $screen || $screen->id !== 'plugins' ) {
+	// 	return;
+	// }
+
+	echo '<tr class="plugin-update-tr" style="transform: translateY(-1px);"><td colspan="4" class="plugin-update colspanchange">
+		<div class="update-message notice-warning notice-alt" style="margin: 8px; padding: 8px; border-radius: 6px;">
+			<p><strong>Product Configurator for WooCommerce addon - Variable Products</strong> has been replaced by functionality in the main plugin and can be safely deleted.</p>
+		</div></td></tr>';
+}
+
+/**
+ * Maybe Deactivate variable add-on
+ *
+ * @return void
+ */
+function mkl_pc_maybe_deactivate_variable_addon() {
+
+
+	if ( ! defined( 'MKL_PC_VARIABLE_PRODUCTS_PATH' ) ) return;
+	$addon_plugin_file = 'woocommerce-mkl-pc-for-variable-products/woocommerce-mkl-pc-for-variable-products.php';
+
+	// Check if it's active
+	if ( is_plugin_active( $addon_plugin_file ) ) {
+		deactivate_plugins( $addon_plugin_file );
+
+		// Optional: show admin notice
+		add_action( 'admin_notices', function() use ( $addon_plugin_file ) {
+			echo '<div class="notice notice-warning"><p>The Variable Product add-on has been deactivated because it is now included in the main plugin.</p></div>';
+		} );
+	}
+}
