@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,configure
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.4.4
+Stable tag: 1.5.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -21,22 +21,23 @@ Instead, export your layers from Photoshop, a 3D render, or any other source, an
 
 Easily add a product configurator to WordPress, with the plugin Product Configurator for Woo!
 
-<a href="http://demos.mklacroix.com/">Check out the demos here</a>
+<a href="http://demos.mklacroix.com/">Check out the demos here</a> | <a href="http://demos.mklacroix.com/wp-signup.php">Setup a test site with admin access</a>
 
 You can report bugs or suggestions on the <a href="https://github.com/marcusig/woocommerce-product-customizer/issues">github repository</a> or the <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">support forum</a>.
 
 **Features**
 
-* Layers: The configurator viewer uses transparent images as layers to create the final product image
-* Multiple views: Display the different parts of your products using the multiple views feature
-* Multiple steps: Selling complex products? Split your configurator in different steps to make the process easier to understand for your customers.
-* Price per option: Charge an additional price for each option that requires it (requires an add-on).
-* Form fields: Let your user input data such as text or numbers, as well as send files with their configuration (requires an add-on).
-* Calculate complex prices with custom formulas (requires Extra-price and Form fields add-ons)
-* Conditional logic: Build complex products, hide or show elements dynamically depending on previous selection or other parameters (requires an add-on).
-* Stock management: Manage stock of your configurator items, directly in the configurator, or by linking other products in the shop (requires an add-on).
-* Linked products: Link other products in your shop to choices in the configurator. They can be added to the cart to build bundles or complex composite products. Useful for example when linking to an external ERP software (requires an add-on).
-* Developer friendly: The configurator and the add-ons all have plenty hooks to extend or modify or add features. While the dev documentation is currently limited, the code source is commented, and you are welcome to open a support request to get guidance would you require.
+* **Layers**: The configurator viewer uses transparent images as layers to create the final product image
+* **Multiple views**: Display the different parts of your products using the multiple views feature
+* **Multiple steps**: Selling complex products? Split your configurator in different steps to make the process easier to understand for your customers.
+* **Price per option**: Charge an additional price for each option that requires it (requires an add-on).
+* **Form fields**: Let your user input data such as text or numbers, as well as send files with their configuration (requires an add-on).
+* **Calculate complex prices with custom formulas (requires Extra-price and Form fields add-ons)
+* **Conditional logic**: Build complex products, hide or show elements dynamically depending on previous selection or other parameters (requires an add-on).
+* **Stock management**: Manage stock of your configurator items, directly in the configurator, or by linking other products in the shop (requires an add-on).
+* **Linked products**: Link other products in your shop to choices in the configurator. They can be added to the cart to build bundles or complex composite products. Useful for example when linking to an external ERP software (requires an add-on).
+* **Custom text with live preview**: Customers can type their text and choose from your selection of fonts and colors.
+* **Developer friendly**: The configurator and the add-ons all have plenty hooks to extend or modify or add features. While the dev documentation is currently limited, the code source is commented, and you are welcome to open a support request to get guidance would you require.
 
 **Available shortcodes**
 
@@ -45,7 +46,7 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 
 **Themes**
 
-* Choose between different themes, or create your own (developer friendly)
+* All available configurator themes are available in the plugin. It is also possible to create your own (developer friendly)
 * Change selected colors using the theme Customizer (Appearance > Customize)
 
 **Premium addons**
@@ -53,14 +54,13 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 This plugin comes without limitations. But if you need more functionalities, look at the available addons: 
 
 * <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
-* <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/save-your-design/">Save your design</a> - Get your customers engaged by enabling them to save the design they’ve made.
-* <a target="_blank" href="https://wc-product-configurator.com/product/variable-products/">Variable products</a> - Use the product configurator with variable products.
 * <a target="_blank" href="https://wc-product-configurator.com/product/multiple-choice/">Multiple choices</a> - Enables multiple choices per layer Ideal for a product’s options, or when having several individual options.
 * <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Linked products and stock managenent</a> - Link choices in the configurator to products in the shop: build complex product bundles, composite products. Use prices from those products or override them. Automatically add the linked products to the cart to allow integration with ERP softwares and other API based services.
 * <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Linked products and stock managenent</a> - Manage inventory of choices in your configurator, either directly in the configurator or by linking to other products in the shop.
-* <a target="_blank" href="https://wc-product-configurator.com/product/conditional-logic/">Conditional logic</a> - Manage the stocks on a choice basis, or link a choice to a product in the shop. 
+* <a target="_blank" href="https://wc-product-configurator.com/product/conditional-logic/">Conditional logic</a> - conditionaly display, hide or select items depending on other selections
 * <a target="_blank" href="https://wc-product-configurator.com/product/form-fields/">Form fields</a> - Create forms to collect data associated to your configurable products. Perform complex price calculations in combination with the Extra price add-on.
+* <a target="_blank" href="https://wc-product-configurator.com/product/text-overlay/">Text overlay</a> - customers can add their own custom text and instantly see how it looks on the product. Let them choose from your selection of fonts and colors to match their style. Perfect for engraving, embroidery, monogramming, or any personalized touch.
 * For custom needs, contact me <a href="https://wc-product-configurator.com/contact/">here</a>
 
 == Installation ==
@@ -111,25 +111,30 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Screenshots ==
 
-1. WooCommerce product settings
-2. Editing a configuration - home screen
-3. Editing a configuration - Layers screen
-4. Editing a configuration - Contents screen 
-5. Editing a configuration - Contents screen editing
-6. Frontend default: replaces the Add to cart button by a "Configure" button
-7. Frontend: configuring a product - Default theme
-8. Frontend: configuring a product
-9. Frontend: configuration in the cart
-10. Backend: configuration in the order
-11. General plugin settings
-12. Configurator theme - Clean
-13. Configurator theme - Dark mode
-14. Configurator theme - Float
-15. Configurator theme - H
-16. Configurator theme - La Pomme
-17. Configurator theme - WSB
+1. Configurator theme - Le Bolide
+2. Configurator theme - Float
+3. Configurator theme - Dark mode
+4. Configurator theme - La Pomme
+5. Configurator theme - WSB
+6. Configurator theme - Float
+7. Frontend default: replaces the Add to cart button by a "Configure" button
+8. Configurator theme - Default
+9. Configurator theme - Default opened
+10. Configurator theme - Clean
+11. Configurator theme - H
+12. Frontend: configuration in the cart
+13. Backend: configuration in the order
+14. General plugin settings
+15. WooCommerce product settings
+16. Editing a configuration - home screen
+17. Editing a configuration - Layers screen
+18. Editing a configuration - Contents screen 
+19. Editing a configuration - Contents screen editing
+
 
 == Changelog ==
+
+= 1.5.0 - 10/Jul/2025 = 
 
 * FEATURE: Added compatibility with Variable products, previously available as an add-on.
 * SECURITY: Prevent possible Cross Site Request Forgery, which would allow purging configuration cache if executed - credit to Nguyen Xuan Chien for the discovery
