@@ -131,6 +131,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* DEV: Refactored copy / paste functionality to work with paste event instead of reading the clipboard data directly
 * TWEAK: Prevent error when a parent group was deleted without removing children first
 
 = 1.4.4 - 13/Jun/2025 = 
