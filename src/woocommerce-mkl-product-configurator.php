@@ -110,10 +110,6 @@ function mkl_pc_addon_row_meta_note( $links, $plugin_file ) {
 	return $links;
 }
 
-add_action( 'after_plugin_row_meta', function( $file, $data ) {
-	echo 'coucou';
-}, 20, 2);
-
 add_action( 'after_plugin_row_woocommerce-mkl-pc-for-variable-products/woocommerce-mkl-pc-for-variable-products.php', 'mkl_pc_addon_plugin_row_notice' );
 function mkl_pc_addon_plugin_row_notice() {
 	// // Only show on the plugins admin screen
