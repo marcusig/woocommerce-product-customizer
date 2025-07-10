@@ -131,6 +131,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FEATURE: Added compatibility with Variable products, previously available as an add-on.
 * SECURITY: Prevent possible Cross Site Request Forgery, which would allow purging configuration cache if executed - credit to Nguyen Xuan Chien for the discovery
 * TWEAK: Improved accessibility on the Frontend, for keyboard navigation and voice over.
 * DEV: Refactored copy / paste functionality to work with paste event instead of reading the clipboard data directly
