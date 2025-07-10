@@ -6,8 +6,11 @@ This is the development repository for https://wordpress.org/plugins/product-con
 # Woocommerce Product configurator 
 - Contributors: mklacroix, marcusig
 - Tags: woocommerce, product, addon, custom product, configurator, live
+- ⭐⭐⭐⭐⭐ 4.7 stars on [WordPress.org]([url](https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/?filter=5))
 
 **Product configurator for WooCommerce - Allow customers to Configure their products, with live preview**
+
+<img width="1383" height="851" alt="screenshot-1" src="https://github.com/user-attachments/assets/dacf2c92-cbdf-4b35-aed4-bc893eac43be" />
 
 ## Description
 
