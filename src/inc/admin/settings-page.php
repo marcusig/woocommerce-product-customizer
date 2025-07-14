@@ -1152,6 +1152,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				</div>
 				<?php if ( ! $is_installed ) : ?>
 					<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now' ) ?> <span class="dashicons dashicons-external"></span></a>
+				<?php elseif(isset($addon->doc_url) && $addon->doc_url):  ?>
+				<a href="<?php echo esc_url( $addon->doc_url ) ?>" class="button button-primary button-large"><?php _e( 'Documentation' ) ?> <span class="dashicons dashicons-external"></span></a>
 				<?php endif; ?>
 			</div>
 		<?php
