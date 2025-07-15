@@ -138,6 +138,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 * FEATURE: Added compatibility with Variable products, previously available as an add-on.
 * SECURITY: Prevent possible Cross Site Request Forgery, which would allow purging configuration cache if executed - credit to Nguyen Xuan Chien for the discovery
+* TWEAK: Set default options when first installing the plugin
 * TWEAK: Improved accessibility on the Frontend, for keyboard navigation and voice over.
 * DEV: Refactored copy / paste functionality to work with paste event instead of reading the clipboard data directly
 * DEV: include Button object in added_to_cart event
