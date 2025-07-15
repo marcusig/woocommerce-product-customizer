@@ -19,8 +19,12 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 				'save_images' => 'save_to_disk',
 				'show_choice_description' => false,
 				'show_layer_description' => false,
+				'show_price_in_configurator' => 'on',
+				'show_active_choice_in_layer' => 'on',
+				'show_angle_name' => 'on',
 				'preview_image_size' => 'full',
 				'thumbnail_size' => 'thumbnail',
+				'mkl_pc__theme' => 'float',
 			) );
 		}
 

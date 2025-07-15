@@ -27,7 +27,11 @@ class Update {
 
 		// First install
 		if ( ! $saved_version ) {
-			// $options = get_option( 'mkl_pc__settings' );
+			$options = get_option( 'mkl_pc__settings' );
+			// Set default settings
+			if ( ! $options ) {
+				update_option( 'mkl_pc__settings', mkl_pc( 'settings' )->get() );
+			}
 			update_option( 'mkl_pc_version', MKL_PC_VERSION );
 			return;
 		}
