@@ -6,7 +6,7 @@
 * Description: Allow customers to configure and customize their products using a live preview powered by a system of layers
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
-* Version: 1.4.4
+* Version: 1.5.0
 * WC requires at least: 8
 * WC tested up to: 9
 *

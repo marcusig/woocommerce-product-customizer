@@ -134,7 +134,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.5.0 - 10/Jul/2025 = 
+= 1.5.0 - 15/Jul/2025 = 
 
 * FEATURE: Added compatibility with Variable products, previously available as an add-on.
 * SECURITY: Prevent possible Cross Site Request Forgery, which would allow purging configuration cache if executed - credit to Nguyen Xuan Chien for the discovery
