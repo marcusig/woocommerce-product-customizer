@@ -17,6 +17,7 @@ PC.actions = PC.actions || {};
 			'click .button.select': 'select',
 			'click .button.cancel': 'close',
 			'select2:select .wc-product-search': 'on_select_product',
+			// 'select2:opening .wc-product-search': 'on_select_open',
 		},
 		initialize: function( t, c ) {
 			this.originals = {
@@ -27,6 +28,7 @@ PC.actions = PC.actions || {};
 			setTimeout(
 				function() {
 					$( document.body ).trigger( 'wc-enhanced-select-init' );
+					
 				},
 				50
 			);
@@ -39,7 +41,8 @@ PC.actions = PC.actions || {};
 			this.originals.target.trigger( 'product_selected', { text: this.selected_text, id: this.selected } );
 			this.close();
 		},
-		close: function( e ) {
+		close: function ( e ) {
+			this.$( 'select' ).select2( 'destroy' );
 			this.remove();
 		},
 		on_select_product: function( e ) {
@@ -50,5 +53,8 @@ PC.actions = PC.actions || {};
 				this.$el.find( '.button.select' ).prop( 'disabled', false );
 			}
 		}
+		// on_select_open( e, f ) {
+		// 	$( e.currentTarget ).data( 'select2' ).dropdown.$dropdownParent = PC.app.get_product().editor.$el;
+		// }
 	});
 })(jQuery);

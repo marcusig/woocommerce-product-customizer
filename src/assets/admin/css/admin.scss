@@ -576,7 +576,8 @@ html .pc-modal-container {
 	}
 }
 
-.pc-modal-opened .mkl_pc span.select2-container {
+.pc-modal-opened .pc-modal-container span.select2-container,
+.pc-modal-opened .pc-modal-container ~ span.select2-container {
 	z-index: 1500000;
 }
 
