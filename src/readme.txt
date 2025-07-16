@@ -27,17 +27,22 @@ You can report bugs or suggestions on the <a href="https://github.com/marcusig/w
 
 **Features**
 
-* **Layers**: The configurator viewer uses transparent images as layers to create the final product image
-* **Multiple views**: Display the different parts of your products using the multiple views feature
-* **Multiple steps**: Selling complex products? Split your configurator in different steps to make the process easier to understand for your customers.
-* **Price per option**: Charge an additional price for each option that requires it (requires an add-on).
-* **Form fields**: Let your user input data such as text or numbers, as well as send files with their configuration (requires an add-on).
-* **Calculate complex prices with custom formulas (requires Extra-price and Form fields add-ons)
-* **Conditional logic**: Build complex products, hide or show elements dynamically depending on previous selection or other parameters (requires an add-on).
-* **Stock management**: Manage stock of your configurator items, directly in the configurator, or by linking other products in the shop (requires an add-on).
-* **Linked products**: Link other products in your shop to choices in the configurator. They can be added to the cart to build bundles or complex composite products. Useful for example when linking to an external ERP software (requires an add-on).
-* **Custom text with live preview**: Customers can type their text and choose from your selection of fonts and colors.
-* **Developer friendly**: The configurator and the add-ons all have plenty hooks to extend or modify or add features. While the dev documentation is currently limited, the code source is commented, and you are welcome to open a support request to get guidance would you require.
+* **Layered Image Rendering**: Build stunning product previews using transparent image layers—no need to generate images for every variation.
+* **Multiple views**: Show different angles or parts of your product (e.g., front, back, side) with the built-in multi-view system.
+* **Multiple steps configurations**: Simplify complex products by breaking the configuration process into clear, user-friendly steps.
+* **Price per option** (via add-on): Charge extra for specific choices—ideal for premium materials, engraving, or special options.
+* **Form fields** *(via add-on)*: Let customers enter text, numbers, or upload files as part of their configuration.
+* **Custom Pricing Formulas** *(via add-on)*: Use dynamic calculations to determine prices based on formulas and user input.
+* **Conditional logic** *(via add-on)*: Show or hide choices based on previous selections or custom rules—perfect for compex products or guided selling.
+* **Inventory & Stock Management** *(via add-on)*: Track stock for configurator options directly—or link choices to actual WooCommerce products.
+* **Linked products** *(via add-on)*: Connect configurator choices to other products in your store. Use this to:
+  * Add components to the cart as real products
+  * Track SKUs and inventory
+  * Build bundle-like or composite products
+  * Sync with ERP or warehouse software
+  * Use the prices of other products in the configurator (requires the Extra price add-on)
+* **Live Text Preview** *(via add-on)*: Let customers add personalized text with live preview, font selection, and color options.
+* **Developer-Friendly Architecture**: Designed for developers with extensibility in mind: Plenty of hooks and filters - Commented codebase - Open support for implementation questions
 
 **Available shortcodes**
 
