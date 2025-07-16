@@ -7,8 +7,9 @@
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
 * Version: 1.5.0
+* Requires PHP: 7.4
 * WC requires at least: 8
-* WC tested up to: 9
+* WC tested up to: 10
 *
 * Text Domain: product-configurator-for-woocommerce
 * Domain Path: /languages/
