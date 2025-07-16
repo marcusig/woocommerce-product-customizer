@@ -1,6 +1,6 @@
 === Product Configurator for WooCommerce ===
 Contributors: mklacroix, marcusig
-Tags: woocommerce,customize,product addons,configure
+Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
@@ -9,64 +9,71 @@ Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Allow your customers to create configurable products with a live preview of the result. Works using a system of layers.
+Allow your customers to create configurable products with a live preview of the result. Works using a layer-based system.
 
 == Description ==
 
-The Product Configurator for WooCommerce allows you to use layers to produce instant visuals for your customers.
+**Product Configurator for WooCommerce** allows you to use transparent image layers to build real-time visual previews of custom products.
 
-Give your customers a great experience, and make your life easy: no need to create many product variations with their images. 
+Give your customers an interactive experience and eliminate the need for hundreds of product variations and images. Export image layers from Photoshop, 3D renders, or other sources, and let the user assemble their product dynamically—no need for technical skills or bulky setups.
 
-Instead, export your layers from Photoshop, a 3D render, or any other source, and allow the user to configure their product using those.
+Whether you're customizing jewelry, watches, clothing, furniture, or electronics, this plugin lets you offer flexible configuration options while keeping your store lightweight and manageable.
 
 Easily add a product configurator to WordPress, with the plugin Product Configurator for Woo!
 
-<a href="http://demos.mklacroix.com/">Check out the demos here</a> | <a href="http://demos.mklacroix.com/wp-signup.php">Setup a test site with admin access</a>
+🎮 [Check out the live demos](http://demos.mklacroix.com/)  
+🛠️ [Set up a sandbox with admin access](http://demos.mklacroix.com/wp-signup.php)
 
-You can report bugs or suggestions on the <a href="https://github.com/marcusig/woocommerce-product-customizer/issues">github repository</a> or the <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">support forum</a>.
+Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.com/marcusig/woocommerce-product-customizer/issues) or use the [support forum](https://wordpress.org/support/plugin/product-configurator-for-woocommerce/).
 
-**Features**
+=== Features ===
 
-* **Layered Image Rendering**: Build stunning product previews using transparent image layers—no need to generate images for every variation.
-* **Multiple views**: Show different angles or parts of your product (e.g., front, back, side) with the built-in multi-view system.
-* **Multiple steps configurations**: Simplify complex products by breaking the configuration process into clear, user-friendly steps.
-* **Price per option** (via add-on): Charge extra for specific choices—ideal for premium materials, engraving, or special options.
-* **Form fields** *(via add-on)*: Let customers enter text, numbers, or upload files as part of their configuration.
-* **Custom Pricing Formulas** *(via add-on)*: Use dynamic calculations to determine prices based on formulas and user input.
-* **Conditional logic** *(via add-on)*: Show or hide choices based on previous selections or custom rules—perfect for compex products or guided selling.
-* **Inventory & Stock Management** *(via add-on)*: Track stock for configurator options directly—or link choices to actual WooCommerce products.
-* **Linked products** *(via add-on)*: Connect configurator choices to other products in your store. Use this to:
-  * Add components to the cart as real products
+* **🖼️ Layered Image Rendering** – Compose product previews using transparent PNG layers—no need to create images for every combination.
+* **🔄 Multiple Views** – Show multiple angles or perspectives (e.g., front, side, back) of the product.
+* **📋 Multi-Step Configurator** – Split complex product builds into multiple steps to streamline user experience.
+* **💰 Price per Option** *(via add-on)* – Assign additional pricing to individual options (great for premium upgrades).
+* **📝 Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
+* **🧮 Custom Pricing Formulas** *(via add-on)* – Calculate advanced prices dynamically based on user input and selected options.
+* **🔀 Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections—perfect for complex logic flows.
+* **📦 Inventory & Stock Management** *(via add-on)* – Track inventory per option inside the configurator, or by linking to actual WooCommerce products.
+* **🔗 Linked Products** *(via add-on)* – Link any configurator choice to a real product in your WooCommerce shop:
+  * Add real components to the cart
   * Track SKUs and inventory
-  * Build bundle-like or composite products
-  * Sync with ERP or warehouse software
-  * Use the prices of other products in the configurator (requires the Extra price add-on)
-* **Live Text Preview** *(via add-on)*: Let customers add personalized text with live preview, font selection, and color options.
-* **Developer-Friendly Architecture**: Designed for developers with extensibility in mind: Plenty of hooks and filters - Commented codebase - Open support for implementation questions
+  * Support ERP/warehouse integration
+  * Build composite/bundled products
+  * Use or override linked product pricing
+* **🔤 Live Text Overlay** *(via add-on)* – Let customers preview custom text with your fonts and colors—ideal for engraving, embroidery, and personalization.
+* **🧑‍💻 Developer Friendly** – Includes hooks, filters, and a clean, commented codebase. Limited docs for now, but open support is available.
 
-**Available shortcodes**
+=== Shortcodes ===
 
-* Configure button: `[mkl_configurator_button product_id=1 classes="button primary"]` or [mkl_configurator_button product_id=1 classes="button primary"]Button name[/mkl_configurator_button]
-* Inline configurator: `[mkl_configurator product_id=1 classes="container-class something-else"]`
+* **Configurator Button:**  
+  `[mkl_configurator_button product_id=1 classes="button primary"]`  
+  Optional content:  
+  `[mkl_configurator_button product_id=1]Button text[/mkl_configurator_button]`
 
-**Themes**
+* **Inline Configurator:**  
+  `[mkl_configurator product_id=1 classes="your-css-class"]`
 
-* All available configurator themes are available in the plugin. It is also possible to create your own (developer friendly)
-* Change selected colors using the theme Customizer (Appearance > Customize)
+=== Themes ===
 
-**Premium addons**
+* Includes several built-in high quality themes (see Screenshots)
+* Easily create your own theme for full control  
+* Supports WordPress Customizer (Appearance > Customize) to change visual styles
 
-This plugin comes without limitations. But if you need more functionalities, look at the available addons: 
+=== Premium Add-ons ===
 
-* <a target="_blank" href="https://wc-product-configurator.com/product/extra-price/">Extra Price</a> - Add an extra cost to any of the choices you offer in your configurable products.
-* <a target="_blank" href="https://wc-product-configurator.com/product/save-your-design/">Save your design</a> - Get your customers engaged by enabling them to save the design they’ve made.
-* <a target="_blank" href="https://wc-product-configurator.com/product/multiple-choice/">Multiple choices</a> - Enables multiple choices per layer Ideal for a product’s options, or when having several individual options.
-* <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Linked products and stock managenent</a> - Link choices in the configurator to products in the shop: build complex product bundles, composite products. Use prices from those products or override them. Automatically add the linked products to the cart to allow integration with ERP softwares and other API based services.
-* <a target="_blank" href="https://wc-product-configurator.com/product/stock-management-and-linked-product/">Linked products and stock managenent</a> - Manage inventory of choices in your configurator, either directly in the configurator or by linking to other products in the shop.
-* <a target="_blank" href="https://wc-product-configurator.com/product/conditional-logic/">Conditional logic</a> - conditionaly display, hide or select items depending on other selections
-* <a target="_blank" href="https://wc-product-configurator.com/product/form-fields/">Form fields</a> - Create forms to collect data associated to your configurable products. Perform complex price calculations in combination with the Extra price add-on.
-* <a target="_blank" href="https://wc-product-configurator.com/product/text-overlay/">Text overlay</a> - customers can add their own custom text and instantly see how it looks on the product. Let them choose from your selection of fonts and colors to match their style. Perfect for engraving, embroidery, monogramming, or any personalized touch.
-* For custom needs, contact me <a href="https://wc-product-configurator.com/contact/">here</a>
+The core plugin is fully functional. Extend it with these premium modules:
+
+* [**Extra Price**](https://wc-product-configurator.com/product/extra-price/) – Add custom pricing to options  
+* [**Save Your Design**](https://wc-product-configurator.com/product/save-your-design/) – Let users save and return to their designs  
+* [**Multiple Choice**](https://wc-product-configurator.com/product/multiple-choice/) – Enable multi-select per layer  
+* [**Linked Products & Stock Management**](https://wc-product-configurator.com/product/stock-management-and-linked-product/) – Link options to WooCommerce products, track inventory, sync with ERP  
+* [**Conditional Logic**](https://wc-product-configurator.com/product/conditional-logic/) – Dynamically show, hide, or auto-select items based on conditions  
+* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, and perform price calculations  
+* [**Text Overlay**](https://wc-product-configurator.com/product/text-overlay/) – Let users preview personalized text in real time
+
+💬 For custom development or tailored integrations, [contact me here](https://wc-product-configurator.com/contact/).
 
 == Installation ==
 
