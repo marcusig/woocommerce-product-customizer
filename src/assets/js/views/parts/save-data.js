@@ -184,7 +184,7 @@ PC.fe.save_data = {
 						wp.hooks.applyFilters(
 							'PC.fe.save_data.parse_choices.added_choice',
 							{
-								is_choice: false,
+								is_choice: true,
 								layer_id: model.id, 
 								choice_id: choice.id, 
 								angle_id: angle_id,
