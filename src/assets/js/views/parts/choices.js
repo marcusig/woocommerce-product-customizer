@@ -36,9 +36,9 @@ PC.fe.views.choices = Backbone.View.extend({
 	},
 	add_one: function( model ) {
 		if ( model.get( 'is_group' ) )  {
-			var new_choice = new PC.fe.views.choiceGroup( { model: model, multiple: false } ); 
+			var new_choice = new PC.fe.views.choiceGroup( { model: model, multiple: false, parent: this } ); 
 		} else {
-			var new_choice = new PC.fe.views.choice( { model: model, multiple: false } ); 
+			var new_choice = new PC.fe.views.choice( { model: model, multiple: false, parent: this } ); 
 		}
 
 		if ( model.get( 'parent' ) && this.$( 'ul[data-item-id=' + model.get( 'parent' ) + ']' ).length ) {
