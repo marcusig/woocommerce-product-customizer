@@ -525,10 +525,9 @@ PC.views = PC.views || {};
 				choice: this.model,
 			};
 			
-			if( !this.model.get('images') )
-				this.model.set('images', new PC.choice_pictures() );
+			if( !this.model.get('images') ) this.model.set('images', new PC.choice_pictures() );
 				
-			var images = this.model.get('images');
+			var images = this.model.get( 'images' );
 			if( !images.get(angle.id) ){
 				images.add({
 					angleId: angle.id,
