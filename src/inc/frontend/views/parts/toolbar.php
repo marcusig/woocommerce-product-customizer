@@ -26,7 +26,7 @@
 		$classes = apply_filters( 'mkl_pc/previous_step/button_classes', '' );
 		$label = mkl_pc( 'settings' )->get_label( 'previous_step_label', _x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' ) );
 	?>
-	<button type="button" class="step-previous <?php echo esc_attr( $classes ); ?>" title="<?php esc_attr( $label ); ?>">
+	<button type="button" aria-label="<?php echo esc_attr( $label ); ?>" class="step-previous <?php echo esc_attr( $classes ); ?>" title="<?php esc_attr( $label ); ?>">
 		<?php do_action( 'mkl_pc/previous_step/before' ); ?>
 		<span><# if ( data.label ) { #>{{{data.label}}}<# } else { #><?php echo $label; ?><# } #></span>
 		<?php do_action( 'mkl_pc/previous_step/after' ); ?>
