@@ -235,7 +235,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				'angle_switch' => array(
 					'label' => __( 'Automatic angle switch', 'product-configurator-for-woocommerce' ),
 					'type' => 'select',
-					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type || "group" == data.type )',
+					'condition' => '!data.not_a_choice && ( "simple" == data.type || "multiple" == data.type || "group" == data.type || "text-overlay" == data.type )',
 					'choices' => [
 						[
 							'label' => 'No',
@@ -328,7 +328,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 						'type' => 'text',
 						'condition' => 'data.maybe_step',
 						'priority' => 15,
-						'section' => 'general',
+						'section' => 'advanced',
 					);
 				}
 			}
