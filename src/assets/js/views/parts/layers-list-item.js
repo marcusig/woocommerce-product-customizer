@@ -20,6 +20,9 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 	render: function() {
 
+		this.$el.attr( 'data-layer', this.model.id );
+		this.$el.data( 'view', this );
+
 		if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
 			this.$el.addClass( 'not-a-choice custom' );
 			this.$el.append( $( this.model.get( 'custom_html' ) ) );
