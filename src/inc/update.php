@@ -30,7 +30,7 @@ class Update {
 			$options = get_option( 'mkl_pc__settings' );
 			// Set default settings
 			if ( ! $options ) {
-				update_option( 'mkl_pc__settings', mkl_pc( 'settings' )->get() );
+				update_option( 'mkl_pc__settings', mkl_pc( 'settings' )->get_initial_settings() );
 			}
 			update_option( 'mkl_pc_version', MKL_PC_VERSION );
 			return;
