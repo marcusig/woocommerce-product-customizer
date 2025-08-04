@@ -135,10 +135,6 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			this.$el.attr( 'data-choice_id', this.model.id );
 		}
 
-		this.$el.attr( 'data-layer', this.layer.get( 'admin_label' ) || this.layer.get( 'name' ) );
-		this.$el.attr( 'data-choice', this.model.get( 'admin_label' ) || this.model.get( 'name' ) );
-		this.$el.attr( 'data-layer_id', this.layer.id );
-		this.$el.attr( 'data-choice_id', this.model.id );
 		return this.$el; 
 	},
 	// get_image_url: function( choice_id, image ) {
