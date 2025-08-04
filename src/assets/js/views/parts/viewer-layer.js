@@ -135,6 +135,7 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			this.$el.attr( 'data-choice_id', this.model.id );
 		}
 
+		wp.hooks.doAction( 'PC.fe.viewer.layer.render.after', this );
 		return this.$el; 
 	},
 	// get_image_url: function( choice_id, image ) {
