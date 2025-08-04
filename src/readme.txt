@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.5.1 - 31/Jul/2025 = 
+
+* TWEAK: Parse conditions on import (compatibility with latest Conditional logic add-on)
+* Fix: Data issue when only one choice exists in a layer
+* FIX: Default settings overriding selection when saving the configurator settings
 
 = 1.5.0 - 15/Jul/2025 = 
 
