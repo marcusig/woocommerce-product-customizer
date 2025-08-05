@@ -164,8 +164,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
 						$choice_images = $layer->get_choice( 'images' );
 						$choice_image = '';
-						if ( apply_filters( 'mkl_pc/wc_cart_get_item_data/display_choice_image', true ) && ! empty( $choice_images ) && $choice_images[0]["thumbnail"]['id'] != '' ) {
-							$choice_image = '<span class="choice-thumb"><img src="' . wp_get_attachment_url( $choice_images[0]["thumbnail"]['id'] ) . '" alt=""></span> ';
+						if ( apply_filters( 'mkl_pc/wc_cart_get_item_data/display_choice_image', true ) 
+							&& ! empty( $choice_images ) 
+							&& isset($choice_images[0]["thumbnail"]['id']) 
+							&& $choice_images[0]["thumbnail"]['id']
+						) {
+							$url = wp_get_attachment_url( $choice_images[0]["thumbnail"]['id'] );
+							if ( $url ) $choice_image = '<span class="choice-thumb"><img src="' . esc_url( $url ) . '" alt=""></span> ';
 						}
 						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'], $cart_item[ 'key' ], 'cart' );
 						if ( empty( $item_data[ 'label' ] ) && empty( $item_data['value'] ) ) continue;

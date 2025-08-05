@@ -27,7 +27,6 @@ class Choice {
 
 	public function __wakeup() {
 		do_action( 'mkl_pc/choice/wakeup', $this );
-		do_action( 'mkl_pc/choice/init', $this, $this->layer_data );
 		// $this->set_selected_choice();
 	}
 
@@ -53,8 +52,16 @@ class Choice {
 	}
 
 	public function maybe_set_things_up() {
-		if ( null === $this->layer ) $this->set_layer(); 
-		if ( null === $this->choice ) $this->set_selected_choice();
+		$setup = false;
+		if ( null === $this->layer ) {
+			$this->set_layer(); 
+			$setup = true;
+		}
+		if ( null === $this->choice ) {
+			$this->set_selected_choice();
+			$setup = true;
+		}
+		if ( $setup ) do_action( 'mkl_pc/choice/init', $this, $this->layer_data );
 	}
 
 	public function __construct( $product_id, $variation_id, $layer_id, $choice_id, $angle_id, $layer_data = false ) { 
