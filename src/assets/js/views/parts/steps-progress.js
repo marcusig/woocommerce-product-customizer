@@ -13,8 +13,10 @@ PC.fe.views.stepsProgress = Backbone.View.extend( {
 	render: function() {
 		this.$ol = $( '<ol class="steps-progress" />' );
 		PC.fe.steps.steps.each( this.add_step.bind( this ) );
-		this.$marker = $( '<li class="steps-progress--item steps-progress--active-marker" />' );
-		this.$ol.append( this.$marker );
+		if ( wp.hooks.applyFilters( 'PC.fe.steps.display_marker', true ) ) {
+			this.$marker = $( '<li class="steps-progress--item steps-progress--active-marker" />' );
+			this.$ol.append( this.$marker );
+		}
 		this.$ol.appendTo( this.$el );
 	},
 	add_step: function( step ) {
