@@ -174,7 +174,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			this.$el.addClass( 'active' ); 
 			if ( this.choices ) {
 				this.choices.$el.addClass( 'active' );
-				this.choices.$( 'button:visible' ).first().focus();
+				this.choices.$( 'button:visible' ).first().trigger( 'focus' );
 			}
 			this.$( '> button.layer-item' ).attr( 'aria-pressed', 'true' );
 			wp.hooks.doAction( 'PC.fe.layer.activate', this );
