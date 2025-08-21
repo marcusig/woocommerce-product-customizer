@@ -19,7 +19,10 @@ PC.fe.views.viewer = Backbone.View.extend({
 	},
 
 	render: function( ) { 
+		wp.hooks.doAction( 'PC.fe.viewer.render.before', this );
+
 		this.$el.append( this.template() ); 
+
 		if ( PC.fe.contents ) {
 			if ( PC.fe.angles.length > 1 ) {
 				this.angles_selector = new PC.fe.views.angles({ parent: this }); 
