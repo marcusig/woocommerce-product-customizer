@@ -17,7 +17,7 @@ PC.choice = Backbone.Model.extend({
 		if ( ! attributes.layerId ) this.set( 'layerId', options.layer.id );
 
 		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
-			var images = new PC.choice_pictures( attributes.images );
+			var images = new PC.choice_pictures( attributes.images, { parse: true } );
 			this.set('images', images); 
 		}
 
