@@ -109,5 +109,12 @@ var PC = PC || {};
 
 	PC.choice_pictures = Backbone.Collection.extend({
 		model: PC.choice_picture, 
+		parse: function(models) {
+			return _.filter(models, function(model) {
+				const imageId = model.image?.url;
+				const thumbnailId = model.thumbnail?.url;
+				return imageId || thumbnailId;
+			});
+		}
 	});
 } ( PC._us || window._ ) );
