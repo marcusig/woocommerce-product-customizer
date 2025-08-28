@@ -54,7 +54,7 @@ PC.fe.views.viewer_static_layer = Backbone.View.extend({
 			this.parent.$el.addClass('is-loading-image');
 		}
 		this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
-
+		wp.hooks.doAction( 'PC.fe.viewer.layer.render.after', this );
 		return this.$el; 
 	}		
 });
