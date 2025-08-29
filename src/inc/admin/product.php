@@ -120,7 +120,25 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					do_action( 'mkl_pc_admin_general_tab_before_start_button' );
 					
 					?>
-
+					<div class="show_if_variable show_if_simple show_if_redq_rental">
+						<?php
+						woocommerce_wp_select( 
+							array( 
+								'id' => MKL_PC_PREFIX.'_configurator_type',
+								'options' => [
+									'configurator' => __('2D configurator', 'product-configurator-for-woocommerce'),
+									// 'addons' => __('Product add-ons (no preview, added to the product form)', 'product-configurator-for-woocommerce'),
+									'3d' => __('3D configurator', 'product-configurator-for-woocommerce'),
+								],
+								'class' => 'configurator-type',
+								'label' => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+								'description' => __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
+								'desc_tip' => true
+							) 
+						);
+						?>
+						<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php _e( 'Configurator type changed. Please update the product to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
+					</div>
 					<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
 						<?php echo $this->start_button( $post->ID ) ?>
 					</div>
@@ -299,6 +317,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function save_product_setting( $post_id ) {
 			$_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? 'yes' : 'no';
 			update_post_meta( $post_id, MKL_PC_PREFIX.'_is_configurable', $_is_configurable );
+			if ( isset( $_POST[MKL_PC_PREFIX.'_configurator_type'] ) ) {
+				update_post_meta( $post_id, MKL_PC_PREFIX.'_configurator_type', sanitize_key( $_POST[MKL_PC_PREFIX.'_configurator_type'] ) );
+			}
 		}	
 
 		/**
