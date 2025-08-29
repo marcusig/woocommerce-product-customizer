@@ -9,6 +9,20 @@ var PC = PC || {};
 			$('input.is_configurable').on( 'change', function( event ) {
 				configurable_product.set_configurable( this.checked );
 			} );
+			
+			window.configurator_type = $('select.configurator-type').val();
+			const initial_configurator_type = window.configurator_type;
+			$('select.configurator-type').on( 'change', function( event ) {
+				window.configurator_type = $( this ).val();
+				if ( initial_configurator_type != window.configurator_type ) {
+					$( '.configurator-type-change-warning' ).removeClass( 'hidden' );
+					$( '.start_button_container' ).hide();
+				} else {
+					$( '.configurator-type-change-warning' ).addClass( 'hidden' );
+					$( '.start_button_container' ).show();
+				}
+			} );
+
 			this.views.init();
 			this.layers_editor.init();
 
