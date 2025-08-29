@@ -14,6 +14,30 @@ function mkl_pc_is_configurable( $product_id = NULL ) {
 	return MKL\PC\Utils::is_configurable( $product_id );
 }
 
+/**
+ * Checks if a product is configurable
+ *
+ * @param integer $product_id
+ * @return boolean
+ */
+function mkl_pc_get_configurator_type( $product_id = NULL ) {
+	// MKL_PC_PREFIX.'_configurator_type
+	if ( NULL == $product_id ) {
+
+		// if $product_id wasn't given, find the current one
+		$product_id = get_the_id();
+
+		if ( NULL == $product_id || false == $product_id ) return false;
+	} 
+
+	// if $product_id doesn't match a product, exit
+	if ( ! MKL\PC\Utils::is_product( $product_id )  ) return false;
+
+	$fetched_product = wc_get_product( $product_id );
+	$type = $fetched_product->get_meta( MKL_PC_PREFIX.'_configurator_type' );
+	return $type ?? 'configurator';
+}
+
 
 if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 
