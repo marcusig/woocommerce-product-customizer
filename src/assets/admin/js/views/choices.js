@@ -644,7 +644,7 @@ PC.views = PC.views || {};
 			this.editing = $(e.currentTarget).closest( '.picture' ).data( 'edit' ); 
 			var media_options = {};
 			media_options.el = this.$el;
-			if( this.model.get( this.editing ).id )
+			if( this.model && this.model.get( this.editing ).id )
 				media_options.selection = this.model.get( this.editing ).id;
 
 			PC.media.open( media_options ); 
@@ -654,7 +654,7 @@ PC.views = PC.views || {};
 			if( !this.editing ) return false;
 			// If no model exists yet, create it now and add to collection
 			if ( !this.model ) {
-				this.model = new PC.models.choice_picture({
+				this.model = new PC.choice_picture({
 					angleId: this.options.angle.id,
 				});
 				this.options.choice.get('images').add(this.model);
