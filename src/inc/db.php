@@ -615,6 +615,10 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				'has_thumbnails' => [ 
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'update' => [ 
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_attr',

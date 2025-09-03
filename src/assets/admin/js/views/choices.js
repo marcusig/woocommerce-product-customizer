@@ -670,6 +670,12 @@ PC.views = PC.views || {};
 					width: attachment.get( 'width' ),
 				}
 			});
+
+			if ( 'thumbnail' == this.editing && !this.options.angle.get( 'has_thumbnails' ) ) {
+				this.options.angle.collection.invoke( 'set', { has_thumbnails: false } );
+				this.options.angle.set( 'has_thumbnails', true );
+			}
+			
 			this.render();
 		},	
 		remove_attachment: function( e ) {
@@ -690,6 +696,7 @@ PC.views = PC.views || {};
 			var data = _.defaults({}, this.model ? this.model.attributes : { image: { url: '' }, thumbnail: { url: '' }});
 			data.is_group = this.options.choice.get( 'is_group' );
 			data.angle_name = this.options.angle.get('name');
+			data.angle = this.options.angle.toJSON();
 			this.$el.append( this.template( data ) );
 			return this;
 		},

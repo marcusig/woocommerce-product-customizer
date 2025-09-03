@@ -388,26 +388,28 @@ CONTENT TEMPLATES
 			<# } #>
 		</div>
 		<# } #>
-		<div class="picture thumbnail-picture" data-edit="thumbnail">
-			<# if ( ! data.is_group ) { #><span><?php _e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span><# } #>
-			<# if ( data.thumbnail.url != '' ) { #>
-			<img class="edit-attachment" src="{{data.thumbnail.url}}" alt="">
-			<# } else { #>
-			<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
-			<# } #>
-
-			<a class="edit-attachment" href="#">
-				<span class="screen-reader-text"><?php _e( 'Add / Edit image', 'product-configurator-for-woocommerce' ); ?></span>
+		<# if ( data.angle.has_thumbnails ) { #>
+			<div class="picture thumbnail-picture" data-edit="thumbnail">
+				<# if ( ! data.is_group ) { #><span><?php _e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span><# } #>
 				<# if ( data.thumbnail.url != '' ) { #>
-					<span class="dashicons dashicons-edit"></span>
+				<img class="edit-attachment" src="{{data.thumbnail.url}}" alt="">
 				<# } else { #>
-					<span class="dashicons dashicons-plus"></span>
+				<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
 				<# } #>
-			</a>
-			<# if ( data.thumbnail.url != '' ) { #>
-				<a class="remove-attachment" href="#"><span class="dashicons dashicons-no"></span><span class="screen-reader-text"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></span></a>
-			<# } #>
-		</div>
+
+				<a class="edit-attachment" href="#">
+					<span class="screen-reader-text"><?php _e( 'Add / Edit image', 'product-configurator-for-woocommerce' ); ?></span>
+					<# if ( data.thumbnail.url != '' ) { #>
+						<span class="dashicons dashicons-edit"></span>
+					<# } else { #>
+						<span class="dashicons dashicons-plus"></span>
+					<# } #>
+				</a>
+				<# if ( data.thumbnail.url != '' ) { #>
+					<a class="remove-attachment" href="#"><span class="dashicons dashicons-no"></span><span class="screen-reader-text"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></span></a>
+				<# } #>
+			</div>
+		<# } #>
 		<div class="clear"></div>
 	</div>
 </script>

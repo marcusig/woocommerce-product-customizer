@@ -159,28 +159,34 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					$edit_link = $this->get_edit_link( $cart_item );
 				}
 
-				foreach ($configurator_data as $layer) {
-					if ( $layer && $layer->is_choice() ) { 
-						if ( $layer->get_layer( 'hide_in_cart' ) || $layer->get_choice( 'hide_in_cart' ) ) continue;
-						$choice_images = $layer->get_choice( 'images' );
+				foreach ($configurator_data as $selected_choice) {
+					if ( $selected_choice && $selected_choice->is_choice() ) { 
+						if ( $selected_choice->get_layer( 'hide_in_cart' ) || $selected_choice->get_choice( 'hide_in_cart' ) ) continue;
 						$choice_image = '';
+						$thumbnail = $selected_choice->get_choice_thumbnail();
 						if ( apply_filters( 'mkl_pc/wc_cart_get_item_data/display_choice_image', true ) 
-							&& ! empty( $choice_images ) 
-							&& isset($choice_images[0]["thumbnail"]['id']) 
-							&& $choice_images[0]["thumbnail"]['id']
+							&& isset($thumbnail['id'])
+							&& $thumbnail['id']
 						) {
-							$url = wp_get_attachment_url( $choice_images[0]["thumbnail"]['id'] );
+							$url = wp_get_attachment_url( $thumbnail['id'] );
 							if ( $url ) $choice_image = '<span class="choice-thumb"><img src="' . esc_url( $url ) . '" alt=""></span> ';
 						}
-						$item_data = Product::set_layer_item_meta( $layer, $cart_item['data'], $cart_item[ 'key' ], 'cart' );
+						/**
+						 * Filter 'mkl_pc/wc_cart_get_item_data/choice_thumbnail'
+						 * @param string         $choice_image - the value to filter
+						 * @param \MKL\PC\Choice $selected_choice - the current choice
+						 * @return string - The choice thumbnail. Empty when no image. <span class="choice-thumb"><img src="image.jpg" alt=""></span> when an image is set
+						 */
+						$choice_image = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice_thumbnail', $choice_image, $selected_choice );
+						$item_data = Product::set_layer_item_meta( $selected_choice, $cart_item['data'], $cart_item[ 'key' ], 'cart' );
 						if ( empty( $item_data[ 'label' ] ) && empty( $item_data['value'] ) ) continue;
-						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $layer->get_layer( 'name' ), $layer );
-						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => '<span class="mkl_pc-choice-value">' . $choice_image . $item_data['value'] . '</span>', 'layer' => $layer ], $layer, $cart_item );
+						$layer_name = $item_data['label'];//apply_filters( 'mkl_pc_cart_get_item_data_layer_name', $selected_choice->get_layer( 'name' ), $selected_choice );
+						$choices[] = apply_filters( 'mkl_pc/wc_cart_get_item_data/choice', [ 'name' => $layer_name, 'value' => '<span class="mkl_pc-choice-value">' . $choice_image . $item_data['value'] . '</span>', 'layer' => $selected_choice ], $selected_choice, $cart_item );
 
-						if ( $compound_sku && ! is_null( $layer->get_choice( 'sku' ) ) ) {
-							$sku[] = $layer->get_choice( 'sku' );
+						if ( $compound_sku && ! is_null( $selected_choice->get_choice( 'sku' ) ) ) {
+							$sku[] = $selected_choice->get_choice( 'sku' );
 						}
-						//apply_filters( 'mkl_pc_cart_get_item_data_choice_name', $choice_image . ' ' . $layer->get_choice( 'name' ), $layer ); 
+						//apply_filters( 'mkl_pc_cart_get_item_data_choice_name', $choice_image . ' ' . $selected_choice->get_choice( 'name' ), $selected_choice ); 
 					}
 				}
 
@@ -386,7 +392,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$classes = $choice[ 'className' ];
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . esc_attr( $classes ) . '"' : '' ) . '>', $choice['choice'] );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice['choice'] );
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . stripslashes( $choice['key'] ) .'</strong>' . ( $choice['key'] ? '<span class="semicol">:</span> ' : ' ' ) . stripslashes( $choice['value'] ) . $after, $choice['key'], $choice['value'], $before, $after );
+				$key = $choice['key'] ? stripslashes( $choice['key'] ) : '';
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $key .'</strong>' . ( $key ? '<span class="semicol">:</span> ' : ' ' ) . stripslashes( $choice['value'] ) . $after, $key, $choice['value'], $before, $after );
 			}
 
 			return $output;

@@ -150,7 +150,7 @@ PC.import.views = PC.import.views || {};
 			}
 
 			if ( response.angles && response.angles.length > 0 ) {
-				angles = new PC.angles( response.angles, { product_id: this.id } );
+				angles = new PC.angles( response.angles, { product_id: this.id, parse: true } );
 			} else {
 				angles = new PC.angles( [], { product_id: this.id } );
 			}

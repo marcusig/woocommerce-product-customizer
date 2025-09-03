@@ -43,7 +43,8 @@ PC.choice = Backbone.Model.extend({
 		image = image || 'image'; 
 		what = what || 'url'; 
 		if ( 'thumbnail' == image ) {
-			angle_id = PC.fe.angles.first().id; 
+			angle_id = PC.fe.angles.findWhere( { has_thumbnails: true } );
+			if ( !angle_id ) angle_id = PC.fe.angles.first().id;
 		} else {
 			if ( !angle_id || ! PC.fe.angles.get( angle_id ) ) {
 				var active_angle = PC.fe.angles.findWhere( { active: true } ) || PC.fe.angles.first();

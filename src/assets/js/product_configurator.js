@@ -283,11 +283,11 @@ PC.actionParameter = 'pc_get_data';
 		if ( parent_id ) {
 			this.currentProductData = PC.productData['prod_' + parent_id];
 			this.layers = new PC.layers( PC.productData['prod_' + parent_id].layers );
-			this.angles = new PC.angles( PC.productData['prod_' + parent_id].angles );
+			this.angles = new PC.angles( PC.productData['prod_' + parent_id].angles, { parse: true } );
 		} else {
 			this.currentProductData = PC.productData['prod_' + product_id];
 			this.layers = new PC.layers( PC.productData['prod_' + product_id].layers ); 
-			this.angles = new PC.angles( PC.productData['prod_' + product_id].angles ); 
+			this.angles = new PC.angles( PC.productData['prod_' + product_id].angles, { parse: true } ); 
 		}
 
 		if ( $( $element ).data( 'force_form' ) ) PC.fe.currentProductData.product_info.force_form = true;

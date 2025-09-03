@@ -71,7 +71,7 @@ PC.views = PC.views || {};
 				this.layers = new PC.layers( PC.app.admin_data.get('layers') );
 			}
 			if( PC.app.admin_data.get('angles') != false ) {
-				this.angles = new PC.angles( PC.app.admin_data.get('angles') );
+				this.angles = new PC.angles( PC.app.admin_data.get('angles'), { parse: true } );
 			}
 
 		},
