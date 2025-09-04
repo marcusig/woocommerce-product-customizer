@@ -199,6 +199,9 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			if ( ! is_a( $product, 'WC_Product' ) ) {
 				$product = wc_get_product();
 			}
+
+			if ( ! apply_filters( 'mkl_pc/display_add_to_cart_button', true, $product ) ) return;
+
 			$add_to_cart = $this->get_add_to_cart_label();
 
 			echo '<div class="pc_configurator_form">';
