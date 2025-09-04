@@ -101,6 +101,9 @@ class Configuration {
 	 * @return WP_Post|false
 	 */
 	public function get_the_post() {
+		if ( ! $this->post && $this->ID ) {
+			$this->post = get_post( $this->ID );
+		}
 		if ( ! $this->post || is_wp_error( $this->post ) ) return false;
 		return $this->post;
 	}
