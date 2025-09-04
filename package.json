@@ -15,7 +15,8 @@
     "gulp-clean": "^0.4.0",
     "gulp-plumber": "^1.2.1",
     "gulp-zip": "^4.2.0",
-    "run-sequence": "^2.2.1"
+    "run-sequence": "^2.2.1",
+    "three": "^0.179.1"
   },
   "devDependencies": {
     "@wordpress/scripts": "^30.15.0",
