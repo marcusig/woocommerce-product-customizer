@@ -95,6 +95,7 @@ PC.views = PC.views || {};
 		className: 'modal-frame-target',
 		events: {
 			'click .pc-main-save': 'save_state', 
+			'click .custom-action': 'state_custom_action', 
 			'click .pc-main-save-all': 'save_all', 
 			'click .pc-main-cancel': 'cancel', 
 			'click .media-frame-menu-toggle': 'show_mobile_menu',
@@ -209,10 +210,10 @@ PC.views = PC.views || {};
 		show_mobile_menu: function( e ) {
 			console.log(this, this.options);
 			this.options.main_view.$menu.toggleClass('visible');
-		}
-		// save_state: function() {
-		// 	this.state.$el.trigger('save-state');
-		// } 
+		},
+		state_custom_action: function( e ) {
+			this.state.$el.trigger( 'custom-state-action', e.currentTarget );
+		} 
 	});
 
 	PC.views.separator = Backbone.View.extend({

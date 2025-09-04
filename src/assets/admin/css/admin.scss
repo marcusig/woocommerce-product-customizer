@@ -1358,3 +1358,18 @@ a.mkl-pc-link--external::before {
     animation: mkl-slide-down .2s;
 }
 
+
+.pc-3d-preview {
+	display: flex;
+	> div {
+		width: 50%;
+	}	
+	.pc-3d-preview--canvas-container {
+		min-height: 300px;
+	}
+	.pc-3d-preview--canvas-container canvas {
+		width: 100%;
+		height: 100%;
+		display: block; /* removes inline gap */
+	}
+}
