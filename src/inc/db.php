@@ -28,6 +28,126 @@ class DB {
 	 * Initialize the class
 	 */
 	public function __construct() {
+		$default_menu = array(
+			array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'home',
+				'label' => __( 'Home', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Welcome to the Product Configurator ', 'product-configurator-for-woocommerce' ),
+				// 'menu' => array(
+				// 	array(
+				// 		'class' => 'pc-main-cancel',
+				// 		'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+				// 	),
+				// 	array(
+				// 		'class' => 'button-primary pc-main-save-all',
+				// 		'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+				// 	),
+
+				// ),
+				'description' => '',
+				'order' => 10,
+			),
+			array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'settings_3D',
+				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary custom-action pc-main-save-3d-settings',
+						'text' => __( 'Save settings' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Manage the main 3D settings for this product', 'product-configurator-for-woocommerce' ),
+				'order' => 15,
+			),
+			array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'layers',
+				'label' => __( 'Layers', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Layers of the product ', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+					),
+
+				),
+				'description' => __( 'Define the layers the product is composed of. ', 'product-configurator-for-woocommerce' ),
+				'order' => 20,
+			),
+			array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'angles',
+				'label' => __( 'Views', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Angles of the product ', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+					),
+
+				),
+				'description' => __( 'Define the view angles, if you want the client to be able to switch between them. ', 'product-configurator-for-woocommerce' ),
+				'order' => 30,
+			),
+			array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'content',
+				'label' => __( 'Content', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Contents ', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+					),
+
+				),
+				'description' => __( 'Define choices for each layer and assign them pictures', 'product-configurator-for-woocommerce' ),
+				'order' => 40,
+			),
+		);
+
+		if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__conditional_placeholder', true )  ) {
+			$default_menu[] = array(
+				'type' 	=> 'separator',
+				'order' => 100,
+			);
+	
+			$default_menu[] = array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'conditional_placeholder',
+				'label' => __( 'Conditional settings', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Conditional settings ', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel', 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Define the conditions for displaying or not the choices / layers', 'mkl-pc-conditional-logic' ),
+				'order' => 101,
+			);			
+		}
+		$this->menu = $default_menu;
+
 		// Add tne import section at the end of the menu
 		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 1200 );
 
@@ -395,6 +515,10 @@ class DB {
 			'product_info' => array()
 		);
 		
+		if ( '3d' === mkl_pc_get_configurator_type( $parent_id ) ) {
+			$init_data['settings_3d'] = $this->get( 'settings_3d', $parent_id ) ?: [ 'url' => 'http://unoiseaudepapier.local/wp-content/uploads/2025/08/test-cup.gltf', 'filename' => 'test-cup' ];
+		}
+
 		if ( 'variable' === $product->get_type()) {
 			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
 			$init_data['product_info']['variations'] = array(); 

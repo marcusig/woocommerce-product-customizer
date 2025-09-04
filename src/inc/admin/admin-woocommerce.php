@@ -52,6 +52,7 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/angle.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product-variable.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/product-3d.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}
 

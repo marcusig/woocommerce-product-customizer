@@ -17,10 +17,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public $ID;
 		private $_product;
 		private $variable;
+		private $three_d;
 		private $should_update_cache = false;
 		public function __construct() {
 			$this->_hooks();
 			$this->variable = new Admin_Variable_Product();
+			$this->three_d = new Admin_Product_3D();
 		}
 
 		/**
@@ -232,6 +234,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/views/states', 'views/states.js'),
 				array('backbone/views/angles', 'views/angles.js'),
 				array('backbone/views/content', 'views/content.js'),
+				array('backbone/views/3d-settings', 'views/3d-settings.js'),
 				array('backbone/views/import', 'views/import.js'),
 				array('backbone/views/app', 'views/app.js'),
 				array('backbone/views/product_selector', 'views/product_selector.js'),
