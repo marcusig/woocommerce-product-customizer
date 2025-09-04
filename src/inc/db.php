@@ -51,6 +51,24 @@ class DB {
 			),
 			array(
 				'type' 	=> 'part',
+				'menu_id' 	=> 'settings_3D',
+				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary custom-action pc-main-save-3d-settings',
+						'text' => __( 'Save settings' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Manage the main 3D settings for this product', 'product-configurator-for-woocommerce' ),
+				'order' => 15,
+			),
+			array(
+				'type' 	=> 'part',
 				'menu_id' 	=> 'layers',
 				'label' => __( 'Layers', 'product-configurator-for-woocommerce' ),
 				'title' => __( 'Layers of the product ', 'product-configurator-for-woocommerce' ),
@@ -397,6 +415,10 @@ class DB {
 			'product_info' => array()
 		);
 		
+		if ( '3d' === mkl_pc_get_configurator_type( $parent_id ) ) {
+			$init_data['settings_3d'] = $this->get( 'settings_3d', $parent_id ) ?: [ 'url' => 'http://unoiseaudepapier.local/wp-content/uploads/2025/08/test-cup.gltf', 'filename' => 'test-cup' ];
+		}
+
 		if ( 'variable' === $product->get_type()) {
 			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
 			$init_data['product_info']['variations'] = array(); 

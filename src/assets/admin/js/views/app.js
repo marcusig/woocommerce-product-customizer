@@ -67,6 +67,9 @@ PC.views = PC.views || {};
 
 		set_data: function() {
 
+			if( PC.app.admin_data.get('settings_3d') != false ) {
+				this.settings_3d = PC.app.admin_data.get('settings_3d');
+			}
 			if( PC.app.admin_data.get('layers') != false ) {
 				this.layers = new PC.layers( PC.app.admin_data.get('layers') );
 			}

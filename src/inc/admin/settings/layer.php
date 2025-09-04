@@ -258,6 +258,12 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 500,
 					'section' => 'advanced',
 				),
+				'id_3d' => array(
+					'label' => __('ID mapping', 'product-configurator-for-woocommerce' ),
+					'type' => 'text',
+					'priority' => 10,
+					'section' => 'threed',
+				),
 			);
 
 			if ( mkl_pc( 'themes' )->current_theme_supports( 'columns' ) ) {
@@ -365,6 +371,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'id' => 'display',
 					'label' => __( 'Display settings', 'product-configurator-for-woocommerce' ),
 					'priority' => 15,
+					'collapsible' => true,
+					'fields' => [
+					],
+				),
+				'_threed' => array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
 					'collapsible' => true,
 					'fields' => [
 					],

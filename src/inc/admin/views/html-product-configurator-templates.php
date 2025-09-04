@@ -217,6 +217,41 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <?php 
 /*
 
+3D Model TEMPLATES 
+
+*/
+?>
+<script type="text/html" id="tmpl-mkl-pc-3d-models">
+	<div class="media-frame-content model-3d">
+		<h4><?php _e( 'Manage the product’s main 3D file', 'product-configurator-for-woocommerce' ); ?></h4>
+		<p><a href="#"><?php _e( 'Read the standard specification for automatic configurator mapping', 'product-configurator-for-woocommerce' ); ?></a></p>
+		<# if ( data.filename ) { #>
+			<h4>{{data.filename}}</h4>
+		<# } #>
+		<# if ( data.url ) { #>
+			<p>{{data.url}}</p>
+		<# } #>
+		<button class="button primary select-gltf" type="button"><?php _e( 'Select glb/gltf file', 'product-configurator-for-woocommerce' ); ?></button>
+		<# if ( data.url ) { #>
+			<div class="pc-3d-preview">
+				<div class="pc-3d-tree"></div>
+				<div class="pc-3d-preview--canvas-container"></div>
+			</div>
+		<# } #>	
+	</div>
+</script>
+<script type="importmap">
+{
+	"imports": {
+		"three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
+		"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
+	}
+}
+</script>
+<?php 
+
+/*
+
 CONTENT TEMPLATES 
 
 */
