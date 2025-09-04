@@ -115,7 +115,7 @@ gulp.task('concat_product_configurator', function(done) {
 });
 
 gulp.task('build-blocks', (cb) => {
-	exec('npx wp-scripts build --output-path=dist/build', (err, stdout, stderr) => {
+	exec('npx wp-scripts build /src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
 	  console.log(stdout);
 	  console.error(stderr);
 	  cb(err);
@@ -123,7 +123,7 @@ gulp.task('build-blocks', (cb) => {
 });
 
 gulp.task('watch-blocks', (cb) => {
-	exec('npx wp-scripts start --output-path=dist/build', (err, stdout, stderr) => {
+	exec('npx wp-scripts start /src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
 		console.log(stdout);
 		console.error(stderr);
 		cb(err);
@@ -183,6 +183,8 @@ gulp.task('build',
 		'js',
 		'concat_product_configurator',
 		'concat_js_views',
+		// 'build-blocks'
+		
 	)
 );
 
