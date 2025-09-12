@@ -189,7 +189,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <script type="text/html" id="tmpl-mkl-pc-structure-layer-form">
 	<div class="form-details">
 		<header>
-			<h2><?php _e('Details', 'product-configurator-for-woocommerce' ) ?></h2>
+			<h2><?php _e('Details', 'product-configurator-for-woocommerce' ) ?> - [{{data._id}}]</h2>
 			<?php echo mkl_pc_get_admin_actions(); ?>
 		</header>
 
