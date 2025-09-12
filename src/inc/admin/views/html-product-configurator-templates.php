@@ -388,7 +388,7 @@ CONTENT TEMPLATES
 			<# } #>
 		</div>
 		<# } #>
-		<# if ( data.angle.has_thumbnails ) { #>
+		<# if ( data?.angle?.has_thumbnails ) { #>
 			<div class="picture thumbnail-picture" data-edit="thumbnail">
 				<# if ( ! data.is_group ) { #><span><?php _e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span><# } #>
 				<# if ( data.thumbnail.url != '' ) { #>
