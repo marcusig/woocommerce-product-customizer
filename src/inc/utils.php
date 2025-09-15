@@ -23,7 +23,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			if ( ! is_array( $array )  ) return $array;
 			
-			if ( count($array) > 1 ) {
+			if ( count($array) ) {
 
 				// get the first one, ordered by 'order'
 				if ( 'order' == $by ) {
@@ -39,8 +39,6 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 					}
 				}
 
-			} elseif ( count($array) == 1 ) {
-				return $array[0];
 			} else {
 				return $array;
 			}
