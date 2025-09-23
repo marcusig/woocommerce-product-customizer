@@ -47,5 +47,5 @@
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-configurator-steps-progress--item" data-wg-notranslate>
-	<a class="step-link" href="#">{{{data.name}}}</a>
+	<a class="step-link" role="button" href="#">{{{data.name}}}</a>
 </script>
