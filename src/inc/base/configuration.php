@@ -269,7 +269,7 @@ class Configuration {
 
 		$images = [];
 		foreach ( $this->content as $layer ) {
-			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
 			if ( $image ) {
 				$images[] = $layer->image;
 			}
@@ -493,7 +493,7 @@ class Configuration {
 				// Check if we have images
 				$images = array();
 				foreach ($content as $layer) {
-					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
 					if ( $image ) {
 						$images[] =  $layer->image;
 					}
@@ -526,7 +526,8 @@ class Configuration {
 				$images = array();
 
 				foreach ( $content as $layer ) {
-					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+					$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
+
 					if ( $image ) {
 						$images[$layer->image] = $image;
 					}
@@ -545,11 +546,37 @@ class Configuration {
 		}
 	}
 
+	/**
+	 * Get the path of an image, checking the set merge Size
+	 * 
+	 * @param int $attachment_id
+	 * @return string - the path
+	 */
+	private function get_image_path_for_merging( $attachment_id ) {
+		static $size;
+		if ( !$size ) $size = mkl_pc( 'settings' )->get( 'merge_size', 'full' );
+		if ( 'full' === $size ) {
+			return get_attached_file( $attachment_id );
+		} else {
+
+			// Try to get the intermediate size
+			$image_data = image_get_intermediate_size( $attachment_id, $size );
+
+			if ( $image_data && ! empty( $image_data['path'] ) ) {
+				return $image_data['path']; // path to the resized image
+			} else {
+				// Fallback to original file
+				return get_attached_file( $attachment_id );
+			}
+		}
+
+	}
+
 	public function serve_image() {
 		$images = array();
 		// collect images
 		foreach ($this->content as $layer) {
-			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', get_attached_file( $layer->image ), $layer );
+			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
 			$images[] = $image;
 		}
 

@@ -292,6 +292,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'merge_size',
+				__( 'Image size used when merging images', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => $sizes,
+					'setting_name' => 'merge_size',
+					'no_value' => true,
+					'description' => __( 'Size of the images used when merging the images to create the cart/order image', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'image_loading_mode',
 				__( 'Lazy load images', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
