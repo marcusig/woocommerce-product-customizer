@@ -147,6 +147,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 == Changelog ==
 
 * TWEAK: Add setting Image size used when merging images
+* FIX: dropdown position in La Pomme and Le Bolide
 
 = 1.5.3 - 16/Sep/2025 = 
 

@@ -75,7 +75,7 @@
 				layer.$( '> button.layer-item' )[0], 
 				layer.$( '> .layer_choices' )[0], 
 				{
-					placement: 'bottom',
+					placement: 'bottom-left',
 					modifiers: [
 						{
 							name: 'eventListeners',
@@ -87,7 +87,7 @@
 						{
 							name: 'flip',
 							options: {
-							fallbackPlacements: [ 'top' ]
+							fallbackPlacements: [ 'top-left' ]
 							}
 						}
 					]
