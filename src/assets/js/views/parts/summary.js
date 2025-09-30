@@ -17,7 +17,7 @@ PC.fe.views.summary = Backbone.View.extend( {
 	render: function () {
 		
 		this.clear();
-		var choices = PC.fe.save_data.get_choices();
+		var choices = PC.fe.save_data.get_choices( false );
 		_.each( choices, function( item ) {
 			var layer = PC.fe.layers.get( item.layer_id );
 			var choice = PC.fe.get_choice_model( item.layer_id, item.choice_id );

@@ -2,18 +2,21 @@ PC.fe.errors = [];
 
 PC.fe.save_data = {
 	choices: [],
-	save: function() {
-		this.reset_errors();
+	save: function( reset_errors ) {
+		if ( false !== reset_errors ) this.reset_errors();
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
 		return JSON.stringify( this.choices );
 	},
-	get_choices: function() {
-		this.save();
+	get_choices: function( reset_errors ) {
+		this.save( reset_errors );
 		return this.choices;
 	},
 	reset_errors: function() {
+		console.log( 'reset errors' );
+		console.trace();
+		
 		if ( PC.fe.errors.length ) {
 			_.each( PC.fe.errors, function( error ) {
 				if ( error.choice && error.choice.get( 'has_error' ) ) {
