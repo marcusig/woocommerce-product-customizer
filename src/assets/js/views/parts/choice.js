@@ -131,11 +131,16 @@ PC.fe.views.choice = Backbone.View.extend({
 		// Activate the clicked item
 		this.model.collection.selectChoice( this.model.id );
 		var layer = PC.fe.layers.get( this.model.get( 'layerId' ) );
+		var auto_close = layer.get( 'auto_close' );
 		var close_choices = 
 			( PC.fe.config.close_choices_when_selecting_choice && ( $( 'body' ).is('.is-mobile' ) || PC.utils._isMobile() ) )
 			|| PC.fe.config.close_choices_when_selecting_choice_desktop
 			|| 'dropdown' == layer.get( 'display_mode' )
-			|| ( 'full-screen' == layer.get( 'display_mode' ) && 'simple' == layer.get( 'type' ) );
+			|| ( 'full-screen' == layer.get( 'display_mode' ) && 'simple' == layer.get( 'type' ) )
+			|| 'yes' === auto_close;
+
+		// If the layer contains the class no-auto-close, do not toggle
+		if ( 'no' === auto_close ) close_choices = false;
 
 		if ( layer ) {
 			// Maybe close the choice list

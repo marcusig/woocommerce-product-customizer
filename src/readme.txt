@@ -146,6 +146,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: added setting to control per layer whether to close a layer when the user makes a selection
+* COMPATIBILITY: WooCommerce Currency Switcher (Curcy) - cache compat
 * TWEAK: Add setting Image size used when merging images
 * FIX: dropdown position in La Pomme and Le Bolide
 

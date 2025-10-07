@@ -245,6 +245,27 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 50,
 					'section' => 'advanced',
 				),
+				'auto_close' => array(
+					'label' => __( 'Close layer when the user makes a selection', 'product-configurator-for-woocommerce' ),
+					'type' => 'select',
+					'condition' => '!data.not_a_choice && "simple" == data.type',
+					'choices' => [
+						[
+							'label' => 'Use global setting',
+							'value' => 'inherit'
+						],
+						[
+							'label' => 'Yes',
+							'value' => 'yes'
+						],
+						[
+							'label' => 'No',
+							'value' => 'no'
+						],
+					],
+					'priority' => 55,
+					'section' => 'advanced',
+				),
 
 				'class_name' => array(
 					'label' => __('CSS Class', 'product-configurator-for-woocommerce' ),
