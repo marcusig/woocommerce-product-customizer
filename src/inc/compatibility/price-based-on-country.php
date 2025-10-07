@@ -39,7 +39,7 @@ class Compat_WCPBC {
 			'mkl_pc/js/views/configurator'
 		];
 		wp_enqueue_script( 
-			'mkl_pc/yith/js', 
+			'mkl_pc/wcpbc/js', 
 			trailingslashit( plugin_dir_url( __FILE__ ) ) . 'assets/js/wcpbc.js', 
 			$dependencies, 
 			filemtime( trailingslashit( plugin_dir_path ( __FILE__ ) ) . 'assets/js/wcpbc.js' ), 

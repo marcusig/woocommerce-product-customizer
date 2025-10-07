@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,17 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+* COMPATIBILITY: WooCommerce Currency Switcher (Curcy) - cache compat
+* TWEAK: added setting to control per layer whether to close a layer when the user makes a selection
+* TWEAK: Add setting Image size used when merging images
+* FIX: dropdown position in La Pomme and Le Bolide
+
+= 1.5.3 - 16/Sep/2025 = 
+
+* FIX: Issue with image from wrong angle used in image generation
+* FIX: compatibility with Quotes for WooCommerce label not working after update
+* TWEAK: added filter mkl_pc/display_add_to_cart_button
 
 = 1.5.2 - 3/Sep/2025 = 
 
@@ -319,4 +330,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.5.2 Optimize data when saving the configurator, when there are more than one views
+* 1.5.3 Minor tweaks and fixes

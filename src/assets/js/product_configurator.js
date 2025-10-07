@@ -271,6 +271,28 @@ PC.actionParameter = 'pc_get_data';
 		if ( PC.fe.config.open_configurator && true == PC.fe.config.open_configurator && ! $( '.mkl-configurator-inline' ).length ) {
 			$( '.configure-product-simple' ).first().trigger( 'click' );
 		}
+
+		// WooCommerce Currency Switcher (Curcy) - cache compat
+		jQuery(document.body).on('wmc_cache_compatible_finish', function( event, data ) {
+			if ( data.format ) {
+				// Override loaded format
+				_.each( data.format, ( item, key ) => {
+					PC_config.lang[key] = item;
+				} )
+			}
+
+			// Override currency rate
+			if ( data.rate ) {
+				PC.fe.config.wcpbc_rate = PC_config.config.wcpbc_rate = data.rate;
+			}
+
+			// Trigger events to re-render price elements
+			wp.hooks.doAction( 'PC.fe.extra_price.after.get_tax_rates' );
+			if ( PC.fe && PC.fe.modal ) {
+				PC.fe.modal.trigger( 'PC.fe.extra_price.update_taxes' );
+			}
+		} );
+
 	} );
 
 	PC.fe.init = function( product_id, parent_id, $element ) {
@@ -410,7 +432,7 @@ PC.actionParameter = 'pc_get_data';
 	}; 
 
 	PC.fe.getLayerContent = PC.fe.get_layer_content = function( id ) {
-		if ( PC.fe.contents.content.get( id ) ) 
+		if ( PC.fe?.contents?.content.get( id ) ) 
 			return PC.fe.contents.content.get( id ).attributes.choices; 
 		return false;
 	};
@@ -552,7 +574,7 @@ PC.actionParameter = 'pc_get_data';
 		if ( PC && PC.fe && PC.fe.modal ) {
 			PC.fe.modal.$el.removeClass( 'adding-to-cart' );
 		}
-	} );
+	} );	
 
 })( jQuery, PC._us || window._ );
 

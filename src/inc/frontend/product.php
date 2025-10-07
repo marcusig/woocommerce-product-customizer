@@ -199,6 +199,9 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			if ( ! is_a( $product, 'WC_Product' ) ) {
 				$product = wc_get_product();
 			}
+
+			if ( ! apply_filters( 'mkl_pc/display_add_to_cart_button', true, $product ) ) return;
+
 			$add_to_cart = $this->get_add_to_cart_label();
 
 			echo '<div class="pc_configurator_form">';
@@ -282,6 +285,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					global $quotes_wc;
 					if ( $quotes_wc && is_callable( [ $quotes_wc, 'qwc_change_button_text' ] ) ) {
 						$label = $quotes_wc->qwc_change_button_text( $label );
+					} elseif( is_callable( '\Quotes_WC::get_instance' ) && is_callable( [ \Quotes_WC::get_instance(), 'qwc_change_button_text' ] ) ) {
+						$label = \Quotes_WC::get_instance()->qwc_change_button_text( $label );
 					}
 				}
 			}

@@ -23,7 +23,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			if ( ! is_array( $array )  ) return $array;
 			
-			if ( count($array) > 1 ) {
+			if ( count($array) ) {
 
 				// get the first one, ordered by 'order'
 				if ( 'order' == $by ) {
@@ -39,8 +39,6 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 					}
 				}
 
-			} elseif ( count($array) == 1 ) {
-				return $array[0];
 			} else {
 				return $array;
 			}
@@ -208,6 +206,43 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 				return false;
 			}
 			return true;
+		}
+
+		/**
+		 * Get the dimensions of a registered image size
+		 * 
+		 *  Example usage:
+		 *  $size_data = get_registered_image_size( 'medium' );
+		 *  if ( $size_data ) {
+		 *  	echo "Width: {$size_data['width']}px, Height: {$size_data['height']}px, Crop: " . ( $size_data['crop'] ? 'yes' : 'no' );
+		 *  }
+		 *
+		 * @param string $size
+		 * @return array|false
+		 */
+		public static function get_registered_image_size( $size ) {
+			global $_wp_additional_image_sizes;
+
+			// Handle core sizes first (thumbnail, medium, large)
+			if ( in_array( $size, [ 'thumbnail', 'medium', 'large' ], true ) ) {
+				return [
+					'width'  => (int) get_option( "{$size}_size_w" ),
+					'height' => (int) get_option( "{$size}_size_h" ),
+					'crop'   => (bool) get_option( "{$size}_crop" ),
+				];
+			}
+
+			// Handle custom sizes
+			if ( isset( $_wp_additional_image_sizes[ $size ] ) ) {
+				return [
+					'width'  => (int) $_wp_additional_image_sizes[ $size ]['width'],
+					'height' => (int) $_wp_additional_image_sizes[ $size ]['height'],
+					'crop'   => $_wp_additional_image_sizes[ $size ]['crop'],
+				];
+			}
+
+			// Not a registered size
+			return false;
 		}
 	}
 }
