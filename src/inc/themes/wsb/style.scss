@@ -157,43 +157,6 @@ $inner_space: 1em;
 	bottom: 0;
 	width: 100%; 
 	z-index: 10000;
-	.loader {
-		display: none;
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		text-align: center;
-		transform: translate(-50%, -50%);
-
-		.header {
-			font-size: 1.5em;
-			font-weight: bold;
-			color: #FFF;
-			text-shadow: 0 2px 14px rgba(0, 0, 0, 0.62);
-		}
-		.spinner {
-			width: 40px;
-			height: 40px;
-			margin: 30px auto;
-			background-color: #FFF;
-
-			border-radius: 100%;  
-			-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
-			animation: sk-scaleout 1.0s infinite ease-in-out;
-		}
-
-	}
-
-	&.loading {
-		.loader {
-			display: block;
-		}
-		.mkl_pc_container {
-			transform: translateY(-30px);
-			opacity: 0;
-		}
-	}
-
 
 	.mkl_pc_container {
 		position: absolute;
