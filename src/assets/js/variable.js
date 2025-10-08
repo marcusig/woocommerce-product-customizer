@@ -40,13 +40,13 @@ PC.fe = PC.fe || {};
 				// Reset the configuration field, to prevent adding the same twice
 				$('input[name=pc_configurator_data]').val( '' );
 
-				if ( PC.productData[ 'prod_' + parent_id ] ) {
+				if ( PC?.productData && PC.productData[ 'prod_' + parent_id ] ) {
 					productData = PC.productData[ 'prod_' + parent_id ];
-				} else if ( PC.productData.product_info ) {
+				} else if ( PC?.productData?.product_info ) {
 					productData = PC.productData;
 				}
 
-				if ( productData.product_info.variations && productData.product_info.variations[ product_id ] && productData.product_info.variations[ product_id ].is_configurable ) {
+				if ( variation.is_configurable ) {
 					$( 'body' ).addClass( 'current-variation-is-configurable' );
 					if ( PC.fe.opened == true ) {
 						if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( '.variations_button' ).removeClass('disabled'); 
@@ -85,6 +85,7 @@ PC.fe = PC.fe || {};
 
 		wp.hooks.addAction( 'PC.fe.init', 'mkl/product_configurator', function( product_id ) {
 			if ( 'variable' == PC.fe.product_type || 'variation' == PC.fe.product_type ) { 
+					
 
 				// Update the price
 				if ( current_variation ) {
@@ -92,14 +93,14 @@ PC.fe = PC.fe || {};
 					PC.fe.currentProductData.product_info.price = current_variation.display_price;
 					PC.fe.currentProductData.product_info.regular_price = current_variation.display_regular_price;
 					PC.fe.currentProductData.product_info.is_on_sale = current_variation.display_price < current_variation.display_regular_price;	
-				} else if ( productData.product_info.variations[ product_id ].price ) {
+				} else if ( productData?.product_info?.variations[ product_id ]?.price ) {
 					// Fallback to the product_info.variations data, if the variation is accessed directly
 					PC.fe.currentProductData.product_info.price = productData.product_info.variations[ product_id ].price;
 					PC.fe.currentProductData.product_info.regular_price = productData.product_info.variations[ product_id ].regular_price;
 					PC.fe.currentProductData.product_info.is_on_sale = productData.product_info.variations[ product_id ].is_on_sale;
 				}
 
-				if ( productData.product_info.mode && 'share_all_config' === productData.product_info.mode ) {
+				if ( productData?.product_info?.mode && 'share_all_config' === productData.product_info.mode ) {
 					PC.fe.contents = PC.fe.setContent.parse( productData );
 					PC.fe.modal.$el.trigger( 'content-is-loaded' );
 					return;

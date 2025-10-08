@@ -72,11 +72,8 @@ class Ajax {
 	 * @return void
 	 */
 	public function get_configurator_data() {
-		global $mkltimestart;
 
 		// check_ajax_referer( 'config-ajax', 'security' );
-
-		// var_dump( 'it took ' . ( (microtime(true) - $mkltimestart ) *1000 ). 'ms to get to get_c_data' );
 
 		if( !isset($_REQUEST['data']) || !isset($_REQUEST['id']) ) {
 			wp_send_json_error();

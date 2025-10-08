@@ -770,6 +770,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'async_data',
+				__( 'Load configurator data asynchronously', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'async_data',
+					'description'  => __( 'Will load the data after page load', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'disable_configuration_gzip',
 				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
