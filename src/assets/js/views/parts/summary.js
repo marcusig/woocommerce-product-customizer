@@ -17,6 +17,12 @@ PC.fe.views.summary = Backbone.View.extend( {
 	render: function () {
 		
 		this.clear();
+		this.$el.append( this.template( this?.model?.attributes || {} ) );
+
+		const $target = this.$( '.mkl-pc-summary--content' );
+		
+		if ( !$target.length ) $target = this.$el;
+
 		var choices = PC.fe.save_data.get_choices( false );
 		_.each( choices, function( item ) {
 			var layer = PC.fe.layers.get( item.layer_id );
@@ -30,7 +36,7 @@ PC.fe.views.summary = Backbone.View.extend( {
 				if ( layer.get( 'parent' ) && this.$( '[data-layer_id="' + layer.get( 'parent' ) + '"]' ).length ) {
 					this.layers[ item.layer_id ].$el.appendTo( this.$( '[data-layer_id="' + layer.get( 'parent' ) + '"]' ) );
 				} else {
-					this.layers[ item.layer_id ].$el.appendTo( this.$el );
+					this.layers[ item.layer_id ].$el.appendTo( $target );
 				}
 			}
 

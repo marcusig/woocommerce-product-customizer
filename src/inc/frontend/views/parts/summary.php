@@ -6,12 +6,10 @@
 			<h3><?php _e( 'Summary', 'product-configurator-for-woocommerce' ); ?></h3>
 		</header>
 	<?php }
-	add_action( 'mkl_pc_frontend_configurator_summary', 'mkl_pc_frontend_configurator_summary__header', 20 );
+	if ( mkl_pc( 'settings' )->get( 'display_summary_header', false ) ) add_action( 'mkl_pc_frontend_configurator_summary', 'mkl_pc_frontend_configurator_summary__header', 20 );
 
 	function mkl_pc_frontend_configurator_summary__content() { ?>
-		<div class="mkl-pc-summary--content">
-			<?php do_action( 'mkl_pc_frontend_configurator_summary__content' ); ?>
-		</div>
+		<div class="mkl-pc-summary--content"></div>
 	<?php }
 	add_action( 'mkl_pc_frontend_configurator_summary', 'mkl_pc_frontend_configurator_summary__content', 40 );
 
