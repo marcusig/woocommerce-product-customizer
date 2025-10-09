@@ -57,6 +57,11 @@ PC.fe.views.summary = Backbone.View.extend( {
 			}
 		} );
 
+		/**
+		 * Triggered whenthe summary has been rendered. 
+		 * It is rendered every time a change to the data is done
+		 */
+		wp.hooks.doAction( 'PC.fe.configurator.summary.render', this );
 		return this.$el;
 	},
 	clear: function() {
