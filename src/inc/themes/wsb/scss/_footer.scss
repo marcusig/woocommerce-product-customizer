@@ -53,10 +53,12 @@ footer {
 		}
 	}
 
-	.mkl-pc-syd-modal {
-		left: 0;
-		&::after {
-			left: 40px;
+	@media(max-width: 760px) {
+		.mkl-pc-syd-modal {
+			left: 0;
+			&::after {
+				left: 40px;
+			}
 		}
 	}
 
