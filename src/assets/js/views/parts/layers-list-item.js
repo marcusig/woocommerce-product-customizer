@@ -24,8 +24,20 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		this.$el.data( 'view', this );
 
 		if ( this.model.get( 'not_a_choice' ) && this.model.get( 'custom_html' ) ) {
+			const custom_html = this.model.get( 'custom_html' );
 			this.$el.addClass( 'not-a-choice custom' );
-			this.$el.append( $( this.model.get( 'custom_html' ) ) );
+			let html;
+			try {	
+				html = $( custom_html );
+			} catch ( error ) {
+				console.log( 'custom_html not formatted correctly, attempting to wrap it' );
+				try {
+					html = $( '<div>' + custom_html + '</div>' );
+				} catch ( error ) {
+					console.log( 'custom_html not formatted correctly, wrapping did not work' );
+				}
+			}
+			if ( html.length ) this.$el.append( html );
 			if ( this.model.get( 'class_name' ) ) this.$el.addClass( this.model.get( 'class_name' ) );
 			wp.hooks.doAction( 'PC.fe.layer.render', this );
 			wp.hooks.doAction( 'PC.fe.html_layer.render', this );
