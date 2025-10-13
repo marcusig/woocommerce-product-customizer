@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.5.3
+Stable tag: 1.5.5
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,9 +146,16 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.5.5 - 13/Oct/2025 =
+
 * COMPATIBILITY: WooCommerce Currency Switcher (Curcy) - cache compat
-* TWEAK: added setting to control per layer whether to close a layer when the user makes a selection
+* FEATURE: added setting to control per layer whether to close a layer when the user makes a selection
+* TWEAK: Automatically wrap custom html when necessary (Layer > Custom HTML)
+* TWEAK: Purge configurator cache when litespeed_purged_all is triggered
+* TWEAK: Added JS action 'PC.fe.configurator.summary.render'
+* TWEAK: Summary to use template function, allowing to add content using PHP hooks
 * TWEAK: Add setting Image size used when merging images
+* FIX: Save your design modal positioning in WSB theme on mobile
 * FIX: dropdown position in La Pomme and Le Bolide
 
 = 1.5.3 - 16/Sep/2025 = 
@@ -330,4 +337,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.5.3 Minor tweaks and fixes
+* 1.5.5 Compatibility with WooCommerce Currency Switcher (Curcy) - cache compat feature; Minor tweaks and fixes
