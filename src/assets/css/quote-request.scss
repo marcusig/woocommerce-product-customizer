@@ -1,0 +1,41 @@
+.mkl-pc--quote-request-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    // background: #000000bd;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(6px);
+}
+
+/* Inline modal is added to the body */
+body > .mkl-pc--quote-request-modal {
+    position: fixed;
+    z-index: 200000;
+}
+.mkl-pc--quote-request-modal--content {
+    padding: 40px;
+    background: #FFF;
+    border-radius: 11px;
+    
+    .quote-actions {
+        margin-top: 10px;
+    }
+}
+
+.mkl-pc--quote-field.quote-h {
+    position: absolute;
+    overflow: hidden;
+    width: 0;
+    height: 0;
+    left: -800px;
+}
+
+.keyboard-navigation .mkl-pc--quote-field.quote-h {
+    display: none;
+}

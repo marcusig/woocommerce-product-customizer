@@ -244,5 +244,14 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			// Not a registered size
 			return false;
 		}
+
+		/**
+		 * Get the button classes
+		 */
+		public static function get_button_classes() {
+			$classes = mkl_pc( 'settings' )->get( 'button_classes' );
+			return $classes ? self::sanitize_html_classes( $classes ) : 'primary button btn btn-primary wp-element-button';
+		}
 	}
+
 }

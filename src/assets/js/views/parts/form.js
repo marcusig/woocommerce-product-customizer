@@ -167,6 +167,17 @@ PC.fe.views.form = Backbone.View.extend({
 					product_id: PC.fe.active_product,
 					mkl_pc_ajax: 1
 				};
+				
+				// Add to quote
+				let is_quote_request = false;
+				if ( e && $( e.currentTarget ).is( '.mkl-request-quote' ) ){ 
+					data.quote_request = 1;
+					is_quote_request = true;
+					$.each( $( e.currentTarget ).data(), function( key, value ) {
+						data[ key ] = value;
+					} );
+				}
+
 				if ( btn ) {
 					$.each( btn.data(), function( key, value ) {
 						data[ key ] = value;
@@ -177,7 +188,6 @@ PC.fe.views.form = Backbone.View.extend({
 					$.each( btn[0].dataset, function( key, value ) {
 						data[ key ] = value;
 					});
-
 				}
 				
 				$( document.body ).trigger( 'adding_to_cart', [ btn, data ] );
@@ -216,8 +226,12 @@ PC.fe.views.form = Backbone.View.extend({
 						window.location = wc_add_to_cart_params.cart_url;
 						return;
 					}
-					
-					$( document.body ).trigger( 'added_to_cart', [ data.fragments, data.cart_hash, btn, data] );
+					if ( is_quote_request ) {
+						$( document.body ).trigger( 'quote_request_sent', [ data ] );
+
+					} else {
+						$( document.body ).trigger( 'added_to_cart', [ data.fragments, data.cart_hash, btn, data] );
+					}
 				} )
 				.catch( error => {
 					console.error( 'Configurator: Error in form submission' );
@@ -297,6 +311,7 @@ PC.fe.views.form = Backbone.View.extend({
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 		}
 
+		// YITH RAQ
 		if ( $( e.currentTarget ).is( '.yith-raq' ) ) {
 			$( '.add-request-quote-button' ).trigger( 'click' );
 			if ( ! PC.fe.inline ) PC.fe.modal.close();

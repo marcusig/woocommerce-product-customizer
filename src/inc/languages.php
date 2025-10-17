@@ -60,6 +60,7 @@ class Languages {
 			'adv_desc_close_label' => __( 'Close', 'mkl-pc-advanced-description' ),
 			'previous_step_label' => _x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' ),
 			'next_step_label' => _x( 'Next', 'Next step button label', 'product-configurator-for-woocommerce' ),
+			'quote_request_button_label' => __( 'Request quote', 'product-configurator-for-woocommerce' ),
 		] );		
 	}
 	/**

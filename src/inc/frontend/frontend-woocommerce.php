@@ -23,11 +23,13 @@ class Frontend_Woocommerce {
 	public $product_variable = NULL;
 	public $cart = NULL;
 	public $order = NULL;
+	public $quote = NULL;
 	public function __construct() {
 		// Plugin::instance()->db;	
 		$this->_hooks();
 		$this->_includes();
 		$this->product = new Frontend_Product();
+		$this->quote = new Quote_Request();
 		$this->cart = new Frontend_Cart();
 		$this->order = new Frontend_Order();
 		$this->product_variable = new Frontend_Product_Variable();
@@ -37,6 +39,7 @@ class Frontend_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'frontend/product-variable.php' );
 		include( MKL_PC_INCLUDE_PATH . 'frontend/order.php' );
 		include( MKL_PC_INCLUDE_PATH . 'frontend/cart.php' );
+		include( MKL_PC_INCLUDE_PATH . 'quote-request.php' );
 	}
 
 	private function _hooks() {
@@ -144,8 +147,7 @@ class Frontend_Woocommerce {
 
 		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 
-		$options = get_option( 'mkl_pc__settings' );
-		$button_class = isset( $options['mkl_pc__button_classes'] ) ? Utils::sanitize_html_classes( $options['mkl_pc__button_classes'] ) : 'primary button btn btn-primary wp-element-button';
+		$button_class = Utils::get_button_classes();
 
 		if ( isset( $atts['tag'] ) && ( 'a' === $atts['tag'] || 'link' === $atts['tag'] ) ) {
 			$tag_name = 'a href="#" ';
@@ -353,6 +355,12 @@ class Frontend_Woocommerce {
 
 		if ( $prod && is_a( $prod, 'WC_Product' ) && 'variable' === $prod->get_type() ) {
 			wp_enqueue_script( 'mkl_pc_variable/frontend', MKL_PC_ASSETS_URL . 'js/variable.js', array( 'jquery' ), filemtime( MKL_PC_ASSETS_PATH .'js/variable.js' ), true );
+		}
+
+		if ( mkl_pc( 'settings' )->get( 'quote_request_enabled' ) ) {
+			wp_enqueue_script( 'mkl_pc/js/quote_request', MKL_PC_ASSETS_URL . 'js/quote-request.js', array( 'jquery', 'wp-hooks' ), filemtime( MKL_PC_ASSETS_PATH .'js/quote-request.js' ), true );
+			wp_enqueue_style( 'mkl_pc/css/quote-request', MKL_PC_ASSETS_URL . 'css/quote-request.css' , false, filemtime( MKL_PC_ASSETS_PATH . 'css/quote-request.css' ) );
+			
 		}
 
 		wp_register_script( 'mkl_pc/js/vendor/popper', MKL_PC_ASSETS_URL . 'js/vendor/popper.min.js', [], '2', true );

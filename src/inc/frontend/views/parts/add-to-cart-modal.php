@@ -16,6 +16,24 @@ $checkout_url = wc_get_checkout_url();
 	</div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-atc-sending-request" data-wg-notranslate> 
+	<div class="adding-to-cart--adding">
+		<div class="header"><?php _e( 'Sending request', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="spinner"></div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-atc-sent-request" data-wg-notranslate> 
+	<div class="adding-to-cart--added has-box">
+		<div class="header"><svg viewBox="0 0 300 300"><title><?php _e( 'Done!', 'product-configurator-for-woocommerce' ); ?></title><circle cx="150" cy="150" r="116.61"/><polyline points="73.61 150 129.81 206.19 223.76 112.24"/></svg></div>
+		<div class="messages">{{{data.messages}}}</div>
+		<div class="adding-to-cart--adding-cta">
+			<button type="button" class="button continue-shopping"><?php _e( 'Close', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+		<?php do_action( 'tmpl-mkl-pc-atc-added' ); ?>
+	</div>
+</script>
+
 <script type="text/html" id="tmpl-mkl-pc-atc-added" data-wg-notranslate> 
 	<div class="adding-to-cart--added has-box">
 		<div class="header"><svg viewBox="0 0 300 300"><title><?php _e( 'Done!', 'product-configurator-for-woocommerce' ); ?></title><circle cx="150" cy="150" r="116.61"/><polyline points="73.61 150 129.81 206.19 223.76 112.24"/></svg></div>

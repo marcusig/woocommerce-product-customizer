@@ -183,7 +183,7 @@ class Ajax {
 			} else {
 				echo $output;
 			}
-			wp_die();
+			die();
 		} else { 
 			wp_send_json( $data );
 		}
@@ -442,6 +442,9 @@ class Ajax {
 	 * AJAX add to cart.
 	 */
 	public function add_to_cart() {
+
+		do_action( 'mkl_pc_add_to_cart_before' );
+
 		ob_start();
 		if ( ! isset( $_POST['product_id'] ) ) {
 			$data = array(

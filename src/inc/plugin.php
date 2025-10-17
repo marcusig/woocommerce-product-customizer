@@ -151,6 +151,7 @@ class Plugin {
 		}
 		// return;
 		$this->_includes();
+		$this->settings = new Settings();
 		$this->languages = new Languages();
 		$this->frontend = new Frontend_Woocommerce();
 		$this->customizer = new Customizer();
@@ -159,7 +160,6 @@ class Plugin {
 			$this->admin = new Admin_Woocommerce();
 		}
 		
-		$this->settings = new Settings();
 		$this->cache = new Cache();
 		$this->db = new DB();
 		$this->themes = new Themes();

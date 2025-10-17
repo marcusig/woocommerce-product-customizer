@@ -993,6 +993,110 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				);
 			}
 
+			add_settings_section(
+				'quote_requests',
+				__( 'Quote requests', 'product-configurator-for-woocommerce' ), 
+				function() { },
+				'mlk_pc_settings'
+			);
+
+			add_settings_field(
+				'quote_request_enabled',
+				__( 'Enable quote request', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[ 
+					'setting_name' => 'quote_request_enabled',
+				]
+			);
+
+			// add_settings_field(
+			// 	'quote_requires_login',
+			// 	__( 'Only logged in users can send a quote request', 'product-configurator-for-woocommerce' ),
+			// 	[ $this, 'callback_checkbox' ],
+			// 	'mlk_pc_settings', 
+			// 	'quote_requests',
+			// 	[ 
+			// 		'setting_name' => 'quote_requires_login',
+			// 		'class' => 'require--quote_request_enabled',
+			// 	]
+			// );
+
+			add_settings_field(
+				'quote_add_to_cart_permitted',
+				__( 'Add to cart is permitted', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[ 
+					'setting_name' => 'quote_add_to_cart_permitted',
+					'class' => 'require--quote_request_enabled',
+				]
+			);
+
+			add_settings_field(
+				'quote_includes_configuration_image',
+				__( 'Include configuration image', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[ 
+					'setting_name' => 'quote_includes_configuration_image',
+					'class' => 'require--quote_request_enabled',
+				]
+			);
+
+			add_settings_field(
+				'quote_saved_to_db',
+				__( 'Save quote requests to database', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[
+					'setting_name' => 'quote_saved_to_db',
+					'class' => 'require--quote_request_enabled',
+					'placeholder' => __( 'Request quote', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'quote_includes_prices',
+				__( 'Include prices in quotes', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[
+					'setting_name' => 'quote_includes_prices',
+					'class' => 'require--quote_request_enabled',
+				]
+			);
+
+			add_settings_field(
+				'quote_request_button_label',
+				__( 'Quote request button label', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[ 
+					'setting_name' => 'quote_request_button_label',
+					'class' => 'require--quote_request_enabled',
+				]
+			);
+
+			add_settings_field(
+				'quote_request_redirect_after',
+				__( 'Redirect after quote request submission', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_text_field' ],
+				'mlk_pc_settings', 
+				'quote_requests',
+				[ 
+					'setting_name' => 'quote_request_redirect_after',
+					'description' => __( 'Page/post URL or ID', 'product-configurator-for-woocommerce' ),
+					'class' => 'require--quote_request_enabled',
+				]
+			);
+
 			do_action( 'mkl_pc/register_settings', $this );
 		}
 
