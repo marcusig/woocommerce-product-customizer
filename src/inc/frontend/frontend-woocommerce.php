@@ -340,6 +340,11 @@ class Frontend_Woocommerce {
 			array('backbone/collections/choices', 'collections/choices.js'),
 
 		);
+
+		if ( !wp_script_is( 'accounting', 'registered' ) ) {
+			wp_register_script( 'accounting', WC()->plugin_url() . '/assets/js/accounting/accounting.min.js', array( 'jquery' ), '0.4.2' );
+		}
+
 		foreach( $scripts as $script ) {
 			list( $key, $file ) = $script;
 			if ( ! defined( 'SCRIPT_DEBUG' ) || !SCRIPT_DEBUG ) {
