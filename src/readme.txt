@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.5.5
+Stable tag: 1.5.6
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.5.6 - 22/Oct/2025 =
+
+* FIX: Check for missing dependency (accounting.js)
+* TWEAK: Include both color and image in choice thumbnails
 
 = 1.5.5 - 13/Oct/2025 =
 
