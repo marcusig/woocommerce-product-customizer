@@ -228,7 +228,8 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 		this.baseContentHeight = 0;
 		this.angleContainers = {};
 		this.activeAngleId = null;
-		this.angleTransition = wp.hooks.applyFilters( 'PC.fe.viewer.pixi.angleTransition', 'slide-horizontal', this );
+		this.angleIndexById = {};
+		this.angleTransition = wp.hooks.applyFilters( 'PC.fe.viewer.pixi.angleTransition', 'slide-vertical', this );
 		return this;
 	},
 	events: {
@@ -306,15 +307,21 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 		var that = this;
 		this.angleContainers = {};
 		var active = null;
-		PC.fe.angles.each( function( angle ) {
+		PC.fe.angles.each( function( angle, idx ) {
 			var id = angle.id;
 			var c = new PIXI.Container();
 			c.visible = !! angle.get( 'active' );
 			that.content.addChild( c );
 			that.angleContainers[ id ] = c;
+			that.angleIndexById[ id ] = idx;
 			if ( angle.get( 'active' ) ) active = id;
 		});
 		this.activeAngleId = active || ( PC.fe.angles.length ? PC.fe.angles.first().id : null );
+	},
+	getAngleIndex: function( id ) {
+		if ( 'undefined' !== typeof this.angleIndexById[ id ] ) return this.angleIndexById[ id ];
+		var model = PC.fe.angles.get( id );
+		return model ? PC.fe.angles.indexOf( model ) : -1;
 	},
 	getAngleContainer: function( angleId ) {
 		return this.angleContainers[ angleId ] || null;
@@ -329,14 +336,14 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 		var newId = model.id;
 		var oldId = this.activeAngleId;
 		if ( newId === oldId ) return;
-		this.activeAngleId = newId;
 		var from = this.getAngleContainer( oldId );
 		var to = this.getAngleContainer( newId );
-		this.transitionContainers( from, to );
+		this.transitionContainers( from, to, oldId, newId );
+		this.activeAngleId = newId;
 		// ensure scaling stays correct
 		this.updateContentScale();
 	},
-	transitionContainers: function( from, to ) {
+	transitionContainers: function( from, to, oldId, newId ) {
 		var transition = this.angleTransition;
 		if ( ! from && ! to ) return;
 		if ( transition === 'visibility' ) {
@@ -345,26 +352,36 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 			return;
 		}
 
-		var duration = 250;
+		var duration = 2500;
 		var that = this;
 		var start = performance.now();
 		if ( to ) { to.visible = true; }
 		var fromStartAlpha = from ? from.alpha : 1;
 		var toStartAlpha = to ? to.alpha : 0;
 		var renderer = this.app.renderer;
-		var w = renderer.width, h = renderer.height;
+		var contentScaleX = this.content && this.content.scale ? ( this.content.scale.x || 1 ) : 1;
+		var contentScaleY = this.content && this.content.scale ? ( this.content.scale.y || 1 ) : 1;
+		var w = ( renderer.width || 0 ) / contentScaleX;
+		var h = ( renderer.height || 0 ) / contentScaleY;
 		var dirX = 0, dirY = 0;
+		// Determine direction from angle order using provided ids
+		var oldIdx = this.getAngleIndex( oldId );
+		var newIdx = this.getAngleIndex( newId );
+		var forward = ( oldIdx >= 0 && newIdx >= 0 ) ? ( newIdx > oldIdx ) : true;
+		console.log( 'idx', oldIdx, newIdx);
+		
 		switch( transition ) {
 			case 'fade':
 				if ( to ) to.alpha = 0;
 				break;
 			case 'slide-vertical':
-				dirY = 1; // slide up/down
-				if ( to ) { to.y = h; to.alpha = 1; }
+				console.log( 'f', forward );
+				dirY = forward ? 1 : -1; // down if forward, up if backward
+				if ( to ) { to.y = h * dirY; to.alpha = 1; }
 				break;
 			case 'slide-horizontal':
-				dirX = 1; // slide right/left
-				if ( to ) { to.x = w; to.alpha = 1; }
+				dirX = forward ? 1 : -1; // right if forward, left if backward
+				if ( to ) { to.x = w * dirX; to.alpha = 1; }
 				break;
 		}
 		function step( now ) {
@@ -382,9 +399,11 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 				if ( to ) to.x = w * ( 1 - e ) * dirX;
 			}
 			if ( t < 1 ) {
-				that.app.ticker.update();
 				requestAnimationFrame( step );
 			} else {
+				// Ensure containers are fully off-canvas before hiding
+				if ( transition === 'slide-vertical' && from ) from.y = -h * dirY;
+				if ( transition === 'slide-horizontal' && from ) from.x = -w * dirX;
 				if ( from ) { from.visible = false; from.alpha = 1; from.position.set( 0, 0 ); }
 				if ( to ) { to.visible = true; to.alpha = 1; to.position.set( 0, 0 ); }
 			}
