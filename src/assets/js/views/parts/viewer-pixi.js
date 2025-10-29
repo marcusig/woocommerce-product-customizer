@@ -33,7 +33,7 @@ PC.fe.views.viewer_pixi_layer = Backbone.View.extend({
 		var texture = PIXI.Texture.from( img );
 		var sprite = new PIXI.Sprite( texture );
 		sprite.anchor.set( 0 );
-		sprite.visible = false;
+		sprite.visible = true; // container controls visibility
 		sprite.eventMode = 'none';
 		var container = this.viewer.getAngleContainer( angleId ) || this.viewer.content;
 		container.addChild( sprite );
@@ -56,11 +56,7 @@ PC.fe.views.viewer_pixi_layer = Backbone.View.extend({
 
 		wp.hooks.doAction( 'PC.fe.viewer.layer.render', this );
 
-		if ( ! img ) {
-			if ( this.sprite ) this.sprite.visible = false;
-			wp.hooks.doAction( 'PC.fe.viewer.layer.render.after', this );
-			return this.$el;
-		}
+		if ( ! img ) { wp.hooks.doAction( 'PC.fe.viewer.layer.render.after', this ); return this.$el; }
 
 		var sprite = this.createSprite( angleId, img );
 		var textureSrc = sprite && sprite.texture.baseTexture.resource && sprite.texture.baseTexture.resource.src || '';
@@ -78,7 +74,7 @@ PC.fe.views.viewer_pixi_layer = Backbone.View.extend({
 			}
 		}
 
-		if ( sprite ) sprite.visible = !! is_active;
+		// Sprite visibility is driven by angle container; do not toggle here
 
 		// a11y parity (kept on the view container if ever needed)
 		if ( ! this.$el.attr( 'data-layer' ) ) {
@@ -352,7 +348,7 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 			return;
 		}
 
-		var duration = 2500;
+		var duration = 350;
 		var that = this;
 		var start = performance.now();
 		if ( to ) { to.visible = true; }
