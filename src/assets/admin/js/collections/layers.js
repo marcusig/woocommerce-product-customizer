@@ -36,7 +36,9 @@ var PC = PC || {};
 				_id: PC.app.get_new_id( this ),
 				order: this.nextOrder(),
 				image_order: this.nextOrder( 'image_order' ),
-				active: true
+				active: true,
+				is_global: false,
+				global_id: null
 			} );
 			return m;
 		},

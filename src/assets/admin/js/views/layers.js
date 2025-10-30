@@ -231,6 +231,8 @@ TODO:
 				name: name,
 				order: this.col.nextOrder(),
 				image_order: this.col.nextOrder(),
+				is_global: false,
+				global_id: null,
 				active: true,
 				// completed: false
 			};
