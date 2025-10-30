@@ -364,14 +364,12 @@ PC.fe.views.viewer_pixi = Backbone.View.extend({
 		var oldIdx = this.getAngleIndex( oldId );
 		var newIdx = this.getAngleIndex( newId );
 		var forward = ( oldIdx >= 0 && newIdx >= 0 ) ? ( newIdx > oldIdx ) : true;
-		console.log( 'idx', oldIdx, newIdx);
 		
 		switch( transition ) {
 			case 'fade':
 				if ( to ) to.alpha = 0;
 				break;
 			case 'slide-vertical':
-				console.log( 'f', forward );
 				dirY = forward ? 1 : -1; // down if forward, up if backward
 				if ( to ) { to.y = h * dirY; to.alpha = 1; }
 				break;
