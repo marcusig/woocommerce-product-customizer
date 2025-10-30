@@ -358,7 +358,26 @@ class DB {
 		}
 
 		if ( '' == $data || false == $data ) {
-			return false;
+			return false; 
+		} else {
+			/**
+			 * Filters the data fetched using the Get method
+			 * 
+			 * @param $data       - The data filtered
+			 * @param $that       - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
+			 * @param $product_id - The product ID
+			 */
+			$data = apply_filters( 'mkl_pc/db/get', $data, $that, $product_id );
+
+			// Resolve global references for layers and content.
+			if ( 'layers' === $that && is_array( $data ) ) {
+				$data = $this->resolve_global_layers( $data );
+			}
+			if ( 'content' === $that && is_array( $data ) ) {
+				$data = $this->resolve_global_content( $data );
+			}
+			wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
+			return $data; 
 		}
 
 		/**
@@ -977,6 +996,13 @@ class DB {
 			$data = array();
 		} elseif ( is_array( $raw_data ) ) {
 			$data = $this->normalize_for_set( $raw_data, $id, $component, $modified_choices );
+
+			// When saving, avoid persisting full data for global refs
+			if ( 'layers' === $component && is_array( $data ) ) {
+				$data = $this->strip_global_layers_to_references( $data );
+			} elseif ( 'content' === $component && is_array( $data ) ) {
+				$data = $this->strip_global_content_to_references( $data );
+			}
 		} else {
 			$data = $raw_data;
 		}
@@ -2324,5 +2350,88 @@ class DB {
 
 	public function set_context( $c) {
 		return $this->context = $c;
+	}
+
+	/**
+	 * Replace layers marked as global with their global definitions while
+	 * preserving local identifiers and ordering.
+	 */
+	private function resolve_global_layers( $layers ) {
+		if ( ! is_array( $layers ) ) return $layers;
+		foreach ( $layers as $index => $layer ) {
+			if ( isset( $layer['is_global'] ) && $layer['is_global'] && ! empty( $layer['global_id'] ) ) {
+				$global = Global_Layers::get( intval( $layer['global_id'] ) );
+				if ( is_array( $global ) && isset( $global['layer'] ) && is_array( $global['layer'] ) ) {
+					$resolved = $global['layer'];
+					// Preserve local layer id and basic flags
+					if ( isset( $layer['id'] ) ) $resolved['id'] = $layer['id'];
+					if ( isset( $layer['layerId'] ) && ! isset( $resolved['id'] ) ) $resolved['id'] = $layer['layerId'];
+					$resolved['is_global'] = true;
+					$resolved['global_id'] = intval( $layer['global_id'] );
+					if ( isset( $layer['order'] ) ) $resolved['order'] = $layer['order'];
+					if ( isset( $layer['image_order'] ) ) $resolved['image_order'] = $layer['image_order'];
+					$layers[$index] = $resolved;
+				}
+			}
+		}
+		return $layers;
+	}
+
+	/**
+	 * For content entries associated to global layers, overlay choices/content
+	 * from the global storage, preserving the local layerId key.
+	 */
+	private function resolve_global_content( $content ) {
+		if ( ! is_array( $content ) ) return $content;
+		foreach ( $content as $index => $entry ) {
+			if ( isset( $entry['global_id'] ) && $entry['global_id'] ) {
+				$global = Global_Layers::get( intval( $entry['global_id'] ) );
+				if ( is_array( $global ) && isset( $global['content'] ) && is_array( $global['content'] ) ) {
+					$resolved = $global['content'];
+					// Ensure the local layerId is preserved
+					if ( isset( $entry['layerId'] ) ) $resolved['layerId'] = $entry['layerId'];
+					$resolved['global_id'] = intval( $entry['global_id'] );
+					$content[$index] = $resolved;
+				}
+			}
+		}
+		return $content;
+	}
+
+	/**
+	 * Strip global layers to minimal reference objects before saving to product meta.
+	 */
+	private function strip_global_layers_to_references( $layers ) {
+		if ( ! is_array( $layers ) ) return $layers;
+		foreach ( $layers as $index => $layer ) {
+			if ( isset( $layer['is_global'] ) && $layer['is_global'] && ! empty( $layer['global_id'] ) ) {
+				$ref = array(
+					'id' => isset( $layer['id'] ) ? $layer['id'] : ( isset( $layer['layerId'] ) ? $layer['layerId'] : null ),
+					'is_global' => true,
+					'global_id' => intval( $layer['global_id'] ),
+				);
+				if ( isset( $layer['order'] ) ) $ref['order'] = $layer['order'];
+				if ( isset( $layer['image_order'] ) ) $ref['image_order'] = $layer['image_order'];
+				$layers[$index] = $ref;
+			}
+		}
+		return $layers;
+	}
+
+	/**
+	 * Strip global content entries to minimal references before saving to product meta.
+	 */
+	private function strip_global_content_to_references( $content ) {
+		if ( ! is_array( $content ) ) return $content;
+		foreach ( $content as $index => $entry ) {
+			if ( isset( $entry['global_id'] ) && $entry['global_id'] ) {
+				$ref = array(
+					'layerId' => isset( $entry['layerId'] ) ? $entry['layerId'] : null,
+					'global_id' => intval( $entry['global_id'] ),
+				);
+				$content[$index] = $ref;
+			}
+		}
+		return $content;
 	}
 }

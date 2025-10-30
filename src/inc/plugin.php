@@ -75,6 +75,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'images.php';
 		include_once MKL_PC_INCLUDE_PATH . 'functions.php';
 		include_once MKL_PC_INCLUDE_PATH . 'settings.php';
+		include_once MKL_PC_INCLUDE_PATH . 'global-layer.php';
 		
 		include_once MKL_PC_INCLUDE_PATH . 'base/product.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/layer.php';
