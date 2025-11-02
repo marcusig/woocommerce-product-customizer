@@ -41,6 +41,14 @@ PC.views = PC.views || {};
 			this.listenTo( this.col, 'simple-selection', this.edit_simple );
 			this.listenTo( PC.app.admin, 'pasted-data', this.on_paste );
 			
+			// Initialize editing state - restore from global collection if layer is global
+			if ( typeof this.editing_choices === 'undefined' ) {
+				if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+					this.editing_choices = PC.app.get_global_layers().is_editing_choices( this.model.get( 'global_id' ) );
+				} else {
+					this.editing_choices = false;
+				}
+			}
 			this.render(); 
 		},
 		events: {
@@ -86,9 +94,13 @@ PC.views = PC.views || {};
 			return !! PC.clipboard_data;
 		},
 		render: function() {
-
+			// Ensure edit state is synced with global collection for global layers
+			if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				var global_id = this.model.get( 'global_id' );
+				this.editing_choices = PC.app.get_global_layers().is_editing_choices( global_id );
+			}
 			this.$el.empty();
-			this.$el.html( this.template( _.extend( { has_clipboard_data: this.has_clipboard_data() }, this.model.attributes ) ) );
+			this.$el.html( this.template( _.extend( { has_clipboard_data: this.has_clipboard_data(), is_editing_choices: this.editing_choices }, this.model.attributes ) ) );
 			this.remove_views();
 
 			this.$active_layer = this.$('.active-layer');
@@ -101,7 +113,28 @@ PC.views = PC.views || {};
 			this.add_all();
 			this.update_groups();
 			this.setup_sortable();
+			// Always update lock state if layer is global - this ensures edit mode persists
+			if ( this.model.get( 'is_global' ) ) {
+				this.update_lock_state();
+			}
+			// Ensure parent view has correct classes for button visibility
+			this.state.$el.toggleClass( 'is-global-layer', this.model.get( 'is_global' ) );
+			if ( this.state && this.state.update_global_actions_visibility ) {
+				this.state.update_global_actions_visibility();
+			}
 			return this;
+		},
+		update_lock_state: function() {
+			// Disable sortable when locked
+			if ( this.$list && this.$list.sortable( 'instance' ) ) {
+				this.$list.sortable( 'option', 'disabled', ! this.editing_choices );
+			}
+			this.$el.toggleClass( 'is-layer-locked', ! this.editing_choices );
+			this.state.$el.toggleClass( 'is-layer-locked', ! this.editing_choices );
+			// Update global lock state on parent view
+			if ( this.state && this.state.update_global_actions_visibility ) {
+				this.state.update_global_actions_visibility();
+			}
 		},
 
 		choices_changed: function( model ) {
@@ -180,10 +213,15 @@ PC.views = PC.views || {};
 				helper:               'clone',
 				opacity:              0.65,
 				connectWith: '.sortable-list',
-				stop: function(event, s) {
+			stop: function(event, s) {
 					this.update_sorting();
 				}.bind( this ),
 			});
+
+			// Respect current lock state
+			if ( this.model.get( 'is_global' ) && this.$list && this.$list.sortable( 'instance' ) ) {
+				this.$list.sortable( 'option', 'disabled', ! this.editing_choices );
+			}
 		},
 		update_sorting: function() {
 			this.$( '.choices .mkl-list-item' ).each( function( i, listItem ) {
@@ -205,6 +243,11 @@ PC.views = PC.views || {};
 				this.state.layers.$el.children( 'li' ).removeClass( 'active' );
 				this.state.layers.$el.find( 'button.layer' ).attr( 'aria-pressed', 'false' );
 			}
+			// Preserve edit state in global collection before closing (for when user comes back)
+			if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				var global_id = this.model.get( 'global_id' );
+				PC.app.get_global_layers().set_editing_choices( global_id, this.editing_choices );
+			}
 			this.state.$el.removeClass( 'show-choices' );
 			if ( this.edit_multiple_items_form ) {
 				this.edit_multiple_items_form.remove();
@@ -217,9 +260,22 @@ PC.views = PC.views || {};
 				}
 			} );
 			this.remove_views();
+			// Remove the element from DOM before clearing
+			if ( this.$el && this.$el.parent().length ) {
+				this.$el.remove();
+			}
 			this.$el.empty();
 			if ( this.$form && this.$form.length ) {
 				this.$form.children().not( '.mkl-pc-content-placeholder' ).remove();
+				this.$form.empty();
+			}
+			if ( this.state ) {
+				this.state.active_layer = null;
+				// Remove classes when closing layer (buttons will be hidden)
+				this.state.$el.removeClass( 'is-global-layer is-global-locked' );
+				if ( this.state.update_global_actions_visibility ) {
+					this.state.update_global_actions_visibility();
+				}
 			}
 		},
 
@@ -234,6 +290,8 @@ PC.views = PC.views || {};
 					return;
 				}
 			}
+			if ( this.model.get( 'is_global' ) && ! this.editing_choices ) return; // Locked
+
 			if( !this.$new_input.val().trim() ) {
 				return;
 			}
@@ -248,6 +306,93 @@ PC.views = PC.views || {};
 
 			this.$new_input.val('');
 			this.apply_list_filter();
+		},
+		on_edit_choices: function( e ) {
+			if ( e ) e.preventDefault();
+			this.editing_choices = true;
+			// Store in global collection
+			if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				PC.app.get_global_layers().set_editing_choices( this.model.get( 'global_id' ), true );
+			}
+			this.render();
+			if ( this.state && this.state.update_global_actions_visibility ) {
+				this.state.update_global_actions_visibility();
+			}
+		},
+		on_cancel_edit_choices: function( e ) {
+			if ( e ) e.preventDefault();
+			var self = this;
+			var global_id = this.model && this.model.get( 'global_id' );
+			
+			// Clear edit state first
+			this.editing_choices = false;
+			if ( this.model && this.model.get( 'is_global' ) && global_id ) {
+				PC.app.get_global_layers().set_editing_choices( global_id, false );
+			}
+			
+			// Re-fetch from server/source to discard local edits
+			this.refresh_from_server().always( function() {
+				self.render();
+				if ( self.state && self.state.update_global_actions_visibility ) {
+					self.state.update_global_actions_visibility();
+				}
+			} );
+		},
+		refresh_from_server: function() {
+			var d = jQuery.Deferred();
+			var self = this;
+			
+			// Safety check: Do not refresh if in edit mode (prevents losing unsaved changes)
+			var is_editing = false;
+			if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) && PC.app.get_global_layers ) {
+				is_editing = PC.app.get_global_layers().is_editing_choices( this.model.get( 'global_id' ) );
+			} else {
+				is_editing = this.editing_choices;
+			}
+			
+			if ( is_editing ) {
+				d.resolve();
+				return d.promise();
+			}
+			
+			// Allow external implementations to hook fetch
+			var handled = false;
+			try {
+				wp.hooks.doAction( 'PC.admin.choices.fetch', this.model, this, function() {
+					handled = true;
+					d.resolve();
+				} );
+			} catch(e) {}
+
+			if ( handled ) return d.promise();
+
+			// Fetch choices - only for global layers to ensure data is not stale
+			var is_global = this.model && this.model.get( 'is_global' );
+			var global_id = this.model && this.model.get( 'global_id' );
+			
+			if ( is_global && global_id && PC.app.get_global_layers ) {
+				// Fetch using global_layers collection
+				PC.app.get_global_layers().fetch_global_choices( global_id, this.model.id, {
+					success: function( choices, response ) {
+						console.log( choices, response );
+						
+						if ( choices && Array.isArray( choices ) ) {
+							self.col.reset( choices );
+							PC.app.is_modified[self.collectionName] = false;
+							self.render();
+						}
+						d.resolve();
+					},
+					error: function( model, error ) {
+						console.error( 'Error fetching global choices:', error );
+						d.resolve(); // Resolve anyway to not block UI
+					}
+				} );
+			} else {
+				// Local layers don't need refresh - data is already loaded
+				d.resolve();
+			}
+			return d.promise();
 		},
 
 		// paste_items: function( e ) {
@@ -673,6 +818,11 @@ PC.views = PC.views || {};
 			if ( ! $parent.is( '.wp-picker-active' ) ) {
 				$button.trigger( 'click' );
 			}
+		},
+		update_lock_state: function() {
+			// Disable inputs when locked
+			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"]' );
+			inputs.prop( 'disabled', ! this.editing_choices );
 		}
 	});
 

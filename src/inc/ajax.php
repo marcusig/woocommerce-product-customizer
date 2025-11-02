@@ -581,6 +581,11 @@ class Ajax {
 			wp_send_json_error( 'Insufficient permissions', 403 );
 		}
 
+		// Verify nonce if provided - use global layers nonce
+		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'mkl_pc_global_layers' ) ) {
+			wp_send_json_error( 'Security check failed', 403 );
+		}
+
 		$global_id = absint( $_REQUEST['global_id'] );
 		if ( $global_id <= 0 ) {
 			wp_send_json_error( 'Invalid global_id' );
@@ -611,8 +616,8 @@ class Ajax {
 			wp_send_json_error( 'Insufficient permissions', 403 );
 		}
 
-		// Verify nonce if provided
-		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'update-pc-post' ) ) {
+		// Verify nonce if provided - use global layers nonce
+		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'mkl_pc_global_layers' ) ) {
 			wp_send_json_error( 'Security check failed', 403 );
 		}
 

@@ -337,6 +337,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					$pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
 				}
 				if ( current_user_can( 'delete_post', $this->ID ) ) $pc_lang['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $this->ID );
+				if ( current_user_can( 'edit_posts' ) ) $pc_lang['global_layers_nonce'] = wp_create_nonce( 'mkl_pc_global_layers' );
 
 				$pc_lang['editor_product_name']       = (string) get_the_title( $this->ID );
 				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );

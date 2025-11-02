@@ -9,6 +9,9 @@ PC.views = PC.views || {};
 		template: wp.template( 'mkl-pc-content' ),
 		events: {
 			// 'save-state': 'save_content',
+			'click .edit-choices': 'on_edit_choices',
+			'click .save-choices': 'on_save_choices',
+			'click .cancel-edit-choices': 'on_cancel_edit_choices',
 		},
 		collectionName: 'content',
 		initialize: function( options ) {
@@ -67,8 +70,14 @@ PC.views = PC.views || {};
 				this.$choices = this.$('.content-choices-list');
 				this.$form = this.$('.content-choice');
 				if ( this.$list && this.$list.length ) {
-					this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } );
-					this.$list.append( this.layers.el );
+					
+
+					this.$global_actions = this.$('.global-actions-container');
+					this.active_layer = null;
+	
+					this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } ); 
+					this.$list.append(this.layers.el);
+					this.update_global_actions_visibility();
 					this.applySidebarLayersFilter();
 					var self = this;
 					window.requestAnimationFrame( function() {
@@ -87,6 +96,124 @@ PC.views = PC.views || {};
 			if ( $btn.length ) {
 				$btn.trigger( 'focus' );
 			}
+		},
+		on_edit_choices: function( e ) {
+			if ( e ) e.preventDefault();
+			if ( this.active_layer && this.active_layer.on_edit_choices ) {
+				this.active_layer.on_edit_choices( e );
+				// Store edit state in global collection
+				if ( this.active_layer.model && this.active_layer.model.get( 'is_global' ) ) {
+					var global_id = this.active_layer.model.get( 'global_id' );
+					if ( global_id ) {
+						PC.app.get_global_layers().set_editing_choices( global_id, true );
+					}
+				}
+				this.update_global_actions_visibility();
+			}
+		},
+		on_save_choices: function( e ) {
+			if ( e ) e.preventDefault();
+			if ( ! this.active_layer ) return;
+			
+			// Only handle global layers - local layers use PC.app.save()
+			var is_global = this.active_layer.model && this.active_layer.model.get( 'is_global' );
+			var global_id = this.active_layer.model && this.active_layer.model.get( 'global_id' );
+			
+			if ( ! is_global || ! global_id ) return;
+			
+			var self = this;
+			
+			// Allow external handlers to hook into save
+			var handled = false;
+			try {
+				wp.hooks.doAction( 'PC.admin.choices.save', this.active_layer.model, this.active_layer, function() {
+					handled = true;
+				} );
+			} catch(e) {}
+			
+			if ( handled ) {
+				this.active_layer.editing_choices = false;
+				PC.app.get_global_layers().set_editing_choices( global_id, false );
+				if ( this.active_layer.render ) {
+					this.active_layer.render();
+				}
+				this.update_global_actions_visibility();
+				return;
+			}
+			
+			// Get choices data
+			var choices_data = [];
+			if ( this.active_layer.col ) {
+				this.active_layer.col.each( function( choice ) {
+					choices_data.push( choice.toJSON() );
+				} );
+			}
+			
+			// Save using global_layers collection
+			PC.app.get_global_layers().save_global_layer( global_id, null, PC.app.state.active_layer.col.toJSON(), {
+				success: function( model, response ) {
+					// Save successful
+					self.active_layer.editing_choices = false;
+					PC.app.get_global_layers().set_editing_choices( global_id, false );
+					// Mark collection as saved
+					if ( self.active_layer.collectionName ) {
+						PC.app.is_modified[self.active_layer.collectionName] = false;
+					}
+					if ( self.active_layer.render ) {
+						self.active_layer.render();
+					}
+					self.update_global_actions_visibility();
+				},
+				error: function( model, error ) {
+					// Error response
+					var error_message = 'Unknown error';
+					if ( error && error.data ) {
+						if ( typeof error.data === 'string' ) {
+							error_message = error.data;
+						} else if ( error.data.message ) {
+							error_message = error.data.message;
+						} else {
+							error_message = JSON.stringify( error.data );
+						}
+					} else if ( error && error.message ) {
+						error_message = error.message;
+					}
+					alert( 'Error saving choices: ' + error_message );
+					console.error( 'Save choices error response:', error );
+				}
+			} );
+		},
+		on_cancel_edit_choices: function( e ) {
+			if ( e ) e.preventDefault();
+			if ( this.active_layer && this.active_layer.on_cancel_edit_choices ) {
+				this.active_layer.on_cancel_edit_choices( e );
+				// Clear edit state after canceling
+				if ( this.active_layer.model && this.active_layer.model.get( 'is_global' ) ) {
+					var global_id = this.active_layer.model.get( 'global_id' );
+					if ( global_id ) {
+						PC.app.get_global_layers().set_editing_choices( global_id, false );
+					}
+				}
+				this.update_global_actions_visibility();
+			}
+		},
+		update_global_actions_visibility: function() {
+			// CSS handles visibility via .is-global-layer and .is-global-locked classes
+			// We just need to ensure the state classes are set correctly
+			if ( ! this.$el ) return;
+			var is_global = this.active_layer && this.active_layer.model && this.active_layer.model.get( 'is_global' );
+			// Get edit state from global collection if layer is global
+			var is_editing = false;
+			if ( is_global && this.active_layer.model.get( 'global_id' ) ) {
+				is_editing = PC.app.get_global_layers().is_editing_choices( this.active_layer.model.get( 'global_id' ) );
+			} else {
+				is_editing = this.active_layer && this.active_layer.editing_choices;
+			}
+			
+			// Set is-global-layer class based on whether active layer is global
+			this.$el.toggleClass( 'is-global-layer', !! is_global );
+			// Set is-global-locked when global layer is NOT in edit mode
+			this.$el.toggleClass( 'is-global-locked', !! ( is_global && ! is_editing ) );
 		},
 		get_col: function() {
 			return this.col;
@@ -170,16 +297,55 @@ PC.views = PC.views || {};
 				this.state.layers.$el.children( 'li' ).removeClass( 'active' );
 				this.state.layers.$el.find( 'button.layer' ).attr( 'aria-pressed', 'false' );
 			}
-			// Remove existing active layer
-			if ( this.state.active_layer ) this.state.active_layer.remove();
+			// Remove existing active layer - both the view and its DOM element
+			if ( this.state.active_layer ) {
+				// Remove the DOM element explicitly
+				if ( this.state.active_layer.$el && this.state.active_layer.$el.parent().length ) {
+					this.state.active_layer.$el.remove();
+				}
+				// Remove the Backbone view
+				this.state.active_layer.remove();
+			}
+			// Also clean up any remaining mkl-choice-list-inner elements
+			this.state.$choices.find('.mkl-choice-list-inner').remove();
 			// Reset the selection collection, to prevent cross-layer issues
 			PC.selection.reset();
 			// Setup the new view
-			this.state.active_layer = new PC.views.choices({ model: this.model, state: this.state });
-			this.state.$choices.append( this.state.active_layer.$el );
+			var choices_view = new PC.views.choices({ model: this.model, state: this.state });
+			// Restore edit state from global collection if this layer is global
+			var global_id = null;
+			var is_editing = false;
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				global_id = this.model.get( 'global_id' );
+				is_editing = PC.app.get_global_layers().is_editing_choices( global_id );
+				choices_view.editing_choices = is_editing;
+			}
+			this.state.active_layer = choices_view;
+			this.state.$choices.append( choices_view.$el );
+			// Re-render after appending to ensure edit state is reflected (render syncs from global collection)
+			if ( this.model.get( 'is_global' ) && global_id ) {
+				choices_view.render();
+			}
 			this.state.$el.addClass('show-choices');
 			this.$el.addClass( 'active' );
 			this.$( 'button.layer' ).attr( 'aria-pressed', 'true' );
+			// Update button visibility
+			this.state.update_global_actions_visibility();
+
+			// Refresh choices from server/source when opening a layer ONLY if NOT in edit mode
+			// This prevents losing unsaved changes when navigating between tabs
+			if ( this.state.active_layer && this.state.active_layer.refresh_from_server && this.model.get( 'is_global' ) && global_id ) {
+				// Only refresh if NOT in edit mode (to preserve unsaved changes)
+				if ( ! is_editing ) {
+					this.state.active_layer.refresh_from_server().done( function() {
+						// After refresh, ensure edit state is still properly set (should be false)
+						if ( this.state.active_layer ) {
+							this.state.active_layer.render();
+							this.state.update_global_actions_visibility();
+						}
+					}.bind( this ) );
+				}
+			}
 		}
 	});
 

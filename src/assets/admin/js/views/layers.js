@@ -318,6 +318,7 @@ TODO:
 			this.listenTo( this.model, 'change:active', this.activate );
 			this.listenTo( this.model, 'change:name change:admin_label change:image', this.update_label );
 			this.listenTo( this.model, 'change', this.mark_layer_modified );
+			this.listenTo( this.model, 'change:is_global', this.on_change_global );
 			this.listenTo( this.model, 'destroy', this.remove );
 		},
 		mark_layer_modified: function() {
@@ -345,11 +346,16 @@ TODO:
 				this.label = new PC.views.layerLabel( { model: this.model, object_type: this.object_type } );
 				this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
 			}
+			this.$( 'h3' ).prepend( this.label.$el );
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
 		},
 		update_label: function() {
 			this.label.render();
+		},
+		on_change_global: function() {
+			this.$el.toggleClass( 'is-global', this.model.get( 'is_global' ) );
+			this.render();
 		},
 		edit: function( event ) {
 			if ( PC.selection.adding_group ) return;
@@ -507,6 +513,12 @@ TODO:
 			if ( this.pre_init ) this.pre_init( options );
 			this.toggled_status.init();
 			this.collection = this.model.collection;
+			// Initialize edit state from global collection if layer is global
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				this.global_editing = PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) );
+			} else {
+				this.global_editing = false;
+			}
 			this.listenTo( this.model, 'destroy', this.remove ); 
 			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode' ), this.render );
 		},
@@ -517,6 +529,11 @@ TODO:
 			'click .cancel-delete': 'delete_layer',
 			'click .duplicate-item': 'duplicate_layer',
 			'click .copy-item': 'copy_layer',
+			'click .make-global': 'on_make_global',
+			'click .unlink-global': 'on_unlink_global',
+			'click .edit-global': 'edit_global',
+			'click .save-global': 'save_global',
+			'click .cancel-global': 'cancel_global',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
@@ -532,6 +549,10 @@ TODO:
 			'click button.components-panel__body-toggle': 'toggle_section',
 		},
 		render: function() {
+			// Sync edit state with global collection for global layers
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				this.global_editing = PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) );
+			}
 			var data = this.model.attributes;
 			
 			if ( 
@@ -544,7 +565,7 @@ TODO:
 				data = _.extend( {}, data, { maybe_step: true } );
 			}
 
-			data = _.extend( {}, data, { toggled_status: this.toggled_status.statuses } );
+			data = _.extend( {}, data, { toggled_status: this.toggled_status.statuses, is_editing_global_layer: this.global_editing } );
 			this.$el.html( this.template( data ) );
 			this.delete_btns = {
 				prompt: this.$('.delete-item'),
@@ -563,8 +584,153 @@ TODO:
 					if ( 1 === focus_to.length ) focus_to.trigger( 'focus' );
 				}
 			}
+			// Lock/unlock UI for global layers
+			this.update_global_lock_state();
 			wp.hooks.doAction( 'PC.admin.layer_form.render', this );
 			return this;
+		},
+		update_global_lock_state: function() {
+			var is_global = !! this.model.get( 'is_global' );
+			var locked = is_global && ! this.global_editing;
+			this.$el.toggleClass( 'is-global', is_global );
+			this.$el.toggleClass( 'is-global-locked', locked );
+			// Disable inputs when locked
+			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"]' );
+			inputs.prop( 'disabled', locked );
+		},
+		on_make_global: function( e ) {
+			e.preventDefault();
+			var self = this;
+			
+			// Allow external handlers to hook in (for custom implementations)
+			var handled = false;
+			try {
+				wp.hooks.doAction( 'PC.admin.layer.makeGlobal', this.model, this, function() {
+					handled = true;
+				} );
+			} catch(e) {}
+			
+			if ( handled ) {
+				// External handler took care of it
+				return;
+			}
+			
+			// Get layer data
+			var layer_data = PC.toJSON( this.model );
+			
+			// Get existing choices for this layer
+			var choices_data = [];
+			var layer_content = PC.app.get_layer_content( this.model.id );
+			if ( layer_content && layer_content.length ) {
+				layer_content.each( function( choice ) {
+					choices_data.push( choice.toJSON() );
+				} );
+			}
+			
+			// Format content data for global layer (array with layerId and choices)
+			var content_data = [{
+				layerId: this.model.id,
+				choices: choices_data
+			}];
+			
+			// Save to server immediately (creating new global layer with global_id = 0)
+			PC.app.get_global_layers().save_global_layer( 0, layer_data, content_data, {
+				success: function( model, response ) {
+					// wp.ajax.post automatically unwraps the response, so response is the data object
+					if ( response && response.global_id ) {
+						var global_id = response.global_id;
+						
+						// Set global_id on the layer model
+						self.model.set( {
+							is_global: true,
+							global_id: global_id
+						} );
+						
+						// Mark layers as modified (so the global_id gets saved with the product)
+						PC.app.is_modified['layers'] = true;
+						
+						// Add to global layers collection
+						var global_model = PC.app.get_global_layers().get_or_create( global_id );
+						global_model.set( {
+							layer: layer_data,
+							content: content_data
+						} );
+						
+						// Enter edit mode for the global layer
+						PC.app.get_global_layers().set_editing_layer( global_id, true );
+						self.global_editing = true;
+						
+						// Update UI
+						self.render();
+					} else {
+						alert( 'Error creating global layer. Please try again.' );
+						console.error( 'Save global layer error:', response );
+					}
+				},
+				error: function( model, error ) {
+					var error_message = 'Unknown error';
+					if ( error && error.data ) {
+						if ( typeof error.data === 'string' ) {
+							error_message = error.data;
+						} else if ( error.data.message ) {
+							error_message = error.data.message;
+						} else {
+							error_message = JSON.stringify( error.data );
+						}
+					} else if ( error && error.message ) {
+						error_message = error.message;
+					}
+					alert( 'Error creating global layer: ' + error_message );
+					console.error( 'Save global layer error:', error );
+				}
+			} );
+		},
+		on_unlink_global: function( e ) {
+			e.preventDefault();
+			// External handler can clone global data back if needed
+			wp.hooks.doAction( 'PC.admin.layer.unlinkGlobal', this.model, this );
+			// Clear edit state in global collection
+			var global_id = this.model.get( 'global_id' );
+			if ( global_id ) {
+				PC.app.get_global_layers().set_editing_layer( global_id, false );
+			}
+			// Local toggle off by default; persistence handled on save
+			this.model.set( { is_global: false, global_id: null } );
+			PC.app.is_modified['layers'] = true;
+			// Re-render header to reflect buttons/badge change
+			this.render();
+		},
+		edit_global: function( e ) {
+			if ( e ) e.preventDefault();
+			this.global_editing = true;
+			// Store edit state in global collection
+			if ( this.model.get( 'global_id' ) ) {
+				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), true );
+			}
+			this.update_global_lock_state();
+			this.render();
+		},
+		save_global: function( e ) {
+			if ( e ) e.preventDefault();
+			// Let external handler perform AJAX to save to CPT
+			wp.hooks.doAction( 'PC.admin.layer.saveGlobal', this.model, this );
+			// Assume save success; lock UI again and clear edit state
+			this.global_editing = false;
+			if ( this.model.get( 'global_id' ) ) {
+				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), false );
+			}
+			this.update_global_lock_state();
+			this.render();
+		},
+		cancel_global: function( e ) {
+			if ( e ) e.preventDefault();
+			this.global_editing = false;
+			// Clear edit state in global collection
+			if ( this.model.get( 'global_id' ) ) {
+				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), false );
+			}
+			this.update_global_lock_state();
+			this.render();
 		},
 		on_change_not_a_choice: function( event ) {
 			var input = $(event.currentTarget);
