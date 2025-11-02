@@ -46,6 +46,12 @@ class Ajax {
 		add_action( 'wp_ajax_pc_add_to_cart', array( $this, 'add_to_cart' ) );
 		add_action( 'wp_ajax_nopriv_pc_add_to_cart', array( $this, 'add_to_cart' ) );
 		add_action( 'wp_ajax_mkl_pc_finalize_chunked_storage', array( $this, 'finalize_chunked_storage' ) );
+		
+		// Global layers handlers
+		add_action( 'wp_ajax_mkl_pc_get_global_layer', array( $this, 'get_global_layer' ) );
+		add_action( 'wp_ajax_mkl_pc_save_global_layer', array( $this, 'save_global_layer' ) );
+		add_action( 'wp_ajax_mkl_pc_get_layer_choices', array( $this, 'get_layer_choices' ) );
+		add_action( 'wp_ajax_mkl_pc_save_layer_choices', array( $this, 'save_layer_choices' ) );
 	}
 
 	/**
@@ -562,6 +568,324 @@ class Ajax {
 			);
 
 			wp_send_json( $data );
+		}
+	}
+
+	/**
+	 * Get a global layer (layer + content) from CPT
+	 */
+	public function get_global_layer() {
+		if ( ! isset( $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( 'Missing global_id parameter' );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		$global_id = absint( $_REQUEST['global_id'] );
+		if ( $global_id <= 0 ) {
+			wp_send_json_error( 'Invalid global_id' );
+		}
+
+		$data = Global_Layers::get( $global_id );
+		
+		if ( false === $data['layer'] && false === $data['content'] ) {
+			wp_send_json_error( 'Global layer not found' );
+		}
+
+		// Sanitize/escape the data
+		$data['layer'] = $this->db->escape( $data['layer'] );
+		$data['content'] = $this->db->escape( $data['content'] );
+
+		wp_send_json_success( $data );
+	}
+
+	/**
+	 * Save/update a global layer (layer + content) to CPT
+	 */
+	public function save_global_layer() {
+		if ( ! isset( $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( 'Missing global_id parameter' );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		// Verify nonce if provided
+		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'update-pc-post' ) ) {
+			wp_send_json_error( 'Security check failed', 403 );
+		}
+
+		$global_id = absint( $_REQUEST['global_id'] );
+		
+		// Parse layer data
+		$layer = null;
+		if ( isset( $_REQUEST['layer'] ) && ! empty( $_REQUEST['layer'] ) ) {
+			$layer = json_decode( stripslashes( $_REQUEST['layer'] ), true );
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( 'Invalid layer JSON data' );
+			}
+			$layer = $this->db->sanitize( $layer );
+		}
+
+		// Parse content data
+		$content = null;
+		if ( isset( $_REQUEST['content'] ) && ! empty( $_REQUEST['content'] ) ) {
+			$content = json_decode( stripslashes( $_REQUEST['content'] ), true );
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( 'Invalid content JSON data' );
+			}
+			$content = $this->db->sanitize( $content );
+		}
+
+		// At least one of layer or content must be provided
+		if ( null === $layer && null === $content ) {
+			wp_send_json_error( 'No data provided' );
+		}
+
+		// If global_id is 0 or new, create new post
+		$result_id = $global_id;
+		if ( $global_id <= 0 ) {
+			$result_id = null;
+		}
+
+		// If updating, fetch existing data to merge
+		if ( $result_id ) {
+			$existing = Global_Layers::get( $result_id );
+			if ( null === $layer && $existing['layer'] ) {
+				$layer = $existing['layer'];
+			}
+			if ( null === $content && $existing['content'] ) {
+				$content = $existing['content'];
+			}
+		}
+
+		// Ensure we have both layer and content for saving
+		if ( ! $layer ) {
+			$layer = array( 'name' => 'Global Layer' );
+		}
+		if ( ! $content ) {
+			$content = array();
+		}
+
+		$result = Global_Layers::save( $layer, $content, $result_id );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( $result->get_error_message() );
+		}
+
+		/**
+		 * Action mkl_pc_saved_global_layer, triggered when a global layer is saved
+		 *
+		 * @param int    $result_id - The global layer CPT post ID
+		 * @param array  $layer     - The layer data
+		 * @param array  $content   - The content/choices data
+		 */
+		do_action( 'mkl_pc_saved_global_layer', $result_id, $layer, $content );
+
+		wp_send_json_success( array(
+			'global_id' => $result,
+			'layer' => $layer,
+			'content' => $content,
+		) );
+	}
+
+	/**
+	 * Get choices for a specific layer (handles both global and local layers)
+	 */
+	public function get_layer_choices() {
+		if ( ! isset( $_REQUEST['layer_id'] ) || ! isset( $_REQUEST['product_id'] ) ) {
+			wp_send_json_error( 'Missing required parameters' );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		$product_id = absint( $_REQUEST['product_id'] );
+		$layer_id = absint( $_REQUEST['layer_id'] );
+		$is_global = isset( $_REQUEST['is_global'] ) && $_REQUEST['is_global'];
+		$global_id = isset( $_REQUEST['global_id'] ) ? absint( $_REQUEST['global_id'] ) : 0;
+
+		$choices = array();
+
+		if ( $is_global && $global_id > 0 ) {
+			// Fetch from global layer CPT
+			$global_data = Global_Layers::get( $global_id );
+			if ( $global_data['content'] && is_array( $global_data['content'] ) ) {
+				// Find the choices for this layer
+				foreach ( $global_data['content'] as $content_entry ) {
+					if ( isset( $content_entry['layerId'] ) && $content_entry['layerId'] == $layer_id ) {
+						$choices = isset( $content_entry['choices'] ) ? $content_entry['choices'] : array();
+						break;
+					}
+				}
+			}
+		} else {
+			// Fetch from product meta
+			$content = $this->db->get( 'content', $product_id );
+			if ( $content && is_array( $content ) ) {
+				foreach ( $content as $content_entry ) {
+					if ( isset( $content_entry['layerId'] ) && $content_entry['layerId'] == $layer_id ) {
+						$choices = isset( $content_entry['choices'] ) ? $content_entry['choices'] : array();
+						break;
+					}
+				}
+			}
+		}
+
+		$choices = $this->db->escape( $choices );
+
+		wp_send_json_success( array( 'choices' => $choices ) );
+	}
+
+	/**
+	 * Save choices for a specific layer (handles both global and local layers)
+	 */
+	public function save_layer_choices() {
+		if ( ! isset( $_REQUEST['layer_id'] ) || ! isset( $_REQUEST['product_id'] ) ) {
+			wp_send_json_error( 'Missing required parameters' );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		// Verify nonce
+		$product_id = absint( $_REQUEST['product_id'] );
+		if ( ! check_ajax_referer( 'update-pc-post_' . $product_id, 'nonce', false ) ) {
+			wp_send_json_error( 'Security check failed', 403 );
+		}
+
+		if ( ! current_user_can( 'edit_post', $product_id ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		$layer_id = absint( $_REQUEST['layer_id'] );
+		$is_global = isset( $_REQUEST['is_global'] ) && ( $_REQUEST['is_global'] == '1' || $_REQUEST['is_global'] === 1 || $_REQUEST['is_global'] === true );
+		$global_id = isset( $_REQUEST['global_id'] ) ? absint( $_REQUEST['global_id'] ) : 0;
+
+		// For global layers, verify permissions on the global layer CPT
+		if ( $is_global && $global_id > 0 ) {
+			$global_post = get_post( $global_id );
+			if ( ! $global_post || $global_post->post_type !== 'mkl_global_layer' ) {
+				wp_send_json_error( 'Invalid global layer ID', 400 );
+			}
+			if ( ! current_user_can( 'edit_post', $global_id ) ) {
+				wp_send_json_error( 'Insufficient permissions to edit global layer', 403 );
+			}
+		}
+
+		// Parse choices data
+		if ( ! isset( $_REQUEST['choices'] ) ) {
+			wp_send_json_error( 'Missing choices data' );
+		}
+
+		$choices = json_decode( stripslashes( $_REQUEST['choices'] ), true );
+		if ( json_last_error() !== JSON_ERROR_NONE ) {
+			wp_send_json_error( 'Invalid choices JSON data: ' . json_last_error_msg() );
+		}
+
+		$choices = $this->db->sanitize( $choices );
+
+		if ( $is_global && $global_id > 0 ) {
+			// Save to global layer CPT
+			$global_data = Global_Layers::get( $global_id );
+			if ( false === $global_data['layer'] && false === $global_data['content'] ) {
+				wp_send_json_error( 'Global layer not found', 404 );
+			}
+			
+			$layer_data = $global_data['layer'] ? $global_data['layer'] : array();
+			$content_data = $global_data['content'] ? $global_data['content'] : array();
+
+			// Find and update or add the content entry for this layer
+			$found = false;
+			if ( ! is_array( $content_data ) ) {
+				$content_data = array();
+			}
+			
+			foreach ( $content_data as $index => $content_entry ) {
+				if ( isset( $content_entry['layerId'] ) && intval( $content_entry['layerId'] ) === $layer_id ) {
+					$content_data[$index]['choices'] = $choices;
+					$found = true;
+					break;
+				}
+			}
+
+			if ( ! $found ) {
+				$content_data[] = array(
+					'layerId' => $layer_id,
+					'choices' => $choices,
+					'global_id' => $global_id,
+				);
+			}
+
+			$result = Global_Layers::save( $layer_data, $content_data, $global_id );
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( $result->get_error_message() );
+			}
+
+			/**
+			 * Action mkl_pc_saved_global_layer_choices, triggered when global layer choices are saved
+			 *
+			 * @param int    $global_id - The global layer CPT post ID
+			 * @param int    $layer_id  - The local layer ID
+			 * @param array  $choices   - The choices data
+			 */
+			do_action( 'mkl_pc_saved_global_layer_choices', $global_id, $layer_id, $choices );
+
+			wp_send_json_success( array(
+				'global_id' => $result,
+				'choices' => $choices,
+			) );
+
+		} else {
+			// Save to product meta
+			$content = $this->db->get( 'content', $product_id );
+			if ( ! is_array( $content ) ) {
+				$content = array();
+			}
+
+			// Find and update or add the content entry for this layer
+			$found = false;
+			foreach ( $content as $index => $content_entry ) {
+				if ( isset( $content_entry['layerId'] ) && $content_entry['layerId'] == $layer_id ) {
+					$content[$index]['choices'] = $choices;
+					$found = true;
+					break;
+				}
+			}
+
+			if ( ! $found ) {
+				$content[] = array(
+					'layerId' => $layer_id,
+					'choices' => $choices,
+				);
+			}
+
+			// Determine ref_id (parent for variations)
+			$ref_id = $product_id;
+			if ( isset( $_REQUEST['parent_id'] ) ) {
+				$ref_id = absint( $_REQUEST['parent_id'] );
+			}
+
+			$result = $this->db->set( $product_id, $ref_id, 'content', $content, array( $layer_id ) );
+
+			/**
+			 * Action mkl_pc_saved_configurator_data, triggered when product content is saved
+			 *
+			 * @param int    $product_id - Product / variation ID
+			 * @param int    $ref_id     - Product ID
+			 * @param string $component  - The component saved (content)
+			 * @param array  $data       - The data saved
+			 * @param array  $modified_choices - Array of modified choices
+			 */
+			do_action( 'mkl_pc_saved_configurator_data', $product_id, $ref_id, 'content', $content, array( $layer_id ) );
+
+			wp_send_json_success( array( 'choices' => $choices ) );
 		}
 	}
 }
