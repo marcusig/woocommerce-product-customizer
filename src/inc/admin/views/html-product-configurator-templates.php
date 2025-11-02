@@ -10,8 +10,8 @@ if ( $is_IE && strpos( $user_agent, 'MSIE 7' ) !== false )
 	$class .= ' ie7';
 
 function mkl_pc_get_admin_actions() {
-	return '<div class="actions-container">
-		<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+	return '' .
+		'<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
 		'<button type="button" class="button-link duplicate duplicate-item">' . __('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
 		'<button type="button" class="button-link copy copy-item">' . __('Copy', 'product-configurator-for-woocommerce' ) . '</button>' .
 		'<div class="prompt-delete hidden mkl-pc-setting--warning">' .
@@ -20,8 +20,7 @@ function mkl_pc_get_admin_actions() {
 				'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
 				'<button type="button" class="button cancel-delete" data-delete="cancel">' . __('Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
 			'</p>' .
-		'</div>' .
-	'</div>';
+		'</div>';
 }
 ?>
 <?php 
@@ -208,7 +207,11 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<button type="button" class="mkl-pc-admin-list-row__hit">
 			<span class="screen-reader-text"><?php echo esc_html__( 'Select layer', 'product-configurator-for-woocommerce' ); ?>: <# print( data.admin_label && data.admin_label != '' ? data.admin_label : data.name ); #></span>
 		</button>
-		<div class="mkl-pc-admin-list-row__body"></div>
+		<div class="mkl-pc-admin-list-row__body">
+			<div class="mkl-pc-badges"><# if ( data.is_global ) { #>
+					<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
+			<# } #></div>
+		</div>
 	</div>
 	<# if ( 'group' == data.type && 'order' == data.orderAttr ) { #>
 		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
@@ -247,7 +250,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<h2>
 				<?php esc_html_e('Details', 'product-configurator-for-woocommerce' ); ?>
 			</h2>
-			<?php echo mkl_pc_get_admin_actions(); ?>
+			<div class="actions-container">
+				<?php echo mkl_pc_get_admin_actions(); ?>
+			</div>
 		</header>
 
 		<?php do_action('mkl_pc_angle_fields') ?>
@@ -272,8 +277,25 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<div class="form-details">
 		<header>
 			<h2><?php esc_html_e('Details', 'product-configurator-for-woocommerce' ) ?> - [ID: {{data._id}}]</h2>
-			<?php echo mkl_pc_get_admin_actions(); ?>
+			<div class="actions-container">
+				<?php echo mkl_pc_get_admin_actions(); ?>
+				<# if ( !data.is_global ) { #>
+					<button type="button" class="button-link make-global"><?php _e('Make Global', 'product-configurator-for-woocommerce' ); ?></button>
+				<# } #>
+			</div>
 		</header>
+		<# if ( data.is_global ) { #>
+		<div class="mkl-pc-global-layer-heading">
+			<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
+			<# if ( data.is_editing_global_layer ) { #>
+				<button type="button" class="button save-global"><?php _e('Save changes to global layer', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button cancel-global"><?php _e('Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+			<# } else { #>
+				<button type="button" class="button unlink-global"><?php _e('Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button edit-global"><?php _e('Edit global layer', 'product-configurator-for-woocommerce' ); ?></button>
+			<# } #>
+		</div>
+		<# } #>
 
 		<?php do_action('mkl_pc_layer_fields') ?>
 
@@ -324,6 +346,9 @@ CONTENT TEMPLATES
 				{{data.name}}
 			<# } #>
 		</span>
+		<# if ( data.is_global ) { #>
+			<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
+		<# } #>
 		<span class="number-of-choices">{{data.choices_number}}</span>
 	</button>
 </script>
@@ -343,19 +368,20 @@ CONTENT TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-choices">
 	<button type="button" class="active-layer"></button>
 	<div class="structure-toolbar structure-toolbar--choices">
+		<# if ( !data.is_global || data.is_editing_choices ) { #>
 		<div class="structure-toolbar__primary">
 			<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>
 			<div class="structure-toolbar__add">
-				<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
-				<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
+				<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}" <# if ( data.is_global && ! data.is_editing_choices ) { #>disabled<# } #>></h4>
+				<button type="button" class="button-primary add-layer" <# if ( data.is_global && ! data.is_editing_choices ) { #>disabled<# } #>><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 			</div>
 		</div>
+		<# } #>
 		<div class="structure-toolbar__filter">
 			<input type="search" class="mkl-pc-list-filter-input" placeholder="{{PC.lang.list_filter_placeholder}}" autocomplete="off" />
 		</div>
 	</div>
-	<div class="mkl-list choices ui-sortable sortable-list">
-	</div>
+	<div class="mkl-list choices ui-sortable sortable-list"></div>
 	<# if ( data.has_clipboard_data ) { #> 
 	<div class="paste">
 		<button type="button" class="button-primary paste-items"><span><?php esc_html_e( 'Paste', 'product-configurator-for-woocommerce' ); ?></span></button>
@@ -392,7 +418,9 @@ CONTENT TEMPLATES
 	<div class="form-details">
 		<header>
 			<h2><?php esc_html_e('Choice informations', 'product-configurator-for-woocommerce' ) ?> [ID: {{data._id}}]</h2>
-			<?php echo mkl_pc_get_admin_actions(); ?>
+			<div class="actions-container">
+				<?php echo mkl_pc_get_admin_actions(); ?>
+			</div>
 		</header>
 
 		<div class="options">

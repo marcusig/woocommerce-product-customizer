@@ -245,6 +245,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/collections/layers', 'collections/layers.js'),
 				array('backbone/collections/angles', 'collections/angles.js'),
 				array('backbone/collections/choices', 'collections/choices.js'),
+				array('backbone/collections/global-layers', 'collections/global-layers.js'),
 				array('backbone/collections/states', 'collections/states.js'),
 				array('backbone/collections/products', 'collections/products.js'),
 				//VIEWS

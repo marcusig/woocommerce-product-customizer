@@ -39,6 +39,12 @@ PC.toJSON = function( item ) {
 		deleted_layer_ids: [],
 		modified_content_layer_ids: {},
 		state: null,
+		get_global_layers: function() {
+			if ( ! this.global_layers ) {
+				this.global_layers = new PC.global_layers();
+			}
+			return this.global_layers;
+		},
 		init: function( options ) {
 			PC.lang = PC_lang || {};
 			if ( options.product_id === undefined) { 
@@ -55,6 +61,9 @@ PC.toJSON = function( item ) {
 				});
 				this.admin = new PC.views.admin({ model: this.admin_data });
 			}
+
+			// Ensure global layers collection is initialized
+			this.get_global_layers();
 
 			// document.addEventListener( 'paste', ( e ) => {
 			// 	if ( !app.configuratorView?.isVisible() ) return;
