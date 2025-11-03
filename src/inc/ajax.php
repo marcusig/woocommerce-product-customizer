@@ -50,6 +50,7 @@ class Ajax {
 		// Global layers handlers
 		add_action( 'wp_ajax_mkl_pc_get_global_layer', array( $this, 'get_global_layer' ) );
 		add_action( 'wp_ajax_mkl_pc_save_global_layer', array( $this, 'save_global_layer' ) );
+		add_action( 'wp_ajax_mkl_pc_list_global_layers', array( $this, 'list_global_layers' ) );
 	}
 
 	/**
@@ -693,6 +694,35 @@ class Ajax {
 			'layer' => $layer,
 			'content' => $content,
 		) );
+	}
+
+	/**
+	 * List all global layers (without content)
+	 */
+	public function list_global_layers() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		// Verify nonce if provided - use global layers nonce
+		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'mkl_pc_global_layers' ) ) {
+			wp_send_json_error( 'Security check failed', 403 );
+		}
+
+		$global_ids = Global_Layers::list();
+		$layers = array();
+
+		foreach ( $global_ids as $global_id ) {
+			$data = Global_Layers::get( $global_id );
+			if ( $data['layer'] && is_array( $data['layer'] ) ) {
+				// Include only layer data, not content
+				$layer_info = $data['layer'];
+				$layer_info['global_id'] = $global_id;
+				$layers[] = $this->db->escape( $layer_info );
+			}
+		}
+
+		wp_send_json_success( array( 'layers' => $layers ) );
 	}
 
 }

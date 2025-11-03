@@ -53,6 +53,7 @@ TODO:
 		single_view: function() { return PC.views.layer; },
 		events: {
 			'click .add-layer': 'create',
+			'click .import-layer': 'import_global_layer',
 			'click .order-toolbar button': 'change_order_type',
 			'keypress .structure-toolbar h4 input': 'create',
 			'input .mkl-pc-list-filter-input': 'on_list_filter',
@@ -211,6 +212,15 @@ TODO:
 
 			this.$new_input.val( '' );
 			this.apply_list_filter();
+		},
+		import_global_layer: function( e ) {
+			e.preventDefault();
+			if ( ! PC.views.import_global_layer ) {
+				console.error( 'Import global layer view not found. Make sure import-global-layer.js is loaded.' );
+				return;
+			}
+			var modal = new PC.views.import_global_layer();
+			modal.open();
 		},
 		layers_changed: function( model ) {
 			var changed = model.changedAttributes && model.changedAttributes();

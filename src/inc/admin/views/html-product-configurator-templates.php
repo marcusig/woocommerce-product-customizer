@@ -144,6 +144,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					<div class="structure-toolbar__add">
 						<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 						<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
+						<# if ( data.collectionName && 'layers' == data.collectionName ) { #><button type="button" class="button-primary import-layer"><span><?php _e( 'Import' ); ?></span></button><# } #>
 					</div>
 				</div>
 				<div class="structure-toolbar__filter">
@@ -756,6 +757,45 @@ IMPORT / EXPORT
 	<div class="options-list"></div>
 	<?php do_action( 'tmpl-mkl-pc-setting--repeater' ); ?>
 	<button class="button add-option" type="button"><i class="dashicons dashicons-plus"></i> <?php esc_html_e( 'Add option', 'product-configurator-for-woocommerce' ); ?></button>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-import-global-layer">
+	<div class="media-frame-content import-global-layer">
+		<div class="import-global-layer-header">
+			<h2><?php _e( 'Import Global Layer', 'product-configurator-for-woocommerce' ); ?></h2>
+			<div class="filter-container">
+				<select class="global-layers-filter" style="width: 100%;" data-placeholder="<?php esc_attr_e( 'Filter layers...', 'product-configurator-for-woocommerce' ); ?>">
+					<option></option>
+				</select>
+			</div>
+		</div>
+		<div class="global-layers-list">
+			<div class="spinner"></div>
+		</div>
+		<div class="media-toolbar">
+			<div class="media-toolbar-primary">
+				<button type="button" class="button button-primary import-selected" disabled><?php _e( 'Import Selected', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button cancel"><?php _e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+			</div>
+		</div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-global-layer-item">
+	<div class="global-layer-item" data-global-id="{{data.global_id}}">
+		<label>
+			<input type="radio" name="global_layer_selection" value="{{data.global_id}}">
+			<div class="layer-info">
+				<h4>{{data.name}}<# if ( data.admin_label && data.admin_label != data.name ) { #> <span class="admin-label">({{data.admin_label}})</span><# } #></h4>
+				<# if ( data.image && data.image.url ) { #>
+					<img src="{{data.image.url}}" class="layer-thumbnail" alt="">
+				<# } #>
+				<# if ( data.type ) { #>
+					<span class="layer-type"><?php _e( 'Type:', 'product-configurator-for-woocommerce' ); ?> {{data.type}}</span>
+				<# } #>
+			</div>
+		</label>
+	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-setting--repeater-option">

@@ -256,6 +256,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/views/angles', 'views/angles.js'),
 				array('backbone/views/content', 'views/content.js'),
 				array('backbone/views/import', 'views/import.js'),
+				array('backbone/views/import_global_layer', 'views/import-global-layer.js'),
 				array('backbone/views/app', 'views/app.js'),
 				array('backbone/views/product_selector', 'views/product_selector.js', array( 'wc-enhanced-select' ) ),
 				array('backbone/views/field_repeater', 'views/field-repeater.js'),
