@@ -315,6 +315,9 @@ PC.views = PC.views || {};
 				PC.app.get_global_layers().set_editing_choices( this.model.get( 'global_id' ), true );
 			}
 			this.render();
+			// Trigger event for choiceDetails views to update lock state
+			this.$el.trigger( 'choices-edit-mode-changed' );
+			wp.hooks.doAction( 'PC.admin.choices.editModeChanged', this.model, this );
 			if ( this.state && this.state.update_global_actions_visibility ) {
 				this.state.update_global_actions_visibility();
 			}
@@ -329,6 +332,10 @@ PC.views = PC.views || {};
 			if ( this.model && this.model.get( 'is_global' ) && global_id ) {
 				PC.app.get_global_layers().set_editing_choices( global_id, false );
 			}
+			
+			// Trigger event for choiceDetails views to update lock state
+			this.$el.trigger( 'choices-edit-mode-changed' );
+			wp.hooks.doAction( 'PC.admin.choices.editModeChanged', this.model, this );
 			
 			// Re-fetch from server/source to discard local edits
 			this.refresh_from_server().always( function() {
@@ -374,8 +381,6 @@ PC.views = PC.views || {};
 				// Fetch using global_layers collection
 				PC.app.get_global_layers().fetch_global_choices( global_id, this.model.id, {
 					success: function( choices, response ) {
-						console.log( choices, response );
-						
 						if ( choices && Array.isArray( choices ) ) {
 							self.col.reset( choices );
 							PC.app.is_modified[self.collectionName] = false;
@@ -575,8 +580,19 @@ PC.views = PC.views || {};
 			this.toggled_status.init();
 			this.angles = this.admin.angles; 
 			this.layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
+			this.state = options.state; // Reference to parent choices view
 			this.listenTo( this.model, 'destroy', this.remove );
 			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group' ), this.render );
+			
+			// Listen for edit mode changes from parent state view
+			if ( this.state ) {
+				// Custom event from parent when edit mode changes
+				$( this.state.$el ).on( 'choices-edit-mode-changed', this.update_lock_state.bind( this ) );
+			}
+			
+			// Also listen to global layers edit state changes via hook
+			wp.hooks.addAction( 'PC.admin.choices.editModeChanged', 'PC/choiceDetails/updateLock', this.update_lock_state.bind( this ) );
+			
 			PC.currentEditedItem = this.model;
 			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},
@@ -602,6 +618,11 @@ PC.views = PC.views || {};
 		},
 		on_remove: function ( e ) {
 			this.$( '.wp-picker-container.wp-picker-active input.color-hex' ).wpColorPicker( 'close' );
+			// Clean up event listeners
+			if ( this.state && this.state.$el ) {
+				$( this.state.$el ).off( 'choices-edit-mode-changed', this.update_lock_state );
+			}
+			wp.hooks.removeAction( 'PC.admin.choices.editModeChanged', 'PC/choiceDetails/updateLock' );
 		},
 		render: function() {
 			var args;
@@ -652,6 +673,10 @@ PC.views = PC.views || {};
 
 			// Hide empty groups
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
+			
+			// Update lock state after render
+			this.update_lock_state();
+			
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;
@@ -820,9 +845,20 @@ PC.views = PC.views || {};
 			}
 		},
 		update_lock_state: function() {
-			// Disable inputs when locked
-			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"]' );
-			inputs.prop( 'disabled', ! this.editing_choices );
+			if ( ! this.$el || ! this.$el.length ) return;
+			
+			// Get current edit state from parent state view or global layers collection
+			var is_editing = false;
+			if ( this.layer && this.layer.get( 'is_global' ) && this.layer.get( 'global_id' ) ) {
+				var global_id = this.layer.get( 'global_id' );
+				is_editing = PC.app.get_global_layers() ? PC.app.get_global_layers().is_editing_choices( global_id ) : false;
+			} else if ( this.state && typeof this.state.editing_choices !== 'undefined' ) {
+				is_editing = this.state.editing_choices;
+			}
+			
+			// Disable inputs when locked (locked = not editing)
+			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"], .setting button' );
+			inputs.prop( 'disabled', ! is_editing );
 		}
 	});
 

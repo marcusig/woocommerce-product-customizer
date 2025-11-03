@@ -185,58 +185,6 @@ var PC = PC || {};
 				if ( options.error ) options.error( model, error );
 			}.bind( this ) );
 		},
-
-		/**
-		 * Save choices for a specific global layer
-		 * Helper method that merges choices into existing content and calls save_global_layer
-		 * @param {number} global_id - The CPT post ID
-		 * @param {number} layer_id - The local layer ID
-		 * @param {Array} choices_data - Array of choice objects
-		 * @param {Object} options - jQuery AJAX options
-		 */
-		save_global_choices: function( global_id, layer_id, choices_data, options ) {
-			options = options || {};
-			var self = this;
-			var model = this.get_or_create( global_id );
-			
-			// Get existing data (from local model or fetch from server)
-			var existing_layer = model.get( 'layer' );
-			var existing_content = model.get( 'content' ) || [];
-			
-			// Update or add choices for this layer
-			var found = false;
-			for ( var i = 0; i < existing_content.length; i++ ) {
-				if ( existing_content[i].layerId == layer_id ) {
-					existing_content[i].choices = choices_data;
-					found = true;
-					break;
-				}
-			}
-			if ( ! found ) {
-				existing_content.push( {
-					layerId: layer_id,
-					choices: choices_data,
-					global_id: global_id
-				} );
-			}
-			
-			// If we don't have layer data locally, fetch it first
-			if ( ! existing_layer && global_id > 0 ) {
-				return this.fetch_global_layer( global_id, {
-					success: function( model, response ) {
-						// Now save with the fetched layer data and updated content
-						self.save_global_layer( global_id, response.layer, existing_content, options );
-					},
-					error: function( model, error ) {
-						// If fetch fails, try saving anyway (server will merge)
-						self.save_global_layer( global_id, null, existing_content, options );
-					}
-				} );
-			} else {
-				// Save using save_global_layer (only updating content, layer remains unchanged)
-				return this.save_global_layer( global_id, existing_layer, existing_content, options );
-			}
-		}
 	});
 
 } ) ( PC._us || window._ );

@@ -137,6 +137,11 @@ PC.views = PC.views || {};
 				if ( this.active_layer.render ) {
 					this.active_layer.render();
 				}
+				// Trigger event for choiceDetails views to update lock state
+				if ( this.active_layer.$el ) {
+					this.active_layer.$el.trigger( 'choices-edit-mode-changed' );
+				}
+				wp.hooks.doAction( 'PC.admin.choices.editModeChanged', this.active_layer.model, this.active_layer );
 				this.update_global_actions_visibility();
 				return;
 			}
@@ -162,6 +167,11 @@ PC.views = PC.views || {};
 					if ( self.active_layer.render ) {
 						self.active_layer.render();
 					}
+					// Trigger event for choiceDetails views to update lock state
+					if ( self.active_layer.$el ) {
+						self.active_layer.$el.trigger( 'choices-edit-mode-changed' );
+					}
+					wp.hooks.doAction( 'PC.admin.choices.editModeChanged', self.active_layer.model, self.active_layer );
 					self.update_global_actions_visibility();
 				},
 				error: function( model, error ) {
@@ -194,6 +204,7 @@ PC.views = PC.views || {};
 						PC.app.get_global_layers().set_editing_choices( global_id, false );
 					}
 				}
+				// Event is triggered in on_cancel_edit_choices, no need to trigger again here
 				this.update_global_actions_visibility();
 			}
 		},

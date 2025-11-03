@@ -333,6 +333,12 @@ CONTENT TEMPLATES
 		</div>
 		<div class="content-col content-choice pc-sidebar choice-details">
 			<p class="mkl-pc-content-placeholder"><?php esc_html_e( 'Choice details', 'product-configurator-for-woocommerce' ); ?></p>
+			<div class="global-actions-container">
+				<h3><span class="dashicons dashicons-lock"></span><span class="dashicons dashicons-unlock"></span> <?php _e('Global layer', 'product-configurator-for-woocommerce' ); ?></h3>
+				<button type="button" class="button button-primary save-choices"><?php _e('Save choices', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button cancel-edit-choices"><?php _e('Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button edit-choices"><?php _e('Edit choices', 'product-configurator-for-woocommerce' ); ?></button>
+			</div>
 		</div>
 	</div>
 </script>

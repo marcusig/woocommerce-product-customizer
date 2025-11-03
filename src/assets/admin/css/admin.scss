@@ -1,4 +1,5 @@
 :root {
+	--global-layer-bg: #d4c9d7;
 	--global-layer-primary: #642077;
 }
 
@@ -2490,24 +2491,29 @@ html .media-modal.pc-modal .pc-sidebar .is-global-locked .setting-section.is-ope
 
 .global-actions-container {
     height: 45px;
-    background: var(--global-layer-primary);
-	color: #FFF;
+    background: var(--global-layer-bg);
+	color: var(--global-layer-primary);
     align-items: center;
     padding-left: 10px;
     padding-right: 10px;
     gap: 5px;
+	justify-content: center;
+
 	display: none;
+	h3 {
+		color: var(--global-layer-primary);
+	}
 }
 .is-global-layer .global-actions-container {
 	display: flex;
 }
 .is-global-locked .global-actions-container {
-	.save-choices, .cancel-edit-choices {
+	.save-choices, .cancel-edit-choices, span.dashicons-unlock {
 		display: none;
 	}
 }
 .is-global-layer:not(.is-global-locked) .global-actions-container {
-	.edit-choices {
+	.edit-choices, span.dashicons-lock {
 		display: none;
 	}
 }
