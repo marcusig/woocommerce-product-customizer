@@ -143,11 +143,39 @@ PC.views = PC.views || {};
 			
 			this.$importBtn.prop( 'disabled', true ).text( 'Importing...' );
 
-			// Fetch the full global layer (including content)
+			// We'll fetch the layer first, then create it and fetch content with the new layer ID
 			PC.app.get_global_layers().fetch_global_layer( global_id, {
 				success: function( model, response ) {
-					if ( response && response.layer && response.content ) {
-						self.add_layer_to_configurator( response.layer, response.content, global_id );
+					if ( response && response.layer ) {
+						// Create the layer first to get the new layer ID
+						var layers_col = PC.app.admin.layers;
+						var new_layer_id = PC.app.get_new_id( layers_col );
+						var new_order = layers_col.nextOrder ? layers_col.nextOrder() : ( layers_col.length + 1 );
+
+						// Prepare layer data
+						var new_layer_data = _.extend( {}, response.layer, {
+							_id: new_layer_id,
+							id: new_layer_id,
+							order: new_order,
+							is_global: true,
+							global_id: global_id,
+							active: false
+						});
+
+						// Create the layer
+						var new_layer = layers_col.create( new_layer_data );
+						PC.app.is_modified.layers = true;
+
+						// Now fetch content with the target layer ID to process layerIds
+						if ( response.content ) {
+							// Process content with the new layer ID
+							var processed_content = PC.app.get_global_layers().process_content_layer_id( response.content, new_layer_id );
+							self.add_layer_to_configurator( new_layer, processed_content, global_id, new_layer_id );
+						} else {
+							// No content, just add the layer
+							self.add_layer_to_configurator( new_layer, null, global_id, new_layer_id );
+						}
+						
 						self.close();
 					} else {
 						alert( 'Error: Could not fetch layer data.' );
@@ -162,74 +190,36 @@ PC.views = PC.views || {};
 			});
 		},
 
-		add_layer_to_configurator: function( layer_data, content_data, global_id ) {
-			var layers_col = PC.app.admin.layers;
+		add_layer_to_configurator: function( new_layer, content_data, global_id, new_layer_id ) {
 			var content_col = PC.app.get_product().get( 'content' );
 
-			// Generate new IDs for the layer
-			var new_layer_id = PC.app.get_new_id( layers_col );
-			var new_order = layers_col.nextOrder ? layers_col.nextOrder() : ( layers_col.length + 1 );
+			// new_layer is already created, new_layer_id is already generated
+			// content_data is an array of choices (already processed with correct layerId)
 
-			// Prepare layer data
-			var new_layer_data = _.extend( {}, layer_data, {
-				_id: new_layer_id,
-				id: new_layer_id,
-				order: new_order,
-				is_global: true,
-				global_id: global_id,
-				active: false
-			});
+			if ( content_data && Array.isArray( content_data ) && content_data.length ) {
+				var new_choices_col = new PC.choices( [], { layer: new_layer } );
+				content_col.add({ 
+					layerId: new_layer_id, 
+					choices: new_choices_col,
+					global_id: global_id
+				});
 
-			// Create the layer
-			var new_layer = layers_col.create( new_layer_data );
-			PC.app.is_modified.layers = true;
-
-			// Prepare content data if it exists
-			// content_data can be either an array of content entries or a single content entry
-			if ( content_data ) {
-				var choices_data = null;
-				
-				// If it's an array, find the content entry for this layer
-				if ( Array.isArray( content_data ) ) {
-					// Check if it's an array of content entries (each with layerId and choices)
-					if ( content_data.length > 0 && content_data[0].layerId !== undefined ) {
-						// Find the entry matching this layer (though for global layers, there should be only one)
-						var content_entry = content_data[0];
-						choices_data = content_entry.choices || [];
-					} else {
-						// It's an array of choices directly
-						choices_data = content_data;
-					}
-				} else if ( content_data.choices ) {
-					// It's a single content entry object
-					choices_data = content_data.choices;
-				}
-
-				if ( choices_data && Array.isArray( choices_data ) && choices_data.length ) {
-					var new_choices_col = new PC.choices( [], { layer: new_layer } );
-					content_col.add({ 
-						layerId: new_layer_id, 
-						choices: new_choices_col,
-						global_id: global_id
+				_.each( content_data, function( choice_data ) {
+					var new_choice_id = PC.app.get_new_id( new_choices_col );
+					var choice_order = new_choices_col.nextOrder ? new_choices_col.nextOrder() : ( new_choices_col.length + 1 );
+					
+					var new_choice_data = _.extend( {}, choice_data, {
+						_id: new_choice_id,
+						id: new_choice_id,
+						layerId: new_layer_id,
+						order: choice_order
 					});
 
-					_.each( choices_data, function( choice_data ) {
-						var new_choice_id = PC.app.get_new_id( new_choices_col );
-						var choice_order = new_choices_col.nextOrder ? new_choices_col.nextOrder() : ( new_choices_col.length + 1 );
-						
-						var new_choice_data = _.extend( {}, choice_data, {
-							_id: new_choice_id,
-							id: new_choice_id,
-							layerId: new_layer_id,
-							order: choice_order
-						});
+					var new_choice = new_choices_col.create( new_choice_data );
+					PC.app.modified_choices.push( new_choice.get( 'layerId' ) + '_' + new_choice.id );
+				});
 
-						var new_choice = new_choices_col.create( new_choice_data );
-						PC.app.modified_choices.push( new_choice.get( 'layerId' ) + '_' + new_choice.id );
-					});
-
-					PC.app.is_modified.content = true;
-				}
+				PC.app.is_modified.content = true;
 			}
 
 			// Trigger event to notify that a layer was imported

@@ -637,11 +637,8 @@ TODO:
 				} );
 			}
 			
-			// Format content data for global layer (array with layerId and choices)
-			var content_data = [{
-				layerId: this.model.id,
-				choices: choices_data
-			}];
+			// Save just the choices array (no layerId wrapper - layerId is product-specific)
+			var content_data = choices_data;
 			
 			// Save to server immediately (creating new global layer with global_id = 0)
 			PC.app.get_global_layers().save_global_layer( 0, layer_data, content_data, {

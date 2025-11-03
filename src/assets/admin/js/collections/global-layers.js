@@ -27,6 +27,28 @@ var PC = PC || {};
 		},
 
 		/**
+		 * Process choices array and update layerId to the target layer ID
+		 * Global layers store only an array of choices (no layerId wrapper)
+		 * @param {Array} choices - Array of choice objects
+		 * @param {number} target_layer_id - The target layer ID to use
+		 * @return {Array} Processed choices array with updated layerIds
+		 */
+		process_content_layer_id: function( choices, target_layer_id ) {
+			if ( ! choices || ! target_layer_id ) return choices;
+			
+			// Global layers should always be an array of choices
+			if ( Array.isArray( choices ) ) {
+				return _.map( choices, function( choice ) {
+					var processed_choice = _.extend( {}, choice );
+					processed_choice.layerId = target_layer_id;
+					return processed_choice;
+				} );
+			}
+			
+			return choices;
+		},
+
+		/**
 		 * Get or create a global layer entry
 		 * @param {number} global_id - The CPT post ID
 		 * @return {Backbone.Model}
@@ -85,10 +107,14 @@ var PC = PC || {};
 		 * Fetch a global layer from server
 		 * @param {number} global_id - The CPT post ID
 		 * @param {Object} options - jQuery AJAX options
+		 *   - target_layer_id (optional) - If provided, updates choice layerIds to this ID
+		 *   - success - Success callback
+		 *   - error - Error callback
 		 */
 		fetch_global_layer: function( global_id, options ) {
 			options = options || {};
 			var model = this.get_or_create( global_id );
+			var target_layer_id = options.target_layer_id || null;
 			
 			return wp.ajax.post( {
 				action: 'mkl_pc_get_global_layer',
@@ -96,9 +122,18 @@ var PC = PC || {};
 				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
 			} ).done( function( response ) {
 				if ( response && response.layer ) {
+					var processed_content = response.content;
+					
+					// Process choices to update layerIds if target_layer_id is provided
+					if ( target_layer_id && processed_content ) {
+						processed_content = this.process_content_layer_id( processed_content, target_layer_id );
+						// Also update the response object for the callback
+						response.content = processed_content;
+					}
+					
 					model.set( {
 						layer: response.layer,
-						content: response.content || null
+						content: processed_content || null
 					} );
 					if ( options.success ) options.success( model, response );
 				}
@@ -111,7 +146,7 @@ var PC = PC || {};
 		 * Save a global layer to server
 		 * @param {number} global_id - The CPT post ID (0 for new)
 		 * @param {Object} layer_data - Layer data (optional if only updating content)
-		 * @param {Object} content_data - Content/choices data (optional if only updating layer)
+		 * @param {Array} content_data - Array of choice objects (optional if only updating layer)
 		 * @param {Object} options - jQuery AJAX options
 		 */
 		save_global_layer: function( global_id, layer_data, content_data, options ) {
@@ -141,7 +176,7 @@ var PC = PC || {};
 		/**
 		 * Fetch choices for a specific global layer
 		 * @param {number} global_id - The CPT post ID
-		 * @param {number} layer_id - The local layer ID
+		 * @param {number} layer_id - The local layer ID (will be used to update layerIds in choices)
 		 * @param {Object} options - jQuery AJAX options
 		 */
 		fetch_global_choices: function( global_id, layer_id, options ) {
@@ -158,13 +193,17 @@ var PC = PC || {};
 				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
 			} ).done( function( response ) {
 				if ( response.content ) {
+					// Process choices to update layerIds (global layers store array of choices)
+					var choices_array = this.process_content_layer_id( response.content, layer_id );
+					
 					// Update local model's content with fetched choices
 					var current_content = model.get( 'content' ) || [];
 					// Find and update the content entry for this layer
 					var found = false;
 					for ( var i = 0; i < current_content.length; i++ ) {
 						if ( current_content[i].layerId == layer_id ) {
-							current_content[i].choices = response.content;
+							current_content[i].choices = choices_array;
+							current_content[i].layerId = layer_id;
 							found = true;
 							break;
 						}
@@ -172,12 +211,14 @@ var PC = PC || {};
 					if ( ! found ) {
 						current_content.push( {
 							layerId: layer_id,
-							choices: response.content,
+							choices: choices_array,
 							global_id: global_id
 						} );
 					}
 					model.set( 'content', current_content );
-					if ( options.success ) options.success( response.content, response );
+					
+					// Return processed choices array in response
+					if ( options.success ) options.success( choices_array, response );
 				} else if ( options.error ) {
 					options.error( model, response );
 				}
