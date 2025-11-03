@@ -764,9 +764,7 @@ IMPORT / EXPORT
 		<div class="import-global-layer-header">
 			<h2><?php _e( 'Import Global Layer', 'product-configurator-for-woocommerce' ); ?></h2>
 			<div class="filter-container">
-				<select class="global-layers-filter" style="width: 100%;" data-placeholder="<?php esc_attr_e( 'Filter layers...', 'product-configurator-for-woocommerce' ); ?>">
-					<option></option>
-				</select>
+				<input type="text" class="global-layers-filter" placeholder="<?php esc_attr_e( 'Filter by name...', 'product-configurator-for-woocommerce' ); ?>" />
 			</div>
 		</div>
 		<div class="global-layers-list">

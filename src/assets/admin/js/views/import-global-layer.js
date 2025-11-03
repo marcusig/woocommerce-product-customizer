@@ -14,6 +14,8 @@ PC.views = PC.views || {};
 			'click .cancel': 'close',
 			'click .import-selected': 'import_selected',
 			'change input[name="global_layer_selection"]': 'on_selection_change',
+			'input .global-layers-filter': 'on_filter_input',
+			'keyup .global-layers-filter': 'on_filter_input',
 		},
 
 		initialize: function( options ) {
@@ -46,27 +48,12 @@ PC.views = PC.views || {};
 			this.$filter = this.$('.global-layers-filter');
 			this.$importBtn = this.$('.import-selected');
 			this.$spinner = this.$('.spinner');
-			this.setup_select2();
 			return this;
 		},
 
-		setup_select2: function() {
-			var self = this;
-			// Check if select2 is available, fallback to regular select if not
-			if ( typeof jQuery.fn.select2 === 'undefined' ) {
-				// Fallback: use regular select
-				this.$filter.on('change', function() {
-					self.filter_layers( $(this).val() );
-				});
-				return;
-			}
-			this.$filter.select2({
-				placeholder: this.$filter.data('placeholder'),
-				allowClear: true,
-				width: '100%'
-			}).on('change', function() {
-				self.filter_layers( $(this).val() );
-			});
+		on_filter_input: function( e ) {
+			var filter_value = $( e.currentTarget ).val().toLowerCase().trim();
+			this.filter_layers( filter_value );
 		},
 
 		fetch_layers: function() {
@@ -81,7 +68,6 @@ PC.views = PC.views || {};
 				if ( response.layers ) {
 					self.layers = response.layers;
 					self.render_layers();
-					self.populate_filter();
 				} else {
 					self.$list.html( '<p>' + PC.lang?.no_global_layers || 'No global layers found.' + '</p>' );
 				}
@@ -90,26 +76,6 @@ PC.views = PC.views || {};
 				self.$list.html( '<p class="error">' + ( error.message || 'Error loading global layers.' ) + '</p>' );
 				console.error( 'Error fetching global layers:', error );
 			});
-		},
-
-		populate_filter: function() {
-			var self = this;
-			var filterData = [{ id: '', text: 'All layers' }];
-			
-			// Add unique layer types to filter
-			var types = [];
-			_.each( this.layers, function( layer ) {
-				if ( layer.type && types.indexOf( layer.type ) === -1 ) {
-					types.push( layer.type );
-					filterData.push({ id: layer.type, text: layer.type });
-				}
-			});
-
-			this.$filter.empty();
-			_.each( filterData, function( item ) {
-				self.$filter.append( new Option( item.text, item.id, false, false ) );
-			});
-			this.$filter.trigger('change');
 		},
 
 		render_layers: function() {
@@ -133,10 +99,30 @@ PC.views = PC.views || {};
 				return;
 			}
 			
+			var self = this;
 			this.$list.find('.global-layer-item').each(function() {
 				var $item = $(this);
-				var layerType = $item.find('.layer-type').text().replace(/Type:\s*/, '').trim();
-				if ( layerType === filter_value ) {
+				var $label = $item.find('h4');
+				var layerName = $label.text().toLowerCase();
+				// Get the layer data from the DOM
+				var globalId = $item.data('global-id');
+				var layer = _.find( self.layers, function( l ) {
+					return l.global_id == globalId;
+				});
+				
+				var matches = false;
+				if ( layer ) {
+					// Check name
+					if ( layer.name && layer.name.toLowerCase().indexOf( filter_value ) !== -1 ) {
+						matches = true;
+					}
+					// Check admin_label (if name didn't match)
+					if ( ! matches && layer.admin_label && layer.admin_label.toLowerCase().indexOf( filter_value ) !== -1 ) {
+						matches = true;
+					}
+				}
+				
+				if ( matches ) {
 					$item.show();
 				} else {
 					$item.hide();
@@ -261,10 +247,6 @@ PC.views = PC.views || {};
 				this.$backdrop.hide();
 			}
 			$('body').removeClass('pc-modal-opened');
-			// Clean up select2
-			if ( this.$filter && this.$filter.data('select2') ) {
-				this.$filter.select2('destroy');
-			}
 			this.remove();
 		}
 	});
