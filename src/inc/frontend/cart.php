@@ -190,6 +190,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					}
 				}
 
+				$choices = apply_filters( 'mkl_pc/wc_cart_get_item_data/choices', $choices, $cart_item );
+
 				if ( $compound_sku && count( $sku ) ) {
 					$data[] = array(
 						'className' => 'configuration-sku',
