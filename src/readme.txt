@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.8
-Stable tag: 1.5.6
+Stable tag: 1.5.8
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.5.8 - 3/Nov/2025 =
+
+* FIX: Choice class to initiate when calling the get method, or some data can be missing in some instances
 
 = 1.5.6 - 22/Oct/2025 =
 
