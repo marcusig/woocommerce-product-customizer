@@ -487,7 +487,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 
 		private function _get_cart_item_context( $cart_item = false ) {
-			if ( WC()->is_store_api_request() ) return 'block';
+			if ( function_exists( 'WC' ) && is_callable( [ WC(), 'is_store_api_request' ] ) ) {
+				if ( WC()->is_store_api_request() ) return 'block';
+			}
 			if ( 
 				( is_cart() || is_checkout() ) 
 				|| (
