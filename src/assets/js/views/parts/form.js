@@ -10,9 +10,9 @@ PC.fe.views.form = Backbone.View.extend({
 	},
 	events: {
 		'click .configurator-add-to-cart': 'add_to_cart',
-		'click .add-to-quote': 'add_to_quote'
+		'click .add-to-quote': 'add_to_quote',
+		'change input.qty': 'qty_change'
 	},
-
 	render: function() {
 		if ( ! PC.fe.config.cart_item_key ) {
 			this.$( '.edit-cart-item' ).hide();
@@ -306,4 +306,18 @@ PC.fe.views.form = Backbone.View.extend({
 			}
 		}
 	},
+	qty_change: function( e ) {
+		
+		PC.fe.currentProductData.product_info.qty = $( e.target ).val();
+		console.log( 'qty_change', PC.fe.currentProductData.product_info.qty, typeof pc_get_extra_price );
+		// If Extra price is not installed, check if price needs an update
+		if ( 'undefined' === typeof pc_get_extra_price && PC.fe.currentProductData.product_info?.price_tiers ) {
+			$( '.pc-total-price' ).html( PC.utils.formatMoney( PC.fe.get_product_price() ) );
+			// Display regular price
+			if ( PC.fe.currentProductData.product_info.regular_price && PC.fe.currentProductData.product_info.is_on_sale && $( '.pc-total--regular-price' ).length ) {
+				$( '.pc-total--regular-price' ).html( PC.utils.formatMoney( ( parseFloat( PC.fe.currentProductData.product_info.regular_price ) ) ) );
+			}
+		}
+		wp.hooks.doAction( 'PC.fe.qty_changed', PC.fe.currentProductData.product_info.qty );
+	}
 } );
