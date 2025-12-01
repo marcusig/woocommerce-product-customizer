@@ -43,12 +43,14 @@ PC.actionParameter = 'pc_get_data';
 			if ( $( this ).hasClass( 'keyboard-navigation' ) ) return;
 			if ( 'Tab' == e.key && ! e.ctrlKey ) {
 				$( this ).addClass( 'keyboard-navigation' );
+				PC.fe.keyboard_navigation = true;
 			}
 		} );
 
 		$( 'body' ).on( 'click', function( e ) {
 			if ( ! $( this ).hasClass( 'keyboard-navigation' ) ) return;
 			$( this ).removeClass( 'keyboard-navigation' );
+			PC.fe.keyboard_navigation = false;
 		} );
 
 		PC.fe.product_type = PC.fe.product_type || 'simple';
