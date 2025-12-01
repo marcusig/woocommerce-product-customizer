@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
-Tested up to: 6.8
+Tested up to: 6.9
 Stable tag: 1.5.8
 Requires PHP: 7.4
 License: GPLv2+
@@ -145,6 +145,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+* Tested up to 6.9
 
 = 1.5.8 - 3/Nov/2025 =
 
