@@ -533,7 +533,6 @@ PC.actionParameter = 'pc_get_data';
 		const { product_info } = PC.fe.currentProductData;
 		const qty = product_info.qty;
 		let price = parseFloat( product_info?.price );
-		console.log( product_info, product_info.price_tiers, typeof product_info.price_tiers );
 		
 		if ( product_info?.price_tiers && Array.isArray( product_info.price_tiers ) ) {
 			const tier = product_info.price_tiers.find( ( item ) => qty >= parseInt( item.start ) );
