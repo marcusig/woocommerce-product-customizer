@@ -128,7 +128,7 @@ class Compat_Yith_Raq {
 				$rq->raq_content[ $item_id ][ 'configurator_data_raw' ] = $data;
 				$rq->raq_content[ $item_id ][ 'pc_extra_price' ] = $ep;
 				if ( ! isset( $rq->raq_content[ $item_id ][ 'variations' ] ) ) $rq->raq_content[ $item_id ][ 'variations' ] = [];
-				foreach( $d as $variation ) {					
+				foreach( $d as $variation ) {
 					$rq->raq_content[ $item_id ][ 'variations' ][$variation['key']] = $variation['value'];
 				}
 				$added = true;
