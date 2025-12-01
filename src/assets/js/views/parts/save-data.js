@@ -14,9 +14,6 @@ PC.fe.save_data = {
 		return this.choices;
 	},
 	reset_errors: function() {
-		console.log( 'reset errors' );
-		console.trace();
-		
 		if ( PC.fe.errors.length ) {
 			_.each( PC.fe.errors, function( error ) {
 				if ( error.choice && error.choice.get( 'has_error' ) ) {

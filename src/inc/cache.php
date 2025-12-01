@@ -22,6 +22,7 @@ class Cache {
 	private function _hooks() {
 		add_action( 'woocommerce_settings_saved', array( $this, 'purge' ) );
 		add_action( 'wpo_cache_flush', array( $this, 'purge' ) );
+		add_action( 'litespeed_purged_all', array( $this, 'purge' ) );
 		add_action( 'after_rocket_clean_domain', array( $this, 'purge' ) );
 		add_action( 'template_redirect', array( $this, 'check_and_regenerate_js_file' ) );
 	}

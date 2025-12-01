@@ -169,10 +169,8 @@ add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_ch
 
 function mkl_pc_frontend_configurator_choice_thumbnail() {
 	?>
-		<# if ( data.thumbnail ) { #>
-			<i class="mkl-pc-thumbnail"><span><img src="{{data.thumbnail}}" alt="" /></span></i>
-		<# } else if ( data.color ) { #>
-			<i class="mkl-pc-thumbnail"><span style="background-color: {{data.color}};"></span></i>
+		<# if ( data.thumbnail || data.color ) { #>
+			<i class="mkl-pc-thumbnail"><span<# if ( data.color ) { #> style="background-color: {{data.color}};"<# } #>><# if ( data.thumbnail ) { #><img src="{{data.thumbnail}}" alt="" /><# } #></span></i>
 		<# } #>
 	<?php
 }

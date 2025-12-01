@@ -884,6 +884,11 @@ body.configurator_is_inline > ul.layer_choices.display-mode-full-screen {
 		left: 14px;
 		bottom: 14px;
 		right: 14px;
+		padding: 10px;
+		li.choices-list {
+			padding-left: 0;
+			padding-right: 0;
+		}
 	}
 	&.active {
 		display: flex;
@@ -991,6 +996,14 @@ body.configurator_is_inline > ul.layer_choices.display-mode-full-screen {
 	} 
 
 }
+
+/* Fix mobile layout for full screen layer display mode */
+@media (max-width: $small_screen_width) {	
+	body:not(.configurator_is_inline).pc-full-screenlayer--opened .mkl_pc .mkl_pc_container .mkl_pc_toolbar {
+		top: 0;
+	}
+}
+
 
 body.configurator_is_inline.pc-full-screenlayer--opened {
     overflow: hidden;

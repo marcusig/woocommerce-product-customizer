@@ -84,6 +84,7 @@ class Choice {
 
 
 	public function get( $val ) {
+		$this->maybe_set_things_up();
 		return isset( $this->$val ) ? $this->$val : false;
 	}
 

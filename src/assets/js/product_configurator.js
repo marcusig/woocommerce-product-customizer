@@ -43,12 +43,14 @@ PC.actionParameter = 'pc_get_data';
 			if ( $( this ).hasClass( 'keyboard-navigation' ) ) return;
 			if ( 'Tab' == e.key && ! e.ctrlKey ) {
 				$( this ).addClass( 'keyboard-navigation' );
+				PC.fe.keyboard_navigation = true;
 			}
 		} );
 
 		$( 'body' ).on( 'click', function( e ) {
 			if ( ! $( this ).hasClass( 'keyboard-navigation' ) ) return;
 			$( this ).removeClass( 'keyboard-navigation' );
+			PC.fe.keyboard_navigation = false;
 		} );
 
 		PC.fe.product_type = PC.fe.product_type || 'simple';
@@ -315,13 +317,17 @@ PC.actionParameter = 'pc_get_data';
 		if ( $( $element ).data( 'force_form' ) ) PC.fe.currentProductData.product_info.force_form = true;
 
 		PC.fe.product_type = this.currentProductData.product_info.product_type;
-		if ( $element && $element.data( 'price' ) ) {
-			this.currentProductData.product_info.price = $element.data( 'price' );
+		if ( $element ) {
+			this.currentProductData.product_info.price = $element.data( 'price' ) || 0;
+			this.currentProductData.product_info.price_tiers = $element.data( 'price_tiers' );
 			this.currentProductData.product_info.regular_price = $element.data( 'regular_price' );
 			this.currentProductData.product_info.is_on_sale = ( 1 == $element.data( 'is_on_sale' ) );
 		} else {
 			this.currentProductData.product_info.price = 0;
 		}
+
+		// Set quantity variable
+		this.currentProductData.product_info.qty = this?.modal?.form?.$( 'input.qty' ).val() || 1;
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
 			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] ); 
@@ -539,6 +545,27 @@ PC.actionParameter = 'pc_get_data';
 		wp.hooks.doAction( 'PC.fe.setConfig', config_items );
 
 		PC.fe.is_setting_config = false;
+	};
+
+	PC.fe.get_product_price = function() {
+		if ( !PC.fe?.currentProductData ) return 0;
+		const { product_info } = PC.fe.currentProductData;
+		const qty = product_info.qty;
+		let price = parseFloat( product_info?.price );
+		
+		if ( product_info?.price_tiers && Array.isArray( product_info.price_tiers ) ) {
+			const tier = product_info.price_tiers.find( ( item ) => qty >= parseInt( item.start ) );
+
+			if ( tier ) {
+				// Percentage or fixed price
+				if ( tier.type.includes( 'percent' ) ) {
+					price = price - ( parseFloat( tier.price ) * parseFloat( price ) / 100 );
+				} else {
+					price = parseFloat( tier.price || 0 );
+				}
+			}
+		}
+		return price || 0;
 	};
 
 	/*
