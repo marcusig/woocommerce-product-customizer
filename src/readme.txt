@@ -146,6 +146,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* Compatibility with Tiered price plugin
+* Compatibility with Wholesale price - tiered prices
 * Tested up to 6.9
 
 = 1.5.8 - 3/Nov/2025 =
