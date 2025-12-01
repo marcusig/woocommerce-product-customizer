@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.9
-Stable tag: 1.5.8
+Stable tag: 1.5.9
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.5.9 - 1/Dec/2025 =
 
 * Compatibility with Tiered price plugin
 * Compatibility with Wholesale price - tiered prices
