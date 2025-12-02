@@ -112,7 +112,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				}
 				$attributes = mkl_pc()->frontend->get_configurator_element_attributes( $product );
 				$attributes = implode( ' ', mkl_pc()->frontend->_output_data_attributes( $attributes ) );
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . esc_attr( $this->button_class ) . '" ' . $attributes . ' type="button">'. $label .'</button>' );
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . esc_attr( $this->button_class ) . '" ' . $attributes . ' type="button"><span class="configure-button--label">'. $label .'</span><span class="loading-icon" aria-hidden="true"><i></i></span></button>' );
 			}
 		}
 

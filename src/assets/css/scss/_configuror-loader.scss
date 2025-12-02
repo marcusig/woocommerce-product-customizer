@@ -1,0 +1,51 @@
+.mkl_pc {
+    .mkl-loader {
+		display: none;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		text-align: center;
+		transform: translate(-50%, -50%);
+
+		.header {
+			font-size: 1.5em;
+			font-weight: bold;
+			color: #FFF;
+			text-shadow: 0 2px 14px rgba(0, 0, 0, 0.62);
+		}
+		.spinner {
+			width: 40px;
+			height: 40px;
+			margin: 30px auto;
+			background-color: #FFF;
+
+			border-radius: 100%;  
+			-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
+			animation: sk-scaleout 1.0s infinite ease-in-out;
+		}
+
+	}
+
+	&.loading {
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #6b6a6aa1;
+            backdrop-filter: blur(6px);
+        }
+		.mkl-loader {
+			display: block;
+		}
+		.mkl_pc_container {
+			transform: translateY(-30px);
+			opacity: 0;
+		}
+        
+	}
+}
+.mkl-configurator-inline .mkl_pc.loading .overlay {
+    display: none;
+}

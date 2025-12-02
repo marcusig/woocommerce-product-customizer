@@ -140,7 +140,7 @@ class Frontend_Woocommerce {
 
 		$date_modified = $product->get_date_modified();
 		
-		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		if ( !mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 
@@ -211,7 +211,7 @@ class Frontend_Woocommerce {
 	}
 
 	/**
-	 * Configure Button shortcode
+	 * Embedded configurator shortcode
 	 *
 	 * @param array  $atts
 	 * @param string $content
@@ -245,7 +245,7 @@ class Frontend_Woocommerce {
 
 		$date_modified = $product->get_date_modified();
 		
-		wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		if ( !mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
@@ -414,6 +414,7 @@ class Frontend_Woocommerce {
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,
 				'where' => 'out',
+				'data_mode' => mkl_pc( 'settings')->get( 'async_data' ) ? 'async' : 'default',
 				'bg_image' => $bg_image ? $bg_image : apply_filters( 'mkl_pc_bg_image', MKL_PC_ASSETS_URL.'images/default-bg.jpg'),
 				'close_configurator_on_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'close_configurator_on_add_to_cart' ),
 				'close_choices_when_selecting_choice' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice' ),
@@ -462,7 +463,7 @@ class Frontend_Woocommerce {
 
 		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
 
-		if ( $prod ) {
+		if ( $prod && ! mkl_pc( 'settings')->get( 'async_data' ) ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 			// Add JSON for Weglot compatibility
 			// if ( current_user_can( 'edit_posts' ) && defined( 'WEGLOT_DIRURL' ) ) {

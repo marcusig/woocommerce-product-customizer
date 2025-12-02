@@ -304,7 +304,7 @@ PC.actionParameter = 'pc_get_data';
 
 		PC.fe.trigger_el = $element;
 
-		if ( parent_id ) {
+		if ( parent_id && 'async' !== PC.fe.config.data_mode ) {
 			this.currentProductData = PC.productData['prod_' + parent_id];
 			this.layers = new PC.layers( PC.productData['prod_' + parent_id].layers );
 			this.angles = new PC.angles( PC.productData['prod_' + parent_id].angles, { parse: true } );
@@ -367,17 +367,36 @@ PC.actionParameter = 'pc_get_data';
 		if ( PC.productData && PC.productData['prod_'+parent_id] ) {
 			this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
 			PC.fe.init( product_id, parent_id, $element );
-		} else if ( PC.productDataMode && "json" == PC.productDataMode ) {
+		} else {
+			// No data found - force Async mode
+			PC.fe.config.data_mode = 'async';
 			wp.hooks.addAction( 'mkl_pc.product_data.loaded', 'mkl_pc', function( id ) {
 				if ( id == product_id ) {
 					this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
 					PC.fe.init( product_id, parent_id, $element );
 				}
 			}.bind( this ) );
-		} else {
-			$element.after( $( '<div>Error loading the configurator data</div>' ) );
-		}
+			// const now = 
+		} 
+		
+		if ( 'async' === PC.fe.config.data_mode ) {
+			if ( $element ) {
+				$element.addClass( 'loading-data' );
+			}
+			wp.hooks.doAction( 'mkl_pc.product_data.loading', product_id );
+			fetch( PC_config.ajaxurl + `?action=pc_get_data&data=init&fe=1&id=${product_id}&ver=` ).then(r => r.json()).then(data => {
+				PC.productData = window.PC.productData || {};
+				PC.productData['prod_'+product_id] = data;
+				
+				if ( !data?.layers?.length || !data?.content?.length ) {
+					console.log( data );
+					$element.after( $( '<div>Error - the configurator data is incomplete. See browser console for data details</div>' ) );
+				}
 
+				$element.removeClass( 'loading-data' );
+				wp.hooks.doAction( 'mkl_pc.product_data.loaded', product_id );
+			});
+		} 
 		// if( !this.layers && !variation ) {
 		// 	return;
 		// }

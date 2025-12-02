@@ -11,7 +11,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 		var product_id = options.product_id;
 		var parent_id = options.parent_id;
 		wp.hooks.doAction( 'PC.fe.init.modal', this ); 
-		if ( parent_id ) {
+		if ( parent_id && 'async' !== PC.fe.config.data_mode ) {
 			this.options = PC.productData['prod_' + parent_id].product_info; 
 		} else {
 			this.options = PC.productData['prod_' + product_id].product_info; 
