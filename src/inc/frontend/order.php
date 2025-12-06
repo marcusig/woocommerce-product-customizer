@@ -51,6 +51,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		}
 
 		public function add_view_link( $item_id, $item, $order ) {
+			if ( ! mkl_pc( 'settings' )->get( 'show_view_configuration_link' ) ) return;
 			$config = wc_get_order_item_meta( $item_id, '_configurator_data_raw', true );
 			if ( ! $config ) return;
 			$view_link = add_query_arg( array( 'load_config_from_order' => $item_id, 'open_configurator'=> 1 ), get_permalink( $item->get_product_id() ) );

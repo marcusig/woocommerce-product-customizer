@@ -508,6 +508,29 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'show_edit_configuration_link',
+				__( 'Show Edit configuration link in the cart and checkout', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_edit_configuration_link',
+					'help' => __( 'NB: currently only works in classic cart and checkout', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'show_view_configuration_link',
+				__( 'Show view configuration link in the order details', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'show_view_configuration_link',
+				]
+			);
+
+			add_settings_field(
 				'display_options_angles',
 				__( 'Angle display options', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_html' ],

@@ -155,7 +155,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
 				 * @return boolean
 				 */
-				if ( apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) ) {
+				if ( apply_filters( 'mkl_pc_user_can_edit_item_from_cart', mkl_pc( 'settings' )->get( 'show_edit_configuration_link' ) ) ) {
 					$edit_link = $this->get_edit_link( $cart_item );
 				}
 
@@ -254,8 +254,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
 			 * @return boolean
 			 */
-			if ( ! apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) ) return $permalink;
-			
+			if ( ! apply_filters( 'mkl_pc_user_can_edit_item_from_cart', mkl_pc( 'settings' )->get( 'show_edit_configuration_link' ) ) ) return $permalink;
+
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
 				return $permalink ? add_query_arg( [ 'load_config_from_cart' => $cart_item_key, 'open_configurator' => 1 ], $permalink ) : $permalink;
 			} else {

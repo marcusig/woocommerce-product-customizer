@@ -21,6 +21,7 @@ class Update {
 			'1.2.35' => [ [ $this, 'set_default_setting_value_v1_2_35' ] ],
 			'1.2.41' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.3.00' => [ [ $this, 'set_default_setting_value_v1_3_00' ] ],
+			'1.5.10' => [ [ $this, 'set_default_setting_value_v1_5_10' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -109,6 +110,18 @@ class Update {
 		$theme = mkl_pc( 'settings' )->get( 'mkl_pc__theme' );
 		if ( ! empty( $theme ) ) return;
 		mkl_pc( 'settings' )->set( 'mkl_pc__theme', 'default' );
+	}
+
+	/**
+	 * Save default values
+	 *
+	 * @return void
+	 */
+	private function set_default_setting_value_v1_5_10() {
+		$options = get_option( 'mkl_pc__settings' );
+		$options['show_edit_configuration_link'] = true;
+		$options['show_view_configuration_link'] = true;
+		update_option( 'mkl_pc__settings', $options );
 	}
 
 	public static function instance() {
