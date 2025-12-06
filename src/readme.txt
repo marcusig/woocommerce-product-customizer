@@ -150,6 +150,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 * Compatibility with Tiered price plugin
 * Compatibility with Wholesale price - tiered prices
+* PERFORMANCE: Possibility to load configurator data asynchronously
 * Tested up to 6.9
 
 = 1.5.8 - 3/Nov/2025 =
