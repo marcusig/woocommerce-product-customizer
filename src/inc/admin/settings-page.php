@@ -515,7 +515,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'general_settings',
 				[ 
 					'setting_name' => 'show_edit_configuration_link',
-					'help' => __( 'NB: currently only works in classic cart and checkout', 'product-configurator-for-woocommerce' ),
+					'description' => __( 'NB: currently only works in classic cart and checkout', 'product-configurator-for-woocommerce' ),
 				]
 			);
 
