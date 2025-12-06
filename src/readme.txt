@@ -146,6 +146,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Added a setting to show "View configuration" link in the order
+* TWEAK: Added a setting to show "Edit configuration" link in the cart and checkout
+
 = 1.5.9 - 1/Dec/2025 =
 
 * Compatibility with Tiered price plugin
