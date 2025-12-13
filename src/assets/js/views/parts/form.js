@@ -213,7 +213,7 @@ PC.fe.views.form = Backbone.View.extend({
 					// Redirect to cart option
 					if ( 'yes' === wp.hooks.applyFilters( 'PC.fe.cart_redirect_after_add', wc_add_to_cart_params.cart_redirect_after_add ) ) {
 						$( document.body ).trigger( 'added_to_cart_with_redirection' );
-						window.location = wc_add_to_cart_params.cart_url;
+						window.location = wp.hooks.applyFilters( 'PC.fe.cart_redirect_url', wc_add_to_cart_params.cart_url );
 						return;
 					}
 					
