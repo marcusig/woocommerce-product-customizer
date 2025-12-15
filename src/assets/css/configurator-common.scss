@@ -140,6 +140,30 @@ button.variations_button.disabled,
 	}
 }
 
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar {
+    .error-message{ 
+        display: none;
+        color: red;
+        font-size: .9em;
+        line-height: 1.2;
+        padding-top: 3px;
+    }
+    .has_error {
+        input[type="text"], 
+        input[type="number"], 
+        input[type="date"],
+        input[type="checkbox"],
+        textarea,
+        select {
+            outline: 4px solid rgba(255, 0, 0,.27);
+            outline-offset: 0px;
+        }
+        .error-message{ 
+            display: block;
+        }
+    }
+}
+
 @import "scss/configure-button-loading"; // button loading
 @import "scss/configuror-loader"; // modal loading - variable products mostly
 @import "scss/add-to-cart-modal";
