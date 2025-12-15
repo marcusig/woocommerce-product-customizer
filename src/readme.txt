@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.9
-Stable tag: 1.5.9
+Stable tag: 1.5.10
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,6 +146,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.5.10 - 15/Dec/2025 =
+
+* TWEAK: Moved error message CSS to common CSS
+* DEV: Filter 'PC.fe.cart_redirect_url'
+* DEV: Added filter Filter 'PC.fe.cart_redirect_after_add'
 * TWEAK: Added a setting to show "View configuration" link in the order
 * TWEAK: Added a setting to show "Edit configuration" link in the cart and checkout
 
@@ -356,4 +361,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.5.5 Compatibility with WooCommerce Currency Switcher (Curcy) - cache compat feature; Minor tweaks and fixes
+* 1.5.10 Minor tweaks and fixes
