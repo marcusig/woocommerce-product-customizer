@@ -179,17 +179,20 @@ PC.fe.save_data = {
 				if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) && 'form' != model.get( 'type' ) ) ) {
 					if ( false === choice.get( 'cshow' ) ) return;
 					var img_id = choice.get_image('image', 'id'); 
-
+					const choice_data = {
+						is_choice: true,
+						layer_id: model.id, 
+						choice_id: choice.id, 
+						angle_id: angle_id,
+						image: img_id,
+						layer_name: model_data.name,
+						name: choice.get_name(),
+					};	
+				
 					if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
 						wp.hooks.applyFilters(
 							'PC.fe.save_data.parse_choices.added_choice',
-							{
-								is_choice: true,
-								layer_id: model.id, 
-								choice_id: choice.id, 
-								angle_id: angle_id,
-								image: img_id,
-							},
+							choice_data,
 							choice
 						)
 					);
