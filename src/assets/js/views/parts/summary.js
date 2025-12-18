@@ -29,7 +29,7 @@ PC.fe.views.summary = Backbone.View.extend( {
 			var choice = PC.fe.get_choice_model( item.layer_id, item.choice_id );
 			if ( ! layer ) return;
 			if ( 'simple' == layer.get( 'type' ) && layer.get( 'not_a_choice' ) ) return;
-			if ( layer.get( 'hide_in_configurator') ) return;
+			// if ( wp.hooks.applyFilters( 'hide_in_configurator-also-hides-in-summary', true, item ) && layer.get( 'hide_in_configurator') ) return;
 			if ( layer.get( 'hide_in_summary') ) return;
 			if ( ! this.layers[ item.layer_id ] ) {
 				this.layers[ item.layer_id ] = new PC.fe.views.summary_item_group( { model: layer } );
