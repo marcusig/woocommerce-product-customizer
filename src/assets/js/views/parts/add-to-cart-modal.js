@@ -42,8 +42,8 @@ PC.fe.views.add_to_cart_modal = Backbone.View.extend({
 	on_added: function( event, fragments, cart_hash, button, response ) {
 		this.show_message( 'added', response.messages );
 	},
-	on_added_with_redirection: function() {
-		this.show_message( 'added-redirect' );
+	on_added_with_redirection: function( e, response ) {
+		this.show_message( 'added-redirect', response.messages );
 	},
 	on_not_added_to_cart: function( e, response ) {
 		this.show_message( 'not-added', response.messages );

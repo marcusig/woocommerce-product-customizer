@@ -31,9 +31,7 @@ $checkout_url = wc_get_checkout_url();
 
 <script type="text/html" id="tmpl-mkl-pc-atc-added-redirect" data-wg-notranslate> 
 	<div class="adding-to-cart--added-with-redirection has-box">
-		<div class="header"><?php _e( 'Done!', 'product-configurator-for-woocommerce' ); ?> </div>
-		<p><?php _e( 'Redirecting you to the cart...', 'product-configurator-for-woocommerce' ); ?> </p>
-		<div class="spinner"></div>
+		<?php do_action( 'tmpl-mkl-pc-atc-redirection-content' ); ?>
 	</div>
 </script>
 

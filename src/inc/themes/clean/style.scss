@@ -829,7 +829,14 @@ body:not( .is-mobile ) {
 			}
 			
 		}
-
+		i.selected-choice-image,
+		i.selected-choice-image + i.img {
+			max-height: calc(100% - 4px);
+			img {
+				max-width: 100%;
+				max-height: 100%;
+			}
+		}
 
 	}
 
