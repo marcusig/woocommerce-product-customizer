@@ -13,8 +13,10 @@ class Frontend_Product_Variable {
 
 	public function is_variation_configurable( $attributes, $product, $variation ) {
 		$id = $attributes['variation_id'];
+		if ( !mkl_pc_is_configurable( $product->get_id() ) ) return $attributes;
 		$is_variation_configurable = get_post_meta( $id, MKL_PC_PREFIX.'_is_configurable' , true );
-		$attributes['is_configurable'] = isset( $is_variation_configurable ) ? ( ( $is_variation_configurable == 'yes' ) ? true : false ) : false;
+		$all_variations_are_configurable = get_post_meta( $product->get_id(), MKL_PC_PREFIX.'_all_variations_are_configurable', true );
+		$attributes['is_configurable'] = $is_variation_configurable === 'yes' || $all_variations_are_configurable === 'yes';
 		return $attributes;
 	}
 

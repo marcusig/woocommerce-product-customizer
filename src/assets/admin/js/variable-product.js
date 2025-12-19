@@ -26,6 +26,8 @@ var PC = PC || {};
 				$( '#general_product_data .start_button_container' ).hide();
 				$( '#variable_product_options .start-configuration' ).show();
 			}
+
+			$( '._mkl_pc__all_variations_are_configurable_field' ).toggle( 'share_all_config' === mode && 'variable' === product_type );
 		} );
 
 		$( '#_mkl_pc__variable_configuration_mode' ).trigger( 'change' );

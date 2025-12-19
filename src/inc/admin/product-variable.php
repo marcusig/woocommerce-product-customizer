@@ -30,6 +30,7 @@ class Admin_Variable_Product {
 		if ( isset( $_POST[MKL_PC_PREFIX.'_variable_configuration_mode'] ) ) {
 			update_post_meta( $product_id, MKL_PC_PREFIX.'_variable_configuration_mode', sanitize_key( $_POST[MKL_PC_PREFIX.'_variable_configuration_mode'] ) );
 		}
+		update_post_meta( $product_id, MKL_PC_PREFIX.'_all_variations_are_configurable', isset( $_POST[MKL_PC_PREFIX.'_all_variations_are_configurable'] ) ? 'yes' : 'no' );
 	}
 
 	public function general_tab_mode_select() {
@@ -46,6 +47,16 @@ class Admin_Variable_Product {
 					'label' => __( 'Configuration mode', 'product-configurator-for-woocommerce' ),
 					'description' => __( 'Warning: changing mode on a product already in use could have undesired effects.', 'product-configurator-for-woocommerce' ),
 					'desc_tip' => true
+				) 
+			);
+			
+			woocommerce_wp_checkbox( 
+				array( 
+					'id' => MKL_PC_PREFIX.'_all_variations_are_configurable',
+					'class' => 'all_variations_configurable',
+					'label' => __( 'All variations are configurable', 'product-configurator-for-woocommerce' ), 
+					'description' => __( 'Select if you want all variations to be configurable – prevents having to enable the setting on each variation', 'product-configurator-for-woocommerce' ),
+					// 'desc_tip' => true
 				) 
 			);
 			?>
