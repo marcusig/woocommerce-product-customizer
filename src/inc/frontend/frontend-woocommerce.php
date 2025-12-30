@@ -437,6 +437,8 @@ class Frontend_Woocommerce {
 				'steps_use_layer_name' => ( bool ) mkl_pc( 'settings')->get( 'steps_use_layer_name', false ),
 				'steps_progress_enable_click_all' => ( bool ) mkl_pc( 'settings')->get( 'steps_progress_enable_click_all', false ),
 				'enable_configurator_ajax_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'enable_configurator_ajax_add_to_cart', false ),
+				'mobile_image_breakpoint' => 660,
+				'large_image_breakpoint' => 2200,
 				'angles' => [
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
@@ -589,6 +591,8 @@ class Frontend_Woocommerce {
 		 */
 		if ( apply_filters( 'mkl_pc_do_not_override_images', false ) ) return $data;
 		$img_size =  mkl_pc( 'settings' )->get( 'preview_image_size', 'full' );
+		$img_size_mobile =  mkl_pc( 'settings' )->get( 'preview_image_size_mobile', 'inherit' );
+		$img_size_large =  mkl_pc( 'settings' )->get( 'preview_image_size_large', 'inherit' );
 		$thumbnail_size = mkl_pc( 'settings' )->get( 'thumbnail_size', 'medium' );
 		foreach( $data['content'] as $lin => $layer ) {
 			foreach( $layer['choices'] as $cin => $choice ) {
@@ -596,6 +600,12 @@ class Frontend_Woocommerce {
 					if ( $image['image']['id'] ) {
 						if ( $new_image_url = wp_get_attachment_image_url( $image['image']['id'], $img_size ) ) {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url'] = $new_image_url;
+						}
+						if ( $img_size_mobile && 'inherit' != $img_size_mobile && $mobile_image_url = wp_get_attachment_image_url( $image['image']['id'], $img_size_mobile ) ) {
+							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url_mobile'] = $mobile_image_url;
+						}
+						if ( $img_size_large && 'inherit' != $img_size_large && $large_image_url = wp_get_attachment_image_url( $image['image']['id'], $img_size_large ) ) {
+							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url_large'] = $large_image_url;
 						}
 					}
 					if ( $image['thumbnail']['id'] ) {
