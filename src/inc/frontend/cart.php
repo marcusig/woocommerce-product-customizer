@@ -42,6 +42,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			// Addify Ad to quote
 			add_filter( 'addify_add_quote_item_data', array( $this, 'addify_add_quote_item_data' ), 20, 5 );
 
+			add_filter( 'wc_stripe_hide_payment_request_on_product_page', array( $this, 'maybe_remove_stripe_express_checkout' ), 10, 2 );
+
 			// Attach short description filter.
 			// add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
 		}
@@ -57,6 +59,19 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( mkl_pc_is_configurable( $product_id ) && empty( $_POST['pc_configurator_data'] ) && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				throw new \Exception( __( 'Configuration data is missing, the product could not be added to the cart.', 'product-configurator-for-woocommerce' ) );
 			}
+		}
+
+		/**
+		 * Maybe hide Stripe express checkout
+		 * 
+		 * @param boolean $hide_express_checkout
+		 * @param WP_Post
+		 * @return boolean
+		 */
+		public function maybe_remove_stripe_express_checkout( $hide_express_checkout, $post ) {
+			// If the product is configurable and enable_default_add_to_cart is false, hide express checkout
+			if ( mkl_pc_is_configurable( $post->ID ) && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) return true;
+			return $hide_express_checkout;
 		}
 
 		/**
