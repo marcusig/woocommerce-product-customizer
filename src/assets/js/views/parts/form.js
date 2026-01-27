@@ -20,7 +20,7 @@ PC.fe.views.form = Backbone.View.extend({
 			this.$el.addClass( 'edit-cart-item-is-displayed');
 		}
 
-		if ( 'variable' === PC.fe.product_type ) {
+		if ( 'variable' === PC.fe.product_type || 'variation' === PC.fe.product_type ) {
 			var atc = $( '[name=variation_id][value=' + PC.fe.active_product + ']' );
 			if ( ! atc.length ) atc = $( '[name=add-to-cart][value=' + PC.fe.active_product + ']' );
 		} else {
@@ -154,10 +154,10 @@ PC.fe.views.form = Backbone.View.extend({
 				/*
 					Prepare data 
 				*/
-				if ( this.$cart.find( '[name="add-to-cart"]' ).length ) {
+				// if ( this.$cart.find( '[name="add-to-cart"]' ).length ) {
 					// var request_body = new FormData( this.$cart[0], this.$cart.find( '[name="add-to-cart"]' )[0] );
-				} else {
-				}
+				// } else {
+				// }
 				var request_body = new FormData( this.$cart[0] );
 
 				// Remove 'add-to-cart' to prevent triggering default WC's actions
