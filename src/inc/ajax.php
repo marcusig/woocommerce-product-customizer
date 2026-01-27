@@ -448,8 +448,8 @@ class Ajax {
 			);
 			wp_send_json( $data );
 		}
-
-		$product_id        = apply_filters( 'woocommerce_add_to_cart_product_id', absint( $_POST['product_id'] ) );
+		$product_id        = isset( $_POST['variation_id'] ) && absint( $_POST['variation_id'] ) ? absint( $_POST['variation_id'] ) : absint( $_POST['product_id'] );
+		$product_id        = apply_filters( 'woocommerce_add_to_cart_product_id', $product_id );
 		$product           = wc_get_product( $product_id );
 		$quantity          = empty( $_POST['quantity'] ) ? 1 : wc_stock_amount( wp_unslash( $_POST['quantity'] ) );
 		$passed_validation = apply_filters( 'woocommerce_add_to_cart_validation', true, $product_id, $quantity );

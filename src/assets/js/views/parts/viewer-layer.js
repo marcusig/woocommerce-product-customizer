@@ -86,6 +86,13 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			
 		var is_active = this.model.get( 'active' );
 		var img = this.model.get_image();
+		const width = PC.fe.modal.$el.outerWidth();
+		if ( width && PC.fe.config.mobile_image_breakpoint && width < PC.fe.config.mobile_image_breakpoint && this.model.get_image( 'image', 'url_mobile' ) ) {
+			img = this.model.get_image( 'image', 'url_mobile' );
+		}
+		if ( width && PC.fe.config.large_image_breakpoint && width >= PC.fe.config.large_image_breakpoint && this.model.get_image( 'image', 'url_large' ) ) {
+			img = this.model.get_image( 'image', 'url_large' );
+		}
 		var classes = [];
 		
 		classes.push( this.model.collection.getType() );

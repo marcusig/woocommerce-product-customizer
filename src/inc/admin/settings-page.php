@@ -266,13 +266,39 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			$sizes = array_merge( [ 'full' ], get_intermediate_image_sizes() );
 			add_settings_field(
 				'preview_image_size',
-				__( 'Preview Image size', 'product-configurator-for-woocommerce' ),
+				__( 'Preview Image size - default', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_select' ],
 				'mlk_pc_settings', 
 				'general_settings',
 				[ 
 					'options' => $sizes,
 					'setting_name' => 'preview_image_size',
+					'no_value' => true,
+				]
+			);
+
+			add_settings_field(
+				'preview_image_size_mobile',
+				__( 'Preview Image size - mobile', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => array_merge( [ 'inherit' ], $sizes ),
+					'setting_name' => 'preview_image_size_mobile',
+					'no_value' => true,
+				]
+			);
+
+			add_settings_field(
+				'preview_image_size_large',
+				__( 'Preview Image size - large screens', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => array_merge( [ 'inherit' ], $sizes ),
+					'setting_name' => 'preview_image_size_large',
 					'no_value' => true,
 				]
 			);

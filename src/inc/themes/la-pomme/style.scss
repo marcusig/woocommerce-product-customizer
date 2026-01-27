@@ -54,7 +54,9 @@ $inner_space: 1em;
 	overflow: hidden;
 }
 
-
+body.show-add-to-cart-modal .adding-to-cart--modal {
+	position: fixed;
+}
 
 .is_configurable, .configurator_is_opened {
 	// div.product form.cart {
