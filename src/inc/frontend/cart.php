@@ -18,6 +18,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		private function _hooks() {
+			add_action( 'woocommerce_add_to_cart', array( $this, 'on_add_to_cart' ), 1, 6 );
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 
 			add_filter( 'woocommerce_add_cart_item', array( $this, 'add_weight_to_product' ), 10 );
@@ -43,6 +44,19 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 			// Attach short description filter.
 			// add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
+		}
+
+		/**
+		 * Check configuration on add to cart
+		 */
+		public function on_add_to_cart( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data ) {
+			if ( $variation_id ) {
+				$product_id = $variation_id;
+			}
+
+			if ( mkl_pc_is_configurable( $product_id ) && empty( $_POST['pc_configurator_data'] ) && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
+				throw new \Exception( __( 'Configuration data is missing, the product could not be added to the cart.', 'product-configurator-for-woocommerce' ) );
+			}
 		}
 
 		/**
