@@ -31,7 +31,7 @@ var PC = PC || {};
 			if ( ! this.layer_type || 'simple' === this.layer_type ) {
 				if ( ! this.layer.get( 'default_selection' ) || 'select_first' == this.layer.get( 'default_selection' ) ) {
 					var default_selection = this.findWhere( { is_default: true } );
-					if ( default_selection && false !== default_selection.get( 'cshow' ) ) {
+					if ( default_selection && false !== default_selection.get( 'cshow' ) && false !== default_selection.get( 'available' ) ) {
 						default_selection.set( 'active', true );
 						var item = default_selection;
 					} else {
