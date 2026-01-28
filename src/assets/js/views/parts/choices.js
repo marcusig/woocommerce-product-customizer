@@ -35,6 +35,9 @@ PC.fe.views.choices = Backbone.View.extend({
 		collection.each( this.add_one, this );
 	},
 	add_one: function( model ) {
+		// Possibility to avoid adding choice
+		if ( !wp.hooks.applyFilters( 'PC.fe.choices.add_one', true, model ) ) return;
+
 		if ( model.get( 'is_group' ) )  {
 			var new_choice = new PC.fe.views.choiceGroup( { model: model, multiple: false, parent: this } ); 
 		} else {
