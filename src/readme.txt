@@ -146,6 +146,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix ajax add to cart modal position on La Pomme
+* TWEAK: Hide Stripe express checkout on configurable products, to prevent adding to the cart without configuring
+* TWEAK: Throw error when adding product to the cart without configuration
+* FIX: Variable products not adding to the cart when using the Ajax ATC feature
+* FIX: issue on some variable products
+
 = 1.5.10 - 15/Dec/2025 =
 
 * TWEAK: Moved error message CSS to common CSS
