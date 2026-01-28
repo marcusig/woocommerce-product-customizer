@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.9
-Stable tag: 1.5.10
+Stable tag: 1.5.11
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,6 +146,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.5.11 - 28/Jan/2026 =
+
+* DEV: Added JS Filter `PC.fe.choices.add_one`, allowing to prevent adding a choice view
 * TWEAK: Fix ajax add to cart modal position on La Pomme
 * TWEAK: Hide Stripe express checkout on configurable products, to prevent adding to the cart without configuring
 * TWEAK: Throw error when adding product to the cart without configuration
@@ -367,4 +370,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.5.10 Minor tweaks and fixes
+* 1.5.11 Minor tweaks and fixes
