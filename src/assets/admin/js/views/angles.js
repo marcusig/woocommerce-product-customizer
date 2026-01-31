@@ -6,6 +6,21 @@ PC.views.angles = PC.views.layers.extend({
 	collectionName: 'angles',
 	// singleView: PC.views.angle,
 	single_view: function() { return PC.views.angle; },
+	new_attributes: function( name ) {
+		const attributes = {
+			_id: PC.app.get_new_id( this.col ),
+			name: name,
+			order: this.col.nextOrder(),
+			image_order: this.col.nextOrder(),
+			active: true,
+			// completed: false
+		};
+		if ( !this.col.length ) {
+			attributes.has_thumbnails = true;
+		}
+
+		return attributes;
+	},
 });
 
 PC.views.angle = PC.views.layer.extend({
