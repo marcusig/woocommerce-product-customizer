@@ -146,6 +146,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FIX: Dropdown dynamic positioning (Upgraded Popper parameters for current version)
+
 = 1.5.11 - 28/Jan/2026 =
 
 * DEV: Added JS Filter `PC.fe.choices.add_one`, allowing to prevent adding a choice view
