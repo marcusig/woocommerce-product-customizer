@@ -146,6 +146,7 @@ class DB {
 				'order' => 101,
 			);			
 		}
+		
 		$this->menu = $default_menu;
 
 		// Add tne import section at the end of the menu
@@ -360,6 +361,7 @@ class DB {
 	 * @return array
 	 */
 	public function get_menu(){
+		return apply_filters( 'mkl_product_configurator_admin_menu', $this->menu );
 		$default_menu = array(
 			array(
 				'type' 	=> 'part',
@@ -460,8 +462,6 @@ class DB {
 				'order' => 101,
 			);			
 		}
-
-		return apply_filters( 'mkl_product_configurator_admin_menu', $default_menu );
 	}
 
 	/**
