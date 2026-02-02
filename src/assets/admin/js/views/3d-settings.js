@@ -15,29 +15,27 @@ PC.views = PC.views || {};
 		template: wp.template( 'mkl-pc-3d-models' ),
 		events: {
 			'click .select-gltf': 'select_gltf',
-            'custom-state-action': 'save',
-            'remove': 'remove'
+			'click .remove-gltf': 'remove_gltf',
+			'custom-state-action': 'save',
+			'remove': 'on_remove'
 		},
-		// collectionName: 'settings_3D',
+		collectionName: 'settings_3d',
 		initialize: function( options ) {
 			this.options = options || {};
-			this.admin = PC.app.get_admin(); 
-			this.product = PC.app.get_product(); 
-			
+			this.admin = PC.app.get_admin();
+			this.product = PC.app.get_product();
+			this.col = this.admin.settings_3d;
+
 			PC.selection.reset();
 
-			// if ( !this.product.get('content') ) {
-			// 	this.product.set('content', new PC.content_list() );
-			// }
-
-			// this.col = this.product.get('content');
-
-            this._three = this._three || {};
+			this._three = this._three || {};
 			this.render();
 		},
-        save( e, f ) {
-            console.log( 'save', e, f );
-        },
+		save: function( e, f ) {
+			if ( PC.app.is_modified[ this.collectionName ] ) {
+				this.$el.closest( '.modal-frame-target' ).find( '.pc-main-save' ).trigger( 'click' );
+			}
+		},
 		render: function() {
             this.$el.empty();
             this.$el.append( this.template( PC.app.admin.settings_3d ) );
@@ -194,16 +192,24 @@ PC.views = PC.views || {};
 
             frame.on('select', () => {
                 let attachment = frame.state().get('selection').first().toJSON();
-                console.log('Selected file:', attachment);
                 PC.app.admin.settings_3d.url = attachment.gltf_url || attachment.url;
                 PC.app.admin.settings_3d.filename = attachment.gltf_filename || attachment.filename;
                 PC.app.admin.settings_3d.attachment_id = attachment.id;
+                PC.app.is_modified.settings_3d = true;
                 this.render();
             });
 
             frame.open();
         },
-        remove: function() {
+        remove_gltf: function( e ) {
+            e.preventDefault();
+            PC.app.admin.settings_3d.url = null;
+            PC.app.admin.settings_3d.filename = null;
+            PC.app.admin.settings_3d.attachment_id = null;
+            PC.app.is_modified.settings_3d = true;
+            this.render();
+        },
+        on_remove: function() {
             if (this._three) {
                 cancelAnimationFrame(this._three.animationId);
                 window.removeEventListener('resize', this._three.onResize);
@@ -213,7 +219,7 @@ PC.views = PC.views || {};
                 }
                 this._three.controls.dispose();
             }
-            Backbone.View.prototype.remove.call(this);
+            // Backbone.View.prototype.remove.call(this);
         }
     });
     

@@ -28,7 +28,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 		 * @return array
 		 */
 		public function get_settings_list() {
-			
+			global $post;
 			$display_modes = [
 				[
 					'label' => __( 'Default', 'product-configurator-for-woocommerce' ),
@@ -279,13 +279,17 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 500,
 					'section' => 'advanced',
 				),
-				'id_3d' => array(
+				
+			);
+
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$settings['id_3d'] = array(
 					'label' => __('ID mapping', 'product-configurator-for-woocommerce' ),
 					'type' => 'text',
 					'priority' => 10,
 					'section' => 'threed',
-				),
-			);
+				);
+			}
 
 			if ( mkl_pc( 'themes' )->current_theme_supports( 'columns' ) ) {
 				$settings['columns'] = array(
