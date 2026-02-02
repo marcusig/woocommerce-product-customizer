@@ -516,7 +516,7 @@ class DB {
 		);
 		
 		if ( '3d' === mkl_pc_get_configurator_type( $parent_id ) ) {
-			$init_data['settings_3d'] = $this->get( 'settings_3d', $parent_id ) ?: [ 'url' => 'http://unoiseaudepapier.local/wp-content/uploads/2025/08/test-cup.gltf', 'filename' => 'test-cup' ];
+			$init_data['settings_3d'] = $this->get( 'settings_3d', $parent_id ) ?: [ 'url' => '', 'filename' => '' ];
 		}
 
 		if ( 'variable' === $product->get_type()) {

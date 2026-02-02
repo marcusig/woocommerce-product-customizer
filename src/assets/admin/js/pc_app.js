@@ -33,6 +33,7 @@ PC.toJSON = function( item ) {
 			layers: false,
 			angles: false,
 			content: false,
+			settings_3d: false,
 		},
 		modified_choices: [],
 		state: null,
@@ -98,6 +99,9 @@ PC.toJSON = function( item ) {
 					return this.get_product().get( key );
 				case 'layers':
 				case 'angles':
+					return this.admin[ key ];
+				case 'settings_3d':
+					return this.get_admin().settings_3d;
 				default :
 					return this.admin[ key ];
 			}
@@ -174,8 +178,13 @@ PC.toJSON = function( item ) {
 
 		},
 		save: function( what, collection, options ) {
-			if ( ! what || ! collection ) {
-				console.log( 'A collection name and data must be set in order to save proprerly.' );
+			if ( ! what ) {
+				console.log( 'A data key must be set in order to save properly.' );
+				return;
+			}
+			// settings_3d and similar state data use a plain object; others use a collection
+			if ( ! collection && what !== 'settings_3d' ) {
+				console.log( 'Collection or data must be set in order to save properly.' );
 				return;
 			}
 			var save_id = this.id;
@@ -209,7 +218,10 @@ PC.toJSON = function( item ) {
 				options.data.parent_id = this.id;
 			}
 
-			if (collection.length > 0) {
+			// Plain object (e.g. settings_3d) — no collection or array
+			if ( collection && typeof collection === 'object' && ! ( collection instanceof Backbone.Collection ) && ! ( collection instanceof Array ) ) {
+				options.data[what] = JSON.stringify( collection );
+			} else if ( collection && collection.length > 0 ) {
 
 				if ( collection instanceof Array ) {
 					options.data[what] = {};
@@ -222,7 +234,7 @@ PC.toJSON = function( item ) {
 				if ( 'content' == what ) {
 					options.data.modified_choices = PC.app.modified_choices;
 				}
-	
+
 			} else {
 				options.data[what] = 'empty';
 			}

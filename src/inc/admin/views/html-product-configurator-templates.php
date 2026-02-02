@@ -223,8 +223,11 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 ?>
 <script type="text/html" id="tmpl-mkl-pc-3d-models">
 	<div class="media-frame-content model-3d">
-		<h4><?php _e( 'Manage the product’s main 3D file', 'product-configurator-for-woocommerce' ); ?></h4>
+		<h3><?php _e( 'Main 3D file', 'product-configurator-for-woocommerce' ); ?></h3>
+		<p><?php _e( 'Use this section if you use a main 3D file.', 'product-configurator-for-woocommerce' ); ?></p>
 		<p><a href="#"><?php _e( 'Read the standard specification for automatic configurator mapping', 'product-configurator-for-woocommerce' ); ?></a></p>
+		<p><a href="#"><?php _e( 'Download the free Blender Add-on', 'product-configurator-for-woocommerce' ); ?></a></p>
+		<h4><?php _e( 'Manage the product’s main 3D file', 'product-configurator-for-woocommerce' ); ?></h4>
 		<# if ( data.filename ) { #>
 			<h4>{{data.filename}}</h4>
 		<# } #>
@@ -232,6 +235,10 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<p>{{data.url}}</p>
 		<# } #>
 		<button class="button primary select-gltf" type="button"><?php _e( 'Select glb/gltf file', 'product-configurator-for-woocommerce' ); ?></button>
+		<# if ( data.url ) { #>
+			<button class="button primary remove-gltf" type="button"><?php _e( 'Remove file', 'product-configurator-for-woocommerce' ); ?></button>
+		<# } #>
+		
 		<# if ( data.url ) { #>
 			<div class="pc-3d-preview">
 				<div class="pc-3d-tree"></div>
