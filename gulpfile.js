@@ -93,6 +93,9 @@ gulp.task('js', function(done) {
 		'!src/assets/**/*.min.js',
 		'!src/assets/js/views/parts/*.js',
 		'!src/assets/js/product-configurator/parts/**',
+		'!src/assets/js/source/*.js',
+		'!src/assets/build/**/*.js',
+		'!src/assets/js/vendor/draco/**/*.js'
 	], { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
 		// .pipe(sourcemaps.init())
@@ -115,20 +118,42 @@ gulp.task('concat_product_configurator', function(done) {
 });
 
 gulp.task('build-blocks', (cb) => {
-	exec('npx wp-scripts build /src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
+	exec('npx wp-scripts build src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
 	  console.log(stdout);
 	  console.error(stderr);
 	  cb(err);
 	});
 });
 
-gulp.task('watch-blocks', (cb) => {
-	exec('npx wp-scripts start /src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
+gulp.task('build-fe-3d-viewer', (cb) => {
+	exec('npx wp-scripts build src/assets/js/source/fe-3d-viewer-entry.js src/assets/js/source/fe-3d-draco-loader.js src/assets/js/source/fe-3d-meshopt-loader.js --output-path=dist/assets/build', (err, stdout, stderr) => {
 		console.log(stdout);
 		console.error(stderr);
 		cb(err);
 	});
 });
+
+gulp.task('copy-draco-libs', (done) => {
+	gulp.src('node_modules/three/examples/jsm/libs/draco/gltf/*')
+		.pipe(gulp.dest('src/assets/js/vendor/draco/gltf'))
+		.on('end', done);
+});
+
+// gulp.task('`watch-blocks`', (cb) => {
+// 	exec('npx wp-scripts start src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
+// 		console.log(stdout);
+// 		console.error(stderr);
+// 		cb(err);
+// 	});
+// });
+
+// gulp.task('watch-fe-3d-viewer', (cb) => {
+// 	exec('npx wp-scripts start src/assets/js/source/fe-3d-viewer-entry.js --output-path=dist/assets/build', (err, stdout, stderr) => {
+// 		console.log(stdout);
+// 		console.error(stderr);
+// 		cb(err);
+// 	});
+// });
 
 // gulp.task('js_min', function() {
 // 	return gulp.src('src/assets/**/*.js', { base: 'src', allowEmpty: true })
@@ -176,6 +201,7 @@ gulp.task('pot', function(done) {
 gulp.task('build', 
 	gulp.series(
 		'clean',
+		'copy-draco-libs',
 		'move_src',
 		'pot',
 		'vendor',
@@ -183,8 +209,10 @@ gulp.task('build',
 		'js',
 		'concat_product_configurator',
 		'concat_js_views',
-		// 'build-blocks'
-		
+		'build-fe-3d-viewer',
+		// 'build-fe-3d-draco-loader',
+		// 'build-fe-3d-meshopt-loader',
+		// 'merge-fe-3d-builds'
 	)
 );
 
@@ -193,7 +221,7 @@ gulp.task('watch', function() {
 	gulp.watch('src/assets/js/views/parts/*.js', gulp.parallel('concat_js_views'));
 	gulp.watch('src/assets/js/product-configurator/parts/*.js', gulp.series('concat_product_configurator'));
 	// gulp.watch(jsPaths, { interval: 500 }, ['js']);
-	gulp.watch('src/**/*')
+	gulp.watch(['src/**/*', '!src/assets/build/fe-3d-viewer-entry.asset.php'])
 		.on('change', function(path, stats) {
 			// console.log(stats);
 			var rel = get_relative_file_path(path);
@@ -214,8 +242,8 @@ gulp.task('watch', function() {
 gulp.task('default', 
 	gulp.series(
 		'build', 
-		'watch'
-		// gulp.parallel( 'watch-blocks' ,'watch' )
+		gulp.parallel( 'watch' )
+		// or also: gulp.parallel( 'watch', 'watch-blocks', 'watch-fe-3d-viewer' )
 	)
 );
 

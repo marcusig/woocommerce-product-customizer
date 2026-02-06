@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "tag": "node scripts/release.js"
+    "tag": "node scripts/release.js",
+    "start": "wp-scripts start src/assets/js/source/fe-3d-viewer-entry.js src/assets/js/source/fe-3d-draco-loader.js src/assets/js/source/fe-3d-meshopt-loader.js --output-path=dist/assets/build"
   },
   "author": "",
   "license": "ISC",
