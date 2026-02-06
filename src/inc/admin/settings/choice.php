@@ -28,6 +28,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 		 * @return array
 		 */
 		public function get_settings_list() {
+			global $post;
 			$fields = array(
 				'name' => array(
 					'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
@@ -164,6 +165,89 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 				),
 			);
 
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$fields['object_selection_3d'] = array(
+					'label'   => __( 'Object selection', 'product-configurator-for-woocommerce' ),
+					'type'    => 'select',
+					'choices' => array(
+						array(
+							'label' => __( 'From main model', 'product-configurator-for-woocommerce' ),
+							'value' => 'main_model',
+						),
+						array(
+							'label' => __( 'From layer model', 'product-configurator-for-woocommerce' ),
+							'value' => 'layer_model',
+						),
+						array(
+							'label' => __( 'Upload model', 'product-configurator-for-woocommerce' ),
+							'value' => 'upload_model',
+						),
+					),
+					'priority' => 10,
+					'section' => 'threed',
+				);
+				$fields['model_upload_3d'] = array(
+					'label'     => __( 'Model upload', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'condition' => '"upload_model" == data.object_selection_3d',
+					'priority'  => 15,
+					'section'   => 'threed',
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="hidden" data-setting="model_upload_3d" value="<# if ( data.model_upload_3d ) { #>{{data.model_upload_3d}}<# } #>"> '
+						. '<button type="button" class="button mkl-pc--action" data-action="edit_model_upload" data-setting="model_upload_3d">' . esc_html__( 'Select model', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '<# if ( data.model_upload_3d_filename ) { #><span class="pc-3d-model-upload-filename">{{data.model_upload_3d_filename}}</span><# } #>'
+						. '</div>',
+				);
+				$fields['object_id_3d'] = array(
+					'label'     => __( 'Object ID', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'priority'  => 20,
+					'section'   => 'threed',
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="text" class="components-select-control__input" data-setting="object_id_3d" value="<# if ( data.object_id_3d ) { #>{{data.object_id_3d}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+						. __( 'Or', 'product-configurator-for-woocommerce' )
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="object_id_3d">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
+				$fields['actions_3d'] = array(
+					'label'    => __( 'Actions', 'product-configurator-for-woocommerce' ),
+					'type'     => 'repeater',
+					'priority' => 25,
+					'section'  => 'threed',
+					'fields'   => array(
+						'action_type' => array(
+							'label'   => __( 'Action', 'product-configurator-for-woocommerce' ),
+							'type'    => 'select',
+							'choices' => array(
+								array( 'label' => __( 'Toggle object visibility', 'product-configurator-for-woocommerce' ), 'value' => 'toggle_visibility' ),
+								array( 'label' => __( 'Select material variant', 'product-configurator-for-woocommerce' ), 'value' => 'material_variant' ),
+								array( 'label' => __( 'Set material color', 'product-configurator-for-woocommerce' ), 'value' => 'material_color' ),
+								array( 'label' => __( 'Set material texture', 'product-configurator-for-woocommerce' ), 'value' => 'material_texture' ),
+							),
+							'default' => 'toggle_visibility',
+						),
+						'material_variant_value' => array(
+							'label'     => __( 'Variant name', 'product-configurator-for-woocommerce' ),
+							'type'      => 'variant_select',
+							'default'   => '',
+							'show_when' => 'material_variant',
+						),
+						'material_color_value' => array(
+							'label'     => __( 'Color', 'product-configurator-for-woocommerce' ),
+							'type'      => 'color',
+							'default'   => '#ffffff',
+							'show_when' => 'material_color',
+						),
+						'material_texture_id' => array(
+							'label'     => __( 'Texture', 'product-configurator-for-woocommerce' ),
+							'type'      => 'attachment',
+							'default'   => '',
+							'show_when' => 'material_texture',
+						),
+					),
+				);
+			}
+
 			if ( ! class_exists( 'MKL_PC_Stock_Management__Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__stock_management_placeholder', true ) ) {
 				$fields['stock_management_placeholder'] = array(
 					'label' => __( 'Stock management and linked product', 'product-configurator-for-woocommerce' ),
@@ -229,6 +313,14 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'id' => 'general',
 					'label' => __( 'General', 'product-configurator-for-woocommerce' ),
 					'priority' => 10,
+					'fields' => [
+					],
+				),
+				'_threed' => array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
 					'fields' => [
 					],
 				),

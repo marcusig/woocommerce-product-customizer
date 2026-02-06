@@ -15,7 +15,9 @@ class Admin_Product_3D {
                 // Add GLB (binary format)
                 $mimes['glb']  = 'model/gltf-binary';
                 $mimes['bin']  = 'application/octet-stream';
-                $mimes['zip'] = 'application/zip';
+                $mimes['zip']  = 'application/zip';
+                // HDR for environment maps
+                $mimes['hdr']  = 'image/vnd.radiance';
             }
             return $mimes;
         });
@@ -38,6 +40,11 @@ class Admin_Product_3D {
                 if ( 'bin' === $ext ) {
                     $data['ext']  = 'bin';
                     $data['type'] = 'application/octet-stream';
+                    $data['proper_filename'] = $filename;
+                }
+                if ( 'hdr' === strtolower( $ext ) ) {
+                    $data['ext']  = 'hdr';
+                    $data['type'] = 'image/vnd.radiance';
                     $data['proper_filename'] = $filename;
                 }
             }

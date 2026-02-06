@@ -1032,6 +1032,40 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			// 3D viewer options
+			add_settings_section(
+				'fe_3d_settings',
+				__( '3D viewer', 'product-configurator-for-woocommerce' ),
+				function() {
+					echo '<p class="description">' . esc_html__( 'Options for the frontend 3D configurator. Enable only the compression formats your 3D models use to keep the page lighter.', 'product-configurator-for-woocommerce' ) . '</p>';
+				},
+				'mlk_pc_settings'
+			);
+
+			add_settings_field(
+				'fe_3d_use_draco_loader',
+				__( 'Enable Draco compression support', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'fe_3d_settings',
+				[
+					'setting_name' => 'fe_3d_use_draco_loader',
+					'description' => __( 'Load DRACOLoader so that GLB/GLTF models using KHR_draco_mesh_compression can be displayed (e.g. from Blender or glTF Pipeline).', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'fe_3d_use_meshopt_loader',
+				__( 'Enable Meshopt compression support', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'fe_3d_settings',
+				[
+					'setting_name' => 'fe_3d_use_meshopt_loader',
+					'description' => __( 'Load the Meshopt decoder so that models using EXT_meshopt_compression can be displayed.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
 			// Translatepress options
 			if ( function_exists( 'trp_translate' ) ) {
 				add_settings_section(

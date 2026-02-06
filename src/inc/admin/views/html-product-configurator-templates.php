@@ -222,36 +222,199 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 */
 ?>
 <script type="text/html" id="tmpl-mkl-pc-3d-models">
-	<div class="media-frame-content model-3d">
-		<h3><?php _e( 'Main 3D file', 'product-configurator-for-woocommerce' ); ?></h3>
-		<p><?php _e( 'Use this section if you use a main 3D file.', 'product-configurator-for-woocommerce' ); ?></p>
-		<p><a href="#"><?php _e( 'Read the standard specification for automatic configurator mapping', 'product-configurator-for-woocommerce' ); ?></a></p>
-		<p><a href="#"><?php _e( 'Download the free Blender Add-on', 'product-configurator-for-woocommerce' ); ?></a></p>
-		<h4><?php _e( 'Manage the product’s main 3D file', 'product-configurator-for-woocommerce' ); ?></h4>
-		<# if ( data.filename ) { #>
-			<h4>{{data.filename}}</h4>
-		<# } #>
-		<# if ( data.url ) { #>
-			<p>{{data.url}}</p>
-		<# } #>
-		<button class="button primary select-gltf" type="button"><?php _e( 'Select glb/gltf file', 'product-configurator-for-woocommerce' ); ?></button>
-		<# if ( data.url ) { #>
-			<button class="button primary remove-gltf" type="button"><?php _e( 'Remove file', 'product-configurator-for-woocommerce' ); ?></button>
-		<# } #>
-		
-		<# if ( data.url ) { #>
-			<div class="pc-3d-preview">
-				<div class="pc-3d-tree"></div>
-				<div class="pc-3d-preview--canvas-container"></div>
+	<div class="media-frame-content model-3d pc-3d-settings">
+		<div class="pc-3d-settings-layout">
+			<div class="pc-3d-settings-column-settings">
+				<nav class="pc-3d-tabs nav-tab-wrapper" role="tablist">
+					<button type="button" class="nav-tab pc-3d-tab active" data-tab="main" role="tab" aria-selected="true"><?php _e( 'Main 3D file', 'product-configurator-for-woocommerce' ); ?></button>
+					<button type="button" class="nav-tab pc-3d-tab" data-tab="viewer" role="tab" aria-selected="false"><?php _e( 'Viewer Settings', 'product-configurator-for-woocommerce' ); ?></button>
+				</nav>
+				<div id="pc-3d-tab-main" class="pc-3d-tab-panel active" role="tabpanel">
+					<h4><?php _e( 'Manage the product\'s main 3D file', 'product-configurator-for-woocommerce' ); ?></h4>
+					<p><?php _e( 'Use this section if you use a main 3D file.', 'product-configurator-for-woocommerce' ); ?></p>
+					<p><a href="#"><?php _e( 'Read the standard specification for automatic configurator mapping', 'product-configurator-for-woocommerce' ); ?></a></p>
+					<p><a href="#"><?php _e( 'Download the free Blender Add-on', 'product-configurator-for-woocommerce' ); ?></a></p>
+					<# if ( data.filename ) { #>
+						<p><strong><?php _e( 'File', 'product-configurator-for-woocommerce' ); ?>:</strong> {{data.filename}}</p>
+					<# } #>
+					<# if ( data.url ) { #>
+						<p class="description">{{data.url}}</p>
+					<# } #>
+					<p>
+						<button class="button primary select-gltf" type="button"><?php _e( 'Select glb/gltf file', 'product-configurator-for-woocommerce' ); ?></button>
+						<# if ( data.url ) { #>
+							<button class="button primary remove-gltf" type="button"><?php _e( 'Remove file', 'product-configurator-for-woocommerce' ); ?></button>
+						<# } #>
+					</p>
+					<# if ( data.url ) { #>
+						<div class="pc-3d-setting-group">
+							<h5><?php _e( 'Scene structure', 'product-configurator-for-woocommerce' ); ?></h5>
+							<div class="pc-3d-tree"></div>
+						</div>
+					<# } #>
+				</div>
+				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel" role="tabpanel" hidden>
+					<div class="pc-3d-settings-sections">
+			<section class="pc-3d-settings-section">
+				<h4><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></h4>
+				<div class="pc-3d-setting-group">
+					<h5><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h5>
+					<p class="field-row">
+						<label><?php _e( 'Environment mode', 'product-configurator-for-woocommerce' ); ?></label>
+						<select class="pc-3d-env-mode" data-key="environment.mode">
+							<option value="preset" <# if ( data.environment && data.environment.mode === 'preset' ) { #>selected<# } #>><?php _e( 'Preset', 'product-configurator-for-woocommerce' ); ?></option>
+							<option value="custom" <# if ( data.environment && data.environment.mode === 'custom' ) { #>selected<# } #>><?php _e( 'Custom HDR upload', 'product-configurator-for-woocommerce' ); ?></option>
+						</select>
+					</p>
+					<p class="field-row pc-3d-env-preset-row">
+						<label><?php _e( 'Preset', 'product-configurator-for-woocommerce' ); ?></label>
+						<select class="pc-3d-env-preset" data-key="environment.preset">
+							<option value="outdoor" <# if ( data.environment && data.environment.preset === 'outdoor' ) { #>selected<# } #>><?php _e( 'Outdoor', 'product-configurator-for-woocommerce' ); ?></option>
+							<option value="studio" <# if ( data.environment && data.environment.preset === 'studio' ) { #>selected<# } #>><?php _e( 'Studio', 'product-configurator-for-woocommerce' ); ?></option>
+						</select>
+					</p>
+					<p class="field-row pc-3d-env-custom-row" style="display:none;">
+						<label><?php _e( 'Custom HDR', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="hidden" class="pc-3d-env-custom-hdr-url" data-key="environment.custom_hdr_url" value="{{ data.environment && data.environment.custom_hdr_url ? data.environment.custom_hdr_url : '' }}" />
+						<button type="button" class="button pc-3d-select-hdr"><?php _e( 'Upload HDR', 'product-configurator-for-woocommerce' ); ?></button>
+					</p>
+					<p class="field-row pc-3d-env-custom-row" style="display:none;">
+						<label><?php _e( 'Environment intensity', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="range" class="pc-3d-env-intensity" data-key="environment.intensity" min="0" max="3" step="0.1" value="{{ data.environment && data.environment.intensity != null ? data.environment.intensity : 1 }}" />
+						<span class="pc-3d-value-display pc-3d-env-intensity-value">1</span>
+					</p>
+					<p class="field-row pc-3d-env-custom-row" style="display:none;">
+						<label><?php _e( 'Environment rotation', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="range" class="pc-3d-env-rotation" data-key="environment.rotation" min="0" max="360" step="1" value="{{ data.environment && data.environment.rotation != null ? data.environment.rotation : 0 }}" />
+						<span class="pc-3d-value-display pc-3d-env-rotation-value">0</span>
+					</p>
+				</div>
+				<div class="pc-3d-setting-group">
+					<h5><?php _e( 'Orbit controls', 'product-configurator-for-woocommerce' ); ?></h5>
+					<p class="description"><?php _e( 'Limit camera orbit so the viewer cannot go below the horizon by default.', 'product-configurator-for-woocommerce' ); ?></p>
+					<p class="field-row">
+						<label><?php _e( 'Min polar angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="number" class="pc-3d-orbit-min-polar" data-key="environment.orbit_min_polar_angle" min="0" max="180" step="1" value="{{ data.environment && data.environment.orbit_min_polar_angle != null ? data.environment.orbit_min_polar_angle : 0 }}" />
+						<span class="description"><?php _e( '0 = from above, 90 = horizon.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
+					<p class="field-row">
+						<label><?php _e( 'Max polar angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="number" class="pc-3d-orbit-max-polar" data-key="environment.orbit_max_polar_angle" min="0" max="180" step="1" value="{{ data.environment && data.environment.orbit_max_polar_angle != null ? data.environment.orbit_max_polar_angle : 90 }}" />
+						<span class="description"><?php _e( '90 = horizon (no view from below), 180 = allow from below.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
+				</div>
+				<div class="pc-3d-setting-group">
+					<h5><?php _e( 'Background', 'product-configurator-for-woocommerce' ); ?></h5>
+					<p class="field-row">
+						<label><?php _e( 'Background mode', 'product-configurator-for-woocommerce' ); ?></label>
+						<select class="pc-3d-bg-mode" data-key="background.mode">
+							<option value="transparent" <# if ( data.background && data.background.mode === 'transparent' ) { #>selected<# } #>><?php _e( 'Transparent', 'product-configurator-for-woocommerce' ); ?></option>
+							<option value="environment" <# if ( data.background && data.background.mode === 'environment' ) { #>selected<# } #>><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></option>
+							<option value="solid" <# if ( data.background && data.background.mode === 'solid' ) { #>selected<# } #>><?php _e( 'Solid color', 'product-configurator-for-woocommerce' ); ?></option>
+						</select>
+					</p>
+					<p class="field-row pc-3d-bg-color-row" style="display:none;">
+						<label><?php _e( 'Background color', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="color" class="pc-3d-bg-color" data-key="background.color" value="{{ data.background && data.background.color ? data.background.color : '#ffffff' }}" />
+					</p>
+				</div>
+				<div class="pc-3d-setting-group">
+					<h5><?php _e( 'Ground / Shadow', 'product-configurator-for-woocommerce' ); ?></h5>
+					<p class="field-row">
+						<label><input type="checkbox" class="pc-3d-ground-enabled" data-key="ground.enabled" <# if ( data.ground && data.ground.enabled !== false ) { #>checked<# } #> /> <?php _e( 'Enable ground plane', 'product-configurator-for-woocommerce' ); ?></label>
+					</p>
+					<p class="field-row">
+						<label><?php _e( 'Ground size', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="number" class="pc-3d-ground-size" data-key="ground.size" min="1" max="100" step="1" value="{{ data.ground && data.ground.size != null ? data.ground.size : 10 }}" />
+					</p>
+					<p class="field-row">
+						<label><?php _e( 'Shadow opacity', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="range" class="pc-3d-shadow-opacity" data-key="ground.shadow_opacity" min="0" max="1" step="0.05" value="{{ data.ground && data.ground.shadow_opacity != null ? data.ground.shadow_opacity : 0.5 }}" />
+						<span class="pc-3d-value-display pc-3d-shadow-opacity-value">0.5</span>
+					</p>
+					<p class="field-row">
+						<label><?php _e( 'Shadow blur / softness', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="range" class="pc-3d-shadow-blur" data-key="ground.shadow_blur" min="0" max="10" step="0.5" value="{{ data.ground && data.ground.shadow_blur != null ? data.ground.shadow_blur : 0 }}" />
+						<span class="pc-3d-value-display pc-3d-shadow-blur-value">0</span>
+					</p>
+				</div>
+			</section>
+			<section class="pc-3d-settings-section">
+				<h4><?php _e( 'Renderer / Output', 'product-configurator-for-woocommerce' ); ?></h4>
+				<p class="field-row">
+					<label><?php _e( 'Tone mapping', 'product-configurator-for-woocommerce' ); ?></label>
+					<select class="pc-3d-tone-mapping" data-key="renderer.tone_mapping">
+						<option value="none" <# if ( data.renderer && data.renderer.tone_mapping === 'none' ) { #>selected<# } #>><?php _e( 'None', 'product-configurator-for-woocommerce' ); ?></option>
+						<option value="linear" <# if ( data.renderer && data.renderer.tone_mapping === 'linear' ) { #>selected<# } #>><?php _e( 'Linear', 'product-configurator-for-woocommerce' ); ?></option>
+						<option value="aces" <# if ( data.renderer && data.renderer.tone_mapping === 'aces' ) { #>selected<# } #>><?php _e( 'ACES', 'product-configurator-for-woocommerce' ); ?></option>
+					</select>
+				</p>
+				<p class="field-row">
+					<label><?php _e( 'Exposure', 'product-configurator-for-woocommerce' ); ?></label>
+					<input type="range" class="pc-3d-exposure" data-key="renderer.exposure" min="0.1" max="3" step="0.1" value="{{ data.renderer && data.renderer.exposure != null ? data.renderer.exposure : 1 }}" />
+					<span class="pc-3d-value-display pc-3d-exposure-value">1</span>
+				</p>
+				<p class="field-row">
+					<label><?php _e( 'Output color space', 'product-configurator-for-woocommerce' ); ?></label>
+					<select class="pc-3d-color-space" data-key="renderer.output_color_space">
+						<option value="srgb" <# if ( !data.renderer || data.renderer.output_color_space === 'srgb' ) { #>selected<# } #>>sRGB</option>
+						<option value="linear" <# if ( data.renderer && data.renderer.output_color_space === 'linear' ) { #>selected<# } #>>Linear</option>
+					</select>
+				</p>
+				<p class="field-row">
+					<label><input type="checkbox" class="pc-3d-alpha" data-key="renderer.alpha" <# if ( data.renderer && data.renderer.alpha ) { #>checked<# } #> /> <?php _e( 'Alpha output', 'product-configurator-for-woocommerce' ); ?></label>
+				</p>
+			</section>
+			<section class="pc-3d-settings-section">
+				<h4><?php _e( 'Lighting (Global)', 'product-configurator-for-woocommerce' ); ?></h4>
+				<p class="field-row">
+					<label><input type="checkbox" class="pc-3d-default-light-enabled" data-key="lighting.default_light_enabled" <# if ( data.lighting && data.lighting.default_light_enabled !== false ) { #>checked<# } #> /> <?php _e( 'Enable default directional light', 'product-configurator-for-woocommerce' ); ?></label>
+				</p>
+				<p class="field-row">
+					<label><?php _e( 'Global light intensity multiplier', 'product-configurator-for-woocommerce' ); ?></label>
+					<input type="range" class="pc-3d-global-intensity" data-key="lighting.global_intensity" min="0" max="3" step="0.05" value="{{ data.lighting && data.lighting.global_intensity != null ? data.lighting.global_intensity : 1 }}" />
+					<span class="pc-3d-value-display pc-3d-global-intensity-value">1</span>
+				</p>
+				<div class="pc-3d-setting-group">
+					<h5><?php _e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h5>
+					<p class="description"><?php _e( 'Lights from the 3D model appear below. Load a model to see them.', 'product-configurator-for-woocommerce' ); ?></p>
+					<div class="pc-3d-lights-list"></div>
+				</div>
+			</section>
+					<p class="pc-3d-reset-settings-row" style="margin-top: 1.5em;">
+						<button type="button" class="button pc-3d-reset-settings"><?php _e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>
+					</p>
+					</div>
+				</div>
 			</div>
-		<# } #>	
+			<div class="pc-3d-settings-column-preview">
+				<div class="pc-3d-preview">
+					<div class="pc-3d-preview--canvas-container"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</script>
+<script type="text/html" id="tmpl-mkl-pc-3d-light-item">
+	<div class="pc-3d-light-item">
+		<label>
+			<input type="checkbox" class="pc-3d-light-enabled" data-key="enabled" <# if ( data.enabled !== false ) { #>checked<# } #> />
+			{{ data.label }}
+		</label>
+		<select class="pc-3d-light-type" data-key="type">
+			<option value="PointLight" <# if ( data.type === 'PointLight' ) { #>selected<# } #>><?php _e( 'Point', 'product-configurator-for-woocommerce' ); ?></option>
+			<option value="DirectionalLight" <# if ( data.type === 'DirectionalLight' ) { #>selected<# } #>><?php _e( 'Directional', 'product-configurator-for-woocommerce' ); ?></option>
+			<option value="SpotLight" <# if ( data.type === 'SpotLight' ) { #>selected<# } #>><?php _e( 'Spot', 'product-configurator-for-woocommerce' ); ?></option>
+		</select>
+		<input type="color" class="pc-3d-light-color" data-key="color" value="{{ data.color || '#ffffff' }}" />
+		<input type="number" class="pc-3d-light-intensity" data-key="intensity" min="0" step="0.1" value="{{ data.intensity != null ? data.intensity : 1 }}" />
 	</div>
 </script>
 <script type="importmap">
 {
 	"imports": {
-		"three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
-		"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
+		"three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+		"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"
 	}
 }
 </script>
@@ -476,6 +639,22 @@ CONTENT TEMPLATES
 	</div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-3d-object-selector">
+	<div class="mkl-pc-3d-object-selector">
+		<h3><?php esc_html_e( 'Select 3D object', 'product-configurator-for-woocommerce' ); ?></h3>
+		<p class="mkl-pc-3d-object-selector--filter">
+			<input type="text" class="mkl-pc-3d-object-selector--filter-input" placeholder="<?php esc_attr_e( 'Filter objects…', 'product-configurator-for-woocommerce' ); ?>" />
+		</p>
+		<div class="mkl-pc-3d-object-selector--tree-container">
+			<ul class="mkl-pc-3d-object-selector--tree"></ul>
+		</div>
+		<div class="mkl-pc-3d-object-selector--actions">
+			<button type="button" class="button button-primary select" disabled><?php esc_html_e( 'Choose', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+	</div>
+</script>
+
 <?php 
 /*
 
@@ -690,10 +869,36 @@ IMPORT / EXPORT
 	?>
 	<# const language_data = <?php echo json_encode( $language_data ); ?>; #>
 	<# _.each( data.fields, ( field, key ) => { #>
+		<# const isSelect = field.type === 'select' && field.choices && field.choices.length; #>
+		<# const isColor = field.type === 'color'; #>
+		<# const isAttachment = field.type === 'attachment'; #>
+		<# const isVariantSelect = field.type === 'variant_select'; #>
+		<# const showWhen = field.show_when || null; #>
+		<div class="field-repeater-field <# if ( showWhen ) { #>pc-action-value<# } #>" <# if ( showWhen ) { #>data-show-when="{{showWhen}}"<# } #>>
 		<label>
 			{{field.label}}
-			<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}">
+			<# if ( isSelect ) { #>
+				<select name="{{key}}">
+					<# _.each( field.choices, ( opt ) => { #>
+						<option value="{{opt.value}}" <# if ( data[key] === opt.value ) { #> selected<# } #>>{{opt.label}}</option>
+					<# } ); #>
+				</select>
+			<# } else if ( isColor ) { #>
+				<input name="{{key}}" type="color" value="{{data[key] || '#ffffff'}}">
+			<# } else if ( isAttachment ) { #>
+				<# const urlKey = key.replace( /_id$/, '_url' ); const filenameKey = key.replace( /_id$/, '_filename' ); const hasUrl = urlKey !== key && data[urlKey]; #>
+				<input name="{{key}}" type="hidden" value="{{data[key] || ''}}">
+				<# if ( hasUrl ) { #>
+					<a href="{{data[urlKey]}}" target="_blank" rel="noopener noreferrer" class="pc-attachment-link">{{data[filenameKey] || data[urlKey]}}</a>
+				<# } #>
+				<button type="button" class="button pc-select-attachment" data-target="{{key}}"><?php echo esc_html( __( 'Select', 'product-configurator-for-woocommerce' ) ); ?></button>
+			<# } else if ( isVariantSelect ) { #>
+				<span class="pc-variant-select-placeholder" data-variant-field="{{key}}" data-variant-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading variants…', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else { #>
+				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}">
+			<# } #>
 		</label>
+		</div>
 		<# if ( field.translatable ) { #>
 				<# 
 				_.each( language_data, ( language, language_key ) => { 

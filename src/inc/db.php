@@ -59,7 +59,7 @@ class DB {
 						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
 					),
 					array(
-						'class' => 'button-primary custom-action pc-main-save-3d-settings',
+						'class' => 'button-primary pc-main-save-all',
 						'text' => __( 'Save settings' , 'product-configurator-for-woocommerce' ),
 					),
 				),
@@ -490,6 +490,49 @@ class DB {
 	}
 
 	/**
+	 * Default 3D settings structure (Environment, Background, Ground, Renderer, Lighting).
+	 *
+	 * @return array
+	 */
+	public static function get_default_settings_3d() {
+		return array(
+			'url'            => '',
+			'filename'       => '',
+			'attachment_id'   => null,
+			'environment'     => array(
+				'mode'                   => 'preset',
+				'preset'                 => 'outdoor',
+				'custom_hdr_url'         => '',
+				'intensity'              => 1,
+				'rotation'               => 0,
+				'orbit_min_polar_angle'  => 0,
+				'orbit_max_polar_angle'  => 90,
+			),
+			'background'      => array(
+				'mode'         => 'environment',
+				'color'        => '#ffffff',
+			),
+			'ground'          => array(
+				'enabled'        => true,
+				'size'           => 10,
+				'shadow_opacity' => 0.5,
+				'shadow_blur'    => 5,
+			),
+			'renderer'        => array(
+				'tone_mapping'       => 'linear',
+				'exposure'           => 1,
+				'output_color_space' => 'srgb',
+				'alpha'              => false,
+			),
+			'lighting'        => array(
+				'global_intensity'     => 1,
+				'default_light_enabled' => true,
+				'lights'               => array(),
+			),
+		);
+	}
+
+	/**
 	 * Get the basic data structure
 	 *
 	 * @param integer $id - The product's ID
@@ -516,7 +559,9 @@ class DB {
 		);
 		
 		if ( '3d' === mkl_pc_get_configurator_type( $parent_id ) ) {
-			$init_data['settings_3d'] = $this->get( 'settings_3d', $parent_id ) ?: [ 'url' => '', 'filename' => '' ];
+			$stored = $this->get( 'settings_3d', $parent_id );
+			$defaults = self::get_default_settings_3d();
+			$init_data['settings_3d'] = is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults;
 		}
 
 		if ( 'variable' === $product->get_type()) {
@@ -559,11 +604,13 @@ class DB {
 
 		$product_type = apply_filters( 'mkl_product_configurator_get_front_end_data/product_type', $product->get_type(), $product );
 		// get the products 'title' attribute
+		$parent_id_for_type = ( 'variation' === $product_type ) ? $product->get_parent_id() : $id;
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
 			array(
-				'title'          => apply_filters( 'the_title', $product->get_title(), $id ),
-				'product_type'   => $product_type,
+				'title'               => apply_filters( 'the_title', $product->get_title(), $id ),
+				'product_type'        => $product_type,
+				'configurator_type'   => mkl_pc_get_configurator_type( $parent_id_for_type ),
 				'show_qty'       => ! $product->is_sold_individually(),
 				'is_in_stock'    => $product->is_in_stock() || $product->backorders_allowed(), 
 				'is_purchasable' => $product->is_purchasable(), 
