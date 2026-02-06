@@ -282,6 +282,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'user_preferences_nonce' => wp_create_nonce( 'mkl_pc_user_preferences' ),
 					'languages' => mkl_pc( 'languages' )->get_languages(),
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
+					'hdr_base_url'         => MKL_PC_ASSETS_URL . 'images/hdr/',
+					'default_settings_3d'  => DB::get_default_settings_3d(),
+					'reset_settings_3d_confirm' => __( 'This will restore all 3D viewer settings to their defaults. Your selected 3D file will be kept. Continue?', 'product-configurator-for-woocommerce' ),
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );

@@ -373,7 +373,7 @@ PC.views = PC.views || {};
 			this.angles = this.admin.angles; 
 			this.layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
 			this.listenTo( this.model, 'destroy', this.remove );
-			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group' ), this.render );
+			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group change:object_selection_3d change:model_upload_3d change:model_upload_3d_filename change:model_upload_3d_url' ), this.render );
 			PC.currentEditedItem = this.model;
 			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},

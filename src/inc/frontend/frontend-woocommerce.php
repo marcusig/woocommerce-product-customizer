@@ -390,6 +390,31 @@ class Frontend_Woocommerce {
 			$configurator_deps[] = 'wc-add-to-cart';
 		}
 
+		$is_3d_configurator = $prod && '3d' === mkl_pc_get_configurator_type( $prod->get_parent_id() ? $prod->get_parent_id() : $prod->get_id() );
+		$fe_3d_viewer_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-viewer-entry.js';
+		if ( $is_3d_configurator && file_exists( $fe_3d_viewer_path ) ) {
+			$fe_3d_deps = array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' );
+			if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
+				$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
+				if ( file_exists( $draco_path ) ) {
+					wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
+					wp_enqueue_script( 'mkl_pc/fe_3d_draco_loader' );
+					$fe_3d_deps[] = 'mkl_pc/fe_3d_draco_loader';
+				}
+			}
+			if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
+				$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
+				if ( file_exists( $meshopt_path ) ) {
+					wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
+					wp_enqueue_script( 'mkl_pc/fe_3d_meshopt_loader' );
+					$fe_3d_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
+				}
+			}
+			wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', $fe_3d_deps, filemtime( $fe_3d_viewer_path ), true );
+			wp_enqueue_script( 'mkl_pc/fe_3d_viewer' );
+			$configurator_deps[] = 'mkl_pc/fe_3d_viewer';
+		}
+
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator' . $file_suffix . '.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator' . $file_suffix . '.js' ) , true );
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator' . $file_suffix . '.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator' . $file_suffix . '.js' ) , true );
 
@@ -403,6 +428,7 @@ class Frontend_Woocommerce {
 		$args = array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' ),
 			'image_endpoint' => get_rest_url() . 'mkl_pc/v1/merge/',
+			'assets_url' => MKL_PC_ASSETS_URL,
 			'lang' => array(
 				'money_precision' => wc_get_price_decimals(),
 				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
@@ -443,7 +469,10 @@ class Frontend_Woocommerce {
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
 					'save_current' => mkl_pc( 'settings')->get( 'use_current_angle_in_cart_image' ),
-				]
+				],
+				'fe_3d_use_draco_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
+				'fe_3d_use_meshopt_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+				'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
 			) ),
 		);
 
