@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.9
-Stable tag: 1.5.11
+Stable tag: 1.5.12
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,6 +146,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.5.12 - 9/Jan/2026 =
+
+* FIX: Save your design popup placement in WSB theme
 * FIX: Dropdown dynamic positioning (Upgraded Popper parameters for current version)
 
 = 1.5.11 - 28/Jan/2026 =
