@@ -260,10 +260,33 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				wp_enqueue_style( 'wp-color-picker' );
 				wp_enqueue_script( 'wp-color-picker' );
 
+				// Optional 3D compression loaders for admin (same as frontend); deps for 3d-settings view
+				$admin_3d_loader_deps = array();
+				if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
+					$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
+					if ( file_exists( $draco_path ) ) {
+						wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
+						wp_enqueue_script( 'mkl_pc/fe_3d_draco_loader' );
+						$admin_3d_loader_deps[] = 'mkl_pc/fe_3d_draco_loader';
+					}
+				}
+				if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
+					$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
+					if ( file_exists( $meshopt_path ) ) {
+						wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
+						wp_enqueue_script( 'mkl_pc/fe_3d_meshopt_loader' );
+						$admin_3d_loader_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
+					}
+				}
+
 				// LOAD BACKBONE SCRIPTS
 				foreach($scripts as $script) {
 					list( $key, $file ) = $script;
-					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), filemtime( MKL_PC_ASSETS_PATH . 'admin/js/'. $file ), true );
+					$deps = array( 'jquery', 'backbone' );
+					if ( $key === 'backbone/views/3d-settings' && ! empty( $admin_3d_loader_deps ) ) {
+						$deps = array_merge( $deps, $admin_3d_loader_deps );
+					}
+					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , $deps, filemtime( MKL_PC_ASSETS_PATH . 'admin/js/'. $file ), true );
 				}
 
 				$pc_lang = array(
@@ -285,6 +308,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'hdr_base_url'         => MKL_PC_ASSETS_URL . 'images/hdr/',
 					'default_settings_3d'  => DB::get_default_settings_3d(),
 					'reset_settings_3d_confirm' => __( 'This will restore all 3D viewer settings to their defaults. Your selected 3D file will be kept. Continue?', 'product-configurator-for-woocommerce' ),
+					'fe_3d_use_draco_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
+					'fe_3d_use_meshopt_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+					'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );

@@ -64,6 +64,8 @@ const viewer_3d_choice = Backbone.View.extend({
 		this.target_id = this.model.get( 'object_id_3d' ) || this.layer_model.get( 'object_id_3d' );
 		this.target_object = this.get_target_object();
 		this.listenTo( this.model, 'change:active', this.apply_actions );
+		this.listenTo( this.model, 'change:cshow', this._apply_cshow_visibility_only );
+		this.listenTo( this.layer_model, 'change:cshow', this._apply_cshow_visibility_only );
 	},
 
 	get_target_object() {
@@ -78,15 +80,39 @@ const viewer_3d_choice = Backbone.View.extend({
 		return obj || null;
 	},
 
+	_effective_visible() {
+		return this.model.get( 'active' ) && false !== this.model.get( 'cshow' ) && false !== this.layer_model.get( 'cshow' );
+	},
+
+	/** Only update visibility (for cshow changes). Does not run material/variant/color/texture actions. */
+	_apply_cshow_visibility_only() {
+		const t = this.parent_view._three;
+		if ( ! t || ! t.model_root ) return;
+		const visible = this._effective_visible();
+		const actions = this.model.get( 'actions_3d' ) || [];
+		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
+
+		if ( this._attached_model_root ) {
+			if ( ! visible && this._attached_model_root.parent ) {
+				this._attached_model_root.parent.remove( this._attached_model_root );
+			} else if ( visible ) {
+				const parent = this._attach_parent || t.model_root;
+				if ( this._attached_model_root.parent !== parent ) parent.add( this._attached_model_root );
+				this._attached_model_root.visible = true;
+			}
+		}
+		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
+	},
+
 	_apply_visibility_and_actions() {
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
 		const select_variant = t.gltf && t.gltf.functions && t.gltf.functions.selectVariant;
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
-		const is_active = this.model.get( 'active' );
+		const visible = this._effective_visible();
 
-		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = is_active;
+		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
 
 		actions.forEach( ( action ) => {
 			const type = action.action_type;
@@ -114,23 +140,46 @@ const viewer_3d_choice = Backbone.View.extend({
 
 	_set_material_map( obj, texture ) {
 		if ( ! obj ) return;
+
 		obj.traverse( ( child ) => {
 			if ( ! child.material ) return;
-			const materials = Array.isArray( child.material ) ? child.material : [ child.material ];
+
+			const materials = Array.isArray( child.material )
+				? child.material
+				: [ child.material ];
+
 			materials.forEach( ( mat ) => {
-				if ( mat ) mat.map = texture;
-			} );
-		} );
+				if ( ! mat ) return;
+
+				const oldMap = mat.map;
+				const tex = texture.clone();
+
+				if ( oldMap ) {
+					tex.repeat.copy( oldMap.repeat );
+					tex.offset.copy( oldMap.offset );
+					tex.center.copy( oldMap.center );
+					tex.rotation = oldMap.rotation;
+					tex.wrapS = oldMap.wrapS;
+					tex.wrapT = oldMap.wrapT;
+				}
+
+				tex.needsUpdate = true;
+
+				mat.map = tex;
+				mat.needsUpdate = true;
+			});
+		});
 	},
+
 
 	apply_actions() {
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
-		const is_active = this.model.get( 'active' );
+		const visible = this._effective_visible();
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 
-		if ( ! is_active ) {
+		if ( ! visible ) {
 			if ( this._attached_model_root && this._attached_model_root.parent ) {
 				this._attached_model_root.parent.remove( this._attached_model_root );
 			}
@@ -146,6 +195,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				this.target_object = this._attached_model_root;
 				const parent = this._attach_parent || t.model_root;
 				if ( this._attached_model_root.parent !== parent ) parent.add( this._attached_model_root );
+				this._attached_model_root.visible = true;
 				this._apply_visibility_and_actions();
 			} else {
 				this.parent_view._load_choice_gltf( model_upload_3d_url, ( scene ) => {
@@ -154,6 +204,7 @@ const viewer_3d_choice = Backbone.View.extend({
 					this._attach_parent = this.target_object || t.model_root;
 					this.target_object = scene;
 					this._attach_parent.add( scene );
+					this._attached_model_root.visible = true;
 					this._apply_visibility_and_actions();
 				} );
 			}
@@ -299,18 +350,18 @@ export default Backbone.View.extend({
 		if ( ! t || ! t.scene ) return;
 
 		const mainUrl = s.url || null;
-		const layerUrls = [];
+		const layerEntries = []; // { layer_model, url } for layers with uploaded model
 		const layers = window.PC.fe && window.PC.fe.layers;
 		if ( layers ) {
 			layers.each( ( layer_model ) => {
 				if ( layer_model.get( 'object_selection_3d' ) !== 'upload_model' ) return;
 				const url = layer_model.get( 'model_upload_3d_url' );
 				if ( ! layer_model.get( 'model_upload_3d' ) || ! url ) return;
-				layerUrls.push( url );
+				layerEntries.push( { layer_model, url } );
 			} );
 		}
 		
-		if ( ! mainUrl && layerUrls.length === 0 ) {
+		if ( ! mainUrl && layerEntries.length === 0 ) {
 			this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<p class="mkl_pc_3d_error">No 3D model configured.</p>' );
 			return;
 		}
@@ -339,22 +390,12 @@ export default Backbone.View.extend({
 			} ) );
 		}
 
-		layerUrls.forEach( ( url ) => {
+		layerEntries.forEach( ( { layer_model, url } ) => {
 			promises.push( new Promise( ( resolve ) => {
-				console.log( url );
-				
 				this._loadGltf(
 					url,
-					( gltf ) => {
-						console.log( gltf );
-						
-						return resolve( { type: 'layer', scene: gltf && gltf.scene ? gltf.scene : null } )
-					},
-					(e,f) => {
-						console.log(e,f);
-						
-						return resolve( { type: 'layer', scene: null } )
-					}
+					( gltf ) => resolve( { type: 'layer', layer_model, scene: gltf && gltf.scene ? gltf.scene : null } ),
+					() => resolve( { type: 'layer', layer_model, scene: null } )
 				);
 			} ) );
 		} );
@@ -372,16 +413,12 @@ export default Backbone.View.extend({
 		} ) );
 
 		Promise.all( promises ).then( ( results ) => {
-			console.log( results );
-			
 			let mainGltf = null;
-			const layerScenes = [];
+			const layerResults = []; // { layer_model, scene }
 			let hdrTexture = null;
 			results.forEach( ( r ) => {
-				console.log( r, r.type );
-				
 				if ( r.type === 'main' ) mainGltf = r.gltf;
-				else if ( r.type === 'layer' && r.scene ) layerScenes.push( r.scene );
+				else if ( r.type === 'layer' ) layerResults.push( { layer_model: r.layer_model, scene: r.scene } );
 				else if ( r.type === 'hdr' ) hdrTexture = r.texture;
 			} );
 
@@ -403,9 +440,25 @@ export default Backbone.View.extend({
 				t.gltf = null;
 			}
 
-			console.log( layerScenes );
-			
-			layerScenes.forEach( ( scene ) => t.model_root.add( scene ) );
+			this._layer_scenes = [];
+			layerResults.forEach( ( { layer_model, scene } ) => {
+				if ( scene ) {
+					t.model_root.add( scene );
+					this._layer_scenes.push( { layer_model, scene } );
+				}
+			} );
+			this._layer_objects = [];
+			if ( layers && t.model_root ) {
+				layers.each( ( layer_model ) => {
+					if ( layer_model.get( 'object_selection_3d' ) === 'upload_model' ) return;
+					const oid = layer_model.get( 'object_id_3d' );
+					if ( ! oid ) return;
+					const obj = this._findObject( t.model_root, String( oid ).trim() );
+					if ( obj ) this._layer_objects.push( { layer_model, object: obj } );
+				} );
+			}
+			this._apply_layer_cshow_visibility();
+			this._bind_layer_cshow();
 
 			if ( hdrTexture ) {
 				t.scene.environment = hdrTexture;
@@ -572,6 +625,29 @@ export default Backbone.View.extend({
 		return found;
 	},
 
+	_apply_layer_cshow_visibility() {
+		const cshow = ( model ) => false !== model.get( 'cshow' );
+		if ( this._layer_scenes && this._layer_scenes.length ) {
+			this._layer_scenes.forEach( ( { layer_model, scene } ) => {
+				if ( scene ) scene.visible = cshow( layer_model );
+			} );
+		}
+		if ( this._layer_objects && this._layer_objects.length ) {
+			this._layer_objects.forEach( ( { layer_model, object } ) => {
+				if ( object ) object.visible = cshow( layer_model );
+			} );
+		}
+	},
+
+	_bind_layer_cshow() {
+		const layerModels = new Set();
+		if ( this._layer_scenes ) this._layer_scenes.forEach( ( { layer_model } ) => layerModels.add( layer_model ) );
+		if ( this._layer_objects ) this._layer_objects.forEach( ( { layer_model } ) => layerModels.add( layer_model ) );
+		layerModels.forEach( ( layer_model ) => {
+			this.listenTo( layer_model, 'change:cshow', this._apply_layer_cshow_visibility );
+		} );
+	},
+
 	_create_choice_views() {
 		const t = this._three;
 		if ( ! t || ! t.model_root ) return;
@@ -625,6 +701,8 @@ export default Backbone.View.extend({
 			this._choice_views.forEach( ( view ) => view.remove() );
 			this._choice_views = [];
 		}
+		this._layer_scenes = [];
+		this._layer_objects = [];
 		const t = this._three;
 		if ( ! t ) return;
 		if ( t.fake_shadow ) {

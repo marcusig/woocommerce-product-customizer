@@ -71,6 +71,46 @@ PC.views = PC.views || {};
 	/** Cache variant names by model URL to avoid re-loading. */
 	var _variantsCache = {};
 
+	/** Cached DRACOLoader instance for admin (one per page, same as frontend). */
+	var _adminDracoLoader = null;
+
+	/**
+	 * Get 3D loader config (Draco/Meshopt) from PC_lang (admin) or PC_config.config (frontend).
+	 * @returns {{ fe_3d_use_draco_loader: boolean, fe_3d_use_meshopt_loader: boolean, fe_3d_draco_decoder_path: string }}
+	 */
+	function getAdmin3dConfig() {
+		const lang = window.PC_lang || {};
+		const config = ( window.PC_config && window.PC_config.config ) || {};
+		return {
+			fe_3d_use_draco_loader: !! ( lang.fe_3d_use_draco_loader || config.fe_3d_use_draco_loader ),
+			fe_3d_use_meshopt_loader: !! ( lang.fe_3d_use_meshopt_loader || config.fe_3d_use_meshopt_loader ),
+			fe_3d_draco_decoder_path: lang.fe_3d_draco_decoder_path || config.fe_3d_draco_decoder_path || ( ( window.PC_config && window.PC_config.assets_url ) ? window.PC_config.assets_url + 'js/vendor/draco/gltf/' : '' ),
+		};
+	}
+
+	/**
+	 * Create a GLTFLoader with the same Draco and Meshopt support as the frontend.
+	 * @returns {GLTFLoader}
+	 */
+	PC.threeD.getGltfLoader = function() {
+		const loader = new GLTFLoader();
+		const config = getAdmin3dConfig();
+		if ( config.fe_3d_use_draco_loader && typeof window.DRACOLoader !== 'undefined' ) {
+			if ( ! _adminDracoLoader ) {
+				_adminDracoLoader = new window.DRACOLoader();
+				if ( config.fe_3d_draco_decoder_path ) {
+					_adminDracoLoader.setDecoderPath( config.fe_3d_draco_decoder_path );
+				}
+			}
+			loader.setDRACOLoader( _adminDracoLoader );
+		}
+		if ( config.fe_3d_use_meshopt_loader && typeof window.MeshoptDecoder !== 'undefined' ) {
+			loader.setMeshoptDecoder( window.MeshoptDecoder );
+		}
+		loader.register( function( parser ) { return new GLTFMaterialsVariantsExtension( parser ); } );
+		return loader;
+	};
+
 	/**
 	 * Load a GLTF from URL and return material variant names (KHR_materials_variants).
 	 * @param {string} url - GLTF/GLB URL
@@ -81,8 +121,7 @@ PC.views = PC.views || {};
 		if ( _variantsCache[ url ] !== undefined ) {
 			return callback( null, _variantsCache[ url ] );
 		}
-		var loader = new GLTFLoader();
-		loader.register( function( parser ) { return new GLTFMaterialsVariantsExtension( parser ); } );
+		var loader = PC.threeD.getGltfLoader();
 		loader.load(
 			url,
 			function( gltf ) {
@@ -606,7 +645,7 @@ PC.views = PC.views || {};
             this._three.on_resize = on_resize;
             window.addEventListener('resize', on_resize);
 
-            const loader = new GLTFLoader();
+            const loader = PC.threeD.getGltfLoader();
             loader.load(url, (gltf) => {
                 if (this._three.fake_shadow) {
                     this._three.fake_shadow.dispose();
@@ -823,7 +862,7 @@ PC.views = PC.views || {};
 			this.selectedName = null;
 			this.setting = this.options.setting || null;
 			this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
-			this._loader = new GLTFLoader();
+			this._loader = PC.threeD.getGltfLoader();
 		},
 		render: function() {
 			this.$el.html( this.template( {} ) );
@@ -849,7 +888,7 @@ PC.views = PC.views || {};
 				} ).fail( () => this.showError( 'Failed to load attachment.' ) );
 				return;
 			}
-			// Resolve from context (layer form): main model or uploaded model
+			// Resolve from context (layer form or choice form): main, layer, or uploaded model
 			if ( this.originals.context && this.originals.context.model ) {
 				const model = this.originals.context.model;
 				const source = model.get( 'object_selection_3d' ) || 'main_model';
@@ -858,6 +897,16 @@ PC.views = PC.views || {};
 					if ( url ) this.loadModel( url );
 					else this.showError( 'No main model set. Configure the 3D model in the 3D tab first.' );
 					return;
+				}
+				if ( source === 'layer_model' && this.originals.context.layer ) {
+					const layerModel = this.originals.context.layer;
+					if ( typeof PC.threeD.resolveChoiceModelUrl === 'function' ) {
+						PC.threeD.resolveChoiceModelUrl( model, layerModel, ( resolvedUrl ) => {
+							if ( resolvedUrl ) this.loadModel( resolvedUrl );
+							else this.showError( 'No 3D file from layer. Set the layer\'s model (main or upload) first.' );
+						} );
+						return;
+					}
 				}
 				if ( source === 'upload_model' ) {
 					const attId = model.get( 'model_upload_3d' );
