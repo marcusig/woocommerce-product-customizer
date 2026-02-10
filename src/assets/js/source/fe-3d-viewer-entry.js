@@ -2,7 +2,7 @@
  * Frontend 3D viewer entry.
  * Exposes the 3D viewer as PC.fe.views.viewer_3d for use when configurator type is 3d.
  */
-import Viewer3D from './fe-3d-viewer-view.js';
+import Viewer3D from '.3d-viewer/main-viewer.js';
 
 const wp = window.wp;
 
