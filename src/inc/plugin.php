@@ -165,7 +165,23 @@ class Plugin {
 		$this->themes = new Themes();
 		$this->ajax = new Ajax();
 
+		add_action( 'mkl_pc_cleanup_3d_cart_screenshots', array( $this->frontend->cart, 'cleanup_old_3d_screenshots' ) );
+		add_action( 'init', array( $this, 'schedule_3d_screenshot_cleanup' ), 20 );
+
 		do_action( 'mkl_pc_is_loaded' );
+	}
+
+	/**
+	 * Schedule daily cleanup of old 3D cart screenshot temp files (if not already scheduled).
+	 */
+	public function schedule_3d_screenshot_cleanup() {
+		if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) {
+			return;
+		}
+		if ( wp_next_scheduled( 'mkl_pc_cleanup_3d_cart_screenshots' ) ) {
+			return;
+		}
+		wp_schedule_event( time(), 'daily', 'mkl_pc_cleanup_3d_cart_screenshots' );
 	}
 }
 

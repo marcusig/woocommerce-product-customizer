@@ -151,9 +151,89 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						$cart_item_data['configurator_data'] = $layers;
 						$cart_item_data['configurator_data_raw'] = $configuration->content;
 					}
-				} 
-			} 
-			return $cart_item_data; 
+				}
+
+				// Save 3D viewer screenshot to temp folder when show_image_in_cart is on (not saved as attachment).
+				if ( mkl_pc_is_configurable( $product_id ) && mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) ) {
+					$saved = $this->save_3d_screenshot_to_temp( sanitize_text_field( wp_unslash( $_POST['pc_3d_screenshot'] ) ) );
+					if ( $saved ) {
+						$cart_item_data['configurator_3d_screenshot_path'] = $saved;
+					}
+				}
+			}
+			return $cart_item_data;
+		}
+
+		/**
+		 * Save 3D screenshot data URL to temp file. No attachment is created.
+		 *
+		 * @param string $data_url Data URL (e.g. data:image/png;base64,...)
+		 * @return string|false Relative path (e.g. cart-temp/3d-xxx.png) under mkl-pc-config-images, or false on failure
+		 */
+		private function save_3d_screenshot_to_temp( $data_url ) {
+			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
+				return false;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			$base_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images';
+			$temp_dir      = $base_dir . '/cart-temp';
+			if ( ! file_exists( $base_dir ) ) {
+				wp_mkdir_p( $base_dir );
+			}
+			if ( ! file_exists( $temp_dir ) ) {
+				wp_mkdir_p( $temp_dir );
+			}
+			$raw = base64_decode( substr( $data_url, strlen( 'data:image/png;base64,' ) ), true );
+			if ( $raw === false ) {
+				return false;
+			}
+			$filename = '3d-' . wp_unique_id( 'cart' ) . '.png';
+			$filepath = $temp_dir . '/' . $filename;
+			if ( file_put_contents( $filepath, $raw ) === false ) {
+				return false;
+			}
+			return 'cart-temp/' . $filename;
+		}
+
+		/**
+		 * Cron callback: delete 3D screenshots in cart-temp older than 48 hours.
+		 * Called by scheduled event mkl_pc_cleanup_3d_cart_screenshots.
+		 */
+		public function cleanup_old_3d_screenshots() {
+			$wp_upload_dir = wp_upload_dir();
+			$temp_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images/cart-temp';
+			if ( ! is_dir( $temp_dir ) ) {
+				return;
+			}
+			$max_age_seconds = apply_filters( 'mkl_pc_3d_screenshot_temp_max_age', 48 * HOUR_IN_SECONDS );
+			$now             = time();
+			$files           = glob( $temp_dir . '/*.png' );
+			if ( ! is_array( $files ) ) {
+				return;
+			}
+			foreach ( $files as $file ) {
+				if ( ! is_file( $file ) ) {
+					continue;
+				}
+				if ( ( $now - filemtime( $file ) ) > $max_age_seconds ) {
+					@unlink( $file );
+				}
+			}
+		}
+
+		/**
+		 * Get the public URL for a 3D screenshot path (temp or final).
+		 *
+		 * @param string $relative_path Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png)
+		 * @return string|null URL or null if path invalid
+		 */
+		private function get_3d_screenshot_url( $relative_path ) {
+			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
+				return null;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			$base_url      = $wp_upload_dir['baseurl'] . '/mkl-pc-config-images';
+			return $base_url . '/' . trim( $relative_path, '/' );
 		}
 
 		/**
@@ -165,6 +245,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( $conf_data && $raw_conf_data ) {
 				$data['configurator_data'] = $conf_data;
 				$data['configurator_data_raw'] = $raw_conf_data;
+			}
+			$screenshot_path = $item->get_meta( '_configurator_3d_screenshot_path', true );
+			if ( $screenshot_path && is_string( $screenshot_path ) ) {
+				$data['configurator_3d_screenshot_path'] = $screenshot_path;
 			}
 			return $data;
 		}
@@ -302,7 +386,14 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 */
 		public function cart_item_thumbnail( $image, $cart_item, $cart_item_key ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
-			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
+			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
+				// 3D screenshot (temp file, not attachment)
+				if ( ! empty( $cart_item['configurator_3d_screenshot_path'] ) ) {
+					$url = $this->get_3d_screenshot_url( $cart_item['configurator_3d_screenshot_path'] );
+					if ( $url ) {
+						return '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $cart_item['data']->get_name() ) . '" class="attachment-woocommerce_thumbnail" />';
+					}
+				}
 				$configuration = $this->_get_configuration_for_cart_item( $cart_item );
 				$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 				$img = $configuration->get_image( $size );
@@ -328,8 +419,14 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 			foreach ( $cart_content as $key => $cart_item ) {
 				if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
-					$configuration = $this->_get_configuration_for_cart_item( $cart_item );
-					$img_url = $configuration->get_image_url( false, $size );
+					$img_url = null;
+					if ( ! empty( $cart_item['configurator_3d_screenshot_path'] ) ) {
+						$img_url = $this->get_3d_screenshot_url( $cart_item['configurator_3d_screenshot_path'] );
+					}
+					if ( ! $img_url ) {
+						$configuration = $this->_get_configuration_for_cart_item( $cart_item );
+						$img_url = $configuration->get_image_url( false, $size );
+					}
 
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
 
