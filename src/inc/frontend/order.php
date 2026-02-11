@@ -98,6 +98,46 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				}
 				do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 			}
+
+			// Move 3D screenshot from temp to final location (not an attachment).
+			if ( ! empty( $values['configurator_3d_screenshot_path'] ) && is_string( $values['configurator_3d_screenshot_path'] ) ) {
+				$final_relative = $this->move_3d_screenshot_to_order( $values['configurator_3d_screenshot_path'], $order, $cart_item_key );
+				if ( $final_relative ) {
+					$item->add_meta_data( '_configurator_3d_screenshot_path', $final_relative, false );
+				}
+			}
+		}
+
+		/**
+		 * Move 3D screenshot from cart temp folder to final order folder.
+		 *
+		 * @param string $temp_relative Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png)
+		 * @param \WC_Order $order
+		 * @param string $cart_item_key
+		 * @return string|false Final relative path (e.g. orders/order-123-abc.png) or false on failure
+		 */
+		private function move_3d_screenshot_to_order( $temp_relative, $order, $cart_item_key ) {
+			if ( strpos( $temp_relative, '..' ) !== false ) {
+				return false;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			$base_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images';
+			$temp_path     = $base_dir . '/' . trim( $temp_relative, '/' );
+			if ( ! file_exists( $temp_path ) || ! is_file( $temp_path ) ) {
+				return false;
+			}
+			$orders_dir = $base_dir . '/orders';
+			if ( ! file_exists( $orders_dir ) ) {
+				wp_mkdir_p( $orders_dir );
+			}
+			$order_id   = $order->get_id();
+			$safe_key   = sanitize_file_name( substr( $cart_item_key, 0, 32 ) );
+			$final_name = 'order-' . $order_id . '-' . $safe_key . '.png';
+			$final_path = $orders_dir . '/' . $final_name;
+			if ( rename( $temp_path, $final_path ) ) {
+				return 'orders/' . $final_name;
+			}
+			return false;
 		}
 
 		public function get_sku( $configurator_data ) {
@@ -331,14 +371,26 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 		public function get_order_item_image( $order_item, $return = 'html', $size = false ) {
 
-			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false; 
-			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
+			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false;
+			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false;
+
+			// 3D screenshot (saved at order placement, not an attachment)
+			$screenshot_path = $order_item->get_meta( '_configurator_3d_screenshot_path', true );
+			if ( $screenshot_path && is_string( $screenshot_path ) ) {
+				$url = $this->get_order_3d_screenshot_url( $screenshot_path );
+				if ( $url ) {
+					if ( 'url' == $return ) {
+						return $url;
+					}
+					return '<img src="' . esc_url( $url ) . '" alt="" class="attachment-woocommerce_thumbnail" />';
+				}
+			}
 
 			$configurator_data = $order_item->get_meta( '_configurator_data' );
 
 			if ( ! $configurator_data ) return false;
 
-			$choices = array(); 
+			$choices = array();
 			usort( $configurator_data, [ $this, '_order_images' ] );
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer ) continue;
@@ -350,7 +402,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$configuration = new Configuration( NULL, array( 'product_id' => $order_item['product_id'], 'content' => json_encode( $choices ) ) );
 			if ( ! $size ) $size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 			$size = apply_filters( 'mkl_pc/order_image_size', $size, $order_item, $configurator_data );
-			
+
 			if ( 'url' == $return ) {
 				return $configuration->get_image_url( false, $size );
 			}
@@ -360,6 +412,20 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			if ( $img ) return $img;
 
 			return false;
+		}
+
+		/**
+		 * Get the public URL for an order 3D screenshot (final path under mkl-pc-config-images).
+		 *
+		 * @param string $relative_path e.g. orders/order-123-abc.png
+		 * @return string|null
+		 */
+		private function get_order_3d_screenshot_url( $relative_path ) {
+			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
+				return null;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			return $wp_upload_dir['baseurl'] . '/mkl-pc-config-images/' . trim( $relative_path, '/' );
 		}
 
 		/**

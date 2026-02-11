@@ -188,6 +188,15 @@ PC.fe.views.form = Backbone.View.extend({
 					}
 				});
 
+				// 3D cart image: capture viewer screenshot when show_image_in_cart is on
+				if ( PC.fe.config.show_image_in_cart && PC.fe.currentProductData && PC.fe.currentProductData.product_info && PC.fe.currentProductData.product_info.configurator_type === '3d' && PC.fe.modal && PC.fe.modal.viewer && typeof PC.fe.modal.viewer.captureScreenshot === 'function' ) {
+					var size = PC.fe.config.cart_screenshot_size || { width: 800, height: 800 };
+					var dataUrl = PC.fe.modal.viewer.captureScreenshot( { view: 'current', width: size.width, height: size.height } );
+					if ( dataUrl ) {
+						request_body.append( 'pc_3d_screenshot', dataUrl );
+					}
+				}
+
 				/* 
 					Add to cart request
 				*/

@@ -486,6 +486,8 @@ export default Backbone.View.extend({
 	 *        - 'current': use the live OrbitControls camera
 	 *        - 'initial': use the framed camera stored after initial load (if available)
 	 *        - 'gltf': use the first camera found in the loaded glTF (if any)
+	 * @param {number} [options.width] - output width (default: canvas width)
+	 * @param {number} [options.height] - output height (default: canvas height)
 	 * @returns {string|null} data URL (image/png) or null if capture is not possible
 	 */
 	captureScreenshot( options = {} ) {
@@ -529,9 +531,17 @@ export default Backbone.View.extend({
 
 		const renderer = t.renderer;
 		const canvas = renderer.domElement;
-		const width = canvas.width;
-		const height = canvas.height;
+		let width = options.width != null ? Math.max( 1, Math.floor( options.width ) ) : canvas.width;
+		let height = options.height != null ? Math.max( 1, Math.floor( options.height ) ) : canvas.height;
 		if ( ! width || ! height ) return null;
+
+		// When using custom size, temporarily set camera aspect so the shot is not distorted.
+		const needAspectRestore = ( width !== canvas.width || height !== canvas.height ) && cameraForShot === baseCamera;
+		const savedAspect = needAspectRestore ? baseCamera.aspect : null;
+		if ( needAspectRestore ) {
+			baseCamera.aspect = width / height;
+			baseCamera.updateProjectionMatrix();
+		}
 
 		// Render into an off-screen target so the visible canvas doesn't change.
 		const renderTarget = new THREE.WebGLRenderTarget( width, height );
@@ -540,6 +550,11 @@ export default Backbone.View.extend({
 		renderer.setRenderTarget( renderTarget );
 		renderer.render( scene, cameraForShot );
 		renderer.setRenderTarget( prevTarget );
+
+		if ( needAspectRestore && savedAspect != null ) {
+			baseCamera.aspect = savedAspect;
+			baseCamera.updateProjectionMatrix();
+		}
 
 		// Read pixels back and convert to a PNG data URL via a temporary 2D canvas.
 		const pixels = new Uint8Array( width * height * 4 );
