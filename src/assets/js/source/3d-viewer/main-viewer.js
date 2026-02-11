@@ -134,6 +134,9 @@ export default Backbone.View.extend({
 			current_env_url: null,
 			default_light: defaultLight,
 			container,
+			// Will be filled after initial framing so we can reuse it for screenshots
+			initial_camera_position: null,
+			initial_controls_target: null,
 		};
 	},
 
@@ -297,6 +300,11 @@ export default Backbone.View.extend({
 				t.controls.target.copy( center );
 				t.camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
 				t.camera.lookAt( center );
+				// Store the framed camera as the \"initial\" view for later screenshots.
+				if ( ! t.initial_camera_position ) {
+					t.initial_camera_position = t.camera.position.clone();
+					t.initial_controls_target = t.controls.target.clone();
+				}
 			}
 			if ( t.on_resize ) t.on_resize();
 
@@ -468,6 +476,100 @@ export default Backbone.View.extend({
 		layerModels.forEach( ( layer_model ) => {
 			this.listenTo( layer_model, 'change:cshow', this._apply_layer_cshow_visibility );
 		} );
+	},
+
+	/**
+	 * Capture a PNG screenshot of the current scene without changing what the user sees.
+	 *
+	 * @param {Object} [options]
+	 * @param {'current'|'initial'|'gltf'} [options.view='current']
+	 *        - 'current': use the live OrbitControls camera
+	 *        - 'initial': use the framed camera stored after initial load (if available)
+	 *        - 'gltf': use the first camera found in the loaded glTF (if any)
+	 * @returns {string|null} data URL (image/png) or null if capture is not possible
+	 */
+	captureScreenshot( options = {} ) {
+		const t = this._three;
+		if ( ! t || ! t.scene || ! t.renderer || ! t.camera ) return null;
+
+		const mode = options.view || 'current';
+		const scene = t.scene;
+		const baseCamera = t.camera;
+		let cameraForShot = baseCamera;
+
+		// Choose which camera to use for the off-screen render.
+		if ( mode === 'initial' && t.initial_camera_position && t.initial_controls_target ) {
+			const cam = baseCamera.clone();
+			cam.position.copy( t.initial_camera_position );
+			cam.lookAt( t.initial_controls_target );
+			cameraForShot = cam;
+		} else if ( mode === 'gltf' ) {
+			let otherCam = null;
+
+			// Prefer explicit glTF cameras if present
+			if ( t.gltf && Array.isArray( t.gltf.cameras ) && t.gltf.cameras.length ) {
+				otherCam = t.gltf.cameras[ 0 ];
+			}
+
+			// Fallback: search the scene graph for any other camera
+			if ( ! otherCam ) {
+				const found = [];
+				scene.traverse( ( obj ) => {
+					if ( obj.isCamera && obj !== baseCamera ) found.push( obj );
+				} );
+				if ( found.length ) {
+					otherCam = found[ 0 ];
+				}
+			}
+
+			if ( otherCam ) {
+				cameraForShot = otherCam;
+			}
+		}
+
+		const renderer = t.renderer;
+		const canvas = renderer.domElement;
+		const width = canvas.width;
+		const height = canvas.height;
+		if ( ! width || ! height ) return null;
+
+		// Render into an off-screen target so the visible canvas doesn't change.
+		const renderTarget = new THREE.WebGLRenderTarget( width, height );
+		const prevTarget = renderer.getRenderTarget();
+
+		renderer.setRenderTarget( renderTarget );
+		renderer.render( scene, cameraForShot );
+		renderer.setRenderTarget( prevTarget );
+
+		// Read pixels back and convert to a PNG data URL via a temporary 2D canvas.
+		const pixels = new Uint8Array( width * height * 4 );
+		renderer.readRenderTargetPixels( renderTarget, 0, 0, width, height, pixels );
+		renderTarget.dispose();
+
+		const outputCanvas = document.createElement( 'canvas' );
+		outputCanvas.width = width;
+		outputCanvas.height = height;
+		const ctx = outputCanvas.getContext( '2d' );
+		const imageData = ctx.createImageData( width, height );
+
+		// WebGL's origin is bottom-left; flip vertically for the 2D canvas.
+		for ( let y = 0; y < height; y++ ) {
+			const srcY = height - 1 - y;
+			const srcStart = srcY * width * 4;
+			const destStart = y * width * 4;
+			imageData.data.set(
+				pixels.subarray( srcStart, srcStart + width * 4 ),
+				destStart
+			);
+		}
+
+		ctx.putImageData( imageData, 0, 0 );
+		try {
+			return outputCanvas.toDataURL( 'image/png' );
+		} catch ( e ) {
+			// Some browsers may block toDataURL for security reasons.
+			return null;
+		}
 	},
 
 	_create_choice_views() {
