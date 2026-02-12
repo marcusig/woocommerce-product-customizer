@@ -545,6 +545,7 @@ export default Backbone.View.extend({
 
 		// Render into an off-screen target so the visible canvas doesn't change.
 		const renderTarget = new THREE.WebGLRenderTarget( width, height );
+		renderTarget.texture.colorSpace = renderer.outputColorSpace;
 		const prevTarget = renderer.getRenderTarget();
 
 		renderer.setRenderTarget( renderTarget );
