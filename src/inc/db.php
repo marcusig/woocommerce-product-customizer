@@ -50,24 +50,6 @@ class DB {
 			),
 			array(
 				'type' 	=> 'part',
-				'menu_id' 	=> 'settings_3D',
-				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
-				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
-				'menu' => array(
-					array(
-						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
-					),
-					array(
-						'class' => 'button-primary pc-main-save-all',
-						'text' => __( 'Save settings' , 'product-configurator-for-woocommerce' ),
-					),
-				),
-				'description' => __( 'Manage the main 3D settings for this product', 'product-configurator-for-woocommerce' ),
-				'order' => 15,
-			),
-			array(
-				'type' 	=> 'part',
 				'menu_id' 	=> 'layers',
 				'label' => __( 'Layers', 'product-configurator-for-woocommerce' ),
 				'title' => __( 'Layers of the product ', 'product-configurator-for-woocommerce' ),
@@ -125,6 +107,7 @@ class DB {
 			),
 		);
 
+
 		if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__conditional_placeholder', true )  ) {
 			$default_menu[] = array(
 				'type' 	=> 'separator',
@@ -147,6 +130,29 @@ class DB {
 			);			
 		}
 		
+		global $post;
+		
+		if ( $post && is_a( $post, 'WP_Post' ) && '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+			$default_menu[] = array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'settings_3D',
+				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save settings' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Manage the main 3D settings for this product', 'product-configurator-for-woocommerce' ),
+				'order' => 15,
+			);
+		}
+
 		$this->menu = $default_menu;
 
 		// Add tne import section at the end of the menu

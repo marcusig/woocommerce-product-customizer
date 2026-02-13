@@ -234,7 +234,6 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/views/states', 'views/states.js'),
 				array('backbone/views/angles', 'views/angles.js'),
 				array('backbone/views/content', 'views/content.js'),
-				array('backbone/views/3d-settings', 'views/3d-settings.js'),
 				array('backbone/views/import', 'views/import.js'),
 				array('backbone/views/app', 'views/app.js'),
 				array('backbone/views/product_selector', 'views/product_selector.js'),
@@ -252,7 +251,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			if ( $this->_current_screen_is( 'product' ) ) {
 
-				
+				global $post;
+				if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+					$scripts[] = array('backbone/views/3d-settings', 'views/3d-settings.js');
+				}
+
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
 				// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
 				$scripts = apply_filters( 'mkl_pc_admin_scripts', $scripts );
