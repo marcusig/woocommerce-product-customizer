@@ -1379,9 +1379,10 @@ a.mkl-pc-link--external::before {
 	
 	.field-repeater--option {
 		display: flex;
-		align-items: end;
+		align-items: center;
 		padding: 8px;
 		border-bottom: 1px solid #e0e0e0;
+		gap: 4px;
 
 		label {
 			flex: 1;
