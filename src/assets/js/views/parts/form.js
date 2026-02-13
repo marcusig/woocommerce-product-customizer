@@ -77,8 +77,8 @@ PC.fe.views.form = Backbone.View.extend({
 		return this.$el;
 	},
 
-	validate_configuration: function() {
-		var data = PC.fe.save_data.save();
+	validate_configuration: async function() {
+		var data = await PC.fe.save_data.getSaveDataAsync();
 		var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 		if ( errors.length ) {
 			// show errors and prevent adding to cart
@@ -109,9 +109,9 @@ PC.fe.views.form = Backbone.View.extend({
 		$( 'input[name=pc_configurator_data]' ).val( data );
 	},
 
-	add_to_cart: function( e ) {
+	add_to_cart: async function( e ) {
 
-		var data = this.validate_configuration();
+		var data = await this.validate_configuration();
 		
 		if ( ! data ) {
 			return;
@@ -275,9 +275,9 @@ PC.fe.views.form = Backbone.View.extend({
 		PC.fe.modal.$el.removeClass( 'adding-to-cart' );
 	},
 	
-	add_to_quote: function( e ) {
+	add_to_quote: async function( e ) {
 
-		var data = this.validate_configuration();
+		var data = await this.validate_configuration();
 		
 		if ( ! data ) {
 			return;

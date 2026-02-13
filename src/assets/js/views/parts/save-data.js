@@ -9,6 +9,15 @@ PC.fe.save_data = {
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
 		return JSON.stringify( this.choices );
 	},
+	/**
+	 * Async variant: runs "before save" promises (plugins inject via PC.fe.save_data.before_save.promises),
+	 * then calls save(). Use for add-to-cart / add-to-quote so plugins can e.g. export base64 first.
+	 */
+	getSaveDataAsync: async function( reset_errors ) {
+		var promises = wp.hooks.applyFilters( 'PC.fe.save_data.before_save.promises', [] );
+		await Promise.all( promises );
+		return this.save( reset_errors );
+	},
 	get_choices: function( reset_errors ) {
 		this.save( reset_errors );
 		return this.choices;
