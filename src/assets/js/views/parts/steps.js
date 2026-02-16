@@ -101,8 +101,10 @@ PC.fe.steps = {
 
 		var urlParams = new URLSearchParams( location.search );
 		var proceed = urlParams.has( 'pc-presets-admin' );
-		if ( ! proceed && ! PC.fe.save_data.is_layer_valid( this.current_step ) ) {
-			var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
+		var validated_layer = PC.fe.save_data.is_layer_valid( this.current_step );
+		var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
+		validated_layer = validated_layer && ! errors.length;
+		if ( ! proceed && ! validated_layer ) {
 			if ( errors.length ) {
 				// show errors and prevent adding to cart
 				console.log( 'Validation errors:', errors );
