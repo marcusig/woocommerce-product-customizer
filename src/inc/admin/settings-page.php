@@ -1118,6 +1118,17 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<?php }
 		}
 
+		public function callback_textarea( $field_options = [] ) {
+			$options = get_option( 'mkl_pc__settings' );
+			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
+			?>
+			<textarea <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' class="widefat"><?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? esc_textarea( $options[$field_options[ 'setting_name' ] ] ) : ''; ?></textarea>
+			<?php
+			if ( isset( $field_options['description'] ) ) { ?>
+				<p class="field-description"><?php echo $field_options['description']; ?></p>
+			<?php }
+		}
+
 		public function callback_select( $field_options = [] ) {
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
 			if ( ! isset( $field_options[ 'options' ] ) ) {
