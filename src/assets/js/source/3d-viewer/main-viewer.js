@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { FakeShadow } from '../../../admin/js/views/3d-fake-shadow.js';
 import GLTFMaterialsVariantsExtension from '../../vendor/KHR_materials_variants.js';
 import viewer_3d_choice from './choice-view.js';
@@ -226,7 +226,7 @@ export default Backbone.View.extend({
 		} );
 
 		promises.push( new Promise( ( resolve ) => {
-			new RGBELoader().load(
+			new HDRLoader().load(
 				hdrUrl,
 				( texture ) => {
 					texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -352,7 +352,7 @@ export default Backbone.View.extend({
 		const desiredUrl = ( env.mode === 'custom' && env.custom_hdr_url ) ? env.custom_hdr_url : hdrBase + presetFile;
 		if ( t.current_env_url !== desiredUrl ) {
 			t.current_env_url = desiredUrl;
-			new RGBELoader().load(
+			new HDRLoader().load(
 				desiredUrl,
 				( texture ) => {
 					texture.mapping = THREE.EquirectangularReflectionMapping;
