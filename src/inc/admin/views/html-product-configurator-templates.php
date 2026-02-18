@@ -302,6 +302,32 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 						<input type="number" class="pc-3d-orbit-max-polar" data-key="environment.orbit_max_polar_angle" min="0" max="180" step="1" value="{{ data.environment && data.environment.orbit_max_polar_angle != null ? data.environment.orbit_max_polar_angle : 90 }}" />
 						<span class="description"><?php _e( '90 = horizon (no view from below), 180 = allow from below.', 'product-configurator-for-woocommerce' ); ?></span>
 					</p>
+					<p class="field-row">
+						<label><?php _e( 'Min azimuth angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="number" class="pc-3d-orbit-min-azimuth" data-key="environment.orbit_min_azimuth_angle" min="-180" max="180" step="1" value="{{ data.environment && data.environment.orbit_min_azimuth_angle != null ? data.environment.orbit_min_azimuth_angle : -180 }}" />
+						<span class="description"><?php _e( 'Horizontal orbit limit (left). -180 to 180 = no limit.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
+					<p class="field-row">
+						<label><?php _e( 'Max azimuth angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
+						<input type="number" class="pc-3d-orbit-max-azimuth" data-key="environment.orbit_max_azimuth_angle" min="-180" max="180" step="1" value="{{ data.environment && data.environment.orbit_max_azimuth_angle != null ? data.environment.orbit_max_azimuth_angle : 180 }}" />
+						<span class="description"><?php _e( 'Horizontal orbit limit (right). -180 to 180 = no limit.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
+					<p class="description"><?php _e( 'Limit how close or far the camera can zoom (distance to target).', 'product-configurator-for-woocommerce' ); ?></p>
+					<p class="field-row">
+						<label>
+							<input type="checkbox" class="pc-3d-orbit-zoom-limits-enabled" data-key="environment.orbit_zoom_limits_enabled" <# if ( data.environment && data.environment.orbit_zoom_limits_enabled !== false ) { #>checked<# } #> />
+							<?php _e( 'Apply zoom limits in preview', 'product-configurator-for-woocommerce' ); ?>
+						</label>
+						<span class="description"><?php _e( 'When off, limits are not applied here so you can move freely to set new limits with the buttons below. Frontend always uses saved limits.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
+					<p class="field-row">
+						<button type="button" class="button pc-3d-set-min-zoom"><?php _e( 'Set current view as minimum zoom', 'product-configurator-for-woocommerce' ); ?></button>
+						<span class="description"><?php _e( 'User cannot zoom in closer than the current distance.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
+					<p class="field-row">
+						<button type="button" class="button pc-3d-set-max-zoom"><?php _e( 'Set current view as maximum zoom', 'product-configurator-for-woocommerce' ); ?></button>
+						<span class="description"><?php _e( 'User cannot zoom out further than the current distance.', 'product-configurator-for-woocommerce' ); ?></span>
+					</p>
 				</div>
 				<div class="pc-3d-setting-group">
 					<h5><?php _e( 'Background', 'product-configurator-for-woocommerce' ); ?></h5>

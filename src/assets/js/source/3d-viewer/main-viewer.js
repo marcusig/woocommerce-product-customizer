@@ -112,6 +112,15 @@ export default Backbone.View.extend({
 		const maxPolar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
 		controls.minPolarAngle = ( minPolar * Math.PI ) / 180;
 		controls.maxPolarAngle = ( maxPolar * Math.PI ) / 180;
+		const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
+		const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
+		controls.minAzimuthAngle = ( minAzimuth * Math.PI ) / 180;
+		controls.maxAzimuthAngle = ( maxAzimuth * Math.PI ) / 180;
+		// Only apply zoom limits when valid positive numbers; 0 or bad values would hide the scene
+		const minDist = ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
+		const maxDist = ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
+		controls.minDistance = minDist;
+		controls.maxDistance = maxDist;
 
 		const onResize = () => {
 			camera.aspect = container.clientWidth / container.clientHeight;
@@ -369,6 +378,15 @@ export default Backbone.View.extend({
 			const maxPolar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
 			t.controls.minPolarAngle = ( minPolar * Math.PI ) / 180;
 			t.controls.maxPolarAngle = ( maxPolar * Math.PI ) / 180;
+			const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
+			const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
+			t.controls.minAzimuthAngle = ( minAzimuth * Math.PI ) / 180;
+			t.controls.maxAzimuthAngle = ( maxAzimuth * Math.PI ) / 180;
+			// Only apply zoom limits when valid positive numbers; 0 or bad values would hide the scene
+			const minDist = ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
+			const maxDist = ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
+			t.controls.minDistance = minDist;
+			t.controls.maxDistance = maxDist;
 		}
 
 		const g = s.ground || {};
