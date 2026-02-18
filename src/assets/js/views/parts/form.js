@@ -77,8 +77,8 @@ PC.fe.views.form = Backbone.View.extend({
 		return this.$el;
 	},
 
-	validate_configuration: async function() {
-		var data = await PC.fe.save_data.getSaveDataAsync();
+	validate_configuration: function() {
+		var data = PC.fe.save_data.save();
 		var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 		if ( errors.length ) {
 			// show errors and prevent adding to cart
@@ -111,8 +111,10 @@ PC.fe.views.form = Backbone.View.extend({
 
 	add_to_cart: async function( e ) {
 
-		var data = await this.validate_configuration();
-		
+		await PC.fe.save_data.runBeforeSavePromises();
+
+		var data = this.validate_configuration();
+
 		if ( ! data ) {
 			return;
 		}
