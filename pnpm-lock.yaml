@@ -27,8 +27,8 @@ importers:
         specifier: ^2.2.1
         version: 2.2.1
       three:
-        specifier: ^0.179.1
-        version: 0.179.1
+        specifier: ^0.182.0
+        version: 0.182.0
     devDependencies:
       '@wordpress/scripts':
         specifier: ^30.15.0
@@ -6782,8 +6782,8 @@ packages:
   third-party-web@0.29.0:
     resolution: {integrity: sha512-nBDSJw5B7Sl1YfsATG2XkW5qgUPODbJhXw++BKygi9w6O/NKS98/uY/nR/DxDq2axEjL6halHW1v+jhm/j1DBQ==}
 
-  three@0.179.1:
-    resolution: {integrity: sha512-5y/elSIQbrvKOISxpwXCR4sQqHtGiOI+MKLc3SsBdDXA2hz3Mdp3X59aUp8DyybMa34aeBwbFTpdoLJaUDEWSw==}
+  three@0.182.0:
+    resolution: {integrity: sha512-GbHabT+Irv+ihI1/f5kIIsZ+Ef9Sl5A1Y7imvS5RQjWgtTPfPnZ43JmlYI7NtCRDK9zir20lQpfg8/9Yd02OvQ==}
 
   through2-filter@3.0.0:
     resolution: {integrity: sha512-jaRjI2WxN3W1V8/FMZ9HKIBXixtiqs3SQSX4/YGIiP3gL6djW48VoZq9tDqeCWs3MT8YY5wb/zli8VW8snY1CA==}
@@ -15711,7 +15711,7 @@ snapshots:
 
   third-party-web@0.29.0: {}
 
-  three@0.179.1: {}
+  three@0.182.0: {}
 
   through2-filter@3.0.0:
     dependencies:
