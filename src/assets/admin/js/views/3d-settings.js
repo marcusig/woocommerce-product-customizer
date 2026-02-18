@@ -249,9 +249,11 @@ PC.views = PC.views || {};
 			'click .pc-3d-reset-settings': 'on_reset_settings',
 			'click .pc-3d-tab': 'on_tab_click',
 			'click .pc-3d-select-hdr': 'select_hdr',
+			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
+			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
 			'change .pc-3d-env-mode': 'on_env_mode_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
-			'change .pc-3d-env-preset, .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
+			'change .pc-3d-env-preset, .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
 			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure, .pc-3d-global-intensity': 'on_slider_input',
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-color-space, .pc-3d-alpha, .pc-3d-global-intensity, .pc-3d-default-light-enabled': 'on_setting_change',
 		},
@@ -287,6 +289,7 @@ PC.views = PC.views || {};
 			this.$el.append( this.template( s ) );
 			this.toggle_env_and_bg_visibility();
 			this.bind_value_displays();
+			this.update_zoom_buttons_state();
 			// Only load preview if a file was selected
 			if (s.url) {
 				this.render_preview(s.url);
@@ -295,7 +298,7 @@ PC.views = PC.views || {};
 			}
 		},
 		ensure_settings_defaults: function(s) {
-			if (!s.environment) s.environment = { mode: 'preset', preset: 'outdoor', custom_hdr_url: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90 };
+			if (!s.environment) s.environment = { mode: 'preset', preset: 'outdoor', custom_hdr_url: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
 			if (!s.background) s.background = { mode: 'environment', color: '#ffffff' };
 			if (!s.ground) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
 			if (!s.renderer) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
@@ -398,6 +401,30 @@ PC.views = PC.views || {};
 			}
 			this.apply_preview_settings();
 		},
+		set_min_zoom_from_view: function(e) {
+			e.preventDefault();
+			if (!this._three || !this._three.controls) return;
+			const distance = this._three.controls.getDistance();
+			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
+			PC.app.admin.settings_3d.environment.orbit_min_distance = distance;
+			PC.app.is_modified.settings_3d = true;
+			this._three.controls.minDistance = distance;
+			this.apply_preview_settings();
+		},
+		set_max_zoom_from_view: function(e) {
+			e.preventDefault();
+			if (!this._three || !this._three.controls) return;
+			const distance = this._three.controls.getDistance();
+			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
+			PC.app.admin.settings_3d.environment.orbit_max_distance = distance;
+			PC.app.is_modified.settings_3d = true;
+			this._three.controls.maxDistance = distance;
+			this.apply_preview_settings();
+		},
+		update_zoom_buttons_state: function() {
+			const disabled = !this._three || !this._three.controls;
+			this.$('.pc-3d-set-min-zoom, .pc-3d-set-max-zoom').prop('disabled', disabled);
+		},
 		select_hdr: function(e) {
 			e.preventDefault();
 			const frame = wp.media({
@@ -441,16 +468,16 @@ PC.views = PC.views || {};
 
 			// Renderer: tone mapping, exposure, alpha, color space
 			const r = s.renderer || {};
+			const bg = s.background || {};
 			renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
 			renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 			renderer.outputColorSpace = r.output_color_space === 'linear' ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
-			renderer.setClearAlpha(r.alpha ? 0 : 1);
+			// Transparent background or explicit alpha: clear with alpha 0 so canvas is see-through
+			renderer.setClearAlpha((bg.mode === 'transparent' || r.alpha) ? 0 : 1);
 
 			// Background
-			const bg = s.background || {};
 			if (bg.mode === 'transparent') {
 				scene.background = null;
-				renderer.setClearAlpha(1);
 			} else if (bg.mode === 'solid' && bg.color) {
 				scene.background = new THREE.Color(bg.color);
 			}
@@ -476,13 +503,24 @@ PC.views = PC.views || {};
 				scene.environmentRotation = new THREE.Euler(0, env.rotation * Math.PI / 180, 0);
 			}
 
-			// OrbitControls polar limits (prevent view from below by default)
+			// OrbitControls polar, azimuth, and zoom (distance) limits
 			if (this._three.controls) {
 				const min_polar = (env.orbit_min_polar_angle != null) ? env.orbit_min_polar_angle : 0;
 				const max_polar = (env.orbit_max_polar_angle != null) ? env.orbit_max_polar_angle : 90;
 				this._three.controls.minPolarAngle = (min_polar * Math.PI) / 180;
 				this._three.controls.maxPolarAngle = (max_polar * Math.PI) / 180;
+				const min_azimuth = (env.orbit_min_azimuth_angle != null) ? env.orbit_min_azimuth_angle : -180;
+				const max_azimuth = (env.orbit_max_azimuth_angle != null) ? env.orbit_max_azimuth_angle : 180;
+				this._three.controls.minAzimuthAngle = (min_azimuth * Math.PI) / 180;
+				this._three.controls.maxAzimuthAngle = (max_azimuth * Math.PI) / 180;
+				// Apply zoom limits in preview only when toggle is on; otherwise no limits so user can move freely
+				const zoomLimitsEnabled = env.orbit_zoom_limits_enabled !== false;
+				const minDist = zoomLimitsEnabled && (typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0) ? env.orbit_min_distance : 0;
+				const maxDist = zoomLimitsEnabled && (typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0) ? env.orbit_max_distance : Infinity;
+				this._three.controls.minDistance = minDist;
+				this._three.controls.maxDistance = maxDist;
 			}
+			this.update_zoom_buttons_state();
 
 			// Fake shadow (planar) – updated in fake_shadow.update() when model_root exists
 			const g = s.ground || {};
@@ -662,14 +700,17 @@ PC.views = PC.views || {};
 
             const s = PC.app.admin.settings_3d;
             const r = s.renderer || {};
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: !!r.alpha });
+            const bg = s.background || {};
+            // Enable alpha channel when transparent background or renderer alpha option is on (needed for see-through)
+            const useAlpha = !!(r.alpha || bg.mode === 'transparent');
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: useAlpha });
             renderer.shadowMap.enabled = false;
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
             renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
             renderer.outputColorSpace = r.output_color_space === 'linear' ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
-            renderer.setClearAlpha(r.alpha ? 0 : 1);
+            renderer.setClearAlpha((bg.mode === 'transparent' || r.alpha) ? 0 : 1);
             container.appendChild(renderer.domElement);
 
             const scene = new THREE.Scene();
@@ -709,7 +750,6 @@ PC.views = PC.views || {};
 				this._removePreviewLoadingStep('hdr');
 			});
 
-            const bg = s.background || {};
             if (bg.mode === 'transparent') scene.background = null;
             else if (bg.mode === 'solid' && bg.color) scene.background = new THREE.Color(bg.color);
 
@@ -717,8 +757,18 @@ PC.views = PC.views || {};
             const env_for_orbit = s.environment || {};
             const min_polar = (env_for_orbit.orbit_min_polar_angle != null) ? env_for_orbit.orbit_min_polar_angle : 0;
             const max_polar = (env_for_orbit.orbit_max_polar_angle != null) ? env_for_orbit.orbit_max_polar_angle : 90;
+            const min_azimuth = (env_for_orbit.orbit_min_azimuth_angle != null) ? env_for_orbit.orbit_min_azimuth_angle : -180;
+            const max_azimuth = (env_for_orbit.orbit_max_azimuth_angle != null) ? env_for_orbit.orbit_max_azimuth_angle : 180;
             controls.minPolarAngle = (min_polar * Math.PI) / 180;
             controls.maxPolarAngle = (max_polar * Math.PI) / 180;
+            controls.minAzimuthAngle = (min_azimuth * Math.PI) / 180;
+            controls.maxAzimuthAngle = (max_azimuth * Math.PI) / 180;
+            // Apply zoom limits in preview only when toggle is on
+            const zoomLimitsEnabled = env_for_orbit.orbit_zoom_limits_enabled !== false;
+            const minDist = zoomLimitsEnabled && (typeof env_for_orbit.orbit_min_distance === 'number' && env_for_orbit.orbit_min_distance > 0) ? env_for_orbit.orbit_min_distance : 0;
+            const maxDist = zoomLimitsEnabled && (typeof env_for_orbit.orbit_max_distance === 'number' && env_for_orbit.orbit_max_distance > 0) ? env_for_orbit.orbit_max_distance : Infinity;
+            controls.minDistance = minDist;
+            controls.maxDistance = maxDist;
             this._three.controls = controls;
 
             const on_resize = () => {

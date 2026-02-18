@@ -411,6 +411,11 @@ class DB {
 				'rotation'               => 0,
 				'orbit_min_polar_angle'  => 0,
 				'orbit_max_polar_angle'  => 90,
+				'orbit_min_azimuth_angle' => -180,
+				'orbit_max_azimuth_angle' => 180,
+				'orbit_min_distance'     => null,
+				'orbit_max_distance'     => null,
+				'orbit_zoom_limits_enabled' => true,
 			),
 			'background'      => array(
 				'mode'         => 'environment',
