@@ -122,7 +122,8 @@ class Ajax {
 				}
 				break;
 			case 'menu' :
-				$data = $this->db->get_menu();
+
+				$data = $this->db->get_menu( $id );
 				break;
 			case 'angles' :
 				$data = $this->db->get_angles( $id );
