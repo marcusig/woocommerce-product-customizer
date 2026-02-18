@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { FakeShadow } from './3d-fake-shadow.js';
 import GLTFMaterialsVariantsExtension from '../../../js/vendor/KHR_materials_variants.js';
 
@@ -463,7 +463,7 @@ PC.views = PC.views || {};
 			const desired_url = env.mode === 'custom' && env.custom_hdr_url ? env.custom_hdr_url : hdr_base + preset_file;
 			if (this._three.current_env_url !== desired_url) {
 				this._three.current_env_url = desired_url;
-				new RGBELoader().load(desired_url, (texture) => {
+				new HDRLoader().load(desired_url, (texture) => {
 					texture.mapping = THREE.EquirectangularReflectionMapping;
 					scene.environment = texture;
 					this.apply_preview_settings();
@@ -581,12 +581,84 @@ PC.views = PC.views || {};
                 }
             }
         },
-        render_preview: function(url) {
+		/**
+		 * Collect layer entries that have an uploaded 3D model (for preview and tree).
+		 * @returns {Array<{ url: string, label: string }>}
+		 */
+		get_layer_model_entries: function() {
+			const entries = [];
+			const layers = PC.app.admin && PC.app.admin.layers;
+			if ( ! layers ) return entries;
+			layers.each( function( layer ) {
+				if ( layer.get( 'object_selection_3d' ) !== 'upload_model' ) return;
+				const url = layer.get( 'model_upload_3d_url' );
+				if ( ! layer.get( 'model_upload_3d' ) || ! url ) return;
+				const label = layer.get( 'admin_label' ) || layer.get( 'name' ) || ( 'Layer ' + layer.id );
+				entries.push( { url: url, label: label } );
+			} );
+			return entries;
+		},
+
+		_setPreviewLoadingStep: function(stepId, label) {
+			const container = this.$('.pc-3d-preview--canvas-container')[0];
+			if (!container) return;
+			let overlay = container.querySelector('.pc-3d-preview-loading');
+			if (!overlay) return;
+			const list = overlay.querySelector('.pc-3d-preview-loading-steps');
+			if (!list) return;
+			let li = list.querySelector('[data-step-id="' + stepId + '"]');
+			if (li) {
+				li.querySelector('.pc-3d-preview-loading-label').textContent = label;
+				return;
+			}
+			li = document.createElement('li');
+			li.setAttribute('data-step-id', stepId);
+			li.className = 'pc-3d-preview-loading-step';
+			li.innerHTML = '<span class="spinner is-active" aria-hidden="true"></span> <span class="pc-3d-preview-loading-label">' + (label || stepId) + '</span>';
+			list.appendChild(li);
+		},
+		_removePreviewLoadingStep: function(stepId) {
+			const container = this.$('.pc-3d-preview--canvas-container')[0];
+			if (!container) return;
+			const li = container.querySelector('.pc-3d-preview-loading [data-step-id="' + stepId + '"]');
+			if (li) li.remove();
+		},
+		_hidePreviewLoading: function() {
+			const container = this.$('.pc-3d-preview--canvas-container')[0];
+			if (!container) return;
+			const overlay = container.querySelector('.pc-3d-preview-loading');
+			if (overlay) overlay.classList.add('is-hidden');
+		},
+		render_tree_loading: function() {
+			const tree_el = this.$('.pc-3d-tree');
+			if (!tree_el.length) return;
+			tree_el.empty().append(
+				'<div class="pc-3d-tree-loading"><span class="spinner is-active" aria-hidden="true"></span> ' +
+				( (typeof PC_lang !== 'undefined' && PC_lang.loading_scene_structure) ? PC_lang.loading_scene_structure : 'Loading scene structure…' ) +
+				'</div>'
+			);
+		},
+		render_tree_message: function(message) {
+			const tree_el = this.$('.pc-3d-tree');
+			if (!tree_el.length) return;
+			tree_el.empty().append('<p class="pc-3d-tree-message description">' + (message || '') + '</p>');
+		},
+
+		render_preview: function(url) {
             const container = this.$('.pc-3d-preview--canvas-container')[0];
             if (!container) return;
 
             this.maybe_cleanup();
             container.innerHTML = '';
+
+			// Loading overlay: list of current steps (HDR, main, layers)
+			const loadingOverlay = document.createElement('div');
+			loadingOverlay.className = 'pc-3d-preview-loading';
+			loadingOverlay.setAttribute('aria-live', 'polite');
+			loadingOverlay.innerHTML = '<ul class="pc-3d-preview-loading-steps" role="list"></ul>';
+			container.appendChild(loadingOverlay);
+
+			this.render_tree_loading();
 
             const s = PC.app.admin.settings_3d;
             const r = s.renderer || {};
@@ -610,19 +682,32 @@ PC.views = PC.views || {};
             scene.add(default_light);
             scene.add(default_light.target);
 
-            this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, current_env_url: null, default_light };
+            this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, default_light };
             window.pc_three = this._three;
 
             const env = s.environment || {};
             const hdr_base = (typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url) ? PC_lang.hdr_base_url : '';
             const preset_file = (env.preset === 'studio') ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
             const initial_env_url = env.mode === 'custom' && env.custom_hdr_url ? env.custom_hdr_url : hdr_base + preset_file;
-            new RGBELoader().load(initial_env_url, (texture) => {
+
+			const layerEntries = this.get_layer_model_entries();
+			const hdrLabel = (typeof PC_lang !== 'undefined' && PC_lang.loading_hdr) ? PC_lang.loading_hdr : 'HDR environment';
+			const mainLabel = (typeof PC_lang !== 'undefined' && PC_lang.loading_main_model) ? PC_lang.loading_main_model : 'Main model';
+			this._setPreviewLoadingStep('hdr', hdrLabel);
+			this._setPreviewLoadingStep('main', mainLabel);
+			layerEntries.forEach((le, i) => {
+				this._setPreviewLoadingStep('layer-' + i, (typeof PC_lang !== 'undefined' && PC_lang.loading_layer) ? PC_lang.loading_layer.replace('%s', le.label) : ('Layer: ' + le.label));
+			});
+
+			new HDRLoader().load(initial_env_url, (texture) => {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.environment = texture;
                 this._three.current_env_url = initial_env_url;
+				this._removePreviewLoadingStep('hdr');
                 this.apply_preview_settings();
-            }, undefined, () => {});
+            }, undefined, () => {
+				this._removePreviewLoadingStep('hdr');
+			});
 
             const bg = s.background || {};
             if (bg.mode === 'transparent') scene.background = null;
@@ -646,25 +731,68 @@ PC.views = PC.views || {};
             window.addEventListener('resize', on_resize);
 
             const loader = PC.threeD.getGltfLoader();
-            loader.load(url, (gltf) => {
-                if (this._three.fake_shadow) {
-                    this._three.fake_shadow.dispose();
-                    this._three.fake_shadow = null;
-                }
-                scene.add(gltf.scene);
-                this._three.model_root = gltf.scene;
-                this._three.fake_shadow = new FakeShadow(scene);
-                this.render_tree(gltf.scene);
-                this.extract_lights_from_scene(gltf.scene);
+            const rootGroup = new THREE.Group();
+            rootGroup.name = 'ConfiguratorRoot';
 
-                const box = new THREE.Box3().setFromObject(gltf.scene);
-                const size = box.getSize(new THREE.Vector3()).length();
-                const center = box.getCenter(new THREE.Vector3());
-                controls.target.copy(center);
-                camera.position.copy(center).add(new THREE.Vector3(size / 2, size / 2, size / 2));
-                camera.lookAt(center);
-                on_resize();
-                this.apply_preview_settings();
+            loader.load(url, (gltf) => {
+                if (!this._three || !this._three.scene) return;
+				this._removePreviewLoadingStep('main');
+                const mainScene = gltf.scene;
+                mainScene.name = mainScene.name || 'Main';
+                rootGroup.add(mainScene);
+
+                const scene_roots = [{ object: mainScene, label: 'Main' }];
+
+                const onAllLoaded = () => {
+                    if (!this._three || !this._three.scene) return;
+                    this._hidePreviewLoading();
+                    if (this._three.fake_shadow) {
+                        this._three.fake_shadow.dispose();
+                        this._three.fake_shadow = null;
+                    }
+                    this._three.scene.add(rootGroup);
+                    this._three.model_root = rootGroup;
+                    this._three.scene_roots = scene_roots;
+                    this._three.fake_shadow = new FakeShadow(this._three.scene);
+                    this.render_tree(this._three.scene_roots);
+                    this.extract_lights_from_scene(rootGroup);
+
+                    const box = new THREE.Box3().setFromObject(rootGroup);
+                    const size = box.getSize(new THREE.Vector3()).length();
+                    const center = box.getCenter(new THREE.Vector3());
+                    controls.target.copy(center);
+                    camera.position.copy(center).add(new THREE.Vector3(size / 2, size / 2, size / 2));
+                    camera.lookAt(center);
+                    on_resize();
+                    this.apply_preview_settings();
+                };
+
+                if (layerEntries.length === 0) {
+                    onAllLoaded();
+                    return;
+                }
+
+                let pending = layerEntries.length;
+                layerEntries.forEach((le, i) => {
+                    loader.load(le.url, (g) => {
+                        if (!this._three) return;
+						this._removePreviewLoadingStep('layer-' + i);
+                        const layerScene = g.scene;
+                        layerScene.name = layerScene.name || le.label;
+                        rootGroup.add(layerScene);
+                        scene_roots.push({ object: layerScene, label: le.label });
+                        pending--;
+                        if (pending === 0) onAllLoaded();
+                    }, undefined, () => {
+                        this._removePreviewLoadingStep('layer-' + i);
+                        pending--;
+                        if (pending === 0) onAllLoaded();
+                    });
+                });
+            }, undefined, (err) => {
+				this._hidePreviewLoading();
+				const msg = (typeof PC_lang !== 'undefined' && PC_lang.failed_load_main_model) ? PC_lang.failed_load_main_model : 'Failed to load main model.';
+				this.render_tree_message(msg);
             });
 
             const animate = () => {
@@ -721,24 +849,85 @@ PC.views = PC.views || {};
                 this._light_item_views.push(view);
             });
         },
-        render_tree: function(root) {
+        /**
+         * Build tree UI from scene roots (main + layer models). Each item has a visibility toggle.
+         * @param {Array<{ object: THREE.Object3D, label: string }>} scene_roots
+         */
+        render_tree: function(scene_roots) {
             const tree_el = this.$('.pc-3d-tree').empty();
+            if (!scene_roots || !scene_roots.length) {
+                const msg = (typeof PC_lang !== 'undefined' && PC_lang.no_objects_in_scene) ? PC_lang.no_objects_in_scene : 'No objects in scene.';
+                tree_el.append('<p class="pc-3d-tree-message description">' + msg + '</p>');
+                return;
+            }
 
             const build_list = (obj) => {
-                let li_el = $('<li>').text((obj.name || '' ) + ' [' + obj.type + ']');
-                console.log( obj );
-                
-                if (obj.children && obj.children.length) {
-                    let ul_el = $('<ul>');
-                    obj.children.forEach(child => ul_el.append(build_list(child)));
+				const hasChildren = obj.children && obj.children.length;
+				const li_el = $('<li class="pc-3d-tree-item' + (hasChildren ? ' pc-3d-tree-item--has-children' : '') + '">');
+
+				let toggle = null;
+				if (hasChildren) {
+					toggle = $('<button type="button" class="pc-3d-tree-toggle" aria-label="Toggle children" aria-expanded="true"></button>');
+					toggle.on('click', function() {
+						const $li = $(this).closest('.pc-3d-tree-item--has-children');
+						const isCollapsed = $li.toggleClass('is-collapsed').hasClass('is-collapsed');
+						$li.children('ul').toggle(!isCollapsed);
+						$(this).attr('aria-expanded', !isCollapsed);
+					});
+					li_el.append(toggle);
+				}
+
+                const cb = $('<input type="checkbox" class="pc-3d-tree-visible" title="Show/hide in preview">')
+                    .prop('checked', obj.visible !== false)
+                    .data('object3d', obj);
+                cb.on('change', function() {
+                    const o = $(this).data('object3d');
+                    if (o) o.visible = this.checked;
+                });
+                const label = (obj.name || '') + ' [' + (obj.type || '') + ']';
+                li_el.append(cb).append(' ').append($('<span class="pc-3d-tree-label">').text(label));
+				if (hasChildren) {
+                    const ul_el = $('<ul>');
+                    obj.children.forEach((child) => ul_el.append(build_list(child)));
                     li_el.append(ul_el);
                 }
                 return li_el;
             };
 
-            let ul_el = $('<ul>');
-            ul_el.append(build_list(root));
-            tree_el.append(ul_el);
+			const ul_el = $('<ul class="pc-3d-tree-list">');
+			scene_roots.forEach(({ object, label }) => {
+				const hasChildren = object.children && object.children.length;
+				const li_el = $('<li class="pc-3d-tree-item pc-3d-tree-item--root' + (hasChildren ? ' pc-3d-tree-item--has-children' : '') + '">');
+
+				let toggle = null;
+				if (hasChildren) {
+					toggle = $('<button type="button" class="pc-3d-tree-toggle" aria-label="Toggle children" aria-expanded="true"></button>');
+					toggle.on('click', function() {
+						const $li = $(this).closest('.pc-3d-tree-item--has-children');
+						const isCollapsed = $li.toggleClass('is-collapsed').hasClass('is-collapsed');
+						$li.children('ul').toggle(!isCollapsed);
+						$(this).attr('aria-expanded', !isCollapsed);
+					});
+					li_el.append(toggle);
+				}
+
+				const cb = $('<input type="checkbox" class="pc-3d-tree-visible" title="Show/hide in preview">')
+					.prop('checked', object.visible !== false)
+					.data('object3d', object);
+				cb.on('change', function() {
+					const o = $(this).data('object3d');
+					if (o) o.visible = this.checked;
+				});
+				const displayLabel = label || (object.name || '') + ' [' + (object.type || '') + ']';
+				li_el.append(cb).append(' ').append($('<span class="pc-3d-tree-label">').text(displayLabel));
+				if (hasChildren) {
+					const child_ul = $('<ul>');
+					object.children.forEach((child) => child_ul.append(build_list(child)));
+					li_el.append(child_ul);
+				}
+				ul_el.append(li_el);
+			});
+			tree_el.append(ul_el);
         },
         select_gltf( e ) {
             e.preventDefault();
