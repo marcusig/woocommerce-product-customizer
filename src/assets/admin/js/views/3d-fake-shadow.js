@@ -46,6 +46,9 @@ export class FakeShadow extends THREE.Object3D {
 				transparent: true,
 				opacity: 1,
 				side: THREE.BackSide,
+				color: 0x000000,
+				alphaTest: 0.01,
+				depthWrite: false,
 			})
 		);
 		this._floor.userData.noHit = true;
