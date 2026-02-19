@@ -662,14 +662,18 @@ html .pc-modal-container {
 			padding: 0;
 			margin: 0;
 			border: 0;
-			background: none;
+			background: #FFF;
+			border: 1px solid #EEE;
+			border-radius: 3px;
+			z-index: 2;
 			cursor: pointer;
 		}
 		> .pc-3d-tree-toggle::before {
 			content: '▾';
-			font-size: 11px;
-			line-height: 1;
+			font-size: 14px;
+			line-height: 14px;
 			color: #50575e;
+			transform: translateY(-1px);
 		}
 		&.is-collapsed {
 			> ul {
