@@ -53,7 +53,27 @@ export default Backbone.View.extend({
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
+		if ( window.PC.fe && window.PC.fe.angles ) {
+			this.listenTo( window.PC.fe.angles, 'change:active', this._applyAngleCamera );
+		}
 		return this;
+	},
+
+	_applyAngleCamera() {
+		const t = this._three;
+		if ( ! t || ! t.camera || ! t.controls ) return;
+		const angles = window.PC.fe && window.PC.fe.angles;
+		if ( ! angles ) return;
+		const active = angles.findWhere( { active: true } );
+		if ( ! active ) return;
+		const pos = active.get( 'camera_position' );
+		const tgt = active.get( 'camera_target' );
+		if ( pos && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' ) {
+			t.camera.position.set( pos.x, pos.y, pos.z );
+		}
+		if ( tgt && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
+			t.controls.target.set( tgt.x, tgt.y, tgt.z );
+		}
 	},
 
 	render() {
@@ -318,6 +338,7 @@ export default Backbone.View.extend({
 			if ( t.on_resize ) t.on_resize();
 
 			this.apply_preview_settings();
+			this._applyAngleCamera();
 			this._create_choice_views();
 
 			const g = ( s && s.ground ) || {};
