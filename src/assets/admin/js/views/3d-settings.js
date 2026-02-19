@@ -251,6 +251,9 @@ PC.views = PC.views || {};
 			'click .pc-3d-select-hdr': 'select_hdr',
 			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
 			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
+			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
+			'click .pc-3d-import-gltf-cameras': 'import_cameras_from_gltf',
+			'change .pc-3d-angle-select': 'on_angle_select_change',
 			'change .pc-3d-env-mode': 'on_env_mode_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
 			'change .pc-3d-env-preset, .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
@@ -290,6 +293,7 @@ PC.views = PC.views || {};
 			this.toggle_env_and_bg_visibility();
 			this.bind_value_displays();
 			this.update_zoom_buttons_state();
+			this.populate_angle_select();
 			// Only load preview if a file was selected
 			if (s.url) {
 				this.render_preview(s.url);
@@ -424,6 +428,87 @@ PC.views = PC.views || {};
 		update_zoom_buttons_state: function() {
 			const disabled = !this._three || !this._three.controls;
 			this.$('.pc-3d-set-min-zoom, .pc-3d-set-max-zoom').prop('disabled', disabled);
+		},
+		populate_angle_select: function() {
+			const $sel = this.$('.pc-3d-angle-select');
+			if (!$sel.length) return;
+			$sel.empty().append('<option value="">— ' + ( (typeof PC_lang !== 'undefined' && PC_lang.select_angle) ? PC_lang.select_angle : 'Select angle' ) + ' —</option>');
+			const angles = this.admin && this.admin.angles;
+			if (angles && angles.length) {
+				angles.each(function(m) {
+					const name = m.get('name') || ('Angle ' + (m.get('_id') || m.id || m.cid));
+					$sel.append($('<option></option>').val(m.id).text(name));
+				});
+			}
+		},
+		on_angle_select_change: function() {
+			if (!this._three || !this._three.camera || !this._three.controls) return;
+			const angleId = this.$('.pc-3d-angle-select').val();
+			if (!angleId) return;
+			const angles = this.admin && this.admin.angles;
+			if (!angles) return;
+			const angle = angles.get(angleId);
+			if (!angle) return;
+			const pos = angle.get('camera_position');
+			const tgt = angle.get('camera_target');
+			if (pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number') {
+				this._three.camera.position.set(pos.x, pos.y, pos.z);
+				this._three.controls.target.set(tgt.x, tgt.y, tgt.z);
+				this._three.camera.lookAt(tgt.x, tgt.y, tgt.z);
+			}
+		},
+		set_current_view_to_angle: function(e) {
+			e.preventDefault();
+			if (!this._three || !this._three.controls || !this._three.camera) return;
+			const angleId = this.$('.pc-3d-angle-select').val();
+			if (!angleId) return;
+			const angles = this.admin && this.admin.angles;
+			if (!angles) return;
+			const angle = angles.get(angleId);
+			if (!angle) return;
+			const pos = this._three.camera.position;
+			const target = this._three.controls.target;
+			angle.set({
+				camera_position: { x: pos.x, y: pos.y, z: pos.z },
+				camera_target: { x: target.x, y: target.y, z: target.z }
+			});
+			PC.app.is_modified.angles = true;
+		},
+		import_cameras_from_gltf: function(e) {
+			e.preventDefault();
+			const gltf = this._three && this._three.mainGltf;
+			let cameras = [];
+			if (gltf && gltf.cameras && gltf.cameras.length) {
+				cameras = gltf.cameras;
+			} else if (gltf && gltf.scene) {
+				gltf.scene.traverse((obj) => { if (obj.isCamera) cameras.push(obj); });
+			}
+			if (!cameras.length) {
+				alert((typeof PC_lang !== 'undefined' && PC_lang.no_cameras_in_gltf) ? PC_lang.no_cameras_in_gltf : 'No cameras found in the main GLTF file.');
+				return;
+			}
+			const angles = this.admin && this.admin.angles;
+			if (!angles) return;
+			const dir = new THREE.Vector3();
+			const nextOrder = angles.nextOrder ? angles.nextOrder() : (angles.length ? (angles.last().get('order') || angles.length) + 1 : 1);
+			cameras.forEach((cam, i) => {
+				cam.updateMatrixWorld(true);
+				dir.set(0, 0, -1).applyQuaternion(cam.quaternion);
+				const pos = cam.position;
+				const dist = 1;
+				const target = { x: pos.x + dir.x * dist, y: pos.y + dir.y * dist, z: pos.z + dir.z * dist };
+				const name = (cam.name && cam.name.trim()) || ('Camera ' + (i + 1));
+				const attrs = {
+					name: name,
+					order: nextOrder + i,
+					camera_position: { x: pos.x, y: pos.y, z: pos.z },
+					camera_target: target,
+					image: { url: '', id: '' }
+				};
+				angles.add(attrs);
+			});
+			PC.app.is_modified.angles = true;
+			this.populate_angle_select();
 		},
 		select_hdr: function(e) {
 			e.preventDefault();
@@ -787,6 +872,7 @@ PC.views = PC.views || {};
             loader.load(url, (gltf) => {
                 if (!this._three || !this._three.scene) return;
 				this._removePreviewLoadingStep('main');
+				this._three.mainGltf = gltf;
                 const mainScene = gltf.scene;
                 mainScene.name = mainScene.name || 'Main';
                 rootGroup.add(mainScene);
@@ -810,9 +896,18 @@ PC.views = PC.views || {};
                     const box = new THREE.Box3().setFromObject(rootGroup);
                     const size = box.getSize(new THREE.Vector3()).length();
                     const center = box.getCenter(new THREE.Vector3());
-                    controls.target.copy(center);
-                    camera.position.copy(center).add(new THREE.Vector3(size / 2, size / 2, size / 2));
-                    camera.lookAt(center);
+                    const firstAngle = this.admin && this.admin.angles && this.admin.angles.length ? this.admin.angles.first() : null;
+                    const pos = firstAngle && firstAngle.get('camera_position');
+                    const tgt = firstAngle && firstAngle.get('camera_target');
+                    if (pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number') {
+                        camera.position.set(pos.x, pos.y, pos.z);
+                        controls.target.set(tgt.x, tgt.y, tgt.z);
+                        camera.lookAt(tgt.x, tgt.y, tgt.z);
+                    } else {
+                        controls.target.copy(center);
+                        camera.position.copy(center).add(new THREE.Vector3(size / 2, size / 2, size / 2));
+                        camera.lookAt(center);
+                    }
                     on_resize();
                     this.apply_preview_settings();
                 };
