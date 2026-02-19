@@ -721,6 +721,125 @@ class DB {
 					'sanitize' => 'intval',
 					'escape' => 'intval',
 				],
+				'x' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'y' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'z' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				// settings_3d: top-level and environment
+				'filename' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_html',
+				],
+				'attachment_id' => [
+					'sanitize' => [ $this, 'sanitize_nullable_int' ],
+					'escape' => [ $this, 'sanitize_nullable_int' ],
+				],
+				'mode' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'preset' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'custom_hdr_url' => [
+					'sanitize' => 'esc_url_raw',
+					'escape' => [ $this, 'esc_url' ],
+				],
+				'intensity' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_min_polar_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_max_polar_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_min_azimuth_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_max_azimuth_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_min_distance' => [
+					'sanitize' => [ $this, 'sanitize_nullable_float' ],
+					'escape' => [ $this, 'sanitize_nullable_float' ],
+				],
+				'orbit_max_distance' => [
+					'sanitize' => [ $this, 'sanitize_nullable_float' ],
+					'escape' => [ $this, 'sanitize_nullable_float' ],
+				],
+				'orbit_zoom_limits_enabled' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				// settings_3d: background, ground, renderer
+				'color' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'enabled' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'size' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_opacity' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_blur' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'tone_mapping' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'exposure' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'output_color_space' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'alpha' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				// settings_3d: lighting
+				'global_intensity' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'default_light_enabled' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'type' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'cast_shadow' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 			],
 			$this
 		);
@@ -761,6 +880,32 @@ class DB {
 		if ( is_string( $image ) && ! strpos( $image, '.' ) ) return sanitize_key( $image );
 		// Other images (assumed to be urls)
 		return esc_url_raw( $image );
+	}
+
+	/**
+	 * Sanitize value as int or null (for optional IDs / limits).
+	 *
+	 * @param mixed $data
+	 * @return int|null
+	 */
+	public function sanitize_nullable_int( $data ) {
+		if ( $data === null || $data === '' || $data === false ) {
+			return null;
+		}
+		return intval( $data );
+	}
+
+	/**
+	 * Sanitize value as float or null (for optional numeric limits).
+	 *
+	 * @param mixed $data
+	 * @return float|null
+	 */
+	public function sanitize_nullable_float( $data ) {
+		if ( $data === null || $data === '' || $data === false ) {
+			return null;
+		}
+		return floatval( $data );
 	}
 
 	public function esc_image( $image ) {
