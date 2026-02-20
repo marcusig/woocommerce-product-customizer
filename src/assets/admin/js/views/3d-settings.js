@@ -1173,6 +1173,24 @@ PC.views = PC.views || {};
 		} );
 	};
 
+	/**
+	 * Action: clear the uploaded 3D model for a layer or choice.
+	 */
+	PC.actions.remove_model_upload = function( $el, context ) {
+		if ( ! context || ! context.model ) return;
+		context.model.set( {
+			model_upload_3d: null,
+			model_upload_3d_url: null,
+			model_upload_3d_filename: null,
+		} );
+		PC.app.is_modified.layers = true;
+		if ( context.$el ) {
+			const setting = $el?.data( 'setting' ) || 'model_upload_3d';
+			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
+		}
+		context.render();
+	};
+
 	PC.views.object_selector_3d = Backbone.View.extend({
 		tagName: 'div',
 		className: 'mkl-pc-3d-object-selector--container',

@@ -195,6 +195,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'html'      => '<div class="mkl-pc-setting--container">'
 						. '<input type="hidden" data-setting="model_upload_3d" value="<# if ( data.model_upload_3d ) { #>{{data.model_upload_3d}}<# } #>"> '
 						. '<button type="button" class="button mkl-pc--action" data-action="edit_model_upload" data-setting="model_upload_3d">' . esc_html__( 'Select model', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '<# if ( data.model_upload_3d ) { #><button type="button" class="button mkl-pc--action" data-action="remove_model_upload" data-setting="model_upload_3d">' . esc_html__( 'Remove', 'product-configurator-for-woocommerce' ) . '</button><# } #>'
 						. '<# if ( data.model_upload_3d_filename ) { #><span class="pc-3d-model-upload-filename">{{data.model_upload_3d_filename}}</span><# } #>'
 						. '</div>',
 				);
