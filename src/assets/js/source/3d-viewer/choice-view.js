@@ -68,6 +68,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
 		const select_variant = t.gltf && t.gltf.functions && t.gltf.functions.selectVariant;
+		const registry = t.material_registry;
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 		const visible = this._effective_visible();
@@ -94,6 +95,48 @@ const viewer_3d_choice = Backbone.View.extend({
 						this._set_material_map( this.target_object, texture );
 					} );
 				}
+			} else if ( type === 'material_color_registry' && registry ) {
+				const name = action.material_name;
+				const color_hex = action.material_registry_color;
+				if ( name && color_hex ) {
+					const mat = registry.get( name );
+					if ( mat && mat.color ) mat.color.set( color_hex );
+				}
+			} else if ( type === 'material_property' && registry ) {
+				const name = action.material_name;
+				const prop = action.material_property_name;
+				const raw = action.material_property_value;
+				if ( name && prop && raw !== undefined && raw !== '' ) {
+					const mat = registry.get( name );
+					if ( ! mat || mat[ prop ] === undefined ) return;
+					let value = raw;
+					if ( typeof mat[ prop ] === 'number' ) {
+						value = parseFloat( raw );
+						if ( Number.isNaN( value ) ) return;
+					} else if ( typeof mat[ prop ] === 'boolean' ) {
+						value = raw === 'true' || raw === '1';
+					}
+					mat[ prop ] = value;
+				}
+			} else if ( type === 'apply_material' && registry && this.target_object ) {
+				const name = action.material_name;
+				if ( ! name ) return;
+				const registryMaterial = registry.get( name );
+				if ( ! registryMaterial ) return;
+				this._apply_material_to_object( this.target_object, registryMaterial );
+			}
+		} );
+	},
+
+	_apply_material_to_object( obj, material ) {
+		if ( ! obj ) return;
+		if ( obj.isMesh && obj.material !== undefined ) {
+			obj.material = material;
+			return;
+		}
+		obj.traverse( ( child ) => {
+			if ( child.isMesh && child.material !== undefined ) {
+				child.material = material;
 			}
 		} );
 	},

@@ -912,6 +912,7 @@ IMPORT / EXPORT
 		<# const isColor = field.type === 'color'; #>
 		<# const isAttachment = field.type === 'attachment'; #>
 		<# const isVariantSelect = field.type === 'variant_select'; #>
+		<# const isMaterialSelect = field.type === 'material_select'; #>
 		<# const showWhen = field.show_when || null; #>
 		<div class="field-repeater-field <# if ( showWhen ) { #>pc-action-value<# } #>" <# if ( showWhen ) { #>data-show-when="{{showWhen}}"<# } #>>
 		<label>
@@ -933,6 +934,8 @@ IMPORT / EXPORT
 				<button type="button" class="button pc-select-attachment" data-target="{{key}}"><?php echo esc_html( __( 'Select', 'product-configurator-for-woocommerce' ) ); ?></button>
 			<# } else if ( isVariantSelect ) { #>
 				<span class="pc-variant-select-placeholder" data-variant-field="{{key}}" data-variant-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading variants…', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else if ( isMaterialSelect ) { #>
+				<span class="pc-material-select-placeholder" data-material-field="{{key}}" data-material-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></span>
 			<# } else { #>
 				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}">
 			<# } #>

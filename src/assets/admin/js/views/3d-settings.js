@@ -68,11 +68,100 @@ PC.views = PC.views || {};
 		return frame;
 	};
 
-	/** Cache variant names by model URL to avoid re-loading. */
-	var _variantsCache = {};
-
 	/** Cached DRACOLoader instance for admin (one per page, same as frontend). */
 	var _adminDracoLoader = null;
+
+	/**
+	 * Build a plain object tree (no Three.js refs) from a scene root for caching.
+	 * @param {THREE.Object3D} root
+	 * @returns {Array<{ id: string, name: string, type: string, depth: number }>}
+	 */
+	function buildObjectTreeFromScene( root ) {
+		var list = [];
+		var skipTypes = [ 'Scene', 'Camera', 'Light', 'AmbientLight', 'DirectionalLight', 'PointLight', 'SpotLight', 'RectAreaLight' ];
+		var isSkip = function( obj ) { return obj && skipTypes.indexOf( obj.type ) !== -1; };
+		var add = function( obj, depth ) {
+			if ( ! obj || isSkip( obj ) ) return;
+			var name = obj.name || obj.type || ( 'Object_' + ( obj.uuid || '' ).slice( 0, 8 ) );
+			var id = obj.name || obj.uuid;
+			list.push( { id: id, name: name, type: obj.type || '', depth: depth } );
+			if ( obj.children && obj.children.length ) {
+				obj.children.forEach( function( ch ) { add( ch, depth + 1 ); } );
+			}
+		};
+		if ( root && root.children ) {
+			root.children.forEach( function( ch ) { add( ch, 0 ); } );
+		}
+		return list;
+	}
+
+	/**
+	 * Global 3D data store: one load per URL, cache holds gltf + variants + materialNames + objectTree.
+	 * Consumers (choices, layers, 3D settings, object selector, preview) use store.get(); remove/replace flows call store.remove().
+	 */
+	PC.threeD.store = ( function() {
+		var _cache = {};
+
+		function get( url, callback ) {
+			if ( ! url || typeof callback !== 'function' ) return;
+			if ( _cache[ url ] !== undefined ) {
+				return callback( null, _cache[ url ] );
+			}
+			var loader = PC.threeD.getGltfLoader();
+			loader.load(
+				url,
+				function( gltf ) {
+					var variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
+						? gltf.userData.variants.slice()
+						: [];
+					var materialNames = [];
+					var seen = {};
+					if ( gltf.scene && gltf.scene.traverse ) {
+						gltf.scene.traverse( function( obj ) {
+							if ( ! obj.material ) return;
+							var materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
+							materials.forEach( function( mat ) {
+								if ( ! mat ) return;
+								var name = ( mat.name && String( mat.name ).trim() ) ? mat.name : mat.uuid;
+								if ( ! seen[ name ] ) {
+									seen[ name ] = true;
+									materialNames.push( name );
+								}
+							} );
+						} );
+					}
+					var objectTree = buildObjectTreeFromScene( gltf.scene );
+					var data = { gltf: gltf, variants: variants, materialNames: materialNames, objectTree: objectTree };
+					_cache[ url ] = data;
+					callback( null, data );
+				},
+				undefined,
+				function( err ) {
+					callback( err || new Error( 'Failed to load model' ), null );
+				}
+			);
+		}
+
+		function remove( url ) {
+			if ( ! url ) return;
+			var entry = _cache[ url ];
+			if ( entry && entry.gltf && entry.gltf.scene ) {
+				entry.gltf.scene.traverse( function( obj ) {
+					if ( obj.geometry ) obj.geometry.dispose();
+					if ( obj.material ) {
+						var mats = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
+						mats.forEach( function( m ) {
+							if ( m && m.dispose ) m.dispose();
+							if ( m && m.map && m.map.dispose ) m.map.dispose();
+						} );
+					}
+				} );
+			}
+			delete _cache[ url ];
+		}
+
+		return { get: get, remove: remove };
+	} )();
 
 	/**
 	 * Get 3D loader config (Draco/Meshopt) from PC_lang (admin) or PC_config.config (frontend).
@@ -113,29 +202,28 @@ PC.views = PC.views || {};
 
 	/**
 	 * Load a GLTF from URL and return material variant names (KHR_materials_variants).
+	 * Uses the global store (single load per URL).
 	 * @param {string} url - GLTF/GLB URL
 	 * @param {Function} callback - ( err, variantNames[] ) variantNames is empty if no extension
 	 */
 	PC.threeD.getMaterialVariantsFromUrl = function( url, callback ) {
 		if ( ! url || typeof callback !== 'function' ) return;
-		if ( _variantsCache[ url ] !== undefined ) {
-			return callback( null, _variantsCache[ url ] );
-		}
-		var loader = PC.threeD.getGltfLoader();
-		loader.load(
-			url,
-			function( gltf ) {
-				var list = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
-					? gltf.userData.variants.slice()
-					: [];
-				_variantsCache[ url ] = list;
-				callback( null, list );
-			},
-			undefined,
-			function( err ) {
-				callback( err || new Error( 'Failed to load model' ), [] );
-			}
-		);
+		PC.threeD.store.get( url, function( err, data ) {
+			callback( err, data ? data.variants : [] );
+		} );
+	};
+
+	/**
+	 * Load a GLTF from URL and return unique material names from the scene.
+	 * Uses the global store (single load per URL).
+	 * @param {string} url - GLTF/GLB URL
+	 * @param {Function} callback - ( err, materialNames[] )
+	 */
+	PC.threeD.getMaterialNamesFromUrl = function( url, callback ) {
+		if ( ! url || typeof callback !== 'function' ) return;
+		PC.threeD.store.get( url, function( err, data ) {
+			callback( err, data ? data.materialNames : [] );
+		} );
 	};
 
 	/**
@@ -865,80 +953,90 @@ PC.views = PC.views || {};
             this._three.on_resize = on_resize;
             window.addEventListener('resize', on_resize);
 
-            const loader = PC.threeD.getGltfLoader();
             const rootGroup = new THREE.Group();
             rootGroup.name = 'ConfiguratorRoot';
 
-            loader.load(url, (gltf) => {
-                if (!this._three || !this._three.scene) return;
-				this._removePreviewLoadingStep('main');
-				this._three.mainGltf = gltf;
-                const mainScene = gltf.scene;
-                mainScene.name = mainScene.name || 'Main';
-                rootGroup.add(mainScene);
-
-                const scene_roots = [{ object: mainScene, label: 'Main' }];
-
-                const onAllLoaded = () => {
-                    if (!this._three || !this._three.scene) return;
-                    this._hidePreviewLoading();
-                    if (this._three.fake_shadow) {
-                        this._three.fake_shadow.dispose();
-                        this._three.fake_shadow = null;
+            // Always run model load in next tick so the animation loop is started first (fixes preview not loading when store returns cached data synchronously)
+            var viewRef = this;
+            var runPreviewLoad = function() {
+                PC.threeD.store.get( url, function( err, data ) {
+                    if ( err || ! data ) {
+                        viewRef._hidePreviewLoading();
+                        var msg = ( typeof PC_lang !== 'undefined' && PC_lang.failed_load_main_model ) ? PC_lang.failed_load_main_model : 'Failed to load main model.';
+                        viewRef.render_tree_message( msg );
+                        return;
                     }
-                    this._three.scene.add(rootGroup);
-                    this._three.model_root = rootGroup;
-                    this._three.scene_roots = scene_roots;
-                    this._three.fake_shadow = new FakeShadow(this._three.scene);
-                    this.render_tree(this._three.scene_roots);
-                    this.extract_lights_from_scene(rootGroup);
+                    if ( ! viewRef._three || ! viewRef._three.scene ) return;
+                    viewRef._removePreviewLoadingStep( 'main' );
+                    var gltf = data.gltf;
+                    viewRef._three.mainGltf = gltf;
+                    // Clone so the preview always has its own scene graph (cached gltf.scene may be attached elsewhere from a previous view)
+                    var mainScene = gltf.scene.clone( true );
+                    mainScene.name = mainScene.name || 'Main';
+                    rootGroup.add( mainScene );
 
-                    const box = new THREE.Box3().setFromObject(rootGroup);
-                    const size = box.getSize(new THREE.Vector3()).length();
-                    const center = box.getCenter(new THREE.Vector3());
-                    const firstAngle = this.admin && this.admin.angles && this.admin.angles.length ? this.admin.angles.first() : null;
-                    const pos = firstAngle && firstAngle.get('camera_position');
-                    const tgt = firstAngle && firstAngle.get('camera_target');
-                    if (pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number') {
-                        camera.position.set(pos.x, pos.y, pos.z);
-                        controls.target.set(tgt.x, tgt.y, tgt.z);
-                        camera.lookAt(tgt.x, tgt.y, tgt.z);
-                    } else {
-                        controls.target.copy(center);
-                        camera.position.copy(center).add(new THREE.Vector3(size / 2, size / 2, size / 2));
-                        camera.lookAt(center);
+                    var scene_roots = [ { object: mainScene, label: 'Main' } ];
+
+                    var onAllLoaded = function() {
+                        if ( ! viewRef._three || ! viewRef._three.scene ) return;
+                        viewRef._hidePreviewLoading();
+                        if ( viewRef._three.fake_shadow ) {
+                            viewRef._three.fake_shadow.dispose();
+                            viewRef._three.fake_shadow = null;
+                        }
+                        viewRef._three.scene.add( rootGroup );
+                        viewRef._three.model_root = rootGroup;
+                        viewRef._three.scene_roots = scene_roots;
+                        viewRef._three.fake_shadow = new FakeShadow( viewRef._three.scene );
+                        viewRef.render_tree( viewRef._three.scene_roots );
+                        viewRef.extract_lights_from_scene( rootGroup );
+
+                        var box = new THREE.Box3().setFromObject( rootGroup );
+                        var size = box.getSize( new THREE.Vector3() ).length();
+                        var center = box.getCenter( new THREE.Vector3() );
+                        var firstAngle = viewRef.admin && viewRef.admin.angles && viewRef.admin.angles.length ? viewRef.admin.angles.first() : null;
+                        var pos = firstAngle && firstAngle.get( 'camera_position' );
+                        var tgt = firstAngle && firstAngle.get( 'camera_target' );
+                        if ( pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
+                            camera.position.set( pos.x, pos.y, pos.z );
+                            controls.target.set( tgt.x, tgt.y, tgt.z );
+                            camera.lookAt( tgt.x, tgt.y, tgt.z );
+                        } else {
+                            controls.target.copy( center );
+                            camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
+                            camera.lookAt( center );
+                        }
+                        on_resize();
+                        viewRef.apply_preview_settings();
+                    };
+
+                    if ( layerEntries.length === 0 ) {
+                        onAllLoaded();
+                        return;
                     }
-                    on_resize();
-                    this.apply_preview_settings();
-                };
 
-                if (layerEntries.length === 0) {
-                    onAllLoaded();
-                    return;
-                }
-
-                let pending = layerEntries.length;
-                layerEntries.forEach((le, i) => {
-                    loader.load(le.url, (g) => {
-                        if (!this._three) return;
-						this._removePreviewLoadingStep('layer-' + i);
-                        const layerScene = g.scene;
-                        layerScene.name = layerScene.name || le.label;
-                        rootGroup.add(layerScene);
-                        scene_roots.push({ object: layerScene, label: le.label });
-                        pending--;
-                        if (pending === 0) onAllLoaded();
-                    }, undefined, () => {
-                        this._removePreviewLoadingStep('layer-' + i);
-                        pending--;
-                        if (pending === 0) onAllLoaded();
-                    });
-                });
-            }, undefined, (err) => {
-				this._hidePreviewLoading();
-				const msg = (typeof PC_lang !== 'undefined' && PC_lang.failed_load_main_model) ? PC_lang.failed_load_main_model : 'Failed to load main model.';
-				this.render_tree_message(msg);
-            });
+                    var pending = layerEntries.length;
+                    layerEntries.forEach( function( le, i ) {
+                        PC.threeD.store.get( le.url, function( errLayer, dataLayer ) {
+                            if ( ! viewRef._three ) return;
+                            viewRef._removePreviewLoadingStep( 'layer-' + i );
+                            if ( errLayer || ! dataLayer ) {
+                                pending--;
+                                if ( pending === 0 ) onAllLoaded();
+                                return;
+                            }
+                            // Clone so the preview always has its own scene graph
+                            var layerScene = dataLayer.gltf.scene.clone( true );
+                            layerScene.name = layerScene.name || le.label;
+                            rootGroup.add( layerScene );
+                            scene_roots.push( { object: layerScene, label: le.label } );
+                            pending--;
+                            if ( pending === 0 ) onAllLoaded();
+                        } );
+                    } );
+                } );
+            };
+            setTimeout( runPreviewLoad, 0 );
 
             const animate = () => {
                 this._three.animation_id = requestAnimationFrame(animate);
@@ -1079,6 +1177,10 @@ PC.views = PC.views || {};
 			PC.threeD.openModelMediaFrame( {
 				selectedId: PC.app.admin.settings_3d.attachment_id,
 				onSelect: ( attachment ) => {
+					var previousUrl = PC.app.admin.settings_3d && PC.app.admin.settings_3d.url ? PC.app.admin.settings_3d.url : null;
+					if ( previousUrl && PC.threeD.store && PC.threeD.store.remove ) {
+						PC.threeD.store.remove( previousUrl );
+					}
 					PC.app.admin.settings_3d.url = attachment.gltf_url || attachment.url;
 					PC.app.admin.settings_3d.filename = attachment.gltf_filename || attachment.filename;
 					PC.app.admin.settings_3d.attachment_id = attachment.id;
@@ -1089,6 +1191,10 @@ PC.views = PC.views || {};
         },
         remove_gltf: function( e ) {
             e.preventDefault();
+            var previousUrl = PC.app.admin.settings_3d && PC.app.admin.settings_3d.url ? PC.app.admin.settings_3d.url : null;
+            if ( previousUrl && PC.threeD.store && PC.threeD.store.remove ) {
+                PC.threeD.store.remove( previousUrl );
+            }
             PC.app.admin.settings_3d.url = null;
             PC.app.admin.settings_3d.filename = null;
             PC.app.admin.settings_3d.attachment_id = null;
@@ -1152,22 +1258,26 @@ PC.views = PC.views || {};
 	 */
 	PC.actions.edit_model_upload = function( $el, context ) {
 		if ( ! context || ! context.model ) return;
-		const setting = $el?.data( 'setting' ) || 'model_upload_3d';
-		const selectedId = context.model.get( 'model_upload_3d' );
+		var setting = $el ? $el.data( 'setting' ) : null;
+		setting = setting || 'model_upload_3d';
+		var selectedId = context.model.get( 'model_upload_3d' );
 		PC.threeD.openModelMediaFrame( {
-			selectedId,
-			onSelect: ( attachment ) => {
-				const url = attachment.gltf_url || attachment.url;
-				const filename = attachment.gltf_filename || attachment.filename;
+			selectedId: selectedId,
+			onSelect: function( attachment ) {
+				var previousUrl = context.model.get( 'model_upload_3d_url' );
+				var url = attachment.gltf_url || attachment.url;
+				if ( previousUrl && previousUrl !== url && PC.threeD.store && PC.threeD.store.remove ) {
+					PC.threeD.store.remove( previousUrl );
+				}
+				var filename = attachment.gltf_filename || attachment.filename;
 				context.model.set( {
 					model_upload_3d: attachment.id,
 					model_upload_3d_url: url,
 					model_upload_3d_filename: filename,
 				} );
 				PC.app.is_modified.layers = true;
-				// Update the hidden input immediately (template re-render may not happen)
 				if ( context.$el && setting ) {
-					context.$el.find( '[data-setting=\"' + setting + '\"]' ).val( attachment.id );
+					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
 				}
 			},
 		} );
@@ -1178,14 +1288,19 @@ PC.views = PC.views || {};
 	 */
 	PC.actions.remove_model_upload = function( $el, context ) {
 		if ( ! context || ! context.model ) return;
+		var url = context.model.get( 'model_upload_3d_url' );
 		context.model.set( {
 			model_upload_3d: null,
 			model_upload_3d_url: null,
 			model_upload_3d_filename: null,
 		} );
+		if ( url && PC.threeD.store && PC.threeD.store.remove ) {
+			PC.threeD.store.remove( url );
+		}
 		PC.app.is_modified.layers = true;
 		if ( context.$el ) {
-			const setting = $el?.data( 'setting' ) || 'model_upload_3d';
+			var setting = $el ? $el.data( 'setting' ) : null;
+			setting = setting || 'model_upload_3d';
 			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
 		}
 		context.render();
@@ -1277,31 +1392,15 @@ PC.views = PC.views || {};
 			this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' ).html( '<p class="description">' + ( message || 'No objects to list.' ) + '</p>' );
 		},
 		loadModel: function( url ) {
-			this._loader.load( url, ( gltf ) => {
-				const root = gltf.scene;
-				this.treeNodes = this.buildTreeNodeList( root );
-				this.renderTree( this.treeNodes );
-			}, undefined, () => {
-				this.showError( 'Failed to load the 3D model.' );
-			} );
-		},
-		buildTreeNodeList: function( root ) {
-			const list = [];
-			const skipTypes = [ 'Scene', 'Camera', 'Light', 'AmbientLight', 'DirectionalLight', 'PointLight', 'SpotLight', 'RectAreaLight' ];
-			const isSkip = ( obj ) => obj && skipTypes.indexOf( obj.type ) !== -1;
-			const add = ( obj, depth ) => {
-				if ( ! obj || isSkip( obj ) ) return;
-				const name = obj.name || obj.type || ( 'Object_' + ( obj.uuid || '' ).slice( 0, 8 ) );
-				const id = obj.name || obj.uuid;
-				list.push( { id, name, type: obj.type, depth, object: obj } );
-				if ( obj.children && obj.children.length ) {
-					obj.children.forEach( ( ch ) => add( ch, depth + 1 ) );
+			var view = this;
+			PC.threeD.store.get( url, function( err, data ) {
+				if ( err || ! data ) {
+					view.showError( 'Failed to load the 3D model.' );
+					return;
 				}
-			};
-			if ( root.children ) {
-				root.children.forEach( ( ch ) => add( ch, 0 ) );
-			}
-			return list;
+				view.treeNodes = data.objectTree || [];
+				view.renderTree( view.treeNodes );
+			} );
 		},
 		renderTree: function( nodes ) {
 			const filter = ( this.$filterInput && this.$filterInput.val() ) ? this.$filterInput.val().toLowerCase() : '';
