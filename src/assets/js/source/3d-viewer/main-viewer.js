@@ -4,46 +4,15 @@
  * layer/choice 3D actions (visibility, material variant, color, texture).
  */
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { FakeShadow } from '../../../admin/js/views/3d-fake-shadow.js';
-import GLTFMaterialsVariantsExtension from '../../vendor/KHR_materials_variants.js';
+import { FakeShadow } from './3d-fake-shadow.js';
 import viewer_3d_choice from './choice-view.js';
+import { getSettings, getHdrBaseUrl, createLightFromSettings, getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv } from './3d-scene-config.js';
+import { createGltfLoader } from './3d-loader-factory.js';
+import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
-
-function getSettings() {
-	const data = window.PC && window.PC.fe && window.PC.fe.currentProductData;
-	return (data && data.settings_3d) ? data.settings_3d : null;
-}
-
-function getHdrBaseUrl() {
-	if ( typeof window.PC_lang !== 'undefined' && window.PC_lang.hdr_base_url ) {
-		return window.PC_lang.hdr_base_url;
-	}
-	return ( window.PC_config && window.PC_config.assets_url ) ? window.PC_config.assets_url + 'images/hdr/' : '';
-}
-
-// Create a light from settings (mirrors admin _create_light_from_settings)
-function createLightFromSettings( settings, gi ) {
-	const color = new THREE.Color( settings.color || '#ffffff' );
-	const base = ( settings.intensity != null ) ? settings.intensity : 1;
-	const intensity = base * gi;
-	const type = settings.type || 'PointLight';
-	let light;
-	if ( type === 'DirectionalLight' ) {
-		light = new THREE.DirectionalLight( color, intensity );
-	} else if ( type === 'SpotLight' ) {
-		light = new THREE.SpotLight( color, intensity );
-	} else {
-		light = new THREE.PointLight( color, intensity );
-	}
-	light.userData = light.userData || {};
-	light.userData.baseIntensity = base;
-	return light;
-}
 
 export default Backbone.View.extend({
 	tagName: 'div',
@@ -100,77 +69,7 @@ export default Backbone.View.extend({
 
 	_initScene( container, s ) {
 		this.maybe_cleanup();
-		const r = s.renderer || {};
-		const renderer = new THREE.WebGLRenderer( { antialias: true, alpha: !!r.alpha } );
-		renderer.shadowMap.enabled = false;
-		renderer.setSize( container.clientWidth, container.clientHeight );
-		renderer.setPixelRatio( window.devicePixelRatio );
-		renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
-		renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
-		renderer.outputColorSpace = r.output_color_space === 'linear' ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
-		renderer.setClearAlpha( r.alpha ? 0 : 1 );
-		container.appendChild( renderer.domElement );
-
-		const scene = new THREE.Scene();
-		const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
-		camera.position.set( 0, 1, 3 );
-
-		// Only add default light if enabled in settings (matches admin behaviour).
-		const lighting = s.lighting || {};
-		let defaultLight = null;
-		if ( lighting.default_light_enabled !== false ) {
-			defaultLight = new THREE.DirectionalLight( 0xffffff, 1.2 );
-			defaultLight.position.set( 5, 10, 7.5 );
-			defaultLight.userData = { baseIntensity: 1.2, isDefaultLight: true };
-			scene.add( defaultLight );
-			scene.add( defaultLight.target );
-		}
-
-		const controls = new OrbitControls( camera, renderer.domElement );
-		const env = s.environment || {};
-		const minPolar = ( env.orbit_min_polar_angle != null ) ? env.orbit_min_polar_angle : 0;
-		const maxPolar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
-		controls.minPolarAngle = ( minPolar * Math.PI ) / 180;
-		controls.maxPolarAngle = ( maxPolar * Math.PI ) / 180;
-		const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
-		const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
-		controls.minAzimuthAngle = ( minAzimuth * Math.PI ) / 180;
-		controls.maxAzimuthAngle = ( maxAzimuth * Math.PI ) / 180;
-		// Only apply zoom limits when valid positive numbers; 0 or bad values would hide the scene
-		const minDist = ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
-		const maxDist = ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
-		controls.minDistance = minDist;
-		controls.maxDistance = maxDist;
-
-		const onResize = () => {
-			camera.aspect = container.clientWidth / container.clientHeight;
-			camera.updateProjectionMatrix();
-			renderer.setSize( container.clientWidth, container.clientHeight );
-			renderer.setPixelRatio( window.devicePixelRatio );
-		};
-		window.addEventListener( 'resize', onResize );
-
-		this._three = {
-			scene,
-			camera,
-			renderer,
-			controls,
-			animation_id: null,
-			on_resize: onResize,
-			fake_shadow: null,
-			model_root: null,
-			gltf: null,
-			current_env_url: null,
-			default_light: defaultLight,
-			container,
-			// Will be filled after initial framing so we can reuse it for screenshots
-			initial_camera_position: null,
-			initial_controls_target: null,
-			// Global material registry: name -> single THREE.Material instance (deduped across all loaded GLTFs)
-			material_registry: new Map(),
-			// Reused for choice material_texture actions to avoid per-load allocations
-			textureLoader: new THREE.TextureLoader(),
-		};
+		this._three = initScene( container, s );
 	},
 
 	/**
@@ -214,24 +113,10 @@ export default Backbone.View.extend({
 
 	_getGltfLoader() {
 		if ( this._gltfLoader ) return this._gltfLoader;
-		const loader = new GLTFLoader();
-		const config = ( window.PC_config && window.PC_config.config ) || {};
-		if ( config.fe_3d_use_draco_loader && typeof window.DRACOLoader !== 'undefined' ) {
-			if ( ! this._dracoLoader ) {
-				this._dracoLoader = new window.DRACOLoader();
-				const decoderPath = config.fe_3d_draco_decoder_path || ( ( window.PC_config && window.PC_config.assets_url ) ? window.PC_config.assets_url + 'js/vendor/draco/gltf/' : '' );
-				if ( decoderPath ) {
-					this._dracoLoader.setDecoderPath( decoderPath );
-				}
-			}
-			loader.setDRACOLoader( this._dracoLoader );
-		}
-		if ( config.fe_3d_use_meshopt_loader && typeof window.MeshoptDecoder !== 'undefined' ) {
-			loader.setMeshoptDecoder( window.MeshoptDecoder );
-		}
-		loader.register( ( parser ) => new GLTFMaterialsVariantsExtension( parser ) );
-		this._gltfLoader = loader;
-		return loader;
+		const result = createGltfLoader( this._dracoLoader || null );
+		this._gltfLoader = result.loader;
+		if ( result.dracoLoader ) this._dracoLoader = result.dracoLoader;
+		return this._gltfLoader;
 	},
 
 	_loadGltf( url, onSuccess, onError ) {
@@ -422,9 +307,9 @@ export default Backbone.View.extend({
 		const scene = t.scene;
 		const renderer = t.renderer;
 		const r = s.renderer || {};
-		renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
+		renderer.toneMapping = getToneMapping( r );
 		renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
-		renderer.outputColorSpace = r.output_color_space === 'linear' ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
+		renderer.outputColorSpace = getOutputColorSpace( r );
 		renderer.setClearAlpha( r.alpha ? 0 : 1 );
 
 		const bg = s.background || {};
@@ -453,19 +338,13 @@ export default Backbone.View.extend({
 		}
 
 		if ( t.controls ) {
-			const minPolar = ( env.orbit_min_polar_angle != null ) ? env.orbit_min_polar_angle : 0;
-			const maxPolar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
-			t.controls.minPolarAngle = ( minPolar * Math.PI ) / 180;
-			t.controls.maxPolarAngle = ( maxPolar * Math.PI ) / 180;
-			const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
-			const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
-			t.controls.minAzimuthAngle = ( minAzimuth * Math.PI ) / 180;
-			t.controls.maxAzimuthAngle = ( maxAzimuth * Math.PI ) / 180;
-			// Only apply zoom limits when valid positive numbers; 0 or bad values would hide the scene
-			const minDist = ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
-			const maxDist = ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
-			t.controls.minDistance = minDist;
-			t.controls.maxDistance = maxDist;
+			const limits = getOrbitLimitsFromEnv( s.environment || {} );
+			t.controls.minPolarAngle = limits.minPolarAngle;
+			t.controls.maxPolarAngle = limits.maxPolarAngle;
+			t.controls.minAzimuthAngle = limits.minAzimuthAngle;
+			t.controls.maxAzimuthAngle = limits.maxAzimuthAngle;
+			t.controls.minDistance = limits.minDistance;
+			t.controls.maxDistance = limits.maxDistance;
 		}
 
 		const g = s.ground || {};
@@ -741,39 +620,7 @@ export default Backbone.View.extend({
 		this._layer_scenes = [];
 		this._layer_objects = [];
 		this._gltfLoader = null;
-		const t = this._three;
-		if ( ! t ) return;
-		if ( t.fake_shadow ) {
-			t.fake_shadow.dispose();
-			t.fake_shadow = null;
-		}
-		if ( t.animation_id ) {
-			cancelAnimationFrame( t.animation_id );
-			t.animation_id = null;
-		}
-		if ( t.on_resize ) {
-			window.removeEventListener( 'resize', t.on_resize );
-			t.on_resize = null;
-		}
-		if ( t.renderer ) {
-			t.renderer.dispose();
-			if ( t.renderer.domElement && t.renderer.domElement.parentNode ) {
-				t.renderer.domElement.parentNode.removeChild( t.renderer.domElement );
-			}
-		}
-		if ( t.controls ) t.controls.dispose();
-		if ( t.scene ) {
-			t.scene.traverse( ( obj ) => {
-				if ( obj.geometry ) obj.geometry.dispose();
-				if ( obj.material ) {
-					if ( Array.isArray( obj.material ) ) {
-						obj.material.forEach( ( m ) => m.dispose && m.dispose() );
-					} else if ( obj.material.dispose ) {
-						obj.material.dispose();
-					}
-				}
-			} );
-		}
+		cleanupThree( this._three );
 		this._three = null;
 	},
 

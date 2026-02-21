@@ -2,6 +2,7 @@
  * Planar fake shadow (model-viewer style).
  * Renders scene depth from above to a texture, blurs it, and displays it on a ground plane.
  * No real-time shadow maps; one orthographic depth pass + horizontal/vertical blur.
+ * Shared by admin 3D settings and frontend 3D viewer.
  */
 import * as THREE from 'three';
 import { HorizontalBlurShader } from 'three/addons/shaders/HorizontalBlurShader.js';
@@ -46,9 +47,6 @@ export class FakeShadow extends THREE.Object3D {
 				transparent: true,
 				opacity: 1,
 				side: THREE.BackSide,
-				// color: 0x000000,
-				// alphaTest: 0.01,
-				// depthWrite: false,
 			})
 		);
 		this._floor.userData.noHit = true;

@@ -1,12 +1,16 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
-import { FakeShadow } from './3d-fake-shadow.js';
-import GLTFMaterialsVariantsExtension from '../../../js/vendor/KHR_materials_variants.js';
+import { FakeShadow } from '../../../js/source/3d-viewer/3d-fake-shadow.js';
+import './3d/3d-loader.js';
+import './3d/3d-store.js';
+import './3d/3d-lights.js';
+import './3d/3d-object-selector-view.js';
 
+const $ = window.jQuery;
+const _ = window.PC._us || window._;
 PC = window.PC || {};
-PC.views = PC.views || {};
+PC.views = window.PC.views || {};
 
 (function($, _){
 
@@ -67,265 +71,6 @@ PC.views = PC.views || {};
 		frame.open();
 		return frame;
 	};
-
-	/** Cached DRACOLoader instance for admin (one per page, same as frontend). */
-	var _adminDracoLoader = null;
-
-	/**
-	 * Build a plain object tree (no Three.js refs) from a scene root for caching.
-	 * @param {THREE.Object3D} root
-	 * @returns {Array<{ id: string, name: string, type: string, depth: number }>}
-	 */
-	function buildObjectTreeFromScene( root ) {
-		var list = [];
-		var skipTypes = [ 'Scene', 'Camera', 'Light', 'AmbientLight', 'DirectionalLight', 'PointLight', 'SpotLight', 'RectAreaLight' ];
-		var isSkip = function( obj ) { return obj && skipTypes.indexOf( obj.type ) !== -1; };
-		var add = function( obj, depth ) {
-			if ( ! obj || isSkip( obj ) ) return;
-			var name = obj.name || obj.type || ( 'Object_' + ( obj.uuid || '' ).slice( 0, 8 ) );
-			var id = obj.name || obj.uuid;
-			list.push( { id: id, name: name, type: obj.type || '', depth: depth } );
-			if ( obj.children && obj.children.length ) {
-				obj.children.forEach( function( ch ) { add( ch, depth + 1 ); } );
-			}
-		};
-		if ( root && root.children ) {
-			root.children.forEach( function( ch ) { add( ch, 0 ); } );
-		}
-		return list;
-	}
-
-	/**
-	 * Global 3D data store: one load per URL, cache holds gltf + variants + materialNames + objectTree.
-	 * Consumers (choices, layers, 3D settings, object selector, preview) use store.get(); remove/replace flows call store.remove().
-	 */
-	PC.threeD.store = ( function() {
-		var _cache = {};
-
-		function get( url, callback ) {
-			if ( ! url || typeof callback !== 'function' ) return;
-			if ( _cache[ url ] !== undefined ) {
-				return callback( null, _cache[ url ] );
-			}
-			var loader = PC.threeD.getGltfLoader();
-			loader.load(
-				url,
-				function( gltf ) {
-					var variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
-						? gltf.userData.variants.slice()
-						: [];
-					var materialNames = [];
-					var seen = {};
-					if ( gltf.scene && gltf.scene.traverse ) {
-						gltf.scene.traverse( function( obj ) {
-							if ( ! obj.material ) return;
-							var materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
-							materials.forEach( function( mat ) {
-								if ( ! mat ) return;
-								var name = ( mat.name && String( mat.name ).trim() ) ? mat.name : mat.uuid;
-								if ( ! seen[ name ] ) {
-									seen[ name ] = true;
-									materialNames.push( name );
-								}
-							} );
-						} );
-					}
-					var objectTree = buildObjectTreeFromScene( gltf.scene );
-					var data = { gltf: gltf, variants: variants, materialNames: materialNames, objectTree: objectTree };
-					_cache[ url ] = data;
-					callback( null, data );
-				},
-				undefined,
-				function( err ) {
-					callback( err || new Error( 'Failed to load model' ), null );
-				}
-			);
-		}
-
-		function remove( url ) {
-			if ( ! url ) return;
-			var entry = _cache[ url ];
-			if ( entry && entry.gltf && entry.gltf.scene ) {
-				entry.gltf.scene.traverse( function( obj ) {
-					if ( obj.geometry ) obj.geometry.dispose();
-					if ( obj.material ) {
-						var mats = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
-						mats.forEach( function( m ) {
-							if ( m && m.dispose ) m.dispose();
-							if ( m && m.map && m.map.dispose ) m.map.dispose();
-						} );
-					}
-				} );
-			}
-			delete _cache[ url ];
-		}
-
-		return { get: get, remove: remove };
-	} )();
-
-	/**
-	 * Get 3D loader config (Draco/Meshopt) from PC_lang (admin) or PC_config.config (frontend).
-	 * @returns {{ fe_3d_use_draco_loader: boolean, fe_3d_use_meshopt_loader: boolean, fe_3d_draco_decoder_path: string }}
-	 */
-	function getAdmin3dConfig() {
-		const lang = window.PC_lang || {};
-		const config = ( window.PC_config && window.PC_config.config ) || {};
-		return {
-			fe_3d_use_draco_loader: !! ( lang.fe_3d_use_draco_loader || config.fe_3d_use_draco_loader ),
-			fe_3d_use_meshopt_loader: !! ( lang.fe_3d_use_meshopt_loader || config.fe_3d_use_meshopt_loader ),
-			fe_3d_draco_decoder_path: lang.fe_3d_draco_decoder_path || config.fe_3d_draco_decoder_path || ( ( window.PC_config && window.PC_config.assets_url ) ? window.PC_config.assets_url + 'js/vendor/draco/gltf/' : '' ),
-		};
-	}
-
-	/**
-	 * Create a GLTFLoader with the same Draco and Meshopt support as the frontend.
-	 * @returns {GLTFLoader}
-	 */
-	PC.threeD.getGltfLoader = function() {
-		const loader = new GLTFLoader();
-		const config = getAdmin3dConfig();
-		if ( config.fe_3d_use_draco_loader && typeof window.DRACOLoader !== 'undefined' ) {
-			if ( ! _adminDracoLoader ) {
-				_adminDracoLoader = new window.DRACOLoader();
-				if ( config.fe_3d_draco_decoder_path ) {
-					_adminDracoLoader.setDecoderPath( config.fe_3d_draco_decoder_path );
-				}
-			}
-			loader.setDRACOLoader( _adminDracoLoader );
-		}
-		if ( config.fe_3d_use_meshopt_loader && typeof window.MeshoptDecoder !== 'undefined' ) {
-			loader.setMeshoptDecoder( window.MeshoptDecoder );
-		}
-		loader.register( function( parser ) { return new GLTFMaterialsVariantsExtension( parser ); } );
-		return loader;
-	};
-
-	/**
-	 * Load a GLTF from URL and return material variant names (KHR_materials_variants).
-	 * Uses the global store (single load per URL).
-	 * @param {string} url - GLTF/GLB URL
-	 * @param {Function} callback - ( err, variantNames[] ) variantNames is empty if no extension
-	 */
-	PC.threeD.getMaterialVariantsFromUrl = function( url, callback ) {
-		if ( ! url || typeof callback !== 'function' ) return;
-		PC.threeD.store.get( url, function( err, data ) {
-			callback( err, data ? data.variants : [] );
-		} );
-	};
-
-	/**
-	 * Load a GLTF from URL and return unique material names from the scene.
-	 * Uses the global store (single load per URL).
-	 * @param {string} url - GLTF/GLB URL
-	 * @param {Function} callback - ( err, materialNames[] )
-	 */
-	PC.threeD.getMaterialNamesFromUrl = function( url, callback ) {
-		if ( ! url || typeof callback !== 'function' ) return;
-		PC.threeD.store.get( url, function( err, data ) {
-			callback( err, data ? data.materialNames : [] );
-		} );
-	};
-
-	/**
-	 * Resolve the 3D model URL for a choice (main, layer model, or uploaded). Async if attachment must be fetched.
-	 * @param {Backbone.Model} choiceModel - The choice model
-	 * @param {Backbone.Model|null} layerModel - The layer model
-	 * @param {Function} callback - ( url ) called with string URL or null
-	 */
-	PC.threeD.resolveChoiceModelUrl = function( choiceModel, layerModel, callback ) {
-		if ( ! choiceModel || typeof callback !== 'function' ) {
-			if ( typeof callback === 'function' ) callback( null );
-			return;
-		}
-		var source = choiceModel.get( 'object_selection_3d' ) || 'main_model';
-		var mainUrl = ( PC.app.admin.settings_3d && PC.app.admin.settings_3d.url ) ? PC.app.admin.settings_3d.url : null;
-
-		function resolveAttachmentUrl( attId, done ) {
-			if ( ! attId ) return done( null );
-			var att = wp.media.attachment( attId );
-			att.fetch().done( function() {
-				var j = att.toJSON();
-				done( j.gltf_url || j.url || null );
-			} ).fail( function() { done( null ); } );
-		}
-
-		if ( source === 'main_model' ) {
-			return callback( mainUrl );
-		}
-		if ( source === 'layer_model' && layerModel ) {
-			var layerSource = layerModel.get( 'object_selection_3d' ) || 'main_model';
-			if ( layerSource === 'main_model' ) return callback( mainUrl );
-			if ( layerSource === 'upload_model' ) {
-				var layerAttId = layerModel.get( 'model_upload_3d' );
-				return resolveAttachmentUrl( layerAttId, callback );
-			}
-			return callback( mainUrl );
-		}
-		if ( source === 'upload_model' ) {
-			return resolveAttachmentUrl( choiceModel.get( 'model_upload_3d' ), callback );
-		}
-		callback( mainUrl );
-	};
-
-	/**
-	 * Single light item in the 3D settings lights list.
-	 * Manages its own change events and updates PC.app.admin.settings_3d.lighting.lights[index].
-	 */
-	PC.views.light_item_3d = Backbone.View.extend({
-		className: 'pc-3d-light-item-wrapper',
-		template: wp.template('mkl-pc-3d-light-item'),
-		events: {
-			'change .pc-3d-light-enabled': 'on_change',
-			'change .pc-3d-light-type': 'on_type_change',
-			'change .pc-3d-light-color': 'on_change',
-			'change .pc-3d-light-intensity': 'on_change',
-		},
-		initialize: function(options) {
-			this.options = options || {};
-			this.index = this.options.index;
-			this.parent_view = this.options.parent_view;
-		},
-		render: function() {
-			const light = this.options.light || {};
-
-			this.$el.html(this.template({
-				label: light.name || 'Light ' + (this.index + 1),
-				type: light.type || 'PointLight',
-				color: light.color || '#ffffff',
-				intensity: light.intensity != null ? light.intensity : 1,
-				enabled: light.enabled !== false,
-			}));
-			return this;
-		},
-		get_light_data: function() {
-			return PC.app.admin.settings_3d.lighting.lights[this.index] || {};
-		},
-		set_light_key: function(key, value) {
-			const lights = PC.app.admin.settings_3d.lighting.lights;
-			if (!lights[this.index]) lights[this.index] = {};
-			lights[this.index][key] = value;
-			PC.app.is_modified.settings_3d = true;
-		},
-		on_change: function(e) {
-			const el = $(e.currentTarget);
-			const key = el.data('key');
-			let val = el.val();
-			if (el.attr('type') === 'checkbox') val = el.is(':checked');
-			else if (el.attr('type') === 'number') val = parseFloat(val) || 0;
-			this.set_light_key(key, val);
-			if (this.parent_view && this.parent_view.apply_preview_settings) {
-				this.parent_view.apply_preview_settings();
-			}
-		},
-		on_type_change: function(e) {
-			const val = $(e.currentTarget).val();
-			this.set_light_key('type', val);
-			this.render();
-			if (this.parent_view && this.parent_view.apply_preview_settings) {
-				this.parent_view.apply_preview_settings();
-			}
-		},
-	});
 
 	PC.views.settings_3D = Backbone.View.extend({
 		tagName: 'div',
@@ -617,22 +362,6 @@ PC.views = PC.views || {};
 			});
 			frame.open();
 		},
-		_create_light_from_settings: function(settings, gi) {
-			const color = new THREE.Color(settings.color || '#ffffff');
-			const base = (settings.intensity != null) ? settings.intensity : 1;
-			const intensity = base * gi;
-			const type = settings.type || 'PointLight';
-			let light;
-			if (type === 'DirectionalLight') {
-				light = new THREE.DirectionalLight(color, intensity);
-			} else if (type === 'SpotLight') {
-				light = new THREE.SpotLight(color, intensity);
-			} else {
-				light = new THREE.PointLight(color, intensity);
-			}
-			light.userData.baseIntensity = base;
-			return light;
-		},
 		apply_preview_settings: function() {
 			if (!this._three || !this._three.scene || !this._three.renderer) return;
 			const s = PC.app.admin.settings_3d;
@@ -721,7 +450,7 @@ PC.views = PC.views || {};
 					if (!type_matches) {
 						const parent = obj.parent;
 						const idx = parent.children.indexOf(obj);
-						const new_light = this._create_light_from_settings(settings, gi);
+						const new_light = PC.threeD.createLightFromSettings(settings, gi);
 						new_light.position.copy(obj.position);
 						new_light.quaternion.copy(obj.quaternion);
 						if (obj.target && new_light.target) {
@@ -1051,47 +780,10 @@ PC.views = PC.views || {};
             animate();
         },
         extract_lights_from_scene: function(root) {
-            PC.app.admin.settings_3d.lighting = PC.app.admin.settings_3d.lighting || {};
-            PC.app.admin.settings_3d.lighting.lights = [];
-
-            const lights = [];
-            root.traverse((obj) => {
-                if (!obj.isLight) return;
-                const type = obj.type;
-                const hex = (obj.color && obj.color.getHex) ? obj.color.getHex() : 0xffffff;
-                const color = '#' + ('000000' + hex.toString(16)).slice(-6);
-                lights.push({ name: obj.name || type, type, color, intensity: obj.intensity, enabled: true, cast_shadow: true });
-                obj.userData = obj.userData || {};
-                obj.userData.baseIntensity = obj.intensity;
-            });
-            PC.app.admin.settings_3d.lighting.lights = lights;
-            this.render_lights_list();
+            PC.threeD.extractLightsFromScene(this, root);
         },
         render_lights_list: function() {
-            const list_el = this.$('.pc-3d-lights-list');
-            if (this._light_item_views) {
-                this._light_item_views.forEach((view) => { view.remove(); });
-                this._light_item_views = [];
-            }
-            list_el.empty();
-
-            const lights = (PC.app.admin.settings_3d.lighting && PC.app.admin.settings_3d.lighting.lights) || [];
-            if (!lights.length) {
-                list_el.append('<p class="description">No lights in model.</p>');
-                return;
-            }
-
-            lights.forEach((light, i) => {
-                const view = new PC.views.light_item_3d({
-                    parent_view: this,
-                    index: i,
-                    light: light,
-                });
-                view.render();
-                list_el.append(view.el);
-                this._light_item_views = this._light_item_views || [];
-                this._light_item_views.push(view);
-            });
+            PC.threeD.renderLightsList(this);
         },
         /**
          * Build tree UI from scene roots (main + layer models). Each item has a visibility toggle.
@@ -1216,43 +908,6 @@ PC.views = PC.views || {};
         }
     });
 
-	// -------------------------------------------------------------------------
-	// 3D Object selector modal (PC.actions.select_3d_object)
-	// Opens in a modal; pass modelUrl or attachmentId to browse that file's tree.
-	// Excludes lights, cameras, and the scene root from the tree.
-	// -------------------------------------------------------------------------
-	PC.actions = PC.actions || {};
-	PC.actions.select_3d_object = function( $el, context ) {
-		const opts = { target: $el, context };
-		if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
-		if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
-		opts.setting = $el?.data( 'setting' ) || 'object_id_3d';
-		opts.applySelection = function( selection ) {
-			const id = selection?.id;
-			if ( id == null ) return;
-
-			// 1) Update model if available (common case: layer/choice forms)
-			if ( context && context.model && typeof context.model.set === 'function' ) {
-				context.model.set( opts.setting, id );
-				// Mark the appropriate collection as modified when we can infer it
-				if ( context.collectionName && PC.app && PC.app.is_modified ) {
-					PC.app.is_modified[ context.collectionName ] = true;
-				} else if ( PC.app && PC.app.is_modified ) {
-					// Default to layers, since this action is primarily used there
-					PC.app.is_modified.layers = true;
-				}
-			}
-
-			// 2) Update the DOM input immediately (no need for extra listeners)
-			const $root = context?.$el && context.$el.length ? context.$el : $( document );
-			const $input = $root.find( '[data-setting="' + opts.setting + '"]' ).first();
-			if ( $input && $input.length ) $input.val( id );
-		};
-		const view = new PC.views.object_selector_3d( opts );
-		view.$el.appendTo( 'body' );
-		view.render();
-	};
-
 	/**
 	 * Action: open a media modal to select/upload a 3D model for a layer setting.
 	 * Expects `context.model` to be the edited layer model.
@@ -1306,140 +961,5 @@ PC.views = PC.views || {};
 		}
 		context.render();
 	};
-
-	PC.views.object_selector_3d = Backbone.View.extend({
-		tagName: 'div',
-		className: 'mkl-pc-3d-object-selector--container',
-		template: wp.template( 'mkl-pc-3d-object-selector' ),
-		events: {
-			'click .button.select': 'select',
-			'click .button.cancel': 'close',
-			'input .mkl-pc-3d-object-selector--filter-input': 'on_filter_input',
-			'click .mkl-pc-3d-object-selector--tree [data-object-id]': 'on_tree_item_click',
-		},
-		initialize: function( options ) {
-			this.options = options || {};
-			this.originals = {
-				target: this.options.target,
-				context: this.options.context,
-			};
-			this.modelUrl = this.options.modelUrl || null;
-			this.attachmentId = this.options.attachmentId != null ? this.options.attachmentId : null;
-			this.treeNodes = [];
-			this.selectedId = null;
-			this.selectedName = null;
-			this.setting = this.options.setting || null;
-			this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
-			this._loader = PC.threeD.getGltfLoader();
-		},
-		render: function() {
-			this.$el.html( this.template( {} ) );
-			this.$tree = this.$( '.mkl-pc-3d-object-selector--tree' );
-			this.$filterInput = this.$( '.mkl-pc-3d-object-selector--filter-input' );
-			this.$selectBtn = this.$( '.button.select' );
-			this.resolveAndLoad();
-			return this;
-		},
-		resolveAndLoad: function() {
-			let url = this.modelUrl;
-			if ( url ) {
-				this.loadModel( url );
-				return;
-			}
-			if ( this.attachmentId ) {
-				const attachment = wp.media.attachment( this.attachmentId );
-				attachment.fetch().done( () => {
-					const att = attachment.toJSON();
-					url = att.gltf_url || att.url;
-					if ( url ) this.loadModel( url );
-					else this.showError( 'Could not get model URL from attachment.' );
-				} ).fail( () => this.showError( 'Failed to load attachment.' ) );
-				return;
-			}
-			// Resolve from context (layer form or choice form): main, layer, or uploaded model
-			if ( this.originals.context && this.originals.context.model ) {
-				const model = this.originals.context.model;
-				const source = model.get( 'object_selection_3d' ) || 'main_model';
-				if ( source === 'main_model' ) {
-					url = PC.app.admin.settings_3d && PC.app.admin.settings_3d.url ? PC.app.admin.settings_3d.url : null;
-					if ( url ) this.loadModel( url );
-					else this.showError( 'No main model set. Configure the 3D model in the 3D tab first.' );
-					return;
-				}
-				if ( source === 'layer_model' && this.originals.context.layer ) {
-					const layerModel = this.originals.context.layer;
-					if ( typeof PC.threeD.resolveChoiceModelUrl === 'function' ) {
-						PC.threeD.resolveChoiceModelUrl( model, layerModel, ( resolvedUrl ) => {
-							if ( resolvedUrl ) this.loadModel( resolvedUrl );
-							else this.showError( 'No 3D file from layer. Set the layer\'s model (main or upload) first.' );
-						} );
-						return;
-					}
-				}
-				if ( source === 'upload_model' ) {
-					const attId = model.get( 'model_upload_3d' );
-					if ( attId ) {
-						this.attachmentId = attId;
-						this.resolveAndLoad();
-						return;
-					}
-					this.showError( 'No uploaded model. Use "Model upload" above to select a file.' );
-					return;
-				}
-			}
-			this.showError( 'No 3D file to browse. Pass modelUrl or set main/uploaded model.' );
-		},
-		showError: function( message ) {
-			this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' ).html( '<p class="description">' + ( message || 'No objects to list.' ) + '</p>' );
-		},
-		loadModel: function( url ) {
-			var view = this;
-			PC.threeD.store.get( url, function( err, data ) {
-				if ( err || ! data ) {
-					view.showError( 'Failed to load the 3D model.' );
-					return;
-				}
-				view.treeNodes = data.objectTree || [];
-				view.renderTree( view.treeNodes );
-			} );
-		},
-		renderTree: function( nodes ) {
-			const filter = ( this.$filterInput && this.$filterInput.val() ) ? this.$filterInput.val().toLowerCase() : '';
-			const filtered = filter ? nodes.filter( ( n ) => ( n.name && n.name.toLowerCase().indexOf( filter ) !== -1 ) || ( n.id && String( n.id ).toLowerCase().indexOf( filter ) !== -1 ) ) : nodes;
-			this.$tree.empty();
-			filtered.forEach( ( node ) => {
-				const indent = ( node.depth || 0 ) * 16;
-				const display = ( node.name || node.id || '' ) + ' [' + ( node.type || '' ) + ']';
-				const $li = $( '<li class="mkl-pc-3d-object-selector--item" data-object-id="' + ( node.id || '' ).replace( /"/g, '&quot;' ) + '" data-object-name="' + ( node.name || '' ).replace( /"/g, '&quot;' ) + '" style="padding-left:' + indent + 'px;">' ).text( display );
-				this.$tree.append( $li );
-			} );
-		},
-		on_filter_input: function() {
-			this.renderTree( this.treeNodes );
-		},
-		on_tree_item_click: function( e ) {
-			const $item = $( e.currentTarget );
-			this.selectedId = $item.data( 'object-id' );
-			this.selectedName = $item.data( 'object-name' ) || this.selectedId;
-			this.$( '.mkl-pc-3d-object-selector--item' ).removeClass( 'selected' );
-			$item.addClass( 'selected' );
-			this.$selectBtn.prop( 'disabled', false );
-		},
-		select: function() {
-			if ( this.selectedId != null ) {
-				const payload = { id: this.selectedId, name: this.selectedName, setting: this.setting };
-				if ( this.applySelection ) {
-					this.applySelection( payload );
-				} else if ( this.originals.context && this.originals.context.$el ) {
-					// Backwards-compatible fallback
-					this.originals.context.$el.trigger( 'object_selected', payload );
-				}
-			}
-			this.close();
-		},
-		close: function() {
-			this.remove();
-		},
-	});
 
 })(jQuery, PC._us || window._ );
