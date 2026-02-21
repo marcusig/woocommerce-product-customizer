@@ -1040,6 +1040,7 @@ PC.views = PC.views || {};
 
             const animate = () => {
                 this._three.animation_id = requestAnimationFrame(animate);
+                if (document.hidden) return;
                 controls.update();
                 const g = PC.app.admin.settings_3d.ground || {};
                 if (this._three.fake_shadow && g.enabled !== false) {

@@ -89,7 +89,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			} else if ( type === 'material_texture' && this.target_object ) {
 				const texture_url = action.material_texture_url || action.material_texture_value;
 				if ( texture_url ) {
-					const loader = new THREE.TextureLoader();
+					const loader = ( this.parent_view._three && this.parent_view._three.textureLoader ) || new THREE.TextureLoader();
 					loader.load( texture_url, ( texture ) => {
 						texture.colorSpace = THREE.SRGBColorSpace;
 						this._set_material_map( this.target_object, texture );

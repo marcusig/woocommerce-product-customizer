@@ -168,6 +168,8 @@ export default Backbone.View.extend({
 			initial_controls_target: null,
 			// Global material registry: name -> single THREE.Material instance (deduped across all loaded GLTFs)
 			material_registry: new Map(),
+			// Reused for choice material_texture actions to avoid per-load allocations
+			textureLoader: new THREE.TextureLoader(),
 		};
 	},
 
@@ -210,8 +212,8 @@ export default Backbone.View.extend({
 		} );
 	},
 
-	_loadGltf( url, onSuccess, onError ) {
-		if ( ! url ) return;
+	_getGltfLoader() {
+		if ( this._gltfLoader ) return this._gltfLoader;
 		const loader = new GLTFLoader();
 		const config = ( window.PC_config && window.PC_config.config ) || {};
 		if ( config.fe_3d_use_draco_loader && typeof window.DRACOLoader !== 'undefined' ) {
@@ -228,7 +230,13 @@ export default Backbone.View.extend({
 			loader.setMeshoptDecoder( window.MeshoptDecoder );
 		}
 		loader.register( ( parser ) => new GLTFMaterialsVariantsExtension( parser ) );
-		loader.load( url, onSuccess, undefined, onError || ( () => {} ) );
+		this._gltfLoader = loader;
+		return loader;
+	},
+
+	_loadGltf( url, onSuccess, onError ) {
+		if ( ! url ) return;
+		this._getGltfLoader().load( url, onSuccess, undefined, onError || ( () => {} ) );
 	},
 
 	_load_choice_gltf( url, done ) {
@@ -393,6 +401,7 @@ export default Backbone.View.extend({
 			const g = ( s && s.ground ) || {};
 			const animate = () => {
 				t.animation_id = requestAnimationFrame( animate );
+				if ( document.hidden ) return;
 				t.controls.update();
 				if ( t.fake_shadow && g.enabled !== false ) {
 					t.fake_shadow.render( t.renderer, t.scene );
@@ -731,6 +740,7 @@ export default Backbone.View.extend({
 		}
 		this._layer_scenes = [];
 		this._layer_objects = [];
+		this._gltfLoader = null;
 		const t = this._three;
 		if ( ! t ) return;
 		if ( t.fake_shadow ) {
