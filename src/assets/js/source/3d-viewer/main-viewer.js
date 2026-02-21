@@ -166,7 +166,48 @@ export default Backbone.View.extend({
 			// Will be filled after initial framing so we can reuse it for screenshots
 			initial_camera_position: null,
 			initial_controls_target: null,
+			// Global material registry: name -> single THREE.Material instance (deduped across all loaded GLTFs)
+			material_registry: new Map(),
 		};
+	},
+
+	/**
+	 * Register materials from a scene in the global registry. If a material with the same name
+	 * already exists (different instance), replace the mesh's material with the registry one.
+	 * @param {Object} t - this._three
+	 * @param {THREE.Object3D} sceneRoot - Scene or group to traverse
+	 */
+	_registerSceneMaterials( t, sceneRoot ) {
+		if ( ! t || ! t.material_registry || ! sceneRoot ) return;
+		const registry = t.material_registry;
+
+		sceneRoot.traverse( ( obj ) => {
+			if ( ! obj.material ) return;
+
+			const materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
+			const resolved = [];
+
+			for ( let i = 0; i < materials.length; i++ ) {
+				const mat = materials[ i ];
+				if ( ! mat ) continue;
+
+				const name = ( mat.name && String( mat.name ).trim() ) || mat.uuid;
+				const existing = registry.get( name );
+
+				if ( existing !== undefined && existing !== mat ) {
+					resolved.push( existing );
+				} else {
+					registry.set( name, mat );
+					resolved.push( mat );
+				}
+			}
+
+			if ( resolved.length === 1 ) {
+				obj.material = resolved[ 0 ];
+			} else if ( resolved.length > 1 ) {
+				obj.material = resolved;
+			}
+		} );
 	},
 
 	_loadGltf( url, onSuccess, onError ) {
@@ -192,9 +233,16 @@ export default Backbone.View.extend({
 
 	_load_choice_gltf( url, done ) {
 		if ( ! url || typeof done !== 'function' ) return;
+		const t = this._three;
 		this._loadGltf(
 			url,
-			( gltf ) => done( gltf && gltf.scene ? gltf.scene : null ),
+			( gltf ) => {
+				const scene = gltf && gltf.scene ? gltf.scene : null;
+				if ( scene && t && t.material_registry ) {
+					this._registerSceneMaterials( t, scene );
+				}
+				done( scene );
+			},
 			() => done( null )
 		);
 	},
@@ -287,6 +335,7 @@ export default Backbone.View.extend({
 				t.scene.add( mainGltf.scene );
 				t.model_root = mainGltf.scene;
 				t.gltf = mainGltf;
+				this._registerSceneMaterials( t, mainGltf.scene );
 			} else {
 				const emptyRoot = new THREE.Group();
 				t.scene.add( emptyRoot );
@@ -298,6 +347,7 @@ export default Backbone.View.extend({
 			layerResults.forEach( ( { layer_model, scene } ) => {
 				if ( scene ) {
 					t.model_root.add( scene );
+					this._registerSceneMaterials( t, scene );
 					this._layer_scenes.push( { layer_model, scene } );
 				}
 			} );
@@ -318,8 +368,7 @@ export default Backbone.View.extend({
 				t.scene.environment = hdrTexture;
 				t.current_env_url = hdrUrl;
 			}
-			console.log(t.model_root);
-			
+
 			t.fake_shadow = new FakeShadow( t.scene );
 
 			const box = new THREE.Box3().setFromObject( t.model_root );

@@ -840,6 +840,23 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				// actions_3d: material registry actions
+				'material_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_registry_color' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_property_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_property_value' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
 			],
 			$this
 		);

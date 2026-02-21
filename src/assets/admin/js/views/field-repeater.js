@@ -107,8 +107,13 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.append( this.template( { ...this.model.attributes, fields: this.fields } ) );
 			this.toggle_action_visibility();
-			if ( this.setting === 'actions_3d' && this.context && this.fields.material_variant_value ) {
-				this.load_variant_field();
+			if ( this.setting === 'actions_3d' && this.context ) {
+				if ( this.fields.material_variant_value ) {
+					this.load_variant_field();
+				}
+				if ( this.fields.material_name && this.fields.material_name.type === 'material_select' ) {
+					this.load_material_select_field();
+				}
 			}
 		},
 		load_variant_field: function() {
@@ -148,6 +153,44 @@ PC.views = PC.views || {};
 				} );
 			} );
 		},
+		load_material_select_field: function() {
+			var view = this;
+			this.$( '.pc-material-select-placeholder' ).each( function() {
+				var $ph = $( this );
+				var key = $ph.data( 'material-field' );
+				var currentVal = $ph.data( 'material-value' ) || '';
+				var choiceModel = view.context && view.context.model;
+				var layerId = choiceModel && choiceModel.get( 'layerId' );
+				var layerModel = ( layerId && PC.app.admin.layers ) ? PC.app.admin.layers.get( layerId ) : null;
+				if ( ! PC.threeD || ! PC.threeD.resolveChoiceModelUrl || ! PC.threeD.getMaterialNamesFromUrl ) {
+					$ph.replaceWith( '<span class="pc-material-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_materials_available ? PC_lang.no_materials_available : 'Materials not available.' ) + '</span>' );
+					return;
+				}
+				PC.threeD.resolveChoiceModelUrl( choiceModel, layerModel, function( url ) {
+					if ( ! url ) {
+						$ph.replaceWith( '<span class="pc-material-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_model_for_materials ? PC_lang.no_model_for_materials : 'No 3D model set. Set object selection and model first.' ) + '</span>' );
+						return;
+					}
+					PC.threeD.getMaterialNamesFromUrl( url, function( err, names ) {
+						if ( err || ! names || ! names.length ) {
+							$ph.replaceWith( '<span class="pc-material-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_materials_in_model ? PC_lang.no_materials_in_model : 'No materials in this model.' ) + '</span>' );
+							return;
+						}
+						var $sel = $( '<select name="' + key + '">' );
+						$sel.append( $( '<option value="">' ).text( typeof PC_lang !== 'undefined' && PC_lang.select_material ? PC_lang.select_material : '— Select material —' ) );
+						names.forEach( function( name ) {
+							var $opt = $( '<option>' ).attr( 'value', name ).text( name );
+							if ( name === currentVal ) $opt.prop( 'selected', true );
+							$sel.append( $opt );
+						} );
+						$ph.replaceWith( $sel );
+						$sel.on( 'change', function() {
+							view.model.set( key, $sel.val() );
+						} );
+					} );
+				} );
+			} );
+		},
 		remove_option: function() {
 			this.model.destroy();
 			this.remove();
@@ -165,7 +208,12 @@ PC.views = PC.views || {};
 			var actionType = this.model.get( 'action_type' );
 			this.$( '.pc-action-value' ).each( function() {
 				var showWhen = $( this ).data( 'show-when' );
-				$( this ).toggle( !! showWhen && showWhen === actionType );
+				var visible = !! showWhen && (
+					showWhen.indexOf( '|' ) !== -1
+						? showWhen.split( '|' ).indexOf( actionType ) !== -1
+						: showWhen === actionType
+				);
+				$( this ).toggle( visible );
 			} );
 		},
 		select_attachment: function( e ) {
@@ -190,8 +238,13 @@ PC.views = PC.views || {};
 				}
 				this.$el.html( this.template( { ...this.model.attributes, fields: this.fields } ) );
 				this.toggle_action_visibility();
-				if ( this.setting === 'actions_3d' && this.context && this.fields.material_variant_value ) {
-					this.load_variant_field();
+				if ( this.setting === 'actions_3d' && this.context ) {
+					if ( this.fields.material_variant_value ) {
+						this.load_variant_field();
+					}
+					if ( this.fields.material_name && this.fields.material_name.type === 'material_select' ) {
+						this.load_material_select_field();
+					}
 				}
 			}.bind( this ) );
 			frame.open();
