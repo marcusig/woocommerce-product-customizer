@@ -309,5 +309,97 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			}
 			return $render;
 		}
+
+		/**
+		 * Shared 3D model source fields (Use object from / Model upload / Object ID) for layers, choices, and angles.
+		 *
+		 * @param array $config {
+		 *     @type bool   $can_upload        Whether to show Upload option and model upload field.
+		 *     @type string $setting_model     Setting key for model source (e.g. object_selection_3d, camera_target_model).
+		 *     @type string $setting_upload    Setting key for upload attachment (e.g. model_upload_3d). Omit or null if no upload.
+		 *     @type string $setting_object_id Setting key for object ID (e.g. object_id_3d, camera_target_object_id).
+		 *     @type string $model_label       Label for the model source select.
+		 *     @type string $upload_label      Label for the upload field.
+		 *     @type string $object_id_label   Label for the object ID field.
+		 *     @type string $condition         Optional condition expression for the fields.
+		 *     @type string $section           Section id (e.g. threed).
+		 *     @type int    $priority          Priority for first field (default 10).
+		 * }
+		 * @return array Field key => field config for merging into get_settings_list().
+		 */
+		public static function get_3d_model_source_fields( $config ) {
+			$can_upload       = ! empty( $config['can_upload'] );
+			$setting_model    = isset( $config['setting_model'] ) ? $config['setting_model'] : 'object_selection_3d';
+			$setting_upload   = isset( $config['setting_upload'] ) ? $config['setting_upload'] : null;
+			$setting_object   = isset( $config['setting_object_id'] ) ? $config['setting_object_id'] : 'object_id_3d';
+			$model_label      = isset( $config['model_label'] ) ? $config['model_label'] : __( 'Use object from', 'product-configurator-for-woocommerce' );
+			$upload_label     = isset( $config['upload_label'] ) ? $config['upload_label'] : __( 'Model upload', 'product-configurator-for-woocommerce' );
+			$object_id_label  = isset( $config['object_id_label'] ) ? $config['object_id_label'] : __( 'Object ID', 'product-configurator-for-woocommerce' );
+			$condition        = isset( $config['condition'] ) ? $config['condition'] : null;
+			$section          = isset( $config['section'] ) ? $config['section'] : 'threed';
+			$priority         = isset( $config['priority'] ) ? (int) $config['priority'] : 10;
+
+			$choices = [
+				[
+					'label' => __( 'Main model', 'product-configurator-for-woocommerce' ),
+					'value' => 'main_model',
+				],
+			];
+			if ( $can_upload ) {
+				$choices[] = [
+					'label' => __( 'Upload model', 'product-configurator-for-woocommerce' ),
+					'value' => 'upload_model',
+				];
+			}
+
+			$base = [
+				'priority' => $priority,
+				'section'  => $section,
+			];
+			if ( $condition ) {
+				$base['condition'] = $condition;
+			}
+
+			$fields = [];
+			$fields[ $setting_model ] = array_merge( $base, [
+				'label'   => $model_label,
+				'type'    => 'select',
+				'choices' => $choices,
+			] );
+
+			if ( $can_upload && $setting_upload ) {
+				$upload_condition = '"upload_model" == data.' . $setting_model;
+				if ( $condition ) {
+					$upload_condition = $condition . ' && ' . $upload_condition;
+				}
+				$fields[ $setting_upload ] = array_merge( $base, [
+					'label'     => $upload_label,
+					'type'      => 'html',
+					'priority'  => $priority + 5,
+					'condition' => $upload_condition,
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="hidden" data-setting="' . esc_attr( $setting_upload ) . '" value="<# if ( data.' . esc_attr( $setting_upload ) . ' ) { #>{{data.' . esc_attr( $setting_upload ) . '}}<# } #>"> '
+						. '<button type="button" class="button mkl-pc--action" data-action="edit_model_upload" data-setting="' . esc_attr( $setting_upload ) . '">' . esc_html__( 'Select model', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '<# if ( data.' . esc_attr( $setting_upload ) . ' ) { #><button type="button" class="button mkl-pc--action" data-action="remove_model_upload" data-setting="' . esc_attr( $setting_upload ) . '">' . esc_html__( 'Remove', 'product-configurator-for-woocommerce' ) . '</button><# } #>'
+						. '<# if ( data.' . esc_attr( $setting_upload ) . '_filename ) { #><span class="pc-3d-model-upload-filename">{{data.' . esc_attr( $setting_upload ) . '_filename}}</span><# } #>'
+						. '</div>',
+				] );
+			}
+
+			$object_html = '<div class="mkl-pc-setting--container">'
+				. '<input type="text" class="components-select-control__input" data-setting="' . esc_attr( $setting_object ) . '" value="<# if ( data.' . esc_attr( $setting_object ) . ' ) { #>{{data.' . esc_attr( $setting_object ) . '}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+				. __( 'Or', 'product-configurator-for-woocommerce' )
+				. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="' . esc_attr( $setting_object ) . '">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+				. '</div>';
+
+			$fields[ $setting_object ] = array_merge( $base, [
+				'label'     => $object_id_label,
+				'type'      => 'html',
+				'priority'  => $priority + 10,
+				'html'      => $object_html,
+			] );
+
+			return $fields;
+		}
 	}
 }

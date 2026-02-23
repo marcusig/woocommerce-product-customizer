@@ -60,16 +60,16 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 			}
 
 			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
-				$settings['camera_target_object_id'] = array(
-					'label'     => __( 'Camera target (object)', 'product-configurator-for-woocommerce' ),
-					'type'      => 'html',
-					'priority'  => 10,
-					'section'   => 'threed',
-					'html'      => '<div class="mkl-pc-setting--container">'
-						. '<input type="text" class="components-select-control__input" data-setting="camera_target_object_id" value="<# if ( data.camera_target_object_id ) { #>{{data.camera_target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
-						. '<button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="camera_target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
-						. '</div>',
-				);
+				$settings = array_merge( $settings, Abstract_Settings::get_3d_model_source_fields( array(
+					'can_upload'        => false,
+					'setting_model'     => 'camera_target_model',
+					'setting_upload'    => null,
+					'setting_object_id' => 'camera_target_object_id',
+					'model_label'       => __( 'Camera target (model)', 'product-configurator-for-woocommerce' ),
+					'object_id_label'   => __( 'Camera target (object)', 'product-configurator-for-woocommerce' ),
+					'section'           => 'threed',
+					'priority'          => 8,
+				) ) );
 			}
 
 			return apply_filters('mkl_pc_angle_default_settings', $settings );

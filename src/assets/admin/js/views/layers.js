@@ -606,22 +606,9 @@ TODO:
 		},
 		populate_object_selection_3d: function() {
 			var $sel = this.$( 'select[data-setting="object_selection_3d"]' );
-			if ( ! $sel.length ) return;
+			if ( ! $sel.length || ! PC.threeD || typeof PC.threeD.populateModelSourceSelect !== 'function' ) return;
 			var currentVal = this.model.get( 'object_selection_3d' ) || 'main_model';
-			var $main = $sel.find( 'option[value="main_model"]' ).clone();
-			var $upload = $sel.find( 'option[value="upload_model"]' ).clone();
-			$sel.empty().append( $main );
-			var layers = PC.app.get_collection( 'layers' );
-			if ( layers && layers.length ) {
-				layers.each( function( layer ) {
-					if ( layer.get( 'object_selection_3d' ) !== 'upload_model' || ! layer.get( 'model_upload_3d' ) ) return;
-					if ( layer.id === this.model.id ) return;
-					var name = layer.get( 'name' ) || ( 'Layer ' + ( layer.get( '_id' ) || layer.id || layer.cid ) );
-					$sel.append( $( '<option></option>' ).attr( 'value', 'layer_' + layer.id ).text( name ) );
-				}, this );
-			}
-			$sel.append( $upload );
-			$sel.val( currentVal );
+			PC.threeD.populateModelSourceSelect( $, $sel, currentVal, { includeUpload: true, excludeLayerId: this.model.id } );
 		},
 		trigger_custom_action: function( event ) {
 			var el = $( event.currentTarget );

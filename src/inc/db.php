@@ -729,6 +729,10 @@ class DB {
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
 				],
+				'camera_target_model' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
 				'bg_image' => [
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],

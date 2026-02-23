@@ -283,47 +283,15 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 			);
 
 			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
-				$settings['object_selection_3d'] = array(
-					'label'   => __( 'Use object from', 'product-configurator-for-woocommerce' ),
-					'type'    => 'select',
-					'choices' => [
-						[
-							'label' => __( 'Main model', 'product-configurator-for-woocommerce' ),
-							'value' => 'main_model',
-						],
-						[
-							'label' => __( 'Upload model', 'product-configurator-for-woocommerce' ),
-							'value' => 'upload_model',
-						],
-					],
-					'priority' => 10,
-					'section' => 'threed',
-				);
-				$settings['model_upload_3d'] = array(
-					'label'     => __( 'Model upload', 'product-configurator-for-woocommerce' ),
-					'type'      => 'html',
-					'condition' => '"upload_model" == data.object_selection_3d',
-					'priority'  => 15,
-					'section'   => 'threed',
-					'html'      => '<div class="mkl-pc-setting--container">
-							<input type="hidden" data-setting="model_upload_3d" value="<# if ( data.model_upload_3d ) { #>{{data.model_upload_3d}}<# } #>"> '
-							. ' <button type="button" class="button mkl-pc--action" data-action="edit_model_upload" data-setting="model_upload_3d">' . esc_html__( 'Select model', 'product-configurator-for-woocommerce' ) . '</button>'
-							. ' <# if ( data.model_upload_3d ) { #><button type="button" class="button mkl-pc--action" data-action="remove_model_upload" data-setting="model_upload_3d">' . esc_html__( 'Remove', 'product-configurator-for-woocommerce' ) . '</button><# } #>'
-							. ' <# if ( data.model_upload_3d_filename ) { #><span class="pc-3d-model-upload-filename">{{data.model_upload_3d_filename}}</span><# } #>
-						</div>
-					',
-				);
-				$settings['object_id_3d'] = array(
-					'label'     => __( 'Object ID', 'product-configurator-for-woocommerce' ),
-					'type'      => 'html',
-					'priority'  => 20,
-					'section'   => 'threed',
-					'html'      => '<div class="mkl-pc-setting--container">
-										<input type="text" class="components-select-control__input" data-setting="object_id_3d" value="<# if ( data.object_id_3d ) { #>{{data.object_id_3d}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '">'
-										. __( 'Or', 'product-configurator-for-woocommerce' ) 
-										. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="object_id_3d">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>
-									</div>',
-				);
+				$settings = array_merge( $settings, Abstract_Settings::get_3d_model_source_fields( array(
+					'can_upload'       => true,
+					'setting_model'    => 'object_selection_3d',
+					'setting_upload'   => 'model_upload_3d',
+					'setting_object_id' => 'object_id_3d',
+					'model_label'      => __( 'Use object from', 'product-configurator-for-woocommerce' ),
+					'section'          => 'threed',
+					'priority'         => 10,
+				) ) );
 			}
 
 			if ( mkl_pc( 'themes' )->current_theme_supports( 'columns' ) ) {

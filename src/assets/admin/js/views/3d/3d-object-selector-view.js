@@ -52,51 +52,12 @@ const ObjectSelector3DView = Backbone.View.extend( {
 			} ).fail( () => this.showError( 'Failed to load attachment.' ) );
 			return;
 		}
-		if ( this.originals.context && this.originals.context.model ) {
-			const model = this.originals.context.model;
-			if ( this.originals.context.collectionName === 'layers' ) {
-				if ( typeof window.PC.threeD.resolveLayerModelUrl === 'function' ) {
-					window.PC.threeD.resolveLayerModelUrl( model, ( resolvedUrl ) => {
-						if ( resolvedUrl ) this.loadModel( resolvedUrl );
-						else this.showError( 'No 3D file for this source. Set the main model in the 3D tab or use an uploaded model.' );
-					} );
-					return;
-				}
-			}
-			const source = model.get( 'object_selection_3d' ) || 'main_model';
-			if ( source === 'main_model' ) {
-				url = window.PC.app.admin.settings_3d && window.PC.app.admin.settings_3d.url ? window.PC.app.admin.settings_3d.url : null;
-				if ( url ) this.loadModel( url );
-				else this.showError( 'No main model set. Configure the 3D model in the 3D tab first.' );
-				return;
-			}
-			if ( source === 'layer_model' && this.originals.context.layer ) {
-				const layerModel = this.originals.context.layer;
-				if ( typeof window.PC.threeD.resolveChoiceModelUrl === 'function' ) {
-					window.PC.threeD.resolveChoiceModelUrl( model, layerModel, ( resolvedUrl ) => {
-						if ( resolvedUrl ) this.loadModel( resolvedUrl );
-						else this.showError( 'No 3D file from layer. Set the layer\'s model (main or upload) first.' );
-					} );
-					return;
-				}
-			}
-			if ( source === 'upload_model' ) {
-				const attId = model.get( 'model_upload_3d' );
-				if ( attId ) {
-					this.attachmentId = attId;
-					this.resolveAndLoad();
-					return;
-				}
-				this.showError( 'No uploaded model. Use "Model upload" above to select a file.' );
-				return;
-			}
-			if ( typeof source === 'string' && source.indexOf( 'layer_' ) === 0 && typeof window.PC.threeD.resolveLayerModelUrl === 'function' ) {
-				window.PC.threeD.resolveLayerModelUrl( model, ( resolvedUrl ) => {
-					if ( resolvedUrl ) this.loadModel( resolvedUrl );
-					else this.showError( 'No 3D file for this source.' );
-				} );
-				return;
-			}
+		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
+			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( resolvedUrl ) => {
+				if ( resolvedUrl ) this.loadModel( resolvedUrl );
+				else this.showError( 'No 3D file for this source. Set the main model in the 3D tab or use an uploaded model.' );
+			} );
+			return;
 		}
 		this.showError( 'No 3D file to browse. Pass modelUrl or set main/uploaded model.' );
 	},
@@ -157,6 +118,9 @@ function select_3d_object( $el, context ) {
 	}
 	if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
 	opts.setting = $el?.data( 'setting' ) || 'object_id_3d';
+	opts.resolveOptions = opts.setting === 'camera_target_object_id'
+		? { sourceKey: 'camera_target_model', uploadKey: null }
+		: { sourceKey: 'object_selection_3d', uploadKey: 'model_upload_3d' };
 	opts.applySelection = function( selection ) {
 		const id = selection?.id;
 		if ( id == null ) return;

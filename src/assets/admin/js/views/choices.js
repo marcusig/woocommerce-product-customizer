@@ -429,7 +429,8 @@ PC.views = PC.views || {};
 			};
 
 			this.populate_angles_list();
-			
+			this.populate_object_selection_3d();
+
 			this.$( 'input.color-hex' ).wpColorPicker( {
 				change: function( event, ui ) {
 					// Update value manually (optional, just in case)
@@ -452,6 +453,12 @@ PC.views = PC.views || {};
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
 
 			return this;
+		},
+		populate_object_selection_3d: function() {
+			var $sel = this.$( 'select[data-setting="object_selection_3d"]' );
+			if ( ! $sel.length || ! PC.threeD || typeof PC.threeD.populateModelSourceSelect !== 'function' ) return;
+			var currentVal = this.model.get( 'object_selection_3d' ) || 'main_model';
+			PC.threeD.populateModelSourceSelect( $, $sel, currentVal, { includeUpload: true } );
 		},
 		form_change: function( event ) {
 			var input = $(event.currentTarget);
