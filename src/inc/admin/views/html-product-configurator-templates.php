@@ -263,8 +263,8 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel" role="tabpanel" hidden>
 					<div class="pc-3d-settings-sections">
-						<div class="pc-3d-setting-group pc-3d-angles-camera-section">
-							<h4><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></h4>
+						<div class="components-panel__body is-opened setting setting-section">
+						<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></span></h2>
 							<p class="description"><?php _e( 'Store the current preview camera as an angle so the frontend can switch to this view.', 'product-configurator-for-woocommerce' ); ?></p>
 							<p class="field-row">
 								<label><?php _e( 'Angle', 'product-configurator-for-woocommerce' ); ?></label>
@@ -420,6 +420,22 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								<p class="description"><?php _e( 'Lights from the 3D model appear below. Load a model to see them.', 'product-configurator-for-woocommerce' ); ?></p>
 								<div class="pc-3d-lights-list"></div>
 							</div>
+						</div>
+						<div class="components-panel__body is-opened setting setting-section">
+							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Postprocessing', 'product-configurator-for-woocommerce' ); ?></span></h2>
+							<p class="description"><?php _e( 'Enable postprocessing effects. On the front-end, each effect is only loaded when enabled here.', 'product-configurator-for-woocommerce' ); ?></p>
+							<p class="field-row">
+								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.ssr" <# if ( data.postprocessing && data.postprocessing.ssr ) { #>checked<# } #> /> <?php _e( 'Screen space reflections', 'product-configurator-for-woocommerce' ); ?></label>
+							</p>
+							<p class="field-row">
+								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.ssao" <# if ( data.postprocessing && data.postprocessing.ssao ) { #>checked<# } #> /> <?php _e( 'Ambient occlusion', 'product-configurator-for-woocommerce' ); ?></label>
+							</p>
+							<p class="field-row">
+								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.bloom" <# if ( data.postprocessing && data.postprocessing.bloom ) { #>checked<# } #> /> <?php _e( 'Bloom', 'product-configurator-for-woocommerce' ); ?></label>
+							</p>
+							<p class="field-row">
+								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.smaa" <# if ( data.postprocessing && data.postprocessing.smaa ) { #>checked<# } #> /> <?php _e( 'Anti-aliasing (SMAA)', 'product-configurator-for-woocommerce' ); ?></label>
+							</p>
 						</div>
 						<p class="pc-3d-reset-settings-row" style="margin-top: 1.5em;">
 							<button type="button" class="button pc-3d-reset-settings"><?php _e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>

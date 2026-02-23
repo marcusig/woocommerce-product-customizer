@@ -450,6 +450,12 @@ class DB {
 				'default_light_enabled' => true,
 				'lights'               => array(),
 			),
+			'postprocessing'  => array(
+				'ssr'   => false,
+				'ssao'  => false,
+				'bloom' => false,
+				'smaa'  => false,
+			),
 		);
 	}
 
@@ -848,6 +854,23 @@ class DB {
 					'escape' => 'esc_attr',
 				],
 				'alpha' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				// settings_3d: postprocessing
+				'ssr' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'ssao' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'bloom' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'smaa' => [
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
