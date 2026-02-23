@@ -482,6 +482,7 @@ TODO:
 			// Hide empty groups
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
 			this.populate_angles_list();
+			this.populate_object_selection_3d();
 			PC.currentEditedItem = this.model;
 			if ( this.current_focus ) {
 				var focus_to = this.$( '[data-setting="'+ this.current_focus + '"]' );
@@ -602,6 +603,25 @@ TODO:
 					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
 				}, this );
 			}
+		},
+		populate_object_selection_3d: function() {
+			var $sel = this.$( 'select[data-setting="object_selection_3d"]' );
+			if ( ! $sel.length ) return;
+			var currentVal = this.model.get( 'object_selection_3d' ) || 'main_model';
+			var $main = $sel.find( 'option[value="main_model"]' ).clone();
+			var $upload = $sel.find( 'option[value="upload_model"]' ).clone();
+			$sel.empty().append( $main );
+			var layers = PC.app.get_collection( 'layers' );
+			if ( layers && layers.length ) {
+				layers.each( function( layer ) {
+					if ( layer.get( 'object_selection_3d' ) !== 'upload_model' || ! layer.get( 'model_upload_3d' ) ) return;
+					if ( layer.id === this.model.id ) return;
+					var name = layer.get( 'name' ) || ( 'Layer ' + ( layer.get( '_id' ) || layer.id || layer.cid ) );
+					$sel.append( $( '<option></option>' ).attr( 'value', 'layer_' + layer.id ).text( name ) );
+				}, this );
+			}
+			$sel.append( $upload );
+			$sel.val( currentVal );
 		},
 		trigger_custom_action: function( event ) {
 			var el = $( event.currentTarget );

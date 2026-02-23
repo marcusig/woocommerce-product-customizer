@@ -398,11 +398,23 @@ class DB {
 	 *
 	 * @return array
 	 */
+	/**
+	 * Default 3D object names that are automatically hidden in the viewer.
+	 * Filterable so themes/plugins can add or remove names.
+	 *
+	 * @return array List of object names to hide.
+	 */
+	public static function get_default_hidden_object_names() {
+		$defaults = array( 'product_bounding_box', 'material_placeholders' );
+		return apply_filters( 'mkl_pc_3d_default_hidden_object_names', $defaults );
+	}
+
 	public static function get_default_settings_3d() {
 		return array(
 			'url'            => '',
 			'filename'       => '',
 			'attachment_id'   => null,
+			'hidden_object_names' => '',
 			'environment'     => array(
 				'mode'                   => 'preset',
 				'preset'                 => 'outdoor',
@@ -537,6 +549,10 @@ class DB {
 			$init_data['content'] = $this->get( 'content', $id );
 			$init_data['product_info']['price'] = (float) $product->get_price();
 			$init_data['product_info']['price_excl_tax'] = (float) wc_get_price_excluding_tax( $product ); 
+		}
+
+		if ( isset( $init_data['settings_3d'] ) ) {
+			$init_data['default_hidden_object_names'] = self::get_default_hidden_object_names();
 		}
 
 		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
@@ -709,6 +725,10 @@ class DB {
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
 				],
+				'camera_target_object_id' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
 				'bg_image' => [
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
@@ -734,6 +754,10 @@ class DB {
 					'escape' => 'floatval',
 				],
 				// settings_3d: top-level and environment
+				'hidden_object_names' => [
+					'sanitize' => [ __CLASS__, 'sanitize_hidden_object_names_textarea' ],
+					'escape'   => 'esc_textarea',
+				],
 				'filename' => [
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_html',
@@ -845,6 +869,10 @@ class DB {
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
 				],
+				'material_texture_material_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
 				'material_registry_color' => [
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
@@ -905,6 +933,25 @@ class DB {
 	 * @param mixed $data
 	 * @return int|null
 	 */
+	/**
+	 * Sanitize the hidden object names textarea (one name per line).
+	 *
+	 * @param mixed $data Raw value (string or array).
+	 * @return string Newline-separated list of sanitized names.
+	 */
+	public static function sanitize_hidden_object_names_textarea( $data ) {
+		if ( ! is_string( $data ) && ! is_array( $data ) ) {
+			return '';
+		}
+		if ( is_array( $data ) ) {
+			$data = implode( "\n", $data );
+		}
+		$lines = preg_split( '/[\r\n]+/', $data, -1, PREG_SPLIT_NO_EMPTY );
+		$lines = array_map( 'sanitize_text_field', $lines );
+		$lines = array_filter( $lines );
+		return implode( "\n", $lines );
+	}
+
 	public function sanitize_nullable_int( $data ) {
 		if ( $data === null || $data === '' || $data === false ) {
 			return null;

@@ -1,28 +1,11 @@
 /**
- * Admin 3D lights: light_item_3d view, createLightFromSettings, extractLightsFromScene, renderLightsList.
+ * Admin 3D lights: light_item_3d view, extractLightsFromScene, renderLightsList. createLightFromSettings from shared utils.
  */
-import * as THREE from 'three';
+import { createLightFromSettings } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 const $ = window.jQuery;
 const Backbone = window.Backbone;
 const wp = window.wp;
-
-export function createLightFromSettings( settings, gi ) {
-	const color = new THREE.Color( settings.color || '#ffffff' );
-	const base = ( settings.intensity != null ) ? settings.intensity : 1;
-	const intensity = base * gi;
-	const type = settings.type || 'PointLight';
-	let light;
-	if ( type === 'DirectionalLight' ) {
-		light = new THREE.DirectionalLight( color, intensity );
-	} else if ( type === 'SpotLight' ) {
-		light = new THREE.SpotLight( color, intensity );
-	} else {
-		light = new THREE.PointLight( color, intensity );
-	}
-	light.userData.baseIntensity = base;
-	return light;
-}
 
 export function extractLightsFromScene( view, root ) {
 	const s = window.PC.app.admin.settings_3d;

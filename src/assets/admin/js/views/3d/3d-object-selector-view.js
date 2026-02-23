@@ -54,6 +54,15 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		}
 		if ( this.originals.context && this.originals.context.model ) {
 			const model = this.originals.context.model;
+			if ( this.originals.context.collectionName === 'layers' ) {
+				if ( typeof window.PC.threeD.resolveLayerModelUrl === 'function' ) {
+					window.PC.threeD.resolveLayerModelUrl( model, ( resolvedUrl ) => {
+						if ( resolvedUrl ) this.loadModel( resolvedUrl );
+						else this.showError( 'No 3D file for this source. Set the main model in the 3D tab or use an uploaded model.' );
+					} );
+					return;
+				}
+			}
 			const source = model.get( 'object_selection_3d' ) || 'main_model';
 			if ( source === 'main_model' ) {
 				url = window.PC.app.admin.settings_3d && window.PC.app.admin.settings_3d.url ? window.PC.app.admin.settings_3d.url : null;
@@ -79,6 +88,13 @@ const ObjectSelector3DView = Backbone.View.extend( {
 					return;
 				}
 				this.showError( 'No uploaded model. Use "Model upload" above to select a file.' );
+				return;
+			}
+			if ( typeof source === 'string' && source.indexOf( 'layer_' ) === 0 && typeof window.PC.threeD.resolveLayerModelUrl === 'function' ) {
+				window.PC.threeD.resolveLayerModelUrl( model, ( resolvedUrl ) => {
+					if ( resolvedUrl ) this.loadModel( resolvedUrl );
+					else this.showError( 'No 3D file for this source.' );
+				} );
 				return;
 			}
 		}
@@ -136,6 +152,9 @@ const ObjectSelector3DView = Backbone.View.extend( {
 function select_3d_object( $el, context ) {
 	const opts = { target: $el, context };
 	if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
+	if ( ! opts.modelUrl && context && context.collectionName === 'angles' && window.PC.app && window.PC.app.admin && window.PC.app.admin.settings_3d && window.PC.app.admin.settings_3d.url ) {
+		opts.modelUrl = window.PC.app.admin.settings_3d.url;
+	}
 	if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
 	opts.setting = $el?.data( 'setting' ) || 'object_id_3d';
 	opts.applySelection = function( selection ) {

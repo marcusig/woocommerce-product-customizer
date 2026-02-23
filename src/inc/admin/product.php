@@ -310,6 +310,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
 					'hdr_base_url'         => MKL_PC_ASSETS_URL . 'images/hdr/',
 					'default_settings_3d'  => DB::get_default_settings_3d(),
+					'default_hidden_object_names' => DB::get_default_hidden_object_names(),
 					'reset_settings_3d_confirm' => __( 'This will restore all 3D viewer settings to their defaults. Your selected 3D file will be kept. Continue?', 'product-configurator-for-woocommerce' ),
 					'fe_3d_use_draco_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
 					'fe_3d_use_meshopt_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),

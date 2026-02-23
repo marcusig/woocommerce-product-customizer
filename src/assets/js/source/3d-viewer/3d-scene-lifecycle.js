@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv } from './3d-scene-config.js';
+import { disposeScene as disposeSceneUtil } from './3d-scene-utils.js';
 
 /**
  * Create renderer, scene, camera, controls, default light and the _three bag.
@@ -74,23 +75,8 @@ export function initScene( container, s ) {
 	};
 }
 
-/**
- * Dispose geometries and materials in a scene (traverse).
- * @param {THREE.Scene} scene
- */
-export function disposeScene( scene ) {
-	if ( ! scene ) return;
-	scene.traverse( ( obj ) => {
-		if ( obj.geometry ) obj.geometry.dispose();
-		if ( obj.material ) {
-			if ( Array.isArray( obj.material ) ) {
-				obj.material.forEach( ( m ) => m.dispose && m.dispose() );
-			} else if ( obj.material.dispose ) {
-				obj.material.dispose();
-			}
-		}
-	} );
-}
+/** Re-export shared disposeScene for callers that import from lifecycle. */
+export const disposeScene = disposeSceneUtil;
 
 /**
  * Full cleanup of the _three bag: fake_shadow, animation frame, resize listener, renderer, controls, scene dispose.
@@ -117,5 +103,5 @@ export function cleanupThree( t ) {
 		}
 	}
 	if ( t.controls ) t.controls.dispose();
-	if ( t.scene ) disposeScene( t.scene );
+	if ( t.scene ) disposeSceneUtil( t.scene );
 }

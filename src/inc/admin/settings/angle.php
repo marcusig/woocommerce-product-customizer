@@ -28,6 +28,7 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 		 * @return array
 		 */
 		public function get_settings_list() {
+			global $post;
 			$settings = array(
 				'name' => array(
 					'label' => __('Angle Name', 'product-configurator-for-woocommerce' ),
@@ -58,6 +59,19 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 				);
 			}
 
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$settings['camera_target_object_id'] = array(
+					'label'     => __( 'Camera target (object)', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'priority'  => 10,
+					'section'   => 'threed',
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="text" class="components-select-control__input" data-setting="camera_target_object_id" value="<# if ( data.camera_target_object_id ) { #>{{data.camera_target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+						. '<button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="camera_target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
+			}
+
 			return apply_filters('mkl_pc_angle_default_settings', $settings );
 		}
 
@@ -67,7 +81,7 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 		 * @return array
 		 */
 		public function get_sections() {
-			return apply_filters( 'mkl_pc_layer_settings_sections', [
+			$sections = [
 				'_general' => array(
 					'id' => 'general',
 					'label' => __( 'General', 'product-configurator-for-woocommerce' ),
@@ -83,8 +97,22 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 					'collapsible' => true,
 					'fields' => [
 					]
-				),				
-			] );
+				),
+			];
+
+			global $post;
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$sections['_threed'] = array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
+					'fields' => [
+					],
+				);
+			}
+
+			return apply_filters( 'mkl_pc_angle_settings_sections', $sections );
 		}		
 	}
 }

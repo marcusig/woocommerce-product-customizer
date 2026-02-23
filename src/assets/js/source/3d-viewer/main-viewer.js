@@ -4,12 +4,13 @@
  * layer/choice 3D actions (visibility, material variant, color, texture).
  */
 import * as THREE from 'three';
-import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { FakeShadow } from './3d-fake-shadow.js';
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl, createLightFromSettings, getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl } from './3d-scene-config.js';
 import { createGltfLoader } from './3d-loader-factory.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
+import { applySettingsToScene } from './3d-apply-preview-settings.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -36,7 +37,15 @@ export default Backbone.View.extend({
 		const active = angles.findWhere( { active: true } );
 		if ( ! active ) return;
 		const pos = active.get( 'camera_position' );
-		const tgt = active.get( 'camera_target' );
+		let tgt = active.get( 'camera_target' );
+		const targetObjectId = active.get( 'camera_target_object_id' );
+		if ( targetObjectId && t.model_root ) {
+			const obj = this._findObject( t.model_root, String( targetObjectId ).trim() );
+			if ( obj ) {
+				getObjectTargetPosition( obj, t.controls.target );
+				tgt = { x: t.controls.target.x, y: t.controls.target.y, z: t.controls.target.z };
+			}
+		}
 		if ( pos && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' ) {
 			t.camera.position.set( pos.x, pos.y, pos.z );
 		}
@@ -113,7 +122,7 @@ export default Backbone.View.extend({
 
 	_getGltfLoader() {
 		if ( this._gltfLoader ) return this._gltfLoader;
-		const result = createGltfLoader( this._dracoLoader || null );
+		const result = createGltfLoader( null, this._dracoLoader || null );
 		this._gltfLoader = result.loader;
 		if ( result.dracoLoader ) this._dracoLoader = result.dracoLoader;
 		return this._gltfLoader;
@@ -257,6 +266,11 @@ export default Backbone.View.extend({
 			this._apply_layer_cshow_visibility();
 			this._bind_layer_cshow();
 
+			const s = getSettings();
+			const defaultHidden = ( window.PC.fe && window.PC.fe.currentProductData && window.PC.fe.currentProductData.default_hidden_object_names ) || null;
+			const customHidden = ( s && s.hidden_object_names ) || '';
+			hideObjectsByName( t.model_root, getHiddenObjectNamesList( defaultHidden, customHidden ) );
+
 			if ( hdrTexture ) {
 				t.scene.environment = hdrTexture;
 				t.current_env_url = hdrUrl;
@@ -304,119 +318,15 @@ export default Backbone.View.extend({
 		const s = getSettings();
 		if ( ! t || ! t.scene || ! t.renderer || ! s ) return;
 
-		const scene = t.scene;
-		const renderer = t.renderer;
-		const r = s.renderer || {};
-		renderer.toneMapping = getToneMapping( r );
-		renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
-		renderer.outputColorSpace = getOutputColorSpace( r );
-		renderer.setClearAlpha( r.alpha ? 0 : 1 );
-
-		const bg = s.background || {};
-		if ( bg.mode === 'transparent' ) {
-			scene.background = null;
-		} else if ( bg.mode === 'solid' && bg.color ) {
-			scene.background = new THREE.Color( bg.color );
-		}
-
-		const env = s.environment || {};
-		const hdrBase = getHdrBaseUrl();
-		const presetFile = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
-		const desiredUrl = ( env.mode === 'custom' && env.custom_hdr_url ) ? env.custom_hdr_url : hdrBase + presetFile;
-		if ( t.current_env_url !== desiredUrl ) {
-			t.current_env_url = desiredUrl;
-			new HDRLoader().load(
-				desiredUrl,
-				( texture ) => {
-					texture.mapping = THREE.EquirectangularReflectionMapping;
-					scene.environment = texture;
-					this.apply_preview_settings();
-				},
-				undefined,
-				() => { t.current_env_url = null; }
-			);
-		}
-
-		if ( t.controls ) {
-			const limits = getOrbitLimitsFromEnv( s.environment || {} );
-			t.controls.minPolarAngle = limits.minPolarAngle;
-			t.controls.maxPolarAngle = limits.maxPolarAngle;
-			t.controls.minAzimuthAngle = limits.minAzimuthAngle;
-			t.controls.maxAzimuthAngle = limits.maxAzimuthAngle;
-			t.controls.minDistance = limits.minDistance;
-			t.controls.maxDistance = limits.maxDistance;
-		}
-
-		const g = s.ground || {};
-		if ( t.fake_shadow && t.model_root ) {
-			t.fake_shadow.update( t.model_root, g );
-		}
-
-		// Global light intensity and per-light settings (mirrors admin preview).
-		const gi = ( s.lighting && s.lighting.global_intensity != null ) ? s.lighting.global_intensity : 1;
-		const lightsList = ( s.lighting && s.lighting.lights ) || [];
-		const sceneLights = [];
-		scene.traverse( ( obj ) => {
-			if ( ! obj.isLight || obj.userData?.isDefaultLight === true ) return;
-			sceneLights.push( { obj, settings: lightsList[ sceneLights.length ] } );
+		const urlRef = { get current() { return t.current_env_url; }, set current( v ) { t.current_env_url = v; } };
+		applySettingsToScene( t.scene, t.renderer, t.controls, s, {
+			defaultLight: t.default_light,
+			fakeShadow: t.fake_shadow,
+			modelRoot: t.model_root,
+			getHdrBaseUrl,
+			currentEnvUrlRef: urlRef,
+			onEnvLoaded: () => this.apply_preview_settings(),
 		} );
-
-		sceneLights.forEach( ( { obj, settings } ) => {
-			let target = obj;
-			target.userData = target.userData || {};
-			if ( settings ) {
-				const desiredType = settings.type || 'PointLight';
-				const typeMatches =
-					( desiredType === 'PointLight' && obj.isPointLight ) ||
-					( desiredType === 'DirectionalLight' && obj.isDirectionalLight ) ||
-					( desiredType === 'SpotLight' && obj.isSpotLight );
-				if ( ! typeMatches ) {
-					const parent = obj.parent;
-					if ( parent ) {
-						const idx = parent.children.indexOf( obj );
-						const newLight = createLightFromSettings( settings, gi );
-						newLight.position.copy( obj.position );
-						newLight.quaternion.copy( obj.quaternion );
-						if ( obj.target && newLight.target ) {
-							newLight.target.position.copy( obj.target.position );
-							if ( obj.target.parent ) {
-								obj.target.parent.add( newLight.target );
-							} else {
-								parent.add( newLight.target );
-							}
-						}
-						parent.remove( obj );
-						parent.children.splice( idx, 0, newLight );
-						newLight.parent = parent;
-						target = newLight;
-					}
-				}
-				target.visible = settings.enabled !== false;
-				if ( target.visible ) {
-					if ( settings.color ) target.color.set( settings.color );
-					target.userData.baseIntensity = ( settings.intensity != null ) ? settings.intensity : ( target.userData.baseIntensity ?? target.intensity );
-					target.intensity = target.userData.baseIntensity * gi;
-				}
-			} else {
-				// No per-light override: only apply global intensity using stored baseIntensity.
-				if ( target.userData.baseIntensity == null ) {
-					target.userData.baseIntensity = target.intensity;
-				}
-				target.intensity = target.userData.baseIntensity * gi;
-			}
-		} );
-
-		if ( t.default_light ) {
-			const lighting = s.lighting || {};
-			const enabled = lighting.default_light_enabled !== false;
-			t.default_light.visible = enabled;
-			if ( enabled ) {
-				const base = ( t.default_light.userData && t.default_light.userData.baseIntensity != null )
-					? t.default_light.userData.baseIntensity
-					: 1.2;
-				t.default_light.intensity = base * gi;
-			}
-		}
 	},
 
 	_findObject( root, object_id ) {
@@ -431,6 +341,12 @@ export default Backbone.View.extend({
 		return found;
 	},
 
+	_getSceneByLayerId( layerId ) {
+		if ( ! this._layer_scenes || ! layerId ) return null;
+		const e = this._layer_scenes.find( ( x ) => String( x.layer_model.id ) === String( layerId ) );
+		return e ? e.scene : null;
+	},
+
 	_apply_layer_cshow_visibility() {
 		const cshow = ( model ) => false !== model.get( 'cshow' );
 		if ( this._layer_scenes && this._layer_scenes.length ) {
@@ -443,12 +359,33 @@ export default Backbone.View.extend({
 				if ( object ) object.visible = cshow( layer_model );
 			} );
 		}
+		const layers = window.PC.fe && window.PC.fe.layers;
+		if ( layers ) {
+			layers.each( ( layer_model ) => {
+				const oid = layer_model.get( 'object_id_3d' );
+				if ( oid ) return;
+				const src = layer_model.get( 'object_selection_3d' );
+				if ( src !== 'upload_model' && ( ! src || String( src ).indexOf( 'layer_' ) !== 0 ) ) return;
+				if ( src === 'upload_model' ) return;
+				const otherId = String( src ).replace( /^layer_/, '' );
+				const otherScene = this._getSceneByLayerId( otherId );
+				if ( otherScene ) otherScene.visible = cshow( layer_model );
+			} );
+		}
 	},
 
 	_bind_layer_cshow() {
 		const layerModels = new Set();
 		if ( this._layer_scenes ) this._layer_scenes.forEach( ( { layer_model } ) => layerModels.add( layer_model ) );
 		if ( this._layer_objects ) this._layer_objects.forEach( ( { layer_model } ) => layerModels.add( layer_model ) );
+		const layers = window.PC.fe && window.PC.fe.layers;
+		if ( layers ) {
+			layers.each( ( layer_model ) => {
+				const oid = layer_model.get( 'object_id_3d' );
+				const src = layer_model.get( 'object_selection_3d' );
+				if ( ! oid && src && String( src ).indexOf( 'layer_' ) === 0 ) layerModels.add( layer_model );
+			} );
+		}
 		layerModels.forEach( ( layer_model ) => {
 			this.listenTo( layer_model, 'change:cshow', this._apply_layer_cshow_visibility );
 		} );

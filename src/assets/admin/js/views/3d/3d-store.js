@@ -1,25 +1,8 @@
 /**
- * Admin 3D store: one load per URL, buildObjectTreeFromScene, getMaterialVariantsFromUrl, getMaterialNamesFromUrl, resolveChoiceModelUrl.
- * Depends on PC.threeD.getGltfLoader (3d-loader.js).
+ * Admin 3D store: one load per URL, getMaterialVariantsFromUrl, getMaterialNamesFromUrl, resolveChoiceModelUrl.
+ * Depends on PC.threeD.getGltfLoader (3d-loader.js). Uses shared buildObjectTreeFromScene and disposeScene.
  */
-function buildObjectTreeFromScene( root ) {
-	const list = [];
-	const skipTypes = [ 'Scene', 'Camera', 'Light', 'AmbientLight', 'DirectionalLight', 'PointLight', 'SpotLight', 'RectAreaLight' ];
-	const isSkip = ( obj ) => obj && skipTypes.indexOf( obj.type ) !== -1;
-	function add( obj, depth ) {
-		if ( ! obj || isSkip( obj ) ) return;
-		const name = obj.name || obj.type || ( 'Object_' + ( obj.uuid || '' ).slice( 0, 8 ) );
-		const id = obj.name || obj.uuid;
-		list.push( { id, name, type: obj.type || '', depth } );
-		if ( obj.children && obj.children.length ) {
-			obj.children.forEach( ( ch ) => add( ch, depth + 1 ) );
-		}
-	}
-	if ( root && root.children ) {
-		root.children.forEach( ( ch ) => add( ch, 0 ) );
-	}
-	return list;
-}
+import { buildObjectTreeFromScene, disposeScene } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 function createStore() {
 	const _cache = {};
@@ -66,16 +49,7 @@ function createStore() {
 		if ( ! url ) return;
 		const entry = _cache[ url ];
 		if ( entry && entry.gltf && entry.gltf.scene ) {
-			entry.gltf.scene.traverse( ( obj ) => {
-				if ( obj.geometry ) obj.geometry.dispose();
-				if ( obj.material ) {
-					const mats = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
-					mats.forEach( ( m ) => {
-						if ( m && m.dispose ) m.dispose();
-						if ( m && m.map && m.map.dispose ) m.map.dispose();
-					} );
-				}
-			} );
+			disposeScene( entry.gltf.scene );
 		}
 		delete _cache[ url ];
 	}
@@ -105,9 +79,50 @@ function resolveChoiceModelUrl( choiceModel, layerModel, callback ) {
 		const layerSource = layerModel.get( 'object_selection_3d' ) || 'main_model';
 		if ( layerSource === 'main_model' ) return callback( mainUrl );
 		if ( layerSource === 'upload_model' ) return resolveAttachmentUrl( layerModel.get( 'model_upload_3d' ), callback );
+		if ( typeof layerSource === 'string' && layerSource.indexOf( 'layer_' ) === 0 ) {
+			const otherId = layerSource.replace( /^layer_/, '' );
+			const layers = window.PC.app && window.PC.app.admin && window.PC.app.admin.layers;
+			const other = layers && layers.get ? layers.get( otherId ) : null;
+			if ( other && other.get( 'model_upload_3d' ) ) return resolveAttachmentUrl( other.get( 'model_upload_3d' ), callback );
+			return callback( mainUrl );
+		}
 		return callback( mainUrl );
 	}
 	if ( source === 'upload_model' ) return resolveAttachmentUrl( choiceModel.get( 'model_upload_3d' ), callback );
+	if ( typeof source === 'string' && source.indexOf( 'layer_' ) === 0 ) {
+		const otherId = source.replace( /^layer_/, '' );
+		const layers = window.PC.app && window.PC.app.admin && window.PC.app.admin.layers;
+		const other = layers && layers.get ? layers.get( otherId ) : null;
+		if ( other && other.get( 'model_upload_3d' ) ) return resolveAttachmentUrl( other.get( 'model_upload_3d' ), callback );
+		return callback( mainUrl );
+	}
+	callback( mainUrl );
+}
+
+function resolveLayerModelUrl( layerModel, callback ) {
+	if ( ! layerModel || typeof callback !== 'function' ) {
+		if ( typeof callback === 'function' ) callback( null );
+		return;
+	}
+	const mainUrl = ( window.PC.app && window.PC.app.admin && window.PC.app.admin.settings_3d && window.PC.app.admin.settings_3d.url ) ? window.PC.app.admin.settings_3d.url : null;
+	function resolveAttachmentUrl( attId, done ) {
+		if ( ! attId ) return done( null );
+		const att = wp.media.attachment( attId );
+		att.fetch().done( function() {
+			const j = att.toJSON();
+			done( j.gltf_url || j.url || null );
+		} ).fail( () => done( null ) );
+	}
+	const source = layerModel.get( 'object_selection_3d' ) || 'main_model';
+	if ( source === 'main_model' ) return callback( mainUrl );
+	if ( source === 'upload_model' ) return resolveAttachmentUrl( layerModel.get( 'model_upload_3d' ), callback );
+	if ( typeof source === 'string' && source.indexOf( 'layer_' ) === 0 ) {
+		const otherId = source.replace( /^layer_/, '' );
+		const layers = window.PC.app && window.PC.app.admin && window.PC.app.admin.layers;
+		const other = layers && layers.get ? layers.get( otherId ) : null;
+		if ( other && other.get( 'model_upload_3d' ) ) return resolveAttachmentUrl( other.get( 'model_upload_3d' ), callback );
+		return callback( mainUrl );
+	}
 	callback( mainUrl );
 }
 
@@ -123,3 +138,4 @@ window.PC.threeD.getMaterialNamesFromUrl = function( url, callback ) {
 	window.PC.threeD.store.get( url, ( err, data ) => callback( err, data ? data.materialNames : [] ) );
 };
 window.PC.threeD.resolveChoiceModelUrl = resolveChoiceModelUrl;
+window.PC.threeD.resolveLayerModelUrl = resolveLayerModelUrl;

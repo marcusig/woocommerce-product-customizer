@@ -251,6 +251,10 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							<h5><?php _e( 'Scene structure', 'product-configurator-for-woocommerce' ); ?></h5>
 							<div class="pc-3d-tree"></div>
 						</div>
+					<# } #>
+				</div>
+				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel" role="tabpanel" hidden>
+					<div class="pc-3d-settings-sections">
 						<div class="pc-3d-setting-group pc-3d-angles-camera-section">
 							<h5><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></h5>
 							<p class="description"><?php _e( 'Store the current preview camera as an angle so the frontend can switch to this view.', 'product-configurator-for-woocommerce' ); ?></p>
@@ -264,10 +268,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								<span class="description"><?php _e( 'Add new angles from cameras defined in the main 3D file.', 'product-configurator-for-woocommerce' ); ?></span>
 							</p>
 						</div>
-					<# } #>
-				</div>
-				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel" role="tabpanel" hidden>
-					<div class="pc-3d-settings-sections">
 			<section class="pc-3d-settings-section">
 				<h4><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></h4>
 				<div class="pc-3d-setting-group">
@@ -343,6 +343,14 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					</p>
 				</div>
 				<div class="pc-3d-setting-group">
+					<h5><?php _e( 'Hidden objects', 'product-configurator-for-woocommerce' ); ?></h5>
+					<p class="description"><?php _e( 'Objects with these names are automatically hidden in the viewer. Default names (e.g. product_bounding_box, material_placeholders) are always hidden; add more below, one per line.', 'product-configurator-for-woocommerce' ); ?></p>
+					<p class="field-row">
+						<label><?php _e( 'Custom hidden object names', 'product-configurator-for-woocommerce' ); ?></label>
+						<textarea class="pc-3d-hidden-object-names" data-key="hidden_object_names" rows="3" placeholder="<?php esc_attr_e( 'One object name per line', 'product-configurator-for-woocommerce' ); ?>"><# if ( data.hidden_object_names != null && data.hidden_object_names !== undefined ) { #>{{ data.hidden_object_names }}<# } #></textarea>
+					</p>
+				</div>
+				<div class="pc-3d-setting-group">
 					<h5><?php _e( 'Background', 'product-configurator-for-woocommerce' ); ?></h5>
 					<p class="field-row">
 						<label><?php _e( 'Background mode', 'product-configurator-for-woocommerce' ); ?></label>
@@ -392,13 +400,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					<label><?php _e( 'Exposure', 'product-configurator-for-woocommerce' ); ?></label>
 					<input type="range" class="pc-3d-exposure" data-key="renderer.exposure" min="0.1" max="3" step="0.1" value="{{ data.renderer && data.renderer.exposure != null ? data.renderer.exposure : 1 }}" />
 					<span class="pc-3d-value-display pc-3d-exposure-value">1</span>
-				</p>
-				<p class="field-row">
-					<label><?php _e( 'Output color space', 'product-configurator-for-woocommerce' ); ?></label>
-					<select class="pc-3d-color-space" data-key="renderer.output_color_space">
-						<option value="srgb" <# if ( !data.renderer || data.renderer.output_color_space === 'srgb' ) { #>selected<# } #>>sRGB</option>
-						<option value="linear" <# if ( data.renderer && data.renderer.output_color_space === 'linear' ) { #>selected<# } #>>Linear</option>
-					</select>
 				</p>
 				<p class="field-row">
 					<label><input type="checkbox" class="pc-3d-alpha" data-key="renderer.alpha" <# if ( data.renderer && data.renderer.alpha ) { #>checked<# } #> /> <?php _e( 'Alpha output', 'product-configurator-for-woocommerce' ); ?></label>

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { FakeShadow } from '../../../js/source/3d-viewer/3d-fake-shadow.js';
+import { hideObjectsByName, getHiddenObjectNamesList, findObject, getObjectTargetPosition } from '../../../js/source/3d-viewer/3d-scene-utils.js';
 import './3d/3d-loader.js';
 import './3d/3d-store.js';
 import './3d/3d-lights.js';
@@ -91,7 +92,8 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
 			'change .pc-3d-env-preset, .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
 			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure, .pc-3d-global-intensity': 'on_slider_input',
-			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-color-space, .pc-3d-alpha, .pc-3d-global-intensity, .pc-3d-default-light-enabled': 'on_setting_change',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-global-intensity, .pc-3d-default-light-enabled': 'on_setting_change',
+			'change .pc-3d-hidden-object-names': 'on_setting_change',
 		},
 		collectionName: 'settings_3d',
 		initialize: function( options ) {
@@ -135,6 +137,7 @@ PC.views = window.PC.views || {};
 			}
 		},
 		ensure_settings_defaults: function(s) {
+			if (s.hidden_object_names === undefined) s.hidden_object_names = '';
 			if (!s.environment) s.environment = { mode: 'preset', preset: 'outdoor', custom_hdr_url: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
 			if (!s.background) s.background = { mode: 'environment', color: '#ffffff' };
 			if (!s.ground) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
@@ -274,6 +277,13 @@ PC.views = window.PC.views || {};
 				});
 			}
 		},
+		_resolveAngleTarget: function(angle, root) {
+			if (!angle || !root) return null;
+			const id = angle.get('camera_target_object_id');
+			if (!id || typeof id !== 'string') return null;
+			const obj = findObject(root, id.trim());
+			return obj ? getObjectTargetPosition(obj) : null;
+		},
 		on_angle_select_change: function() {
 			if (!this._three || !this._three.camera || !this._three.controls) return;
 			const angleId = this.$('.pc-3d-angle-select').val();
@@ -283,7 +293,12 @@ PC.views = window.PC.views || {};
 			const angle = angles.get(angleId);
 			if (!angle) return;
 			const pos = angle.get('camera_position');
-			const tgt = angle.get('camera_target');
+			let tgt = angle.get('camera_target');
+			const targetFromObject = this._resolveAngleTarget(angle, this._three.model_root);
+			if (targetFromObject) {
+				this._three.controls.target.copy(targetFromObject);
+				tgt = { x: targetFromObject.x, y: targetFromObject.y, z: targetFromObject.z };
+			}
 			if (pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number') {
 				this._three.camera.position.set(pos.x, pos.y, pos.z);
 				this._three.controls.target.set(tgt.x, tgt.y, tgt.z);
@@ -368,12 +383,12 @@ PC.views = window.PC.views || {};
 			const scene = this._three.scene;
 			const renderer = this._three.renderer;
 
-			// Renderer: tone mapping, exposure, alpha, color space
+			// Renderer: tone mapping, exposure, alpha (color space always sRGB)
 			const r = s.renderer || {};
 			const bg = s.background || {};
 			renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
 			renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
-			renderer.outputColorSpace = r.output_color_space === 'linear' ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
+			renderer.outputColorSpace = THREE.SRGBColorSpace;
 			// Transparent background or explicit alpha: clear with alpha 0 so canvas is see-through
 			renderer.setClearAlpha((bg.mode === 'transparent' || r.alpha) ? 0 : 1);
 
@@ -611,7 +626,7 @@ PC.views = window.PC.views || {};
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
             renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
-            renderer.outputColorSpace = r.output_color_space === 'linear' ? THREE.LinearSRGBColorSpace : THREE.SRGBColorSpace;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.setClearAlpha((bg.mode === 'transparent' || r.alpha) ? 0 : 1);
             container.appendChild(renderer.domElement);
 
@@ -716,6 +731,9 @@ PC.views = window.PC.views || {};
                         viewRef._three.scene.add( rootGroup );
                         viewRef._three.model_root = rootGroup;
                         viewRef._three.scene_roots = scene_roots;
+                        const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
+                        const customHidden = ( viewRef.admin && viewRef.admin.settings_3d && viewRef.admin.settings_3d.hidden_object_names ) || '';
+                        hideObjectsByName( rootGroup, getHiddenObjectNamesList( defaultHidden, customHidden ) );
                         viewRef._three.fake_shadow = new FakeShadow( viewRef._three.scene );
                         viewRef.render_tree( viewRef._three.scene_roots );
                         viewRef.extract_lights_from_scene( rootGroup );
@@ -726,6 +744,11 @@ PC.views = window.PC.views || {};
                         var firstAngle = viewRef.admin && viewRef.admin.angles && viewRef.admin.angles.length ? viewRef.admin.angles.first() : null;
                         var pos = firstAngle && firstAngle.get( 'camera_position' );
                         var tgt = firstAngle && firstAngle.get( 'camera_target' );
+                        var targetFromObject = firstAngle && rootGroup ? viewRef._resolveAngleTarget( firstAngle, rootGroup ) : null;
+                        if ( targetFromObject ) {
+                            controls.target.copy( targetFromObject );
+                            tgt = { x: targetFromObject.x, y: targetFromObject.y, z: targetFromObject.z };
+                        }
                         if ( pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
                             camera.position.set( pos.x, pos.y, pos.z );
                             controls.target.set( tgt.x, tgt.y, tgt.z );

@@ -435,14 +435,6 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'fields' => [
 					],
 				),
-				'_threed' => array(
-					'id' => 'threed',
-					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
-					'priority' => 20,
-					'collapsible' => true,
-					'fields' => [
-					],
-				),
 				'_selection' => array(
 					'id' => 'selection',
 					'label' => __( 'Selection settings', 'product-configurator-for-woocommerce' ),
@@ -461,6 +453,18 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					]
 				),				
 			];
+
+			global $post;
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$sections['_threed'] = array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
+					'fields' => [
+					],
+				);
+			}
 
 			$languages = mkl_pc( 'languages' )->get_languages();
 			if ( ! empty( $languages ) ) {

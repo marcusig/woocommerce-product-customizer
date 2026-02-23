@@ -222,7 +222,6 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'choices' => array(
 								array( 'label' => __( 'Toggle object visibility', 'product-configurator-for-woocommerce' ), 'value' => 'toggle_visibility' ),
 								array( 'label' => __( 'Select material variant', 'product-configurator-for-woocommerce' ), 'value' => 'material_variant' ),
-								array( 'label' => __( 'Set material color', 'product-configurator-for-woocommerce' ), 'value' => 'material_color' ),
 								array( 'label' => __( 'Set material texture', 'product-configurator-for-woocommerce' ), 'value' => 'material_texture' ),
 								array( 'label' => __( 'Change material color (from registry)', 'product-configurator-for-woocommerce' ), 'value' => 'material_color_registry' ),
 								array( 'label' => __( 'Change material property', 'product-configurator-for-woocommerce' ), 'value' => 'material_property' ),
@@ -236,15 +235,15 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'default'   => '',
 							'show_when' => 'material_variant',
 						),
-						'material_color_value' => array(
-							'label'     => __( 'Color', 'product-configurator-for-woocommerce' ),
-							'type'      => 'color',
-							'default'   => '#ffffff',
-							'show_when' => 'material_color',
-						),
 						'material_texture_id' => array(
 							'label'     => __( 'Texture', 'product-configurator-for-woocommerce' ),
 							'type'      => 'attachment',
+							'default'   => '',
+							'show_when' => 'material_texture',
+						),
+						'material_texture_material_name' => array(
+							'label'     => __( 'Material', 'product-configurator-for-woocommerce' ),
+							'type'      => 'material_select',
 							'default'   => '',
 							'show_when' => 'material_texture',
 						),
@@ -345,14 +344,6 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'fields' => [
 					],
 				),
-				'_threed' => array(
-					'id' => 'threed',
-					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
-					'priority' => 20,
-					'collapsible' => true,
-					'fields' => [
-					],
-				),
 				'_extra_price_settings' => array(
 					'id' => 'extra_price_settings',
 					'label' => __( 'Extra price', 'product-configurator-for-woocommerce' ),
@@ -386,6 +377,17 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					]
 				),				
 			];
+			global $post;
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$sections['_threed'] = array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
+					'fields' => [
+					],
+				);
+			}
 			$languages = mkl_pc( 'languages' )->get_languages();
 			if ( ! empty( $languages ) ) {
 				$sections[ '_translations' ] = array(

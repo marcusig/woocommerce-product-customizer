@@ -14,6 +14,7 @@ const viewer_3d_choice = Backbone.View.extend({
 	className: 'mkl_pc_viewer_3d_choice',
 	target_id: null,
 	target_object: null,
+	target_scene: null,
 	_attached_model_root: null,
 	_attach_parent: null,
 
@@ -23,6 +24,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		this.parent_view = options.parent;
 		this.target_id = this.model.get( 'object_id_3d' ) || this.layer_model.get( 'object_id_3d' );
 		this.target_object = this.get_target_object();
+		this.target_scene = this.get_target_scene();
 		this.listenTo( this.model, 'change:active', this.apply_actions );
 		this.listenTo( this.model, 'change:cshow', this._apply_cshow_visibility_only );
 		this.listenTo( this.layer_model, 'change:cshow', this._apply_cshow_visibility_only );
@@ -38,6 +40,19 @@ const viewer_3d_choice = Backbone.View.extend({
 		const root = t.model_root;
 		const obj = this.parent_view._findObject( root, String( target_id ).trim() );
 		return obj || null;
+	},
+
+	get_target_scene() {
+		if ( this.target_id ) return null;
+		const layer = this.layer_model;
+		const src = layer.get( 'object_selection_3d' );
+		if ( src === 'main_model' ) return null;
+		if ( ! this.parent_view._getSceneByLayerId ) return null;
+		if ( src === 'upload_model' ) return this.parent_view._getSceneByLayerId( layer.id );
+		if ( src && String( src ).indexOf( 'layer_' ) === 0 ) {
+			return this.parent_view._getSceneByLayerId( String( src ).replace( /^layer_/, '' ) );
+		}
+		return null;
 	},
 
 	_effective_visible() {
@@ -62,6 +77,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			}
 		}
 		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
+		if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = visible;
 	},
 
 	_apply_visibility_and_actions() {
@@ -74,6 +90,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		const visible = this._effective_visible();
 
 		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
+		if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = visible;
 
 		actions.forEach( ( action ) => {
 			const type = action.action_type;
@@ -81,19 +98,20 @@ const viewer_3d_choice = Backbone.View.extend({
 			if ( type === 'material_variant' && select_variant && this.target_object ) {
 				const variant_name = action.material_variant_value || action.variant_select;
 				if ( variant_name ) select_variant( this.target_object, variant_name, true, null );
-			} else if ( type === 'material_color' && this.target_object ) {
-				const color_hex = action.material_color_value;
-				if ( color_hex && this.target_object.material ) {
-					this.target_object.material.color.set( color_hex );
-				}
-			} else if ( type === 'material_texture' && this.target_object ) {
+			} else if ( type === 'material_texture' && registry ) {
+				const name = action.material_texture_material_name || action.material_name;
 				const texture_url = action.material_texture_url || action.material_texture_value;
-				if ( texture_url ) {
-					const loader = ( this.parent_view._three && this.parent_view._three.textureLoader ) || new THREE.TextureLoader();
-					loader.load( texture_url, ( texture ) => {
-						texture.colorSpace = THREE.SRGBColorSpace;
-						this._set_material_map( this.target_object, texture );
-					} );
+				if ( name && texture_url ) {
+					const mat = registry.get( name );
+					if ( mat ) {
+						const loader = ( this.parent_view._three && this.parent_view._three.textureLoader ) || new THREE.TextureLoader();
+						loader.load( texture_url, ( texture ) => {
+							texture.colorSpace = THREE.SRGBColorSpace;
+							if ( mat.map && mat.map.dispose ) mat.map.dispose();
+							mat.map = texture;
+							mat.needsUpdate = true;
+						} );
+					}
 				}
 			} else if ( type === 'material_color_registry' && registry ) {
 				const name = action.material_name;
@@ -182,6 +200,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				this._attached_model_root.parent.remove( this._attached_model_root );
 			}
 			if ( this.target_object && has_toggle_visibility ) this.target_object.visible = false;
+			if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = false;
 			return;
 		}
 
