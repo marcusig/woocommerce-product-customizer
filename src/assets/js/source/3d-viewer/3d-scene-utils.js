@@ -44,8 +44,8 @@ export function getHiddenObjectNamesList( defaultNames, customTextarea ) {
  * @returns {number} THREE.ToneMapping
  */
 export function getToneMapping( r ) {
-	if ( ! r ) return THREE.NoToneMapping;
-	return r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
+	if ( ! r ) THREE.ACESFilmicToneMapping;
+	return r.tone_mapping;
 }
 
 /**

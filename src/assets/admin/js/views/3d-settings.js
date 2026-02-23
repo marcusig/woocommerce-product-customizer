@@ -272,7 +272,7 @@ PC.views = window.PC.views || {};
 			const angles = this.admin && this.admin.angles;
 			if (angles && angles.length) {
 				angles.each(function(m) {
-					const name = m.get('name') || ('Angle ' + (m.get('_id') || m.id || m.cid));
+					const name = m.get('name') || ('View ' + (m.get('_id') || m.id || m.cid));
 					$sel.append($('<option></option>').val(m.id).text(name));
 				});
 			}
@@ -624,7 +624,7 @@ PC.views = window.PC.views || {};
             renderer.shadowMap.enabled = false;
             renderer.setSize(container.clientWidth, container.clientHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
+            renderer.toneMapping = r.tone_mapping  ? r.tone_mapping : THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             renderer.setClearAlpha((bg.mode === 'transparent' || r.alpha) ? 0 : 1);
