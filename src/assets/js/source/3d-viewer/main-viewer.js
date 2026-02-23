@@ -6,7 +6,8 @@
 import * as THREE from 'three';
 import { FakeShadow } from './3d-fake-shadow.js';
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl, getPostprocessingFlags } from './3d-scene-config.js';
+import { createPostprocessingLayer } from './3d-postprocessing.js';
 import { createGltfLoader } from './3d-loader-factory.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
@@ -121,16 +122,19 @@ export default Backbone.View.extend({
 	},
 
 	_getGltfLoader() {
-		if ( this._gltfLoader ) return this._gltfLoader;
-		const result = createGltfLoader( null, this._dracoLoader || null );
-		this._gltfLoader = result.loader;
-		if ( result.dracoLoader ) this._dracoLoader = result.dracoLoader;
-		return this._gltfLoader;
+		if ( ! this._gltfLoaderPromise ) {
+			this._gltfLoaderPromise = createGltfLoader( null );
+		}
+		return this._gltfLoaderPromise;
 	},
 
 	_loadGltf( url, onSuccess, onError ) {
 		if ( ! url ) return;
-		this._getGltfLoader().load( url, onSuccess, undefined, onError || ( () => {} ) );
+		this._getGltfLoader().then( ( loader ) => {
+			loader.load( url, onSuccess, undefined, onError || ( () => {} ) );
+		} ).catch( ( err ) => {
+			if ( typeof onError === 'function' ) onError( err );
+		} );
 	},
 
 	_load_choice_gltf( url, done ) {
@@ -278,6 +282,30 @@ export default Backbone.View.extend({
 
 			t.fake_shadow = new FakeShadow( t.scene );
 
+			t.bypassPostprocessing = false;
+			t.controls.addEventListener( 'start', () => { t.bypassPostprocessing = true; } );
+			t.controls.addEventListener( 'end', () => { t.bypassPostprocessing = false; } );
+
+			const flags = getPostprocessingFlags( s );
+			createPostprocessingLayer( t.renderer, t.scene, t.camera, {
+				width: t.container.clientWidth,
+				height: t.container.clientHeight,
+				flags
+			} ).then( ( layer ) => {
+				if ( ! t.container || ! t.on_resize ) return;
+				t.postprocessingLayer = layer;
+				const origResize = t.on_resize;
+				window.removeEventListener( 'resize', origResize );
+				t.on_resize = () => {
+					origResize();
+					if ( t.postprocessingLayer ) {
+						t.postprocessingLayer.setSize( t.container.clientWidth, t.container.clientHeight );
+						t.postprocessingLayer.setPixelRatio( window.devicePixelRatio );
+					}
+				};
+				window.addEventListener( 'resize', t.on_resize );
+			} ).catch( () => {} );
+
 			const box = new THREE.Box3().setFromObject( t.model_root );
 			if ( ! box.isEmpty() ) {
 				const size = box.getSize( new THREE.Vector3() ).length();
@@ -305,7 +333,12 @@ export default Backbone.View.extend({
 				if ( t.fake_shadow && g.enabled !== false ) {
 					t.fake_shadow.render( t.renderer, t.scene );
 				}
-				t.renderer.render( t.scene, t.camera );
+				if ( t.postprocessingLayer ) {
+					t.postprocessingLayer.render( t.bypassPostprocessing );
+				}
+				if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
+					t.renderer.render( t.scene, t.camera );
+				}
 			};
 			animate();
 		} ).catch( ( err ) => {

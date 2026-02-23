@@ -126,7 +126,7 @@ gulp.task('build-blocks', (cb) => {
 });
 
 gulp.task('build-fe-3d-viewer', (cb) => {
-	exec('npx wp-scripts build src/assets/js/source/fe-3d-viewer-entry.js src/assets/js/source/fe-3d-draco-loader.js src/assets/js/source/fe-3d-meshopt-loader.js --output-path=dist/assets/build', (err, stdout, stderr) => {
+	exec('npx wp-scripts build src/assets/js/source/fe-3d-viewer-entry.js --output-path=dist/assets/build', (err, stdout, stderr) => {
 		console.log(stdout);
 		console.error(stderr);
 		cb(err);

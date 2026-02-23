@@ -26,7 +26,6 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		this.selectedName = null;
 		this.setting = this.options.setting || null;
 		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
-		this._loader = window.PC.threeD.getGltfLoader();
 	},
 	render() {
 		this.$el.html( this.template( {} ) );

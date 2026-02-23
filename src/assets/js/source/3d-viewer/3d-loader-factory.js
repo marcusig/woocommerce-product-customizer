@@ -1,45 +1,86 @@
-/**
- * Shared GLTF loader factory: config from PC_lang + PC_config, create loader with Draco/Meshopt/KHR_materials_variants.
- * Used by both frontend and admin.
- */
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import GLTFMaterialsVariantsExtension from '../../vendor/KHR_materials_variants.js';
 
 /**
- * Default 3D loader config from PC_lang (admin) and PC_config.config (frontend).
- * @returns {{ fe_3d_use_draco_loader: boolean, fe_3d_use_meshopt_loader: boolean, fe_3d_draco_decoder_path: string }}
+ * Internal module caches (per runtime)
+ */
+let DRACOLoaderModule = null;
+let MeshoptModule = null;
+let cachedDracoLoader = null;
+
+/**
+ * Default 3D loader config
  */
 export function getDefaultGltfConfig() {
 	const lang = window.PC_lang || {};
-	const config = ( window.PC_config && window.PC_config.config ) || {};
+	const config = (window.PC_config && window.PC_config.config) || {};
+
 	return {
-		fe_3d_use_draco_loader: !!( lang.fe_3d_use_draco_loader || config.fe_3d_use_draco_loader ),
-		fe_3d_use_meshopt_loader: !!( lang.fe_3d_use_meshopt_loader || config.fe_3d_use_meshopt_loader ),
-		fe_3d_draco_decoder_path: lang.fe_3d_draco_decoder_path || config.fe_3d_draco_decoder_path || ( ( window.PC_config && window.PC_config.assets_url ) ? window.PC_config.assets_url + 'js/vendor/draco/gltf/' : '' ),
+		fe_3d_use_draco_loader: !!(lang.fe_3d_use_draco_loader || config.fe_3d_use_draco_loader),
+		fe_3d_use_meshopt_loader: !!(lang.fe_3d_use_meshopt_loader || config.fe_3d_use_meshopt_loader),
+		fe_3d_draco_decoder_path:
+			lang.fe_3d_draco_decoder_path ||
+			config.fe_3d_draco_decoder_path ||
+			((window.PC_config && window.PC_config.assets_url)
+				? window.PC_config.assets_url + 'js/vendor/draco/gltf/'
+				: ''),
 	};
 }
 
 /**
- * Create a configured GLTFLoader. Config defaults to getDefaultGltfConfig().
- * Pass existingDracoLoader to reuse a cached DRACOLoader.
- * @param {Object} [config] - from getDefaultGltfConfig() or override
- * @param {object} [existingDracoLoader] - Cached DRACOLoader instance to reuse
- * @returns {{ loader: GLTFLoader, dracoLoader?: object }}
+ * Create configured GLTFLoader (async because of dynamic imports)
  */
-export function createGltfLoader( config = null, existingDracoLoader = null ) {
+export async function createGltfLoader(config = null) {
+
 	const cfg = config || getDefaultGltfConfig();
 	const loader = new GLTFLoader();
-	let dracoLoader = existingDracoLoader || null;
-	if ( cfg.fe_3d_use_draco_loader && typeof window.DRACOLoader !== 'undefined' ) {
-		if ( ! dracoLoader ) {
-			dracoLoader = new window.DRACOLoader();
-			if ( cfg.fe_3d_draco_decoder_path ) dracoLoader.setDecoderPath( cfg.fe_3d_draco_decoder_path );
+
+	/* ===============================
+	   DRACO (lazy + cached)
+	================================ */
+	if (cfg.fe_3d_use_draco_loader) {
+
+		// Load module only once
+		if (!DRACOLoaderModule) {
+			DRACOLoaderModule = await import(
+				'three/addons/loaders/DRACOLoader.js'
+			);
 		}
-		loader.setDRACOLoader( dracoLoader );
+
+		// Create decoder only once
+		if (!cachedDracoLoader) {
+			const { DRACOLoader } = DRACOLoaderModule;
+			cachedDracoLoader = new DRACOLoader();
+
+			if (cfg.fe_3d_draco_decoder_path) {
+				cachedDracoLoader.setDecoderPath(cfg.fe_3d_draco_decoder_path);
+			}
+
+			// Optional but recommended
+			cachedDracoLoader.setDecoderConfig({ type: 'wasm' });
+		}
+
+		loader.setDRACOLoader(cachedDracoLoader);
 	}
-	if ( cfg.fe_3d_use_meshopt_loader && typeof window.MeshoptDecoder !== 'undefined' ) {
-		loader.setMeshoptDecoder( window.MeshoptDecoder );
+
+	/* ===============================
+	   Meshopt (lazy + cached)
+	================================ */
+	if (cfg.fe_3d_use_meshopt_loader) {
+
+		if (!MeshoptModule) {
+			MeshoptModule = await import(
+				'three/addons/libs/meshopt_decoder.module.js'
+			);
+		}
+
+		loader.setMeshoptDecoder(MeshoptModule.MeshoptDecoder);
 	}
-	loader.register( ( parser ) => new GLTFMaterialsVariantsExtension( parser ) );
-	return dracoLoader ? { loader, dracoLoader } : { loader };
+
+	/* ===============================
+	   Variants extension
+	================================ */
+	loader.register((parser) => new GLTFMaterialsVariantsExtension(parser));
+
+	return loader;
 }

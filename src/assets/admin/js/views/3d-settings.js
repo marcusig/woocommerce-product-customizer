@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import { FakeShadow } from '../../../js/source/3d-viewer/3d-fake-shadow.js';
+import { createPostprocessingLayer } from '../../../js/source/3d-viewer/3d-postprocessing.js';
 import { hideObjectsByName, getHiddenObjectNamesList, findObject, getObjectTargetPosition } from '../../../js/source/3d-viewer/3d-scene-utils.js';
 import './3d/3d-loader.js';
 import './3d/3d-store.js';
@@ -94,6 +95,15 @@ PC.views = window.PC.views || {};
 			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure, .pc-3d-global-intensity': 'on_slider_input',
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-global-intensity, .pc-3d-default-light-enabled': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
+			'change .pc-3d-postprocess': 'on_setting_change',
+			'remove': 'on_remove',
+		},
+		on_remove: function() {
+			console.log('on_remove');
+			// if (this._three && this._three.postprocessingLayer) {
+			// 	this._three.postprocessingLayer.dispose();
+			// 	this._three.postprocessingLayer = null;
+			// }
 		},
 		collectionName: 'settings_3d',
 		initialize: function( options ) {
@@ -143,6 +153,7 @@ PC.views = window.PC.views || {};
 			if (!s.ground) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
 			if (!s.renderer) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if (!s.lighting) s.lighting = { global_intensity: 1, lights: [] };
+			if (!s.postprocessing) s.postprocessing = { ssr: false, ssao: false, bloom: false, smaa: false };
 		},
 		on_reset_settings: function(e) {
 			e.preventDefault();
@@ -496,11 +507,41 @@ PC.views = window.PC.views || {};
 					this._three.default_light.intensity = (this._three.default_light.userData?.baseIntensity ?? 1.2) * gi;
 				}
 			}
+
+			// Postprocessing: build or clear composer from settings (order: SSAO → SSR → Bloom → SMAA); loads passes async
+			this.setup_preview_postprocessing();
+		},
+		setup_preview_postprocessing: async function() {
+			if (!this._three || !this._three.scene || !this._three.camera || !this._three.renderer) return;
+			const s = PC.app.admin.settings_3d;
+			const pp = (s && s.postprocessing) ? s.postprocessing : {};
+			const scene = this._three.scene;
+			const camera = this._three.camera;
+			const renderer = this._three.renderer;
+			const container = this.$('.pc-3d-preview--canvas-container')[0];
+			if (!container) return;
+			const w = container.clientWidth || 1;
+			const h = container.clientHeight || 1;
+
+			if (this._three.postprocessingLayer) {
+				this._three.postprocessingLayer.dispose();
+				this._three.postprocessingLayer = null;
+				this._three.composer = null;
+			}
+
+			const flags = { ssao: !!pp.ssao, ssr: !!pp.ssr, bloom: !!pp.bloom, smaa: !!pp.smaa };
+			const layer = await createPostprocessingLayer(renderer, scene, camera, { width: w, height: h, flags });
+			if (layer) {
+				this._three.postprocessingLayer = layer;
+				this._three.composer = layer.composer;
+			}
 		},
         on_window_resize: function() {
 
         },
         maybe_cleanup: function() {
+			console.log( 'cleanup' );
+			
             if (this._three?.fake_shadow) {
                 this._three.fake_shadow.dispose();
                 this._three.fake_shadow = null;
@@ -508,6 +549,11 @@ PC.views = window.PC.views || {};
             if (this._three?.renderer) {
                 cancelAnimationFrame(this._three.animation_id); // stop previous loop
 
+                if (this._three.postprocessingLayer) {
+                    this._three.postprocessingLayer.dispose();
+                    this._three.postprocessingLayer = null;
+                    this._three.composer = null;
+                }
                 // Dispose renderer
                 this._three.renderer.dispose();
                 if (this._three.renderer.domElement?.parentNode) {
@@ -640,7 +686,7 @@ PC.views = window.PC.views || {};
             scene.add(default_light);
             scene.add(default_light.target);
 
-            this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, default_light };
+            this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, default_light, postprocessingLayer: null, composer: null };
             window.pc_three = this._three;
 
             const env = s.environment || {};
@@ -671,6 +717,10 @@ PC.views = window.PC.views || {};
             else if (bg.mode === 'solid' && bg.color) scene.background = new THREE.Color(bg.color);
 
             const controls = new OrbitControls(camera, renderer.domElement);
+			controls.enableDamping = true;
+			controls.dampingFactor = 0.1;
+			controls.screenSpacePanning = false;
+
             const env_for_orbit = s.environment || {};
             const min_polar = (env_for_orbit.orbit_min_polar_angle != null) ? env_for_orbit.orbit_min_polar_angle : 0;
             const max_polar = (env_for_orbit.orbit_max_polar_angle != null) ? env_for_orbit.orbit_max_polar_angle : 90;
@@ -687,12 +737,22 @@ PC.views = window.PC.views || {};
             controls.minDistance = minDist;
             controls.maxDistance = maxDist;
             this._three.controls = controls;
+            this._three.bypassPostprocessing = false;
+            controls.addEventListener('start', () => { this._three.bypassPostprocessing = true; });
+            controls.addEventListener('end', () => { this._three.bypassPostprocessing = false; });
 
             const on_resize = () => {
-                camera.aspect = container.clientWidth / container.clientHeight;
+                const w = container.clientWidth;
+                const h = container.clientHeight;
+                const pr = window.devicePixelRatio;
+                camera.aspect = w / h;
                 camera.updateProjectionMatrix();
-                renderer.setSize(container.clientWidth, container.clientHeight);
-                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(w, h);
+                renderer.setPixelRatio(pr);
+                if (this._three.postprocessingLayer) {
+                    this._three.postprocessingLayer.setSize(w, h);
+                    this._three.postprocessingLayer.setPixelRatio(pr);
+                }
             };
             this._three.on_resize = on_resize;
             window.addEventListener('resize', on_resize);
@@ -798,7 +858,12 @@ PC.views = window.PC.views || {};
                 if (this._three.fake_shadow && g.enabled !== false) {
                     this._three.fake_shadow.render(renderer, scene);
                 }
-                renderer.render(scene, camera);
+                if (this._three.postprocessingLayer) {
+                    this._three.postprocessingLayer.render(this._three.bypassPostprocessing);
+                }
+                if (!this._three.postprocessingLayer || this._three.bypassPostprocessing) {
+                    renderer.render(scene, camera);
+                }
             };
             animate();
         },

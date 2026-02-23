@@ -96,6 +96,10 @@ export function cleanupThree( t ) {
 		window.removeEventListener( 'resize', t.on_resize );
 		t.on_resize = null;
 	}
+	if ( t.postprocessingLayer && t.postprocessingLayer.dispose ) {
+		t.postprocessingLayer.dispose();
+		t.postprocessingLayer = null;
+	}
 	if ( t.renderer ) {
 		t.renderer.dispose();
 		if ( t.renderer.domElement && t.renderer.domElement.parentNode ) {

@@ -1,14 +1,19 @@
 /**
- * Admin 3D loader: exposes getGltfLoader using shared factory and config.
+ * Admin 3D loader: exposes getGltfLoader (async) using shared factory and config.
  */
 import { getDefaultGltfConfig, createGltfLoader } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
 
-let _adminDracoLoader = null;
+let _loaderPromise = null;
 
+/**
+ * Returns a Promise that resolves to the configured GLTFLoader (cached after first call).
+ * @returns {Promise<THREE.GLTFLoader>}
+ */
 function getGltfLoader() {
-	const result = createGltfLoader( getDefaultGltfConfig(), _adminDracoLoader );
-	if ( result.dracoLoader ) _adminDracoLoader = result.dracoLoader;
-	return result.loader;
+	if ( ! _loaderPromise ) {
+		_loaderPromise = createGltfLoader( getDefaultGltfConfig() );
+	}
+	return _loaderPromise;
 }
 
 window.PC = window.PC || {};

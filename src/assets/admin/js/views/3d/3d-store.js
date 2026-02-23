@@ -67,37 +67,42 @@ function createStore() {
 		if ( _cache[ url ] !== undefined ) {
 			return callback( null, _cache[ url ] );
 		}
-		const loader = window.PC.threeD.getGltfLoader();
-		loader.load(
-			url,
-			( gltf ) => {
-				const variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
-					? gltf.userData.variants.slice()
-					: [];
-				const materialNames = [];
-				const seen = {};
-				if ( gltf.scene && gltf.scene.traverse ) {
-					gltf.scene.traverse( ( obj ) => {
-						if ( ! obj.material ) return;
-						const materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
-						materials.forEach( ( mat ) => {
-							if ( ! mat ) return;
-							const name = ( mat.name && String( mat.name ).trim() ) ? mat.name : mat.uuid;
-							if ( ! seen[ name ] ) {
-								seen[ name ] = true;
-								materialNames.push( name );
-							}
+		const getLoader = window.PC.threeD.getGltfLoader;
+		if ( typeof getLoader !== 'function' ) {
+			return callback( new Error( 'getGltfLoader not available' ), null );
+		}
+		Promise.resolve( getLoader() ).then( ( loader ) => {
+			loader.load(
+				url,
+				( gltf ) => {
+					const variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
+						? gltf.userData.variants.slice()
+						: [];
+					const materialNames = [];
+					const seen = {};
+					if ( gltf.scene && gltf.scene.traverse ) {
+						gltf.scene.traverse( ( obj ) => {
+							if ( ! obj.material ) return;
+							const materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
+							materials.forEach( ( mat ) => {
+								if ( ! mat ) return;
+								const name = ( mat.name && String( mat.name ).trim() ) ? mat.name : mat.uuid;
+								if ( ! seen[ name ] ) {
+									seen[ name ] = true;
+									materialNames.push( name );
+								}
+							} );
 						} );
-					} );
-				}
-				const objectTree = buildObjectTreeFromScene( gltf.scene );
-				const data = { gltf, variants, materialNames, objectTree };
-				_cache[ url ] = data;
-				callback( null, data );
-			},
-			undefined,
-			( err ) => callback( err || new Error( 'Failed to load model' ), null )
-		);
+					}
+					const objectTree = buildObjectTreeFromScene( gltf.scene );
+					const data = { gltf, variants, materialNames, objectTree };
+					_cache[ url ] = data;
+					callback( null, data );
+				},
+				undefined,
+				( err ) => callback( err || new Error( 'Failed to load model' ), null )
+			);
+		} ).catch( ( err ) => callback( err || new Error( 'Failed to get loader' ), null ) );
 	}
 
 	function remove( url ) {

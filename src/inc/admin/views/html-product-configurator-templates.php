@@ -264,22 +264,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel" role="tabpanel" hidden>
 					<div class="pc-3d-settings-sections">
 						<div class="components-panel__body is-opened setting setting-section">
-						<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<p class="description"><?php _e( 'Store the current preview camera as an angle so the frontend can switch to this view.', 'product-configurator-for-woocommerce' ); ?></p>
-							<p class="field-row">
-								<label><?php _e( 'Angle', 'product-configurator-for-woocommerce' ); ?></label>
-								<select class="pc-3d-angle-select"></select>
-								<button type="button" class="button pc-3d-set-view-to-angle"><?php _e( 'Set current view to selected angle', 'product-configurator-for-woocommerce' ); ?></button>
-							</p>
-							<p class="field-row">
-								<button type="button" class="button pc-3d-import-gltf-cameras"><?php _e( 'Import cameras from GLTF', 'product-configurator-for-woocommerce' ); ?></button>
-								<span class="description"><?php _e( 'Add new angles from cameras defined in the main 3D file.', 'product-configurator-for-woocommerce' ); ?></span>
-							</p>
-						</div>
-						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></span></h2>
 							<div class="pc-3d-setting-group">
-								<h5><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h5>
+								<h4><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
 								<p class="field-row">
 									<label><?php _e( 'Environment mode', 'product-configurator-for-woocommerce' ); ?></label>
 									<select class="pc-3d-env-mode" data-key="environment.mode">
@@ -311,7 +298,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								</p>
 							</div>
 							<div class="pc-3d-setting-group">
-								<h5><?php _e( 'Orbit controls', 'product-configurator-for-woocommerce' ); ?></h5>
+								<h4><?php _e( 'Orbit controls', 'product-configurator-for-woocommerce' ); ?></h4>
 								<p class="description"><?php _e( 'Limit camera orbit so the viewer cannot go below the horizon by default.', 'product-configurator-for-woocommerce' ); ?></p>
 								<p class="field-row">
 									<label><?php _e( 'Min polar angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
@@ -351,7 +338,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								</p>
 							</div>
 							<div class="pc-3d-setting-group">
-								<h5><?php _e( 'Hidden objects', 'product-configurator-for-woocommerce' ); ?></h5>
+								<h4><?php _e( 'Hidden objects', 'product-configurator-for-woocommerce' ); ?></h4>
 								<p class="description"><?php _e( 'Objects with these names are automatically hidden in the viewer. Default names (e.g. product_bounding_box, material_placeholders) are always hidden; add more below, one per line.', 'product-configurator-for-woocommerce' ); ?></p>
 								<p class="field-row">
 									<label><?php _e( 'Custom hidden object names', 'product-configurator-for-woocommerce' ); ?></label>
@@ -359,7 +346,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								</p>
 							</div>
 							<div class="pc-3d-setting-group">
-								<h5><?php _e( 'Background', 'product-configurator-for-woocommerce' ); ?></h5>
+								<h4><?php _e( 'Background', 'product-configurator-for-woocommerce' ); ?></h4>
 								<p class="field-row">
 									<label><?php _e( 'Background mode', 'product-configurator-for-woocommerce' ); ?></label>
 									<select class="pc-3d-bg-mode" data-key="background.mode">
@@ -374,7 +361,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								</p>
 							</div>
 							<div class="pc-3d-setting-group">
-								<h5><?php _e( 'Ground / Shadow', 'product-configurator-for-woocommerce' ); ?></h5>
+								<h4><?php _e( 'Ground / Shadow', 'product-configurator-for-woocommerce' ); ?></h4>
 								<p class="field-row">
 									<label><input type="checkbox" class="pc-3d-ground-enabled" data-key="ground.enabled" <# if ( data.ground && data.ground.enabled !== false ) { #>checked<# } #> /> <?php _e( 'Enable ground plane', 'product-configurator-for-woocommerce' ); ?></label>
 								</p>
@@ -416,10 +403,23 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								<span class="pc-3d-value-display pc-3d-global-intensity-value">1</span>
 							</p>
 							<div class="pc-3d-setting-group">
-								<h5><?php _e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h5>
+								<h4><?php _e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h4>
 								<p class="description"><?php _e( 'Lights from the 3D model appear below. Load a model to see them.', 'product-configurator-for-woocommerce' ); ?></p>
 								<div class="pc-3d-lights-list"></div>
 							</div>
+						</div>
+						<div class="components-panel__body is-opened setting setting-section">
+							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></span></h2>
+							<p class="description"><?php _e( 'Store the current preview camera as an angle so the frontend can switch to this view.', 'product-configurator-for-woocommerce' ); ?></p>
+							<p class="field-row">
+								<label><?php _e( 'Angle', 'product-configurator-for-woocommerce' ); ?></label>
+								<select class="pc-3d-angle-select"></select>
+								<button type="button" class="button pc-3d-set-view-to-angle"><?php _e( 'Set current view to selected angle', 'product-configurator-for-woocommerce' ); ?></button>
+							</p>
+							<p class="field-row">
+								<button type="button" class="button pc-3d-import-gltf-cameras"><?php _e( 'Import cameras from GLTF', 'product-configurator-for-woocommerce' ); ?></button>
+								<span class="description"><?php _e( 'Add new angles from cameras defined in the main 3D file.', 'product-configurator-for-woocommerce' ); ?></span>
+							</p>
 						</div>
 						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Postprocessing', 'product-configurator-for-woocommerce' ); ?></span></h2>
