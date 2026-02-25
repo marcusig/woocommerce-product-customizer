@@ -118,7 +118,7 @@ gulp.task('concat_product_configurator', function(done) {
 });
 
 gulp.task('build-admin-js', (cb) => {
-	exec('npx wp-scripts build src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
+	exec('npx wp-scripts build src/assets/admin/js/views/3d-settings.js --output-path=dist/assets/admin/js/build', (err, stdout, stderr) => {
 	  console.log(stdout);
 	  console.error(stderr);
 	  cb(err);
@@ -210,6 +210,7 @@ gulp.task('build',
 		'concat_product_configurator',
 		'concat_js_views',
 		'build-fe-3d-viewer',
+		'assets/admin/js/'
 		// 'build-fe-3d-draco-loader',
 		// 'build-fe-3d-meshopt-loader',
 		// 'merge-fe-3d-builds'

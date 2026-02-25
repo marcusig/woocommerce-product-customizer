@@ -253,7 +253,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 				global $post;
 				if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
-					$scripts[] = array('backbone/views/3d-settings', 'views/3d-settings.js');
+					$scripts[] = array('backbone/views/3d-settings', 'build/3d-settings.js');
 				}
 
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );

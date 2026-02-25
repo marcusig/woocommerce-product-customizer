@@ -466,14 +466,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<input type="number" class="pc-3d-light-intensity" data-key="intensity" min="0" step="0.1" value="{{ data.intensity != null ? data.intensity : 1 }}" />
 	</div>
 </script>
-<script type="importmap">
-{
-	"imports": {
-		"three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
-		"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"
-	}
-}
-</script>
 <?php 
 
 /*
