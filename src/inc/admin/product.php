@@ -309,6 +309,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'languages' => mkl_pc( 'languages' )->get_languages(),
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
 					'hdr_base_url'         => MKL_PC_ASSETS_URL . 'images/hdr/',
+					'admin_js_build_url'   => MKL_PC_ASSETS_URL . 'admin/js/build/',
 					'default_settings_3d'  => DB::get_default_settings_3d(),
 					'default_hidden_object_names' => DB::get_default_hidden_object_names(),
 					'reset_settings_3d_confirm' => __( 'This will restore all 3D viewer settings to their defaults. Your selected 3D file will be kept. Continue?', 'product-configurator-for-woocommerce' ),
