@@ -2,13 +2,12 @@
  * Frontend 3D viewer – Backbone view that renders the product 3D model
  * using settings from PC.fe.currentProductData.settings_3d and applies
  * layer/choice 3D actions (visibility, material variant, color, texture).
+ *
+ * Pipeline: 1) Get settings → 2) Async load conditional modules → 3) Load assets → 4) Setup scene.
  */
 import * as THREE from 'three';
-import { FakeShadow } from './3d-fake-shadow.js';
 import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags } from './3d-scene-config.js';
-import { createPostprocessingLayer } from './3d-postprocessing.js';
-import { createGltfLoader } from './3d-loader-factory.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition } from './3d-scene-utils.js';
@@ -71,15 +70,286 @@ export default Backbone.View.extend({
 			return this.$el;
 		}
 
-		this._initScene( container, s );
-		this._loadInitialModels( s );
-		wp.hooks.doAction( 'PC.fe.viewer.render', this );
+		// Phase 1 done (we have s). Run pipeline: phases 2 → 3 → 4.
+		this._showLoadingOverlay( container );
+		this._runViewerPipeline( container, s )
+			.then( () => {
+				this._hideLoadingOverlay();
+				wp.hooks.doAction( 'PC.fe.viewer.render', this );
+			} )
+			.catch( ( err ) => {
+				this._hideLoadingOverlay();
+				this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
+			} );
+
 		return this.$el;
 	},
 
-	_initScene( container, s ) {
+	_showLoadingOverlay( container ) {
+		const overlay = document.createElement( 'div' );
+		overlay.className = 'mkl_pc_3d_loader mkl_pc_3d_loading';
+		overlay.setAttribute( 'aria-live', 'polite' );
+		overlay.textContent = typeof PC_lang !== 'undefined' && PC_lang.loading_viewer ? PC_lang.loading_viewer : 'Loading…';
+		container.after( overlay );
+		this._loadingOverlay = overlay;
+	},
+
+	_setLoadingStep( text ) {
+		if ( this._loadingOverlay ) this._loadingOverlay.textContent = text || '';
+	},
+
+	_hideLoadingOverlay() {
+		if ( this._loadingOverlay && this._loadingOverlay.parentNode ) {
+			this._loadingOverlay.parentNode.removeChild( this._loadingOverlay );
+		}
+		this._loadingOverlay = null;
+	},
+
+	_showError( msg ) {
+		const container = this.$layers.find( '.mkl_pc_3d_canvas_container' )[ 0 ];
+		if ( container && container.nextElementSibling && container.nextElementSibling.classList.contains( 'mkl_pc_3d_error' ) ) return;
+		this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<p class="mkl_pc_3d_error">' + ( msg || 'Failed to load 3D model.' ) + '</p>' );
+	},
+
+	/**
+	 * Pipeline: load modules (phase 2) → load assets (phase 3) → setup scene (phase 4).
+	 * @param {HTMLElement} container - Canvas container
+	 * @param {Object} s - settings_3d from phase 1
+	 * @returns {Promise<void>}
+	 */
+	async _runViewerPipeline( container, s ) {
+		this._setLoadingStep( typeof PC_lang !== 'undefined' && PC_lang.loading_viewer_preparing ? PC_lang.loading_viewer_preparing : 'Preparing 3D…' );
+		const modules = await this._loadModules( s );
+		this._setLoadingStep( typeof PC_lang !== 'undefined' && PC_lang.loading_model ? PC_lang.loading_model : 'Loading 3D model…' );
+		const assets = await this._loadAssets( s, modules );
+		this._setLoadingStep( typeof PC_lang !== 'undefined' && PC_lang.loading_viewer_setup ? PC_lang.loading_viewer_setup : 'Setting up scene…' );
+		await this._setupScene( container, s, modules, assets );
+	},
+
+	/**
+	 * Phase 2: Load conditional modules in parallel (loader, FakeShadow, HDRLoader, postprocessing).
+	 * @param {Object} s - settings_3d
+	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, HDRLoader: *, createPostprocessingLayer: * }>}
+	 */
+	async _loadModules( s ) {
+		const { createGltfLoader, getDefaultGltfConfig } = await import( './3d-loader-factory.js' );
+		const groundEnabled = ( s.ground && s.ground.enabled !== false );
+		const ppFlags = getPostprocessingFlags( s );
+		const anyPostprocessing = ppFlags.ssao || ppFlags.ssr || ppFlags.bloom || ppFlags.emissiveBloom || ppFlags.smaa;
+
+		const promises = [
+			createGltfLoader( getDefaultGltfConfig() ),
+			import( 'three/addons/loaders/HDRLoader.js' ),
+		];
+		if ( groundEnabled ) promises.push( import( './3d-fake-shadow.js' ) );
+		if ( anyPostprocessing ) promises.push( import( './3d-postprocessing.js' ) );
+
+		const results = await Promise.all( promises );
+		let idx = 0;
+		const gltfLoader = results[ idx++ ];
+		const hdrModule = results[ idx++ ];
+		const FakeShadowModule = groundEnabled ? results[ idx++ ] : { FakeShadow: null };
+		const postprocessingModule = anyPostprocessing ? results[ idx++ ] : { createPostprocessingLayer: null };
+
+		return {
+			gltfLoader,
+			HDRLoader: hdrModule.HDRLoader,
+			FakeShadow: FakeShadowModule.FakeShadow || null,
+			createPostprocessingLayer: postprocessingModule.createPostprocessingLayer || null,
+		};
+	},
+
+	/**
+	 * Phase 3: Load assets (main GLTF, layer GLTFs, HDR).
+	 * @param {Object} s - settings_3d
+	 * @param {Object} modules - from _loadModules
+	 * @returns {Promise<{ mainGltf: *, layerResults: *, hdrTexture: *, hdrUrl: string }>}
+	 */
+	async _loadAssets( s, modules ) {
+		const mainUrl = s.url || null;
+		const layerEntries = [];
+		const layers = window.PC.fe && window.PC.fe.layers;
+		if ( layers ) {
+			layers.each( ( layer_model ) => {
+				if ( layer_model.get( 'object_selection_3d' ) !== 'upload_model' ) return;
+				const url = layer_model.get( 'model_upload_3d_url' );
+				if ( ! layer_model.get( 'model_upload_3d' ) || ! url ) return;
+				layerEntries.push( { layer_model, url } );
+			} );
+		}
+
+		if ( ! mainUrl && layerEntries.length === 0 ) {
+			throw new Error( typeof PC_lang !== 'undefined' && PC_lang.no_3d_model_configured ? PC_lang.no_3d_model_configured : 'No 3D model configured.' );
+		}
+
+		const env = s.environment || {};
+		const hdrBase = getHdrBaseUrl();
+		const presetFile = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
+		const hdrUrl = ( env.mode === 'custom' && env.custom_hdr_url ) ? env.custom_hdr_url : hdrBase + presetFile;
+
+		const loader = modules.gltfLoader;
+		const HDRLoader = modules.HDRLoader;
+
+		const promises = [];
+
+		if ( mainUrl ) {
+			promises.push( new Promise( ( resolve, reject ) => {
+				loader.load( mainUrl, ( gltf ) => resolve( { type: 'main', gltf } ), undefined, () => reject( new Error( 'Main model failed to load.' ) ) );
+			} ) );
+		}
+
+		layerEntries.forEach( ( { layer_model, url } ) => {
+			promises.push( new Promise( ( resolve ) => {
+				loader.load( url, ( gltf ) => resolve( { type: 'layer', layer_model, scene: gltf && gltf.scene ? gltf.scene : null } ), undefined, () => resolve( { type: 'layer', layer_model, scene: null } ) );
+			} ) );
+		} );
+
+		promises.push( new Promise( ( resolve ) => {
+			const hdr = new HDRLoader();
+			hdr.load( hdrUrl, ( texture ) => {
+				texture.mapping = THREE.EquirectangularReflectionMapping;
+				resolve( { type: 'hdr', texture } );
+			}, undefined, () => resolve( { type: 'hdr', texture: null } ) );
+		} ) );
+
+		const results = await Promise.all( promises );
+		let mainGltf = null;
+		const layerResults = [];
+		let hdrTexture = null;
+		results.forEach( ( r ) => {
+			if ( r.type === 'main' ) mainGltf = r.gltf;
+			else if ( r.type === 'layer' ) layerResults.push( { layer_model: r.layer_model, scene: r.scene } );
+			else if ( r.type === 'hdr' ) hdrTexture = r.texture;
+		} );
+
+		if ( mainUrl && ! mainGltf ) {
+			throw new Error( 'Failed to load 3D model.' );
+		}
+
+		return { mainGltf, layerResults, hdrTexture, hdrUrl };
+	},
+
+	/**
+	 * Phase 4: Init scene, add models, FakeShadow, postprocessing, frame camera, apply settings, start loop.
+	 * @param {HTMLElement} container
+	 * @param {Object} s - settings_3d
+	 * @param {Object} modules - from _loadModules
+	 * @param {Object} assets - from _loadAssets
+	 */
+	async _setupScene( container, s, modules, assets ) {
+		const { mainGltf, layerResults, hdrTexture, hdrUrl } = assets;
 		this.maybe_cleanup();
+		this._gltfLoader = modules.gltfLoader;
 		this._three = initScene( container, s );
+		const t = this._three;
+		const layers = window.PC.fe && window.PC.fe.layers;
+
+		if ( mainGltf ) {
+			t.scene.add( mainGltf.scene );
+			t.model_root = mainGltf.scene;
+			t.gltf = mainGltf;
+			this._registerSceneMaterials( t, mainGltf.scene );
+		} else {
+			const emptyRoot = new THREE.Group();
+			t.scene.add( emptyRoot );
+			t.model_root = emptyRoot;
+			t.gltf = null;
+		}
+
+		this._layer_scenes = [];
+		layerResults.forEach( ( { layer_model, scene } ) => {
+			if ( scene ) {
+				t.model_root.add( scene );
+				this._registerSceneMaterials( t, scene );
+				this._layer_scenes.push( { layer_model, scene } );
+			}
+		} );
+		this._layer_objects = [];
+		if ( layers && t.model_root ) {
+			layers.each( ( layer_model ) => {
+				if ( layer_model.get( 'object_selection_3d' ) === 'upload_model' ) return;
+				const oid = layer_model.get( 'object_id_3d' );
+				if ( ! oid ) return;
+				const obj = this._findObject( t.model_root, String( oid ).trim() );
+				if ( obj ) this._layer_objects.push( { layer_model, object: obj } );
+			} );
+		}
+		this._apply_layer_cshow_visibility();
+		this._bind_layer_cshow();
+
+		const defaultHidden = ( window.PC.fe && window.PC.fe.currentProductData && window.PC.fe.currentProductData.default_hidden_object_names ) || null;
+		const customHidden = ( s && s.hidden_object_names ) || '';
+		hideObjectsByName( t.model_root, getHiddenObjectNamesList( defaultHidden, customHidden ) );
+
+		if ( hdrTexture ) {
+			t.scene.environment = hdrTexture;
+			t.current_env_url = hdrUrl;
+		}
+
+		if ( modules.FakeShadow ) {
+			t.fake_shadow = new modules.FakeShadow( t.scene );
+		}
+
+		t.bypassPostprocessing = false;
+		t.controls.addEventListener( 'start', () => { t.bypassPostprocessing = true; } );
+		t.controls.addEventListener( 'end', () => { t.bypassPostprocessing = false; } );
+
+		if ( modules.createPostprocessingLayer ) {
+			const flags = getPostprocessingFlags( s );
+			const layer = await modules.createPostprocessingLayer( t.renderer, t.scene, t.camera, {
+				width: t.container.clientWidth,
+				height: t.container.clientHeight,
+				flags
+			} );
+			if ( layer && t.container && t.on_resize ) {
+				t.postprocessingLayer = layer;
+				const origResize = t.on_resize;
+				window.removeEventListener( 'resize', origResize );
+				t.on_resize = () => {
+					origResize();
+					if ( t.postprocessingLayer ) {
+						t.postprocessingLayer.setSize( t.container.clientWidth, t.container.clientHeight );
+						t.postprocessingLayer.setPixelRatio( window.devicePixelRatio );
+					}
+				};
+				window.addEventListener( 'resize', t.on_resize );
+			}
+		}
+
+		const box = new THREE.Box3().setFromObject( t.model_root );
+		if ( ! box.isEmpty() ) {
+			const size = box.getSize( new THREE.Vector3() ).length();
+			const center = box.getCenter( new THREE.Vector3() );
+			t.controls.target.copy( center );
+			t.camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
+			t.camera.lookAt( center );
+			if ( ! t.initial_camera_position ) {
+				t.initial_camera_position = t.camera.position.clone();
+				t.initial_controls_target = t.controls.target.clone();
+			}
+		}
+		if ( t.on_resize ) t.on_resize();
+
+		this.apply_preview_settings();
+		this._applyAngleCamera();
+		this._create_choice_views();
+
+		const g = ( s && s.ground ) || {};
+		const animate = () => {
+			t.animation_id = requestAnimationFrame( animate );
+			if ( document.hidden ) return;
+			t.controls.update();
+			if ( t.fake_shadow && g.enabled !== false ) {
+				t.fake_shadow.render( t.renderer, t.scene );
+			}
+			if ( t.postprocessingLayer ) {
+				t.postprocessingLayer.render( t.bypassPostprocessing );
+			}
+			if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
+				t.renderer.render( t.scene, t.camera );
+			}
+		};
+		animate();
 	},
 
 	/**
@@ -122,10 +392,11 @@ export default Backbone.View.extend({
 	},
 
 	_getGltfLoader() {
-		if ( ! this._gltfLoaderPromise ) {
-			this._gltfLoaderPromise = createGltfLoader( null );
-		}
-		return this._gltfLoaderPromise;
+		if ( this._gltfLoader ) return Promise.resolve( this._gltfLoader );
+		return import( './3d-loader-factory.js' ).then( ( m ) => m.createGltfLoader( m.getDefaultGltfConfig() ) ).then( ( loader ) => {
+			this._gltfLoader = loader;
+			return loader;
+		} );
 	},
 
 	_loadGltf( url, onSuccess, onError ) {
@@ -151,199 +422,6 @@ export default Backbone.View.extend({
 			},
 			() => done( null )
 		);
-	},
-
-	_loadInitialModels( s ) {
-		const t = this._three;
-		if ( ! t || ! t.scene ) return;
-
-		const mainUrl = s.url || null;
-		const layerEntries = []; // { layer_model, url } for layers with uploaded model
-		const layers = window.PC.fe && window.PC.fe.layers;
-		if ( layers ) {
-			layers.each( ( layer_model ) => {
-				if ( layer_model.get( 'object_selection_3d' ) !== 'upload_model' ) return;
-				const url = layer_model.get( 'model_upload_3d_url' );
-				if ( ! layer_model.get( 'model_upload_3d' ) || ! url ) return;
-				layerEntries.push( { layer_model, url } );
-			} );
-		}
-		
-		if ( ! mainUrl && layerEntries.length === 0 ) {
-			this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<p class="mkl_pc_3d_error">No 3D model configured.</p>' );
-			return;
-		}
-
-		const env = s.environment || {};
-		const hdrBase = getHdrBaseUrl();
-		const presetFile = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
-		const hdrUrl = ( env.mode === 'custom' && env.custom_hdr_url ) ? env.custom_hdr_url : hdrBase + presetFile;
-
-		this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<div class="mkl_pc_3d_loader">Loading…</div>' );
-		const hideLoader = () => this.$layers.find( '.mkl_pc_3d_loader' ).remove();
-		const showError = ( msg ) => {
-			hideLoader();
-			this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<p class="mkl_pc_3d_error">' + ( msg || 'Failed to load 3D model.' ) + '</p>' );
-		};
-
-		const promises = [];
-
-		if ( mainUrl ) {
-			promises.push( new Promise( ( resolve, reject ) => {
-				this._loadGltf(
-					mainUrl,
-					( gltf ) => resolve( { type: 'main', gltf } ),
-					() => reject( new Error( 'Main model failed to load.' ) )
-				);
-			} ) );
-		}
-
-		layerEntries.forEach( ( { layer_model, url } ) => {
-			promises.push( new Promise( ( resolve ) => {
-				this._loadGltf(
-					url,
-					( gltf ) => resolve( { type: 'layer', layer_model, scene: gltf && gltf.scene ? gltf.scene : null } ),
-					() => resolve( { type: 'layer', layer_model, scene: null } )
-				);
-			} ) );
-		} );
-
-		promises.push( new Promise( ( resolve ) => {
-			new HDRLoader().load(
-				hdrUrl,
-				( texture ) => {
-					texture.mapping = THREE.EquirectangularReflectionMapping;
-					resolve( { type: 'hdr', texture } );
-				},
-				undefined,
-				() => resolve( { type: 'hdr', texture: null } )
-			);
-		} ) );
-
-		Promise.all( promises ).then( ( results ) => {
-			let mainGltf = null;
-			const layerResults = []; // { layer_model, scene }
-			let hdrTexture = null;
-			results.forEach( ( r ) => {
-				if ( r.type === 'main' ) mainGltf = r.gltf;
-				else if ( r.type === 'layer' ) layerResults.push( { layer_model: r.layer_model, scene: r.scene } );
-				else if ( r.type === 'hdr' ) hdrTexture = r.texture;
-			} );
-
-			if ( mainUrl && ! mainGltf ) {
-				showError( 'Failed to load 3D model.' );
-				return;
-			}
-
-			hideLoader();
-
-			if ( mainGltf ) {
-				t.scene.add( mainGltf.scene );
-				t.model_root = mainGltf.scene;
-				t.gltf = mainGltf;
-				this._registerSceneMaterials( t, mainGltf.scene );
-			} else {
-				const emptyRoot = new THREE.Group();
-				t.scene.add( emptyRoot );
-				t.model_root = emptyRoot;
-				t.gltf = null;
-			}
-
-			this._layer_scenes = [];
-			layerResults.forEach( ( { layer_model, scene } ) => {
-				if ( scene ) {
-					t.model_root.add( scene );
-					this._registerSceneMaterials( t, scene );
-					this._layer_scenes.push( { layer_model, scene } );
-				}
-			} );
-			this._layer_objects = [];
-			if ( layers && t.model_root ) {
-				layers.each( ( layer_model ) => {
-					if ( layer_model.get( 'object_selection_3d' ) === 'upload_model' ) return;
-					const oid = layer_model.get( 'object_id_3d' );
-					if ( ! oid ) return;
-					const obj = this._findObject( t.model_root, String( oid ).trim() );
-					if ( obj ) this._layer_objects.push( { layer_model, object: obj } );
-				} );
-			}
-			this._apply_layer_cshow_visibility();
-			this._bind_layer_cshow();
-
-			const s = getSettings();
-			const defaultHidden = ( window.PC.fe && window.PC.fe.currentProductData && window.PC.fe.currentProductData.default_hidden_object_names ) || null;
-			const customHidden = ( s && s.hidden_object_names ) || '';
-			hideObjectsByName( t.model_root, getHiddenObjectNamesList( defaultHidden, customHidden ) );
-
-			if ( hdrTexture ) {
-				t.scene.environment = hdrTexture;
-				t.current_env_url = hdrUrl;
-			}
-
-			t.fake_shadow = new FakeShadow( t.scene );
-
-			t.bypassPostprocessing = false;
-			t.controls.addEventListener( 'start', () => { t.bypassPostprocessing = true; } );
-			t.controls.addEventListener( 'end', () => { t.bypassPostprocessing = false; } );
-
-			const flags = getPostprocessingFlags( s );
-			createPostprocessingLayer( t.renderer, t.scene, t.camera, {
-				width: t.container.clientWidth,
-				height: t.container.clientHeight,
-				flags
-			} ).then( ( layer ) => {
-				if ( ! t.container || ! t.on_resize ) return;
-				t.postprocessingLayer = layer;
-				const origResize = t.on_resize;
-				window.removeEventListener( 'resize', origResize );
-				t.on_resize = () => {
-					origResize();
-					if ( t.postprocessingLayer ) {
-						t.postprocessingLayer.setSize( t.container.clientWidth, t.container.clientHeight );
-						t.postprocessingLayer.setPixelRatio( window.devicePixelRatio );
-					}
-				};
-				window.addEventListener( 'resize', t.on_resize );
-			} ).catch( () => {} );
-
-			const box = new THREE.Box3().setFromObject( t.model_root );
-			if ( ! box.isEmpty() ) {
-				const size = box.getSize( new THREE.Vector3() ).length();
-				const center = box.getCenter( new THREE.Vector3() );
-				t.controls.target.copy( center );
-				t.camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
-				t.camera.lookAt( center );
-				// Store the framed camera as the \"initial\" view for later screenshots.
-				if ( ! t.initial_camera_position ) {
-					t.initial_camera_position = t.camera.position.clone();
-					t.initial_controls_target = t.controls.target.clone();
-				}
-			}
-			if ( t.on_resize ) t.on_resize();
-
-			this.apply_preview_settings();
-			this._applyAngleCamera();
-			this._create_choice_views();
-
-			const g = ( s && s.ground ) || {};
-			const animate = () => {
-				t.animation_id = requestAnimationFrame( animate );
-				if ( document.hidden ) return;
-				t.controls.update();
-				if ( t.fake_shadow && g.enabled !== false ) {
-					t.fake_shadow.render( t.renderer, t.scene );
-				}
-				if ( t.postprocessingLayer ) {
-					t.postprocessingLayer.render( t.bypassPostprocessing );
-				}
-				if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
-					t.renderer.render( t.scene, t.camera );
-				}
-			};
-			animate();
-		} ).catch( ( err ) => {
-			showError( err && err.message ? err.message : 'Failed to load 3D model.' );
-		} );
 	},
 
 	apply_preview_settings() {
