@@ -117,7 +117,7 @@ gulp.task('concat_product_configurator', function(done) {
 		.on('end', done);
 });
 
-gulp.task('build-blocks', (cb) => {
+gulp.task('build-admin-js', (cb) => {
 	exec('npx wp-scripts build src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
 	  console.log(stdout);
 	  console.error(stderr);
