@@ -12,6 +12,7 @@ class Compat_Yith_Raq {
 
 	public function run() {
 
+		add_filter( 'woocommerce_locate_template', [ $this, 'locate_yith_template' ], 20, 4 );
 		add_action( 'yith_raq_updated', [ $this, 'yith_raq_updated' ] );
 		add_filter( 'ywraq_request_quote_view_item_data', [ $this, 'view_item_data' ], 20, 3 );
 		add_filter( 'ywraq_item_data', [ $this, 'item_data' ], 20, 3 );
@@ -31,6 +32,38 @@ class Compat_Yith_Raq {
 		$config['ywraq_hide_add_to_cart'] = 'yes' === get_option( 'ywraq_hide_add_to_cart' );
 		$config['ywraq_hide_price']       = 'yes' === get_option( 'ywraq_hide_price' );
 		return $config;
+	}
+
+	/**
+	 * Override YITH Request a Quote templates with configurator-compatible versions.
+	 *
+	 * @param string $template      Located template path.
+	 * @param string $template_name Template name (e.g. request-quote-view.php, emails/request-quote.php).
+	 * @param string $template_path Theme template path.
+	 * @param string $default_path  Plugin default path (YITH_YWRAQ_TEMPLATE_PATH when loading YITH templates).
+	 * @return string
+	 */
+	public function locate_yith_template( $template, $template_name, $template_path, $default_path ) {
+		if ( ! defined( 'YITH_YWRAQ_TEMPLATE_PATH' ) ) {
+			return $template;
+		}
+		$yith_path = trailingslashit( YITH_YWRAQ_TEMPLATE_PATH );
+		if ( trailingslashit( $default_path ) !== $yith_path ) {
+			return $template;
+		}
+		$overrides = [
+			'request-quote-view.php'       => 'request-quote-view.php',
+			'emails/request-quote.php'     => 'emails/request-quote.php',
+			'emails/plain/request-quote.php' => 'emails/plain/request-quote.php',
+		];
+		if ( ! isset( $overrides[ $template_name ] ) ) {
+			return $template;
+		}
+		$our_file = dirname( __FILE__ ) . '/yith-free-templates/' . $overrides[ $template_name ];
+		if ( is_readable( $our_file ) ) {
+			return $our_file;
+		}
+		return $template;
 	}
 
 	public function apply_extra_price( $raq, $product ) {
