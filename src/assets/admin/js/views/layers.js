@@ -606,9 +606,19 @@ TODO:
 		},
 		populate_object_selection_3d: function() {
 			var $sel = this.$( 'select[data-setting="object_selection_3d"]' );
-			if ( ! $sel.length || ! PC.threeD || typeof PC.threeD.populateModelSourceSelect !== 'function' ) return;
+			if ( ! $sel.length ) return;
 			var currentVal = this.model.get( 'object_selection_3d' ) || 'main_model';
-			PC.threeD.populateModelSourceSelect( $, $sel, currentVal, { includeUpload: true, excludeLayerId: this.model.id } );
+			var opts = { includeUpload: true, excludeLayerId: this.model.id };
+			var doPopulate = function() {
+				if ( PC.threeD && typeof PC.threeD.populateModelSourceSelect === 'function' ) {
+					PC.threeD.populateModelSourceSelect( $, $sel, currentVal, opts );
+				}
+			};
+			if ( typeof PC.threeD.populateModelSourceSelect === 'function' ) {
+				doPopulate();
+			} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+				PC.threeD.ensureReady().then( doPopulate );
+			}
 		},
 		trigger_custom_action: function( event ) {
 			var el = $( event.currentTarget );

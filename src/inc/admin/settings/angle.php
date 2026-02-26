@@ -70,6 +70,19 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 					'section'           => 'threed',
 					'priority'          => 8,
 				) ) );
+				$settings['camera_focus_object_ids'] = array(
+					'label'   => __( 'Camera focus (objects for framing)', 'product-configurator-for-woocommerce' ),
+					'type'    => 'html',
+					'section' => 'threed',
+					'priority' => 19,
+					'html'    => '<div class="mkl-pc-setting--container mkl-pc--framing-objects-container">'
+						. '<div class="mkl-pc--framing-objects-list" data-setting="camera_focus_object_ids">'
+						. '<# if ( data.camera_focus_object_ids && data.camera_focus_object_ids.length ) { #>{{ data.camera_focus_object_ids.join(", ") }}<# } else { #><em>' . esc_html__( 'None selected', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
+						. '</div>'
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_objects" data-setting="camera_focus_object_ids">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. ' <button type="button" class="button mkl-pc--action mkl-pc--action-clear-framing" data-action="clear_framing_objects" data-setting="camera_focus_object_ids">' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
 			}
 
 			return apply_filters('mkl_pc_angle_default_settings', $settings );

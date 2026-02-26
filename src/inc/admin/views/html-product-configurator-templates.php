@@ -703,6 +703,22 @@ CONTENT TEMPLATES
 	</div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-3d-object-selector-multi">
+	<div class="mkl-pc-3d-object-selector mkl-pc-3d-object-selector--multi">
+		<h3><?php esc_html_e( 'Select 3D objects for framing (multiple)', 'product-configurator-for-woocommerce' ); ?></h3>
+		<p class="mkl-pc-3d-object-selector--filter">
+			<input type="text" class="mkl-pc-3d-object-selector--filter-input" placeholder="<?php esc_attr_e( 'Filter objects…', 'product-configurator-for-woocommerce' ); ?>" />
+		</p>
+		<div class="mkl-pc-3d-object-selector--tree-container">
+			<ul class="mkl-pc-3d-object-selector--tree"></ul>
+		</div>
+		<div class="mkl-pc-3d-object-selector--actions">
+			<button type="button" class="button button-primary select"><?php esc_html_e( 'Choose', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+	</div>
+</script>
+
 <?php 
 /*
 

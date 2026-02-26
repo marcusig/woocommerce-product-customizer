@@ -181,6 +181,39 @@ export function findObject( root, objectId ) {
 	return found;
 }
 
+const COMPOSITE_ID_SEP = ':';
+
+/**
+ * Find an object by composite id "sourceId:objectName" (e.g. attachment_id:objectName).
+ * modelRoot must be the full scene root; direct children (and modelRoot itself) can have userData.attachment_id set.
+ * Legacy: if id does not contain ':', looks up by name/uuid over the whole tree.
+ * @param {THREE.Object3D} modelRoot - Full scene root (main + layer scenes as children)
+ * @param {string} compositeId - "sourceId:objectName" or legacy "name"/"uuid"
+ * @returns {THREE.Object3D|null}
+ */
+export function findObjectByCompositeId( modelRoot, compositeId ) {
+	if ( ! modelRoot || ! compositeId ) return null;
+	const id = String( compositeId ).trim();
+	const sepIdx = id.indexOf( COMPOSITE_ID_SEP );
+	if ( sepIdx === -1 ) {
+		return findObject( modelRoot, id );
+	}
+	const sourceId = id.slice( 0, sepIdx );
+	const objectName = id.slice( sepIdx + 1 );
+	if ( ! objectName ) return null;
+	const roots = [ modelRoot ].concat( modelRoot.children ? Array.from( modelRoot.children ) : [] );
+	for ( let i = 0; i < roots.length; i++ ) {
+		const r = roots[ i ];
+		const attId = r && r.userData && r.userData.attachment_id;
+		if ( attId != null && String( attId ) === sourceId ) {
+			const obj = findObject( r, objectName );
+			if ( obj ) return obj;
+			return null;
+		}
+	}
+	return null;
+}
+
 /**
  * Get world-space target position for an object (bounding box center).
  * @param {THREE.Object3D} obj
@@ -191,6 +224,36 @@ export function getObjectTargetPosition( obj, target = new THREE.Vector3() ) {
 	if ( ! obj ) return target;
 	const box = new THREE.Box3().setFromObject( obj );
 	return box.getCenter( target );
+}
+
+/**
+ * Build a combined bounding box from multiple objects by id; used for multi-object framing.
+ * objectIds can be composite "sourceId:objectName" (e.g. attachment_id:name) or legacy name/uuid.
+ * @param {THREE.Object3D} modelRoot - Scene root to search in (with userData.attachment_id on roots)
+ * @param {string[]} objectIds - Array of composite ids or object names/uuids
+ * @returns {{ box: THREE.Box3, center: THREE.Vector3, size: THREE.Vector3 }|null} Combined box and center/size, or null if no valid objects found
+ */
+export function getBoundingBoxFromObjectIds( modelRoot, objectIds ) {
+	if ( ! modelRoot || ! Array.isArray( objectIds ) || objectIds.length === 0 ) return null;
+	const box = new THREE.Box3();
+	let hasAny = false;
+	for ( let i = 0; i < objectIds.length; i++ ) {
+		const id = objectIds[ i ];
+		if ( id == null || String( id ).trim() === '' ) continue;
+		const obj = findObjectByCompositeId( modelRoot, String( id ).trim() );
+		if ( ! obj ) continue;
+		const objBox = new THREE.Box3().setFromObject( obj );
+		if ( hasAny ) {
+			box.union( objBox );
+		} else {
+			box.copy( objBox );
+			hasAny = true;
+		}
+	}
+	if ( ! hasAny ) return null;
+	const center = box.getCenter( new THREE.Vector3() );
+	const size = box.getSize( new THREE.Vector3() );
+	return { box, center, size };
 }
 
 /**
@@ -216,7 +279,7 @@ export function hideObjectsByName( root, names ) {
  * Build a plain object tree from a scene root (no Three.js refs stored).
  * @param {THREE.Object3D} root
  * @param {string[]} [skipTypes] - optional override; defaults to OBJECT_TREE_SKIP_TYPES
- * @returns {Array<{ id: string, name: string, type: string, depth: number }>}
+ * @returns {Array<{ id: string, name: string, type: string, depth: number, uuid?: string }>}
  */
 export function buildObjectTreeFromScene( root, skipTypes = OBJECT_TREE_SKIP_TYPES ) {
 	const list = [];
@@ -225,7 +288,9 @@ export function buildObjectTreeFromScene( root, skipTypes = OBJECT_TREE_SKIP_TYP
 		if ( ! obj || isSkip( obj ) ) return;
 		const name = obj.name || obj.type || ( 'Object_' + ( obj.uuid || '' ).slice( 0, 8 ) );
 		const id = obj.name || obj.uuid;
-		list.push( { id, name, type: obj.type || '', depth } );
+		const node = { id, name, type: obj.type || '', depth };
+		if ( obj.uuid ) node.uuid = obj.uuid;
+		list.push( node );
 		if ( obj.children && obj.children.length ) {
 			obj.children.forEach( ( ch ) => add( ch, depth + 1 ) );
 		}

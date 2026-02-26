@@ -5,9 +5,29 @@
 import { buildObjectTreeFromScene, disposeScene } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 function getMainUrl() {
-	return ( window.PC && window.PC.app && window.PC.app.admin && window.PC.app.admin.settings_3d && window.PC.app.admin.settings_3d.url )
-		? window.PC.app.admin.settings_3d.url
-		: null;
+	const admin = window.PC && window.PC.app && window.PC.app.admin;
+	if ( admin && admin.settings_3d && admin.settings_3d.url ) {
+		return admin.settings_3d.url;
+	}
+	const product = window.PC && window.PC.app && typeof window.PC.app.get_product === 'function' && window.PC.app.get_product();
+	const productSettings = product && product.get && product.get( 'settings_3d' );
+	if ( productSettings && productSettings.url ) {
+		return productSettings.url;
+	}
+	return null;
+}
+
+function getMainAttachmentId() {
+	const admin = window.PC && window.PC.app && window.PC.app.admin;
+	if ( admin && admin.settings_3d && admin.settings_3d.attachment_id != null ) {
+		return admin.settings_3d.attachment_id;
+	}
+	const product = window.PC && window.PC.app && typeof window.PC.app.get_product === 'function' && window.PC.app.get_product();
+	const productSettings = product && product.get && product.get( 'settings_3d' );
+	if ( productSettings && productSettings.attachment_id != null ) {
+		return productSettings.attachment_id;
+	}
+	return null;
 }
 
 function getLayersCollection() {
@@ -130,6 +150,90 @@ function resolveAngleCameraTargetModelUrl( angleModel, callback ) {
 }
 
 /**
+ * Resolve the attachment_id for a model's 3D source (main, upload, or layer ref).
+ * @param {Backbone.Model} model - Layer or choice model.
+ * @param {{ sourceKey: string, uploadKey: string|null }} options
+ * @param {function(number|string|null)} callback - Called with attachment_id or null.
+ */
+function resolveModelAttachmentId( model, options, callback ) {
+	if ( ! model || typeof callback !== 'function' ) {
+		if ( typeof callback === 'function' ) callback( null );
+		return;
+	}
+	const sourceKey = options && options.sourceKey ? options.sourceKey : 'object_selection_3d';
+	const uploadKey = options && options.uploadKey !== undefined ? options.uploadKey : 'model_upload_3d';
+	const source = model.get( sourceKey ) || 'main_model';
+	const mainAttId = getMainAttachmentId();
+
+	if ( source === 'main_model' ) return callback( mainAttId );
+	if ( source === 'upload_model' && uploadKey ) {
+		const attId = model.get( uploadKey );
+		return callback( attId != null ? attId : null );
+	}
+	if ( typeof source === 'string' && source.indexOf( 'layer_' ) === 0 ) {
+		const otherId = source.replace( /^layer_/, '' );
+		const layers = getLayersCollection();
+		const other = layers && layers.get ? layers.get( otherId ) : null;
+		if ( other && other.get( 'model_upload_3d' ) != null ) {
+			return callback( other.get( 'model_upload_3d' ) );
+		}
+		return callback( mainAttId );
+	}
+	callback( mainAttId );
+}
+
+/**
+ * Get all model sources that make up the configurator scene (main + each layer with a model).
+ * sourceId is the attachment_id (stable file id) for camera_focus_object_ids composite ids.
+ * @param {function(Error|null, Array<{ sourceLabel: string, url: string, sourceId: string }>)} callback
+ */
+function getSceneModelSources( callback ) {
+	if ( typeof callback !== 'function' ) return;
+	const mainUrl = getMainUrl();
+	const mainAttId = getMainAttachmentId();
+	const out = [];
+	if ( mainUrl ) {
+		out.push( {
+			sourceLabel: 'Main model',
+			url: mainUrl,
+			sourceId: mainAttId != null ? String( mainAttId ) : 'main',
+		} );
+	}
+	const layers = getLayersCollection();
+	if ( ! layers || ! layers.length ) {
+		return callback( null, out );
+	}
+	const layerResults = new Array( layers.length );
+	let pending = layers.length;
+	let done = false;
+	function onLayer( idx, url, label, attachmentId ) {
+		if ( done ) return;
+		layerResults[ idx ] = url ? { sourceLabel: label, url, sourceId: attachmentId != null ? String( attachmentId ) : null } : null;
+		pending--;
+		if ( pending <= 0 ) {
+			done = true;
+			const seen = new Set( out.map( ( s ) => s.url ) );
+			layerResults.forEach( ( r ) => {
+				if ( r && r.url && ! seen.has( r.url ) ) {
+					seen.add( r.url );
+					out.push( r );
+				}
+			} );
+			callback( null, out );
+		}
+	}
+	layers.each( function( layer, idx ) {
+		const layerName = layer.get( 'name' ) || ( 'Layer ' + ( layer.get( '_id' ) || layer.id || layer.cid ) );
+		const label = 'Layer: ' + layerName;
+		resolveModelUrl( layer, { sourceKey: 'object_selection_3d', uploadKey: 'model_upload_3d' }, function( url ) {
+			resolveModelAttachmentId( layer, { sourceKey: 'object_selection_3d', uploadKey: 'model_upload_3d' }, function( attachmentId ) {
+				onLayer( idx, url, label, attachmentId );
+			} );
+		} );
+	} );
+}
+
+/**
  * Populate a model source select (Main, Layer: X…, optional Upload). Call from layer/choice/angle view with jQuery.
  * @param {jQuery} $ - jQuery
  * @param {jQuery} $sel - The select element (must already have option main_model and optionally upload_model)
@@ -171,4 +275,5 @@ window.PC.threeD.resolveModelUrl = resolveModelUrl;
 window.PC.threeD.resolveChoiceModelUrl = resolveChoiceModelUrl;
 window.PC.threeD.resolveLayerModelUrl = resolveLayerModelUrl;
 window.PC.threeD.resolveAngleCameraTargetModelUrl = resolveAngleCameraTargetModelUrl;
+window.PC.threeD.getSceneModelSources = getSceneModelSources;
 window.PC.threeD.populateModelSourceSelect = populateModelSourceSelect;

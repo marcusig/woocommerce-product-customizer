@@ -10,7 +10,7 @@ import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -38,12 +38,23 @@ export default Backbone.View.extend({
 		if ( ! active ) return;
 		const pos = active.get( 'camera_position' );
 		let tgt = active.get( 'camera_target' );
-		const targetObjectId = active.get( 'camera_target_object_id' );
-		if ( targetObjectId && t.model_root ) {
-			const obj = this._findObject( t.model_root, String( targetObjectId ).trim() );
-			if ( obj ) {
-				getObjectTargetPosition( obj, t.controls.target );
-				tgt = { x: t.controls.target.x, y: t.controls.target.y, z: t.controls.target.z };
+		const focusIds = active.get( 'camera_focus_object_ids' );
+		const useFocusIds = Array.isArray( focusIds ) && focusIds.length > 0 && t.model_root;
+		if ( useFocusIds ) {
+			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds );
+			if ( result ) {
+				t.controls.target.copy( result.center );
+				tgt = { x: result.center.x, y: result.center.y, z: result.center.z };
+			}
+		}
+		if ( ! useFocusIds || ! tgt ) {
+			const targetObjectId = active.get( 'camera_target_object_id' );
+			if ( targetObjectId && t.model_root ) {
+				const obj = this._findObject( t.model_root, String( targetObjectId ).trim() );
+				if ( obj ) {
+					getObjectTargetPosition( obj, t.controls.target );
+					tgt = { x: t.controls.target.x, y: t.controls.target.y, z: t.controls.target.z };
+				}
 			}
 		}
 		if ( pos && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' ) {
@@ -248,6 +259,7 @@ export default Backbone.View.extend({
 			t.scene.add( mainGltf.scene );
 			t.model_root = mainGltf.scene;
 			t.gltf = mainGltf;
+			mainGltf.scene.userData.attachment_id = s.attachment_id != null ? s.attachment_id : 'main';
 			this._registerSceneMaterials( t, mainGltf.scene );
 		} else {
 			const emptyRoot = new THREE.Group();
@@ -259,6 +271,10 @@ export default Backbone.View.extend({
 		this._layer_scenes = [];
 		layerResults.forEach( ( { layer_model, scene } ) => {
 			if ( scene ) {
+				const attId = layer_model.get( 'model_upload_3d' );
+				if ( attId != null ) {
+					scene.userData.attachment_id = attId;
+				}
 				t.model_root.add( scene );
 				this._registerSceneMaterials( t, scene );
 				this._layer_scenes.push( { layer_model, scene } );

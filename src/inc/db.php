@@ -739,6 +739,10 @@ class DB {
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
 				],
+				'camera_focus_object_ids' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_focus_object_ids' ],
+					'escape' => [ __CLASS__, 'escape_camera_focus_object_ids' ],
+				],
 				'bg_image' => [
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
@@ -977,6 +981,33 @@ class DB {
 		$lines = array_map( 'sanitize_text_field', $lines );
 		$lines = array_filter( $lines );
 		return implode( "\n", $lines );
+	}
+
+	/**
+	 * Sanitize camera_focus_object_ids (array of object id strings per angle).
+	 *
+	 * @param mixed $data Array of strings or single value.
+	 * @return array Sanitized array of strings.
+	 */
+	public static function sanitize_camera_focus_object_ids( $data ) {
+		if ( ! is_array( $data ) ) {
+			$data = $data === null || $data === '' ? [] : (array) $data;
+		}
+		$out = array_map( 'sanitize_text_field', $data );
+		return array_values( array_filter( $out ) );
+	}
+
+	/**
+	 * Escape camera_focus_object_ids for output (e.g. HTML attributes).
+	 *
+	 * @param mixed $data Array of strings.
+	 * @return array Escaped array of strings.
+	 */
+	public static function escape_camera_focus_object_ids( $data ) {
+		if ( ! is_array( $data ) ) {
+			return [];
+		}
+		return array_map( 'esc_attr', $data );
 	}
 
 	public function sanitize_nullable_int( $data ) {

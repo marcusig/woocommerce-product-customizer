@@ -16,6 +16,7 @@ let hideObjectsByName;
 let getHiddenObjectNamesList;
 let findObject;
 let getObjectTargetPosition;
+let getBoundingBoxFromObjectIds;
 
 let threeDepsPromise = null;
 
@@ -58,6 +59,7 @@ function ensureThreeDepsLoaded() {
 			getHiddenObjectNamesList,
 			findObject,
 			getObjectTargetPosition,
+			getBoundingBoxFromObjectIds,
 		} = sceneUtilsModule );
 
 		return {
@@ -70,6 +72,7 @@ function ensureThreeDepsLoaded() {
 			getHiddenObjectNamesList,
 			findObject,
 			getObjectTargetPosition,
+			getBoundingBoxFromObjectIds,
 		};
 	} )();
 
@@ -87,6 +90,25 @@ PC.views = window.PC.views || {};
 	// Shared helpers (DRY) for 3D model media selection
 	// -------------------------------------------------------------------------
 	PC.threeD = PC.threeD || {};
+	PC.threeD.ensureReady = ensureThreeDepsLoaded;
+	PC.actions = PC.actions || {};
+
+	// Stub actions so "Select from list" / "Select 3D objects" work from Layers/Choices/Angles
+	// before the user has opened the 3D settings tab. First click loads store + loader + real actions.
+	if ( ! PC.actions.select_3d_object ) {
+		PC.actions.select_3d_object = function ( el, context ) {
+			ensureThreeDepsLoaded().then( function () {
+				if ( PC.actions.select_3d_object ) PC.actions.select_3d_object( el, context );
+			} );
+		};
+	}
+	if ( ! PC.actions.select_3d_objects ) {
+		PC.actions.select_3d_objects = function ( el, context ) {
+			ensureThreeDepsLoaded().then( function () {
+				if ( PC.actions.select_3d_objects ) PC.actions.select_3d_objects( el, context );
+			} );
+		};
+	}
 
 	/**
 	 * Opens a WP media frame restricted to GLB/GLTF/ZIP (same as 3D settings).
@@ -356,6 +378,11 @@ PC.views = window.PC.views || {};
 		},
 		_resolveAngleTarget: function ( angle, root ) {
 			if ( !angle || !root ) return null;
+			const focusIds = angle.get( 'camera_focus_object_ids' );
+			if ( Array.isArray( focusIds ) && focusIds.length > 0 && typeof getBoundingBoxFromObjectIds === 'function' ) {
+				const result = getBoundingBoxFromObjectIds( root, focusIds );
+				return result ? result.center : null;
+			}
 			const id = angle.get( 'camera_target_object_id' );
 			if ( !id || typeof id !== 'string' ) return null;
 			const obj = findObject( root, id.trim() );
@@ -788,7 +815,7 @@ PC.views = window.PC.views || {};
 				const controls = new OrbitControls( camera, renderer.domElement );
 				controls.enableDamping = true;
 				controls.dampingFactor = 0.1;
-				controls.screenSpacePanning = false;
+				// controls.screenSpacePanning = false;
 
 				const env_for_orbit = s.environment || {};
 				const min_polar = ( env_for_orbit.orbit_min_polar_angle != null ) ? env_for_orbit.orbit_min_polar_angle : 0;
