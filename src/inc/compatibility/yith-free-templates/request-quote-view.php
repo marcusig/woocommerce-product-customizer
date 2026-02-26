@@ -16,7 +16,7 @@ $hide_price             = 'yes' === get_option( 'ywraq_hide_price', 'no' );
 if ( isset( $_REQUEST['sent'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	return;
 }
-echo 'Coucou les poulets';
+
 if ( count( $raq_content ) === 0 ) :
 	?>
 	<p><?php esc_html_e( 'No products in list', 'yith-woocommerce-request-a-quote' ); ?></p>
