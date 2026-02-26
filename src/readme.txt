@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 6.9
-Stable tag: 1.5.12
+Stable tag: 1.5.13
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.5.13 - 26/Feb/2026 =
+
+* TWEAK: method is_configurable now also checks if all_variations_are_configurable
+* Fix validation logic in the steps
 
 = 1.5.12 - 9/Jan/2026 =
 
