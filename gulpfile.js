@@ -210,7 +210,7 @@ gulp.task('build',
 		'concat_product_configurator',
 		'concat_js_views',
 		'build-fe-3d-viewer',
-		'assets/admin/js/'
+		'build-admin-js',
 		// 'build-fe-3d-draco-loader',
 		// 'build-fe-3d-meshopt-loader',
 		// 'merge-fe-3d-builds'
