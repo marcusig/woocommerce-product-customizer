@@ -112,20 +112,19 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 //			global $product;
 			$product_types = apply_filters( 'mkl_pc_woocommerce_product_types', array( 'simple', 'variable', 'variation' ) );
 
-			// if ( is_object( $product ) ) {
-
-			// 	if ( ! in_array($product->product_type, $product_types) ) {
-			// 		return false;
-			// 	}
-			// } else {
-
 			if ( ! in_array($fetched_product->get_type(), $product_types) ) {
 				return false;
 			}
 
-			// }
+			if ( $configurable === 'yes') return true;
+			
+			if ( $fetched_product->is_type( 'variation' ) ) {
+				$all_variations_are_configurable = get_post_meta( $fetched_product->get_parent_id(), MKL_PC_PREFIX.'_all_variations_are_configurable', true );
+				$configurable = get_post_meta( $fetched_product->get_parent_id(), MKL_PC_PREFIX.'_is_configurable', true );
+				return $all_variations_are_configurable === 'yes' && $configurable === 'yes';
+			}
 
-			return $configurable === 'yes';
+			return false;
 		}
 
 		/**
