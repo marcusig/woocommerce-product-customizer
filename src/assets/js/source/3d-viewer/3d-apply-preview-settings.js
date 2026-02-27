@@ -42,6 +42,8 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 		scene.background = null;
 	} else if ( bg.mode === 'solid' && bg.color ) {
 		scene.background = new THREE.Color( bg.color );
+	} else if ( bg.mode === 'environment' && scene.environment ) {
+		scene.background = scene.environment;
 	}
 
 	const env = s.environment || {};
@@ -70,6 +72,9 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	}
 	if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
 		scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+		if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
+			scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+		}
 	}
 
 	if ( controls ) {

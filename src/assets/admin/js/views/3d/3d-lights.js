@@ -10,6 +10,12 @@ const wp = window.wp;
 export function extractLightsFromScene( view, root ) {
 	const s = window.PC.app.admin.settings_3d;
 	s.lighting = s.lighting || {};
+	// If there is already a saved lights list, keep it and just render it;
+	// do not overwrite user configuration with GLTF defaults.
+	if ( Array.isArray( s.lighting.lights ) && s.lighting.lights.length ) {
+		renderLightsList( view );
+		return;
+	}
 	s.lighting.lights = [];
 	const lights = [];
 	root.traverse( ( obj ) => {

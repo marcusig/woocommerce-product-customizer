@@ -286,12 +286,12 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 									<input type="hidden" class="pc-3d-env-custom-hdr-url" data-key="environment.custom_hdr_url" value="{{ data.environment && data.environment.custom_hdr_url ? data.environment.custom_hdr_url : '' }}" />
 									<button type="button" class="button pc-3d-select-hdr"><?php _e( 'Upload HDR', 'product-configurator-for-woocommerce' ); ?></button>
 								</p>
-								<p class="field-row pc-3d-env-custom-row" style="display:none;">
+								<p class="field-row">
 									<label><?php _e( 'Environment intensity', 'product-configurator-for-woocommerce' ); ?></label>
 									<input type="range" class="pc-3d-env-intensity" data-key="environment.intensity" min="0" max="3" step="0.1" value="{{ data.environment && data.environment.intensity != null ? data.environment.intensity : 1 }}" />
 									<span class="pc-3d-value-display pc-3d-env-intensity-value">1</span>
 								</p>
-								<p class="field-row pc-3d-env-custom-row" style="display:none;">
+								<p class="field-row">
 									<label><?php _e( 'Environment rotation', 'product-configurator-for-woocommerce' ); ?></label>
 									<input type="range" class="pc-3d-env-rotation" data-key="environment.rotation" min="0" max="360" step="1" value="{{ data.environment && data.environment.rotation != null ? data.environment.rotation : 0 }}" />
 									<span class="pc-3d-value-display pc-3d-env-rotation-value">0</span>

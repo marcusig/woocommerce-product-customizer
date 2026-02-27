@@ -501,6 +501,8 @@ PC.views = window.PC.views || {};
 				scene.background = null;
 			} else if ( bg.mode === 'solid' && bg.color ) {
 				scene.background = new THREE.Color( bg.color );
+			} else if ( bg.mode === 'environment' && scene.environment ) {
+				scene.background = scene.environment;
 			}
 			// environment mode background is applied via scene.environment (below)
 
@@ -522,6 +524,9 @@ PC.views = window.PC.views || {};
 			}
 			if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
 				scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+				if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
+					scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+				}
 			}
 
 			// OrbitControls polar, azimuth, and zoom (distance) limits
