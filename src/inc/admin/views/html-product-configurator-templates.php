@@ -267,8 +267,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></span></h2>
 							<div class="pc-3d-setting-group">
 								<h4><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
+								<p class="description"><?php _e( 'The HDR environment controls reflections and lighting. The background controls what is visible behind the model.', 'product-configurator-for-woocommerce' ); ?></p>
 								<p class="field-row">
-									<label><?php _e( 'Environment mode', 'product-configurator-for-woocommerce' ); ?></label>
+									<label><?php _e( 'Environment HDR source', 'product-configurator-for-woocommerce' ); ?></label>
 									<select class="pc-3d-env-mode" data-key="environment.mode">
 										<option value="preset" <# if ( data.environment && data.environment.mode === 'preset' ) { #>selected<# } #>><?php _e( 'Preset', 'product-configurator-for-woocommerce' ); ?></option>
 										<option value="custom" <# if ( data.environment && data.environment.mode === 'custom' ) { #>selected<# } #>><?php _e( 'Custom HDR upload', 'product-configurator-for-woocommerce' ); ?></option>
@@ -299,7 +300,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							</div>
 							<div class="pc-3d-setting-group">
 								<h4><?php _e( 'Orbit controls', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="description"><?php _e( 'Limit camera orbit so the viewer cannot go below the horizon by default.', 'product-configurator-for-woocommerce' ); ?></p>
+								<p class="description"><?php _e( 'Control how far the camera can move around the model on the frontend.', 'product-configurator-for-woocommerce' ); ?></p>
 								<p class="field-row">
 									<label><?php _e( 'Min polar angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
 									<input type="number" class="pc-3d-orbit-min-polar" data-key="environment.orbit_min_polar_angle" min="0" max="180" step="1" value="{{ data.environment && data.environment.orbit_min_polar_angle != null ? data.environment.orbit_min_polar_angle : 0 }}" />
@@ -383,6 +384,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 						</div>
 						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Renderer / Output', 'product-configurator-for-woocommerce' ); ?></span></h2>
+							<p class="description"><?php _e( 'Control overall brightness, alpha output and quality effects. Higher quality can be more demanding on performance.', 'product-configurator-for-woocommerce' ); ?></p>
 							<p class="field-row">
 								<label><?php _e( 'Exposure', 'product-configurator-for-woocommerce' ); ?></label>
 								<input type="range" class="pc-3d-exposure" data-key="renderer.exposure" min="0.1" max="3" step="0.1" value="{{ data.renderer && data.renderer.exposure != null ? data.renderer.exposure : 1 }}" />
@@ -394,6 +396,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 						</div>
 						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Lighting (Global)', 'product-configurator-for-woocommerce' ); ?></span></h2>
+							<p class="description"><?php _e( 'Use a default light and a list of lights imported from the 3D model. Changes here override the model lights in both preview and frontend.', 'product-configurator-for-woocommerce' ); ?></p>
 							<p class="field-row">
 								<label><input type="checkbox" class="pc-3d-default-light-enabled" data-key="lighting.default_light_enabled" <# if ( data.lighting && data.lighting.default_light_enabled !== false ) { #>checked<# } #> /> <?php _e( 'Enable default directional light', 'product-configurator-for-woocommerce' ); ?></label>
 							</p>
