@@ -289,7 +289,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								</p>
 								<p class="field-row">
 									<label><?php _e( 'Environment intensity', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="range" class="pc-3d-env-intensity" data-key="environment.intensity" min="0" max="3" step="0.1" value="{{ data.environment && data.environment.intensity != null ? data.environment.intensity : 1 }}" />
+									<input type="range" class="pc-3d-env-intensity" data-key="environment.intensity" min="0" max="10" step="0.1" value="{{ data.environment && data.environment.intensity != null ? data.environment.intensity : 1 }}" />
 									<span class="pc-3d-value-display pc-3d-env-intensity-value">1</span>
 								</p>
 								<p class="field-row">
