@@ -8,13 +8,14 @@ PC.fe.views.configurator = Backbone.View.extend({
 	template: wp.template( 'mkl-pc-configurator' ), 
 	initialize: function( options ) {
 		this.options = options;
-		var product_id = options.product_id;
-		var parent_id = options.parent_id;
+		this.product_id = options.product_id;
+		this.parent_id = options.parent_id;
 		wp.hooks.doAction( 'PC.fe.init.modal', this ); 
-		if ( parent_id && 'async' !== PC.fe.config.data_mode ) {
-			this.options = PC.productData['prod_' + parent_id].product_info; 
+		
+		if ( this.parent_id && 'async' !== PC.fe.config.data_mode ) {
+			this.options = PC.productData['prod_' + this.parent_id].product_info; 
 		} else {
-			this.options = PC.productData['prod_' + product_id].product_info; 
+			this.options = PC.productData['prod_' + this.product_id].product_info; 
 		}
 
 		try {
