@@ -347,6 +347,24 @@ class DB {
 		if ( $id && '3d' === mkl_pc_get_configurator_type( $id ) ) {
 			$default_menu[] = array(
 				'type' 	=> 'part',
+				'menu_id' 	=> 'objects3d',
+				'label' => __( '3D Objects', 'product-configurator-for-woocommerce' ),
+				'title' => __( '3D Objects', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Manage 3D models and assets used by this product', 'product-configurator-for-woocommerce' ),
+				'order' => 45,
+			);
+			$default_menu[] = array(
+				'type' 	=> 'part',
 				'menu_id' 	=> 'settings_3D',
 				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
 				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
@@ -361,7 +379,7 @@ class DB {
 					),
 				),
 				'description' => __( 'Manage the main 3D settings for this product', 'product-configurator-for-woocommerce' ),
-				'order' => 15,
+				'order' => 50,
 			);
 		}
 
@@ -411,9 +429,6 @@ class DB {
 
 	public static function get_default_settings_3d() {
 		return array(
-			'url'            => '',
-			'filename'       => '',
-			'attachment_id'   => null,
 			'hidden_object_names' => '',
 			'environment'     => array(
 				'mode'                   => 'preset',
@@ -489,6 +504,8 @@ class DB {
 			$stored = $this->get( 'settings_3d', $parent_id );
 			$defaults = self::get_default_settings_3d();
 			$init_data['settings_3d'] = is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults;
+			$stored_objects = $this->get( 'objects3d', $parent_id );
+			$init_data['objects3d'] = is_array( $stored_objects ) ? $stored_objects : array();
 		}
 
 		if ( 'variable' === $product->get_type()) {
@@ -775,6 +792,18 @@ class DB {
 				'filename' => [
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_html',
+				],
+				'object_type' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'loading_strategy' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'object_3d_id' => [
+					'sanitize' => [ $this, 'sanitize_nullable_int' ],
+					'escape' => [ $this, 'sanitize_nullable_int' ],
 				],
 				'attachment_id' => [
 					'sanitize' => [ $this, 'sanitize_nullable_int' ],

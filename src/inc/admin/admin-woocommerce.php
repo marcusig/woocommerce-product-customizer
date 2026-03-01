@@ -22,18 +22,20 @@ class Admin_Woocommerce {
 	public $order;
 	public $product;
 	public $settings;
-	public $choice_settings;
-	public $layer_settings;
-	public $angle_settings;
-	public function __construct() {
-		$this->_includes();
-		$this->customizer = new Customizer();
-		$this->order = new Admin_Order();
-		$this->product = new Admin_Product();
-		$this->settings = new Admin_Settings();
-		$this->choice_settings = new Choice_Settings();
-		$this->layer_settings = new Layer_Settings();
-		$this->angle_settings = new Angle_Settings();
+		public $choice_settings;
+		public $layer_settings;
+		public $angle_settings;
+		public $object3d_settings;
+		public function __construct() {
+			$this->_includes();
+			$this->customizer = new Customizer();
+			$this->order = new Admin_Order();
+			$this->product = new Admin_Product();
+			$this->settings = new Admin_Settings();
+			$this->choice_settings = new Choice_Settings();
+			$this->layer_settings = new Layer_Settings();
+			$this->angle_settings = new Angle_Settings();
+			$this->object3d_settings = new Object3D_Settings();
 
 		add_action( 'admin_enqueue_scripts', [ $this, 'admin_enqueue_scripts' ] );
 		add_filter( 'udmupdater_you_are_connected', [ $this, 'updater_message' ], 20, 3 );
@@ -50,6 +52,7 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/choice.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/layer.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/angle.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/settings/object3d.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product-variable.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/product-3d.php' );

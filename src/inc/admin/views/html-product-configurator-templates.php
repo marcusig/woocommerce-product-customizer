@@ -154,7 +154,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<# } else { #>
 		{{data.name}}
 	<# } #>
-	<# if ( data.image.url != '' ) { #>
+	<# if ( data.image && data.image.url != '' ) { #>
 		<img src="{{data.image.url}}" class="layer-img" />
 	<# } #>
 </script>
@@ -183,6 +183,20 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<# if ( data.image.url != '' ) { #>
 			| <a class="remove-attachment" href="#"><?php _e('Remove picture', 'product-configurator-for-woocommerce' ) ?></a>
 		<# } #>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-structure-object3d-form">
+	<div class="form-details">
+		<header>
+			<h2>
+				<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
+			</h2>
+			<?php echo mkl_pc_get_admin_actions(); ?>
+		</header>
+
+		<?php do_action('mkl_pc_object3d_fields') ?>
+		<?php do_action('mkl_pc_object3d_settings') ?>
 	</div>
 </script>
 
@@ -226,42 +240,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="pc-3d-settings-layout">
 			<div class="pc-3d-settings-column-settings">
 				<nav class="pc-3d-tabs nav-tab-wrapper" role="tablist">
-					<button type="button" class="nav-tab pc-3d-tab active" data-tab="main" role="tab" aria-selected="true"><?php _e( 'Main 3D file', 'product-configurator-for-woocommerce' ); ?></button>
-					<button type="button" class="nav-tab pc-3d-tab" data-tab="viewer" role="tab" aria-selected="false"><?php _e( 'Viewer Settings', 'product-configurator-for-woocommerce' ); ?></button>
+					<button type="button" class="nav-tab pc-3d-tab active" data-tab="viewer" role="tab" aria-selected="true"><?php _e( 'Viewer Settings', 'product-configurator-for-woocommerce' ); ?></button>
 				</nav>
-				<div id="pc-3d-tab-main" class="pc-3d-tab-panel active" role="tabpanel">
-					<div class="components-panel__body is-opened setting setting-section">
-						<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Main 3D file', 'product-configurator-for-woocommerce' ); ?></span></h2>
-						<p><?php _e( 'Use this section if you use a main 3D file.', 'product-configurator-for-woocommerce' ); ?></p>
-						<p><a href="#"><?php _e( 'Read the standard specification for automatic configurator mapping', 'product-configurator-for-woocommerce' ); ?></a></p>
-						<p><a href="#"><?php _e( 'Download the free Blender Add-on', 'product-configurator-for-woocommerce' ); ?></a></p>
-					</div>
-					<div class="components-panel__body is-opened setting setting-section">
-						<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Main 3D file', 'product-configurator-for-woocommerce' ); ?></span></h2>
-						<# if ( data.filename ) { #>
-							<p><strong><?php _e( 'File:', 'product-configurator-for-woocommerce' ); ?></strong> {{data.filename}}</p>
-						<# } #>
-						<# if ( data.url ) { #>
-							<p><input type="text" disabled value="{{data.url}}" /></p>
-						<# } #>
-						<p>
-							<button class="button primary select-gltf" type="button"><?php _e( 'Select glb/gltf file', 'product-configurator-for-woocommerce' ); ?></button>
-							<# if ( data.url ) { #>
-								<button class="button primary remove-gltf" type="button"><?php _e( 'Remove file', 'product-configurator-for-woocommerce' ); ?></button>
-							<# } #>
-						</p>
-					</div>
-					<# if ( data.url ) { #>
-						<div class="components-panel__body is-opened setting setting-section">
-							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Scene structure', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<div class="pc-3d-setting-group">
-								<div class="pc-3d-tree"></div>
-							</div>
-						</div>
-					<# } #>
-				</div>
-
-				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel" role="tabpanel" hidden>
+				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel active" role="tabpanel">
 					<div class="pc-3d-settings-sections">
 						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></span></h2>

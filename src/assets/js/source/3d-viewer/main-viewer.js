@@ -176,20 +176,30 @@ export default Backbone.View.extend({
 	 * @param {Object} modules - from _loadModules
 	 * @returns {Promise<{ mainGltf: *, layerResults: *, hdrTexture: *, hdrUrl: string }>}
 	 */
+	_getUrlForObject3dId( object3dId ) {
+		if ( object3dId == null || object3dId === '' ) return null;
+		const data = window.PC.fe && window.PC.fe.currentProductData;
+		const list = data && data['objects3d'];
+		if ( ! Array.isArray( list ) ) return null;
+		const idStr = String( object3dId );
+		const obj = list.find( ( o ) => String( o._id || o.id ) === idStr );
+		return obj && obj.url ? obj.url : null;
+	},
+
 	async _loadAssets( s, modules ) {
-		const mainUrl = s.url || null;
 		const layerEntries = [];
 		const layers = window.PC.fe && window.PC.fe.layers;
 		if ( layers ) {
 			layers.each( ( layer_model ) => {
-				if ( layer_model.get( 'object_selection_3d' ) !== 'upload_model' ) return;
-				const url = layer_model.get( 'model_upload_3d_url' );
-				if ( ! layer_model.get( 'model_upload_3d' ) || ! url ) return;
+				const object3dId = layer_model.get( 'object_3d_id' );
+				if ( object3dId == null || object3dId === '' ) return;
+				const url = this._getUrlForObject3dId( object3dId );
+				if ( ! url ) return;
 				layerEntries.push( { layer_model, url } );
 			} );
 		}
 
-		if ( ! mainUrl && layerEntries.length === 0 ) {
+		if ( layerEntries.length === 0 ) {
 			throw new Error( typeof PC_lang !== 'undefined' && PC_lang.no_3d_model_configured ? PC_lang.no_3d_model_configured : 'No 3D model configured.' );
 		}
 
@@ -202,12 +212,6 @@ export default Backbone.View.extend({
 		const HDRLoader = modules.HDRLoader;
 
 		const promises = [];
-
-		if ( mainUrl ) {
-			promises.push( new Promise( ( resolve, reject ) => {
-				loader.load( mainUrl, ( gltf ) => resolve( { type: 'main', gltf } ), undefined, () => reject( new Error( 'Main model failed to load.' ) ) );
-			} ) );
-		}
 
 		layerEntries.forEach( ( { layer_model, url } ) => {
 			promises.push( new Promise( ( resolve ) => {
@@ -224,20 +228,14 @@ export default Backbone.View.extend({
 		} ) );
 
 		const results = await Promise.all( promises );
-		let mainGltf = null;
 		const layerResults = [];
 		let hdrTexture = null;
 		results.forEach( ( r ) => {
-			if ( r.type === 'main' ) mainGltf = r.gltf;
-			else if ( r.type === 'layer' ) layerResults.push( { layer_model: r.layer_model, scene: r.scene } );
+			if ( r.type === 'layer' ) layerResults.push( { layer_model: r.layer_model, scene: r.scene } );
 			else if ( r.type === 'hdr' ) hdrTexture = r.texture;
 		} );
 
-		if ( mainUrl && ! mainGltf ) {
-			throw new Error( 'Failed to load 3D model.' );
-		}
-
-		return { mainGltf, layerResults, hdrTexture, hdrUrl };
+		return { mainGltf: null, layerResults, hdrTexture, hdrUrl };
 	},
 
 	/**
@@ -259,7 +257,6 @@ export default Backbone.View.extend({
 			t.scene.add( mainGltf.scene );
 			t.model_root = mainGltf.scene;
 			t.gltf = mainGltf;
-			mainGltf.scene.userData.attachment_id = s.attachment_id != null ? s.attachment_id : 'main';
 			this._registerSceneMaterials( t, mainGltf.scene );
 		} else {
 			const emptyRoot = new THREE.Group();
@@ -269,12 +266,20 @@ export default Backbone.View.extend({
 		}
 
 		this._layer_scenes = [];
+		const productData = window.PC.fe && window.PC.fe.currentProductData;
+		const objects3d = productData && productData['objects3d'];
+		const getAttIdForObject3d = ( object3dId ) => {
+			if ( object3dId == null || object3dId === '' || ! Array.isArray( objects3d ) ) return null;
+			const idStr = String( object3dId );
+			const o = objects3d.find( ( x ) => String( x._id || x.id ) === idStr );
+			return o && o.attachment_id != null ? o.attachment_id : null;
+		};
 		layerResults.forEach( ( { layer_model, scene } ) => {
 			if ( scene ) {
-				const attId = layer_model.get( 'model_upload_3d' );
-				if ( attId != null ) {
-					scene.userData.attachment_id = attId;
-				}
+				const object3dId = layer_model.get( 'object_3d_id' );
+				const attId = getAttIdForObject3d( object3dId );
+				if ( attId != null ) scene.userData.attachment_id = attId;
+				if ( object3dId != null && object3dId !== '' ) scene.userData.object_id = String( object3dId );
 				t.model_root.add( scene );
 				this._registerSceneMaterials( t, scene );
 				this._layer_scenes.push( { layer_model, scene } );
@@ -283,7 +288,7 @@ export default Backbone.View.extend({
 		this._layer_objects = [];
 		if ( layers && t.model_root ) {
 			layers.each( ( layer_model ) => {
-				if ( layer_model.get( 'object_selection_3d' ) === 'upload_model' ) return;
+				if ( layer_model.get( 'object_3d_id' ) ) return;
 				const oid = layer_model.get( 'object_id_3d' );
 				if ( ! oid ) return;
 				const obj = this._findObject( t.model_root, String( oid ).trim() );
@@ -486,19 +491,6 @@ export default Backbone.View.extend({
 				if ( object ) object.visible = cshow( layer_model );
 			} );
 		}
-		const layers = window.PC.fe && window.PC.fe.layers;
-		if ( layers ) {
-			layers.each( ( layer_model ) => {
-				const oid = layer_model.get( 'object_id_3d' );
-				if ( oid ) return;
-				const src = layer_model.get( 'object_selection_3d' );
-				if ( src !== 'upload_model' && ( ! src || String( src ).indexOf( 'layer_' ) !== 0 ) ) return;
-				if ( src === 'upload_model' ) return;
-				const otherId = String( src ).replace( /^layer_/, '' );
-				const otherScene = this._getSceneByLayerId( otherId );
-				if ( otherScene ) otherScene.visible = cshow( layer_model );
-			} );
-		}
 	},
 
 	_bind_layer_cshow() {
@@ -509,8 +501,8 @@ export default Backbone.View.extend({
 		if ( layers ) {
 			layers.each( ( layer_model ) => {
 				const oid = layer_model.get( 'object_id_3d' );
-				const src = layer_model.get( 'object_selection_3d' );
-				if ( ! oid && src && String( src ).indexOf( 'layer_' ) === 0 ) layerModels.add( layer_model );
+				const object3dId = layer_model.get( 'object_3d_id' );
+				if ( ! oid && object3dId ) layerModels.add( layer_model );
 			} );
 		}
 		layerModels.forEach( ( layer_model ) => {
@@ -663,7 +655,7 @@ export default Backbone.View.extend({
 			const choices = window.PC.fe.getLayerContent && window.PC.fe.getLayerContent( layer_model.id );
 			if ( ! choices ) return;
 			choices.each( ( choice_model ) => {
-				const has_3d = choice_model.get( 'object_id_3d' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'model_upload_3d' ) || choice_model.get( 'model_upload_3d_url' );
+				const has_3d = choice_model.get( 'object_id_3d' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' );
 				if ( ! has_3d ) return;
 				const view = new viewer_3d_choice( {
 					model: choice_model,

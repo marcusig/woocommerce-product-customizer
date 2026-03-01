@@ -66,15 +66,19 @@ PC.views = PC.views || {};
 		},
 
 		set_data: function() {
+			var productId = this.current_product ? this.current_product.id : null;
 
 			if( PC.app.admin_data.get('settings_3d') != false ) {
 				this.settings_3d = PC.app.admin_data.get('settings_3d');
 			}
 			if( PC.app.admin_data.get('layers') != false ) {
-				this.layers = new PC.layers( PC.app.admin_data.get('layers') );
+				this.layers = new PC.layers( PC.app.admin_data.get('layers'), productId ? { product_id: productId } : {} );
 			}
 			if( PC.app.admin_data.get('angles') != false ) {
 				this.angles = new PC.angles( PC.app.admin_data.get('angles'), { parse: true } );
+			}
+			if( PC.app.admin_data.get('objects3d') != false ) {
+				this.objects3d = new PC.objects3d( PC.app.admin_data.get('objects3d') || [], productId ? { product_id: productId } : {} );
 			}
 
 		},

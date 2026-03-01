@@ -373,7 +373,7 @@ PC.views = PC.views || {};
 			this.angles = this.admin.angles; 
 			this.layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
 			this.listenTo( this.model, 'destroy', this.remove );
-			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group change:object_selection_3d change:model_upload_3d change:model_upload_3d_filename change:model_upload_3d_url' ), this.render );
+			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group change:object_3d_id' ), this.render );
 			PC.currentEditedItem = this.model;
 			wp.hooks.doAction( 'PC.admin.choiceDetails.init', this );
 		},
@@ -429,7 +429,7 @@ PC.views = PC.views || {};
 			};
 
 			this.populate_angles_list();
-			this.populate_object_selection_3d();
+			this.populate_object_3d_id();
 
 			this.$( 'input.color-hex' ).wpColorPicker( {
 				change: function( event, ui ) {
@@ -454,20 +454,19 @@ PC.views = PC.views || {};
 
 			return this;
 		},
-		populate_object_selection_3d: function() {
-			var $sel = this.$( 'select[data-setting="object_selection_3d"]' );
+		populate_object_3d_id: function() {
+			var $sel = this.$( 'select[data-setting="object_3d_id"]' );
 			if ( ! $sel.length ) return;
-			var currentVal = this.model.get( 'object_selection_3d' ) || 'main_model';
-			var opts = { includeUpload: true };
-			var doPopulate = function() {
-				if ( PC.threeD && typeof PC.threeD.populateModelSourceSelect === 'function' ) {
-					PC.threeD.populateModelSourceSelect( $, $sel, currentVal, opts );
-				}
-			};
-			if ( typeof PC.threeD.populateModelSourceSelect === 'function' ) {
-				doPopulate();
-			} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
-				PC.threeD.ensureReady().then( doPopulate );
+			var currentVal = this.model.get( 'object_3d_id' );
+			var objects3d = PC.app.get_collection( 'objects3d' );
+			$sel.find( 'option:not(:first)' ).remove();
+			if ( objects3d && objects3d.length ) {
+				objects3d.each( function( obj ) {
+					var id = obj.get( '_id' ) || obj.id;
+					var label = obj.get( 'name' ) || obj.get( 'filename' ) || ( 'Object #' + id );
+					var selected = ( currentVal != null && String( currentVal ) === String( id ) ) ? ' selected' : '';
+					$sel.append( '<option value="' + ( id === undefined || id === null ? '' : id ) + '"' + selected + '>' + ( _.escape( label ) ) + '</option>' );
+				} );
 			}
 		},
 		form_change: function( event ) {

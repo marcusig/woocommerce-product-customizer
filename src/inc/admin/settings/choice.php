@@ -166,16 +166,30 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 			);
 
 			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
-				$fields = array_merge( $fields, Abstract_Settings::get_3d_model_source_fields( array(
-					'can_upload'        => true,
-					'setting_model'    => 'object_selection_3d',
-					'setting_upload'   => 'model_upload_3d',
-					'setting_object_id' => 'object_id_3d',
-					'model_label'      => __( 'Use object from', 'product-configurator-for-woocommerce' ),
-					'condition'        => '!data.not_a_choice && !data.is_group',
-					'section'          => 'threed',
-					'priority'         => 10,
-				) ) );
+				$fields['object_3d_id'] = array(
+					'label'     => __( '3D model', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 10,
+					'condition' => '!data.not_a_choice && !data.is_group',
+					'html'      => '<div class="mkl-pc-setting--container mkl-pc--object3d-select-container">'
+						. '<select class="components-select-control__input" data-setting="object_3d_id">'
+						. '<option value="">' . esc_html__( '— None / Inherit —', 'product-configurator-for-woocommerce' ) . '</option>'
+						. '</select>'
+						. '<p class="description">' . esc_html__( 'Select a 3D object from the 3D Objects tab.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '</div>',
+				);
+				$fields['object_id_3d'] = array(
+					'label'     => __( 'Object ID (scene)', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 12,
+					'condition' => '!data.not_a_choice && !data.is_group',
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="text" class="components-select-control__input" data-setting="object_id_3d" value="<# if ( data.object_id_3d ) { #>{{data.object_id_3d}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="object_id_3d">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
 				$fields['actions_3d'] = array(
 					'label'    => __( 'Actions', 'product-configurator-for-woocommerce' ),
 					'type'     => 'repeater',

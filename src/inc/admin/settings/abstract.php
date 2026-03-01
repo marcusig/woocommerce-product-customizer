@@ -339,12 +339,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			$section          = isset( $config['section'] ) ? $config['section'] : 'threed';
 			$priority         = isset( $config['priority'] ) ? (int) $config['priority'] : 10;
 
-			$choices = [
-				[
-					'label' => __( 'Main model', 'product-configurator-for-woocommerce' ),
-					'value' => 'main_model',
-				],
-			];
+			$choices = [];
 			if ( $can_upload ) {
 				$choices[] = [
 					'label' => __( 'Upload model', 'product-configurator-for-woocommerce' ),

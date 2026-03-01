@@ -168,8 +168,6 @@ PC.views = window.PC.views || {};
 		className: 'state settings-3d-state',
 		template: wp.template( 'mkl-pc-3d-models' ),
 		events: {
-			'click .select-gltf': 'select_gltf',
-			'click .remove-gltf': 'remove_gltf',
 			'click .pc-3d-reset-settings': 'on_reset_settings',
 			'click .pc-3d-tab': 'on_tab_click',
 			'click .pc-3d-select-hdr': 'select_hdr',
@@ -205,8 +203,6 @@ PC.views = window.PC.views || {};
 			this.render();
 		},
 		save: function ( e, f ) {
-			console.log( 'h', this.collectionName, PC.app.is_modified[this.collectionName], this.col );
-
 			if ( !PC.app.is_modified[this.collectionName] ) return;
 			const state = PC.app.state;
 			if ( state && state.$save_button ) state.$save_button.addClass( 'disabled' );
@@ -226,10 +222,10 @@ PC.views = window.PC.views || {};
 			this.bind_value_displays();
 			this.update_zoom_buttons_state();
 			this.populate_angle_select();
-			// Load preview when there is a main model or at least one layer model
-			const layerEntries = this.get_layer_model_entries();
-			if ( s.url || layerEntries.length > 0 ) {
-				this.render_preview( s.url || null );
+			// Load preview when there is at least one model to show (from objects3d)
+			const modelEntries = this.get_model_entries();
+			if ( modelEntries.length > 0 ) {
+				this.render_preview( null );
 			} else {
 				this._three = this._three || {};
 			}
@@ -245,17 +241,11 @@ PC.views = window.PC.views || {};
 		},
 		on_reset_settings: function ( e ) {
 			e.preventDefault();
-			const msg = ( typeof PC_lang !== 'undefined' && PC_lang.reset_settings_3d_confirm ) ? PC_lang.reset_settings_3d_confirm : 'This will restore all 3D viewer settings to their defaults. Your selected 3D file will be kept. Continue?';
+			const msg = ( typeof PC_lang !== 'undefined' && PC_lang.reset_settings_3d_confirm ) ? PC_lang.reset_settings_3d_confirm : 'This will restore all 3D viewer settings to their defaults. Continue?';
 			if ( !confirm( msg ) ) return;
 			const defaults = ( typeof PC_lang !== 'undefined' && PC_lang.default_settings_3d ) ? PC_lang.default_settings_3d : {};
-			const current = PC.app.admin.settings_3d || {};
-			const gltf_data = {
-				url: current.url,
-				filename: current.filename,
-				attachment_id: current.attachment_id,
-			};
 			const admin = PC.app.get_admin();
-			admin.settings_3d = Object.assign( {}, defaults, gltf_data );
+			admin.settings_3d = Object.assign( {}, defaults );
 			this.col = admin.settings_3d;
 			PC.app.is_modified.settings_3d = true;
 			this.render();
@@ -379,35 +369,38 @@ PC.views = window.PC.views || {};
 		_resolveAngleTarget: function ( angle, root ) {
 			if ( !angle || !root ) return null;
 			const focusIds = angle.get( 'camera_focus_object_ids' );
+			console.log( 'focusIds', focusIds );
 			if ( Array.isArray( focusIds ) && focusIds.length > 0 && typeof getBoundingBoxFromObjectIds === 'function' ) {
 				const result = getBoundingBoxFromObjectIds( root, focusIds );
+				console.log( 'result', result );
 				return result ? result.center : null;
 			}
 			const id = angle.get( 'camera_target_object_id' );
 			if ( !id || typeof id !== 'string' ) return null;
 			const obj = findObject( root, id.trim() );
+			console.log( 'obj', obj );
+			console.log( 'getObjectTargetPosition( obj )', getObjectTargetPosition( obj ) );
 			return obj ? getObjectTargetPosition( obj ) : null;
 		},
 		on_angle_select_change: function () {
 			if ( !this._three || !this._three.camera || !this._three.controls ) return;
 			const angleId = this.$( '.pc-3d-angle-select' ).val();
-			if ( !angleId ) return;
 			const angles = this.admin && this.admin.angles;
-			if ( !angles ) return;
-			const angle = angles.get( angleId );
+			if ( !angles || !angles.length ) return;
+			const angle = angleId ? angles.get( angleId ) : angles.first();
 			if ( !angle ) return;
 			const pos = angle.get( 'camera_position' );
 			let tgt = angle.get( 'camera_target' );
 			const targetFromObject = this._resolveAngleTarget( angle, this._three.model_root );
 			if ( targetFromObject ) {
-				this._three.controls.target.copy( targetFromObject );
 				tgt = { x: targetFromObject.x, y: targetFromObject.y, z: targetFromObject.z };
 			}
+			this._three.controls.target.set( tgt && typeof tgt.x === 'number' ? tgt.x : 0, tgt && typeof tgt.y === 'number' ? tgt.y : 0, tgt && typeof tgt.z === 'number' ? tgt.z : 0 );
 			if ( pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
 				this._three.camera.position.set( pos.x, pos.y, pos.z );
-				this._three.controls.target.set( tgt.x, tgt.y, tgt.z );
-				this._three.camera.lookAt( tgt.x, tgt.y, tgt.z );
+				this._three.camera.lookAt( this._three.controls.target );
 			}
+			this._three.controls.update();
 		},
 		set_current_view_to_angle: function ( e ) {
 			e.preventDefault();
@@ -638,8 +631,6 @@ PC.views = window.PC.views || {};
 
 		},
 		maybe_cleanup: function () {
-			console.log( 'cleanup' );
-
 			if ( this._three?.fake_shadow ) {
 				this._three.fake_shadow.dispose();
 				this._three.fake_shadow = null;
@@ -681,21 +672,21 @@ PC.views = window.PC.views || {};
 			}
 		},
 		/**
-		 * Collect layer entries that have an uploaded 3D model (for preview and tree).
+		 * Collect 3D model entries (for preview and tree).
 		 * @returns {Array<{ url: string, label: string }>}
 		 */
-		get_layer_model_entries: function () {
-			const entries = [];
-			const layers = PC.app.admin && PC.app.admin.layers;
-			if ( !layers ) return entries;
-			layers.each( function ( layer ) {
-				if ( layer.get( 'object_selection_3d' ) !== 'upload_model' ) return;
-				const url = layer.get( 'model_upload_3d_url' );
-				if ( !layer.get( 'model_upload_3d' ) || !url ) return;
-				const label = layer.get( 'admin_label' ) || layer.get( 'name' ) || ( 'Layer ' + layer.id );
-				entries.push( { url: url, label: label } );
-			} );
-			return entries;
+		/**
+		 * Get display label for an objects3d model (for preview loading steps and scene_roots).
+		 * @param {Backbone.Model} model - Model from objects3d collection
+		 * @returns {string}
+		 */
+		_get_model_entry_label: function ( model ) {
+			return model.get( 'name' ) || model.get( 'filename' ) || ( 'Object #' + ( model.get( '_id' ) || model.id || '' ) );
+		},
+		get_model_entries: function () {
+			const objects3d = PC.app.get_collection( 'objects3d' );
+			if ( ! objects3d ) return [];
+			return objects3d.where( { object_type: 'gltf' } );
 		},
 
 		_setPreviewLoadingStep: function ( stepId, label ) {
@@ -745,12 +736,12 @@ PC.views = window.PC.views || {};
 
 		render_preview: function ( url ) {
 			const container = this.$( '.pc-3d-preview--canvas-container' )[0];
-			if ( !container ) return;
+			if ( ! container ) return;
 
 			this.maybe_cleanup();
 			container.innerHTML = '';
 
-			// Loading overlay: list of current steps (HDR, main, layers)
+			// Loading overlay: list of current steps (HDR, models)
 			const loadingOverlay = document.createElement( 'div' );
 			loadingOverlay.className = 'pc-3d-preview-loading';
 			loadingOverlay.setAttribute( 'aria-live', 'polite' );
@@ -760,7 +751,6 @@ PC.views = window.PC.views || {};
 			this.render_tree_loading();
 
 			const depsReady = this._threeDepsPromise || ensureThreeDepsLoaded();
-
 			depsReady.then( () => {
 				const s = PC.app.admin.settings_3d;
 				const r = s.renderer || {};
@@ -795,13 +785,13 @@ PC.views = window.PC.views || {};
 				const preset_file = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
 				const initial_env_url = env.mode === 'custom' && env.custom_hdr_url ? env.custom_hdr_url : hdr_base + preset_file;
 
-				const layerEntries = this.get_layer_model_entries();
+				const modelEntries = this.get_model_entries();
 				const hdrLabel = ( typeof PC_lang !== 'undefined' && PC_lang.loading_hdr ) ? PC_lang.loading_hdr : 'HDR environment';
-				const mainLabel = ( typeof PC_lang !== 'undefined' && PC_lang.loading_main_model ) ? PC_lang.loading_main_model : 'Main model';
 				this._setPreviewLoadingStep( 'hdr', hdrLabel );
-				if ( url ) this._setPreviewLoadingStep( 'main', mainLabel );
-				layerEntries.forEach( ( le, i ) => {
-					this._setPreviewLoadingStep( 'layer-' + i, ( typeof PC_lang !== 'undefined' && PC_lang.loading_layer ) ? PC_lang.loading_layer.replace( '%s', le.label ) : ( 'Layer: ' + le.label ) );
+
+				modelEntries.forEach( ( me, i ) => {
+					const label = this._get_model_entry_label( me );
+					this._setPreviewLoadingStep( 'model-' + i, ( typeof PC_lang !== 'undefined' && PC_lang.loading_model ) ? PC_lang.loading_model.replace( '%s', label ) : ( 'Model: ' + label ) );
 				} );
 
 				new HDRLoader().load( initial_env_url, ( texture ) => {
@@ -820,7 +810,7 @@ PC.views = window.PC.views || {};
 				const controls = new OrbitControls( camera, renderer.domElement );
 				controls.enableDamping = true;
 				controls.dampingFactor = 0.1;
-				// controls.screenSpacePanning = false;
+				controls.screenSpacePanning = false;
 
 				const env_for_orbit = s.environment || {};
 				const min_polar = ( env_for_orbit.orbit_min_polar_angle != null ) ? env_for_orbit.orbit_min_polar_angle : 0;
@@ -887,95 +877,68 @@ PC.views = window.PC.views || {};
 					if ( !box.isEmpty() ) {
 						var size = box.getSize( new THREE.Vector3() ).length();
 						var center = box.getCenter( new THREE.Vector3() );
-						var firstAngle = viewRef.admin && viewRef.admin.angles && viewRef.admin.angles.length ? viewRef.admin.angles.first() : null;
-						var pos = firstAngle && firstAngle.get( 'camera_position' );
-						var tgt = firstAngle && firstAngle.get( 'camera_target' );
-						var targetFromObject = firstAngle && rootGroup ? viewRef._resolveAngleTarget( firstAngle, rootGroup ) : null;
+						var angles = viewRef.admin && viewRef.admin.angles;
+						var selectedId = viewRef.$( '.pc-3d-angle-select' ).val();
+						var angle = ( selectedId && angles ) ? angles.get( selectedId ) : null;
+						if ( !angle && angles && angles.length ) angle = angles.first();
+						var pos = angle && angle.get( 'camera_position' );
+						var tgt = angle && angle.get( 'camera_target' );
+						var targetFromObject = angle && rootGroup ? viewRef._resolveAngleTarget( angle, rootGroup ) : null;
+						var orbitTarget = center.clone();
 						if ( targetFromObject ) {
-							controls.target.copy( targetFromObject );
+							orbitTarget.copy( targetFromObject );
 							tgt = { x: targetFromObject.x, y: targetFromObject.y, z: targetFromObject.z };
+						} else if ( tgt && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
+							orbitTarget.set( tgt.x, tgt.y, tgt.z );
 						}
+						controls.target.copy( orbitTarget );
 						if ( pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
 							camera.position.set( pos.x, pos.y, pos.z );
-							controls.target.set( tgt.x, tgt.y, tgt.z );
-							camera.lookAt( tgt.x, tgt.y, tgt.z );
+							camera.lookAt( orbitTarget.x, orbitTarget.y, orbitTarget.z );
 						} else {
-							controls.target.copy( center );
 							camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
-							camera.lookAt( center );
+							camera.lookAt( orbitTarget.x, orbitTarget.y, orbitTarget.z );
 						}
+						controls.update();
 					}
 					on_resize();
 					viewRef.apply_preview_settings();
 				};
 
 				var runPreviewLoad = function () {
-					// No main model: set up scene with empty root and optionally load layer models only
-					if ( !url ) {
-						if ( layerEntries.length === 0 ) {
-							onAllLoaded();
-							return;
-						}
-						var pending = layerEntries.length;
-						layerEntries.forEach( function ( le, i ) {
-							PC.threeD.store.get( le.url, function ( errLayer, dataLayer ) {
-								if ( !viewRef._three ) return;
-								viewRef._removePreviewLoadingStep( 'layer-' + i );
-								if ( errLayer || !dataLayer ) {
-									pending--;
-									if ( pending === 0 ) onAllLoaded();
-									return;
-								}
-								var layerScene = dataLayer.gltf.scene.clone( true );
-								layerScene.name = layerScene.name || le.label;
-								rootGroup.add( layerScene );
-								scene_roots.push( { object: layerScene, label: le.label } );
-								pending--;
-								if ( pending === 0 ) onAllLoaded();
-							} );
-						} );
+					// Load models from objects3d collection only (no main model)
+					if ( modelEntries.length === 0 ) {
+						onAllLoaded();
 						return;
 					}
-
-					// Main model URL present: load main then layers
-					PC.threeD.store.get( url, function ( err, data ) {
-						if ( err || !data ) {
-							viewRef._hidePreviewLoading();
-							var msg = ( typeof PC_lang !== 'undefined' && PC_lang.failed_load_main_model ) ? PC_lang.failed_load_main_model : 'Failed to load main model.';
-							viewRef.render_tree_message( msg );
+					var pending = modelEntries.length;
+					modelEntries.forEach( function ( me, i ) {
+						var url = me.get( 'url' );
+						if ( ! url ) {
+							pending--;
+							if ( pending === 0 ) onAllLoaded();
 							return;
 						}
-						if ( !viewRef._three || !viewRef._three.scene ) return;
-						viewRef._removePreviewLoadingStep( 'main' );
-						var gltf = data.gltf;
-						viewRef._three.mainGltf = gltf;
-						var mainScene = gltf.scene.clone( true );
-						mainScene.name = mainScene.name || 'Main';
-						rootGroup.add( mainScene );
-						scene_roots.push( { object: mainScene, label: 'Main' } );
-
-						if ( layerEntries.length === 0 ) {
-							onAllLoaded();
-							return;
-						}
-
-						var pending = layerEntries.length;
-						layerEntries.forEach( function ( le, i ) {
-							PC.threeD.store.get( le.url, function ( errLayer, dataLayer ) {
-								if ( !viewRef._three ) return;
-								viewRef._removePreviewLoadingStep( 'layer-' + i );
-								if ( errLayer || !dataLayer ) {
-									pending--;
-									if ( pending === 0 ) onAllLoaded();
-									return;
-								}
-								var layerScene = dataLayer.gltf.scene.clone( true );
-								layerScene.name = layerScene.name || le.label;
-								rootGroup.add( layerScene );
-								scene_roots.push( { object: layerScene, label: le.label } );
+						PC.threeD.store.get( url, function ( errModel, dataModel ) {
+							if ( ! viewRef._three ) return;
+							viewRef._removePreviewLoadingStep( 'model-' + i );
+							if ( errModel || ! dataModel ) {
 								pending--;
 								if ( pending === 0 ) onAllLoaded();
-							} );
+								return;
+							}
+							var modelScene = dataModel.gltf.scene.clone( true );
+							var label = viewRef._get_model_entry_label( me );
+							modelScene.name = label || modelScene.name;
+							rootGroup.add( modelScene );
+							modelScene.userData.object_id = me.id;
+							modelScene.userData.name = me.get( 'name' );
+							if ( me.get( 'loading_strategy' ) === 'lazy' ) {
+								modelScene.visible = false;
+							}
+							scene_roots.push( { object_id: me.get( '_id' ), object: modelScene, label: label } );
+							pending--;
+							if ( pending === 0 ) onAllLoaded();
 						} );
 					} );
 				};
@@ -1006,7 +969,7 @@ PC.views = window.PC.views || {};
 			PC.threeD.renderLightsList( this );
 		},
 		/**
-		 * Build tree UI from scene roots (main + layer models). Each item has a visibility toggle.
+		 * Build tree UI from scene roots (layer models). Each item has a visibility toggle.
 		 * @param {Array<{ object: THREE.Object3D, label: string }>} scene_roots
 		 */
 		render_tree: function ( scene_roots ) {
@@ -1085,35 +1048,6 @@ PC.views = window.PC.views || {};
 			} );
 			tree_el.append( ul_el );
 		},
-		select_gltf: function ( e ) {
-			e.preventDefault();
-			PC.threeD.openModelMediaFrame( {
-				selectedId: PC.app.admin.settings_3d.attachment_id,
-				onSelect: ( attachment ) => {
-					var previousUrl = PC.app.admin.settings_3d && PC.app.admin.settings_3d.url ? PC.app.admin.settings_3d.url : null;
-					if ( previousUrl && PC.threeD.store && PC.threeD.store.remove ) {
-						PC.threeD.store.remove( previousUrl );
-					}
-					PC.app.admin.settings_3d.url = attachment.gltf_url || attachment.url;
-					PC.app.admin.settings_3d.filename = attachment.gltf_filename || attachment.filename;
-					PC.app.admin.settings_3d.attachment_id = attachment.id;
-					PC.app.is_modified.settings_3d = true;
-					this.render();
-				},
-			} );
-		},
-		remove_gltf: function ( e ) {
-			e.preventDefault();
-			var previousUrl = PC.app.admin.settings_3d && PC.app.admin.settings_3d.url ? PC.app.admin.settings_3d.url : null;
-			if ( previousUrl && PC.threeD.store && PC.threeD.store.remove ) {
-				PC.threeD.store.remove( previousUrl );
-			}
-			PC.app.admin.settings_3d.url = null;
-			PC.app.admin.settings_3d.filename = null;
-			PC.app.admin.settings_3d.attachment_id = null;
-			PC.app.is_modified.settings_3d = true;
-			this.render();
-		}
 	} );
 
 	/**

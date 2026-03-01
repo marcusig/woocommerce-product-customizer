@@ -1,6 +1,100 @@
 var PC = PC || {};
 // Backbone.emulateHTTP = true;
 
+PC.actions = PC.actions || {};
+PC.threeD = PC.threeD || {};
+
+// Provide the 3D model media frame even if 3D settings haven't been opened yet.
+if ( ! PC.threeD.openModelMediaFrame ) {
+	PC.threeD.openModelMediaFrame = function ( opts = {} ) {
+		const selectedId = opts.selectedId != null ? opts.selectedId : null;
+		const title = opts.title || 'Upload 3D Model';
+		const buttonText = opts.buttonText || 'Use this file';
+		const onSelect = typeof opts.onSelect === 'function' ? opts.onSelect : null;
+		if ( ! window.wp || ! window.wp.media ) return null;
+
+		const frame = window.wp.media( {
+			title: title,
+			button: { text: buttonText },
+			multiple: false,
+			selected: selectedId,
+			library: {
+				type: [ 'model/gltf-binary', 'model/gltf+json', 'application/zip' ],
+			},
+		} );
+
+		frame.on( 'open', function () {
+			const selection = frame.state().get( 'selection' );
+			if ( selectedId ) {
+				const attachment = window.wp.media.attachment( selectedId );
+				selection.add( attachment ? [ attachment ] : [] );
+			} else {
+				selection.reset( null );
+			}
+		} );
+
+		if ( frame.uploader?.options?.uploader?.params ) {
+			frame.uploader.options.uploader.params.context = 'configurator_assets';
+		}
+
+		if ( onSelect ) {
+			frame.on( 'select', () => {
+				const attachment = frame.state().get( 'selection' ).first().toJSON();
+				onSelect( attachment );
+			} );
+		}
+
+		frame.open();
+		return frame;
+	};
+}
+
+// 3D Objects upload actions (used by Object3D settings fields).
+if ( ! PC.actions.edit_object3d_upload ) {
+	PC.actions.edit_object3d_upload = function ( $el, context ) {
+		if ( ! context || ! context.model || ! PC.threeD.openModelMediaFrame ) return;
+		const selectedId = context.model.get( 'attachment_id' );
+		PC.threeD.openModelMediaFrame( {
+			selectedId: selectedId,
+			onSelect: function ( attachment ) {
+				const url = attachment.gltf_url || attachment.url || '';
+				const filename = attachment.gltf_filename || attachment.filename || '';
+				context.model.set( {
+					attachment_id: attachment.id,
+					url: url,
+					filename: filename,
+				} );
+				if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
+					window.PC.app.is_modified[ 'objects3d' ] = true;
+				}
+				if ( context.$el && $el && $el.data ) {
+					const setting = $el.data( 'setting' ) || 'attachment_id';
+					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
+				}
+			},
+		} );
+	};
+}
+
+if ( ! PC.actions.remove_object3d_upload ) {
+	PC.actions.remove_object3d_upload = function ( $el, context ) {
+		if ( ! context || ! context.model ) return;
+		context.model.set( {
+			attachment_id: null,
+			url: '',
+			filename: '',
+		} );
+		if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
+			window.PC.app.is_modified[ 'objects3d' ] = true;
+		}
+		if ( context.$el && $el && $el.data ) {
+			const setting = $el.data( 'setting' ) || 'attachment_id';
+			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
+		}
+		context.render();
+	};
+}
+
 PC.toJSON = function( item ) {
 	var _ = PC._us || window._;
 	if ( item instanceof Backbone.Collection ) {
@@ -34,6 +128,7 @@ PC.toJSON = function( item ) {
 			angles: false,
 			content: false,
 			settings_3d: false,
+			'objects3d': false,
 		},
 		modified_choices: [],
 		state: null,
@@ -99,6 +194,7 @@ PC.toJSON = function( item ) {
 					return this.get_product().get( key );
 				case 'layers':
 				case 'angles':
+				case 'objects3d':
 					return this.admin[ key ];
 				case 'settings_3d':
 					return this.get_admin().settings_3d;

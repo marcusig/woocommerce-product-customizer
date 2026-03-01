@@ -54,11 +54,11 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
 			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( resolvedUrl ) => {
 				if ( resolvedUrl ) this.loadModel( resolvedUrl );
-				else this.showError( 'No 3D file for this source. Set the main model in the 3D tab or use an uploaded model.' );
+				else this.showError( 'No 3D file for this source. Use a 3D object or uploaded model.' );
 			} );
 			return;
 		}
-		this.showError( 'No 3D file to browse. Pass modelUrl or set main/uploaded model.' );
+		this.showError( 'No 3D file to browse. Pass modelUrl or use a 3D object/uploaded model.' );
 	},
 	showError( message ) {
 		this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' ).html( '<p class="description">' + ( message || 'No objects to list.' ) + '</p>' );
@@ -137,8 +137,12 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		return this;
 	},
 	resolveAndLoad() {
-		if ( this.loadAllSceneModels && window.PC.threeD && typeof window.PC.threeD.getSceneModelSources === 'function' ) {
-			this.loadAllSceneModelsAndRender();
+		// Camera focus uses objects3d list; ensure getter is available
+		const getSources = this.setting === 'camera_focus_object_ids' && typeof window.PC.threeD.getObjects3DModelSources === 'function'
+			? window.PC.threeD.getObjects3DModelSources
+			: ( window.PC.threeD && typeof window.PC.threeD.getSceneModelSources === 'function' ? window.PC.threeD.getSceneModelSources : null );
+		if ( this.loadAllSceneModels && getSources ) {
+			this.loadAllSceneModelsAndRender( getSources );
 			return;
 		}
 		let url = this.modelUrl;
@@ -159,21 +163,24 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
 			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( resolvedUrl ) => {
 				if ( resolvedUrl ) this.loadModel( resolvedUrl );
-				else this.showError( 'No 3D file for this source. Set the main model in the 3D tab or use an uploaded model.' );
+				else this.showError( 'No 3D file for this source. Use a 3D object or uploaded model.' );
 			} );
 			return;
 		}
-		this.showError( 'No 3D file to browse. Pass modelUrl or set main/uploaded model.' );
+		this.showError( 'No 3D file to browse. Pass modelUrl or use a 3D object/uploaded model.' );
 	},
-	loadAllSceneModelsAndRender() {
+	loadAllSceneModelsAndRender( getSources ) {
 		const view = this;
 		if ( ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' ) {
 			view.showError( '3D store not ready. Please try again.' );
 			return;
 		}
-		window.PC.threeD.getSceneModelSources( ( err, sources ) => {
+		const getter = typeof getSources === 'function' ? getSources : window.PC.threeD.getSceneModelSources;
+		getter( ( err, sources ) => {
 			if ( err || ! sources || ! sources.length ) {
-				view.showError( 'No 3D models in the scene. Set the main model in the 3D tab.' );
+				view.showError( view.setting === 'camera_focus_object_ids'
+					? 'No 3D objects. Add models in 3D Objects.'
+					: 'No 3D models in the scene. Add a 3D object to a layer or in 3D Objects.' );
 				return;
 			}
 			const results = new Array( sources.length );
@@ -295,9 +302,6 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 function select_3d_object( $el, context ) {
 	const opts = { target: $el, context };
 	if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
-	if ( ! opts.modelUrl && context && context.collectionName === 'angles' && window.PC.app && window.PC.app.admin && window.PC.app.admin.settings_3d && window.PC.app.admin.settings_3d.url ) {
-		opts.modelUrl = window.PC.app.admin.settings_3d.url;
-	}
 	if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
 	opts.setting = $el?.data( 'setting' ) || 'object_id_3d';
 	opts.resolveOptions = opts.setting === 'camera_target_object_id'
@@ -326,7 +330,7 @@ function select_3d_object( $el, context ) {
 function select_3d_objects( $el, context ) {
 	const opts = { target: $el, context, multiple: true, setting: 'camera_focus_object_ids' };
 	opts.initialSelectedIds = ( context && context.model && context.model.get( 'camera_focus_object_ids' ) ) || [];
-	// For camera focus we load all scene models (main + layers), not a single model
+	// For camera focus we load all scene models (from layers), not a single model
 	if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
 	if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
 	opts.resolveOptions = { sourceKey: 'camera_target_model', uploadKey: null };

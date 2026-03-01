@@ -200,12 +200,20 @@ export function findObjectByCompositeId( modelRoot, compositeId ) {
 	}
 	const sourceId = id.slice( 0, sepIdx );
 	const objectName = id.slice( sepIdx + 1 );
+	console.log( 'sourceId', sourceId );
+	console.log( 'objectName', objectName );
 	if ( ! objectName ) return null;
 	const roots = [ modelRoot ].concat( modelRoot.children ? Array.from( modelRoot.children ) : [] );
+	console.log( 'roots', roots );
+	
 	for ( let i = 0; i < roots.length; i++ ) {
 		const r = roots[ i ];
-		const attId = r && r.userData && r.userData.attachment_id;
-		if ( attId != null && String( attId ) === sourceId ) {
+		console.log( 'r', r, r.userData );
+		if ( ! r || ! r.userData ) continue;
+		const attId = r.userData.attachment_id;
+		const objId = r.userData.object_id;
+		const match = ( attId != null && String( attId ) === sourceId ) || ( objId != null && String( objId ) === sourceId );
+		if ( match ) {
 			const obj = findObject( r, objectName );
 			if ( obj ) return obj;
 			return null;
@@ -234,6 +242,7 @@ export function getObjectTargetPosition( obj, target = new THREE.Vector3() ) {
  * @returns {{ box: THREE.Box3, center: THREE.Vector3, size: THREE.Vector3 }|null} Combined box and center/size, or null if no valid objects found
  */
 export function getBoundingBoxFromObjectIds( modelRoot, objectIds ) {
+	console.log( 'getBoundingBoxFromObjectIds', modelRoot, objectIds );
 	if ( ! modelRoot || ! Array.isArray( objectIds ) || objectIds.length === 0 ) return null;
 	const box = new THREE.Box3();
 	let hasAny = false;
@@ -241,6 +250,7 @@ export function getBoundingBoxFromObjectIds( modelRoot, objectIds ) {
 		const id = objectIds[ i ];
 		if ( id == null || String( id ).trim() === '' ) continue;
 		const obj = findObjectByCompositeId( modelRoot, String( id ).trim() );
+		console.log( 'obj', obj );
 		if ( ! obj ) continue;
 		const objBox = new THREE.Box3().setFromObject( obj );
 		if ( hasAny ) {

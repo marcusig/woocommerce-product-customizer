@@ -45,13 +45,8 @@ const viewer_3d_choice = Backbone.View.extend({
 	get_target_scene() {
 		if ( this.target_id ) return null;
 		const layer = this.layer_model;
-		const src = layer.get( 'object_selection_3d' );
-		if ( src === 'main_model' ) return null;
 		if ( ! this.parent_view._getSceneByLayerId ) return null;
-		if ( src === 'upload_model' ) return this.parent_view._getSceneByLayerId( layer.id );
-		if ( src && String( src ).indexOf( 'layer_' ) === 0 ) {
-			return this.parent_view._getSceneByLayerId( String( src ).replace( /^layer_/, '' ) );
-		}
+		if ( layer.get( 'object_3d_id' ) ) return this.parent_view._getSceneByLayerId( layer.id );
 		return null;
 	},
 
@@ -204,10 +199,12 @@ const viewer_3d_choice = Backbone.View.extend({
 			return;
 		}
 
-		const model_upload_3d = this.model.get( 'model_upload_3d' );
-		const model_upload_3d_url = this.model.get( 'model_upload_3d_url' );
+		const object3dId = this.model.get( 'object_3d_id' );
+		const choiceModelUrl = object3dId != null && object3dId !== '' && this.parent_view._getUrlForObject3dId
+			? this.parent_view._getUrlForObject3dId( object3dId )
+			: null;
 
-		if ( model_upload_3d && model_upload_3d_url ) {
+		if ( choiceModelUrl ) {
 			if ( this._attached_model_root ) {
 				this.target_object = this._attached_model_root;
 				const parent = this._attach_parent || t.model_root;
@@ -215,7 +212,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				this._attached_model_root.visible = true;
 				this._apply_visibility_and_actions();
 			} else {
-				this.parent_view._load_choice_gltf( model_upload_3d_url, ( scene ) => {
+				this.parent_view._load_choice_gltf( choiceModelUrl, ( scene ) => {
 					if ( ! scene || ! t || ! t.model_root ) return;
 					this._attached_model_root = scene;
 					this._attach_parent = this.target_object || t.model_root;

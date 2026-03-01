@@ -63,7 +63,7 @@ PC.views.angle_form = PC.views.layer_form.extend({
 	populate_camera_target_model: function() {
 		var $sel = this.$( 'select[data-setting="camera_target_model"]' );
 		if ( ! $sel.length ) return;
-		var currentVal = this.model.get( 'camera_target_model' ) || 'main_model';
+		var currentVal = this.model.get( 'camera_target_model' ) || '';
 		var opts = { includeUpload: false };
 		var doPopulate = function() {
 			if ( PC.threeD && typeof PC.threeD.populateModelSourceSelect === 'function' ) {
