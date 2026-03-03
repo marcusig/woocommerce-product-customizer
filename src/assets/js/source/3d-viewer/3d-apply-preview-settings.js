@@ -3,13 +3,12 @@
  * Used by both frontend main-viewer and admin 3d-settings.
  */
 import * as THREE from 'three';
-import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 import {
 	getToneMapping,
 	getOutputColorSpace,
 	getOrbitLimitsFromEnv,
 	getHdrUrlFromEnv,
-	createLightFromSettings,
+	loadEnvMap,
 } from './3d-scene-utils.js';
 
 /**
@@ -52,10 +51,9 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	const urlRef = options.currentEnvUrlRef || { current: null };
 	if ( urlRef.current !== desiredUrl ) {
 		urlRef.current = desiredUrl;
-		new HDRLoader().load(
+		loadEnvMap(
 			desiredUrl,
 			( texture ) => {
-				texture.mapping = THREE.EquirectangularReflectionMapping;
 				scene.environment = texture;
 				urlRef.current = desiredUrl;
 				if ( typeof options.onEnvLoaded === 'function' ) options.onEnvLoaded();
@@ -92,59 +90,10 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 		options.fakeShadow.update( options.modelRoot, g );
 	}
 
-	const gi = ( s.lighting && s.lighting.global_intensity != null ) ? s.lighting.global_intensity : 1;
-	const lightsList = ( s.lighting && s.lighting.lights ) || [];
-	const sceneLights = [];
+	const gi = 1;
 	scene.traverse( ( obj ) => {
-		if ( ! obj.isLight || obj.userData?.isDefaultLight === true ) return;
-		sceneLights.push( { obj, settings: lightsList[ sceneLights.length ] } );
+		if ( ! obj.isLight ) return;
+		const base = ( obj.userData && obj.userData.baseIntensity != null ) ? obj.userData.baseIntensity : obj.intensity;
+		obj.intensity = base * gi;
 	} );
-
-	sceneLights.forEach( ( { obj, settings } ) => {
-		let target = obj;
-		target.userData = target.userData || {};
-		if ( settings ) {
-			const desiredType = settings.type || 'PointLight';
-			const typeMatches =
-				( desiredType === 'PointLight' && obj.isPointLight ) ||
-				( desiredType === 'DirectionalLight' && obj.isDirectionalLight ) ||
-				( desiredType === 'SpotLight' && obj.isSpotLight );
-			if ( ! typeMatches ) {
-				const parent = obj.parent;
-				if ( parent ) {
-					const idx = parent.children.indexOf( obj );
-					const newLight = createLightFromSettings( settings, gi );
-					newLight.position.copy( obj.position );
-					newLight.quaternion.copy( obj.quaternion );
-					if ( obj.target && newLight.target ) {
-						newLight.target.position.copy( obj.target.position );
-						if ( obj.target.parent ) obj.target.parent.add( newLight.target );
-						else parent.add( newLight.target );
-					}
-					parent.remove( obj );
-					parent.children.splice( idx, 0, newLight );
-					newLight.parent = parent;
-					target = newLight;
-				}
-			}
-			target.visible = settings.enabled !== false;
-			if ( target.visible ) {
-				if ( settings.color ) target.color.set( settings.color );
-				target.userData.baseIntensity = ( settings.intensity != null ) ? settings.intensity : ( target.userData.baseIntensity ?? target.intensity );
-				target.intensity = target.userData.baseIntensity * gi;
-			}
-		} else {
-			if ( target.userData.baseIntensity == null ) target.userData.baseIntensity = target.intensity;
-			target.intensity = target.userData.baseIntensity * gi;
-		}
-	} );
-
-	if ( options.defaultLight ) {
-		const enabled = ( s.lighting && s.lighting.default_light_enabled !== false );
-		options.defaultLight.visible = enabled;
-		if ( enabled ) {
-			const base = ( options.defaultLight.userData && options.defaultLight.userData.baseIntensity != null ) ? options.defaultLight.userData.baseIntensity : 1.2;
-			options.defaultLight.intensity = base * gi;
-		}
-	}
 }

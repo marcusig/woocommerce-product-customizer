@@ -9,14 +9,17 @@ if ( typeof PC_lang !== 'undefined' && PC_lang.admin_js_build_url ) {
 
 let THREE;
 let OrbitControls;
-let HDRLoader;
+let loadEnvMap;
 let FakeShadow;
 let createPostprocessingLayer;
 let hideObjectsByName;
 let getHiddenObjectNamesList;
 let findObject;
+let findObjectByCompositeId;
 let getObjectTargetPosition;
 let getBoundingBoxFromObjectIds;
+let removeLightsFromScene;
+let RectAreaLightHelper = null;
 
 let threeDepsPromise = null;
 
@@ -27,17 +30,17 @@ function ensureThreeDepsLoaded() {
 		const [
 			threeModule,
 			controlsModule,
-			hdrModule,
 			fakeShadowModule,
 			postprocessingModule,
 			sceneUtilsModule,
+			rectAreaLightHelperModule
 		] = await Promise.all( [
 			import( 'three' ),
 			import( 'three/addons/controls/OrbitControls.js' ),
-			import( 'three/addons/loaders/HDRLoader.js' ),
 			import( '../../../js/source/3d-viewer/3d-fake-shadow.js' ),
 			import( '../../../js/source/3d-viewer/3d-postprocessing.js' ),
 			import( '../../../js/source/3d-viewer/3d-scene-utils.js' ),
+			import( 'three/addons/helpers/RectAreaLightHelper.js' ),
 		] );
 
 		// Side-effect modules: loader/store/lights/object selector (attach to PC.threeD)
@@ -50,27 +53,31 @@ function ensureThreeDepsLoaded() {
 
 		THREE = threeModule;
 		OrbitControls = controlsModule.OrbitControls;
-		HDRLoader = hdrModule.HDRLoader;
+		loadEnvMap = sceneUtilsModule.loadEnvMap;
 		FakeShadow = fakeShadowModule.FakeShadow;
 		createPostprocessingLayer = postprocessingModule.createPostprocessingLayer;
+		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
 
 		( {
 			hideObjectsByName,
 			getHiddenObjectNamesList,
 			findObject,
+			findObjectByCompositeId,
 			getObjectTargetPosition,
 			getBoundingBoxFromObjectIds,
+			removeLightsFromScene,
 		} = sceneUtilsModule );
 
 		return {
 			THREE,
 			OrbitControls,
-			HDRLoader,
+			loadEnvMap,
 			FakeShadow,
 			createPostprocessingLayer,
 			hideObjectsByName,
 			getHiddenObjectNamesList,
 			findObject,
+			findObjectByCompositeId,
 			getObjectTargetPosition,
 			getBoundingBoxFromObjectIds,
 		};
@@ -170,17 +177,16 @@ PC.views = window.PC.views || {};
 		events: {
 			'click .pc-3d-reset-settings': 'on_reset_settings',
 			'click .pc-3d-tab': 'on_tab_click',
-			'click .pc-3d-select-hdr': 'select_hdr',
 			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
 			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
 			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
 			'click .pc-3d-import-gltf-cameras': 'import_cameras_from_gltf',
 			'change .pc-3d-angle-select': 'on_angle_select_change',
-			'change .pc-3d-env-mode': 'on_env_mode_change',
+			'change .pc-3d-env-source': 'on_env_source_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
-			'change .pc-3d-env-preset, .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
-			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure, .pc-3d-global-intensity': 'on_slider_input',
-			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-global-intensity, .pc-3d-default-light-enabled': 'on_setting_change',
+			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
+			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure': 'on_slider_input',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
 			'remove': 'on_remove',
@@ -220,6 +226,7 @@ PC.views = window.PC.views || {};
 			this.$el.append( this.template( s ) );
 			this.toggle_env_and_bg_visibility();
 			this.bind_value_displays();
+			this._populateEnvSource();
 			this.update_zoom_buttons_state();
 			this.populate_angle_select();
 			// Load preview when there is at least one model to show (from objects3d)
@@ -232,11 +239,11 @@ PC.views = window.PC.views || {};
 		},
 		ensure_settings_defaults: function ( s ) {
 			if ( s.hidden_object_names === undefined ) s.hidden_object_names = '';
-			if ( !s.environment ) s.environment = { mode: 'preset', preset: 'outdoor', custom_hdr_url: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
+			if ( !s.environment ) s.environment = { mode: 'preset', preset: 'outdoor', object_id: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
 			if ( !s.background ) s.background = { mode: 'environment', color: '#ffffff' };
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
-			if ( !s.lighting ) s.lighting = { global_intensity: 1, lights: [] };
+			if ( !s.lighting ) s.lighting = {};
 			if ( !s.postprocessing ) s.postprocessing = { ssr: false, ssao: false, bloom: false, smaa: false };
 		},
 		on_reset_settings: function ( e ) {
@@ -260,11 +267,74 @@ PC.views = window.PC.views || {};
 			this.$( '#pc-3d-tab-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
 		},
 		toggle_env_and_bg_visibility: function () {
-			const env_mode = ( PC.app.admin.settings_3d.environment && PC.app.admin.settings_3d.environment.mode ) || 'preset';
-			this.$( '.pc-3d-env-preset-row' ).toggle( env_mode === 'preset' );
-			this.$( '.pc-3d-env-custom-row' ).toggle( env_mode === 'custom' );
 			const bg_mode = ( PC.app.admin.settings_3d.background && PC.app.admin.settings_3d.background.mode ) || 'environment';
 			this.$( '.pc-3d-bg-color-row' ).toggle( bg_mode === 'solid' );
+		},
+		/**
+		 * Populate .pc-3d-env-source: built-in presets first, then environment objects from objects3d.
+		 * Set select value from env.mode + env.preset or env.object_id.
+		 */
+		_populateEnvSource: function () {
+			const $sel = this.$( '.pc-3d-env-source' );
+			if ( !$sel.length ) return;
+			const env = ( PC.app.admin.settings_3d && PC.app.admin.settings_3d.environment ) || {};
+			const opts = [];
+			opts.push( { value: 'preset_outdoor', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_preset_outdoor ) ? PC_lang.env_preset_outdoor : 'Preset: Outdoor' } );
+			opts.push( { value: 'preset_studio', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_preset_studio ) ? PC_lang.env_preset_studio : 'Preset: Studio' } );
+			const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
+			if ( col ) {
+				col.where( { object_type: 'environment' } ).forEach( function ( m ) {
+					const id = m.get( '_id' );
+					const name = m.get( 'name' ) || m.get( 'label' ) || ( 'Environment ' + id );
+					opts.push( { value: 'object_' + id, label: name } );
+				} );
+			}
+			$sel.empty();
+			opts.forEach( function ( o ) {
+				$sel.append( $( '<option></option>' ).attr( 'value', o.value ).text( o.label ) );
+			} );
+			const mode = env.mode || 'preset';
+			const preset = env.preset || 'outdoor';
+			const objectId = env.object_id || '';
+			const selected = mode === 'object' && objectId ? ( 'object_' + objectId ) : ( 'preset_' + preset );
+			$sel.val( opts.some( function ( o ) { return o.value === selected; } ) ? selected : 'preset_outdoor' );
+		},
+		on_env_source_change: function () {
+			const val = this.$( '.pc-3d-env-source' ).val() || 'preset_outdoor';
+			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
+			if ( val.indexOf( 'preset_' ) === 0 ) {
+				PC.app.admin.settings_3d.environment.mode = 'preset';
+				PC.app.admin.settings_3d.environment.preset = val === 'preset_studio' ? 'studio' : 'outdoor';
+				PC.app.admin.settings_3d.environment.object_id = '';
+			} else if ( val.indexOf( 'object_' ) === 0 ) {
+				PC.app.admin.settings_3d.environment.mode = 'object';
+				PC.app.admin.settings_3d.environment.object_id = val.slice( 7 );
+				PC.app.admin.settings_3d.environment.preset = 'outdoor';
+			}
+			PC.app.is_modified.settings_3d = true;
+			this.apply_preview_settings();
+		},
+		/**
+		 * Resolve environment map URL for preview: preset → hdr_base + file; object → env object's HDRi URL if any.
+		 * @param {Object} env - settings_3d.environment
+		 * @returns {string|null} URL to load with HDR/EXR loader, or null to skip load
+		 */
+		get_env_url_for_preview: function ( env ) {
+			if ( !env ) return null;
+			const hdr_base = ( typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url ) ? PC_lang.hdr_base_url : '';
+			const preset_file = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
+			if ( env.mode === 'preset' ) return hdr_base + preset_file;
+			if ( env.mode === 'object' && env.object_id ) {
+				const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
+				if ( col ) {
+					const m = col.get( env.object_id ) || col.find( function ( mod ) { return mod.get( '_id' ) === env.object_id; } );
+					if ( m ) {
+						const ed = m.get( 'environment_data' );
+						if ( ed && ed.env_type === 'hdri' && ed.url && ed.url.url ) return ed.url.url;
+					}
+				}
+			}
+			return hdr_base + preset_file;
 		},
 		bind_value_displays: function () {
 			const sync = ( sel, val_sel ) => {
@@ -277,7 +347,6 @@ PC.views = window.PC.views || {};
 			sync( '.pc-3d-shadow-opacity', '.pc-3d-shadow-opacity-value' );
 			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
-			sync( '.pc-3d-global-intensity', '.pc-3d-global-intensity-value' );
 		},
 		set_nested: function ( obj, path, value ) {
 			const parts = path.split( '.' );
@@ -288,14 +357,6 @@ PC.views = window.PC.views || {};
 				o = o[k];
 			}
 			o[parts[parts.length - 1]] = value;
-		},
-		on_env_mode_change: function () {
-			const val = this.$( '.pc-3d-env-mode' ).val();
-			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
-			PC.app.admin.settings_3d.environment.mode = val;
-			PC.app.is_modified.settings_3d = true;
-			this.toggle_env_and_bg_visibility();
-			this.apply_preview_settings();
 		},
 		on_bg_mode_change: function () {
 			const val = this.$( '.pc-3d-bg-mode' ).val();
@@ -455,25 +516,6 @@ PC.views = window.PC.views || {};
 			PC.app.is_modified.angles = true;
 			this.populate_angle_select();
 		},
-		select_hdr: function ( e ) {
-			e.preventDefault();
-			const frame = wp.media( {
-				title: 'Upload HDR',
-				button: { text: 'Use this file' },
-				multiple: false,
-				library: {},
-			} );
-			frame.on( 'select', () => {
-				const attachment = frame.state().get( 'selection' ).first().toJSON();
-				const url = attachment.url;
-				PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
-				PC.app.admin.settings_3d.environment.custom_hdr_url = url;
-				this.$( '.pc-3d-env-custom-hdr-url' ).val( url );
-				PC.app.is_modified.settings_3d = true;
-				this.apply_preview_settings();
-			} );
-			frame.open();
-		},
 		apply_preview_settings: function () {
 			if ( !this._three || !this._three.scene || !this._three.renderer ) return;
 			const s = PC.app.admin.settings_3d;
@@ -499,15 +541,12 @@ PC.views = window.PC.views || {};
 			}
 			// environment mode background is applied via scene.environment (below)
 
-			// Environment: reload map when preset or custom URL changes, then set intensity/rotation
+			// Environment: reload map when preset or object URL changes, then set intensity/rotation
 			const env = s.environment || {};
-			const hdr_base = ( typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url ) ? PC_lang.hdr_base_url : '';
-			const preset_file = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
-			const desired_url = env.mode === 'custom' && env.custom_hdr_url ? env.custom_hdr_url : hdr_base + preset_file;
-			if ( this._three.current_env_url !== desired_url ) {
+			const desired_url = this.get_env_url_for_preview( env );
+			if ( desired_url && this._three.current_env_url !== desired_url ) {
 				this._three.current_env_url = desired_url;
-				new HDRLoader().load( desired_url, ( texture ) => {
-					texture.mapping = THREE.EquirectangularReflectionMapping;
+				loadEnvMap( desired_url, ( texture ) => {
 					scene.environment = texture;
 					this.apply_preview_settings();
 				}, undefined, () => { this._three.current_env_url = null; } );
@@ -547,57 +586,13 @@ PC.views = window.PC.views || {};
 				this._three.fake_shadow.update( this._three.model_root, g );
 			}
 
-			// Global light intensity and per-light settings
-			const gi = ( s.lighting && s.lighting.global_intensity != null ) ? s.lighting.global_intensity : 1;
-			const lights_list = ( s.lighting && s.lighting.lights ) || [];
-			const scene_lights = [];
+			// Global light intensity (used by objects3d lights when applied in scene)
+			const gi = 1;
 			scene.traverse( ( obj ) => {
-				if ( !obj.isLight || obj.userData?.isDefaultLight === true ) return;
-				scene_lights.push( { obj, settings: lights_list[scene_lights.length] } );
+				if ( ! obj.isLight ) return;
+				const base = obj.userData?.baseIntensity ?? obj.intensity;
+				obj.intensity = base * gi;
 			} );
-
-			scene_lights.forEach( ( { obj, settings } ) => {
-				let target = obj;
-				if ( settings ) {
-					const desired_type = settings.type || 'PointLight';
-					const type_matches =
-						( desired_type === 'PointLight' && obj.isPointLight ) ||
-						( desired_type === 'DirectionalLight' && obj.isDirectionalLight ) ||
-						( desired_type === 'SpotLight' && obj.isSpotLight );
-					if ( !type_matches ) {
-						const parent = obj.parent;
-						const idx = parent.children.indexOf( obj );
-						const new_light = PC.threeD.createLightFromSettings( settings, gi );
-						new_light.position.copy( obj.position );
-						new_light.quaternion.copy( obj.quaternion );
-						if ( obj.target && new_light.target ) {
-							new_light.target.position.copy( obj.target.position );
-							if ( obj.target.parent ) obj.target.parent.add( new_light.target );
-							else parent.add( new_light.target );
-						}
-						parent.remove( obj );
-						parent.children.splice( idx, 0, new_light );
-						new_light.parent = parent;
-						target = new_light;
-					}
-					target.visible = settings.enabled !== false;
-					if ( target.visible ) {
-						if ( settings.color ) target.color.set( settings.color );
-						target.userData.baseIntensity = ( settings.intensity != null ) ? settings.intensity : 1;
-						target.intensity = target.userData.baseIntensity * gi;
-					}
-				} else {
-					target.intensity = ( target.userData?.baseIntensity ?? target.intensity ) * gi;
-				}
-			} );
-			if ( this._three.default_light ) {
-				const lighting = s.lighting || {};
-				const enabled = lighting.default_light_enabled !== false;
-				this._three.default_light.visible = enabled;
-				if ( enabled ) {
-					this._three.default_light.intensity = ( this._three.default_light.userData?.baseIntensity ?? 1.2 ) * gi;
-				}
-			}
 
 			// Postprocessing: build or clear composer from settings (order: SSAO → SSR → Bloom → SMAA); loads passes async
 			this.setup_preview_postprocessing();
@@ -634,6 +629,12 @@ PC.views = window.PC.views || {};
 			if ( this._three?.fake_shadow ) {
 				this._three.fake_shadow.dispose();
 				this._three.fake_shadow = null;
+			}
+			if ( this._three?.light_helpers && this._three.light_helpers.length ) {
+				this._three.light_helpers.forEach( function ( h ) {
+					if ( h.dispose ) h.dispose();
+				} );
+				this._three.light_helpers = [];
 			}
 			if ( this._three?.renderer ) {
 				cancelAnimationFrame( this._three.animation_id ); // stop previous loop
@@ -771,19 +772,11 @@ PC.views = window.PC.views || {};
 				const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
 				camera.position.set( 0, 1, 3 );
 
-				const default_light = new THREE.DirectionalLight( 0xffffff, 1.2 );
-				default_light.position.set( 5, 10, 7.5 );
-				default_light.userData = { baseIntensity: 1.2, isDefaultLight: true };
-				scene.add( default_light );
-				scene.add( default_light.target );
-
-				this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, default_light, postprocessingLayer: null, composer: null };
+				this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null };
 				window.pc_three = this._three;
 
 				const env = s.environment || {};
-				const hdr_base = ( typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url ) ? PC_lang.hdr_base_url : '';
-				const preset_file = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
-				const initial_env_url = env.mode === 'custom' && env.custom_hdr_url ? env.custom_hdr_url : hdr_base + preset_file;
+				const initial_env_url = this.get_env_url_for_preview( env );
 
 				const modelEntries = this.get_model_entries();
 				const hdrLabel = ( typeof PC_lang !== 'undefined' && PC_lang.loading_hdr ) ? PC_lang.loading_hdr : 'HDR environment';
@@ -794,15 +787,19 @@ PC.views = window.PC.views || {};
 					this._setPreviewLoadingStep( 'model-' + i, ( typeof PC_lang !== 'undefined' && PC_lang.loading_model ) ? PC_lang.loading_model.replace( '%s', label ) : ( 'Model: ' + label ) );
 				} );
 
-				new HDRLoader().load( initial_env_url, ( texture ) => {
-					texture.mapping = THREE.EquirectangularReflectionMapping;
-					scene.environment = texture;
-					this._three.current_env_url = initial_env_url;
+				if ( !initial_env_url ) {
 					this._removePreviewLoadingStep( 'hdr' );
 					this.apply_preview_settings();
-				}, undefined, () => {
-					this._removePreviewLoadingStep( 'hdr' );
-				} );
+				} else {
+					loadEnvMap( initial_env_url, ( texture ) => {
+						scene.environment = texture;
+						this._three.current_env_url = initial_env_url;
+						this._removePreviewLoadingStep( 'hdr' );
+						this.apply_preview_settings();
+					}, undefined, () => {
+						this._removePreviewLoadingStep( 'hdr' );
+					} );
+				}
 
 				if ( bg.mode === 'transparent' ) scene.background = null;
 				else if ( bg.mode === 'solid' && bg.color ) scene.background = new THREE.Color( bg.color );
@@ -863,6 +860,9 @@ PC.views = window.PC.views || {};
 						viewRef._three.fake_shadow.dispose();
 						viewRef._three.fake_shadow = null;
 					}
+
+					viewRef._three.THREE = THREE;
+
 					viewRef._three.scene.add( rootGroup );
 					viewRef._three.model_root = rootGroup;
 					viewRef._three.scene_roots = scene_roots;
@@ -871,7 +871,63 @@ PC.views = window.PC.views || {};
 					hideObjectsByName( rootGroup, getHiddenObjectNamesList( defaultHidden, customHidden ) );
 					viewRef._three.fake_shadow = new FakeShadow( viewRef._three.scene );
 					viewRef.render_tree( viewRef._three.scene_roots );
-					viewRef.extract_lights_from_scene( rootGroup );
+					var s = PC.app.admin.settings_3d;
+					var gi = 1;
+					var objects3dCol = PC.app.get_collection( 'objects3d' );
+					viewRef._three.light_helpers = viewRef._three.light_helpers || [];
+					if ( objects3dCol && typeof PC.threeD.createLightFromSettings === 'function' ) {
+						objects3dCol.each( function ( obj ) {
+							if ( obj.get( 'object_type' ) !== 'light' ) return;
+							var ld = obj.get( 'light_data' );
+							if ( ! ld ) return;
+							var settings = { type: ld.type || 'PointLight', color: ld.color || '#ffffff', intensity: ( ld.intensity != null ) ? ld.intensity : 1 };
+							settings.position = ld.position;
+							settings.target = ld.target;
+							settings.angle = ld.angle;
+							settings.penumbra = ld.penumbra;
+							settings.distance = ld.distance;
+							settings.decay = ld.decay;
+							// RectAreaLight dimensions: prefer new rect_width/rect_height, fall back to legacy width/height if present.
+							settings.width = ( ld.rect_width != null ) ? ld.rect_width : ld.width;
+							settings.height = ( ld.rect_height != null ) ? ld.rect_height : ld.height;
+							// Optional explicit rotation (degrees) for RectAreaLight and other lights.
+							if ( ld.rect_rotation ) settings.rotation = ld.rect_rotation;
+							settings.groundColor = ld.groundColor;
+							var light = PC.threeD.createLightFromSettings( settings, gi );
+							light.name = obj.get( 'name' ) || 'Light';
+							if ( light.target && ld.target_object_id && rootGroup && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
+								var targetObj = findObjectByCompositeId( viewRef._three.scene, ld.target_object_id );
+								if ( targetObj ) getObjectTargetPosition( targetObj, light.target.position );
+							} else if ( light.target && ld.target ) {
+								light.target.position.set( ld.target.x || 0, ld.target.y || 0, ld.target.z || 0 );
+							}
+							viewRef._three.scene.add( light );
+							if ( light.target ) viewRef._three.scene.add( light.target );
+							if ( ld.cookie && ld.cookie.url && typeof PC.threeD.applyLightCookie === 'function' ) {
+								PC.threeD.applyLightCookie( light, ld.cookie );
+							}
+							console.log( 'typeof RectAreaLightHelper', typeof RectAreaLightHelper );
+							var helper = null;
+							if ( THREE.PointLightHelper && light.isPointLight ) {
+								helper = new THREE.PointLightHelper( light, 0.5 );
+							} else if ( THREE.DirectionalLightHelper && light.isDirectionalLight ) {
+								helper = new THREE.DirectionalLightHelper( light, 1 );
+							} else if ( THREE.SpotLightHelper && light.isSpotLight ) {
+								helper = new THREE.SpotLightHelper( light );
+							} else if ( RectAreaLightHelper && light.isRectAreaLight ) {
+								helper = new RectAreaLightHelper( light );
+							}
+							
+							if ( helper ) {
+								if ( light.isRectAreaLight ) {
+									light.add( helper );
+								} else {
+									viewRef._three.scene.add( helper );
+								}
+								viewRef._three.light_helpers.push( helper );
+							}
+						} );
+					}
 
 					var box = new THREE.Box3().setFromObject( rootGroup );
 					if ( !box.isEmpty() ) {
@@ -928,6 +984,10 @@ PC.views = window.PC.views || {};
 								return;
 							}
 							var modelScene = dataModel.gltf.scene.clone( true );
+							// Remove any lights included in the GLTF; only objects3d lights should be used.
+							if ( typeof removeLightsFromScene === 'function' ) {
+								removeLightsFromScene( modelScene );
+							}
 							var label = viewRef._get_model_entry_label( me );
 							modelScene.name = label || modelScene.name;
 							rootGroup.add( modelScene );
@@ -948,6 +1008,11 @@ PC.views = window.PC.views || {};
 					this._three.animation_id = requestAnimationFrame( animate );
 					if ( document.hidden ) return;
 					controls.update();
+					if ( this._three.light_helpers && this._three.light_helpers.length ) {
+						this._three.light_helpers.forEach( function ( h ) {
+							if ( h.update ) h.update();
+						} );
+					}
 					const g = PC.app.admin.settings_3d.ground || {};
 					if ( this._three.fake_shadow && g.enabled !== false ) {
 						this._three.fake_shadow.render( renderer, scene );
@@ -961,12 +1026,6 @@ PC.views = window.PC.views || {};
 				};
 				animate();
 			} );
-		},
-		extract_lights_from_scene: function ( root ) {
-			PC.threeD.extractLightsFromScene( this, root );
-		},
-		render_lights_list: function () {
-			PC.threeD.renderLightsList( this );
 		},
 		/**
 		 * Build tree UI from scene roots (layer models). Each item has a visibility toggle.

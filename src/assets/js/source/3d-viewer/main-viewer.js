@@ -10,7 +10,7 @@ import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -138,9 +138,9 @@ export default Backbone.View.extend({
 	},
 
 	/**
-	 * Phase 2: Load conditional modules in parallel (loader, FakeShadow, HDRLoader, postprocessing).
+	 * Phase 2: Load conditional modules in parallel (loader, FakeShadow, postprocessing).
 	 * @param {Object} s - settings_3d
-	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, HDRLoader: *, createPostprocessingLayer: * }>}
+	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, createPostprocessingLayer: * }>}
 	 */
 	async _loadModules( s ) {
 		const { createGltfLoader, getDefaultGltfConfig } = await import( './3d-loader-factory.js' );
@@ -150,7 +150,6 @@ export default Backbone.View.extend({
 
 		const promises = [
 			createGltfLoader( getDefaultGltfConfig() ),
-			import( 'three/addons/loaders/HDRLoader.js' ),
 		];
 		if ( groundEnabled ) promises.push( import( './3d-fake-shadow.js' ) );
 		if ( anyPostprocessing ) promises.push( import( './3d-postprocessing.js' ) );
@@ -158,13 +157,11 @@ export default Backbone.View.extend({
 		const results = await Promise.all( promises );
 		let idx = 0;
 		const gltfLoader = results[ idx++ ];
-		const hdrModule = results[ idx++ ];
 		const FakeShadowModule = groundEnabled ? results[ idx++ ] : { FakeShadow: null };
 		const postprocessingModule = anyPostprocessing ? results[ idx++ ] : { createPostprocessingLayer: null };
 
 		return {
 			gltfLoader,
-			HDRLoader: hdrModule.HDRLoader,
 			FakeShadow: FakeShadowModule.FakeShadow || null,
 			createPostprocessingLayer: postprocessingModule.createPostprocessingLayer || null,
 		};
@@ -209,22 +206,29 @@ export default Backbone.View.extend({
 		const hdrUrl = ( env.mode === 'custom' && env.custom_hdr_url ) ? env.custom_hdr_url : hdrBase + presetFile;
 
 		const loader = modules.gltfLoader;
-		const HDRLoader = modules.HDRLoader;
 
 		const promises = [];
 
 		layerEntries.forEach( ( { layer_model, url } ) => {
 			promises.push( new Promise( ( resolve ) => {
-				loader.load( url, ( gltf ) => resolve( { type: 'layer', layer_model, scene: gltf && gltf.scene ? gltf.scene : null } ), undefined, () => resolve( { type: 'layer', layer_model, scene: null } ) );
+				loader.load(
+					url,
+					( gltf ) => {
+						const scene = gltf && gltf.scene ? gltf.scene : null;
+						if ( scene ) {
+							// Strip any lights embedded in the GLTF; only objects3d lights should be used.
+							removeLightsFromScene( scene );
+						}
+						resolve( { type: 'layer', layer_model, scene } );
+					},
+					undefined,
+					() => resolve( { type: 'layer', layer_model, scene: null } )
+				);
 			} ) );
 		} );
 
 		promises.push( new Promise( ( resolve ) => {
-			const hdr = new HDRLoader();
-			hdr.load( hdrUrl, ( texture ) => {
-				texture.mapping = THREE.EquirectangularReflectionMapping;
-				resolve( { type: 'hdr', texture } );
-			}, undefined, () => resolve( { type: 'hdr', texture: null } ) );
+			loadEnvMap( hdrUrl, ( texture ) => resolve( { type: 'hdr', texture } ), undefined, () => resolve( { type: 'hdr', texture: null } ) );
 		} ) );
 
 		const results = await Promise.all( promises );
@@ -301,6 +305,41 @@ export default Backbone.View.extend({
 		const defaultHidden = ( window.PC.fe && window.PC.fe.currentProductData && window.PC.fe.currentProductData.default_hidden_object_names ) || null;
 		const customHidden = ( s && s.hidden_object_names ) || '';
 		hideObjectsByName( t.model_root, getHiddenObjectNamesList( defaultHidden, customHidden ) );
+
+		const gi = 1;
+		if ( Array.isArray( objects3d ) ) {
+			objects3d.forEach( ( item ) => {
+				if ( item.object_type !== 'light' || ! item.light_data ) return;
+				const ld = item.light_data;
+				const settings = {
+					type: ld.type || 'PointLight',
+					color: ld.color || '#ffffff',
+					intensity: ld.intensity != null ? ld.intensity : 1,
+					position: ld.position,
+					target: ld.target,
+					angle: ld.angle,
+					penumbra: ld.penumbra,
+					distance: ld.distance,
+					decay: ld.decay,
+					// RectAreaLight dimensions: prefer new rect_width/rect_height, fall back to legacy width/height if present.
+					width: ld.rect_width != null ? ld.rect_width : ld.width,
+					height: ld.rect_height != null ? ld.rect_height : ld.height,
+					groundColor: ld.groundColor,
+				};
+				if ( ld.rect_rotation ) settings.rotation = ld.rect_rotation;
+				const light = createLightFromSettings( settings, gi );
+				light.name = item.name || 'Light';
+				if ( light.target && ld.target_object_id && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
+					const targetObj = findObjectByCompositeId( t.scene, ld.target_object_id );
+					if ( targetObj ) getObjectTargetPosition( targetObj, light.target.position );
+				} else if ( light.target && ld.target ) {
+					light.target.position.set( ld.target.x || 0, ld.target.y || 0, ld.target.z || 0 );
+				}
+				t.scene.add( light );
+				if ( light.target ) t.scene.add( light.target );
+				if ( ld.cookie && ld.cookie.url ) applyLightCookie( light, ld.cookie );
+			} );
+		}
 
 		if ( hdrTexture ) {
 			t.scene.environment = hdrTexture;
@@ -452,7 +491,6 @@ export default Backbone.View.extend({
 
 		const urlRef = { get current() { return t.current_env_url; }, set current( v ) { t.current_env_url = v; } };
 		applySettingsToScene( t.scene, t.renderer, t.controls, s, {
-			defaultLight: t.default_light,
 			fakeShadow: t.fake_shadow,
 			modelRoot: t.model_root,
 			getHdrBaseUrl,

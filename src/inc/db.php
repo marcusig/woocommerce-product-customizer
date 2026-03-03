@@ -433,7 +433,7 @@ class DB {
 			'environment'     => array(
 				'mode'                   => 'preset',
 				'preset'                 => 'outdoor',
-				'custom_hdr_url'         => '',
+				'object_id'              => '',
 				'intensity'              => 1,
 				'rotation'               => 0,
 				'orbit_min_polar_angle'  => 0,
@@ -460,11 +460,7 @@ class DB {
 				'output_color_space' => 'srgb',
 				'alpha'              => false,
 			),
-			'lighting'        => array(
-				'global_intensity'     => 1,
-				'default_light_enabled' => true,
-				'lights'               => array(),
-			),
+			'lighting'        => array(),
 			'postprocessing'  => array(
 				'ssr'   => false,
 				'ssao'  => false,
@@ -640,6 +636,14 @@ class DB {
 					'sanitize' => 'intval',
 					'escape' => 'intval',
 				],
+				'rect_width' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'rect_height' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
 				'rotation' => [ 
 					'sanitize' => 'intval',
 					'escape' => 'intval',
@@ -794,7 +798,7 @@ class DB {
 					'escape' => 'esc_html',
 				],
 				'object_type' => [
-					'sanitize' => 'sanitize_key',
+					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
 				],
 				'loading_strategy' => [
@@ -907,17 +911,8 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
-				// settings_3d: lighting
-				'global_intensity' => [
-					'sanitize' => 'floatval',
-					'escape' => 'floatval',
-				],
-				'default_light_enabled' => [
-					'sanitize' => 'boolean',
-					'escape' => 'boolean',
-				],
 				'type' => [
-					'sanitize' => 'sanitize_key',
+					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
 				],
 				'cast_shadow' => [

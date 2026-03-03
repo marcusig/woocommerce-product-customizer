@@ -28,16 +28,6 @@ export function initScene( container, s ) {
 	const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
 	camera.position.set( 0, 1, 3 );
 
-	const lighting = s.lighting || {};
-	let defaultLight = null;
-	if ( lighting.default_light_enabled !== false ) {
-		defaultLight = new THREE.DirectionalLight( 0xffffff, 1.2 );
-		defaultLight.position.set( 5, 10, 7.5 );
-		defaultLight.userData = { baseIntensity: 1.2, isDefaultLight: true };
-		scene.add( defaultLight );
-		scene.add( defaultLight.target );
-	}
-
 	const controls = new OrbitControls( camera, renderer.domElement );
 	const limits = getOrbitLimitsFromEnv( s.environment || {} );
 	controls.minPolarAngle = limits.minPolarAngle;
@@ -66,7 +56,6 @@ export function initScene( container, s ) {
 		model_root: null,
 		gltf: null,
 		current_env_url: null,
-		default_light: defaultLight,
 		container,
 		initial_camera_position: null,
 		initial_controls_target: null,

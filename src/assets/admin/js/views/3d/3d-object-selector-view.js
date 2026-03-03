@@ -137,12 +137,8 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		return this;
 	},
 	resolveAndLoad() {
-		// Camera focus uses objects3d list; ensure getter is available
-		const getSources = this.setting === 'camera_focus_object_ids' && typeof window.PC.threeD.getObjects3DModelSources === 'function'
-			? window.PC.threeD.getObjects3DModelSources
-			: ( window.PC.threeD && typeof window.PC.threeD.getSceneModelSources === 'function' ? window.PC.threeD.getSceneModelSources : null );
-		if ( this.loadAllSceneModels && getSources ) {
-			this.loadAllSceneModelsAndRender( getSources );
+		if ( this.loadAllSceneModels && window.PC.threeD && typeof window.PC.threeD.getObjects3DModelSources === 'function' ) {
+			this.loadAllSceneModelsAndRender( window.PC.threeD.getObjects3DModelSources );
 			return;
 		}
 		let url = this.modelUrl;
@@ -175,12 +171,14 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 			view.showError( '3D store not ready. Please try again.' );
 			return;
 		}
-		const getter = typeof getSources === 'function' ? getSources : window.PC.threeD.getSceneModelSources;
+		const getter = typeof getSources === 'function' ? getSources : null;
+		if ( ! getter ) {
+			view.showError( 'No 3D objects. Add models in 3D Objects.' );
+			return;
+		}
 		getter( ( err, sources ) => {
 			if ( err || ! sources || ! sources.length ) {
-				view.showError( view.setting === 'camera_focus_object_ids'
-					? 'No 3D objects. Add models in 3D Objects.'
-					: 'No 3D models in the scene. Add a 3D object to a layer or in 3D Objects.' );
+				view.showError( 'No 3D objects. Add models in 3D Objects.' );
 				return;
 			}
 			const results = new Array( sources.length );
@@ -299,19 +297,51 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 	},
 } );
 
+/**
+ * Set a value at a path (array of keys) in an object; mutates and returns the object.
+ * @param {Object} obj
+ * @param {string[]} path
+ * @param {*} value
+ * @returns {Object}
+ */
+function setValueByPath( obj, path, value ) {
+	if ( ! path || path.length === 0 ) return obj;
+	let current = obj;
+	for ( let i = 0; i < path.length - 1; i++ ) {
+		const key = path[i];
+		if ( ! ( key in current ) || typeof current[key] !== 'object' || current[key] === null ) {
+			current[key] = {};
+		}
+		current = current[key];
+	}
+	current[ path[ path.length - 1 ] ] = value;
+	return obj;
+}
+
 function select_3d_object( $el, context ) {
 	const opts = { target: $el, context };
 	if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
 	if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
 	opts.setting = $el?.data( 'setting' ) || 'object_id_3d';
-	opts.resolveOptions = opts.setting === 'camera_target_object_id'
+	const isSceneObjectSelector = opts.setting === 'camera_target_object_id' || opts.setting === 'light_data.target_object_id';
+	opts.resolveOptions = isSceneObjectSelector
 		? { sourceKey: 'camera_target_model', uploadKey: null }
 		: { sourceKey: 'object_selection_3d', uploadKey: 'model_upload_3d' };
 	opts.applySelection = function( selection ) {
 		const id = selection?.id;
 		if ( id == null ) return;
 		if ( context && context.model && typeof context.model.set === 'function' ) {
-			context.model.set( opts.setting, id );
+			const setting = opts.setting;
+			if ( setting.indexOf( '.' ) !== -1 ) {
+				const parts = setting.split( '.' );
+				const rootKey = parts[0];
+				const path = parts.slice( 1 );
+				const current = context.model.get( rootKey );
+				const updated = setValueByPath( current ? $.extend( true, {}, current ) : {}, path, id );
+				context.model.set( rootKey, updated );
+			} else {
+				context.model.set( setting, id );
+			}
 			if ( context.collectionName && window.PC.app && window.PC.app.is_modified ) {
 				window.PC.app.is_modified[ context.collectionName ] = true;
 			} else if ( window.PC.app && window.PC.app.is_modified ) {

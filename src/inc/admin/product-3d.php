@@ -16,8 +16,9 @@ class Admin_Product_3D {
                 $mimes['glb']  = 'model/gltf-binary';
                 $mimes['bin']  = 'application/octet-stream';
                 $mimes['zip']  = 'application/zip';
-                // HDR for environment maps
+                // HDR and EXR for environment maps
                 $mimes['hdr']  = 'image/vnd.radiance';
+                $mimes['exr']  = 'image/x-exr';
             }
             return $mimes;
         });
@@ -45,6 +46,11 @@ class Admin_Product_3D {
                 if ( 'hdr' === strtolower( $ext ) ) {
                     $data['ext']  = 'hdr';
                     $data['type'] = 'image/vnd.radiance';
+                    $data['proper_filename'] = $filename;
+                }
+                if ( 'exr' === strtolower( $ext ) ) {
+                    $data['ext']  = 'exr';
+                    $data['type'] = 'image/x-exr';
                     $data['proper_filename'] = $filename;
                 }
             }

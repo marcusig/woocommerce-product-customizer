@@ -33,6 +33,7 @@ var PC = PC || {};
 				filename: ( data && data.filename ) || '',
 				object_type: ( data && data.object_type ) || 'gltf',
 				loading_strategy: ( data && data.loading_strategy ) || 'eager',
+				light_data: ( data && data.light_data ) || null,
 			} );
 		},
 	} );

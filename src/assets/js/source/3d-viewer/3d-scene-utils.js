@@ -109,13 +109,43 @@ export function getHdrUrlFromEnv( env, hdrBaseUrl ) {
 	return ( hdrBaseUrl || '' ) + getDefaultHdrPresetFilename( preset );
 }
 
+/**
+ * Load an environment map (HDR or EXR) from URL. Uses HDRLoader for .hdr, EXRLoader for .exr.
+ * @param {string} url - full URL to the file
+ * @param {function(THREE.DataTexture)} onLoad - called with the loaded texture
+ * @param {function()} [onProgress]
+ * @param {function()} [onError]
+ */
+export function loadEnvMap( url, onLoad, onProgress, onError ) {
+	if ( ! url ) {
+		if ( onError ) onError();
+		return;
+	}
+	const isExr = /\.exr(\?|#|$)/i.test( url );
+	const loaderModule = isExr ? import( 'three/addons/loaders/EXRLoader.js' ) : import( 'three/addons/loaders/HDRLoader.js' );
+	loaderModule.then( ( mod ) => {
+		const LoaderClass = isExr ? mod.EXRLoader : mod.HDRLoader;
+		const loader = new LoaderClass();
+		loader.load(
+			url,
+			( texture ) => {
+				texture.mapping = THREE.EquirectangularReflectionMapping;
+				if ( onLoad ) onLoad( texture );
+			},
+			onProgress || undefined,
+			onError || ( () => {} )
+		);
+	} ).catch( onError || ( () => {} ) );
+}
+
 // -------------------------------------------------------------------------
 // Light creation (3.1)
 // -------------------------------------------------------------------------
 
 /**
- * Create a light from settings (type, color, intensity).
- * @param {Object} settings - { type?, color?, intensity? }
+ * Create a light from settings (type, color, intensity, and type-specific params).
+ * Optionally applies position; target must be set by caller (from ld.target or by resolving target_object_id).
+ * @param {Object} settings - light_data: type?, color?, intensity?, position?, angle?, penumbra?, distance?, decay?, width?, height?, groundColor?
  * @param {number} gi - global intensity multiplier
  * @returns {THREE.Light}
  */
@@ -125,21 +155,97 @@ export function createLightFromSettings( settings, gi ) {
 	const intensity = base * gi;
 	const type = settings.type || 'PointLight';
 	let light;
-	if ( type === 'DirectionalLight' ) {
+	if ( type === 'AmbientLight' ) {
+		light = new THREE.AmbientLight( color, intensity );
+	} else if ( type === 'HemisphereLight' ) {
+		const groundColor = new THREE.Color( settings.groundColor != null ? settings.groundColor : '#443333' );
+		light = new THREE.HemisphereLight( color, groundColor, intensity );
+	} else if ( type === 'DirectionalLight' ) {
 		light = new THREE.DirectionalLight( color, intensity );
 	} else if ( type === 'SpotLight' ) {
-		light = new THREE.SpotLight( color, intensity );
+		const distance = ( settings.distance != null && settings.distance > 0 ) ? settings.distance : 0;
+		const angle = settings.angle != null ? settings.angle : Math.PI / 4;
+		const penumbra = settings.penumbra != null ? settings.penumbra : 0;
+		const decay = settings.decay != null ? settings.decay : 2;
+		light = new THREE.SpotLight( color, intensity, distance, angle, penumbra, decay );
+	} else if ( type === 'RectAreaLight' ) {
+		const width = settings.width != null ? settings.width : 10;
+		const height = settings.height != null ? settings.height : 10;
+		light = new THREE.RectAreaLight( color, intensity, width, height );
 	} else {
-		light = new THREE.PointLight( color, intensity );
+		// PointLight (default)
+		const distance = ( settings.distance != null && settings.distance > 0 ) ? settings.distance : 0;
+		const decay = settings.decay != null ? settings.decay : 2;
+		light = new THREE.PointLight( color, intensity, distance, decay );
 	}
 	light.userData = light.userData || {};
 	light.userData.baseIntensity = base;
+	if ( settings.position && ( settings.position.x != null || settings.position.y != null || settings.position.z != null ) ) {
+		light.position.set(
+			settings.position.x != null ? settings.position.x : 0,
+			settings.position.y != null ? settings.position.y : 0,
+			settings.position.z != null ? settings.position.z : 0
+		);
+	}
+	if ( light.target && settings.target && ( settings.target.x != null || settings.target.y != null || settings.target.z != null ) ) {
+		light.target.position.set(
+			settings.target.x != null ? settings.target.x : 0,
+			settings.target.y != null ? settings.target.y : 0,
+			settings.target.z != null ? settings.target.z : 0
+		);
+	}
+	// Optional explicit rotation in degrees (applied to all light types, mainly used for RectAreaLight).
+	if ( settings.rotation && ( settings.rotation.x != null || settings.rotation.y != null || settings.rotation.z != null ) ) {
+		const rx = ( settings.rotation.x != null ? settings.rotation.x : 0 ) * Math.PI / 180;
+		const ry = ( settings.rotation.y != null ? settings.rotation.y : 0 ) * Math.PI / 180;
+		const rz = ( settings.rotation.z != null ? settings.rotation.z : 0 ) * Math.PI / 180;
+		light.rotation.set( rx, ry, rz );
+	}
 	return light;
 }
 
+/**
+ * Apply a cookie (projection texture) to a light that supports it (SpotLight, DirectionalLight).
+ * Loads the texture from cookie.url and sets light.map. Async.
+ * @param {THREE.SpotLight|THREE.DirectionalLight} light - light with .map property
+ * @param {{ url: string }|string} cookie - cookie object with url, or url string
+ */
+export function applyLightCookie( light, cookie ) {
+	if ( ! light || ! cookie ) return;
+	const url = typeof cookie === 'string' ? cookie : ( cookie.url || '' );
+	if ( ! url ) return;
+	if ( light.map && light.map.dispose ) light.map.dispose();
+	const loader = new THREE.TextureLoader();
+	loader.load( url, ( texture ) => {
+		if ( light.map && light.map !== texture && light.map.dispose ) light.map.dispose();
+		light.map = texture;
+	} );
+}
+
 // -------------------------------------------------------------------------
-// Scene dispose (3.5)
+// Scene light stripping & dispose (3.8)
 // -------------------------------------------------------------------------
+
+/**
+ * Remove all lights (and their targets) from a scene or subtree.
+ * Used to ensure only configured lights (from objects3d) are present, not GLTF-embedded lights.
+ * @param {THREE.Object3D} root
+ */
+export function removeLightsFromScene( root ) {
+	if ( ! root ) return;
+	const toRemove = [];
+	root.traverse( ( obj ) => {
+		if ( obj && obj.isLight ) {
+			toRemove.push( obj );
+			if ( obj.target && obj.target.parent ) {
+				toRemove.push( obj.target );
+			}
+		}
+	} );
+	toRemove.forEach( ( obj ) => {
+		if ( obj.parent ) obj.parent.remove( obj );
+	} );
+}
 
 /**
  * Traverse scene and dispose geometries and materials (and material maps).
@@ -156,6 +262,7 @@ export function disposeScene( scene ) {
 				if ( m && m.map && m.map.dispose ) m.map.dispose();
 			} );
 		}
+		if ( obj.isLight && obj.map && obj.map.dispose ) obj.map.dispose();
 	} );
 }
 

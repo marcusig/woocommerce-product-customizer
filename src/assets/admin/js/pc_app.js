@@ -4,6 +4,158 @@ var PC = PC || {};
 PC.actions = PC.actions || {};
 PC.threeD = PC.threeD || {};
 
+// Generic file select/remove actions for settings fields of type "file".
+// These work for both nested objects (value_path storing { id, url, filename? })
+// and flat paths (flat_id_path / flat_url_path / flat_filename_path).
+if ( ! PC.actions.pc_file_select ) {
+	PC.actions.pc_file_select = function ( $el, context ) {
+		if ( ! context || ! context.model || ! window.wp || ! window.wp.media ) return;
+
+		var $container = $el.closest( '.mkl-pc-setting--file' );
+		if ( ! $container.length ) return;
+
+		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
+		var flatIdPath = $container.attr( 'data-flat-id-path' ) || '';
+		var flatUrlPath = $container.attr( 'data-flat-url-path' ) || '';
+		var flatFilenamePath = $container.attr( 'data-flat-filename-path' ) || '';
+		var allowed = $container.attr( 'data-allowed-types' ) || 'image';
+
+		if ( ! settingPath && ! flatIdPath && ! flatUrlPath ) return;
+
+		var mediaArgs = {
+			title: ( PC.lang && PC.lang.media_title_file ) ? PC.lang.media_title_file : 'Select file',
+			button: {
+				text: ( PC.lang && PC.lang.media_select_button_file ) ? PC.lang.media_select_button_file : 'Use this file',
+			},
+			multiple: false,
+		};
+
+		if ( allowed === 'image' ) {
+			mediaArgs.library = { type: 'image' };
+		}
+
+		var frame = window.wp.media( mediaArgs );
+
+		// Helper to set nested or flat paths on the model immutably.
+		var setPath = function( model, path, value ) {
+			if ( ! path ) return;
+			path = String( path );
+			if ( path.indexOf( '.' ) === -1 ) {
+				model.set( path, value );
+				return;
+			}
+			var parts = path.split( '.' );
+			var rootKey = parts[0];
+			var obj = model.get( rootKey );
+			obj = obj && typeof obj === 'object' ? _.extend( {}, obj ) : {};
+			var cursor = obj;
+			for ( var i = 1; i < parts.length - 1; i++ ) {
+				var key = parts[i];
+				cursor[ key ] = cursor[ key ] && typeof cursor[ key ] === 'object' ? _.extend( {}, cursor[ key ] ) : {};
+				cursor = cursor[ key ];
+			}
+			cursor[ parts[ parts.length - 1 ] ] = value;
+			model.set( rootKey, obj );
+		};
+
+		frame.on( 'select', function () {
+			var selection = frame.state().get( 'selection' );
+			var att = selection && selection.first ? selection.first().toJSON() : null;
+			if ( ! att ) return;
+
+			var url = att.gltf_url || att.url || '';
+			var filename = att.gltf_filename || att.filename || '';
+
+			if ( flatIdPath ) {
+				setPath( context.model, flatIdPath, att.id );
+			}
+			if ( flatUrlPath ) {
+				setPath( context.model, flatUrlPath, url );
+			}
+			if ( flatFilenamePath ) {
+				setPath( context.model, flatFilenamePath, filename );
+			}
+
+			// Nested object storage at value_path (e.g. light_data.cookie).
+			if ( ! flatIdPath && ! flatUrlPath && settingPath ) {
+				setPath( context.model, settingPath, {
+					id: att.id,
+					url: url,
+					filename: filename,
+				} );
+			}
+
+			if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
+				window.PC.app.is_modified[ context.collectionName ] = true;
+			}
+
+			if ( context.render ) {
+				context.render();
+			}
+		} );
+
+		frame.open();
+	};
+}
+
+if ( ! PC.actions.pc_file_remove ) {
+	PC.actions.pc_file_remove = function ( $el, context ) {
+		if ( ! context || ! context.model ) return;
+
+		var $container = $el.closest( '.mkl-pc-setting--file' );
+		if ( ! $container.length ) return;
+
+		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
+		var flatIdPath = $container.attr( 'data-flat-id-path' ) || '';
+		var flatUrlPath = $container.attr( 'data-flat-url-path' ) || '';
+		var flatFilenamePath = $container.attr( 'data-flat-filename-path' ) || '';
+
+		var setPath = function( model, path, value ) {
+			if ( ! path ) return;
+			path = String( path );
+			if ( path.indexOf( '.' ) === -1 ) {
+				model.set( path, value );
+				return;
+			}
+			var parts = path.split( '.' );
+			var rootKey = parts[0];
+			var obj = model.get( rootKey );
+			obj = obj && typeof obj === 'object' ? _.extend( {}, obj ) : {};
+			var cursor = obj;
+			for ( var i = 1; i < parts.length - 1; i++ ) {
+				var key = parts[i];
+				cursor[ key ] = cursor[ key ] && typeof cursor[ key ] === 'object' ? _.extend( {}, cursor[ key ] ) : {};
+				cursor = cursor[ key ];
+			}
+			cursor[ parts[ parts.length - 1 ] ] = value;
+			model.set( rootKey, obj );
+		};
+
+		if ( flatIdPath ) {
+			setPath( context.model, flatIdPath, null );
+		}
+		if ( flatUrlPath ) {
+			setPath( context.model, flatUrlPath, '' );
+		}
+		if ( flatFilenamePath ) {
+			setPath( context.model, flatFilenamePath, '' );
+		}
+
+		if ( ! flatIdPath && ! flatUrlPath && settingPath ) {
+			// Clear nested object.
+			setPath( context.model, settingPath, {} );
+		}
+
+		if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
+			window.PC.app.is_modified[ context.collectionName ] = true;
+		}
+
+		if ( context.render ) {
+			context.render();
+		}
+	};
+}
+
 // Provide the 3D model media frame even if 3D settings haven't been opened yet.
 if ( ! PC.threeD.openModelMediaFrame ) {
 	PC.threeD.openModelMediaFrame = function ( opts = {} ) {
@@ -70,6 +222,36 @@ if ( ! PC.actions.edit_object3d_upload ) {
 				if ( context.$el && $el && $el.data ) {
 					const setting = $el.data( 'setting' ) || 'attachment_id';
 					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
+				}
+				// If GLTF contains lights, offer to import them as objects3d of type Light
+				if ( url && window.PC.threeD && window.PC.threeD.store && typeof window.PC.threeD.store.get === 'function' && window.PC.threeD.getLightsFromSceneForImport ) {
+					window.PC.threeD.store.get( url, function ( err, data ) {
+						if ( err || ! data || ! data.gltf || ! data.gltf.scene ) return;
+						const lights = window.PC.threeD.getLightsFromSceneForImport( data.gltf.scene );
+						if ( ! lights.length ) return;
+						const n = lights.length;
+						const msg = ( typeof PC_lang !== 'undefined' && PC_lang.import_lights_from_gltf )
+							? PC_lang.import_lights_from_gltf.replace( '%d', String( n ) )
+							: 'This model contains ' + n + ' light(s). Import them as 3D Objects?';
+						if ( ! window.confirm( msg ) ) return;
+						const col = context.model && context.model.collection;
+						if ( ! col || ! col.create_object ) return;
+						lights.forEach( function ( light ) {
+							const attrs = col.create_object( {
+								object_type: 'light',
+								name: light.name,
+								light_data: {
+									type: light.type,
+									color: light.color,
+									intensity: light.intensity,
+									position: light.position,
+									target: light.target,
+								},
+							} );
+							col.add( attrs );
+						} );
+						if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.objects3d = true;
+					} );
 				}
 			},
 		} );

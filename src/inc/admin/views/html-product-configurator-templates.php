@@ -248,25 +248,12 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></span></h2>
 							<div class="pc-3d-setting-group">
 								<h4><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="description"><?php _e( 'The HDR environment controls reflections and lighting. The background controls what is visible behind the model.', 'product-configurator-for-woocommerce' ); ?></p>
+								<p class="description"><?php _e( 'The environment map controls reflections and lighting. Choose a built-in preset or an environment from the 3D Objects list (type: Environment).', 'product-configurator-for-woocommerce' ); ?></p>
 								<p class="field-row">
-									<label><?php _e( 'Environment HDR source', 'product-configurator-for-woocommerce' ); ?></label>
-									<select class="pc-3d-env-mode" data-key="environment.mode">
-										<option value="preset" <# if ( data.environment && data.environment.mode === 'preset' ) { #>selected<# } #>><?php _e( 'Preset', 'product-configurator-for-woocommerce' ); ?></option>
-										<option value="custom" <# if ( data.environment && data.environment.mode === 'custom' ) { #>selected<# } #>><?php _e( 'Custom HDR upload', 'product-configurator-for-woocommerce' ); ?></option>
+									<label><?php _e( 'Environment source', 'product-configurator-for-woocommerce' ); ?></label>
+									<select class="pc-3d-env-source">
+										<!-- Options populated by JS: presets (Outdoor, Studio) then environment objects from objects3d -->
 									</select>
-								</p>
-								<p class="field-row pc-3d-env-preset-row">
-									<label><?php _e( 'Preset', 'product-configurator-for-woocommerce' ); ?></label>
-									<select class="pc-3d-env-preset" data-key="environment.preset">
-										<option value="outdoor" <# if ( data.environment && data.environment.preset === 'outdoor' ) { #>selected<# } #>><?php _e( 'Outdoor', 'product-configurator-for-woocommerce' ); ?></option>
-										<option value="studio" <# if ( data.environment && data.environment.preset === 'studio' ) { #>selected<# } #>><?php _e( 'Studio', 'product-configurator-for-woocommerce' ); ?></option>
-									</select>
-								</p>
-								<p class="field-row pc-3d-env-custom-row" style="display:none;">
-									<label><?php _e( 'Custom HDR', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="hidden" class="pc-3d-env-custom-hdr-url" data-key="environment.custom_hdr_url" value="{{ data.environment && data.environment.custom_hdr_url ? data.environment.custom_hdr_url : '' }}" />
-									<button type="button" class="button pc-3d-select-hdr"><?php _e( 'Upload HDR', 'product-configurator-for-woocommerce' ); ?></button>
 								</p>
 								<p class="field-row">
 									<label><?php _e( 'Environment intensity', 'product-configurator-for-woocommerce' ); ?></label>
@@ -376,23 +363,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							</p>
 						</div>
 						<div class="components-panel__body is-opened setting setting-section">
-							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Lighting (Global)', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<p class="description"><?php _e( 'Use a default light and a list of lights imported from the 3D model. Changes here override the model lights in both preview and frontend.', 'product-configurator-for-woocommerce' ); ?></p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-default-light-enabled" data-key="lighting.default_light_enabled" <# if ( data.lighting && data.lighting.default_light_enabled !== false ) { #>checked<# } #> /> <?php _e( 'Enable default directional light', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-							<p class="field-row">
-								<label><?php _e( 'Global light intensity multiplier', 'product-configurator-for-woocommerce' ); ?></label>
-								<input type="range" class="pc-3d-global-intensity" data-key="lighting.global_intensity" min="0" max="3" step="0.05" value="{{ data.lighting && data.lighting.global_intensity != null ? data.lighting.global_intensity : 1 }}" />
-								<span class="pc-3d-value-display pc-3d-global-intensity-value">1</span>
-							</p>
-							<div class="pc-3d-setting-group">
-								<h4><?php _e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="description"><?php _e( 'Lights from the 3D model appear below. Load a model to see them.', 'product-configurator-for-woocommerce' ); ?></p>
-								<div class="pc-3d-lights-list"></div>
-							</div>
-						</div>
-						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></span></h2>
 							<p class="description"><?php _e( 'Store the current preview camera as an angle so the frontend can switch to this view.', 'product-configurator-for-woocommerce' ); ?></p>
 							<p class="field-row">
@@ -433,21 +403,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				</div>
 			</div>
 		</div>
-	</div>
-</script>
-<script type="text/html" id="tmpl-mkl-pc-3d-light-item">
-	<div class="pc-3d-light-item">
-		<label>
-			<input type="checkbox" class="pc-3d-light-enabled" data-key="enabled" <# if ( data.enabled !== false ) { #>checked<# } #> />
-			{{ data.label }}
-		</label>
-		<select class="pc-3d-light-type" data-key="type">
-			<option value="PointLight" <# if ( data.type === 'PointLight' ) { #>selected<# } #>><?php _e( 'Point', 'product-configurator-for-woocommerce' ); ?></option>
-			<option value="DirectionalLight" <# if ( data.type === 'DirectionalLight' ) { #>selected<# } #>><?php _e( 'Directional', 'product-configurator-for-woocommerce' ); ?></option>
-			<option value="SpotLight" <# if ( data.type === 'SpotLight' ) { #>selected<# } #>><?php _e( 'Spot', 'product-configurator-for-woocommerce' ); ?></option>
-		</select>
-		<input type="color" class="pc-3d-light-color" data-key="color" value="{{ data.color || '#ffffff' }}" />
-		<input type="number" class="pc-3d-light-intensity" data-key="intensity" min="0" step="0.1" value="{{ data.intensity != null ? data.intensity : 1 }}" />
 	</div>
 </script>
 <?php 

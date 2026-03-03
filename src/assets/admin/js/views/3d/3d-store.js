@@ -1,5 +1,5 @@
 /**
- * Admin 3D store: one load per URL, getMaterialVariantsFromUrl, getMaterialNamesFromUrl, resolveModelUrl, populateModelSourceSelect.
+ * Admin 3D store: cache by URL, resolveModelUrl (object_3d_id / camera_target_model), getObjects3DModelSources, populateModelSourceSelect.
  * Depends on PC.threeD.getGltfLoader (3d-loader.js). Uses shared buildObjectTreeFromScene and disposeScene.
  */
 import { buildObjectTreeFromScene, disposeScene } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
@@ -8,14 +8,6 @@ function get3DObjectsCollection() {
 	return ( window.PC && window.PC.app && typeof window.PC.app.get_collection === 'function' && window.PC.app.get_collection( 'objects3d' ) )
 		? window.PC.app.get_collection( 'objects3d' )
 		: null;
-}
-
-function getLayersCollection() {
-	return ( window.PC && window.PC.app && window.PC.app.admin && window.PC.app.admin.layers )
-		? window.PC.app.admin.layers
-		: ( window.PC && window.PC.app && typeof window.PC.app.get_collection === 'function' && window.PC.app.get_collection( 'layers' ) )
-			? window.PC.app.get_collection( 'layers' )
-			: null;
 }
 
 /**
@@ -51,10 +43,11 @@ function resolveAttachmentUrl( attId, done ) {
 }
 
 /**
- * Resolve model URL for a layer or choice: use object_3d_id (from objects3d).
- * When options.sourceKey is 'camera_target_model' (angle), resolves layer_<id> from layer's object_3d_id.
+ * Resolve model URL for a layer, choice, or angle.
+ * - Layers/choices: use object_3d_id (from objects3d).
+ * - Angles (sourceKey 'camera_target_model'): use camera_target_model value as objects3d id.
  * @param {Backbone.Model} model - Layer, choice, or angle model.
- * @param {{ sourceKey: string, uploadKey: string|null }} options - sourceKey for angle: 'camera_target_model'.
+ * @param {{ sourceKey: string }} options - sourceKey for angle: 'camera_target_model'.
  * @param {function(string|null)} callback - Called with the resolved URL or null.
  */
 function resolveModelUrl( model, options, callback ) {
@@ -66,20 +59,6 @@ function resolveModelUrl( model, options, callback ) {
 	if ( sourceKey === 'camera_target_model' ) {
 		const source = model.get( 'camera_target_model' );
 		if ( source == null || source === '' ) return callback( null );
-		// Legacy: main_model no longer used
-		if ( source === 'main_model' ) return callback( null );
-		// Layer reference: resolve via layer's object_3d_id
-		if ( typeof source === 'string' && source.indexOf( 'layer_' ) === 0 ) {
-			const layerId = source.replace( /^layer_/, '' );
-			const layers = getLayersCollection();
-			const layer = layers && layers.get ? layers.get( layerId ) : null;
-			if ( layer ) {
-				const oid = layer.get( 'object_3d_id' );
-				if ( oid != null && oid !== '' ) return resolveObject3DUrl( oid, callback );
-			}
-			return callback( null );
-		}
-		// Direct objects3d id (from Camera target model dropdown)
 		return resolveObject3DUrl( String( source ), callback );
 	}
 	const object3dId = model.get( 'object_3d_id' );
@@ -147,39 +126,8 @@ function createStore() {
 	return { get, remove };
 }
 
-function resolveChoiceModelUrl( choiceModel, layerModel, callback ) {
-	resolveModelUrl( choiceModel, {}, callback );
-}
-
-function resolveLayerModelUrl( layerModel, callback ) {
-	resolveModelUrl( layerModel, {}, callback );
-}
-
 function resolveAngleCameraTargetModelUrl( angleModel, callback ) {
-	resolveModelUrl( angleModel, { sourceKey: 'camera_target_model', uploadKey: null }, callback );
-}
-
-/**
- * Resolve attachment_id for a layer/choice model's 3D source (object_3d_id from objects3d).
- * @param {Backbone.Model} model - Layer or choice model.
- * @param {{ sourceKey: string, uploadKey: string|null }} options - Ignored; kept for API compatibility.
- * @param {function(number|string|null)} callback - Called with attachment_id or null.
- */
-function resolveModelAttachmentId( model, options, callback ) {
-	if ( ! model || typeof callback !== 'function' ) {
-		if ( typeof callback === 'function' ) callback( null );
-		return;
-	}
-	const object3dId = model.get( 'object_3d_id' );
-	if ( object3dId != null && object3dId !== '' ) {
-		const objects3d = get3DObjectsCollection();
-		if ( objects3d ) {
-			const obj = objects3d.get( object3dId );
-			if ( obj ) return callback( obj.get( 'attachment_id' ) != null ? obj.get( 'attachment_id' ) : null );
-		}
-		return callback( null );
-	}
-	return callback( null );
+	resolveModelUrl( angleModel, { sourceKey: 'camera_target_model' }, callback );
 }
 
 /**
@@ -219,48 +167,6 @@ function getObjects3DModelSources( callback ) {
 }
 
 /**
- * Get all model sources that make up the configurator scene (each layer with a model).
- * sourceId is the attachment_id (stable file id) for camera_focus_object_ids composite ids.
- * @param {function(Error|null, Array<{ sourceLabel: string, url: string, sourceId: string }>)} callback
- */
-function getSceneModelSources( callback ) {
-	if ( typeof callback !== 'function' ) return;
-	const out = [];
-	const layers = getLayersCollection();
-	if ( ! layers || ! layers.length ) {
-		return callback( null, out );
-	}
-	const layerResults = new Array( layers.length );
-	let pending = layers.length;
-	let done = false;
-	function onLayer( idx, url, label, attachmentId ) {
-		if ( done ) return;
-		layerResults[ idx ] = url ? { sourceLabel: label, url, sourceId: attachmentId != null ? String( attachmentId ) : null } : null;
-		pending--;
-		if ( pending <= 0 ) {
-			done = true;
-			const seen = new Set( out.map( ( s ) => s.url ) );
-			layerResults.forEach( ( r ) => {
-				if ( r && r.url && ! seen.has( r.url ) ) {
-					seen.add( r.url );
-					out.push( r );
-				}
-			} );
-			callback( null, out );
-		}
-	}
-	layers.each( function( layer, idx ) {
-		const layerName = layer.get( 'name' ) || ( 'Layer ' + ( layer.get( '_id' ) || layer.id || layer.cid ) );
-		const label = 'Layer: ' + layerName;
-		resolveModelUrl( layer, {}, function( url ) {
-			resolveModelAttachmentId( layer, {}, function( attachmentId ) {
-				onLayer( idx, url, label, attachmentId );
-			} );
-		} );
-	} );
-}
-
-/**
  * Populate a model source select with options from the objects3d collection. Used for angle camera_target_model. Layer/choice forms use object_3d_id select from objects3d directly.
  */
 function populateModelSourceSelect( $, $sel, currentVal, options ) {
@@ -291,9 +197,6 @@ window.PC.threeD.getMaterialNamesFromUrl = function( url, callback ) {
 window.PC.threeD.get3DObjectsCollection = get3DObjectsCollection;
 window.PC.threeD.resolveObject3DUrl = resolveObject3DUrl;
 window.PC.threeD.resolveModelUrl = resolveModelUrl;
-window.PC.threeD.resolveChoiceModelUrl = resolveChoiceModelUrl;
-window.PC.threeD.resolveLayerModelUrl = resolveLayerModelUrl;
 window.PC.threeD.resolveAngleCameraTargetModelUrl = resolveAngleCameraTargetModelUrl;
-window.PC.threeD.getSceneModelSources = getSceneModelSources;
 window.PC.threeD.getObjects3DModelSources = getObjects3DModelSources;
 window.PC.threeD.populateModelSourceSelect = populateModelSourceSelect;
