@@ -312,37 +312,40 @@ export default Backbone.View.extend({
 		if ( Array.isArray( objects3d ) ) {
 			objects3d.forEach( ( item ) => {
 				if ( item.object_type !== 'light' ) return;
-				// Flat keys: light_type, light_position, light_color, etc. (legacy: item.light_data)
-				const ld = item.light_data || {};
-				const type = item.light_type || ld.type || 'PointLight';
+				// Flat keys only: light_type, light_position, light_color, etc.
+				const type = item.light_type || 'PointLight';
 				const settings = {
 					type,
-					color: item.light_color != null ? item.light_color : ( ld.color || '#ffffff' ),
-					intensity: item.light_intensity != null ? item.light_intensity : ( ld.intensity != null ? ld.intensity : 1 ),
-					position: item.light_position || ld.position,
-					target: item.light_target || ld.target,
-					angle: item.light_angle != null ? item.light_angle : ld.angle,
-					penumbra: item.penumbra != null ? item.penumbra : ld.penumbra,
-					distance: item.distance != null ? item.distance : ld.distance,
-					decay: item.decay != null ? item.decay : ld.decay,
-					width: item.rect_width != null ? item.rect_width : ( ld.rect_width != null ? ld.rect_width : ld.width ),
-					height: item.rect_height != null ? item.rect_height : ( ld.rect_height != null ? ld.rect_height : ld.height ),
-					groundColor: item.light_ground_color != null ? item.light_ground_color : ld.groundColor,
+					color: item.light_color != null ? item.light_color : '#ffffff',
+					intensity: item.light_intensity != null ? item.light_intensity : 1,
+					position: item.light_position,
+					target: item.light_target,
+					angle: item.light_angle,
+					penumbra: item.penumbra,
+					distance: item.distance,
+					decay: item.decay,
+					width: item.rect_width,
+					height: item.rect_height,
+					groundColor: item.light_ground_color,
 				};
-				const rot = item.rect_rotation || ld.rect_rotation;
+				const rot = item.rect_rotation;
 				if ( rot ) settings.rotation = rot;
 				const light = createLightFromSettings( settings, gi );
 				light.name = item.name || 'Light';
-				const targetObjectId = item.light_target_object_id != null ? item.light_target_object_id : ld.target_object_id;
+				const targetObjectId = item.light_target_object_id;
 				if ( light.target && targetObjectId && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
 					const targetObj = findObjectByCompositeId( t.scene, targetObjectId );
 					if ( targetObj ) getObjectTargetPosition( targetObj, light.target.position );
 				} else if ( light.target && settings.target ) {
-					light.target.position.set( settings.target.x != null ? settings.target.x : 0, settings.target.y != null ? settings.target.y : 0, settings.target.z != null ? settings.target.z : 0 );
+					light.target.position.set(
+						settings.target.x != null ? settings.target.x : 0,
+						settings.target.y != null ? settings.target.y : 0,
+						settings.target.z != null ? settings.target.z : 0
+					);
 				}
 				t.scene.add( light );
 				if ( light.target ) t.scene.add( light.target );
-				const cookie = item.light_cookie || ld.cookie;
+				const cookie = item.light_cookie;
 				if ( cookie && cookie.url ) applyLightCookie( light, cookie );
 			} );
 		}

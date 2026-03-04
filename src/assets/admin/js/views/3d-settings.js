@@ -893,33 +893,41 @@ PC.views = window.PC.views || {};
 					if ( objects3dCol && typeof PC.threeD.createLightFromSettings === 'function' ) {
 						objects3dCol.each( function ( obj ) {
 							if ( obj.get( 'object_type' ) !== 'light' ) return;
-							var ld = obj.get( 'light_data' );
-							if ( ! ld ) return;
-							var settings = { type: ld.type || 'PointLight', color: ld.color || '#ffffff', intensity: ( ld.intensity != null ) ? ld.intensity : 1 };
-							settings.position = ld.position;
-							settings.target = ld.target;
-							settings.angle = ld.angle;
-							settings.penumbra = ld.penumbra;
-							settings.distance = ld.distance;
-							settings.decay = ld.decay;
-							// RectAreaLight dimensions: prefer new rect_width/rect_height, fall back to legacy width/height if present.
-							settings.width = ( ld.rect_width != null ) ? ld.rect_width : ld.width;
-							settings.height = ( ld.rect_height != null ) ? ld.rect_height : ld.height;
+							var settings = {
+								type: obj.get( 'light_type' ) || 'PointLight',
+								color: obj.get( 'light_color' ) || '#ffffff',
+								intensity: ( obj.get( 'light_intensity' ) != null ) ? obj.get( 'light_intensity' ) : 1
+							};
+							settings.position = obj.get( 'light_position' );
+							settings.target = obj.get( 'light_target' );
+							settings.angle = obj.get( 'light_angle' );
+							settings.penumbra = obj.get( 'penumbra' );
+							settings.distance = obj.get( 'distance' );
+							settings.decay = obj.get( 'decay' );
+							settings.width = obj.get( 'rect_width' );
+							settings.height = obj.get( 'rect_height' );
 							// Optional explicit rotation (degrees) for RectAreaLight and other lights.
-							if ( ld.rect_rotation ) settings.rotation = ld.rect_rotation;
-							settings.groundColor = ld.groundColor;
+							var rot = obj.get( 'rect_rotation' );
+							if ( rot ) settings.rotation = rot;
+							settings.groundColor = obj.get( 'light_ground_color' );
 							var light = PC.threeD.createLightFromSettings( settings, gi );
 							light.name = obj.get( 'name' ) || 'Light';
-							if ( light.target && ld.target_object_id && rootGroup && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
-								var targetObj = findObjectByCompositeId( viewRef._three.scene, ld.target_object_id );
+							var targetId = obj.get( 'light_target_object_id' );
+							if ( light.target && targetId && rootGroup && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
+								var targetObj = findObjectByCompositeId( viewRef._three.scene, targetId );
 								if ( targetObj ) getObjectTargetPosition( targetObj, light.target.position );
-							} else if ( light.target && ld.target ) {
-								light.target.position.set( ld.target.x || 0, ld.target.y || 0, ld.target.z || 0 );
+							} else if ( light.target && settings.target ) {
+								light.target.position.set(
+									settings.target.x || 0,
+									settings.target.y || 0,
+									settings.target.z || 0
+								);
 							}
 							viewRef._three.scene.add( light );
 							if ( light.target ) viewRef._three.scene.add( light.target );
-							if ( ld.cookie && ld.cookie.url && typeof PC.threeD.applyLightCookie === 'function' ) {
-								PC.threeD.applyLightCookie( light, ld.cookie );
+							var cookie = obj.get( 'light_cookie' );
+							if ( cookie && cookie.url && typeof PC.threeD.applyLightCookie === 'function' ) {
+								PC.threeD.applyLightCookie( light, cookie );
 							}
 							console.log( 'typeof RectAreaLightHelper', typeof RectAreaLightHelper );
 							var helper = null;

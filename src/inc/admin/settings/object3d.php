@@ -374,31 +374,18 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 		}
 
 		/**
-		 * Template snippet for value from light_data path (safe: checks light_data and nested keys).
+		 * Template snippet for value from a flat light_* key (e.g. light_target_object_id).
 		 *
-		 * @param string $path    dot path including light_data (e.g. light_data.position.x)
+		 * @param string $path    Flat key name (may contain non-identifier chars, which are stripped).
 		 * @param mixed  $default default if missing
 		 * @return string Underscore template snippet
 		 */
 		private static function light_value_tpl( $path, $default ) {
-			// Flat key (e.g. light_target_object_id, light_ground_color).
-			if ( strpos( $path, 'light_data.' ) !== 0 ) {
-				$key = preg_replace( '/[^a-z0-9_]/i', '', $path );
-				if ( $key !== '' ) {
-					return '<# if ( data.' . $key . ' != null && data.' . $key . ' !== "" ) { #>{{data.' . $key . '}}<# } else { #>' . \esc_attr( (string) $default ) . '<# } #>';
-				}
+			$key = preg_replace( '/[^a-z0-9_]/i', '', $path );
+			if ( $key === '' ) {
 				return (string) $default;
 			}
-			$parts = explode( '.', substr( $path, strlen( 'light_data.' ) ) );
-			$conds = array( 'data.light_data' );
-			$cur  = 'data.light_data';
-			foreach ( array_slice( $parts, 0, -1 ) as $p ) {
-				$cur .= '.' . $p;
-				$conds[] = $cur;
-			}
-			$cur .= '.' . end( $parts );
-			$cond = implode( ' && ', $conds ) . ' && ' . $cur . ' != null';
-			return '<# if ( ' . $cond . ' ) { #>{{' . $cur . '}}<# } else { #>' . \esc_attr( (string) $default ) . '<# } #>';
+			return '<# if ( data.' . $key . ' != null && data.' . $key . ' !== \"\" ) { #>{{data.' . $key . '}}<# } else { #>' . \esc_attr( (string) $default ) . '<# } #>';
 		}
 
 		/**
