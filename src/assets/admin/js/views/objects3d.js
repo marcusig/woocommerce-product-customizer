@@ -49,24 +49,24 @@ PC.views = PC.views || {};
 			this.listenTo( this.model, 'change:object_type', this._ensure_light_data_default );
 			this.listenTo( this.model, 'change:object_type', this._ensure_environment_data_default );
 			this.listenTo( this.model, 'change:object_type', this.render );
-			this.listenTo( this.model, 'change:light_data', this._maybeRenderForLightDataVisibility );
-			this.listenTo( this.model, 'change:environment_data', this._maybeRenderForEnvironmentDataVisibility );
+			this.listenTo( this.model, 'change:light_type', this._maybeRenderForLightDataVisibility );
+			this.listenTo( this.model, 'change:env_type', this._maybeRenderForEnvironmentDataVisibility );
 			// When a 3D model file is changed, optionally import lights from GLTF (handled via change event, not file field JS).
-			this.listenTo( this.model, 'change:attachment_id', this._maybe_import_lights_from_gltf );
+			this.listenTo( this.model, 'change:gltf', this._maybe_import_lights_from_gltf );
 		},
 		_lastEnvType: undefined,
 		_maybeRenderForEnvironmentDataVisibility: function() {
-			var ed = this.model.get( 'environment_data' );
-			var envType = ed && ed.env_type;
-			if ( this._lastEnvType !== envType ) {
-				this._lastEnvType = envType;
+			var type = this.model.get( 'env_type' );
+			if ( this._lastEnvType !== type ) {
+				this._lastEnvType = type;
 				this.render();
 			}
 		},
 		_maybe_import_lights_from_gltf: function() {
 			var objType = this.model.get( 'object_type' );
 			if ( objType !== 'gltf' ) return;
-			var url = this.model.get( 'url' );
+			var gltf = this.model.get( 'gltf' );
+			var url = ( gltf && gltf.url ) ? gltf.url : '';
 			if ( ! url || ! window.PC || ! window.PC.threeD || ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' || ! window.PC.threeD.getLightsFromSceneForImport ) {
 				return;
 			}
@@ -85,13 +85,11 @@ PC.views = PC.views || {};
 					var attrs = col.create_object( {
 						object_type: 'light',
 						name: light.name,
-						light_data: {
-							type: light.type,
-							color: light.color,
-							intensity: light.intensity,
-							position: light.position,
-							target: light.target,
-						},
+						light_position: light.position,
+						light_type: light.type,
+						light_color: light.color,
+						light_intensity: light.intensity,
+						light_target: light.target,
 					} );
 					col.add( attrs );
 				} );
@@ -99,18 +97,21 @@ PC.views = PC.views || {};
 			}.bind( this ) );
 		},
 		_ensure_environment_data_default: function() {
-			if ( this.model.get( 'object_type' ) === 'environment' && this.model.get( 'environment_data' ) == null ) {
-				this.model.set( 'environment_data', {
-					env_type: 'hdri',
-					url: {},
-					faces: { px: {}, nx: {}, py: {}, ny: {}, pz: {}, nz: {} }
-				} );
+			if ( this.model.get( 'object_type' ) === 'environment' && this.model.get( 'env_type' ) == null ) {
+				var emptyFile = { attachment_id: null, url: '' };
+				this.model.set( 'env_type', 'hdri' );
+				// this.model.set( 'env_hdri_file', _.clone( emptyFile ) );
+				// this.model.set( 'env_cubemap_px', _.clone( emptyFile ) );
+				// this.model.set( 'env_cubemap_nx', _.clone( emptyFile ) );
+				// this.model.set( 'env_cubemap_py', _.clone( emptyFile ) );
+				// this.model.set( 'env_cubemap_ny', _.clone( emptyFile ) );
+				// this.model.set( 'env_cubemap_pz', _.clone( emptyFile ) );
+				// this.model.set( 'env_cubemap_nz', _.clone( emptyFile ) );
 			}
 		},
 		_maybeRenderForLightDataVisibility: function() {
-			var ld = this.model.get( 'light_data' );
-			var type = ld && ld.type;
-			var targetId = ld && ld.target_object_id;
+			var type = this.model.get( 'light_type' );
+			var targetId = this.model.get( 'light_target_object_id' );
 			var typeChanged = this._lastLightType !== type;
 			var targetIdChanged = this._lastLightTargetObjectId !== targetId;
 			this._lastLightType = type;
@@ -120,18 +121,17 @@ PC.views = PC.views || {};
 			}
 		},
 		_ensure_light_data_default: function() {
-			if ( this.model.get( 'object_type' ) === 'light' && this.model.get( 'light_data' ) == null ) {
-				this.model.set( 'light_data', { type: 'PointLight', intensity: 1 } );
+			if ( this.model.get( 'object_type' ) === 'light' && this.model.get( 'light_type' ) == null ) {
+				this.model.set( 'light_type', 'PointLight' );
 			}
 		},
 		render: function() {
 			this._ensure_light_data_default();
 			this._ensure_environment_data_default();
-			var ld = this.model.get( 'light_data' );
-			this._lastLightType = ld && ld.type;
-			this._lastLightTargetObjectId = ld && ld.target_object_id;
-			var ed = this.model.get( 'environment_data' );
-			this._lastEnvType = ed && ed.env_type;
+			this._lastLightType = this.model.get( 'light_type' );
+			this._lastLightTargetObjectId = this.model.get( 'light_target_object_id' );
+			var type = this.model.get( 'env_type' );
+			this._lastEnvType = type;
 			this.$( 'input.color-hex' ).wpColorPicker( {
 				change: function( event, ui ) {
 					// Update value manually (optional, just in case)
@@ -160,65 +160,31 @@ PC.views = PC.views || {};
 			if ( ! setting ) {
 				return PC.views.layer_form.prototype.form_change.call( this, event );
 			}
-			if ( setting.indexOf( 'environment_data.' ) === 0 ) {
-				this.current_focus = setting;
-				var raw = input.val != null ? input.val() : ( input.prop && input.prop( 'checked' ) );
-				if ( event.currentTarget.type === 'checkbox' ) {
-					if ( event.type === 'click' ) raw = input.prop( 'checked' );
-					else return;
+			// Euler/vector3: one setting path, three inputs with data-component; set whole object.
+			var component = input.data( 'component' );
+			if ( component && input.closest( '.mkl-pc-setting--euler' ).length ) {
+				var $wrapper = input.closest( '.mkl-pc-setting--euler' );
+				setting = $wrapper.attr( 'data-setting' );
+				if ( setting ) {
+					var x = parseFloat( $wrapper.find( '[data-component="x"]' ).val() ) || 0;
+					var y = parseFloat( $wrapper.find( '[data-component="y"]' ).val() ) || 0;
+					var z = parseFloat( $wrapper.find( '[data-component="z"]' ).val() ) || 0;
+					this.model.set( setting, { x: x, y: y, z: z } );
 				}
-				var path = setting.split( '.' ).slice( 1 );
-				var envData = this.model.get( 'environment_data' );
-				envData = envData ? _.extend( {}, envData ) : { env_type: 'hdri', url: {}, faces: {} };
-				if ( ! envData.faces ) envData.faces = {};
-				this._setByPath( envData, path, raw );
-				this.model.set( 'environment_data', envData );
 				return;
 			}
-			if ( setting.indexOf( 'light_data.' ) !== 0 ) {
-				return PC.views.layer_form.prototype.form_change.call( this, event );
-			}
-			this.current_focus = setting;
-			var raw = input.val != null ? input.val() : ( input.prop && input.prop( 'checked' ) );
-			if ( event.currentTarget.type === 'checkbox' ) {
-				if ( event.type === 'click' ) raw = input.prop( 'checked' );
-				else return;
-			}
-			var path = setting.split( '.' ).slice( 1 );
-			var numKeys = [ 'position.x', 'position.y', 'position.z', 'target.x', 'target.y', 'target.z', 'intensity', 'angle', 'penumbra', 'distance', 'decay', 'width', 'height' ];
-			var pathStr = path.join( '.' );
-			if ( numKeys.indexOf( pathStr ) !== -1 && raw !== '' && ! isNaN( parseFloat( raw ) ) ) {
-				raw = parseFloat( raw );
-			}
-			var lightData = this.model.get( 'light_data' );
-			lightData = lightData ? _.extend( {}, lightData ) : {};
-			this._setByPath( lightData, path, raw );
-			this.model.set( 'light_data', lightData );
-		},
-		_setByPath: function( obj, path, value ) {
-			for ( var i = 0; i < path.length - 1; i++ ) {
-				var key = path[i];
-				if ( ! ( key in obj ) || typeof obj[key] !== 'object' || obj[key] === null ) {
-					obj[key] = {};
-				}
-				obj = obj[key];
-			}
-			obj[ path[ path.length - 1 ] ] = value;
+			return PC.views.layer_form.prototype.form_change.call( this, event );
 		},
 		open_light_cookie_media: function() {
 			this._selecting_light_cookie = true;
-			var ld = this.model.get( 'light_data' );
-			var cookieId = ( ld && ld.cookie && ld.cookie.id ) ? ld.cookie.id : null;
+			var cookie = this.model.get( 'light_cookie' );
+			var cookieId = ( cookie && cookie.attachment_id != null ) ? cookie.attachment_id : null;
 			if ( typeof PC.media !== 'undefined' && PC.media.open ) {
 				PC.media.open( { el: this.$el, selection: cookieId } );
 			}
 		},
 		remove_light_cookie: function() {
-			var lightData = this.model.get( 'light_data' );
-			if ( ! lightData ) return;
-			lightData = _.extend( {}, lightData );
-			delete lightData.cookie;
-			this.model.set( 'light_data', lightData );
+			this.model.set( 'light_cookie', { attachment_id: null, url: '' } );
 		},
 	} );
 

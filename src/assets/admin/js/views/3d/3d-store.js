@@ -24,9 +24,10 @@ function resolveObject3DUrl( objectId, callback ) {
 	if ( ! objects3d ) return callback( null );
 	const obj = objects3d.get( objectId );
 	if ( ! obj ) return callback( null );
-	const url = obj.get( 'url' );
+	const gltf = obj.get( 'gltf' );
+	const url = ( gltf && gltf.url ) ? gltf.url : ( obj.get( 'url' ) || '' );
 	if ( url ) return callback( url );
-	const attachmentId = obj.get( 'attachment_id' );
+	const attachmentId = ( gltf && gltf.attachment_id != null ) ? gltf.attachment_id : obj.get( 'attachment_id' );
 	if ( attachmentId != null ) {
 		return resolveAttachmentUrl( attachmentId, callback );
 	}

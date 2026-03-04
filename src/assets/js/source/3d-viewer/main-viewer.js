@@ -180,7 +180,8 @@ export default Backbone.View.extend({
 		if ( ! Array.isArray( list ) ) return null;
 		const idStr = String( object3dId );
 		const obj = list.find( ( o ) => String( o._id || o.id ) === idStr );
-		return obj && obj.url ? obj.url : null;
+		const gltf = obj && obj.gltf;
+		return ( gltf && gltf.url ) ? gltf.url : ( obj && obj.url ? obj.url : null );
 	},
 
 	async _loadAssets( s, modules ) {
@@ -276,7 +277,8 @@ export default Backbone.View.extend({
 			if ( object3dId == null || object3dId === '' || ! Array.isArray( objects3d ) ) return null;
 			const idStr = String( object3dId );
 			const o = objects3d.find( ( x ) => String( x._id || x.id ) === idStr );
-			return o && o.attachment_id != null ? o.attachment_id : null;
+			const gltf = o && o.gltf;
+			return ( gltf && gltf.attachment_id != null ) ? gltf.attachment_id : ( o && o.attachment_id != null ? o.attachment_id : null );
 		};
 		layerResults.forEach( ( { layer_model, scene } ) => {
 			if ( scene ) {
@@ -309,35 +311,39 @@ export default Backbone.View.extend({
 		const gi = 1;
 		if ( Array.isArray( objects3d ) ) {
 			objects3d.forEach( ( item ) => {
-				if ( item.object_type !== 'light' || ! item.light_data ) return;
-				const ld = item.light_data;
+				if ( item.object_type !== 'light' ) return;
+				// Flat keys: light_type, light_position, light_color, etc. (legacy: item.light_data)
+				const ld = item.light_data || {};
+				const type = item.light_type || ld.type || 'PointLight';
 				const settings = {
-					type: ld.type || 'PointLight',
-					color: ld.color || '#ffffff',
-					intensity: ld.intensity != null ? ld.intensity : 1,
-					position: ld.position,
-					target: ld.target,
-					angle: ld.angle,
-					penumbra: ld.penumbra,
-					distance: ld.distance,
-					decay: ld.decay,
-					// RectAreaLight dimensions: prefer new rect_width/rect_height, fall back to legacy width/height if present.
-					width: ld.rect_width != null ? ld.rect_width : ld.width,
-					height: ld.rect_height != null ? ld.rect_height : ld.height,
-					groundColor: ld.groundColor,
+					type,
+					color: item.light_color != null ? item.light_color : ( ld.color || '#ffffff' ),
+					intensity: item.light_intensity != null ? item.light_intensity : ( ld.intensity != null ? ld.intensity : 1 ),
+					position: item.light_position || ld.position,
+					target: item.light_target || ld.target,
+					angle: item.light_angle != null ? item.light_angle : ld.angle,
+					penumbra: item.penumbra != null ? item.penumbra : ld.penumbra,
+					distance: item.distance != null ? item.distance : ld.distance,
+					decay: item.decay != null ? item.decay : ld.decay,
+					width: item.rect_width != null ? item.rect_width : ( ld.rect_width != null ? ld.rect_width : ld.width ),
+					height: item.rect_height != null ? item.rect_height : ( ld.rect_height != null ? ld.rect_height : ld.height ),
+					groundColor: item.light_ground_color != null ? item.light_ground_color : ld.groundColor,
 				};
-				if ( ld.rect_rotation ) settings.rotation = ld.rect_rotation;
+				const rot = item.rect_rotation || ld.rect_rotation;
+				if ( rot ) settings.rotation = rot;
 				const light = createLightFromSettings( settings, gi );
 				light.name = item.name || 'Light';
-				if ( light.target && ld.target_object_id && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
-					const targetObj = findObjectByCompositeId( t.scene, ld.target_object_id );
+				const targetObjectId = item.light_target_object_id != null ? item.light_target_object_id : ld.target_object_id;
+				if ( light.target && targetObjectId && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
+					const targetObj = findObjectByCompositeId( t.scene, targetObjectId );
 					if ( targetObj ) getObjectTargetPosition( targetObj, light.target.position );
-				} else if ( light.target && ld.target ) {
-					light.target.position.set( ld.target.x || 0, ld.target.y || 0, ld.target.z || 0 );
+				} else if ( light.target && settings.target ) {
+					light.target.position.set( settings.target.x != null ? settings.target.x : 0, settings.target.y != null ? settings.target.y : 0, settings.target.z != null ? settings.target.z : 0 );
 				}
 				t.scene.add( light );
 				if ( light.target ) t.scene.add( light.target );
-				if ( ld.cookie && ld.cookie.url ) applyLightCookie( light, ld.cookie );
+				const cookie = item.light_cookie || ld.cookie;
+				if ( cookie && cookie.url ) applyLightCookie( light, cookie );
 			} );
 		}
 

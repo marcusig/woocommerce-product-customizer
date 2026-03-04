@@ -5,8 +5,7 @@ PC.actions = PC.actions || {};
 PC.threeD = PC.threeD || {};
 
 // Generic file select/remove actions for settings fields of type "file".
-// These work for both nested objects (value_path storing { id, url, filename? })
-// and flat paths (flat_id_path / flat_url_path / flat_filename_path).
+// Value at data-setting path is always { attachment_id, url }. No filename stored.
 if ( ! PC.actions.pc_file_select ) {
 	PC.actions.pc_file_select = function ( $el, context ) {
 		if ( ! context || ! context.model || ! window.wp || ! window.wp.media ) return;
@@ -15,12 +14,9 @@ if ( ! PC.actions.pc_file_select ) {
 		if ( ! $container.length ) return;
 
 		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
-		var flatIdPath = $container.attr( 'data-flat-id-path' ) || '';
-		var flatUrlPath = $container.attr( 'data-flat-url-path' ) || '';
-		var flatFilenamePath = $container.attr( 'data-flat-filename-path' ) || '';
 		var allowed = $container.attr( 'data-allowed-types' ) || 'image';
 
-		if ( ! settingPath && ! flatIdPath && ! flatUrlPath ) return;
+		if ( ! settingPath ) return;
 
 		var mediaArgs = {
 			title: ( PC.lang && PC.lang.media_title_file ) ? PC.lang.media_title_file : 'Select file',
@@ -36,7 +32,6 @@ if ( ! PC.actions.pc_file_select ) {
 
 		var frame = window.wp.media( mediaArgs );
 
-		// Helper to set nested or flat paths on the model immutably.
 		var setPath = function( model, path, value ) {
 			if ( ! path ) return;
 			path = String( path );
@@ -64,26 +59,10 @@ if ( ! PC.actions.pc_file_select ) {
 			if ( ! att ) return;
 
 			var url = att.gltf_url || att.url || '';
-			var filename = att.gltf_filename || att.filename || '';
-
-			if ( flatIdPath ) {
-				setPath( context.model, flatIdPath, att.id );
-			}
-			if ( flatUrlPath ) {
-				setPath( context.model, flatUrlPath, url );
-			}
-			if ( flatFilenamePath ) {
-				setPath( context.model, flatFilenamePath, filename );
-			}
-
-			// Nested object storage at value_path (e.g. light_data.cookie).
-			if ( ! flatIdPath && ! flatUrlPath && settingPath ) {
-				setPath( context.model, settingPath, {
-					id: att.id,
-					url: url,
-					filename: filename,
-				} );
-			}
+			setPath( context.model, settingPath, {
+				attachment_id: att.id,
+				url: url,
+			} );
 
 			if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
 				window.PC.app.is_modified[ context.collectionName ] = true;
@@ -106,9 +85,7 @@ if ( ! PC.actions.pc_file_remove ) {
 		if ( ! $container.length ) return;
 
 		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
-		var flatIdPath = $container.attr( 'data-flat-id-path' ) || '';
-		var flatUrlPath = $container.attr( 'data-flat-url-path' ) || '';
-		var flatFilenamePath = $container.attr( 'data-flat-filename-path' ) || '';
+		if ( ! settingPath ) return;
 
 		var setPath = function( model, path, value ) {
 			if ( ! path ) return;
@@ -131,20 +108,7 @@ if ( ! PC.actions.pc_file_remove ) {
 			model.set( rootKey, obj );
 		};
 
-		if ( flatIdPath ) {
-			setPath( context.model, flatIdPath, null );
-		}
-		if ( flatUrlPath ) {
-			setPath( context.model, flatUrlPath, '' );
-		}
-		if ( flatFilenamePath ) {
-			setPath( context.model, flatFilenamePath, '' );
-		}
-
-		if ( ! flatIdPath && ! flatUrlPath && settingPath ) {
-			// Clear nested object.
-			setPath( context.model, settingPath, {} );
-		}
+		setPath( context.model, settingPath, { attachment_id: null, url: '' } );
 
 		if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
 			window.PC.app.is_modified[ context.collectionName ] = true;
@@ -201,26 +165,25 @@ if ( ! PC.threeD.openModelMediaFrame ) {
 	};
 }
 
-// 3D Objects upload actions (used by Object3D settings fields).
+// 3D Objects upload actions (used by Object3D settings fields). Store only { attachment_id, url } at gltf.
 if ( ! PC.actions.edit_object3d_upload ) {
 	PC.actions.edit_object3d_upload = function ( $el, context ) {
 		if ( ! context || ! context.model || ! PC.threeD.openModelMediaFrame ) return;
-		const selectedId = context.model.get( 'attachment_id' );
+		const gltf = context.model.get( 'gltf' );
+		const selectedId = ( gltf && gltf.attachment_id != null ) ? gltf.attachment_id : null;
 		PC.threeD.openModelMediaFrame( {
 			selectedId: selectedId,
 			onSelect: function ( attachment ) {
 				const url = attachment.gltf_url || attachment.url || '';
-				const filename = attachment.gltf_filename || attachment.filename || '';
-				context.model.set( {
+				context.model.set( 'gltf', {
 					attachment_id: attachment.id,
 					url: url,
-					filename: filename,
 				} );
 				if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
 					window.PC.app.is_modified[ 'objects3d' ] = true;
 				}
 				if ( context.$el && $el && $el.data ) {
-					const setting = $el.data( 'setting' ) || 'attachment_id';
+					const setting = $el.data( 'setting' ) || 'gltf';
 					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
 				}
 				// If GLTF contains lights, offer to import them as objects3d of type Light
@@ -240,13 +203,11 @@ if ( ! PC.actions.edit_object3d_upload ) {
 							const attrs = col.create_object( {
 								object_type: 'light',
 								name: light.name,
-								light_data: {
-									type: light.type,
-									color: light.color,
-									intensity: light.intensity,
-									position: light.position,
-									target: light.target,
-								},
+								light_position: light.position,
+								light_type: light.type,
+								light_color: light.color,
+								light_intensity: light.intensity,
+								light_target: light.target,		
 							} );
 							col.add( attrs );
 						} );
@@ -261,16 +222,12 @@ if ( ! PC.actions.edit_object3d_upload ) {
 if ( ! PC.actions.remove_object3d_upload ) {
 	PC.actions.remove_object3d_upload = function ( $el, context ) {
 		if ( ! context || ! context.model ) return;
-		context.model.set( {
-			attachment_id: null,
-			url: '',
-			filename: '',
-		} );
+		context.model.set( 'gltf', { attachment_id: null, url: '' } );
 		if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
 			window.PC.app.is_modified[ 'objects3d' ] = true;
 		}
 		if ( context.$el && $el && $el.data ) {
-			const setting = $el.data( 'setting' ) || 'attachment_id';
+			const setting = $el.data( 'setting' ) || 'gltf';
 			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
 		}
 		context.render();

@@ -25,15 +25,15 @@ var PC = PC || {};
 			var _id = ( this.product_id && typeof PC.app.get_new_id === 'function' )
 				? PC.app.get_new_id( this )
 				: ( this.nextOrder() );
+			var gltf = ( data && data.gltf ) ? data.gltf : ( ( data && ( data.attachment_id != null || data.url ) ) ? { attachment_id: data.attachment_id != null ? data.attachment_id : null, url: data.url || '' } : { attachment_id: null, url: '' } );
 			return _.extend( data || {}, {
 				_id: _id,
 				name: ( data && data.name ) || '',
-				attachment_id: ( data && data.attachment_id ) != null ? data.attachment_id : null,
-				url: ( data && data.url ) || '',
-				filename: ( data && data.filename ) || '',
 				object_type: ( data && data.object_type ) || 'gltf',
 				loading_strategy: ( data && data.loading_strategy ) || 'eager',
-				light_data: ( data && data.light_data ) || null,
+				gltf: gltf,
+				// light_data: ( data && data.light_data ) || null,
+				// environment_data: ( data && data.environment_data ) || null,
 			} );
 		},
 	} );

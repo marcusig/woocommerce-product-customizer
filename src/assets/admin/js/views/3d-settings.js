@@ -329,8 +329,23 @@ PC.views = window.PC.views || {};
 				if ( col ) {
 					const m = col.get( env.object_id ) || col.find( function ( mod ) { return mod.get( '_id' ) === env.object_id; } );
 					if ( m ) {
-						const ed = m.get( 'environment_data' );
-						if ( ed && ed.env_type === 'hdri' && ed.url && ed.url.url ) return ed.url.url;
+						const type = m.get( 'env_type' );
+						if ( type === 'hdri' ) {
+							const file_data = m.get( 'env_hdri_file' );
+							return file_data && file_data.url ? file_data.url : null;
+						}
+						if ( type === 'cubemap' ) {
+							const file_data = [
+								m.get( 'env_cubemap_px' ) && m.get( 'env_cubemap_px' ).url,
+								m.get( 'env_cubemap_nx' ) && m.get( 'env_cubemap_nx' ).url,
+								m.get( 'env_cubemap_py' ) && m.get( 'env_cubemap_py' ).url,
+								m.get( 'env_cubemap_ny' ) && m.get( 'env_cubemap_ny' ).url,
+								m.get( 'env_cubemap_pz' ) && m.get( 'env_cubemap_pz' ).url,
+								m.get( 'env_cubemap_nz' ) && m.get( 'env_cubemap_nz' ).url,
+							];
+							return file_data.filter( ( url ) => url !== null );
+						}
+						return null;
 					}
 				}
 			}

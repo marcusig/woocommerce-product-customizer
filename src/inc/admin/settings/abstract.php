@@ -166,6 +166,10 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				case 'file':
 					$field = $this->output_setting_file( $options );
 					break;
+				case 'euler':
+				case 'vector3':
+					$field = $this->output_setting_euler( $options );
+					break;
 				case 'image_select':
 					if ( is_array($options['choices'] ) ) {
 						$field = '<div class="mkl-pc-image-select">';
@@ -301,80 +305,86 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		}
 
 		/**
-		 * Output a file upload field (select + remove buttons, optional preview).
-		 * Use for any setting that stores a file as { id, url } or similar.
+		 * Output an euler/vector3 field: one path (e.g. light_data.position), value { x, y, z }, three number inputs.
 		 *
 		 * @param array $options {
-		 *     @type string $id                    Setting id (required).
-		 *     @type string $value_path            Dot path from data to the file value, e.g. 'light_data.cookie'. Default: options['id'] so data[id].
+		 *     @type string $id     Dot path for the value, e.g. 'light_data.position'.
+		 *     @type string $label  Label for the group.
+		 *     @type array  $attributes Optional min/max/step for inputs.
+		 * }
+		 * @return string
+		 */
+		private function output_setting_euler( $options ) {
+			$setting = isset( $options['id'] ) ? $options['id'] : '';
+			if ( ! $setting ) {
+				return '<div class="error">' . __( 'Euler/vector3 field requires setting (id).', 'product-configurator-for-woocommerce' ) . '</div>';
+			}
+			$data_expr = 'data.' . $setting;
+			$attrs = isset( $options['attributes'] ) && is_array( $options['attributes'] ) ? $this->field_attributes( $options['attributes'] ) : '';
+			$step = isset( $options['attributes']['step'] ) ? ' step="' . esc_attr( $options['attributes']['step'] ) . '"' : ' step="any"';
+			$min = isset( $options['attributes']['min'] ) ? ' min="' . esc_attr( $options['attributes']['min'] ) . '"' : '';
+			$max = isset( $options['attributes']['max'] ) ? ' max="' . esc_attr( $options['attributes']['max'] ) . '"' : '';
+			$out = '<div class="mkl-pc-setting--euler" data-setting="' . esc_attr( $setting ) . '" data-euler="1">';
+			foreach ( array( 'x', 'y', 'z' ) as $axis ) {
+				$val_tpl = '<# if ( ' . $data_expr . ' && ' . $data_expr . '.' . $axis . ' != null ) { #>{{' . $data_expr . '.' . $axis . '}}<# } else { #>0<# } #>';
+				$out .= '<label class="euler-axis"><span class="euler-axis-label">' . strtoupper( $axis ) . '</span>';
+				$out .= '<input type="number" class="components-select-control__input euler-input" data-component="' . esc_attr( $axis ) . '" value="' . $val_tpl . '"' . $step . $min . $max . '>';
+				$out .= '</label>';
+			}
+			$out .= '</div>';
+			return $out;
+		}
+
+		/**
+		 * Output a file upload field (select + remove buttons, optional preview).
+		 * Value at id (dot path) is a single object { attachment_id, url }. No filename stored.
+		 *
+		 * @param array $options {
+		 *     @type string $id                    Setting id / dot path (e.g. 'gltf', 'light_data.cookie'). Required.
 		 *     @type bool   $show_preview          Show image preview when value has .url. Default true.
-		 *     @type string $allowed_types         'image' or 'file' (for media library). Default 'image'. Output as data-allowed-types.
-		 *     @type string $button_select_label   Label for the select button. Default 'Select image' / 'Select file'.
-		 *     @type string $button_select_label_has_file Optional label when file already set (e.g. 'Select new image').
-		 *     @type string $button_remove_label   Label for remove button. Default 'Remove'.
-		 *     @type string $action_select         Optional data-action for select button (e.g. 'select_light_cookie'). Default 'pc_file_select'.
-		 *     @type string $action_remove         Optional data-action for remove button. Default 'pc_file_remove'.
-		 *     @type string $preview_img_style     Inline style for preview img. Default max-width:80px;max-height:60px;display:block.
-		 *     @type string $flat_id_path          Optional dot path where the attachment id is stored separately (e.g. 'attachment_id').
-		 *     @type string $flat_url_path         Optional dot path where the file URL is stored separately (e.g. 'url').
-		 *     @type string $flat_filename_path    Optional dot path where the filename is stored separately (e.g. 'filename').
+		 *     @type string $allowed_types         'image' or 'file'. Default 'image'.
+		 *     @type string $button_select_label   Label for the select button.
+		 *     @type string $button_select_label_has_file Optional label when file already set.
+		 *     @type string $button_remove_label   Label for remove button.
+		 *     @type string $action_select         data-action for select. Default 'pc_file_select'.
+		 *     @type string $action_remove         data-action for remove. Default 'pc_file_remove'.
+		 *     @type string $preview_img_style     Inline style for preview img.
 		 * }
 		 * @return string
 		 */
 		private function output_setting_file( $options ) {
 			$id          = isset( $options['id'] ) ? $options['id'] : '';
-			$value_path  = isset( $options['value_path'] ) ? $options['value_path'] : $id;
 			$show_preview = isset( $options['show_preview'] ) ? $options['show_preview'] : true;
 			$allowed     = isset( $options['allowed_types'] ) ? $options['allowed_types'] : 'image';
 			$label_select = isset( $options['button_select_label'] ) ? $options['button_select_label'] : ( $allowed === 'image' ? __( 'Select image', 'product-configurator-for-woocommerce' ) : __( 'Select file', 'product-configurator-for-woocommerce' ) );
 			$label_select_has = isset( $options['button_select_label_has_file'] ) ? $options['button_select_label_has_file'] : $label_select;
 			$label_remove = isset( $options['button_remove_label'] ) ? $options['button_remove_label'] : __( 'Remove', 'product-configurator-for-woocommerce' );
-			// Default to generic JS handlers so new file fields work without extra JS.
 			$action_select = isset( $options['action_select'] ) ? $options['action_select'] : 'pc_file_select';
 			$action_remove = isset( $options['action_remove'] ) ? $options['action_remove'] : 'pc_file_remove';
 			$preview_style = isset( $options['preview_img_style'] ) ? $options['preview_img_style'] : 'max-width:80px;max-height:60px;display:block;';
-			$flat_id_path  = isset( $options['flat_id_path'] ) ? $options['flat_id_path'] : '';
-			$flat_url_path = isset( $options['flat_url_path'] ) ? $options['flat_url_path'] : '';
-			$flat_filename_path = isset( $options['flat_filename_path'] ) ? $options['flat_filename_path'] : '';
 
 			if ( ! $action_select || ! $action_remove ) {
 				return '<div class="error">' . __( 'File field requires action_select and action_remove.', 'product-configurator-for-woocommerce' ) . '</div>';
 			}
 
-			if ( $flat_id_path && $flat_url_path ) {
-				$has_value_cond = 'data.' . $flat_id_path;
-				$has_url_cond   = 'data.' . $flat_url_path;
-				$data_expr      = 'data.' . $flat_url_path;
-			} else {
-				$data_expr = $value_path ? ( 'data.' . $value_path ) : ( 'data.' . $id );
-				$parts = $value_path ? explode( '.', $value_path ) : array( $id );
-				$has_value_conds = array( 'data' );
-				$cur = 'data';
-				foreach ( $parts as $p ) {
-					$cur .= '.' . $p;
-					$has_value_conds[] = $cur;
-				}
-				$has_value_cond = implode( ' && ', $has_value_conds );
-				$has_url_cond = $has_value_cond . ' && ' . $data_expr . '.url';
+			$data_expr = $id ? ( 'data.' . $id ) : '';
+			$parts = $id ? explode( '.', $id ) : array();
+			$has_value_conds = array( 'data' );
+			$cur = 'data';
+			foreach ( $parts as $p ) {
+				$cur .= '.' . $p;
+				$has_value_conds[] = $cur;
 			}
+			$has_value_cond = implode( ' && ', $has_value_conds );
+			$has_url_cond = $has_value_cond . ' && ' . $data_expr . '.url';
 
 			$out = '<div class="mkl-pc-setting--container mkl-pc-setting--file"'
 				. ' data-allowed-types="' . esc_attr( $allowed ) . '"'
-				. ' data-setting="' . esc_attr( $value_path ) . '"';
-			if ( $flat_id_path ) {
-				$out .= ' data-flat-id-path="' . esc_attr( $flat_id_path ) . '"';
-			}
-			if ( $flat_url_path ) {
-				$out .= ' data-flat-url-path="' . esc_attr( $flat_url_path ) . '"';
-			}
-			if ( $flat_filename_path ) {
-				$out .= ' data-flat-filename-path="' . esc_attr( $flat_filename_path ) . '"';
-			}
+				. ' data-setting="' . esc_attr( $id ) . '"';
 			$out .= '>';
 			if ( $show_preview ) {
 				$out .= '<# if ( ' . $has_url_cond . ' ) { #>';
-				$img_src = $flat_url_path ? '{{' . $data_expr . '}}' : '{{' . $data_expr . '.url}}';
-				$out .= '<div class="mkl-pc-setting--file-preview"><img src="' . $img_src . '" alt="" style="' . esc_attr( $preview_style ) . '"></div>';
+				$out .= '<div class="mkl-pc-setting--file-preview"><img src="{{' . $data_expr . '.url}}" alt="" style="' . esc_attr( $preview_style ) . '"></div>';
 				$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_remove ) . '">' . esc_html( $label_remove ) . '</button> ';
 				$out .= '<# } #>';
 			} else {

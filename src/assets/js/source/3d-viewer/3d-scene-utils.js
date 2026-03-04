@@ -3,6 +3,7 @@
  * Used by both frontend 3D viewer and admin 3D settings.
  */
 import * as THREE from 'three';
+import { array } from 'three/tsl';
 
 // -------------------------------------------------------------------------
 // Constants (3.7)
@@ -121,6 +122,16 @@ export function loadEnvMap( url, onLoad, onProgress, onError ) {
 		if ( onError ) onError();
 		return;
 	}
+	if ( Array.isArray( url ) ) {
+		const loader = new THREE.CubeTextureLoader();
+		loader.load( url, ( texture ) => {
+			if ( onLoad ) onLoad( texture );
+		}, 
+		onProgress || undefined, 
+		onError || ( () => {} ) );
+		return;
+	}
+
 	const isExr = /\.exr(\?|#|$)/i.test( url );
 	const loaderModule = isExr ? import( 'three/addons/loaders/EXRLoader.js' ) : import( 'three/addons/loaders/HDRLoader.js' );
 	loaderModule.then( ( mod ) => {

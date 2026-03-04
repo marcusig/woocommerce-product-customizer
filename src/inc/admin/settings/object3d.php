@@ -26,6 +26,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 
 		/**
 		 * Default attributes for a single 3D object in the collection.
+		 * File fields store only { attachment_id, url }. No filename.
 		 *
 		 * @return array
 		 */
@@ -33,21 +34,29 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 			return array(
 				'_id'              => 0,
 				'label'            => '',
-				'attachment_id'    => null,
-				'url'              => '',
-				'filename'         => '',
 				'object_type'      => 'gltf',
 				'loading_strategy'  => 'eager',
-				'environment_data' => array(
+				'gltf'             => array(
+					'attachment_id' => null,
+					'url'           => '',
+				),
+				'env_type' => 'hdri',
+				'env_hdri_file' => array( 'attachment_id' => null, 'url' => '' ),
+				'env_cubemap_px' => array( 'attachment_id' => null, 'url' => '' ),
+				'env_cubemap_nx' => array( 'attachment_id' => null, 'url' => '' ),
+				'env_cubemap_py' => array( 'attachment_id' => null, 'url' => '' ),
+				'env_cubemap_ny' => array( 'attachment_id' => null, 'url' => '' ),
+				'env_cubemap_pz' => array( 'attachment_id' => null, 'url' => '' ),
+				'env_cubemap_nz' => array( 'attachment_id' => null, 'url' => '' ),
 					'env_type' => 'hdri',
-					'url'      => '',
+					'url'      => array( 'attachment_id' => null, 'url' => '' ),
 					'faces'    => array(
-						'px' => array( 'url' => '' ),
-						'nx' => array( 'url' => '' ),
-						'py' => array( 'url' => '' ),
-						'ny' => array( 'url' => '' ),
-						'pz' => array( 'url' => '' ),
-						'nz' => array( 'url' => '' ),
+						'px' => array( 'attachment_id' => null, 'url' => '' ),
+						'nx' => array( 'attachment_id' => null, 'url' => '' ),
+						'py' => array( 'attachment_id' => null, 'url' => '' ),
+						'ny' => array( 'attachment_id' => null, 'url' => '' ),
+						'pz' => array( 'attachment_id' => null, 'url' => '' ),
+						'nz' => array( 'attachment_id' => null, 'url' => '' ),
 					),
 				),
 			);
@@ -74,20 +83,16 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'choices' => array(
 						array( 'label' => \__( 'GLTF model', 'product-configurator-for-woocommerce' ), 'value' => 'gltf' ),
 						array( 'label' => \__( 'Light', 'product-configurator-for-woocommerce' ), 'value' => 'light' ),
-						array( 'label' => \__( 'Decal', 'product-configurator-for-woocommerce' ), 'value' => 'decal' ),
+						// array( 'label' => \__( 'Decal', 'product-configurator-for-woocommerce' ), 'value' => 'decal' ),
 						array( 'label' => \__( 'Environment', 'product-configurator-for-woocommerce' ), 'value' => 'environment' ),
 					),
 				),
-				'attachment_id' => array(
+				'gltf' => array(
 					'label'       => \__( '3D file', 'product-configurator-for-woocommerce' ),
 					'type'        => 'file',
 					'priority'    => 25,
 					'section'     => 'object3d',
 					'condition'   => '"gltf" == data.object_type',
-					'value_path'  => 'attachment_id',
-					'flat_id_path'  => 'attachment_id',
-					'flat_url_path' => 'url',
-					'flat_filename_path' => 'filename',
 					'show_preview' => false,
 					'allowed_types' => 'file',
 					'button_select_label' => \__( 'Select model', 'product-configurator-for-woocommerce' ),
@@ -106,7 +111,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'condition' => '"gltf" == data.object_type',
 				),
 				// Light section fields (section "light" – shown when object_type is light)
-				'light_data.type' => array(
+				'light_type' => array(
 					'label'   => \__( 'Light type', 'product-configurator-for-woocommerce' ),
 					'type'    => 'select',
 					'priority' => 10,
@@ -114,29 +119,13 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'condition' => '"light" == data.object_type',
 					'choices' => self::get_light_type_choices(),
 				),
-				'light_position_x' => array(
-					'label'   => \__( 'Position X', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+				'light_position' => array(
+					'label'   => \__( 'Position', 'product-configurator-for-woocommerce' ),
+					'type'    => 'euler',
 					'priority' => 12,
 					'section' => 'light',
 					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.position.x', 0 ),
-				),
-				'light_position_y' => array(
-					'label'   => \__( 'Position Y', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'priority' => 14,
-					'section' => 'light',
-					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.position.y', 0 ),
-				),
-				'light_position_z' => array(
-					'label'   => \__( 'Position Z', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'priority' => 16,
-					'section' => 'light',
-					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.position.z', 0 ),
+					'id'      => 'light_position',
 				),
 				'light_color' => array(
 					'label'   => \__( 'Color', 'product-configurator-for-woocommerce' ),
@@ -148,11 +137,11 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 				),
 				'light_intensity' => array(
 					'label'   => \__( 'Intensity', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 20,
 					'section' => 'light',
 					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.intensity', 1, array( 'min' => 0 ) ),
+					'attributes' => array( 'min' => 0, 'step' => 'any' ),
 				),
 				'light_target_object_id' => array(
 					'label'   => \__( 'Target (object)', 'product-configurator-for-woocommerce' ),
@@ -162,117 +151,82 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'condition' => '"light" == data.object_type',
 					'html'    => self::light_field_target_selector(),
 				),
-				'light_target_x' => array(
-					'label'   => \__( 'Target position X', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+				'light_target' => array(
+					'label'   => \__( 'Target position', 'product-configurator-for-woocommerce' ),
+					'type'    => 'euler',
 					'priority' => 24,
 					'section' => 'light',
 					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.target.x', 0 ),
-				),
-				'light_target_y' => array(
-					'label'   => \__( 'Target position Y', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'priority' => 26,
-					'section' => 'light',
-					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.target.y', 0 ),
-				),
-				'light_target_z' => array(
-					'label'   => \__( 'Target position Z', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'priority' => 28,
-					'section' => 'light',
-					'condition' => '"light" == data.object_type',
-					'html'    => self::light_field_number( 'light_data.target.z', 0 ),
 				),
 				'light_angle' => array(
 					'label'   => \__( 'Angle (rad)', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 30,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "SpotLight"',
-					'html'    => self::light_field_number( 'light_data.angle', 0.785398, array( 'min' => 0 ) ),
+					'condition' => '"light" == data.object_type && data.light_type === "SpotLight"',
+					'attributes' => array( 'min' => 0, 'step' => 'any' ),
 				),
-				'light_penumbra' => array(
+				'penumbra' => array(
 					'label'   => \__( 'Penumbra', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 32,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "SpotLight"',
-					'html'    => self::light_field_number( 'light_data.penumbra', 0, array( 'min' => 0, 'max' => 1 ) ),
+					'condition' => '"light" == data.object_type && data.light_type === "SpotLight"',
+					'attributes' => array( 'min' => 0, 'max' => 1, 'step' => 'any' ),
 				),
-				'light_distance' => array(
+				'distance' => array(
 					'label'   => \__( 'Distance', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 34,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && ( data.light_data.type === "PointLight" || data.light_data.type === "SpotLight" )',
-					'html'    => self::light_field_number( 'light_data.distance', 0, array( 'min' => 0 ) ),
+					'condition' => '"light" == data.object_type && ( data.light_type === "PointLight" || data.light_type === "SpotLight" )',
+					'attributes' => array( 'min' => 0, 'step' => 'any' ),
 				),
-				'light_decay' => array(
+				'decay' => array(
 					'label'   => \__( 'Decay', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 36,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && ( data.light_data.type === "PointLight" || data.light_data.type === "SpotLight" )',
-					'html'    => self::light_field_number( 'light_data.decay', 2, array( 'min' => 0 ) ),
+					'condition' => '"light" == data.object_type && ( data.light_type === "PointLight" || data.light_type === "SpotLight" )',
+					'attributes' => array( 'min' => 0, 'step' => 'any' ),
 				),
-				'light_width' => array(
+				'rect_width' => array(
 					'label'   => \__( 'Width', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 38,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "RectAreaLight"',
-					'html'    => self::light_field_number( 'light_data.rect_width', 10, array( 'min' => 0 ) ),
+					'condition' => '"light" == data.object_type && data.light_type === "RectAreaLight"',
+					'attributes' => array( 'min' => 0, 'step' => 'any' ),
 				),
-				'light_height' => array(
+				'rect_height' => array(
 					'label'   => \__( 'Height', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'number',
 					'priority' => 40,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "RectAreaLight"',
-					'html'    => self::light_field_number( 'light_data.rect_height', 10, array( 'min' => 0 ) ),
+					'condition' => '"light" == data.object_type && data.light_type === "RectAreaLight"',
+					'attributes' => array( 'min' => 0, 'step' => 'any' ),
 				),
-				'light_rect_rotation_x' => array(
-					'label'   => \__( 'Rotation X (deg)', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+				'rect_rotation' => array(
+					'label'   => \__( 'Rotation (deg)', 'product-configurator-for-woocommerce' ),
+					'type'    => 'euler',
 					'priority' => 42,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "RectAreaLight"',
-					'html'    => self::light_field_number( 'light_data.rect_rotation.x', 0 ),
-				),
-				'light_rect_rotation_y' => array(
-					'label'   => \__( 'Rotation Y (deg)', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'priority' => 44,
-					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "RectAreaLight"',
-					'html'    => self::light_field_number( 'light_data.rect_rotation.y', 0 ),
-				),
-				'light_rect_rotation_z' => array(
-					'label'   => \__( 'Rotation Z (deg)', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'priority' => 46,
-					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "RectAreaLight"',
-					'html'    => self::light_field_number( 'light_data.rect_rotation.z', 0 ),
+					'condition' => '"light" == data.object_type && data.light_type === "RectAreaLight"',
 				),
 				'light_ground_color' => array(
 					'label'   => \__( 'Ground color', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
+					'type'    => 'text',
 					'priority' => 48,
 					'section' => 'light',
-					'condition' => '"light" == data.object_type && data.light_data && data.light_data.type === "HemisphereLight"',
-					'html'    => self::light_field_color( 'light_data.groundColor', '#443333' ),
+					'input_classes' => 'color-hex',
+					'condition' => '"light" == data.object_type && data.light_type === "HemisphereLight"',
 				),
 				'light_cookie' => array(
 					'label'       => \__( 'Cookie (projection image)', 'product-configurator-for-woocommerce' ),
 					'type'        => 'file',
 					'priority'    => 44,
 					'section'     => 'light',
-					'condition'   => '"light" == data.object_type && data.light_data && ( data.light_data.type === "SpotLight" || data.light_data.type === "DirectionalLight" )',
-					'value_path'  => 'light_data.cookie',
+					'condition'   => '"light" == data.object_type && ( data.light_type === "SpotLight" || data.light_type === "DirectionalLight" )',
 					'show_preview' => true,
 					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select image', 'product-configurator-for-woocommerce' ),
@@ -281,19 +235,21 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 				// Environment section (when object_type is environment)
 				'env_type' => array(
 					'label'    => \__( 'Environment type', 'product-configurator-for-woocommerce' ),
-					'type'     => 'html',
+					'type'     => 'select',
 					'priority' => 10,
 					'section'  => 'environment',
 					'condition' => '"environment" == data.object_type',
-					'html'     => self::env_type_select(),
+					'choices' => array(
+						array( 'label' => \__( 'HDRi (HDR / EXR)', 'product-configurator-for-woocommerce' ), 'value' => 'hdri' ),
+						array( 'label' => \__( 'Cubemap (6 faces)', 'product-configurator-for-woocommerce' ), 'value' => 'cubemap' ),
+					),
 				),
 				'env_hdri_file' => array(
 					'label'       => \__( 'HDR/EXR file', 'product-configurator-for-woocommerce' ),
 					'type'        => 'file',
 					'priority'    => 12,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "hdri"',
-					'value_path'  => 'environment_data.url',
+					'condition'   => '"environment" == data.object_type && data.env_type === "hdri"',
 					'show_preview' => false,
 					'allowed_types' => 'file',
 					'button_select_label' => \__( 'Select HDR/EXR', 'product-configurator-for-woocommerce' ),
@@ -304,10 +260,9 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'type'        => 'file',
 					'priority'    => 20,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "cubemap"',
-					'value_path'  => 'environment_data.faces.px',
+					'condition'   => '"environment" == data.object_type && data.env_type === "cubemap"',
 					'show_preview' => false,
-					'allowed_types' => 'file',
+					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
 				),
@@ -316,10 +271,9 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'type'        => 'file',
 					'priority'    => 22,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "cubemap"',
-					'value_path'  => 'environment_data.faces.nx',
+					'condition'   => '"environment" == data.object_type && data.env_type === "cubemap"',
 					'show_preview' => false,
-					'allowed_types' => 'file',
+					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
 				),
@@ -328,10 +282,9 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'type'        => 'file',
 					'priority'    => 24,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "cubemap"',
-					'value_path'  => 'environment_data.faces.py',
+					'condition'   => '"environment" == data.object_type && data.env_type === "cubemap"',
 					'show_preview' => false,
-					'allowed_types' => 'file',
+					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
 				),
@@ -340,10 +293,9 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'type'        => 'file',
 					'priority'    => 26,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "cubemap"',
-					'value_path'  => 'environment_data.faces.ny',
+					'condition'   => '"environment" == data.object_type && data.env_type === "cubemap"',
 					'show_preview' => false,
-					'allowed_types' => 'file',
+					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
 				),
@@ -352,10 +304,9 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'type'        => 'file',
 					'priority'    => 28,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "cubemap"',
-					'value_path'  => 'environment_data.faces.pz',
+					'condition'   => '"environment" == data.object_type && data.env_type === "cubemap"',
 					'show_preview' => false,
-					'allowed_types' => 'file',
+					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
 				),
@@ -364,10 +315,9 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'type'        => 'file',
 					'priority'    => 30,
 					'section'     => 'environment',
-					'condition'   => '"environment" == data.object_type && data.environment_data && data.environment_data.env_type === "cubemap"',
-					'value_path'  => 'environment_data.faces.nz',
+					'condition'   => '"environment" == data.object_type && data.env_type === "cubemap"',
 					'show_preview' => false,
-					'allowed_types' => 'file',
+					'allowed_types' => 'image',
 					'button_select_label' => \__( 'Select', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
 				),
@@ -406,18 +356,6 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 			);
 		}
 
-		/**
-		 * Environment type select (nested path environment_data.env_type).
-		 *
-		 * @return string
-		 */
-		private static function env_type_select() {
-			$out = '<select class="components-select-control__input" data-setting="environment_data.env_type">';
-			$out .= '<option value="hdri" <# if ( data.environment_data && data.environment_data.env_type === "hdri" ) { #> selected <# } #>>' . \esc_html__( 'HDRi (HDR / EXR)', 'product-configurator-for-woocommerce' ) . '</option>';
-			$out .= '<option value="cubemap" <# if ( data.environment_data && data.environment_data.env_type === "cubemap" ) { #> selected <# } #>>' . \esc_html__( 'Cubemap (6 faces)', 'product-configurator-for-woocommerce' ) . '</option>';
-			$out .= '</select>';
-			return $out;
-		}
 
 		/**
 		 * Light type choices for the select (value => label).
@@ -436,58 +374,6 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 		}
 
 		/**
-		 * Build HTML for a light select field (data-setting and value from light_data path).
-		 *
-		 * @param string $setting data-setting value (e.g. light_data.type)
-		 * @param array  $choices  value => label
-		 * @return string
-		 */
-		private static function light_field_select( $setting, $choices ) {
-			$out = '<select class="components-select-control__input" data-setting="' . \esc_attr( $setting ) . '">';
-			foreach ( $choices as $value => $label ) {
-				$sel = $setting === 'light_data.type'
-					? '<# if ( data.light_data && data.light_data.type === "' . \esc_attr( $value ) . '" ) { #> selected <# } #>'
-					: '';
-				$out .= '<option value="' . \esc_attr( $value ) . '" ' . $sel . '>' . \esc_html( $label ) . '</option>';
-			}
-			$out .= '</select>';
-			return $out;
-		}
-
-		/**
-		 * Build HTML for a light number input. Value read from light_data by path (e.g. light_data.position.x).
-		 *
-		 * @param string $setting data-setting value
-		 * @param mixed  $default default value in template
-		 * @param array  $attrs   optional min/max/step
-		 * @return string
-		 */
-		private static function light_field_number( $setting, $default, $attrs = array() ) {
-			$val = self::light_value_tpl( $setting, $default );
-			$extra = '';
-			if ( isset( $attrs['min'] ) ) {
-				$extra .= ' min="' . \esc_attr( $attrs['min'] ) . '"';
-			}
-			if ( isset( $attrs['max'] ) ) {
-				$extra .= ' max="' . \esc_attr( $attrs['max'] ) . '"';
-			}
-			$extra .= ' step="any"';
-			return '<input type="number" class="components-select-control__input" data-setting="' . \esc_attr( $setting ) . '" value="' . $val . '"' . $extra . '>';
-		}
-
-		/**
-		 * Build HTML for a light color input (same pattern as choice color: placeholder, color-hex class).
-		 *
-		 * @param string $setting data-setting value (e.g. light_data.color)
-		 * @param string $default default hex (e.g. #ffffff)
-		 * @return string
-		 */
-		private static function light_field_color( $setting, $default = '#ffffff' ) {
-			$val = self::light_value_tpl( $setting, $default );
-			return '<input type="text" class="components-select-control__input color-hex" data-setting="' . \esc_attr( $setting ) . '" value="' . $val . '" placeholder="' . \esc_attr( \__( 'E.g. #EEFF00', 'product-configurator-for-woocommerce' ) ) . '">';
-		}
-
-		/**
 		 * Template snippet for value from light_data path (safe: checks light_data and nested keys).
 		 *
 		 * @param string $path    dot path including light_data (e.g. light_data.position.x)
@@ -495,7 +381,12 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 		 * @return string Underscore template snippet
 		 */
 		private static function light_value_tpl( $path, $default ) {
+			// Flat key (e.g. light_target_object_id, light_ground_color).
 			if ( strpos( $path, 'light_data.' ) !== 0 ) {
+				$key = preg_replace( '/[^a-z0-9_]/i', '', $path );
+				if ( $key !== '' ) {
+					return '<# if ( data.' . $key . ' != null && data.' . $key . ' !== "" ) { #>{{data.' . $key . '}}<# } else { #>' . \esc_attr( (string) $default ) . '<# } #>';
+				}
 				return (string) $default;
 			}
 			$parts = explode( '.', substr( $path, strlen( 'light_data.' ) ) );
@@ -516,10 +407,10 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 		 * @return string
 		 */
 		private static function light_field_target_selector() {
-			$val = self::light_value_tpl( 'light_data.target_object_id', '' );
+			$val = self::light_value_tpl( 'light_target_object_id', '' );
 			return '<div class="mkl-pc-setting--container">'
-				. '<input type="text" class="light-target-object-id components-select-control__input" data-setting="light_data.target_object_id" value="' . $val . '" placeholder="' . \esc_attr__( 'Select from list', 'product-configurator-for-woocommerce' ) . '" readonly>'
-				. '<button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="light_data.target_object_id">' . \esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+				. '<input type="text" class="light-target-object-id components-select-control__input" data-setting="light_target_object_id" value="' . $val . '" placeholder="' . \esc_attr__( 'Select from list', 'product-configurator-for-woocommerce' ) . '" readonly>'
+				. '<button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="light_target_object_id">' . \esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
 				. '</div>';
 		}
 
