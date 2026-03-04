@@ -48,17 +48,21 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 				'env_cubemap_ny' => array( 'attachment_id' => null, 'url' => '' ),
 				'env_cubemap_pz' => array( 'attachment_id' => null, 'url' => '' ),
 				'env_cubemap_nz' => array( 'attachment_id' => null, 'url' => '' ),
-					'env_type' => 'hdri',
-					'url'      => array( 'attachment_id' => null, 'url' => '' ),
-					'faces'    => array(
-						'px' => array( 'attachment_id' => null, 'url' => '' ),
-						'nx' => array( 'attachment_id' => null, 'url' => '' ),
-						'py' => array( 'attachment_id' => null, 'url' => '' ),
-						'ny' => array( 'attachment_id' => null, 'url' => '' ),
-						'pz' => array( 'attachment_id' => null, 'url' => '' ),
-						'nz' => array( 'attachment_id' => null, 'url' => '' ),
-					),
-				),
+				'light_type' => 'PointLight',
+				'light_position' => array( 'x' => 0, 'y' => 0, 'z' => 0 ),
+				'light_color' => '#ffffff',
+				'light_intensity' => 1,
+				'light_target_object_id' => '',
+				'light_target' => array( 'x' => 0, 'y' => 0, 'z' => 0 ),
+				'light_angle' => 0.785398,
+				'penumbra' => 0,
+				'distance' => 0,
+				'decay' => 2,
+				'rect_width' => 10,
+				'rect_height' => 10,
+				'rect_rotation' => array( 'x' => 0, 'y' => 0, 'z' => 0 ),
+				'light_ground_color' => '#443333',
+				'light_cookie' => array( 'attachment_id' => null, 'url' => '' ),
 			);
 		}
 
@@ -75,18 +79,18 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'priority' => 10,
 					'section' => 'object3d',
 				),
-				'object_type' => array(
-					'label'   => \__( 'Object type', 'product-configurator-for-woocommerce' ),
-					'type'    => 'select',
-					'priority' => 20,
-					'section' => 'object3d',
-					'choices' => array(
-						array( 'label' => \__( 'GLTF model', 'product-configurator-for-woocommerce' ), 'value' => 'gltf' ),
-						array( 'label' => \__( 'Light', 'product-configurator-for-woocommerce' ), 'value' => 'light' ),
-						// array( 'label' => \__( 'Decal', 'product-configurator-for-woocommerce' ), 'value' => 'decal' ),
-						array( 'label' => \__( 'Environment', 'product-configurator-for-woocommerce' ), 'value' => 'environment' ),
-					),
-				),
+				// 'object_type' => array(
+				// 	'label'   => \__( 'Object type', 'product-configurator-for-woocommerce' ),
+				// 	'type'    => 'select',
+				// 	'priority' => 20,
+				// 	'section' => 'object3d',
+				// 	'choices' => array(
+				// 		array( 'label' => \__( 'GLTF model', 'product-configurator-for-woocommerce' ), 'value' => 'gltf' ),
+				// 		array( 'label' => \__( 'Light', 'product-configurator-for-woocommerce' ), 'value' => 'light' ),
+				// 		// array( 'label' => \__( 'Decal', 'product-configurator-for-woocommerce' ), 'value' => 'decal' ),
+				// 		array( 'label' => \__( 'Environment', 'product-configurator-for-woocommerce' ), 'value' => 'environment' ),
+				// 	),
+				// ),
 				'gltf' => array(
 					'label'       => \__( '3D file', 'product-configurator-for-woocommerce' ),
 					'type'        => 'file',
@@ -385,7 +389,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 			if ( $key === '' ) {
 				return (string) $default;
 			}
-			return '<# if ( data.' . $key . ' != null && data.' . $key . ' !== \"\" ) { #>{{data.' . $key . '}}<# } else { #>' . \esc_attr( (string) $default ) . '<# } #>';
+			return '<# if ( data.' . $key . ' != null && data.' . $key . ' !== "" ) { #>{{data.' . $key . '}}<# } else { #>' . \esc_attr( (string) $default ) . '<# } #>';
 		}
 
 		/**

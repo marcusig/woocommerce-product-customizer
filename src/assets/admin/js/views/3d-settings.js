@@ -559,20 +559,32 @@ PC.views = window.PC.views || {};
 			// Environment: reload map when preset or object URL changes, then set intensity/rotation
 			const env = s.environment || {};
 			const desired_url = this.get_env_url_for_preview( env );
-			if ( desired_url && this._three.current_env_url !== desired_url ) {
-				this._three.current_env_url = desired_url;
+			const desired_key = Array.isArray( desired_url ) ? desired_url.join( '|' ) : desired_url || null;
+			if ( desired_key && this._three.current_env_key !== desired_key ) {
+				this._three.current_env_key = desired_key;
 				loadEnvMap( desired_url, ( texture ) => {
 					scene.environment = texture;
-					this.apply_preview_settings();
-				}, undefined, () => { this._three.current_env_url = null; } );
-			}
-			if ( typeof scene.environmentIntensity !== 'undefined' ) {
-				scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
-			}
-			if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
-				scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-				if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
-					scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+					// apply intensity/rotation once texture is loaded
+					if ( typeof scene.environmentIntensity !== 'undefined' ) {
+						scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
+					}
+					if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
+						scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+						if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
+							scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+						}
+					}
+				}, undefined, () => { this._three.current_env_key = null; } );
+			} else {
+				// No reload, but still keep intensity/rotation in sync
+				if ( typeof scene.environmentIntensity !== 'undefined' ) {
+					scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
+				}
+				if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
+					scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+					if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
+						scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
+					}
 				}
 			}
 

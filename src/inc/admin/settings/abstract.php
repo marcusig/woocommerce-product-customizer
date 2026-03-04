@@ -375,7 +375,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				$cur .= '.' . $p;
 				$has_value_conds[] = $cur;
 			}
-			$has_value_cond = implode( ' && ', $has_value_conds );
+			$has_value_cond = implode( ' && ', $has_value_conds ) . ' && ' . $data_expr . '.attachment_id';
 			$has_url_cond = $has_value_cond . ' && ' . $data_expr . '.url';
 
 			$out = '<div class="mkl-pc-setting--container mkl-pc-setting--file"'
@@ -388,10 +388,15 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_remove ) . '">' . esc_html( $label_remove ) . '</button> ';
 				$out .= '<# } #>';
 			} else {
-				$out .= '<# if ( ' . $has_value_cond . ' ) { #>';
-				$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_remove ) . '">' . esc_html( $label_remove ) . '</button> ';
+				$out .= '<# if ( ' . $has_url_cond . ' ) {  console.log("'. $data_expr .'"); #>';
+				$out .= '<div class="mkl-pc-setting--file-preview-filename">' . __( 'Selected file:', 'product-configurator-for-woocommerce' ) . ' <b>{{' . $data_expr . '.url.replace( /^.*\//, "" )}}</b></div>';
 				$out .= '<# } #>';
 			}
+
+			$out .= '<# if ( ' . $has_value_cond . ' ) { #>';
+			$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_remove ) . '">' . esc_html( $label_remove ) . '</button> ';
+			$out .= '<# } #>';
+
 			$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_select ) . '">';
 			$out .= '<# if ( ' . $has_value_cond . ' ) { #>' . esc_html( $label_select_has ) . '<# } else { #>' . esc_html( $label_select ) . '<# } #>';
 			$out .= '</button>';

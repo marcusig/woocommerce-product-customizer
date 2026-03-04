@@ -93,18 +93,61 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <script type="text/html" id="tmpl-mkl-pc-structure">
 	<div class="media-frame-content structure">
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
-			<div class="structure-toolbar">
-				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
-				<button type="button" class="button-primary add-layer"><span><?php _e( 'Add' ); ?></span></button>
+			<div class="structure-toolbar <# if ( data.collectionName && 'objects3d' === data.collectionName ) { #>pc-objects3d-toolbar<# } #>">
+				<# if ( data.collectionName && 'objects3d' === data.collectionName ) { #>
+					<button type="button" class="button button-primary pc-3d-add-toggle">
+						<span><?php _e( 'Add 3D item', 'product-configurator-for-woocommerce' ); ?></span>
+					</button>
+					<div class="pc-3d-add-menu hidden">
+						<div class="pc-3d-add-section">
+							<h4><?php _e( 'Object', 'product-configurator-for-woocommerce' ); ?></h4>
+							<div class="pc-3d-add-grid">
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="object">
+									<?php echo mkl_pc_include_svg_icon( 'admin', '3d/object_data' ); ?>
+									<span class="pc-3d-add-tile-label"><?php _e( 'Gltf/glb model', 'product-configurator-for-woocommerce' ); ?></span>
+								</button>
+							</div>
+						</div>
+						<div class="pc-3d-add-section">
+							<h4><?php _e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h4>
+							<div class="pc-3d-add-grid">
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="AmbientLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_point' ); ?><span class="pc-3d-add-tile-label"><?php _e( 'Ambient', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="DirectionalLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_sun' ); ?><span class="pc-3d-add-tile-label"><?php _e( 'Directional', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="PointLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_point' ); ?><span class="pc-3d-add-tile-label"><?php _e( 'Point', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="SpotLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_spot' ); ?><span class="pc-3d-add-tile-label"><?php _e( 'Spot', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="RectAreaLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_area' ); ?><span class="pc-3d-add-tile-label"><?php _e( 'Rect Area', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="HemisphereLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_hemi' ); ?><span class="pc-3d-add-tile-label"><?php _e( 'Hemisphere', 'product-configurator-for-woocommerce' ); ?></span></button>
+							</div>
+						</div>
+						<div class="pc-3d-add-section">
+							<h4><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
+							<div class="pc-3d-add-grid">
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="environment" data-env-type="hdri">
+									<?php echo mkl_pc_include_svg_icon( 'admin', '3d/world' ); ?>
+									<span class="pc-3d-add-tile-label"><?php _e( 'HDRi', 'product-configurator-for-woocommerce' ); ?></span>
+								</button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="environment" data-env-type="cubemap">
+									<?php echo mkl_pc_include_svg_icon( 'admin', '3d/mesh_cube' ); ?>
+									<span class="pc-3d-add-tile-label"><?php _e( 'Cubemap', 'product-configurator-for-woocommerce' ); ?></span>
+								</button>
+							</div>
+						</div>
+					</div>
+				<# } else { #>
+					<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
+					<button type="button" class="button-primary add-layer"><span><?php _e( 'Add' ); ?></span></button>
+				<# } #>
 			</div>
 			<div class="mkl-list layers ui-sortable sortable-list">
 			</div>
-			<div class="floating-add">
-				<button class="mkl-floating-add-item">
-					<i class="dashicons dashicons-plus-alt2"></i>
-					<span class="screen-reader-text"><?php _e( 'Add item here' ); ?></span>
-				</button>
-			</div>
+			<# if ( ! data.collectionName || 'objects3d' !== data.collectionName ) { #>
+				<div class="floating-add">
+					<button class="mkl-floating-add-item">
+						<i class="dashicons dashicons-plus-alt2"></i>
+						<span class="screen-reader-text"><?php _e( 'Add item here' ); ?></span>
+					</button>
+				</div>
+			<# } #>
 			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
 				<div class="order-toolbar">
 					<div class="button-group media-button-group">

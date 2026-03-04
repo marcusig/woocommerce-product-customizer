@@ -70,3 +70,11 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 		return false;
 	}
 }
+
+function mkl_pc_include_svg_icon( $type, $icon ) {
+	$path = trailingslashit( MKL_PC_ASSETS_PATH ) . $type . '/images/ui/' . $icon . '.svg';
+	if ( file_exists( $path ) ) {
+		return file_get_contents( $path );
+	}
+	return '';
+}
