@@ -1004,12 +1004,13 @@ PC.views = window.PC.views || {};
 					}
 					var pending = modelEntries.length;
 					modelEntries.forEach( function ( me, i ) {
-						var url = me.get( 'url' );
-						if ( ! url ) {
+						const gltf = me.get( 'gltf' );
+						if ( ! gltf || ! gltf.url ) {
 							pending--;
 							if ( pending === 0 ) onAllLoaded();
 							return;
 						}
+						const url = gltf.url;
 						PC.threeD.store.get( url, function ( errModel, dataModel ) {
 							if ( ! viewRef._three ) return;
 							viewRef._removePreviewLoadingStep( 'model-' + i );
