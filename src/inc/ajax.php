@@ -76,13 +76,13 @@ class Ajax {
 		// check_ajax_referer( 'config-ajax', 'security' );
 
 		if( !isset($_REQUEST['data']) || !isset($_REQUEST['id']) ) {
-			wp_send_json_error();
+			wp_send_json_error( [ 'message' => __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) ], 400 );
 			return false;
 		}
 
 		$start = microtime(true);
 		if( ! $id = absint( $_REQUEST['id'] ) ) {
-			wp_send_json_error();
+			wp_send_json_error( [ 'message' => __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
 
 		$data = NULL;
@@ -206,22 +206,24 @@ class Ajax {
 		}
 
 		if ( ! check_ajax_referer( 'update-pc-post_' . $ref_id, 'nonce', false ) ) {
-			wp_send_json_error( __( 'Error saving the data:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) );
+			wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
 
 		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) ) {
-			wp_send_json_error();
+			wp_send_json_error( [ 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
 
 		if ( !isset( $_REQUEST['data'] ) ) {
-			wp_send_json_error( 'Expecting a data type' );
+			wp_send_json_error( [ 'message' => __( 'Expecting a data type', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
+
+		wp_send_json_error( [ 'message' => __( 'Expecting a data type', 'product-configurator-for-woocommerce' ) ], 400 );
 
 		// Prepare the posted data
 		$component = sanitize_key( $_REQUEST['data'] );
 
 		if ( ! isset( $_REQUEST[$component] ) ) {
-			wp_send_json_error( 'No data was received' );
+			wp_send_json_error( [ 'message' => __( 'No data was received', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
 
 		if ( apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
@@ -261,7 +263,7 @@ class Ajax {
 	 * Purge the configurations cache
 	 */
 	public function purge_config_cache() {
-		if ( ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) || ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+		if ( ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) || ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to purge the configuration cache.', 'product-configurator-for-woocommerce' ) ], 403 );
 		Plugin::instance()->cache->purge();
 		wp_send_json_success();
 	}
@@ -270,7 +272,7 @@ class Ajax {
 	 * Purge the configurations cache
 	 */
 	public function toggle_config_images_in_library() {
-		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to toggle the configuration images in the library.', 'product-configurator-for-woocommerce' ) ], 403 );
 		$mode = mkl_pc( 'settings' )->get( 'show_config_images_in_the_library', true );
 		if ( $mode ) {
 			// Will hide the images
@@ -299,7 +301,7 @@ class Ajax {
 	 * Fix image ids after a transfer
 	 */
 	public function fix_image_ids() {
-		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to fix the image ids.', 'product-configurator-for-woocommerce' ) ], 403 );
 		if ( ! $id = absint( $_REQUEST['id'] ) ) wp_send_json_error();
 		delete_transient( 'mkl_pc_data_init_' . $id );
 		wp_send_json_success( [ 'changed_items' => $this->db->scan_product_images( $id ) ] );
@@ -309,10 +311,10 @@ class Ajax {
 	 * Fix image ids after a transfer
 	 */
 	public function fix_image_ids_from_configurator() {
-		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( '', 403 );
+		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to fix the image ids from the configurator.', 'product-configurator-for-woocommerce' ) ], 403 );
 		if ( ! $id = absint( $_REQUEST['id'] ) ) wp_send_json_error();
 		if ( ! check_ajax_referer( 'update-pc-post_' . $id, 'security', false ) ) {
-			wp_send_json_error( __( 'Error processing the request:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ), 403 );
+			wp_send_json_error( [ 'message' => __( 'Error processing the request:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
 		delete_transient( 'mkl_pc_data_init_' . $id );
 		$changed_items = $this->db->scan_product_images( $id );
@@ -333,18 +335,18 @@ class Ajax {
 	 */
 	public function generate_config_image() {
 		
-		if ( empty( $_REQUEST['data'] ) ) wp_send_json_error( 'No data to process' );
+		if ( empty( $_REQUEST['data'] ) ) wp_send_json_error( [ 'message' => __( 'No data to process', 'product-configurator-for-woocommerce' ) ], 400 );
 
 		// Extract the temporary suffix: The name should contain '-temp-'
 		$temp_offset = strpos( $_REQUEST['data'], '-temp-' );
 		
 		// Exit if the suffix was not found in the name
-		if ( false === $temp_offset ) wp_send_json_error( 'No data to process' );
+		if ( false === $temp_offset ) wp_send_json_error( [ 'message' => __( 'No data to process', 'product-configurator-for-woocommerce' ) ], 400 );
 		
 		// Extract the nonce which is storred after the suffix
 		$nonce = substr( $_REQUEST['data'], $temp_offset + 6 );
 		// Exit if the file name doesn't contain a valid nonce
-		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'generate-image-from-temp-file' ) ) wp_send_json_error( 'Unauthorized action', 403 );
+		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'generate-image-from-temp-file' ) ) wp_send_json_error( [ 'message' => __( 'Unauthorized action', 'product-configurator-for-woocommerce' ) ], 403 );
 		
 		$config = new Configuration();
 		$config->image_name = sanitize_file_name( rtrim( $_REQUEST['data'] , '-temp-' . $nonce ) );
@@ -406,7 +408,7 @@ class Ajax {
 	}
 
 	public function get_configurable_products() {
-		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( '', 403 );
+		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $_REQUEST[ 'security' ], 'mlk_pc_settings-options' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to get the configurable products.', 'product-configurator-for-woocommerce' ) ], 403 );
 		if ( $data = get_transient( 'mkl_get_configurable_products' ) ) wp_send_json_success( $data );
 		$args = array(
 			'limit' => -1,

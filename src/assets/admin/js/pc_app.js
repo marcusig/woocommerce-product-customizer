@@ -148,13 +148,20 @@ PC.toJSON = function( item ) {
 			// if ( this.saving == 0 ) this.admin.close();
 		},
 
-		error_saving: function( key, state, a, error_message ) {
-			this.errors.push( error_message );
+		error_saving: function( key, state, options, error, a, b ) {
 			this.saving--;
 			if ( this.saving == 0 ) {
 				state.state_saved( 1 );
-				console.log( key, this.errors, state, a, error_message );
-				alert( this.errors.join( "/n" ) );
+				if ( error && 'string' == typeof error && error.length > 0 ) this.errors.push( error );
+				if ( error && 'object' == typeof error ) {
+					const type = error?.status || 'unknown';
+					const response = error?.responseJSON;
+					this.errors.push( 'Error type: ' + type );
+					if ( response && response.data && response.data.message ) this.errors.push( 'Error message: ' + response.data.message );
+					if ( !response && error?.responseText ) this.errors.push( 'Error response: ' + error.responseText );
+				}
+				console.log( key, state, options, error, a, b, this.errors );
+				alert( this.errors.join( "\n" ) );
 			}
 		},
 		saved_all: function( key, state, options ) {
