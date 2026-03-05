@@ -369,15 +369,11 @@ PC.views = PC.views || {};
 		},
 		form_change: function( event ) {
 			var input = $( event.currentTarget );
-			var setting = input.data( 'setting' );
-			if ( ! setting ) {
-				return PC.views.layer_form.prototype.form_change.call( this, event );
-			}
-			// Euler/vector3: one setting path, three inputs with data-component; set whole object.
+			// Euler/vector3: inputs have data-component only; wrapper has data-setting. Handle first so we never delegate with missing setting.
 			var component = input.data( 'component' );
 			if ( component && input.closest( '.mkl-pc-setting--euler' ).length ) {
 				var $wrapper = input.closest( '.mkl-pc-setting--euler' );
-				setting = $wrapper.attr( 'data-setting' );
+				var setting = $wrapper.attr( 'data-setting' );
 				if ( setting ) {
 					var x = parseFloat( $wrapper.find( '[data-component="x"]' ).val() ) || 0;
 					var y = parseFloat( $wrapper.find( '[data-component="y"]' ).val() ) || 0;
@@ -385,6 +381,10 @@ PC.views = PC.views || {};
 					this.model.set( setting, { x: x, y: y, z: z } );
 				}
 				return;
+			}
+			var setting = input.data( 'setting' );
+			if ( ! setting ) {
+				return PC.views.layer_form.prototype.form_change.call( this, event );
 			}
 			return PC.views.layer_form.prototype.form_change.call( this, event );
 		},
