@@ -217,8 +217,6 @@ class Ajax {
 			wp_send_json_error( [ 'message' => __( 'Expecting a data type', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
 
-		wp_send_json_error( [ 'message' => __( 'Expecting a data type', 'product-configurator-for-woocommerce' ) ], 400 );
-
 		// Prepare the posted data
 		$component = sanitize_key( $_REQUEST['data'] );
 
