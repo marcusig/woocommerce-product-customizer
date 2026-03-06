@@ -14,11 +14,17 @@ var PC = PC || {};
 			}
 		},
 		nextOrder: function() {
-			if ( ! this.length ) return 1;
-			return parseInt( this.last().get( '_id' ), 10 ) + 1;
+			if ( ! this.length ) {
+				return 1;
+			}
+
+			const orders = this.pluck( 'order' );
+			const max = _.max( orders );
+			if ( max ) return max + 1;
+			return 1;
 		},
-		comparator: function( a, b ) {
-			return ( a.get( '_id' ) || 0 ) - ( b.get( '_id' ) || 0 );
+		comparator: function( layer ) {
+			return layer.get('order');
 		},
 		sync: function( method, model, options ) {},
 		create_object: function( data ) {

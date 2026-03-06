@@ -37,6 +37,9 @@ const viewer_3d_choice = Backbone.View.extend({
 			this.model.get( 'object_id_3d' ) ||
 			this.layer_model.get( 'object_id_3d' );
 		if ( ! target_id ) return null;
+		if ( typeof this.parent_view._findObjectById === 'function' ) {
+			return this.parent_view._findObjectById( target_id ) || null;
+		}
 		const root = t.model_root;
 		const obj = this.parent_view._findObject( root, String( target_id ).trim() );
 		return obj || null;
@@ -71,13 +74,26 @@ const viewer_3d_choice = Backbone.View.extend({
 				this._attached_model_root.visible = true;
 			}
 		}
-		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
-		if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = visible;
+		const targetObject = this.get_target_object();
+		const targetScene = this.get_target_scene();
+		if ( targetObject && has_toggle_visibility ) targetObject.visible = visible;
+		if ( targetScene && has_toggle_visibility ) targetScene.visible = visible;
+		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
+			this.parent_view._applyAngleCamera();
+		}
+
+		// If conditional logic just made an active choice visible, ensure lazy targets can load.
+		if ( visible && this.model.get( 'active' ) ) {
+			this.apply_actions();
+		}
 	},
 
 	_apply_visibility_and_actions() {
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
+		this.target_object = this.get_target_object();
+		this.target_scene = this.get_target_scene();
+		if ( ! this.target_object && this.target_scene ) this.target_object = this.target_scene;
 		const select_variant = t.gltf && t.gltf.functions && t.gltf.functions.selectVariant;
 		const registry = t.material_registry;
 		const actions = this.model.get( 'actions_3d' ) || [];
@@ -139,6 +155,9 @@ const viewer_3d_choice = Backbone.View.extend({
 				this._apply_material_to_object( this.target_object, registryMaterial );
 			}
 		} );
+		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
+			this.parent_view._applyAngleCamera();
+		}
 	},
 
 	_apply_material_to_object( obj, material ) {
@@ -186,6 +205,8 @@ const viewer_3d_choice = Backbone.View.extend({
 	apply_actions() {
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
+		this.target_object = this.get_target_object();
+		this.target_scene = this.get_target_scene();
 		const visible = this._effective_visible();
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
@@ -199,29 +220,45 @@ const viewer_3d_choice = Backbone.View.extend({
 			return;
 		}
 
-		const object3dId = this.model.get( 'object_3d_id' );
-		const choiceModelUrl = object3dId != null && object3dId !== '' && this.parent_view._getUrlForObject3dId
-			? this.parent_view._getUrlForObject3dId( object3dId )
-			: null;
-
-		if ( choiceModelUrl ) {
-			if ( this._attached_model_root ) {
-				this.target_object = this._attached_model_root;
-				const parent = this._attach_parent || t.model_root;
-				if ( this._attached_model_root.parent !== parent ) parent.add( this._attached_model_root );
-				this._attached_model_root.visible = true;
-				this._apply_visibility_and_actions();
-			} else {
-				this.parent_view._load_choice_gltf( choiceModelUrl, ( scene ) => {
-					if ( ! scene || ! t || ! t.model_root ) return;
-					this._attached_model_root = scene;
-					this._attach_parent = this.target_object || t.model_root;
-					this.target_object = scene;
-					this._attach_parent.add( scene );
-					this._attached_model_root.visible = true;
-					this._apply_visibility_and_actions();
-				} );
+		// If this choice needs to toggle visibility for an object/scene that isn't loaded yet,
+		// lazily load the corresponding objects3d model on demand.
+		if ( has_toggle_visibility && this.parent_view ) {
+			if ( this._loading_targets_promise ) {
+				// Wait for the in-flight load, then retry.
+				this._loading_targets_promise.then( () => this.apply_actions() );
+				return;
 			}
+
+			const targetId = this.model.get( 'object_id_3d' ) || this.layer_model.get( 'object_id_3d' );
+			const needsObject = ! this.target_object && targetId && String( targetId ).indexOf( ':' ) !== -1;
+			const layerObject3dId = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
+			const needsScene = ! this.target_scene && ! targetId && layerObject3dId != null && String( layerObject3dId ).trim() !== '';
+
+			if ( needsObject && typeof this.parent_view._ensureObjects3dSceneLoadedForCompositeId === 'function' ) {
+				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedForCompositeId( targetId )
+					.finally( () => { this._loading_targets_promise = null; } );
+				this._loading_targets_promise.then( () => this.apply_actions() );
+				return;
+			}
+
+			if ( needsScene && typeof this.parent_view._ensureObjects3dSceneLoadedById === 'function' ) {
+				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedById( layerObject3dId )
+					.finally( () => { this._loading_targets_promise = null; } );
+				this._loading_targets_promise.then( () => this.apply_actions() );
+				return;
+			}
+		}
+
+		const object3dId = this.model.get( 'object_3d_id' );
+		const hasChoiceModel = object3dId != null && String( object3dId ).trim() !== '';
+
+		if ( hasChoiceModel && this.parent_view._ensureObjects3dSceneLoadedById ) {
+			this.parent_view._ensureObjects3dSceneLoadedById( object3dId ).then( ( scene ) => {
+				if ( ! scene || ! t || ! t.model_root ) return;
+				this.target_scene = scene;
+				if ( ! this.target_object ) this.target_object = scene;
+				this._apply_visibility_and_actions();
+			} );
 			return;
 		}
 

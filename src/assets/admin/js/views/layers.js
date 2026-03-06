@@ -66,6 +66,7 @@ TODO:
 		render: function( ) {
 			this.col.orderBy = 'order';
 			this.col.sort();
+			console.log( this.col.orderBy, this.col );
 			this.$el.append( this.template({ input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.pc-sidebar'); 

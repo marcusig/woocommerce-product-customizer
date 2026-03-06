@@ -201,7 +201,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'label'   => __( 'Action', 'product-configurator-for-woocommerce' ),
 							'type'    => 'select',
 							'choices' => array(
-								array( 'label' => __( 'Toggle object visibility', 'product-configurator-for-woocommerce' ), 'value' => 'toggle_visibility' ),
+								array( 'label' => __( 'Display object', 'product-configurator-for-woocommerce' ), 'value' => 'toggle_visibility' ),
 								array( 'label' => __( 'Select material variant', 'product-configurator-for-woocommerce' ), 'value' => 'material_variant' ),
 								array( 'label' => __( 'Set material texture', 'product-configurator-for-woocommerce' ), 'value' => 'material_texture' ),
 								array( 'label' => __( 'Change material color (from registry)', 'product-configurator-for-woocommerce' ), 'value' => 'material_color_registry' ),

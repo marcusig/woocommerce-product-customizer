@@ -17,7 +17,7 @@ const loadingText = ( typeof window.PC_lang !== 'undefined' && window.PC_lang.lo
 
 const Viewer3DWrapper = Backbone.View.extend( {
 	tagName: 'div',
-	className: 'mkl_pc_viewer mkl_pc_viewer--3d',
+	className: 'mkl_pc_viewer_3d_wrapper',
 	template: wp && wp.template ? wp.template( 'mkl-pc-configurator-viewer' ) : function () { return ''; },
 	_realView: null,
 

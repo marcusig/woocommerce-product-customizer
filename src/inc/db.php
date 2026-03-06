@@ -462,10 +462,13 @@ class DB {
 			),
 			'lighting'        => array(),
 			'postprocessing'  => array(
-				'ssr'   => false,
-				'ssao'  => false,
-				'bloom' => false,
-				'smaa'  => false,
+				'ssr'             => false,
+				'ssao'            => false,
+				'bloom'           => false,
+				'smaa'            => false,
+				'bloom_strength'  => 0.05,
+				'bloom_radius'    => 0.04,
+				'bloom_threshold' => 0.85,
 			),
 		);
 	}

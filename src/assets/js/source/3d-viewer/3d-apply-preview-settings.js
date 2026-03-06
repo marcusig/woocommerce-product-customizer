@@ -49,13 +49,14 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	const hdrBase = ( typeof options.getHdrBaseUrl === 'function' ? options.getHdrBaseUrl() : '' );
 	const desiredUrl = getHdrUrlFromEnv( env, hdrBase );
 	const urlRef = options.currentEnvUrlRef || { current: null };
-	if ( urlRef.current !== desiredUrl ) {
-		urlRef.current = desiredUrl;
+	const desiredKey = Array.isArray( desiredUrl ) ? desiredUrl.join( '|' ) : desiredUrl;
+	if ( urlRef.current !== desiredKey ) {
+		urlRef.current = desiredKey;
 		loadEnvMap(
 			desiredUrl,
 			( texture ) => {
 				scene.environment = texture;
-				urlRef.current = desiredUrl;
+				urlRef.current = desiredKey;
 				if ( typeof options.onEnvLoaded === 'function' ) options.onEnvLoaded();
 			},
 			undefined,

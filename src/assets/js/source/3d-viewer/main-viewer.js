@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl, getPostprocessingFlags } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl, getPostprocessingFlags, getHdrUrlFromEnv } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap } from './3d-scene-utils.js';
@@ -20,9 +20,17 @@ export default Backbone.View.extend({
 	className: 'mkl_pc_viewer mkl_pc_viewer--3d',
 	template: wp.template( 'mkl-pc-configurator-viewer' ),
 	_three: null,
+	_objects3dById: null,
+	_objects3dByAttachmentId: null,
+	_objectIdToScene: null,
+	_scene_models: null,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
+		this._objects3dById = new Map();
+		this._objects3dByAttachmentId = new Map();
+		this._objectIdToScene = {};
+		this._scene_models = new Backbone.Collection();
 		if ( window.PC.fe && window.PC.fe.angles ) {
 			this.listenTo( window.PC.fe.angles, 'change:active', this._applyAngleCamera );
 		}
@@ -41,7 +49,7 @@ export default Backbone.View.extend({
 		const focusIds = active.get( 'camera_focus_object_ids' );
 		const useFocusIds = Array.isArray( focusIds ) && focusIds.length > 0 && t.model_root;
 		if ( useFocusIds ) {
-			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds );
+			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds, { visibleOnly: true } );
 			if ( result ) {
 				t.controls.target.copy( result.center );
 				tgt = { x: result.center.x, y: result.center.y, z: result.center.z };
@@ -68,12 +76,20 @@ export default Backbone.View.extend({
 	render() {
 		wp.hooks.doAction( 'PC.fe.viewer.render.before', this );
 		this.$el.append( this.template() );
+
 		this.$layers = this.$el.find( '.mkl_pc_layers' );
 		this.$layers.empty();
 		const container = document.createElement( 'div' );
 		container.className = 'mkl_pc_3d_canvas_container';
 		this.$layers.append( container );
 
+		if ( PC.fe.angles.length > 1 ) {
+			this.angles_selector = new PC.fe.views.angles({ parent: this }); 
+			this.$el.append( this.angles_selector.render() );
+		} else if ( PC.fe.angles.length ) {
+			PC.fe.angles.first().set( 'active', true );
+		}
+		
 		const s = getSettings();
 		if ( ! s ) {
 			this.$layers.append( '<p class="mkl_pc_3d_error">No 3D model configured.</p>' );
@@ -167,12 +183,6 @@ export default Backbone.View.extend({
 		};
 	},
 
-	/**
-	 * Phase 3: Load assets (main GLTF, layer GLTFs, HDR).
-	 * @param {Object} s - settings_3d
-	 * @param {Object} modules - from _loadModules
-	 * @returns {Promise<{ mainGltf: *, layerResults: *, hdrTexture: *, hdrUrl: string }>}
-	 */
 	_getUrlForObject3dId( object3dId ) {
 		if ( object3dId == null || object3dId === '' ) return null;
 		const data = window.PC.fe && window.PC.fe.currentProductData;
@@ -184,63 +194,87 @@ export default Backbone.View.extend({
 		return ( gltf && gltf.url ) ? gltf.url : ( obj && obj.url ? obj.url : null );
 	},
 
-	async _loadAssets( s, modules ) {
-		const layerEntries = [];
-		const layers = window.PC.fe && window.PC.fe.layers;
-		if ( layers ) {
-			layers.each( ( layer_model ) => {
-				const object3dId = layer_model.get( 'object_3d_id' );
-				if ( object3dId == null || object3dId === '' ) return;
-				const url = this._getUrlForObject3dId( object3dId );
-				if ( ! url ) return;
-				layerEntries.push( { layer_model, url } );
+	_initSceneModelsStore( objects3d ) {
+		this._objects3dById = new Map();
+		this._objects3dByAttachmentId = new Map();
+		this._scene_models.reset();
+		this._objectIdToScene = {};
+
+		if ( ! Array.isArray( objects3d ) ) return;
+
+		objects3d.forEach( ( item ) => {
+			if ( ! item || item.object_type !== 'gltf' ) return;
+			const oid = String( item._id != null ? item._id : item.id || '' );
+			if ( ! oid ) return;
+			const url = this._getUrlForObject3dId( oid );
+			if ( ! url ) return;
+			const strategy = item.loading_strategy != null ? item.loading_strategy : 'eager';
+			const attId = item && item.gltf && item.gltf.attachment_id != null ? String( item.gltf.attachment_id ) : '';
+
+			this._objects3dById.set( oid, item );
+			if ( attId ) this._objects3dByAttachmentId.set( attId, item );
+
+			this._scene_models.add( {
+				id: oid,
+				object3d: item,
+				url,
+				loading_strategy: strategy,
+				state: 'unloaded',
+				scene: null,
+				loadPromise: null,
 			} );
+		} );
+	},
+
+	_syncLayerSceneForObjectId( objectId, scene ) {
+		const layers = window.PC.fe && window.PC.fe.layers;
+		if ( !layers || ! scene ) return;
+		layers.each( ( layer_model ) => {
+			const lid = layer_model.get( 'object_3d_id' );
+			if ( lid == null || String( lid ) !== String( objectId ) ) return;
+			const exists = this._layer_scenes && this._layer_scenes.some( ( x ) => String( x.layer_model.id ) === String( layer_model.id ) );
+			if ( ! exists ) this._layer_scenes.push( { layer_model, scene } );
+		} );
+	},
+
+	/**
+	 * Phase 3: Load assets (eager GLTFs from objects3d, HDR).
+	 * @param {Object} s - settings_3d
+	 * @param {Object} modules - from _loadModules
+	 * @returns {Promise<{ mainGltf: *, modelResults: *, hdrTexture: *, hdrUrl: string }>}
+	 */
+	async _loadAssets( s, modules ) {
+		const productData = window.PC.fe && window.PC.fe.currentProductData;
+		const objects3d = ( productData && productData['objects3d'] ) || [];
+		const eagerObjectIds = [];
+		for ( let i = 0; i < objects3d.length; i++ ) {
+			const obj = objects3d[ i ];
+			if ( obj.object_type !== 'gltf' ) continue;
+			const strategy = obj.loading_strategy != null ? obj.loading_strategy : 'eager';
+			if ( strategy !== 'eager' ) continue;
+			const oid = String( obj._id != null ? obj._id : obj.id || '' );
+			if ( ! oid ) continue;
+			const url = this._getUrlForObject3dId( oid );
+			if ( ! url ) continue;
+			eagerObjectIds.push( oid );
 		}
 
-		if ( layerEntries.length === 0 ) {
+		// Allow zero eager models: the viewer can start empty and lazily load models when choices require them.
+		// Only error if there are no glTF entries at all.
+		const hasAnyGltf = Array.isArray( objects3d ) && objects3d.some( ( o ) => o && o.object_type === 'gltf' && ( ( o.gltf && o.gltf.url ) || o.url ) );
+		if ( eagerObjectIds.length === 0 && ! hasAnyGltf ) {
 			throw new Error( typeof PC_lang !== 'undefined' && PC_lang.no_3d_model_configured ? PC_lang.no_3d_model_configured : 'No 3D model configured.' );
 		}
 
 		const env = s.environment || {};
 		const hdrBase = getHdrBaseUrl();
-		const presetFile = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
-		const hdrUrl = ( env.mode === 'custom' && env.custom_hdr_url ) ? env.custom_hdr_url : hdrBase + presetFile;
+		const hdrUrl = getHdrUrlFromEnv( env, hdrBase );
 
-		const loader = modules.gltfLoader;
-
-		const promises = [];
-
-		layerEntries.forEach( ( { layer_model, url } ) => {
-			promises.push( new Promise( ( resolve ) => {
-				loader.load(
-					url,
-					( gltf ) => {
-						const scene = gltf && gltf.scene ? gltf.scene : null;
-						if ( scene ) {
-							// Strip any lights embedded in the GLTF; only objects3d lights should be used.
-							removeLightsFromScene( scene );
-						}
-						resolve( { type: 'layer', layer_model, scene } );
-					},
-					undefined,
-					() => resolve( { type: 'layer', layer_model, scene: null } )
-				);
-			} ) );
+		const hdrTexture = await new Promise( ( resolve ) => {
+			loadEnvMap( hdrUrl, ( texture ) => resolve( texture ), undefined, () => resolve( null ) );
 		} );
 
-		promises.push( new Promise( ( resolve ) => {
-			loadEnvMap( hdrUrl, ( texture ) => resolve( { type: 'hdr', texture } ), undefined, () => resolve( { type: 'hdr', texture: null } ) );
-		} ) );
-
-		const results = await Promise.all( promises );
-		const layerResults = [];
-		let hdrTexture = null;
-		results.forEach( ( r ) => {
-			if ( r.type === 'layer' ) layerResults.push( { layer_model: r.layer_model, scene: r.scene } );
-			else if ( r.type === 'hdr' ) hdrTexture = r.texture;
-		} );
-
-		return { mainGltf: null, layerResults, hdrTexture, hdrUrl };
+		return { mainGltf: null, eagerObjectIds, hdrTexture, hdrUrl };
 	},
 
 	/**
@@ -251,7 +285,7 @@ export default Backbone.View.extend({
 	 * @param {Object} assets - from _loadAssets
 	 */
 	async _setupScene( container, s, modules, assets ) {
-		const { mainGltf, layerResults, hdrTexture, hdrUrl } = assets;
+		const { mainGltf, eagerObjectIds, hdrTexture, hdrUrl } = assets;
 		this.maybe_cleanup();
 		this._gltfLoader = modules.gltfLoader;
 		this._three = initScene( container, s );
@@ -270,34 +304,30 @@ export default Backbone.View.extend({
 			t.gltf = null;
 		}
 
-		this._layer_scenes = [];
 		const productData = window.PC.fe && window.PC.fe.currentProductData;
 		const objects3d = productData && productData['objects3d'];
-		const getAttIdForObject3d = ( object3dId ) => {
-			if ( object3dId == null || object3dId === '' || ! Array.isArray( objects3d ) ) return null;
-			const idStr = String( object3dId );
-			const o = objects3d.find( ( x ) => String( x._id || x.id ) === idStr );
-			const gltf = o && o.gltf;
-			return ( gltf && gltf.attachment_id != null ) ? gltf.attachment_id : ( o && o.attachment_id != null ? o.attachment_id : null );
-		};
-		layerResults.forEach( ( { layer_model, scene } ) => {
-			if ( scene ) {
+		this._initSceneModelsStore( objects3d );
+		this._layer_scenes = [];
+		// Initial pass: load all eager objects through the same store path as lazy loads.
+		if ( Array.isArray( eagerObjectIds ) && eagerObjectIds.length ) {
+			await Promise.all( eagerObjectIds.map( ( oid ) => this._ensureObjects3dSceneLoadedById( oid ) ) );
+		}
+		if ( layers ) {
+			layers.each( ( layer_model ) => {
 				const object3dId = layer_model.get( 'object_3d_id' );
-				const attId = getAttIdForObject3d( object3dId );
-				if ( attId != null ) scene.userData.attachment_id = attId;
-				if ( object3dId != null && object3dId !== '' ) scene.userData.object_id = String( object3dId );
-				t.model_root.add( scene );
-				this._registerSceneMaterials( t, scene );
-				this._layer_scenes.push( { layer_model, scene } );
-			}
-		} );
+				if ( object3dId == null || object3dId === '' ) return;
+				const idStr = String( object3dId );
+				const scene = this._objectIdToScene[ idStr ];
+				if ( scene ) this._layer_scenes.push( { layer_model, scene } );
+			} );
+		}
 		this._layer_objects = [];
 		if ( layers && t.model_root ) {
 			layers.each( ( layer_model ) => {
 				if ( layer_model.get( 'object_3d_id' ) ) return;
 				const oid = layer_model.get( 'object_id_3d' );
 				if ( ! oid ) return;
-				const obj = this._findObject( t.model_root, String( oid ).trim() );
+				const obj = this._findObjectById( oid );
 				if ( obj ) this._layer_objects.push( { layer_model, object: obj } );
 			} );
 		}
@@ -352,7 +382,7 @@ export default Backbone.View.extend({
 
 		if ( hdrTexture ) {
 			t.scene.environment = hdrTexture;
-			t.current_env_url = hdrUrl;
+			t.current_env_url = Array.isArray( hdrUrl ) ? hdrUrl.join( '|' ) : hdrUrl;
 		}
 
 		if ( modules.FakeShadow ) {
@@ -365,10 +395,14 @@ export default Backbone.View.extend({
 
 		if ( modules.createPostprocessingLayer ) {
 			const flags = getPostprocessingFlags( s );
+			const pp = ( s && s.postprocessing ) ? s.postprocessing : {};
 			const layer = await modules.createPostprocessingLayer( t.renderer, t.scene, t.camera, {
 				width: t.container.clientWidth,
 				height: t.container.clientHeight,
-				flags
+				flags,
+				bloomStrength: pp.bloom_strength,
+				bloomRadius: pp.bloom_radius,
+				bloomThreshold: pp.bloom_threshold,
 			} );
 			if ( layer && t.container && t.on_resize ) {
 				t.postprocessingLayer = layer;
@@ -392,15 +426,15 @@ export default Backbone.View.extend({
 			t.controls.target.copy( center );
 			t.camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
 			t.camera.lookAt( center );
-			if ( ! t.initial_camera_position ) {
-				t.initial_camera_position = t.camera.position.clone();
-				t.initial_controls_target = t.controls.target.clone();
-			}
 		}
 		if ( t.on_resize ) t.on_resize();
 
 		this.apply_preview_settings();
 		this._applyAngleCamera();
+		// Capture "initial" camera after applying active angle so screenshot/view reset
+		// uses configured angle camera instead of fallback bbox framing.
+		t.initial_camera_position = t.camera.position.clone();
+		t.initial_controls_target = t.controls.target.clone();
 		this._create_choice_views();
 
 		const g = ( s && s.ground ) || {};
@@ -422,6 +456,19 @@ export default Backbone.View.extend({
 	},
 
 	/**
+	 * glTF may omit alphaMode; default is OPAQUE so texture alpha is ignored.
+	 * Enable transparency for unlit materials that have a base color texture or opacity < 1.
+	 * @param {THREE.Material} mat
+	 */
+	_ensureUnlitTransparency( mat ) {
+		if ( ! mat || ! mat.isMeshBasicMaterial ) return;
+		const hasAlpha = ( mat.map != null ) || ( typeof mat.opacity === 'number' && mat.opacity < 1 );
+		if ( ! hasAlpha ) return;
+		mat.transparent = true;
+		mat.depthWrite = false;
+	},
+
+	/**
 	 * Register materials from a scene in the global registry. If a material with the same name
 	 * already exists (different instance), replace the mesh's material with the registry one.
 	 * @param {Object} t - this._three
@@ -440,6 +487,8 @@ export default Backbone.View.extend({
 			for ( let i = 0; i < materials.length; i++ ) {
 				const mat = materials[ i ];
 				if ( ! mat ) continue;
+
+				this._ensureUnlitTransparency( mat );
 
 				const name = ( mat.name && String( mat.name ).trim() ) || mat.uuid;
 				const existing = registry.get( name );
@@ -477,20 +526,86 @@ export default Backbone.View.extend({
 		} );
 	},
 
-	_load_choice_gltf( url, done ) {
-		if ( ! url || typeof done !== 'function' ) return;
+	_ensureObjects3dSceneLoadedById( object3dId ) {
 		const t = this._three;
-		this._loadGltf(
-			url,
-			( gltf ) => {
-				const scene = gltf && gltf.scene ? gltf.scene : null;
-				if ( scene && t && t.material_registry ) {
-					this._registerSceneMaterials( t, scene );
+		if ( ! t || ! t.model_root || object3dId == null || String( object3dId ).trim() === '' ) return Promise.resolve( null );
+		const idStr = String( object3dId ).trim();
+		const sceneModel = this._scene_models && this._scene_models.get( idStr );
+		if ( ! sceneModel ) return Promise.resolve( null );
+
+		const state = sceneModel.get( 'state' );
+		if ( state === 'loaded' ) return Promise.resolve( sceneModel.get( 'scene' ) || null );
+		if ( state === 'loading' && sceneModel.get( 'loadPromise' ) ) return sceneModel.get( 'loadPromise' );
+
+		const url = sceneModel.get( 'url' );
+		if ( ! url ) {
+			sceneModel.set( { state: 'error', loadPromise: null } );
+			return Promise.resolve( null );
+		}
+
+		const loadPromise = new Promise( ( resolve ) => {
+			this._loadGltf(
+				url,
+				( gltf ) => {
+					const scene = gltf && gltf.scene ? gltf.scene : null;
+					if ( ! scene ) {
+						sceneModel.set( { state: 'error', loadPromise: null } );
+						resolve( null );
+						return;
+					}
+					removeLightsFromScene( scene );
+					const sceneToAdd = scene.parent != null ? scene.clone( true ) : scene;
+					sceneToAdd.userData = sceneToAdd.userData || {};
+					sceneToAdd.userData.object_id = idStr;
+					const obj = sceneModel.get( 'object3d' );
+					const attId = obj && obj.gltf && obj.gltf.attachment_id != null ? obj.gltf.attachment_id : null;
+					if ( attId != null ) sceneToAdd.userData.attachment_id = attId;
+
+					sceneModel.set( {
+						scene: sceneToAdd,
+						state: 'loaded',
+						loadPromise: null,
+					} );
+					if ( ! sceneToAdd.parent ) t.model_root.add( sceneToAdd );
+					this._registerSceneMaterials( t, sceneToAdd );
+					this._objectIdToScene[ idStr ] = sceneToAdd;
+					this._syncLayerSceneForObjectId( idStr, sceneToAdd );
+					this._apply_layer_cshow_visibility();
+					resolve( sceneToAdd );
+				},
+				() => {
+					sceneModel.set( { state: 'error', loadPromise: null } );
+					resolve( null );
 				}
-				done( scene );
-			},
-			() => done( null )
-		);
+			);
+		} );
+
+		sceneModel.set( { state: 'loading', loadPromise } );
+		return loadPromise;
+	},
+
+	/**
+	 * Lazily load an objects3d model based on a composite id "sourceId:objectName".
+	 * sourceId can match objects3d _id/id or gltf.attachment_id.
+	 *
+	 * @param {string} compositeId
+	 * @returns {Promise<THREE.Object3D|null>} scene root that was loaded/ensured
+	 */
+	_ensureObjects3dSceneLoadedForCompositeId( compositeId ) {
+		if ( ! compositeId ) return Promise.resolve( null );
+		const id = String( compositeId ).trim();
+		const sepIdx = id.indexOf( ':' );
+		if ( sepIdx === -1 ) return Promise.resolve( null );
+		const sourceId = id.slice( 0, sepIdx );
+		if ( ! sourceId ) return Promise.resolve( null );
+
+		const byId = this._objects3dById ? this._objects3dById.get( sourceId ) : null;
+		const byAtt = this._objects3dByAttachmentId ? this._objects3dByAttachmentId.get( sourceId ) : null;
+		const obj = byId || byAtt;
+		if ( ! obj ) return Promise.resolve( null );
+		const oid = String( obj._id != null ? obj._id : obj.id || '' );
+		if ( ! oid ) return Promise.resolve( null );
+		return this._ensureObjects3dSceneLoadedById( oid );
 	},
 
 	apply_preview_settings() {
@@ -520,6 +635,19 @@ export default Backbone.View.extend({
 		return found;
 	},
 
+	/**
+	 * Resolve object_id_3d (plain name/uuid or composite "sourceId:objectName") to a scene object.
+	 * Uses findObjectByCompositeId so multiple loaded models are disambiguated by attachment_id/object_id.
+	 */
+	_findObjectById( id ) {
+		const t = this._three;
+		if ( ! t || ! t.model_root || id == null || String( id ).trim() === '' ) return null;
+		const s = String( id ).trim();
+		const byComposite = findObjectByCompositeId( t.model_root, s );
+		if ( byComposite ) return byComposite;
+		return this._findObject( t.model_root, s );
+	},
+
 	_getSceneByLayerId( layerId ) {
 		if ( ! this._layer_scenes || ! layerId ) return null;
 		const e = this._layer_scenes.find( ( x ) => String( x.layer_model.id ) === String( layerId ) );
@@ -538,6 +666,8 @@ export default Backbone.View.extend({
 				if ( object ) object.visible = cshow( layer_model );
 			} );
 		}
+		// Keep active-angle framing in sync with current visibility state.
+		this._applyAngleCamera();
 	},
 
 	_bind_layer_cshow() {
@@ -693,7 +823,7 @@ export default Backbone.View.extend({
 		} );
 
 		visibility_targets.forEach( ( id ) => {
-			const obj = this._findObject( root, id );
+			const obj = this._findObjectById( id );
 			if ( obj ) obj.visible = false;
 		} );
 
@@ -723,6 +853,8 @@ export default Backbone.View.extend({
 		this._layer_scenes = [];
 		this._layer_objects = [];
 		this._gltfLoader = null;
+		if ( this._scene_models ) this._scene_models.reset();
+		this._objectIdToScene = {};
 		cleanupThree( this._three );
 		this._three = null;
 	},

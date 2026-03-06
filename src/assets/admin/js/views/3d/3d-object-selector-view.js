@@ -26,6 +26,9 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		this.selectedName = null;
 		this.setting = this.options.setting || null;
 		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
+		// Some selectors (e.g. light target) don't have a "model source" field to resolve a single model URL.
+		// In that case, list objects from all models in objects3d and store composite ids "sourceId:objectName".
+		this.loadAllSceneModels = this.setting === 'light_target_object_id';
 	},
 	render() {
 		this.$el.html( this.template( {} ) );
@@ -36,6 +39,10 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		return this;
 	},
 	resolveAndLoad() {
+		if ( this.loadAllSceneModels && window.PC?.threeD && typeof window.PC.threeD.getObjects3DModelSources === 'function' ) {
+			this.loadAllSceneModelsAndRender( window.PC.threeD.getObjects3DModelSources );
+			return;
+		}
 		let url = this.modelUrl;
 		if ( url ) {
 			this.loadModel( url );
@@ -59,6 +66,56 @@ const ObjectSelector3DView = Backbone.View.extend( {
 			return;
 		}
 		this.showError( 'No 3D file to browse. Pass modelUrl or use a 3D object/uploaded model.' );
+	},
+	loadAllSceneModelsAndRender( getSources ) {
+		const view = this;
+		if ( ! window.PC?.threeD?.store || typeof window.PC.threeD.store.get !== 'function' ) {
+			view.showError( '3D store not ready. Please try again.' );
+			return;
+		}
+		const getter = typeof getSources === 'function' ? getSources : null;
+		if ( ! getter ) {
+			view.showError( 'No 3D objects. Add models in 3D Objects.' );
+			return;
+		}
+		getter( ( err, sources ) => {
+			if ( err || ! sources || ! sources.length ) {
+				view.showError( 'No 3D objects. Add models in 3D Objects.' );
+				return;
+			}
+			const results = new Array( sources.length );
+			let pending = sources.length;
+			sources.forEach( ( src, idx ) => {
+				window.PC.threeD.store.get( src.url, ( loadErr, data ) => {
+					if ( ! loadErr && data && data.objectTree && data.objectTree.length ) {
+						results[ idx ] = { sourceLabel: src.sourceLabel, sourceId: src.sourceId, objectTree: data.objectTree };
+					} else {
+						results[ idx ] = null;
+					}
+					pending--;
+					if ( pending <= 0 ) {
+						const combined = [];
+						results.forEach( ( r ) => {
+							if ( ! r ) return;
+							const sourceId = r.sourceId != null ? String( r.sourceId ) : null;
+							r.objectTree.forEach( ( node ) => {
+								const objectName = node.name || node.id || '';
+								if ( ! objectName ) return;
+								const id = sourceId ? sourceId + ':' + objectName : objectName;
+								combined.push( {
+									id,
+									name: ( r.sourceLabel ? ( r.sourceLabel + ' / ' ) : '' ) + objectName,
+									type: node.type || '',
+									depth: node.depth != null ? node.depth : 0,
+								} );
+							} );
+						} );
+						view.treeNodes = combined;
+						view.renderTree( combined );
+					}
+				} );
+			} );
+		} );
 	},
 	showError( message ) {
 		this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' ).html( '<p class="description">' + ( message || 'No objects to list.' ) + '</p>' );

@@ -244,7 +244,14 @@ PC.views = window.PC.views || {};
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if ( !s.lighting ) s.lighting = {};
-			if ( !s.postprocessing ) s.postprocessing = { ssr: false, ssao: false, bloom: false, smaa: false };
+			if ( !s.postprocessing ) s.postprocessing = {};
+			if ( s.postprocessing.ssr === undefined ) s.postprocessing.ssr = false;
+			if ( s.postprocessing.ssao === undefined ) s.postprocessing.ssao = false;
+			if ( s.postprocessing.bloom === undefined ) s.postprocessing.bloom = false;
+			if ( s.postprocessing.smaa === undefined ) s.postprocessing.smaa = false;
+			if ( s.postprocessing.bloom_strength === undefined ) s.postprocessing.bloom_strength = 0.05;
+			if ( s.postprocessing.bloom_radius === undefined ) s.postprocessing.bloom_radius = 0.04;
+			if ( s.postprocessing.bloom_threshold === undefined ) s.postprocessing.bloom_threshold = 0.85;
 		},
 		on_reset_settings: function ( e ) {
 			e.preventDefault();
@@ -362,6 +369,9 @@ PC.views = window.PC.views || {};
 			sync( '.pc-3d-shadow-opacity', '.pc-3d-shadow-opacity-value' );
 			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
+			sync( '.pc-3d-bloom-strength', '.pc-3d-bloom-strength-value' );
+			sync( '.pc-3d-bloom-radius', '.pc-3d-bloom-radius-value' );
+			sync( '.pc-3d-bloom-threshold', '.pc-3d-bloom-threshold-value' );
 		},
 		set_nested: function ( obj, path, value ) {
 			const parts = path.split( '.' );
@@ -643,7 +653,14 @@ PC.views = window.PC.views || {};
 			}
 
 			const flags = { ssao: !!pp.ssao, ssr: !!pp.ssr, bloom: !!pp.bloom, smaa: !!pp.smaa };
-			const layer = await createPostprocessingLayer( renderer, scene, camera, { width: w, height: h, flags } );
+			const layer = await createPostprocessingLayer( renderer, scene, camera, {
+				width: w,
+				height: h,
+				flags,
+				bloomStrength: pp.bloom_strength,
+				bloomRadius: pp.bloom_radius,
+				bloomThreshold: pp.bloom_threshold,
+			} );
 			if ( layer ) {
 				this._three.postprocessingLayer = layer;
 				this._three.composer = layer.composer;

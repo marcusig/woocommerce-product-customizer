@@ -15,6 +15,7 @@ PC.views = PC.views || {};
 
 	PC.views.objects3d = PC.views.layers.extend({
 		collectionName: 'objects3d',
+		orderAttr: 'order',
 		events: ( function() {
 			var parent = PC.views.layers.prototype.events || {};
 			return _.extend( {}, parent, {

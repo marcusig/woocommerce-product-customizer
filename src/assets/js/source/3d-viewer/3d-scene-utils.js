@@ -41,12 +41,15 @@ export function getHiddenObjectNamesList( defaultNames, customTextarea ) {
 // -------------------------------------------------------------------------
 
 /**
- * @param {Object} r - renderer settings (tone_mapping)
+ * @param {Object} r - renderer settings (tone_mapping: 'linear' | 'aces' | string)
  * @returns {number} THREE.ToneMapping
  */
 export function getToneMapping( r ) {
-	if ( ! r ) THREE.ACESFilmicToneMapping;
-	return r.tone_mapping;
+	if ( ! r || ! r.tone_mapping ) return THREE.NoToneMapping;
+	const t = String( r.tone_mapping ).toLowerCase();
+	if ( t === 'aces' ) return THREE.ACESFilmicToneMapping;
+	if ( t === 'linear' ) return THREE.LinearToneMapping;
+	return THREE.NoToneMapping;
 }
 
 /**
@@ -99,14 +102,50 @@ export function getOrbitLimitsFromEnv( env, opts = {} ) {
 // -------------------------------------------------------------------------
 
 /**
- * @param {Object} env - environment settings (preset, mode, custom_hdr_url)
+ * Resolve environment source into a texture URL (HDR/EXR) or cubemap URLs array.
+ *
+ * Supported:
+ * - env.mode === 'object' with env.object_id → looks up objects3d environment entry (hdri/cubemap)
+ * - env.mode === 'custom' with env.custom_hdr_url → uses that URL
+ * - presets (outdoor/studio) → uses built-in HDR filename
+ *
+ * @param {Object} env - environment settings (preset, mode, custom_hdr_url, object_id)
  * @param {string} hdrBaseUrl - base URL for preset files
- * @returns {string} full HDR URL
+ * @returns {string|string[]} HDR/EXR URL or cubemap URL array [px,nx,py,ny,pz,nz]
  */
 export function getHdrUrlFromEnv( env, hdrBaseUrl ) {
 	if ( ! env ) return ( hdrBaseUrl || '' ) + getDefaultHdrPresetFilename( 'outdoor' );
+
+	// Environment from objects3d (frontend: currentProductData.objects3d)
+	if ( env.mode === 'object' && env.object_id != null && String( env.object_id ).trim() !== '' ) {
+		const productData = ( typeof window !== 'undefined' && window.PC && window.PC.fe && window.PC.fe.currentProductData ) ? window.PC.fe.currentProductData : null;
+		const list = productData && productData.objects3d;
+		const idStr = String( env.object_id ).trim();
+		if ( Array.isArray( list ) ) {
+			const o = list.find( ( item ) => String( item._id != null ? item._id : item.id ) === idStr );
+			if ( o && o.object_type === 'environment' ) {
+				const t = o.env_type != null ? String( o.env_type ).toLowerCase() : 'hdri';
+				if ( t === 'cubemap' ) {
+					const px = o.env_cubemap_px && o.env_cubemap_px.url;
+					const nx = o.env_cubemap_nx && o.env_cubemap_nx.url;
+					const py = o.env_cubemap_py && o.env_cubemap_py.url;
+					const ny = o.env_cubemap_ny && o.env_cubemap_ny.url;
+					const pz = o.env_cubemap_pz && o.env_cubemap_pz.url;
+					const nz = o.env_cubemap_nz && o.env_cubemap_nz.url;
+					if ( px && nx && py && ny && pz && nz ) {
+						return [ px, nx, py, ny, pz, nz ];
+					}
+				} else {
+					const url = o.env_hdri_file && o.env_hdri_file.url;
+					if ( url ) return url;
+				}
+			}
+		}
+	}
+
 	if ( env.mode === 'custom' && env.custom_hdr_url ) return env.custom_hdr_url;
-	const preset = ( env.preset === 'studio' ) ? 'studio' : 'outdoor';
+	const p = env.preset != null ? String( env.preset ).toLowerCase() : '';
+	const preset = ( p === 'studio' ) ? 'studio' : 'outdoor';
 	return ( hdrBaseUrl || '' ) + getDefaultHdrPresetFilename( preset );
 }
 
@@ -318,15 +357,11 @@ export function findObjectByCompositeId( modelRoot, compositeId ) {
 	}
 	const sourceId = id.slice( 0, sepIdx );
 	const objectName = id.slice( sepIdx + 1 );
-	console.log( 'sourceId', sourceId );
-	console.log( 'objectName', objectName );
 	if ( ! objectName ) return null;
 	const roots = [ modelRoot ].concat( modelRoot.children ? Array.from( modelRoot.children ) : [] );
-	console.log( 'roots', roots );
-	
+
 	for ( let i = 0; i < roots.length; i++ ) {
 		const r = roots[ i ];
-		console.log( 'r', r, r.userData );
 		if ( ! r || ! r.userData ) continue;
 		const attId = r.userData.attachment_id;
 		const objId = r.userData.object_id;
@@ -357,19 +392,28 @@ export function getObjectTargetPosition( obj, target = new THREE.Vector3() ) {
  * objectIds can be composite "sourceId:objectName" (e.g. attachment_id:name) or legacy name/uuid.
  * @param {THREE.Object3D} modelRoot - Scene root to search in (with userData.attachment_id on roots)
  * @param {string[]} objectIds - Array of composite ids or object names/uuids
+ * @param {{ visibleOnly?: boolean }} [opts] - when visibleOnly=true, ignores objects hidden directly or via hidden parent
  * @returns {{ box: THREE.Box3, center: THREE.Vector3, size: THREE.Vector3 }|null} Combined box and center/size, or null if no valid objects found
  */
-export function getBoundingBoxFromObjectIds( modelRoot, objectIds ) {
-	console.log( 'getBoundingBoxFromObjectIds', modelRoot, objectIds );
+export function getBoundingBoxFromObjectIds( modelRoot, objectIds, opts = {} ) {
 	if ( ! modelRoot || ! Array.isArray( objectIds ) || objectIds.length === 0 ) return null;
+	const visibleOnly = opts && opts.visibleOnly === true;
+	const isEffectivelyVisible = ( obj ) => {
+		let current = obj;
+		while ( current ) {
+			if ( current.visible === false ) return false;
+			current = current.parent;
+		}
+		return true;
+	};
 	const box = new THREE.Box3();
 	let hasAny = false;
 	for ( let i = 0; i < objectIds.length; i++ ) {
 		const id = objectIds[ i ];
 		if ( id == null || String( id ).trim() === '' ) continue;
 		const obj = findObjectByCompositeId( modelRoot, String( id ).trim() );
-		console.log( 'obj', obj );
 		if ( ! obj ) continue;
+		if ( visibleOnly && ! isEffectivelyVisible( obj ) ) continue;
 		const objBox = new THREE.Box3().setFromObject( obj );
 		if ( hasAny ) {
 			box.union( objBox );
