@@ -37,9 +37,55 @@ export default Backbone.View.extend({
 		return this;
 	},
 
-	_applyAngleCamera() {
+	_moveCameraTo( position, target, opts = {} ) {
 		const t = this._three;
 		if ( ! t || ! t.camera || ! t.controls ) return;
+		const immediate = opts.immediate === true;
+		const duration = typeof opts.duration === 'number' ? Math.max( 0, opts.duration ) : 850;
+		const camera = t.camera;
+		const controls = t.controls;
+
+		if ( t._cameraAnimId ) {
+			cancelAnimationFrame( t._cameraAnimId );
+			t._cameraAnimId = null;
+		}
+
+		if ( immediate || duration === 0 ) {
+			if ( position ) camera.position.copy( position );
+			if ( target ) controls.target.copy( target );
+			controls.update();
+			return;
+		}
+
+		const startPos = camera.position.clone();
+		const startTarget = controls.target.clone();
+		const endPos = position ? position.clone() : startPos.clone();
+		const endTarget = target ? target.clone() : startTarget.clone();
+		const startTs = performance.now();
+		const easeInOutCubic = ( x ) => ( x < 0.5 ? 4 * x * x * x : 1 - Math.pow( -2 * x + 2, 3 ) / 2 );
+
+		const step = ( now ) => {
+			const elapsed = now - startTs;
+			const ratio = Math.min( 1, elapsed / duration );
+			const k = easeInOutCubic( ratio );
+			camera.position.lerpVectors( startPos, endPos, k );
+			controls.target.lerpVectors( startTarget, endTarget, k );
+			controls.update();
+			if ( ratio < 1 ) {
+				t._cameraAnimId = requestAnimationFrame( step );
+			} else {
+				t._cameraAnimId = null;
+			}
+		};
+		t._cameraAnimId = requestAnimationFrame( step );
+	},
+
+	_applyAngleCamera( opts = {} ) {
+		const t = this._three;
+		if ( ! t || ! t.camera || ! t.controls ) return;
+		const reframe = opts.reframe === true;
+		const reframeBlend = ( typeof opts.reframeBlend === 'number' ) ? Math.max( 0, Math.min( 1, opts.reframeBlend ) ) : 1;
+		const currentOffset = t.camera.position.clone().sub( t.controls.target );
 		const angles = window.PC.fe && window.PC.fe.angles;
 		if ( ! angles ) return;
 		const active = angles.findWhere( { active: true } );
@@ -51,7 +97,6 @@ export default Backbone.View.extend({
 		if ( useFocusIds ) {
 			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds, { visibleOnly: true } );
 			if ( result ) {
-				t.controls.target.copy( result.center );
 				tgt = { x: result.center.x, y: result.center.y, z: result.center.z };
 			}
 		}
@@ -60,17 +105,28 @@ export default Backbone.View.extend({
 			if ( targetObjectId && t.model_root ) {
 				const obj = this._findObject( t.model_root, String( targetObjectId ).trim() );
 				if ( obj ) {
-					getObjectTargetPosition( obj, t.controls.target );
-					tgt = { x: t.controls.target.x, y: t.controls.target.y, z: t.controls.target.z };
+					const targetPos = getObjectTargetPosition( obj, new THREE.Vector3() );
+					tgt = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
 				}
 			}
 		}
-		if ( pos && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' ) {
-			t.camera.position.set( pos.x, pos.y, pos.z );
+		const nextPos = ( pos && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' )
+			? new THREE.Vector3( pos.x, pos.y, pos.z )
+			: null;
+		const nextTarget = ( tgt && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' )
+			? new THREE.Vector3( tgt.x, tgt.y, tgt.z )
+			: null;
+		let finalPos = nextPos;
+		if ( reframe && nextTarget ) {
+			const offsetPos = nextTarget.clone().add( currentOffset );
+			if ( finalPos ) {
+				finalPos = finalPos.clone().lerp( offsetPos, reframeBlend );
+			} else {
+				finalPos = offsetPos;
+			}
 		}
-		if ( tgt && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
-			t.controls.target.set( tgt.x, tgt.y, tgt.z );
-		}
+		if ( !finalPos && !nextTarget ) return;
+		this._moveCameraTo( finalPos, nextTarget, opts );
 	},
 
 	render() {
@@ -430,7 +486,7 @@ export default Backbone.View.extend({
 		if ( t.on_resize ) t.on_resize();
 
 		this.apply_preview_settings();
-		this._applyAngleCamera();
+		this._applyAngleCamera( { immediate: true } );
 		// Capture "initial" camera after applying active angle so screenshot/view reset
 		// uses configured angle camera instead of fallback bbox framing.
 		t.initial_camera_position = t.camera.position.clone();
@@ -667,7 +723,7 @@ export default Backbone.View.extend({
 			} );
 		}
 		// Keep active-angle framing in sync with current visibility state.
-		this._applyAngleCamera();
+		this._applyAngleCamera( { reframe: true } );
 	},
 
 	_bind_layer_cshow() {
@@ -855,6 +911,10 @@ export default Backbone.View.extend({
 		this._gltfLoader = null;
 		if ( this._scene_models ) this._scene_models.reset();
 		this._objectIdToScene = {};
+		if ( this._three && this._three._cameraAnimId ) {
+			cancelAnimationFrame( this._three._cameraAnimId );
+			this._three._cameraAnimId = null;
+		}
 		cleanupThree( this._three );
 		this._three = null;
 	},

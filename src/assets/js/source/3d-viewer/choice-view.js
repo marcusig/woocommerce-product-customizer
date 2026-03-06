@@ -79,7 +79,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( targetObject && has_toggle_visibility ) targetObject.visible = visible;
 		if ( targetScene && has_toggle_visibility ) targetScene.visible = visible;
 		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
-			this.parent_view._applyAngleCamera();
+			this.parent_view._applyAngleCamera( { reframe: true } );
 		}
 
 		// If conditional logic just made an active choice visible, ensure lazy targets can load.
@@ -156,7 +156,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			}
 		} );
 		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
-			this.parent_view._applyAngleCamera();
+			this.parent_view._applyAngleCamera( { reframe: true } );
 		}
 	},
 
@@ -217,6 +217,9 @@ const viewer_3d_choice = Backbone.View.extend({
 			}
 			if ( this.target_object && has_toggle_visibility ) this.target_object.visible = false;
 			if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = false;
+			if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
+				this.parent_view._applyAngleCamera( { reframe: true } );
+			}
 			return;
 		}
 
