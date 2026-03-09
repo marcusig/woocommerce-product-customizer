@@ -516,7 +516,7 @@ PC.views = PC.views || {};
 			this.model.collection.trigger( 'duplicated-item' );
 		},
 		copy_choice: function() {
-			PC.copy_items();
+			PC.copy_items( this );
 		},		
 		add_angle: function( angle ) {
 			// this.model
