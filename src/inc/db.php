@@ -454,6 +454,7 @@ class DB {
 				'shadow_opacity' => 0.5,
 				'shadow_blur'    => 5,
 			),
+			'enable_shadows'  => false,
 			'renderer'        => array(
 				'tone_mapping'       => 'linear',
 				'exposure'           => 1,
@@ -881,6 +882,10 @@ class DB {
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',
 				],
+				'enable_shadows' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'tone_mapping' => [
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_attr',
@@ -919,6 +924,10 @@ class DB {
 					'escape' => 'esc_attr',
 				],
 				'cast_shadow' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'cast_shadows' => [
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],

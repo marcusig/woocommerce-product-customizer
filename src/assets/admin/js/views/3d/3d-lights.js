@@ -26,6 +26,7 @@ export function getLightsFromSceneForImport( root ) {
 			type,
 			color,
 			intensity: obj.intensity != null ? obj.intensity : 1,
+			cast_shadows: obj.castShadow === true,
 			position,
 			target,
 		} );

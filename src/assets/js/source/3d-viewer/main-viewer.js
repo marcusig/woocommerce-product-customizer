@@ -24,6 +24,7 @@ export default Backbone.View.extend({
 	_objects3dByAttachmentId: null,
 	_objectIdToScene: null,
 	_scene_models: null,
+	_shadowsEnabled: false,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
@@ -31,6 +32,7 @@ export default Backbone.View.extend({
 		this._objects3dByAttachmentId = new Map();
 		this._objectIdToScene = {};
 		this._scene_models = new Backbone.Collection();
+		this._shadowsEnabled = false;
 		if ( window.PC.fe && window.PC.fe.angles ) {
 			this.listenTo( window.PC.fe.angles, 'change:active', this._applyAngleCamera );
 		}
@@ -293,6 +295,39 @@ export default Backbone.View.extend({
 		} );
 	},
 
+	_supportsLightShadows( light ) {
+		return !!( light && ( light.isDirectionalLight || light.isSpotLight || light.isPointLight ) );
+	},
+
+	_applyShadowFlagsToObject( root, enabled ) {
+		if ( !root || !root.traverse ) return;
+		root.traverse( ( obj ) => {
+			if ( obj.isMesh ) {
+				obj.castShadow = !!enabled;
+				obj.receiveShadow = !!enabled;
+			}
+		} );
+	},
+
+	_applyShadowSettingsToLight( light, item ) {
+		if ( !light ) return;
+		if ( !this._shadowsEnabled || !this._supportsLightShadows( light ) ) {
+			light.castShadow = false;
+			return;
+		}
+		const cast = item && item.cast_shadows === true;
+		light.castShadow = cast;
+		if ( !cast || !light.shadow ) return;
+		light.shadow.mapSize.width = 1024;
+		light.shadow.mapSize.height = 1024;
+		if ( light.isDirectionalLight || light.isSpotLight ) {
+			light.shadow.bias = -0.0001;
+			light.shadow.normalBias = 0.02;
+		} else if ( light.isPointLight ) {
+			light.shadow.bias = -0.0005;
+		}
+	},
+
 	/**
 	 * Phase 3: Load assets (eager GLTFs from objects3d, HDR).
 	 * @param {Object} s - settings_3d
@@ -347,11 +382,17 @@ export default Backbone.View.extend({
 		this._three = initScene( container, s );
 		const t = this._three;
 		const layers = window.PC.fe && window.PC.fe.layers;
+		this._shadowsEnabled = !!( s && s.enable_shadows );
+		if ( t.renderer && t.renderer.shadowMap ) {
+			t.renderer.shadowMap.enabled = this._shadowsEnabled;
+			if ( this._shadowsEnabled ) t.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		}
 
 		if ( mainGltf ) {
 			t.scene.add( mainGltf.scene );
 			t.model_root = mainGltf.scene;
 			t.gltf = mainGltf;
+			this._applyShadowFlagsToObject( mainGltf.scene, this._shadowsEnabled );
 			this._registerSceneMaterials( t, mainGltf.scene );
 		} else {
 			const emptyRoot = new THREE.Group();
@@ -418,6 +459,7 @@ export default Backbone.View.extend({
 				if ( rot ) settings.rotation = rot;
 				const light = createLightFromSettings( settings, gi );
 				light.name = item.name || 'Light';
+				this._applyShadowSettingsToLight( light, item );
 				const targetObjectId = item.light_target_object_id;
 				if ( light.target && targetObjectId && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
 					const targetObj = findObjectByCompositeId( t.scene, targetObjectId );
@@ -622,6 +664,7 @@ export default Backbone.View.extend({
 						state: 'loaded',
 						loadPromise: null,
 					} );
+					this._applyShadowFlagsToObject( sceneToAdd, this._shadowsEnabled );
 					if ( ! sceneToAdd.parent ) t.model_root.add( sceneToAdd );
 					this._registerSceneMaterials( t, sceneToAdd );
 					this._objectIdToScene[ idStr ] = sceneToAdd;
@@ -911,6 +954,7 @@ export default Backbone.View.extend({
 		this._gltfLoader = null;
 		if ( this._scene_models ) this._scene_models.reset();
 		this._objectIdToScene = {};
+		this._shadowsEnabled = false;
 		if ( this._three && this._three._cameraAnimId ) {
 			cancelAnimationFrame( this._three._cameraAnimId );
 			this._three._cameraAnimId = null;

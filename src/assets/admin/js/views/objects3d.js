@@ -117,6 +117,7 @@ PC.views = PC.views || {};
 				light_type: type,
 				light_color: '#ffffff',
 				light_intensity: 1,
+				cast_shadows: false,
 				light_position: { x: 0, y: 0, z: 0 },
 				light_target: { x: 0, y: 0, z: 0 },
 				light_target_object_id: '',
@@ -295,6 +296,7 @@ PC.views = PC.views || {};
 						light_type: light.type,
 						light_color: light.color,
 						light_intensity: light.intensity,
+						cast_shadows: light.cast_shadows === true,
 						light_target: light.target,
 					} );
 					col.add( attrs );
@@ -331,6 +333,9 @@ PC.views = PC.views || {};
 		_ensure_light_defaults: function() {
 			if ( this.model.get( 'object_type' ) === 'light' && this.model.get( 'light_type' ) == null ) {
 				this.model.set( 'light_type', 'PointLight' );
+			}
+			if ( this.model.get( 'object_type' ) === 'light' && this.model.get( 'cast_shadows' ) == null ) {
+				this.model.set( 'cast_shadows', false );
 			}
 		},
 		render: function() {

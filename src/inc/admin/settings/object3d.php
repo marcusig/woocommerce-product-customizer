@@ -52,6 +52,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 				'light_position' => array( 'x' => 0, 'y' => 0, 'z' => 0 ),
 				'light_color' => '#ffffff',
 				'light_intensity' => 1,
+				'cast_shadows' => false,
 				'light_target_object_id' => '',
 				'light_target' => array( 'x' => 0, 'y' => 0, 'z' => 0 ),
 				'light_angle' => 0.785398,
@@ -146,6 +147,13 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'section' => 'light',
 					'condition' => '"light" == data.object_type',
 					'attributes' => array( 'min' => 0, 'step' => 'any' ),
+				),
+				'cast_shadows' => array(
+					'label'   => \__( 'Cast shadows', 'product-configurator-for-woocommerce' ),
+					'type'    => 'checkbox',
+					'priority' => 21,
+					'section' => 'light',
+					'condition' => '"light" == data.object_type && ( data.light_type === "DirectionalLight" || data.light_type === "SpotLight" || data.light_type === "PointLight" )',
 				),
 				'light_target_object_id' => array(
 					'label'   => \__( 'Target (object)', 'product-configurator-for-woocommerce' ),

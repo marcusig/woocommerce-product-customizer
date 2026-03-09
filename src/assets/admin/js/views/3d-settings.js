@@ -186,7 +186,7 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
 			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
 			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure': 'on_slider_input',
-			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha': 'on_setting_change',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
 			'remove': 'on_remove',
@@ -242,6 +242,7 @@ PC.views = window.PC.views || {};
 			if ( !s.environment ) s.environment = { mode: 'preset', preset: 'outdoor', object_id: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
 			if ( !s.background ) s.background = { mode: 'environment', color: '#ffffff' };
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
+			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if ( !s.lighting ) s.lighting = {};
 			if ( !s.postprocessing ) s.postprocessing = {};
@@ -803,7 +804,9 @@ PC.views = window.PC.views || {};
 				// Enable alpha channel when transparent background or renderer alpha option is on (needed for see-through)
 				const useAlpha = !!( r.alpha || bg.mode === 'transparent' );
 				const renderer = new THREE.WebGLRenderer( { antialias: true, alpha: useAlpha } );
-				renderer.shadowMap.enabled = false;
+				const shadowsEnabled = !!( s && s.enable_shadows );
+				renderer.shadowMap.enabled = shadowsEnabled;
+				if ( shadowsEnabled ) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 				renderer.setSize( container.clientWidth, container.clientHeight );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.toneMapping = r.tone_mapping ? r.tone_mapping : THREE.ACESFilmicToneMapping;
@@ -910,6 +913,13 @@ PC.views = window.PC.views || {};
 					viewRef._three.scene.add( rootGroup );
 					viewRef._three.model_root = rootGroup;
 					viewRef._three.scene_roots = scene_roots;
+					// Real-time shadows: meshes need cast/receive flags.
+					rootGroup.traverse( function( obj ) {
+						if ( obj && obj.isMesh ) {
+							obj.castShadow = shadowsEnabled;
+							obj.receiveShadow = shadowsEnabled;
+						}
+					} );
 					const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
 					const customHidden = ( viewRef.admin && viewRef.admin.settings_3d && viewRef.admin.settings_3d.hidden_object_names ) || '';
 					hideObjectsByName( rootGroup, getHiddenObjectNamesList( defaultHidden, customHidden ) );
@@ -941,6 +951,18 @@ PC.views = window.PC.views || {};
 							settings.groundColor = obj.get( 'light_ground_color' );
 							var light = PC.threeD.createLightFromSettings( settings, gi );
 							light.name = obj.get( 'name' ) || 'Light';
+							var supportsShadows = !!( light.isDirectionalLight || light.isSpotLight || light.isPointLight );
+							light.castShadow = !!( shadowsEnabled && supportsShadows && obj.get( 'cast_shadows' ) === true );
+							if ( light.castShadow && light.shadow ) {
+								light.shadow.mapSize.width = 1024;
+								light.shadow.mapSize.height = 1024;
+								if ( light.isDirectionalLight || light.isSpotLight ) {
+									light.shadow.bias = -0.0001;
+									light.shadow.normalBias = 0.02;
+								} else if ( light.isPointLight ) {
+									light.shadow.bias = -0.0005;
+								}
+							}
 							var targetId = obj.get( 'light_target_object_id' );
 							if ( light.target && targetId && rootGroup && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
 								var targetObj = findObjectByCompositeId( viewRef._three.scene, targetId );
@@ -958,7 +980,6 @@ PC.views = window.PC.views || {};
 							if ( cookie && cookie.url && typeof PC.threeD.applyLightCookie === 'function' ) {
 								PC.threeD.applyLightCookie( light, cookie );
 							}
-							console.log( 'typeof RectAreaLightHelper', typeof RectAreaLightHelper );
 							var helper = null;
 							if ( THREE.PointLightHelper && light.isPointLight ) {
 								helper = new THREE.PointLightHelper( light, 0.5 );

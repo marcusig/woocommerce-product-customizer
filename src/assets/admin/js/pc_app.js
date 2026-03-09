@@ -207,6 +207,7 @@ if ( ! PC.actions.edit_object3d_upload ) {
 								light_type: light.type,
 								light_color: light.color,
 								light_intensity: light.intensity,
+								cast_shadows: light.cast_shadows === true,
 								light_target: light.target,		
 							} );
 							col.add( attrs );

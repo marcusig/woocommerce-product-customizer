@@ -404,6 +404,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							<p class="field-row">
 								<label><input type="checkbox" class="pc-3d-alpha" data-key="renderer.alpha" <# if ( data.renderer && data.renderer.alpha ) { #>checked<# } #> /> <?php _e( 'Alpha output', 'product-configurator-for-woocommerce' ); ?></label>
 							</p>
+							<p class="field-row">
+								<label><input type="checkbox" class="pc-3d-enable-shadows" data-key="enable_shadows" <# if ( data.enable_shadows ) { #>checked<# } #> /> <?php _e( 'Enable shadows', 'product-configurator-for-woocommerce' ); ?></label>
+							</p>
 						</div>
 						<div class="components-panel__body is-opened setting setting-section">
 							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></span></h2>
