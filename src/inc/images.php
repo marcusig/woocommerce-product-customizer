@@ -48,10 +48,9 @@ class Images {
 
 		} elseif ( 'file' === $output && is_dir( $where ) ) {
 
-			if( file_exists( $where . '/' .$file_name ) )
-				return 'file already exists';
-			if( '' == $file_name )
-				return 'file name is empty';
+			if( file_exists( $where . '/' .$file_name ) ) return $where . '/' .$file_name;
+			
+			if( '' == $file_name ) return new \WP_Error( 'file_name_empty', 'File name is empty' );
 
 			$the_image->save($where . '/' .$file_name);
 			return $where . '/' .$file_name;

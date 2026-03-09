@@ -293,6 +293,7 @@ class Configuration {
 		if ( empty( $this->content ) ) return '';
 
 		foreach ( $this->content as $layer ) {
+			if ( ! $layer->image ) continue;
 			$image_file_name .= '-'.$layer->image;
 		}
 		$image_file_name .= '.png'; 
