@@ -1684,7 +1684,10 @@ a.mkl-pc-link--external::before {
 	}
 	.pc-3d-settings-column-settings {
 		flex: 0 0 380px;
+		display: flex;
+		flex-direction: column;
 		min-width: 0;
+		min-height: 0;
 		overflow: hidden;
 		border-right: 1px solid #ddd;
 		padding: 0;
@@ -1692,7 +1695,9 @@ a.mkl-pc-link--external::before {
 	}
 	.pc-3d-sections-layout {
 		display: flex;
+		flex: 1;
 		min-height: 100%;
+		min-height: 0;
 	}
 	.pc-3d-section-tabs {
 		display: flex;
@@ -1781,6 +1786,7 @@ a.mkl-pc-link--external::before {
 		padding: 0;
 		flex: 1;
 		min-width: 0;
+		min-height: 0;
 		overflow-y: auto;
 	}
 	.pc-3d-settings-section {
