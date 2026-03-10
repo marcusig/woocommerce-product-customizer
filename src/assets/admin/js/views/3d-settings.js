@@ -178,7 +178,7 @@ PC.views = window.PC.views || {};
 		template: wp.template( 'mkl-pc-3d-models' ),
 		events: {
 			'click .pc-3d-reset-settings': 'on_reset_settings',
-			'click .pc-3d-tab': 'on_tab_click',
+			'click .pc-3d-section-tab': 'on_section_tab_click',
 			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
 			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
 			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
@@ -268,13 +268,14 @@ PC.views = window.PC.views || {};
 			this.render();
 			if ( this.apply_preview_settings ) this.apply_preview_settings();
 		},
-		on_tab_click: function ( e ) {
-			const tab = $( e.currentTarget ).data( 'tab' );
+		on_section_tab_click: function ( e ) {
+			e.preventDefault();
+			const tab = $( e.currentTarget ).data( 'section-tab' );
 			if ( !tab ) return;
-			this.$( '.pc-3d-tab' ).removeClass( 'active' ).attr( 'aria-selected', 'false' );
-			this.$( '.pc-3d-tab[data-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
-			this.$( '.pc-3d-tab-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
-			this.$( '#pc-3d-tab-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
+			this.$( '.pc-3d-section-tab' ).removeClass( 'active' ).attr( 'aria-selected', 'false' );
+			this.$( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
+			this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
+			this.$( '#pc-3d-section-panel-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
 		},
 		toggle_env_and_bg_visibility: function () {
 			const bg_mode = ( PC.app.admin.settings_3d.background && PC.app.admin.settings_3d.background.mode ) || 'environment';

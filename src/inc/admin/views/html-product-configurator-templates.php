@@ -29,7 +29,7 @@ GENERAL TEMPLATES
 <?php do_action('mkl_pc_admin_templates_before') ?>
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo $class; ?>">
-		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close media panel' ); ?></span></span></button>
+		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close configurator panel' ); ?></span></span></button>
 		<div class="media-modal-content">
 			<div class="media-frame wp-core-ui">
 				
@@ -278,180 +278,92 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 */
 ?>
+<?php
+$mkl_pc_3d_settings_sections = apply_filters(
+	'mkl_pc_3d_settings_sections',
+	array(
+		array(
+			'id'       => 'environment-scene',
+			'title'    => __( 'Environment & Scene', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/world.svg',
+			'template' => __DIR__ . '/3d-settings-sections/environment-scene.php',
+		),
+		array(
+			'id'       => 'renderer-output',
+			'title'    => __( 'Renderer / Output', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/object_data.svg',
+			'template' => __DIR__ . '/3d-settings-sections/renderer-output.php',
+		),
+		array(
+			'id'       => 'camera-positions',
+			'title'    => __( 'Camera positions (views)', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/mesh_cube.svg',
+			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
+		),
+		array(
+			'id'       => 'postprocessing',
+			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/light.svg',
+			'template' => __DIR__ . '/3d-settings-sections/postprocessing.php',
+		),
+	)
+);
+?>
 <script type="text/html" id="tmpl-mkl-pc-3d-models">
 	<div class="media-frame-content model-3d pc-3d-settings">
 		<div class="pc-3d-settings-layout">
 			<div class="pc-3d-settings-column-settings">
-				<nav class="pc-3d-tabs nav-tab-wrapper" role="tablist">
-					<button type="button" class="nav-tab pc-3d-tab active" data-tab="viewer" role="tab" aria-selected="true"><?php _e( 'Viewer Settings', 'product-configurator-for-woocommerce' ); ?></button>
-				</nav>
-				<div id="pc-3d-tab-viewer" class="pc-3d-tab-panel active" role="tabpanel">
+				<div class="pc-3d-sections-layout">
+					<nav class="pc-3d-section-tabs" role="tablist" aria-label="<?php esc_attr_e( '3D settings sections', 'product-configurator-for-woocommerce' ); ?>">
+						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
+							$section_id = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
+							$section_title = isset( $section['title'] ) ? (string) $section['title'] : '';
+							$section_icon = isset( $section['icon'] ) ? (string) $section['icon'] : '';
+							$section_template = isset( $section['template'] ) ? (string) $section['template'] : '';
+							if ( '' === $section_id || '' === $section_template || ! file_exists( $section_template ) ) {
+								continue;
+							}
+							$is_active = ( 0 === (int) $index );
+							?>
+							<button
+								type="button"
+								class="pc-3d-section-tab<?php echo $is_active ? ' active' : ''; ?>"
+								data-section-tab="<?php echo esc_attr( $section_id ); ?>"
+								data-label="<?php echo esc_attr( $section_title ); ?>"
+								title="<?php echo esc_attr( $section_title ); ?>"
+								role="tab"
+								aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+							>
+								<?php if ( '' !== $section_icon ) : ?>
+									<img src="<?php echo esc_url( $section_icon ); ?>" alt="" class="pc-3d-settings-section-icon" />
+								<?php endif; ?>
+								<span class="screen-reader-text"><?php echo esc_html( $section_title ); ?></span>
+							</button>
+						<?php endforeach; ?>
+					</nav>
 					<div class="pc-3d-settings-sections">
-						<div class="components-panel__body is-opened setting setting-section">
-							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Environment & Scene', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<div class="pc-3d-setting-group">
-								<h4><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="description"><?php _e( 'The environment map controls reflections and lighting. Choose a built-in preset or an environment from the 3D Objects list (type: Environment).', 'product-configurator-for-woocommerce' ); ?></p>
-								<p class="field-row">
-									<label><?php _e( 'Environment source', 'product-configurator-for-woocommerce' ); ?></label>
-									<select class="pc-3d-env-source">
-										<!-- Options populated by JS: presets (Outdoor, Studio) then environment objects from objects3d -->
-									</select>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Environment intensity', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="range" class="pc-3d-env-intensity" data-key="environment.intensity" min="0" max="10" step="0.1" value="{{ data.environment && data.environment.intensity != null ? data.environment.intensity : 1 }}" />
-									<span class="pc-3d-value-display pc-3d-env-intensity-value">1</span>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Environment rotation', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="range" class="pc-3d-env-rotation" data-key="environment.rotation" min="0" max="360" step="1" value="{{ data.environment && data.environment.rotation != null ? data.environment.rotation : 0 }}" />
-									<span class="pc-3d-value-display pc-3d-env-rotation-value">0</span>
-								</p>
+						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
+							$section_id = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
+							$section_title = isset( $section['title'] ) ? (string) $section['title'] : '';
+							$section_icon = isset( $section['icon'] ) ? (string) $section['icon'] : '';
+							$section_template = isset( $section['template'] ) ? (string) $section['template'] : '';
+							if ( '' === $section_id || '' === $section_template || ! file_exists( $section_template ) ) {
+								continue;
+							}
+							$is_active = ( 0 === (int) $index );
+							?>
+							<div id="pc-3d-section-panel-<?php echo esc_attr( $section_id ); ?>" class="components-panel__body is-opened setting setting-section pc-3d-settings-section pc-3d-section-panel<?php echo $is_active ? ' active' : ''; ?>" data-section-id="<?php echo esc_attr( $section_id ); ?>" role="tabpanel" <?php echo $is_active ? '' : 'hidden="hidden"'; ?>>
+								<h2 class="components-panel__body-title">
+									<span class="components-button components-panel__body-toggle">
+										<?php if ( '' !== $section_icon ) : ?>
+											<img src="<?php echo esc_url( $section_icon ); ?>" alt="" class="pc-3d-settings-section-icon" />
+										<?php endif; ?>
+										<span><?php echo esc_html( $section_title ); ?></span>
+									</span>
+								</h2>
+								<?php include $section_template; ?>
 							</div>
-							<div class="pc-3d-setting-group">
-								<h4><?php _e( 'Orbit controls', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="description"><?php _e( 'Control how far the camera can move around the model on the frontend.', 'product-configurator-for-woocommerce' ); ?></p>
-								<p class="field-row">
-									<label><?php _e( 'Min polar angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="number" class="pc-3d-orbit-min-polar" data-key="environment.orbit_min_polar_angle" min="0" max="180" step="1" value="{{ data.environment && data.environment.orbit_min_polar_angle != null ? data.environment.orbit_min_polar_angle : 0 }}" />
-									<span class="description"><?php _e( '0 = from above, 90 = horizon.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Max polar angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="number" class="pc-3d-orbit-max-polar" data-key="environment.orbit_max_polar_angle" min="0" max="180" step="1" value="{{ data.environment && data.environment.orbit_max_polar_angle != null ? data.environment.orbit_max_polar_angle : 90 }}" />
-									<span class="description"><?php _e( '90 = horizon (no view from below), 180 = allow from below.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Min azimuth angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="number" class="pc-3d-orbit-min-azimuth" data-key="environment.orbit_min_azimuth_angle" min="-180" max="180" step="1" value="{{ data.environment && data.environment.orbit_min_azimuth_angle != null ? data.environment.orbit_min_azimuth_angle : -180 }}" />
-									<span class="description"><?php _e( 'Horizontal orbit limit (left). -180 to 180 = no limit.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Max azimuth angle (degrees)', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="number" class="pc-3d-orbit-max-azimuth" data-key="environment.orbit_max_azimuth_angle" min="-180" max="180" step="1" value="{{ data.environment && data.environment.orbit_max_azimuth_angle != null ? data.environment.orbit_max_azimuth_angle : 180 }}" />
-									<span class="description"><?php _e( 'Horizontal orbit limit (right). -180 to 180 = no limit.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-								<p class="description"><?php _e( 'Limit how close or far the camera can zoom (distance to target).', 'product-configurator-for-woocommerce' ); ?></p>
-								<p class="field-row">
-									<label>
-										<input type="checkbox" class="pc-3d-orbit-zoom-limits-enabled" data-key="environment.orbit_zoom_limits_enabled" <# if ( data.environment && data.environment.orbit_zoom_limits_enabled !== false ) { #>checked<# } #> />
-										<?php _e( 'Apply zoom limits in preview', 'product-configurator-for-woocommerce' ); ?>
-									</label>
-									<span class="description"><?php _e( 'When off, limits are not applied here so you can move freely to set new limits with the buttons below. Frontend always uses saved limits.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-								<p class="field-row">
-									<button type="button" class="button pc-3d-set-min-zoom"><?php _e( 'Set current view as minimum zoom', 'product-configurator-for-woocommerce' ); ?></button>
-									<span class="description"><?php _e( 'User cannot zoom in closer than the current distance.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-								<p class="field-row">
-									<button type="button" class="button pc-3d-set-max-zoom"><?php _e( 'Set current view as maximum zoom', 'product-configurator-for-woocommerce' ); ?></button>
-									<span class="description"><?php _e( 'User cannot zoom out further than the current distance.', 'product-configurator-for-woocommerce' ); ?></span>
-								</p>
-							</div>
-							<div class="pc-3d-setting-group">
-								<h4><?php _e( 'Hidden objects', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="description"><?php _e( 'Objects with these names are automatically hidden in the viewer. Default names (e.g. product_bounding_box, material_placeholders) are always hidden; add more below, one per line.', 'product-configurator-for-woocommerce' ); ?></p>
-								<p class="field-row">
-									<label><?php _e( 'Custom hidden object names', 'product-configurator-for-woocommerce' ); ?></label>
-									<textarea class="pc-3d-hidden-object-names" data-key="hidden_object_names" rows="3" placeholder="<?php esc_attr_e( 'One object name per line', 'product-configurator-for-woocommerce' ); ?>"><# if ( data.hidden_object_names != null && data.hidden_object_names !== undefined ) { #>{{ data.hidden_object_names }}<# } #></textarea>
-								</p>
-							</div>
-							<div class="pc-3d-setting-group">
-								<h4><?php _e( 'Background', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="field-row">
-									<label><?php _e( 'Background mode', 'product-configurator-for-woocommerce' ); ?></label>
-									<select class="pc-3d-bg-mode" data-key="background.mode">
-										<option value="transparent" <# if ( data.background && data.background.mode === 'transparent' ) { #>selected<# } #>><?php _e( 'Transparent', 'product-configurator-for-woocommerce' ); ?></option>
-										<option value="environment" <# if ( data.background && data.background.mode === 'environment' ) { #>selected<# } #>><?php _e( 'Environment', 'product-configurator-for-woocommerce' ); ?></option>
-										<option value="solid" <# if ( data.background && data.background.mode === 'solid' ) { #>selected<# } #>><?php _e( 'Solid color', 'product-configurator-for-woocommerce' ); ?></option>
-									</select>
-								</p>
-								<p class="field-row pc-3d-bg-color-row" style="display:none;">
-									<label><?php _e( 'Background color', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="color" class="pc-3d-bg-color" data-key="background.color" value="{{ data.background && data.background.color ? data.background.color : '#ffffff' }}" />
-								</p>
-							</div>
-							<div class="pc-3d-setting-group">
-								<h4><?php _e( 'Ground / Shadow', 'product-configurator-for-woocommerce' ); ?></h4>
-								<p class="field-row">
-									<label><input type="checkbox" class="pc-3d-ground-enabled" data-key="ground.enabled" <# if ( data.ground && data.ground.enabled !== false ) { #>checked<# } #> /> <?php _e( 'Enable ground plane', 'product-configurator-for-woocommerce' ); ?></label>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Ground size', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="number" class="pc-3d-ground-size" data-key="ground.size" min="1" max="100" step="1" value="{{ data.ground && data.ground.size != null ? data.ground.size : 10 }}" />
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Shadow opacity', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="range" class="pc-3d-shadow-opacity" data-key="ground.shadow_opacity" min="0" max="1" step="0.05" value="{{ data.ground && data.ground.shadow_opacity != null ? data.ground.shadow_opacity : 0.5 }}" />
-									<span class="pc-3d-value-display pc-3d-shadow-opacity-value">0.5</span>
-								</p>
-								<p class="field-row">
-									<label><?php _e( 'Shadow blur / softness', 'product-configurator-for-woocommerce' ); ?></label>
-									<input type="range" class="pc-3d-shadow-blur" data-key="ground.shadow_blur" min="0" max="10" step="0.5" value="{{ data.ground && data.ground.shadow_blur != null ? data.ground.shadow_blur : 0 }}" />
-									<span class="pc-3d-value-display pc-3d-shadow-blur-value">0</span>
-								</p>
-							</div>
-						</div>
-						<div class="components-panel__body is-opened setting setting-section">
-							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Renderer / Output', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<p class="description"><?php _e( 'Control overall brightness, alpha output and quality effects. Higher quality can be more demanding on performance.', 'product-configurator-for-woocommerce' ); ?></p>
-							<p class="field-row">
-								<label><?php _e( 'Exposure', 'product-configurator-for-woocommerce' ); ?></label>
-								<input type="range" class="pc-3d-exposure" data-key="renderer.exposure" min="0.1" max="3" step="0.1" value="{{ data.renderer && data.renderer.exposure != null ? data.renderer.exposure : 1 }}" />
-								<span class="pc-3d-value-display pc-3d-exposure-value">1</span>
-							</p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-alpha" data-key="renderer.alpha" <# if ( data.renderer && data.renderer.alpha ) { #>checked<# } #> /> <?php _e( 'Alpha output', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-enable-shadows" data-key="enable_shadows" <# if ( data.enable_shadows ) { #>checked<# } #> /> <?php _e( 'Enable shadows', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-						</div>
-						<div class="components-panel__body is-opened setting setting-section">
-							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Camera positions (views)', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<p class="description"><?php _e( 'Store the current preview camera as an angle so the frontend can switch to this view.', 'product-configurator-for-woocommerce' ); ?></p>
-							<p class="field-row">
-								<label><?php _e( 'Angle', 'product-configurator-for-woocommerce' ); ?></label>
-								<select class="pc-3d-angle-select"></select>
-								<button type="button" class="button pc-3d-set-view-to-angle"><?php _e( 'Set current view to selected angle', 'product-configurator-for-woocommerce' ); ?></button>
-							</p>
-							<p class="field-row">
-								<button type="button" class="button pc-3d-import-gltf-cameras"><?php _e( 'Import cameras from GLTF', 'product-configurator-for-woocommerce' ); ?></button>
-								<span class="description"><?php _e( 'Add new angles from cameras defined in the main 3D file.', 'product-configurator-for-woocommerce' ); ?></span>
-							</p>
-						</div>
-						<div class="components-panel__body is-opened setting setting-section">
-							<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle"><?php _e( 'Postprocessing', 'product-configurator-for-woocommerce' ); ?></span></h2>
-							<p class="description"><?php _e( 'Enable postprocessing effects. On the front-end, each effect is only loaded when enabled here.', 'product-configurator-for-woocommerce' ); ?></p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.ssr" <# if ( data.postprocessing && data.postprocessing.ssr ) { #>checked<# } #> /> <?php _e( 'Screen space reflections', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.ssao" <# if ( data.postprocessing && data.postprocessing.ssao ) { #>checked<# } #> /> <?php _e( 'Ambient occlusion', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.bloom" <# if ( data.postprocessing && data.postprocessing.bloom ) { #>checked<# } #> /> <?php _e( 'Bloom', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-							<p class="field-row">
-								<label><?php _e( 'Bloom strength', 'product-configurator-for-woocommerce' ); ?></label>
-								<input type="range" class="pc-3d-bloom-strength" data-key="postprocessing.bloom_strength" min="0" max="1" step="0.01" value="{{ data.postprocessing && data.postprocessing.bloom_strength != null ? data.postprocessing.bloom_strength : 0.05 }}" />
-								<span class="pc-3d-value-display pc-3d-bloom-strength-value">0.05</span>
-							</p>
-							<p class="field-row">
-								<label><?php _e( 'Bloom radius', 'product-configurator-for-woocommerce' ); ?></label>
-								<input type="range" class="pc-3d-bloom-radius" data-key="postprocessing.bloom_radius" min="0" max="1" step="0.01" value="{{ data.postprocessing && data.postprocessing.bloom_radius != null ? data.postprocessing.bloom_radius : 0.04 }}" />
-								<span class="pc-3d-value-display pc-3d-bloom-radius-value">0.04</span>
-							</p>
-							<p class="field-row">
-								<label><?php _e( 'Bloom threshold', 'product-configurator-for-woocommerce' ); ?></label>
-								<input type="range" class="pc-3d-bloom-threshold" data-key="postprocessing.bloom_threshold" min="0" max="1" step="0.01" value="{{ data.postprocessing && data.postprocessing.bloom_threshold != null ? data.postprocessing.bloom_threshold : 0.85 }}" />
-								<span class="pc-3d-value-display pc-3d-bloom-threshold-value">0.85</span>
-							</p>
-							<p class="field-row">
-								<label><input type="checkbox" class="pc-3d-postprocess" data-key="postprocessing.smaa" <# if ( data.postprocessing && data.postprocessing.smaa ) { #>checked<# } #> /> <?php _e( 'Anti-aliasing (SMAA)', 'product-configurator-for-woocommerce' ); ?></label>
-							</p>
-						</div>
+						<?php endforeach; ?>
 						<p class="pc-3d-reset-settings-row" style="margin-top: 1.5em;">
 							<button type="button" class="button pc-3d-reset-settings"><?php _e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>
 						</p>
