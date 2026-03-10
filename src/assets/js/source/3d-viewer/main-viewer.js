@@ -10,7 +10,7 @@ import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags, getHdrUrlFromEnv } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -377,23 +377,27 @@ export default Backbone.View.extend({
 	 */
 	async _setupScene( container, s, modules, assets ) {
 		const { mainGltf, eagerObjectIds, hdrTexture, hdrUrl } = assets;
+		// Start from a clean viewer state before creating a fresh scene graph.
 		this.maybe_cleanup();
 		this._gltfLoader = modules.gltfLoader;
+		// Create core Three.js objects (scene, camera, renderer, controls, etc.).
 		this._three = initScene( container, s );
 		const t = this._three;
 		const layers = window.PC.fe && window.PC.fe.layers;
+		// Enable or disable shadows globally, then mirror the setting to the renderer.
 		this._shadowsEnabled = !!( s && s.enable_shadows );
 		if ( t.renderer && t.renderer.shadowMap ) {
 			t.renderer.shadowMap.enabled = this._shadowsEnabled;
 			if ( this._shadowsEnabled ) t.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		}
 
+		// Mount the initial model root. If there is no eager main glTF, use an empty root as anchor.
 		if ( mainGltf ) {
 			t.scene.add( mainGltf.scene );
 			t.model_root = mainGltf.scene;
 			t.gltf = mainGltf;
 			this._applyShadowFlagsToObject( mainGltf.scene, this._shadowsEnabled );
-			this._registerSceneMaterials( t, mainGltf.scene );
+			registerSceneMaterials( t, mainGltf.scene );
 		} else {
 			const emptyRoot = new THREE.Group();
 			t.scene.add( emptyRoot );
@@ -403,12 +407,14 @@ export default Backbone.View.extend({
 
 		const productData = window.PC.fe && window.PC.fe.currentProductData;
 		const objects3d = productData && productData['objects3d'];
+		// Build runtime stores used by both eager and lazy-loaded 3D assets.
 		this._initSceneModelsStore( objects3d );
 		this._layer_scenes = [];
 		// Initial pass: load all eager objects through the same store path as lazy loads.
 		if ( Array.isArray( eagerObjectIds ) && eagerObjectIds.length ) {
 			await Promise.all( eagerObjectIds.map( ( oid ) => this._ensureObjects3dSceneLoadedById( oid ) ) );
 		}
+		// Map layer models to full scene assets (`object_3d_id`) when available.
 		if ( layers ) {
 			layers.each( ( layer_model ) => {
 				const object3dId = layer_model.get( 'object_3d_id' );
@@ -419,6 +425,7 @@ export default Backbone.View.extend({
 			} );
 		}
 		this._layer_objects = [];
+		// Backward compatibility path: map layers to object references in the main root (`object_id_3d`).
 		if ( layers && t.model_root ) {
 			layers.each( ( layer_model ) => {
 				if ( layer_model.get( 'object_3d_id' ) ) return;
@@ -428,14 +435,17 @@ export default Backbone.View.extend({
 				if ( obj ) this._layer_objects.push( { layer_model, object: obj } );
 			} );
 		}
+		// Apply cshow visibility rules once, then subscribe so later layer changes keep scene in sync.
 		this._apply_layer_cshow_visibility();
 		this._bind_layer_cshow();
 
+		// Hide configured objects immediately so first rendered frame matches product settings.
 		const defaultHidden = ( window.PC.fe && window.PC.fe.currentProductData && window.PC.fe.currentProductData.default_hidden_object_names ) || null;
 		const customHidden = ( s && s.hidden_object_names ) || '';
 		hideObjectsByName( t.model_root, getHiddenObjectNamesList( defaultHidden, customHidden ) );
 
 		const gi = 1;
+		// Recreate all configured lights from product settings (including targets/cookies/shadows).
 		if ( Array.isArray( objects3d ) ) {
 			objects3d.forEach( ( item ) => {
 				if ( item.object_type !== 'light' ) return;
@@ -478,19 +488,23 @@ export default Backbone.View.extend({
 			} );
 		}
 
+		// Assign environment lighting/reflections (HDR) when available.
 		if ( hdrTexture ) {
 			t.scene.environment = hdrTexture;
 			t.current_env_url = Array.isArray( hdrUrl ) ? hdrUrl.join( '|' ) : hdrUrl;
 		}
 
+		// Optional fake shadow pass for products without fully baked real-time shadows.
 		if ( modules.FakeShadow ) {
 			t.fake_shadow = new modules.FakeShadow( t.scene );
 		}
 
+		// While orbiting, temporarily bypass heavier postprocessing for responsiveness.
 		t.bypassPostprocessing = false;
 		t.controls.addEventListener( 'start', () => { t.bypassPostprocessing = true; } );
 		t.controls.addEventListener( 'end', () => { t.bypassPostprocessing = false; } );
 
+		// Create postprocessing pipeline and keep it in sync with container resize events.
 		if ( modules.createPostprocessingLayer ) {
 			const flags = getPostprocessingFlags( s );
 			const pp = ( s && s.postprocessing ) ? s.postprocessing : {};
@@ -517,6 +531,7 @@ export default Backbone.View.extend({
 			}
 		}
 
+		// Compute an initial framing so camera/controls target the loaded model bounds.
 		const box = new THREE.Box3().setFromObject( t.model_root );
 		if ( ! box.isEmpty() ) {
 			const size = box.getSize( new THREE.Vector3() ).length();
@@ -527,6 +542,7 @@ export default Backbone.View.extend({
 		}
 		if ( t.on_resize ) t.on_resize();
 
+		// Apply project-specific preview/camera settings, then create choice-related view bindings.
 		this.apply_preview_settings();
 		this._applyAngleCamera( { immediate: true } );
 		// Capture "initial" camera after applying active angle so screenshot/view reset
@@ -536,6 +552,7 @@ export default Backbone.View.extend({
 		this._create_choice_views();
 
 		const g = ( s && s.ground ) || {};
+		// Main render loop: update controls, shadow pass, postprocessing pass, then final render.
 		const animate = () => {
 			t.animation_id = requestAnimationFrame( animate );
 			if ( document.hidden ) return;
@@ -551,60 +568,6 @@ export default Backbone.View.extend({
 			}
 		};
 		animate();
-	},
-
-	/**
-	 * glTF may omit alphaMode; default is OPAQUE so texture alpha is ignored.
-	 * Enable transparency for unlit materials that have a base color texture or opacity < 1.
-	 * @param {THREE.Material} mat
-	 */
-	_ensureUnlitTransparency( mat ) {
-		if ( ! mat || ! mat.isMeshBasicMaterial ) return;
-		const hasAlpha = ( mat.map != null ) || ( typeof mat.opacity === 'number' && mat.opacity < 1 );
-		if ( ! hasAlpha ) return;
-		mat.transparent = true;
-		mat.depthWrite = false;
-	},
-
-	/**
-	 * Register materials from a scene in the global registry. If a material with the same name
-	 * already exists (different instance), replace the mesh's material with the registry one.
-	 * @param {Object} t - this._three
-	 * @param {THREE.Object3D} sceneRoot - Scene or group to traverse
-	 */
-	_registerSceneMaterials( t, sceneRoot ) {
-		if ( ! t || ! t.material_registry || ! sceneRoot ) return;
-		const registry = t.material_registry;
-
-		sceneRoot.traverse( ( obj ) => {
-			if ( ! obj.material ) return;
-
-			const materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
-			const resolved = [];
-
-			for ( let i = 0; i < materials.length; i++ ) {
-				const mat = materials[ i ];
-				if ( ! mat ) continue;
-
-				this._ensureUnlitTransparency( mat );
-
-				const name = ( mat.name && String( mat.name ).trim() ) || mat.uuid;
-				const existing = registry.get( name );
-
-				if ( existing !== undefined && existing !== mat ) {
-					resolved.push( existing );
-				} else {
-					registry.set( name, mat );
-					resolved.push( mat );
-				}
-			}
-
-			if ( resolved.length === 1 ) {
-				obj.material = resolved[ 0 ];
-			} else if ( resolved.length > 1 ) {
-				obj.material = resolved;
-			}
-		} );
 	},
 
 	_getGltfLoader() {
@@ -666,7 +629,7 @@ export default Backbone.View.extend({
 					} );
 					this._applyShadowFlagsToObject( sceneToAdd, this._shadowsEnabled );
 					if ( ! sceneToAdd.parent ) t.model_root.add( sceneToAdd );
-					this._registerSceneMaterials( t, sceneToAdd );
+					registerSceneMaterials( t, sceneToAdd );
 					this._objectIdToScene[ idStr ] = sceneToAdd;
 					this._syncLayerSceneForObjectId( idStr, sceneToAdd );
 					this._apply_layer_cshow_visibility();

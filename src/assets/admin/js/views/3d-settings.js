@@ -19,6 +19,7 @@ let findObjectByCompositeId;
 let getObjectTargetPosition;
 let getBoundingBoxFromObjectIds;
 let removeLightsFromScene;
+let registerSceneMaterials;
 let RectAreaLightHelper = null;
 
 let threeDepsPromise = null;
@@ -66,6 +67,7 @@ function ensureThreeDepsLoaded() {
 			getObjectTargetPosition,
 			getBoundingBoxFromObjectIds,
 			removeLightsFromScene,
+			registerSceneMaterials,
 		} = sceneUtilsModule );
 
 		return {
@@ -715,6 +717,9 @@ PC.views = window.PC.views || {};
 						}
 					} );
 				}
+				if ( this._three.material_registry && this._three.material_registry.clear ) {
+					this._three.material_registry.clear();
+				}
 			}
 		},
 		/**
@@ -819,7 +824,7 @@ PC.views = window.PC.views || {};
 				const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
 				camera.position.set( 0, 1, 3 );
 
-				this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null };
+				this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null, material_registry: new Map() };
 				window.pc_three = this._three;
 
 				const env = s.environment || {};
@@ -1061,6 +1066,9 @@ PC.views = window.PC.views || {};
 							// Remove any lights included in the GLTF; only objects3d lights should be used.
 							if ( typeof removeLightsFromScene === 'function' ) {
 								removeLightsFromScene( modelScene );
+							}
+							if ( typeof registerSceneMaterials === 'function' ) {
+								registerSceneMaterials( viewRef._three, modelScene );
 							}
 							var label = viewRef._get_model_entry_label( me );
 							modelScene.name = label || modelScene.name;

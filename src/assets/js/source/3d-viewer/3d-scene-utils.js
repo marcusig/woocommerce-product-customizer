@@ -429,6 +429,71 @@ export function getBoundingBoxFromObjectIds( modelRoot, objectIds, opts = {} ) {
 }
 
 /**
+ * Ensure unlit materials can use alpha from map/opacity when glTF omits alphaMode.
+ * @param {THREE.Material} mat
+ */
+function ensureUnlitTransparency( mat ) {
+	if ( ! mat || ! mat.isMeshBasicMaterial ) return;
+	const hasAlpha = ( mat.map != null ) || ( typeof mat.opacity === 'number' && mat.opacity < 1 );
+	if ( ! hasAlpha ) return;
+	mat.transparent = true;
+	mat.depthWrite = false;
+}
+
+/**
+ * Apply default AO intensity for materials that have an AO map.
+ * @param {THREE.Material} mat
+ * @param {number} intensity
+ */
+function setDefaultAo( mat, intensity ) {
+	const hasAoMap = ( mat && mat.aoMap != null );
+	if ( ! hasAoMap ) return;
+	mat.aoMapIntensity = intensity;
+}
+
+/**
+ * Register materials from a scene in a global registry.
+ * If a material with the same name already exists (different instance),
+ * replace the mesh material with the registry one.
+ *
+ * Also normalizes unlit alpha handling and AO defaults.
+ *
+ * @param {{ material_registry?: Map<string,THREE.Material> }} threeCtx
+ * @param {THREE.Object3D} sceneRoot
+ * @param {{ defaultAoIntensity?: number }} [opts]
+ */
+export function registerSceneMaterials( threeCtx, sceneRoot, opts = {} ) {
+	if ( ! threeCtx || ! threeCtx.material_registry || ! sceneRoot ) return;
+	const registry = threeCtx.material_registry;
+	const aoIntensity = ( typeof opts.defaultAoIntensity === 'number' ) ? opts.defaultAoIntensity : 0.5;
+
+	sceneRoot.traverse( ( obj ) => {
+		if ( ! obj.material ) return;
+		const materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
+		const resolved = [];
+
+		for ( let i = 0; i < materials.length; i++ ) {
+			const mat = materials[ i ];
+			if ( ! mat ) continue;
+			ensureUnlitTransparency( mat );
+			setDefaultAo( mat, aoIntensity );
+
+			const name = ( mat.name && String( mat.name ).trim() ) || mat.uuid;
+			const existing = registry.get( name );
+			if ( existing !== undefined && existing !== mat ) {
+				resolved.push( existing );
+			} else {
+				registry.set( name, mat );
+				resolved.push( mat );
+			}
+		}
+
+		if ( resolved.length === 1 ) obj.material = resolved[ 0 ];
+		else if ( resolved.length > 1 ) obj.material = resolved;
+	} );
+}
+
+/**
  * Hide all objects whose name is in the given list (traverses root).
  * @param {THREE.Object3D} root
  * @param {string[]} names
