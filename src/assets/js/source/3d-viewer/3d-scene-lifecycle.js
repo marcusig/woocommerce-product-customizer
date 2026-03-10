@@ -36,6 +36,9 @@ export function initScene( container, s ) {
 	controls.maxAzimuthAngle = limits.maxAzimuthAngle;
 	controls.minDistance = limits.minDistance;
 	controls.maxDistance = limits.maxDistance;
+	controls.enablePan = false;
+	controls.enableDamping = true;
+	controls.dampingFactor = 0.1;
 
 	const onResize = () => {
 		camera.aspect = container.clientWidth / container.clientHeight;
