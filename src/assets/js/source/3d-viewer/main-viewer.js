@@ -25,6 +25,9 @@ export default Backbone.View.extend({
 	_objectIdToScene: null,
 	_scene_models: null,
 	_shadowsEnabled: false,
+	_runtimeApi: null,
+	_runtimeBus: null,
+	_lastActiveAngleId: null,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
@@ -33,10 +36,73 @@ export default Backbone.View.extend({
 		this._objectIdToScene = {};
 		this._scene_models = new Backbone.Collection();
 		this._shadowsEnabled = false;
+		this._runtimeApi = null;
+		this._runtimeBus = Object.assign( {}, Backbone.Events );
+		this._lastActiveAngleId = null;
 		if ( window.PC.fe && window.PC.fe.angles ) {
 			this.listenTo( window.PC.fe.angles, 'change:active', this._applyAngleCamera );
 		}
 		return this;
+	},
+
+	_emitRuntimeAction( hookName, args = [] ) {
+		if ( ! window.wp || ! window.wp.hooks || typeof window.wp.hooks.doAction !== 'function' ) return;
+		window.wp.hooks.doAction( hookName, ...args );
+	},
+
+	_emitRuntimeEvent( eventName, payload = {} ) {
+		if ( this._runtimeBus && typeof this._runtimeBus.trigger === 'function' ) {
+			this._runtimeBus.trigger( eventName, payload );
+		}
+		this._emitRuntimeAction( 'PC.fe.viewer.runtime.event', [ this, eventName, payload, this._runtimeApi ] );
+	},
+
+	_createRuntimeApi() {
+		if ( this._runtimeApi ) return this._runtimeApi;
+		this._runtimeApi = {
+			THREE,
+			getTHREE: () => THREE,
+			getScene: () => ( this._three ? this._three.scene : null ),
+			getCamera: () => ( this._three ? this._three.camera : null ),
+			getControls: () => ( this._three ? this._three.controls : null ),
+			getRenderer: () => ( this._three ? this._three.renderer : null ),
+			getModelRoot: () => ( this._three ? this._three.model_root : null ),
+			getSceneForObject3dId: ( object3dId ) => {
+				if ( object3dId == null ) return null;
+				return this._objectIdToScene[ String( object3dId ).trim() ] || null;
+			},
+			ensureObject3dLoaded: ( object3dId ) => this._ensureObjects3dSceneLoadedById( object3dId ),
+			findObjectByCompositeId: ( compositeId ) => {
+				const t = this._three;
+				if ( ! t || ! t.model_root ) return null;
+				return findObjectByCompositeId( t.model_root, compositeId );
+			},
+			findObjectById: ( id ) => this._findObjectById( id ),
+			getActiveAngle: () => {
+				const angles = window.PC.fe && window.PC.fe.angles;
+				return angles ? angles.findWhere( { active: true } ) || null : null;
+			},
+			getObject3dAnimations: ( object3dId ) => {
+				if ( object3dId == null ) return [];
+				const model = this._scene_models && this._scene_models.get( String( object3dId ).trim() );
+				if ( ! model ) return [];
+				const clips = model.get( 'animations' );
+				return Array.isArray( clips ) ? clips : [];
+			},
+			on: ( eventName, callback ) => {
+				if ( ! this._runtimeBus || typeof this._runtimeBus.on !== 'function' ) return;
+				this._runtimeBus.on( eventName, callback );
+			},
+			off: ( eventName, callback ) => {
+				if ( ! this._runtimeBus || typeof this._runtimeBus.off !== 'function' ) return;
+				this._runtimeBus.off( eventName, callback );
+			},
+		};
+		if ( window.PC && window.PC.fe ) {
+			window.PC.fe.threeApi = window.PC.fe.threeApi || {};
+			window.PC.fe.threeApi.viewer = this._runtimeApi;
+		}
+		return this._runtimeApi;
 	},
 
 	_moveCameraTo( position, target, opts = {} ) {
@@ -129,6 +195,13 @@ export default Backbone.View.extend({
 		}
 		if ( !finalPos && !nextTarget ) return;
 		this._moveCameraTo( finalPos, nextTarget, opts );
+		const activeId = String( active.id != null ? active.id : active.get( '_id' ) || '' );
+		if ( activeId && this._lastActiveAngleId !== activeId ) {
+			const previous = this._lastActiveAngleId ? ( angles.get( this._lastActiveAngleId ) || null ) : null;
+			this._lastActiveAngleId = activeId;
+			this._emitRuntimeAction( 'PC.fe.viewer.angle.changed', [ this, previous, active, this._runtimeApi ] );
+			this._emitRuntimeEvent( 'angle:changed', { previous, current: active } );
+		}
 	},
 
 	render() {
@@ -278,6 +351,7 @@ export default Backbone.View.extend({
 				url,
 				loading_strategy: strategy,
 				state: 'unloaded',
+				animations: [],
 				scene: null,
 				loadPromise: null,
 			} );
@@ -550,12 +624,20 @@ export default Backbone.View.extend({
 		t.initial_camera_position = t.camera.position.clone();
 		t.initial_controls_target = t.controls.target.clone();
 		this._create_choice_views();
+		this._createRuntimeApi();
+		this._emitRuntimeAction( 'PC.fe.viewer.runtime.ready', [ this, t, this._runtimeApi ] );
+		this._emitRuntimeEvent( 'runtime:ready', { three: t } );
 
 		const g = ( s && s.ground ) || {};
 		// Main render loop: update controls, shadow pass, postprocessing pass, then final render.
-		const animate = () => {
+		const animate = ( now ) => {
 			t.animation_id = requestAnimationFrame( animate );
 			if ( document.hidden ) return;
+			if ( t._lastFrameTs == null ) t._lastFrameTs = now;
+			const deltaSeconds = Math.max( 0, ( now - t._lastFrameTs ) / 1000 );
+			t._lastFrameTs = now;
+			this._emitRuntimeAction( 'PC.fe.viewer.frame', [ this, deltaSeconds, this._runtimeApi ] );
+			this._emitRuntimeEvent( 'frame', { deltaSeconds } );
 			t.controls.update();
 			if ( t.fake_shadow && g.enabled !== false ) {
 				t.fake_shadow.render( t.renderer, t.scene );
@@ -625,6 +707,7 @@ export default Backbone.View.extend({
 					sceneModel.set( {
 						scene: sceneToAdd,
 						state: 'loaded',
+						animations: Array.isArray( gltf.animations ) ? gltf.animations : [],
 						loadPromise: null,
 					} );
 					this._applyShadowFlagsToObject( sceneToAdd, this._shadowsEnabled );
@@ -633,6 +716,8 @@ export default Backbone.View.extend({
 					this._objectIdToScene[ idStr ] = sceneToAdd;
 					this._syncLayerSceneForObjectId( idStr, sceneToAdd );
 					this._apply_layer_cshow_visibility();
+					this._emitRuntimeAction( 'PC.fe.viewer.object3d.loaded', [ this, idStr, sceneToAdd, sceneModel.get( 'animations' ) || [], this._runtimeApi ] );
+					this._emitRuntimeEvent( 'object3d:loaded', { object3dId: idStr, scene: sceneToAdd, animations: sceneModel.get( 'animations' ) || [] } );
 					resolve( sceneToAdd );
 				},
 				() => {
@@ -922,6 +1007,11 @@ export default Backbone.View.extend({
 			cancelAnimationFrame( this._three._cameraAnimId );
 			this._three._cameraAnimId = null;
 		}
+		if ( this._three ) this._emitRuntimeAction( 'PC.fe.viewer.runtime.dispose', [ this, this._three, this._runtimeApi ] );
+		this._emitRuntimeEvent( 'runtime:dispose', {} );
+		if ( this._runtimeBus ) this._runtimeBus.off();
+		this._runtimeApi = null;
+		this._lastActiveAngleId = null;
 		cleanupThree( this._three );
 		this._three = null;
 	},

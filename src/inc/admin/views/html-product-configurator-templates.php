@@ -132,6 +132,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								</button>
 							</div>
 						</div>
+						<?php do_action( 'mkl_pc_admin_objects3d_add_tiles' ); ?>
 					</div>
 				<# } else { #>
 					<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
@@ -874,7 +875,7 @@ IMPORT / EXPORT
 			<# } else if ( isMaterialSelect ) { #>
 				<span class="pc-material-select-placeholder" data-material-field="{{key}}" data-material-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></span>
 			<# } else { #>
-				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}">
+				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}" <# if ( field.type === 'checkbox' && ( data[key] === true || data[key] === 1 || data[key] === "1" || data[key] === "true" ) ) { #>checked<# } #>>
 			<# } #>
 		</label>
 		</div>

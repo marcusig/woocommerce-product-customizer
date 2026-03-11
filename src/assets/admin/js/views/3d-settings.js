@@ -69,6 +69,26 @@ function ensureThreeDepsLoaded() {
 			removeLightsFromScene,
 			registerSceneMaterials,
 		} = sceneUtilsModule );
+		PC.threeD = PC.threeD || {};
+		PC.threeD.getTHREE = function () { return THREE; };
+		PC.threeD.getThreeDeps = function () {
+			return {
+				THREE,
+				OrbitControls,
+				loadEnvMap,
+				FakeShadow,
+				createPostprocessingLayer,
+			};
+		};
+		if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
+			window.wp.hooks.doAction( 'PC.admin.3d_settings.three_ready', {
+				THREE,
+				OrbitControls,
+				loadEnvMap,
+				FakeShadow,
+				createPostprocessingLayer,
+			} );
+		}
 
 		return {
 			THREE,
@@ -226,6 +246,9 @@ PC.views = window.PC.views || {};
 			this.ensure_settings_defaults( s );
 			this.$el.empty();
 			this.$el.append( this.template( s ) );
+			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
+				window.wp.hooks.doAction( 'PC.admin.3d_settings.render', this );
+			}
 			this.toggle_env_and_bg_visibility();
 			this.bind_value_displays();
 			this._populateEnvSource();
@@ -827,6 +850,9 @@ PC.views = window.PC.views || {};
 
 				this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null, material_registry: new Map() };
 				window.pc_three = this._three;
+				if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
+					window.wp.hooks.doAction( 'PC.admin.3d_settings.viewer_ready', this, this._three, THREE );
+				}
 
 				const env = s.environment || {};
 				const initial_env_url = this.get_env_url_for_preview( env );

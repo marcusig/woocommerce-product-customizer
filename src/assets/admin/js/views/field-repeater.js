@@ -196,6 +196,10 @@ PC.views = PC.views || {};
 			this.remove();
 		},
 		update_value: function( e ) {
+			if ( e.target && e.target.type === 'checkbox' ) {
+				this.model.set( e.target.name, $( e.target ).is( ':checked' ) );
+				return;
+			}
 			this.model.set( e.target.name, e.target.value );
 		},
 		on_select_change: function( e ) {

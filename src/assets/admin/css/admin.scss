@@ -1617,9 +1617,11 @@ a.mkl-pc-link--external::before {
 			flex: 1;
 			margin-right: 5px;
 			input {
+				float: none;
+			}
+			input[type="text"], input[type="number"] {
 				display: block;
 				width: 100%;
-				float: none;
 			}
 			
 		}

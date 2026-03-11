@@ -229,7 +229,6 @@ PC.views = PC.views || {};
 	PC.views.object3d_item = PC.views.layer.extend({
 		edit_view: function() { return PC.views.object3d_form; },
 		className: function() {
-			console.log(this.model.get('object_type'), 'mm');
 			const objectType = this.model.get('object_type');
 			// return 'layer mkl-list-item 3d-object';
 			return 'layer mkl-list-item object3d' + ( objectType ? ' object3d--' + objectType : '' );

@@ -931,6 +931,62 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				'animation_target_object_id' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'animation_target_model' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'animation_clips' => [
+					'sanitize' => [ __CLASS__, 'sanitize_animation_clips' ],
+					'escape' => [ __CLASS__, 'escape_animation_clips' ],
+				],
+				'animation_triggers_enter' => [
+					'sanitize' => [ __CLASS__, 'sanitize_animation_triggers' ],
+					'escape' => [ __CLASS__, 'escape_animation_triggers' ],
+				],
+				'animation_triggers_leave' => [
+					'sanitize' => [ __CLASS__, 'sanitize_animation_triggers' ],
+					'escape' => [ __CLASS__, 'escape_animation_triggers' ],
+				],
+				'animation_object_id' => [
+					'sanitize' => [ $this, 'sanitize_nullable_int' ],
+					'escape' => [ $this, 'sanitize_nullable_int' ],
+				],
+				'clip_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'loop_mode' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'repetitions' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'clamp_when_finished' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'speed' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'fade_in_ms' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'fade_out_ms' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'command' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
 				// actions_3d: material registry actions
 				'material_name' => [
 					'sanitize' => 'sanitize_text_field',
@@ -1044,6 +1100,104 @@ class DB {
 			return [];
 		}
 		return array_map( 'esc_attr', $data );
+	}
+
+	/**
+	 * Sanitize animation clip configuration array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function sanitize_animation_clips( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		$out = [];
+		foreach ( $data as $item ) {
+			if ( ! is_array( $item ) ) continue;
+			$clip_name = isset( $item['clip_name'] ) ? sanitize_text_field( $item['clip_name'] ) : '';
+			if ( '' === $clip_name ) continue;
+			$out[] = [
+				'clip_name' => $clip_name,
+				'loop_mode' => isset( $item['loop_mode'] ) ? sanitize_key( $item['loop_mode'] ) : 'once',
+				'repetitions' => isset( $item['repetitions'] ) ? floatval( $item['repetitions'] ) : 1,
+				'clamp_when_finished' => ! empty( $item['clamp_when_finished'] ),
+				'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+				'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+				'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Escape animation clip configuration array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function escape_animation_clips( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		return array_map(
+			function( $item ) {
+				if ( ! is_array( $item ) ) return [];
+				return [
+					'clip_name' => isset( $item['clip_name'] ) ? esc_attr( $item['clip_name'] ) : '',
+					'loop_mode' => isset( $item['loop_mode'] ) ? esc_attr( $item['loop_mode'] ) : 'once',
+					'repetitions' => isset( $item['repetitions'] ) ? floatval( $item['repetitions'] ) : 1,
+					'clamp_when_finished' => ! empty( $item['clamp_when_finished'] ),
+					'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+					'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+					'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+				];
+			},
+			$data
+		);
+	}
+
+	/**
+	 * Sanitize angle animation trigger array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function sanitize_animation_triggers( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		$out = [];
+		foreach ( $data as $item ) {
+			if ( ! is_array( $item ) ) continue;
+			$animation_object_id = isset( $item['animation_object_id'] ) ? intval( $item['animation_object_id'] ) : 0;
+			if ( $animation_object_id <= 0 ) continue;
+			$out[] = [
+				'animation_object_id' => $animation_object_id,
+				'command' => isset( $item['command'] ) ? sanitize_key( $item['command'] ) : 'play',
+				'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+				'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+				'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Escape angle animation trigger array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function escape_animation_triggers( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		return array_map(
+			function( $item ) {
+				if ( ! is_array( $item ) ) return [];
+				return [
+					'animation_object_id' => isset( $item['animation_object_id'] ) ? intval( $item['animation_object_id'] ) : 0,
+					'command' => isset( $item['command'] ) ? esc_attr( $item['command'] ) : 'play',
+					'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+					'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+					'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+				];
+			},
+			$data
+		);
 	}
 
 	public function sanitize_nullable_int( $data ) {
