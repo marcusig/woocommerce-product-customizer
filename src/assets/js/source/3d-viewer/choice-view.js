@@ -15,8 +15,6 @@ const viewer_3d_choice = Backbone.View.extend({
 	target_id: null,
 	target_object: null,
 	target_scene: null,
-	_attached_model_root: null,
-	_attach_parent: null,
 
 	initialize( options ) {
 		this.model = options.model;
@@ -46,10 +44,6 @@ const viewer_3d_choice = Backbone.View.extend({
 	},
 
 	get_target_scene() {
-		if ( this.target_id ) return null;
-		const layer = this.layer_model;
-		if ( ! this.parent_view._getSceneByLayerId ) return null;
-		if ( layer.get( 'object_3d_id' ) ) return this.parent_view._getSceneByLayerId( layer.id );
 		return null;
 	},
 
@@ -65,15 +59,6 @@ const viewer_3d_choice = Backbone.View.extend({
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 
-		if ( this._attached_model_root ) {
-			if ( ! visible && this._attached_model_root.parent ) {
-				this._attached_model_root.parent.remove( this._attached_model_root );
-			} else if ( visible ) {
-				const parent = this._attach_parent || t.model_root;
-				if ( this._attached_model_root.parent !== parent ) parent.add( this._attached_model_root );
-				this._attached_model_root.visible = true;
-			}
-		}
 		const targetObject = this.get_target_object();
 		const targetScene = this.get_target_scene();
 		if ( targetObject && has_toggle_visibility ) targetObject.visible = visible;
@@ -230,9 +215,6 @@ const viewer_3d_choice = Backbone.View.extend({
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 
 		if ( ! visible ) {
-			if ( this._attached_model_root && this._attached_model_root.parent ) {
-				this._attached_model_root.parent.remove( this._attached_model_root );
-			}
 			if ( this.target_object && has_toggle_visibility ) this.target_object.visible = false;
 			if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = false;
 			if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
@@ -253,7 +235,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			const targetId = this.model.get( 'object_id_3d' ) || this.layer_model.get( 'object_id_3d' );
 			const needsObject = ! this.target_object && targetId && String( targetId ).indexOf( ':' ) !== -1;
 			const layerObject3dId = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
-			const needsScene = ! this.target_scene && ! targetId && layerObject3dId != null && String( layerObject3dId ).trim() !== '';
+			const needsScene = layerObject3dId != null && String( layerObject3dId ).trim() !== '';
 
 			if ( needsObject && typeof this.parent_view._ensureObjects3dSceneLoadedForCompositeId === 'function' ) {
 				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedForCompositeId( targetId )
@@ -287,10 +269,6 @@ const viewer_3d_choice = Backbone.View.extend({
 	},
 
 	remove() {
-		if ( this._attached_model_root && this._attached_model_root.parent ) {
-			this._attached_model_root.parent.remove( this._attached_model_root );
-			this._attached_model_root = null;
-		}
 		return Backbone.View.prototype.remove.apply( this, arguments );
 	},
 });
