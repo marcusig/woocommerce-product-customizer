@@ -700,6 +700,7 @@ export default Backbone.View.extend({
 					const sceneToAdd = scene.parent != null ? scene.clone( true ) : scene;
 					sceneToAdd.userData = sceneToAdd.userData || {};
 					sceneToAdd.userData.object_id = idStr;
+					sceneToAdd.userData.gltf_functions = gltf && gltf.functions ? gltf.functions : null;
 					const obj = sceneModel.get( 'object3d' );
 					const attId = obj && obj.gltf && obj.gltf.attachment_id != null ? obj.gltf.attachment_id : null;
 					if ( attId != null ) sceneToAdd.userData.attachment_id = attId;

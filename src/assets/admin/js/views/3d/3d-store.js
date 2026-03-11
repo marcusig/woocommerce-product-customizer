@@ -133,6 +133,23 @@ function resolveAngleCameraTargetModelUrl( angleModel, callback ) {
 }
 
 /**
+ * Resolve model URL for choice action fields:
+ * - first from the choice object_3d_id
+ * - fallback to parent layer object_3d_id
+ *
+ * @param {Backbone.Model} choiceModel
+ * @param {Backbone.Model|null} layerModel
+ * @param {function(string|null)} callback
+ */
+function resolveChoiceModelUrl( choiceModel, layerModel, callback ) {
+	if ( typeof callback !== 'function' ) return;
+	resolveModelUrl( choiceModel, { sourceKey: 'object_3d_id' }, function( url ) {
+		if ( url ) return callback( url );
+		resolveModelUrl( layerModel, { sourceKey: 'object_3d_id' }, callback );
+	} );
+}
+
+/**
  * Get model sources from the objects3d collection (for Camera focus selector).
  * sourceId is the object's _id for camera_focus_object_ids composite ids (e.g. "1:MeshName").
  * @param {function(Error|null, Array<{ sourceLabel: string, url: string, sourceId: string }>)} callback
@@ -199,6 +216,7 @@ window.PC.threeD.getMaterialNamesFromUrl = function( url, callback ) {
 window.PC.threeD.get3DObjectsCollection = get3DObjectsCollection;
 window.PC.threeD.resolveObject3DUrl = resolveObject3DUrl;
 window.PC.threeD.resolveModelUrl = resolveModelUrl;
+window.PC.threeD.resolveChoiceModelUrl = resolveChoiceModelUrl;
 window.PC.threeD.resolveAngleCameraTargetModelUrl = resolveAngleCameraTargetModelUrl;
 window.PC.threeD.getObjects3DModelSources = getObjects3DModelSources;
 window.PC.threeD.populateModelSourceSelect = populateModelSourceSelect;

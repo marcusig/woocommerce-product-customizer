@@ -126,6 +126,15 @@ PC.views = PC.views || {};
 			var layerId = choiceModel && choiceModel.get( 'layerId' );
 			var layerModel = ( layerId && PC.app.admin.layers ) ? PC.app.admin.layers.get( layerId ) : null;
 			if ( ! PC.threeD || ! PC.threeD.resolveChoiceModelUrl || ! PC.threeD.getMaterialVariantsFromUrl ) {
+				if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' && ! view._variantDepsRequested ) {
+					view._variantDepsRequested = true;
+					PC.threeD.ensureReady().then( function() {
+						view.load_variant_field();
+					} ).catch( function() {
+						$ph.replaceWith( '<span class="pc-variant-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_variants_available ? PC_lang.no_variants_available : 'No variants available.' ) + '</span>' );
+					} );
+					return;
+				}
 				$ph.replaceWith( '<span class="pc-variant-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_variants_available ? PC_lang.no_variants_available : 'No variants available.' ) + '</span>' );
 				return;
 			}
@@ -163,6 +172,15 @@ PC.views = PC.views || {};
 				var layerId = choiceModel && choiceModel.get( 'layerId' );
 				var layerModel = ( layerId && PC.app.admin.layers ) ? PC.app.admin.layers.get( layerId ) : null;
 				if ( ! PC.threeD || ! PC.threeD.resolveChoiceModelUrl || ! PC.threeD.getMaterialNamesFromUrl ) {
+					if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' && ! view._materialDepsRequested ) {
+						view._materialDepsRequested = true;
+						PC.threeD.ensureReady().then( function() {
+							view.load_material_select_field();
+						} ).catch( function() {
+							$ph.replaceWith( '<span class="pc-material-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_materials_available ? PC_lang.no_materials_available : 'Materials not available.' ) + '</span>' );
+						} );
+						return;
+					}
 					$ph.replaceWith( '<span class="pc-material-select-warning">' + ( typeof PC_lang !== 'undefined' && PC_lang.no_materials_available ? PC_lang.no_materials_available : 'Materials not available.' ) + '</span>' );
 					return;
 				}

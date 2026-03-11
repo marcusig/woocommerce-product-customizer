@@ -94,7 +94,6 @@ const viewer_3d_choice = Backbone.View.extend({
 		this.target_object = this.get_target_object();
 		this.target_scene = this.get_target_scene();
 		if ( ! this.target_object && this.target_scene ) this.target_object = this.target_scene;
-		const select_variant = t.gltf && t.gltf.functions && t.gltf.functions.selectVariant;
 		const registry = t.material_registry;
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
@@ -106,9 +105,28 @@ const viewer_3d_choice = Backbone.View.extend({
 		actions.forEach( ( action ) => {
 			const type = action.action_type;
 			if ( type === 'toggle_visibility' ) return;
-			if ( type === 'material_variant' && select_variant && this.target_object ) {
+			if ( type === 'material_variant' && this.target_object ) {
 				const variant_name = action.material_variant_value || action.variant_select;
-				if ( variant_name ) select_variant( this.target_object, variant_name, true, null );
+				if ( variant_name ) {
+					let variantRoot = this.target_scene || this.target_object;
+					let selectVariant = null;
+					let node = variantRoot;
+					while ( node ) {
+						if ( node.userData && node.userData.gltf_functions && typeof node.userData.gltf_functions.selectVariant === 'function' ) {
+							selectVariant = node.userData.gltf_functions.selectVariant;
+							variantRoot = node;
+							break;
+						}
+						node = node.parent;
+					}
+					// Fallback for main model actions.
+					if ( ! selectVariant ) {
+						selectVariant = t.gltf && t.gltf.functions && t.gltf.functions.selectVariant;
+					}
+					if ( typeof selectVariant === 'function' ) {
+						selectVariant( variantRoot, variant_name, true, null );
+					}
+				}
 			} else if ( type === 'material_texture' && registry ) {
 				const name = action.material_texture_material_name || action.material_name;
 				const texture_url = action.material_texture_url || action.material_texture_value;

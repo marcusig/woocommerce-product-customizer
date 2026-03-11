@@ -1956,3 +1956,7 @@ a.mkl-pc-link--external::before {
 .object3d.active button::after {
 	filter: invert(1);
 }
+
+.object3d--animation button::after {
+	background-image: url(../images/ui/3d/play.svg);
+}

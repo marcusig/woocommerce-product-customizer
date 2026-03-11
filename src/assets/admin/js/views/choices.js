@@ -462,6 +462,7 @@ PC.views = PC.views || {};
 			$sel.find( 'option:not(:first)' ).remove();
 			if ( objects3d && objects3d.length ) {
 				objects3d.each( function( obj ) {
+					if ( obj.get( 'object_type' ) !== 'gltf' ) return;
 					var id = obj.get( '_id' ) || obj.id;
 					var label = obj.get( 'name' ) || obj.get( 'filename' ) || ( 'Object #' + id );
 					var selected = ( currentVal != null && String( currentVal ) === String( id ) ) ? ' selected' : '';
