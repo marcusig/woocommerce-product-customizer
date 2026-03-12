@@ -171,7 +171,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 10,
-					'condition' => '!data.not_a_choice && !data.is_group',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 					'html'      => '<div class="mkl-pc-setting--container mkl-pc--object3d-select-container">'
 						. '<select class="components-select-control__input" data-setting="object_3d_id">'
 						. '<option value="">' . esc_html__( '— None / Inherit —', 'product-configurator-for-woocommerce' ) . '</option>'
@@ -184,7 +184,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 12,
-					'condition' => '!data.not_a_choice && !data.is_group',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 					'html'      => '<div class="mkl-pc-setting--container">'
 						. '<input type="text" class="components-select-control__input" data-setting="object_id_3d" value="<# if ( data.object_id_3d ) { #>{{data.object_id_3d}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
 						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="object_id_3d">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
@@ -195,7 +195,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type'     => 'repeater',
 					'priority' => 25,
 					'section'  => 'threed',
-					'condition' => '!data.not_a_choice && !data.is_group',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 					'fields'   => array(
 						'action_type' => array(
 							'label'   => __( 'Action', 'product-configurator-for-woocommerce' ),
