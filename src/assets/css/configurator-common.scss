@@ -1,4 +1,19 @@
 /* Variable products */
+
+.screen-reader-text,
+.screen-reader-only {
+	clip: rect(1px, 1px, 1px, 1px);
+	word-wrap: normal !important;
+	border: 0;
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	overflow-wrap: normal !important;
+	padding: 0;
+	position: absolute !important;
+	width: 1px;
+}
 button.variations_button.disabled,
 .variations_button.disabled button.single_add_to_cart_button {
 	display: none;

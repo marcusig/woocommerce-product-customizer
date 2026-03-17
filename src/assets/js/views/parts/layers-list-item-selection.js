@@ -89,7 +89,7 @@ PC.fe.views.layers_list_item_selection_image = Backbone.View.extend({
 		_.each( active_choices, function( item ) {
 			var image = item.get_image( 'thumbnail' );
 			if ( image ) {
-				html_content += '<img src="' + image + '">';
+				html_content += '<img src="' + image + '" alt="" aria-hidden="true">';
 			}
 		} );
 		if ( ! this.has_thumbnail ) {
