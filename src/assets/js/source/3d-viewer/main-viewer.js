@@ -498,17 +498,6 @@ export default Backbone.View.extend({
 				if ( scene ) this._layer_scenes.push( { layer_model, scene } );
 			} );
 		}
-		this._layer_objects = [];
-		// Backward compatibility path: map layers to object references in the main root (`object_id_3d`).
-		if ( layers && t.model_root ) {
-			layers.each( ( layer_model ) => {
-				if ( layer_model.get( 'object_3d_id' ) ) return;
-				const oid = layer_model.get( 'object_id_3d' );
-				if ( ! oid ) return;
-				const obj = this._findObjectById( oid );
-				if ( obj ) this._layer_objects.push( { layer_model, object: obj } );
-			} );
-		}
 		// Apply cshow visibility rules once, then subscribe so later layer changes keep scene in sync.
 		this._apply_layer_cshow_visibility();
 		this._bind_layer_cshow();
@@ -784,7 +773,7 @@ export default Backbone.View.extend({
 	},
 
 	/**
-	 * Resolve object_id_3d (plain name/uuid or composite "sourceId:objectName") to a scene object.
+	 * Resolve target_object_id (plain name/uuid or composite "sourceId:objectName") to a scene object.
 	 * Uses findObjectByCompositeId so multiple loaded models are disambiguated by attachment_id/object_id.
 	 */
 	_findObjectById( id ) {
@@ -809,11 +798,6 @@ export default Backbone.View.extend({
 				if ( scene ) scene.visible = cshow( layer_model );
 			} );
 		}
-		if ( this._layer_objects && this._layer_objects.length ) {
-			this._layer_objects.forEach( ( { layer_model, object } ) => {
-				if ( object ) object.visible = cshow( layer_model );
-			} );
-		}
 		// Keep active-angle framing in sync with current visibility state.
 		this._applyAngleCamera( { reframe: true } );
 	},
@@ -821,13 +805,12 @@ export default Backbone.View.extend({
 	_bind_layer_cshow() {
 		const layerModels = new Set();
 		if ( this._layer_scenes ) this._layer_scenes.forEach( ( { layer_model } ) => layerModels.add( layer_model ) );
-		if ( this._layer_objects ) this._layer_objects.forEach( ( { layer_model } ) => layerModels.add( layer_model ) );
 		const layers = window.PC.fe && window.PC.fe.layers;
 		if ( layers ) {
 			layers.each( ( layer_model ) => {
-				const oid = layer_model.get( 'object_id_3d' );
+				const targetId = layer_model.get( 'target_object_id' );
 				const object3dId = layer_model.get( 'object_3d_id' );
-				if ( ! oid && object3dId ) layerModels.add( layer_model );
+				if ( ! targetId && object3dId ) layerModels.add( layer_model );
 			} );
 		}
 		layerModels.forEach( ( layer_model ) => {
@@ -965,7 +948,7 @@ export default Backbone.View.extend({
 			choices.each( ( choice_model ) => {
 				const actions = choice_model.get( 'actions_3d' );
 				if ( ! Array.isArray( actions ) || ! actions.some( ( a ) => a.action_type === 'toggle_visibility' ) ) return;
-				const main_oid = choice_model.get( 'object_id_3d' ) || layer_model.get( 'object_id_3d' );
+				const main_oid = choice_model.get( 'target_object_id' ) || layer_model.get( 'target_object_id' );
 				if ( main_oid ) visibility_targets.add( String( main_oid ).trim() );
 			} );
 		} );
@@ -980,7 +963,7 @@ export default Backbone.View.extend({
 			const choices = window.PC.fe.getLayerContent && window.PC.fe.getLayerContent( layer_model.id );
 			if ( ! choices ) return;
 			choices.each( ( choice_model ) => {
-				const has_3d = choice_model.get( 'object_id_3d' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' );
+				const has_3d = choice_model.get( 'target_object_id' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' );
 				if ( ! has_3d ) return;
 				const view = new viewer_3d_choice( {
 					model: choice_model,
@@ -999,7 +982,6 @@ export default Backbone.View.extend({
 			this._choice_views = [];
 		}
 		this._layer_scenes = [];
-		this._layer_objects = [];
 		this._gltfLoader = null;
 		if ( this._scene_models ) this._scene_models.reset();
 		this._objectIdToScene = {};

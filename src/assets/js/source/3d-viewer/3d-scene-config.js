@@ -1,6 +1,6 @@
 /**
  * Frontend 3D scene config: settings access, HDR base URL.
- * Re-exports shared utils (tone mapping, orbit limits, light creation) for backward compatibility.
+ * Re-exports shared utils (tone mapping, orbit limits, light creation).
  */
 import {
 	getToneMapping,

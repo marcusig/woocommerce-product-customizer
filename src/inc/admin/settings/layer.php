@@ -295,14 +295,14 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 						. '<p class="description">' . esc_html__( 'Select a 3D object from the 3D Objects tab.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '</div>',
 				);
-				$settings['object_id_3d'] = array(
+				$settings['target_object_id'] = array(
 					'label'     => __( 'Object ID (scene)', 'product-configurator-for-woocommerce' ),
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 12,
 					'html'      => '<div class="mkl-pc-setting--container">'
-						. '<input type="text" class="components-select-control__input" data-setting="object_id_3d" value="<# if ( data.object_id_3d ) { #>{{data.object_id_3d}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
-						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="object_id_3d">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
 						. '</div>',
 				);
 			}

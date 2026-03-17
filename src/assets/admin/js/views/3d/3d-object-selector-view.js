@@ -379,7 +379,7 @@ function select_3d_object( $el, context ) {
 	const opts = { target: $el, context };
 	if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
 	if ( $el && $el.data( 'attachment-id' ) != null ) opts.attachmentId = $el.data( 'attachment-id' );
-	opts.setting = $el?.data( 'setting' ) || 'object_id_3d';
+	opts.setting = $el?.data( 'setting' ) || 'target_object_id';
 	const isSceneObjectSelector = opts.setting === 'camera_target_object_id' || opts.setting === 'light_target_object_id';
 	opts.resolveOptions = isSceneObjectSelector
 		? { sourceKey: 'camera_target_model', uploadKey: null }

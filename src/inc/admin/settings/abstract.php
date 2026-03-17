@@ -427,7 +427,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		 *     @type bool   $can_upload        Whether to show Upload option and model upload field.
 		 *     @type string $setting_model     Setting key for model source (e.g. object_selection_3d, camera_target_model).
 		 *     @type string $setting_upload    Setting key for upload attachment (e.g. model_upload_3d). Omit or null if no upload.
-		 *     @type string $setting_object_id Setting key for object ID (e.g. object_id_3d, camera_target_object_id).
+		 *     @type string $setting_object_id Setting key for object ID (e.g. target_object_id, camera_target_object_id).
 		 *     @type string $model_label       Label for the model source select.
 		 *     @type string $upload_label      Label for the upload field.
 		 *     @type string $object_id_label   Label for the object ID field.
@@ -441,7 +441,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			$can_upload       = ! empty( $config['can_upload'] );
 			$setting_model    = isset( $config['setting_model'] ) ? $config['setting_model'] : 'object_selection_3d';
 			$setting_upload   = isset( $config['setting_upload'] ) ? $config['setting_upload'] : null;
-			$setting_object   = isset( $config['setting_object_id'] ) ? $config['setting_object_id'] : 'object_id_3d';
+			$setting_object   = isset( $config['setting_object_id'] ) ? $config['setting_object_id'] : 'target_object_id';
 			$model_label      = isset( $config['model_label'] ) ? $config['model_label'] : __( 'Use object from', 'product-configurator-for-woocommerce' );
 			$upload_label     = isset( $config['upload_label'] ) ? $config['upload_label'] : __( 'Model upload', 'product-configurator-for-woocommerce' );
 			$object_id_label  = isset( $config['object_id_label'] ) ? $config['object_id_label'] : __( 'Object ID', 'product-configurator-for-woocommerce' );

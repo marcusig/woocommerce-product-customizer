@@ -80,7 +80,6 @@ var PC = PC || {};
 				env_cubemap_pz: true,
 				env_cubemap_nz: true,
 				animation_target_model: true,
-				animation_target_object_id: true,
 				animation_clips: true,
 			};
 			return Object.keys( input || {} ).reduce( function( out, key ) {
@@ -141,7 +140,6 @@ var PC = PC || {};
 		_build_animation_attrs: function( input ) {
 			return {
 				animation_target_model: input.animation_target_model || '',
-				animation_target_object_id: input.animation_target_object_id || '',
 				animation_clips: Array.isArray( input.animation_clips ) ? input.animation_clips : [],
 			};
 		},

@@ -20,7 +20,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		this.model = options.model;
 		this.layer_model = options.layer_model;
 		this.parent_view = options.parent;
-		this.target_id = this.model.get( 'object_id_3d' ) || this.layer_model.get( 'object_id_3d' );
+		this.target_id = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
 		this.target_object = this.get_target_object();
 		this.target_scene = this.get_target_scene();
 		this.listenTo( this.model, 'change:active', this.apply_actions );
@@ -32,8 +32,8 @@ const viewer_3d_choice = Backbone.View.extend({
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return null;
 		const target_id =
-			this.model.get( 'object_id_3d' ) ||
-			this.layer_model.get( 'object_id_3d' );
+			this.model.get( 'target_object_id' ) ||
+			this.layer_model.get( 'target_object_id' );
 		if ( ! target_id ) return null;
 		if ( typeof this.parent_view._findObjectById === 'function' ) {
 			return this.parent_view._findObjectById( target_id ) || null;
@@ -232,7 +232,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				return;
 			}
 
-			const targetId = this.model.get( 'object_id_3d' ) || this.layer_model.get( 'object_id_3d' );
+			const targetId = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
 			const needsObject = ! this.target_object && targetId && String( targetId ).indexOf( ':' ) !== -1;
 			const layerObject3dId = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
 			const needsScene = layerObject3dId != null && String( layerObject3dId ).trim() !== '';

@@ -813,6 +813,10 @@ class DB {
 					'sanitize' => [ $this, 'sanitize_nullable_int' ],
 					'escape' => [ $this, 'sanitize_nullable_int' ],
 				],
+				'target_object_id' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
 				'attachment_id' => [
 					'sanitize' => [ $this, 'sanitize_nullable_int' ],
 					'escape' => [ $this, 'sanitize_nullable_int' ],
@@ -930,10 +934,6 @@ class DB {
 				'cast_shadows' => [
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
-				],
-				'animation_target_object_id' => [
-					'sanitize' => 'sanitize_text_field',
-					'escape' => 'esc_attr',
 				],
 				'animation_target_model' => [
 					'sanitize' => 'sanitize_text_field',
