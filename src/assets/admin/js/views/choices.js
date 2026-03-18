@@ -94,11 +94,18 @@ PC.views = PC.views || {};
 			if ( -1 == PC.app.modified_choices.indexOf( e.get( 'layerId' ) + '_' + e.id ) ) {
 				PC.app.modified_choices.push( e.get( 'layerId' ) + '_' + e.id );
 			}
-			PC.app.is_modified[this.collectionName] = true;
+			this.mark_collection_as_modified();
 		},
 
 		mark_collection_as_modified: function() {
 			PC.app.is_modified[this.collectionName] = true;
+			if ( this.collectionName === 'content' && this.model ) {
+				var layerId = this.model.get && this.model.get( 'layerId' ) || this.model.id;
+				if ( layerId ) {
+					PC.app.modified_content_layer_ids = PC.app.modified_content_layer_ids || {};
+					PC.app.modified_content_layer_ids[ layerId ] = true;
+				}
+			}
 		},
 
 		add_one: function( model ) {
@@ -638,6 +645,10 @@ PC.views = PC.views || {};
 		},
 		has_changed: function() {
 			PC.app.is_modified[this.collectionName] = true;
+			if ( this.model && this.model.get( 'layerId' ) ) {
+				PC.app.modified_content_layer_ids = PC.app.modified_content_layer_ids || {};
+				PC.app.modified_content_layer_ids[ this.model.get( 'layerId' ) ] = true;
+			}
 		},
 		edit_attachment: function(e) {
 			e.preventDefault();

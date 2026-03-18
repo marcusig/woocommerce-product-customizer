@@ -423,13 +423,14 @@ class Languages {
 	}
 
 	public function wpml_maybe_fix_duplicate_data( $post_id_from, $post_id_to, $meta_key ) {
-		if ( in_array( $meta_key, [ '_mkl_product_configurator_content', '_mkl_product_configurator_layers', '_mkl_product_configurator_conditions', '_mkl_product_configurator_angles' ] ) ) {
+		$legacy_keys = [ '_mkl_product_configurator_content', '_mkl_product_configurator_layers', '_mkl_product_configurator_conditions', '_mkl_product_configurator_angles' ];
+		$chunked_index = '_mkl_product_configurator_layers_index';
+		$is_chunked = ( 0 === strpos( $meta_key, '_mkl_product_configurator_layer_' ) || 0 === strpos( $meta_key, '_mkl_product_configurator_content_' ) );
+		if ( in_array( $meta_key, $legacy_keys, true ) || $meta_key === $chunked_index || $is_chunked ) {
 			$meta = get_post_meta( $post_id_to, $meta_key, false );
 			if ( is_array( $meta ) && 1 < count( $meta ) ) {
 				$keep = end( $meta );
-				// delete all post_meta
 				delete_post_meta( $post_id_to, $meta_key );
-				// insert the last one only
 				add_post_meta( $post_id_to, $meta_key, $keep );
 			}
 		}

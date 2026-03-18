@@ -35,6 +35,9 @@ PC.toJSON = function( item ) {
 			content: false,
 		},
 		modified_choices: [],
+		modified_layer_ids: {},
+		deleted_layer_ids: [],
+		modified_content_layer_ids: {},
 		state: null,
 		init: function( options ) {
 			PC.lang = PC_lang || {};
@@ -167,6 +170,8 @@ PC.toJSON = function( item ) {
 		saved_all: function( key, state, options ) {
 			this.saving--;
 			this.is_modified[ key ] = false;
+			if ( key === 'layers' ) { this.modified_layer_ids = {}; this.deleted_layer_ids = []; }
+			if ( key === 'content' ) this.modified_content_layer_ids = {};
 			if ( options && options.saved_one ) options.saved_one( key );
 			if ( this.saving == 0 ) {
 
@@ -216,20 +221,47 @@ PC.toJSON = function( item ) {
 				options.data.parent_id = this.id;
 			}
 
-			if (collection.length > 0) {
+			if ( collection.length > 0 ) {
 
-				if ( collection instanceof Array ) {
+				if ( 'layers' === what && collection instanceof Backbone.Collection ) {
+					var layersIndex = collection.pluck( '_id' ).filter( function( id ) { return id; } );
+					var layerIds = PC.app.modified_layer_ids && typeof PC.app.modified_layer_ids === 'object' ? Object.keys( PC.app.modified_layer_ids ) : [];
+					var hasDeleted = PC.app.deleted_layer_ids && PC.app.deleted_layer_ids.length > 0;
+					if ( layerIds.length > 0 || hasDeleted ) {
+						var layersPayload = { layers_index: layersIndex, layers: {}, deleted: PC.app.deleted_layer_ids || [] };
+						layerIds.forEach( function( id ) {
+							var m = collection.get( id );
+							if ( m ) layersPayload.layers[ id ] = m.toJSON();
+						} );
+						options.data[what] = JSON.stringify( layersPayload );
+					} else {
+						options.data[what] = JSON.stringify( collection );
+					}
+				} else if ( 'content' === what && collection instanceof Backbone.Collection ) {
+					var contentLayerIds = PC.app.modified_content_layer_ids && typeof PC.app.modified_content_layer_ids === 'object' ? Object.keys( PC.app.modified_content_layer_ids ) : [];
+					if ( contentLayerIds.length > 0 ) {
+						var contentPayload = { content: {} };
+						contentLayerIds.forEach( function( layerId ) {
+							var layerModel = collection.get( layerId );
+							if ( layerModel ) contentPayload.content[ layerId ] = layerModel.toJSON();
+						} );
+						options.data[what] = JSON.stringify( contentPayload );
+						options.data.modified_choices = PC.app.modified_choices;
+					} else {
+						options.data[what] = JSON.stringify( collection );
+						options.data.modified_choices = PC.app.modified_choices;
+					}
+				} else if ( collection instanceof Array ) {
 					options.data[what] = {};
-					$.each( collection, function( index, value ){
+					$.each( collection, function( index, value ) {
 						options.data[what][index] = ( value instanceof Backbone.Collection ) ? JSON.stringify( value ) : value;
-					});
+					} );
 				} else if ( collection instanceof Backbone.Collection ) {
 					options.data[what] = JSON.stringify( collection );
+					if ( 'content' == what ) {
+						options.data.modified_choices = PC.app.modified_choices;
+					}
 				}
-				if ( 'content' == what ) {
-					options.data.modified_choices = PC.app.modified_choices;
-				}
-	
 			} else {
 				options.data[what] = 'empty';
 			}

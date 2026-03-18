@@ -1,5 +1,7 @@
 <wpml-config>
 	<custom-fields>
+		<!-- Chunked storage: layers_index + _mkl_product_configurator_layer_{id} and _mkl_product_configurator_content_{id} are synced in code on save -->
+		<custom-field action="copy">_mkl_product_configurator_layers_index</custom-field>
 		<custom-field action="copy">_mkl_product_configurator_layers</custom-field>
 		<custom-field action="copy">_mkl_product_configurator_content</custom-field>
 		<custom-field action="copy">_mkl_product_configurator_angles</custom-field>
