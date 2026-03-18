@@ -191,7 +191,11 @@ PC.views = PC.views || {};
 				that.$el.removeClass('saved'); 
 			}, 2500);
 			// reset 'modified'
-			if ( ! has_errors ) PC.app.is_modified[this.collectionName] = false;
+			if ( ! has_errors ) {
+				PC.app.is_modified[this.collectionName] = false;
+				if ( this.collectionName === 'layers' ) { PC.app.modified_layer_ids = {}; PC.app.deleted_layer_ids = []; }
+				if ( this.collectionName === 'content' ) PC.app.modified_content_layer_ids = {};
+			}
 		},
 		error_saving: function(r, s) {
 			this.$save_button.removeClass('disabled'); 

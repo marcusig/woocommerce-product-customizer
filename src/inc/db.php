@@ -54,6 +54,36 @@ class DB {
 	}
 
 	/**
+	 * Get the layers index (ordered layer IDs) for chunked storage.
+	 * Returns array of layer IDs, or false if using legacy storage.
+	 *
+	 * @param int $product_id
+	 * @return array|false
+	 */
+	private function get_layers_index( $product_id ) {
+		$cache_key = 'mkl_pc_layers_index_' . $product_id;
+		$cached = wp_cache_get( $cache_key, 'mkl_pc' );
+		if ( false !== $cached ) {
+			return $cached;
+		}
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+		$index = maybe_unserialize( $index );
+		if ( is_string( $index ) ) {
+			$index = json_decode( stripslashes( $index ), true );
+		}
+		if ( is_array( $index ) && ! empty( $index ) ) {
+			wp_cache_set( $cache_key, $index, 'mkl_pc', 3600 );
+			return $index;
+		}
+		wp_cache_set( $cache_key, false, 'mkl_pc', 3600 );
+		return false;
+	}
+
+	/**
 	 * Getter
 	 *
 	 * @param string  $that
@@ -75,28 +105,115 @@ class DB {
 
 		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return false;
 
-		$data = $product->get_meta( '_mkl_product_configurator_' . $that );
-
-		$data = maybe_unserialize( $data );
-
-		if ( is_string( $data) ) {
-			$data = json_decode( stripslashes( $data ), 1 );
+		if ( 'layers' === $that ) {
+			$data = $this->get_layers_chunked( $product_id, $product );
+			if ( false === $data ) {
+				$data = $this->get_legacy_meta( $product, '_mkl_product_configurator_layers' );
+			}
+		} elseif ( 'content' === $that ) {
+			$data = $this->get_content_chunked( $product_id, $product );
+			if ( false === $data ) {
+				$data = $this->get_legacy_meta( $product, '_mkl_product_configurator_content' );
+			}
+		} else {
+			$data = $this->get_legacy_meta( $product, '_mkl_product_configurator_' . $that );
 		}
 
 		if ( '' == $data || false == $data ) {
-			return false; 
-		} else {
-			/**
-			 * Filters the data fetched using the Get method
-			 * 
-			 * @param $data       - The data filtered
-			 * @param $that       - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
-			 * @param $product_id - The product ID
-			 */
-			$data = apply_filters( 'mkl_pc/db/get', $data, $that, $product_id );
-			wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
-			return $data; 
+			return false;
 		}
+
+		/**
+		 * Filters the data fetched using the Get method
+		 *
+		 * @param $data       - The data filtered
+		 * @param $that       - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
+		 * @param $product_id - The product ID
+		 */
+		$data = apply_filters( 'mkl_pc/db/get', $data, $that, $product_id );
+		wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
+		return $data;
+	}
+
+	/**
+	 * Read and decode a single legacy-style meta value.
+	 *
+	 * @param \WC_Product $product
+	 * @param string      $meta_key
+	 * @return array|false
+	 */
+	private function get_legacy_meta( $product, $meta_key ) {
+		$data = $product->get_meta( $meta_key );
+		$data = maybe_unserialize( $data );
+		if ( is_string( $data ) ) {
+			$data = json_decode( stripslashes( $data ), true );
+		}
+		return ( '' !== $data && false !== $data && is_array( $data ) ) ? $data : false;
+	}
+
+	/**
+	 * Get layers from chunked storage (layer_1, layer_2, ...).
+	 *
+	 * @param int         $product_id
+	 * @param \WC_Product $product
+	 * @return array|false
+	 */
+	private function get_layers_chunked( $product_id, $product ) {
+		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+		$index = maybe_unserialize( $index );
+		if ( is_string( $index ) ) {
+			$index = json_decode( stripslashes( $index ), true );
+		}
+		if ( ! is_array( $index ) || empty( $index ) ) {
+			return false;
+		}
+		$layers = array();
+		foreach ( $index as $layer_id ) {
+			$chunk = $product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
+			$chunk = maybe_unserialize( $chunk );
+			if ( is_string( $chunk ) ) {
+				$chunk = json_decode( stripslashes( $chunk ), true );
+			}
+			if ( empty( $chunk ) || ! is_array( $chunk ) ) {
+				return false;
+			}
+			$layers[] = $chunk;
+		}
+		return $layers;
+	}
+
+	/**
+	 * Get content from chunked storage (content_1, content_2, ...).
+	 *
+	 * @param int         $product_id
+	 * @param \WC_Product $product
+	 * @return array|false
+	 */
+	private function get_content_chunked( $product_id, $product ) {
+		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+		$index = maybe_unserialize( $index );
+		if ( is_string( $index ) ) {
+			$index = json_decode( stripslashes( $index ), true );
+		}
+		if ( ! is_array( $index ) || empty( $index ) ) {
+			return false;
+		}
+		$content = array();
+		foreach ( $index as $layer_id ) {
+			$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
+			$chunk = maybe_unserialize( $chunk );
+			if ( is_string( $chunk ) ) {
+				$chunk = json_decode( stripslashes( $chunk ), true );
+			}
+			if ( ! is_array( $chunk ) ) {
+				$chunk = array( 'layerId' => (int) $layer_id, 'choices' => array() );
+			}
+			if ( ! isset( $chunk['layerId'] ) ) {
+				$chunk['layerId'] = (int) $layer_id;
+			}
+			$content[] = $chunk;
+		}
+		return $content;
 	}
 
 	public function get_indexed( $type, $key, $product_id ) {
@@ -128,58 +245,360 @@ class DB {
 	/**
 	 * Set Data
 	 *
-	 * @param integer $id        - The product ID 
+	 * @param integer $id        - The product ID
 	 * @param integer $ref_id    - The referring ID
 	 * @param string  $component - Which component to save (Layers, angles, content)
-	 * @param array   $raw_data  - The data
+	 * @param array   $raw_data  - The data (full array or delta object for layers/content)
 	 * @return array
 	 */
 	public function set( $id, $ref_id, $component, $raw_data, $modified_choices = false ) {
-		if( ! $this->is_product( $id ) ) return false;
+		if ( ! $this->is_product( $id ) ) return false;
+		if ( $ref_id !== $id && ! $this->is_product( $ref_id ) ) return false;
 
-		if( $ref_id !== $id && !$this->is_product( $ref_id ) ) return false;
-
-		do_action( 'mkl_pc_before_save_product_configuration_'.$component, $id, $raw_data );
+		do_action( 'mkl_pc_before_save_product_configuration_' . $component, $id, $raw_data );
 		do_action( 'mkl_pc_before_save_product_configuration', $id, $raw_data );
+
+		if ( 'layers' === $component ) {
+			return $this->set_layers( $id, $ref_id, $raw_data );
+		}
+		if ( 'content' === $component ) {
+			return $this->set_content( $id, $ref_id, $raw_data, $modified_choices );
+		}
+
+		// Angles, conditions, etc.: legacy single-meta write
+		if ( 'empty' === $raw_data ) {
+			$data = array();
+		} elseif ( is_array( $raw_data ) ) {
+			$data = $this->normalize_for_set( $raw_data, $id, $component, $modified_choices );
+		} else {
+			$data = $raw_data;
+		}
+		$data = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
+		$product = wc_get_product( $id );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->update_meta_data( '_mkl_product_configurator_' . $component, $data );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_' . $component );
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		do_action( 'mkl_pc_saved_product_configuration_' . $component, $id, $data );
+		do_action( 'mkl_pc_saved_product_configuration', $id );
+		wp_cache_delete( "mkl_pc_data_{$component}_{$id}", 'mkl_pc' );
+		return $data;
+	}
+
+	/**
+	 * Normalize raw data for set (strip active, apply choice filter).
+	 *
+	 * @param array  $raw_data
+	 * @param int    $id
+	 * @param string $component
+	 * @param mixed  $modified_choices
+	 * @return array
+	 */
+	private function normalize_for_set( $raw_data, $id, $component, $modified_choices ) {
+		foreach ( $raw_data as $key => $value ) {
+			if ( isset( $value['active'] ) ) {
+				$raw_data[ $key ]['active'] = false;
+			} elseif ( isset( $value['choices'] ) ) {
+				foreach ( $value['choices'] as $choice_index => $choice ) {
+					if ( isset( $choice['active'] ) ) {
+						$raw_data[ $key ]['choices'][ $choice_index ]['active'] = false;
+						$raw_data[ $key ]['choices'][ $choice_index ] = apply_filters( 'mkl_product_configurator/data/set/choice', $raw_data[ $key ]['choices'][ $choice_index ], $id, $raw_data, $modified_choices );
+					}
+				}
+			}
+		}
+		return $raw_data;
+	}
+
+	/**
+	 * Set layers (chunked storage): one meta + save per layer.
+	 *
+	 * @param int   $id
+	 * @param int   $ref_id
+	 * @param mixed $raw_data Full array of layers, delta object, or 'empty'
+	 * @return array|false
+	 */
+	private function set_layers( $id, $ref_id, $raw_data ) {
+		$product = wc_get_product( $id );
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+
+		// Delta: { layers_index: [], layers: { id => layer_data }, deleted: [] }
+		if ( is_array( $raw_data ) && isset( $raw_data['layers_index'] ) && isset( $raw_data['layers'] ) ) {
+			return $this->set_layers_delta( $id, $product, $raw_data );
+		}
 
 		if ( 'empty' === $raw_data ) {
 			$data = array();
 		} elseif ( is_array( $raw_data ) ) {
-			// Remove active state. Defaults to first item
-			foreach ($raw_data as $key => $value) {
-				if( isset( $value['active'] ) ) {
-					$raw_data[$key]['active'] = false;
-				} elseif( isset( $value['choices'] ) ) {
-					foreach ( $value['choices'] as $choice_index => $choice) {
-						if ( isset( $choice['active'] ) ) {
-							$raw_data[$key]['choices'][$choice_index]['active'] = false;
-							$raw_data[$key]['choices'][$choice_index] = apply_filters( 'mkl_product_configurator/data/set/choice', $raw_data[$key]['choices'][$choice_index], $id, $raw_data, $modified_choices );
-						}
-					}
-				}
-			}
-			$data = $raw_data;
+			$data = $this->normalize_for_set( $raw_data, $id, 'layers', false );
 		} else {
 			$data = $raw_data;
 		}
+		$data = apply_filters( 'mkl_product_configurator/data/set/layers', $data, $id );
 
-		$data = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
-		$product = wc_get_product( $id );
+		if ( empty( $data ) || ! is_array( $data ) ) {
+			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+			$old_index = maybe_unserialize( $old_index );
+			if ( is_string( $old_index ) ) {
+				$old_index = json_decode( stripslashes( $old_index ), true );
+			}
+			$product->update_meta_data( '_mkl_product_configurator_layers_index', array() );
+			$product->save();
+			$this->delete_layer_chunk_metas( $product, array(), is_array( $old_index ) ? $old_index : array() );
+			$product->delete_meta_data( '_mkl_product_configurator_layers' );
+			$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+			$product->save();
+			$this->invalidate_layers_cache( $id );
+			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layers_index' );
+			do_action( 'mkl_pc_saved_product_configuration_layers', $id, array() );
+			do_action( 'mkl_pc_saved_product_configuration', $id );
+			return array();
+		}
+
+		$layer_ids = array();
+		foreach ( $data as $layer ) {
+			if ( isset( $layer['_id'] ) ) {
+				$layer_ids[] = (int) $layer['_id'];
+			}
+		}
+
+		$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+		$old_index = maybe_unserialize( $old_index );
+		if ( is_string( $old_index ) ) {
+			$old_index = json_decode( stripslashes( $old_index ), true );
+		}
+		if ( ! is_array( $old_index ) ) {
+			$old_index = array();
+		}
+
+		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
-		$product->update_meta_data( '_mkl_product_configurator_' . $component , $data );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+
+		foreach ( $data as $layer ) {
+			$layer_id = isset( $layer['_id'] ) ? (int) $layer['_id'] : 0;
+			if ( ! $layer_id ) continue;
+			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
+			$product->save();
+			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layer_' . $layer_id );
+		}
+
+		$this->delete_layer_chunk_metas( $product, $layer_ids, $old_index );
+		$product->delete_meta_data( '_mkl_product_configurator_layers' );
 		$product->save();
 
-		// WPML Sync custom field
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_' . $component );
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
-		
-		do_action( 'mkl_pc_saved_product_configuration_'.$component, $id, $data );
+		$this->invalidate_layers_cache( $id );
+		do_action( 'mkl_pc_saved_product_configuration_layers', $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
-
-		// On product save or meta update:
-		wp_cache_delete( "mkl_pc_data_{$component}_{$id}", 'mkl_pc' );
-
 		return $data;
+	}
+
+	/**
+	 * Set layers from delta payload.
+	 *
+	 * @param int         $id
+	 * @param \WC_Product $product
+	 * @param array       $payload { layers_index: [], layers: { id => data }, deleted: [] }
+	 * @return array
+	 */
+	private function set_layers_delta( $id, $product, $payload ) {
+		$layer_ids = isset( $payload['layers_index'] ) && is_array( $payload['layers_index'] ) ? $payload['layers_index'] : array();
+		$layers = isset( $payload['layers'] ) && is_array( $payload['layers'] ) ? $payload['layers'] : array();
+		$deleted = isset( $payload['deleted'] ) && is_array( $payload['deleted'] ) ? $payload['deleted'] : array();
+
+		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+
+		foreach ( $layers as $layer_id => $layer ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+			$layer = $this->normalize_for_set( array( $layer ), $id, 'layers', false );
+			$layer = isset( $layer[0] ) ? $layer[0] : $layer;
+			$layer = apply_filters( 'mkl_product_configurator/data/set/layers', array( $layer ), $id );
+			$layer = isset( $layer[0] ) ? $layer[0] : $layer;
+			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
+			$product->save();
+			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layer_' . $layer_id );
+		}
+
+		foreach ( $deleted as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( $layer_id ) {
+				$product->delete_meta_data( '_mkl_product_configurator_layer_' . $layer_id );
+			}
+		}
+		$product->save();
+
+		$data = $this->get( 'layers', $id );
+		$this->invalidate_layers_cache( $id );
+		do_action( 'mkl_pc_saved_product_configuration_layers', $id, $data ? $data : array() );
+		do_action( 'mkl_pc_saved_product_configuration', $id );
+		return $data ? $data : array();
+	}
+
+	/**
+	 * Delete layer chunk metas for IDs that were in the old index but not in the new list.
+	 *
+	 * @param \WC_Product $product
+	 * @param array       $keep_ids  New layer IDs to keep.
+	 * @param array       $old_index Previous layer index (IDs that might have chunk metas).
+	 */
+	private function delete_layer_chunk_metas( $product, $keep_ids, $old_index = array() ) {
+		$keep = array_flip( $keep_ids );
+		foreach ( $old_index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( $layer_id && ! isset( $keep[ $layer_id ] ) ) {
+				$product->delete_meta_data( '_mkl_product_configurator_layer_' . $layer_id );
+			}
+		}
+	}
+
+	/**
+	 * Set content (chunked storage): one meta + save per layer.
+	 *
+	 * @param int   $id
+	 * @param int   $ref_id
+	 * @param mixed $raw_data Full array of content items, delta object, or 'empty'
+	 * @param mixed $modified_choices
+	 * @return array|false
+	 */
+	private function set_content( $id, $ref_id, $raw_data, $modified_choices = false ) {
+		$product = wc_get_product( $id );
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+
+		// Delta: { content: { layerId => { layerId, choices } } }
+		if ( is_array( $raw_data ) && isset( $raw_data['content'] ) && is_array( $raw_data['content'] ) ) {
+			return $this->set_content_delta( $id, $product, $raw_data, $modified_choices );
+		}
+
+		if ( 'empty' === $raw_data ) {
+			$data = array();
+		} elseif ( is_array( $raw_data ) ) {
+			$data = $this->normalize_for_set( $raw_data, $id, 'content', $modified_choices );
+		} else {
+			$data = $raw_data;
+		}
+		$data = apply_filters( 'mkl_product_configurator/data/set/content', $data, $id );
+
+		$layer_ids = array();
+		if ( is_array( $data ) ) {
+			foreach ( $data as $item ) {
+				if ( isset( $item['layerId'] ) ) {
+					$layer_ids[] = (int) $item['layerId'];
+				}
+			}
+		}
+
+		$current_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+		$current_index = maybe_unserialize( $current_index );
+		if ( is_string( $current_index ) ) {
+			$current_index = json_decode( stripslashes( $current_index ), true );
+		}
+		if ( ! is_array( $current_index ) ) {
+			$current_index = array();
+		}
+		if ( empty( $layer_ids ) && ! empty( $data ) ) {
+			$layer_ids = $current_index;
+		}
+
+		foreach ( $data as $item ) {
+			$layer_id = isset( $item['layerId'] ) ? (int) $item['layerId'] : 0;
+			if ( ! $layer_id ) continue;
+			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
+			$product->save();
+			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_content_' . $layer_id );
+		}
+
+		$this->delete_content_chunk_metas( $product, $layer_ids, $current_index );
+		$product->delete_meta_data( '_mkl_product_configurator_content' );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+
+		$this->invalidate_layers_cache( $id );
+		wp_cache_delete( 'mkl_pc_data_content_' . $id, 'mkl_pc' );
+		do_action( 'mkl_pc_saved_product_configuration_content', $id, $data );
+		do_action( 'mkl_pc_saved_product_configuration', $id );
+		return $data;
+	}
+
+	/**
+	 * Set content from delta payload.
+	 *
+	 * @param int         $id
+	 * @param \WC_Product $product
+	 * @param array       $payload { content: { layerId => { layerId, choices } } }
+	 * @param mixed       $modified_choices
+	 * @return array
+	 */
+	private function set_content_delta( $id, $product, $payload, $modified_choices = false ) {
+		$content_chunks = isset( $payload['content'] ) && is_array( $payload['content'] ) ? $payload['content'] : array();
+		foreach ( $content_chunks as $layer_id => $item ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+			$normalized = $this->normalize_for_set( array( $item ), $id, 'content', $modified_choices );
+			$item = isset( $normalized[0] ) ? $normalized[0] : $item;
+			$item = apply_filters( 'mkl_product_configurator/data/set/content', array( $item ), $id );
+			$item = is_array( $item ) && isset( $item[0] ) ? $item[0] : $item;
+			if ( ! isset( $item['layerId'] ) ) {
+				$item['layerId'] = $layer_id;
+			}
+			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
+			$product->save();
+			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_content_' . $layer_id );
+		}
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $id, 'mkl_pc' );
+		$data = $this->get( 'content', $id );
+		$this->invalidate_layers_cache( $id );
+		do_action( 'mkl_pc_saved_product_configuration_content', $id, $data ? $data : array() );
+		do_action( 'mkl_pc_saved_product_configuration', $id );
+		return $data ? $data : array();
+	}
+
+	/**
+	 * Delete content chunk metas for layer IDs that are in old_index but not in keep_ids.
+	 *
+	 * @param \WC_Product $product
+	 * @param array       $keep_ids  Layer IDs to keep (current content layer IDs).
+	 * @param array       $old_index Optional. Previous layers index; if not provided, read from product.
+	 */
+	private function delete_content_chunk_metas( $product, $keep_ids, $old_index = null ) {
+		if ( null === $old_index ) {
+			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
+			$old_index = maybe_unserialize( $old_index );
+			if ( is_string( $old_index ) ) {
+				$old_index = json_decode( stripslashes( $old_index ), true );
+			}
+		}
+		if ( ! is_array( $old_index ) ) {
+			return;
+		}
+		$keep = array_flip( $keep_ids );
+		foreach ( $old_index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( $layer_id && ! isset( $keep[ $layer_id ] ) ) {
+				$product->delete_meta_data( '_mkl_product_configurator_content_' . $layer_id );
+			}
+		}
+	}
+
+	private function invalidate_layers_cache( $product_id ) {
+		wp_cache_delete( 'mkl_pc_data_layers_' . $product_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $product_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_layers_index_' . $product_id, 'mkl_pc' );
 	}
 
 	/**
@@ -200,6 +619,70 @@ class DB {
 	}
 
 	/**
+	 * Get content for a single layer (chunked or legacy).
+	 *
+	 * @param int $product_id
+	 * @param int $layer_id
+	 * @return array|false { layerId, choices } or false
+	 */
+	public function get_content_layer( $product_id, $layer_id ) {
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+		$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
+		if ( '' !== $chunk ) {
+			$chunk = maybe_unserialize( $chunk );
+			if ( is_string( $chunk ) ) {
+				$chunk = json_decode( stripslashes( $chunk ), true );
+			}
+			if ( is_array( $chunk ) ) {
+				if ( ! isset( $chunk['layerId'] ) ) {
+					$chunk['layerId'] = (int) $layer_id;
+				}
+				return $chunk;
+			}
+		}
+		$content = $this->get( 'content', $product_id );
+		if ( ! is_array( $content ) ) {
+			return false;
+		}
+		foreach ( $content as $item ) {
+			if ( isset( $item['layerId'] ) && (int) $item['layerId'] === (int) $layer_id ) {
+				return $item;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Set content for a single layer (one chunk write).
+	 *
+	 * @param int   $product_id
+	 * @param int   $layer_id
+	 * @param array $layer_content { layerId, choices }
+	 * @return bool
+	 */
+	public function set_content_layer( $product_id, $layer_id, $layer_content ) {
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+		if ( ! isset( $layer_content['layerId'] ) ) {
+			$layer_content['layerId'] = (int) $layer_id;
+		}
+		$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $layer_content );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_content_' . $layer_id );
+		do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_last_updated' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $product_id, 'mkl_pc' );
+		do_action( 'mkl_pc_saved_product_configuration_content', $product_id, array( $layer_content ) );
+		do_action( 'mkl_pc_saved_product_configuration', $product_id );
+		return true;
+	}
+
+	/**
 	 * Update a choice
 	 *
 	 * @param int   $product_id
@@ -217,19 +700,19 @@ class DB {
 
 		if ( ! $product_id ) return false;
 
-		$content = $this->get( 'content', $product_id );
+		$layer_content = $this->get_content_layer( $product_id, $layer_id );
 
-		if ( empty( $content ) ) return false;
+		if ( empty( $layer_content ) || ! isset( $layer_content['choices'] ) || ! is_array( $layer_content['choices'] ) ) {
+			return false;
+		}
 
-		foreach( $content as $index => $layer ) {
-			if ( $layer_id !== $layer[ 'layerId' ] ) continue;
-			foreach( $layer['choices'] as $choice_index => $choice ) {
-				if ( $choice_id !== $choice[ '_id' ] ) continue;
-				$choice = wp_parse_args( $data, $choice );
-				$content[$index]['choices'][$choice_index] = $choice;
-				$this->set( $product_id, $product_id, 'content', $content, [ $layer_id . '_' . $choice_id ] );
-				return true;
+		foreach ( $layer_content['choices'] as $choice_index => $choice ) {
+			if ( (int) $choice_id !== (int) ( isset( $choice['_id'] ) ? $choice['_id'] : 0 ) ) {
+				continue;
 			}
+			$layer_content['choices'][ $choice_index ] = wp_parse_args( $data, $choice );
+			$this->set_content_layer( $product_id, $layer_id, $layer_content );
+			return true;
 		}
 		return false;
 	}
@@ -798,72 +1281,104 @@ class DB {
 	}
 
 	/**
-	 * Scan and fix images
+	 * Scan and fix images (per-layer chunks for content and layers).
 	 */
 	public function scan_product_images( $product_id ) {
-		// UPDATE the content
-		$content = $this->get( 'content', $product_id );
-		if ( is_array( $content ) ) {
-			foreach( $content as $key => $item ) {
-				if ( is_array( $item[ 'choices' ] ) ) {
-					foreach( $item[ 'choices' ] as $choice_key => $choice ) {
-						if ( isset( $choice[ 'images' ] ) && is_array( $choice[ 'images' ] ) ) {
-							foreach( $choice[ 'images' ] as $ik => $image ) {
-								if ( isset( $image[ 'image' ] ) && $image[ 'image' ]['url'] ) {
-									$new_image_id = $this->_find_image_id( $image[ 'image' ]['url'], $image[ 'image' ]['id'] );
-									$new_url = wp_get_attachment_url( $new_image_id );
-									if ( $new_image_id && $new_image_id != $image[ 'image' ]['id'] || $new_url != $image[ 'image' ]['url'] ) {
-										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'id' ] = $new_image_id;
-										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_image_id );
-									}
-								}
-								if ( isset( $image[ 'thumbnail' ] ) && $image[ 'thumbnail' ]['url'] ) { 									
-									$new_thumbnail_id = $this->_find_image_id( $image[ 'thumbnail' ]['url'], $image[ 'thumbnail' ]['id'] );
-									if ( $new_thumbnail_id && $new_thumbnail_id != $image[ 'thumbnail' ]['id'] ) {
-										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'thumbnail' ][ 'id' ] = $new_thumbnail_id;
-										$content[ $key ][ 'choices' ][ $choice_key ][ 'images' ][ $ik ][ 'thumbnail' ][ 'url' ] = wp_get_attachment_url( $new_thumbnail_id );
-									}
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return $this->changed_items_count;
+		}
 
-								}
-							}
-							
+		$index = $this->get_layers_index( $product_id );
+		if ( false === $index || ! is_array( $index ) ) {
+			$layers = $this->get( 'layers', $product_id );
+			$index = is_array( $layers ) ? array_filter( array_map( function ( $l ) {
+				return isset( $l['_id'] ) ? (int) $l['_id'] : null;
+			}, $layers ) ) : array();
+		}
+
+		// Update content per layer chunk
+		foreach ( $index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+			$item = $this->get_content_layer( $product_id, $layer_id );
+			if ( empty( $item ) || ! is_array( $item['choices'] ) ) continue;
+			$changed = false;
+			foreach ( $item['choices'] as $choice_key => $choice ) {
+				if ( ! isset( $choice['images'] ) || ! is_array( $choice['images'] ) ) continue;
+				foreach ( $choice['images'] as $ik => $image ) {
+					if ( isset( $image['image'] ) && ! empty( $image['image']['url'] ) ) {
+						$new_image_id = $this->_find_image_id( $image['image']['url'], isset( $image['image']['id'] ) ? $image['image']['id'] : 0 );
+						$new_url = wp_get_attachment_url( $new_image_id );
+						if ( $new_image_id && ( ! isset( $image['image']['id'] ) || $new_image_id != $image['image']['id'] ) || $new_url != $image['image']['url'] ) {
+							$item['choices'][ $choice_key ]['images'][ $ik ]['image']['id'] = $new_image_id;
+							$item['choices'][ $choice_key ]['images'][ $ik ]['image']['url'] = $new_url;
+							$changed = true;
+						}
+					}
+					if ( isset( $image['thumbnail'] ) && ! empty( $image['thumbnail']['url'] ) ) {
+						$new_thumbnail_id = $this->_find_image_id( $image['thumbnail']['url'], isset( $image['thumbnail']['id'] ) ? $image['thumbnail']['id'] : 0 );
+						if ( $new_thumbnail_id && ( ! isset( $image['thumbnail']['id'] ) || $new_thumbnail_id != $image['thumbnail']['id'] ) ) {
+							$item['choices'][ $choice_key ]['images'][ $ik ]['thumbnail']['id'] = $new_thumbnail_id;
+							$item['choices'][ $choice_key ]['images'][ $ik ]['thumbnail']['url'] = wp_get_attachment_url( $new_thumbnail_id );
+							$changed = true;
 						}
 					}
 				}
 			}
+			if ( $changed ) {
+				$this->set_content_layer( $product_id, $layer_id, $item );
+			}
 		}
-		$this->set( $product_id, $product_id, 'content', $content );
 
-		// Update the angles
+		// Update angles (single meta)
 		$angles = $this->get( 'angles', $product_id );
 		if ( is_array( $angles ) ) {
-			foreach( $angles as $key => $angle ) {
-				if ( isset( $angle[ 'image' ] ) && $angle[ 'image' ]['url'] ) {
-					$new_angle_id = $this->_find_image_id( $angle[ 'image' ]['url'], $angle[ 'image' ]['id'] );
-					if ( $new_angle_id && $new_angle_id != $angle[ 'image' ]['id'] ) {
-						$angles[ $key ][ 'image' ][ 'id' ] = $new_angle_id;
-						$angles[ $key ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_angle_id );
+			foreach ( $angles as $key => $angle ) {
+				if ( isset( $angle['image'] ) && ! empty( $angle['image']['url'] ) ) {
+					$new_angle_id = $this->_find_image_id( $angle['image']['url'], isset( $angle['image']['id'] ) ? $angle['image']['id'] : 0 );
+					if ( $new_angle_id && ( ! isset( $angle['image']['id'] ) || $new_angle_id != $angle['image']['id'] ) ) {
+						$angles[ $key ]['image']['id'] = $new_angle_id;
+						$angles[ $key ]['image']['url'] = wp_get_attachment_url( $new_angle_id );
 					}
 				}
 			}
+			$this->set( $product_id, $product_id, 'angles', $angles );
 		}
 
-		$this->set( $product_id, $product_id, 'angles', $angles );
-		
-		// Update the layers
-		$layers = $this->get( 'layers', $product_id );
-		if ( is_array( $layers ) ) {
-			foreach( $layers as $key => $layer ) {
-				if ( isset( $layer[ 'image' ] ) && $layer[ 'image' ]['url'] ) {
-					$new_layer_id = $this->_find_image_id( $layer[ 'image' ]['url'], $layer[ 'image' ]['id'] );
-					if ( $new_layer_id && $new_layer_id != $layer[ 'image' ]['id'] ) {
-						$layers[ $key ][ 'image' ][ 'id' ] = $new_layer_id;
-						$layers[ $key ][ 'image' ][ 'url' ] = wp_get_attachment_url( $new_layer_id );
+		// Update layers per chunk
+		foreach ( $index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+			$chunk = $product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
+			if ( '' === $chunk ) {
+				$layers = $this->get( 'layers', $product_id );
+				if ( is_array( $layers ) ) {
+					foreach ( $layers as $layer ) {
+						if ( isset( $layer['_id'] ) && (int) $layer['_id'] === $layer_id ) {
+							$chunk = $layer;
+							break;
+						}
 					}
+				}
+			} else {
+				$chunk = maybe_unserialize( $chunk );
+				if ( is_string( $chunk ) ) {
+					$chunk = json_decode( stripslashes( $chunk ), true );
+				}
+			}
+			if ( empty( $chunk ) || ! is_array( $chunk ) ) continue;
+			if ( isset( $chunk['image'] ) && ! empty( $chunk['image']['url'] ) ) {
+				$new_layer_id = $this->_find_image_id( $chunk['image']['url'], isset( $chunk['image']['id'] ) ? $chunk['image']['id'] : 0 );
+				if ( $new_layer_id && ( ! isset( $chunk['image']['id'] ) || $new_layer_id != $chunk['image']['id'] ) ) {
+					$chunk['image']['id'] = $new_layer_id;
+					$chunk['image']['url'] = wp_get_attachment_url( $new_layer_id );
+					$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $chunk );
+					$product->save();
+					do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_layer_' . $layer_id );
 				}
 			}
 		}
-		$this->set( $product_id, $product_id, 'layers', $layers );
 
 		return $this->changed_items_count;
 	}

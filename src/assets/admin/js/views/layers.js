@@ -74,13 +74,23 @@ TODO:
 			this.add_all(); 
 			return this;
 		},
-		mark_collection_as_modified: function() {
+		mark_collection_as_modified: function( model ) {
 			PC.app.is_modified[this.collectionName] = true;
+			if ( this.collectionName === 'layers' && model ) {
+				var id = model.get && model.get( '_id' ) || model.id;
+				if ( id ) PC.app.modified_layer_ids[ id ] = true;
+			}
 		},
-		removed_model: function( m ){
-			// remove 
+		removed_model: function( m ) {
+			if ( this.collectionName === 'layers' && m ) {
+				var id = m.get && m.get( '_id' ) || m.id;
+				if ( id ) {
+					PC.app.deleted_layer_ids = PC.app.deleted_layer_ids || [];
+					PC.app.deleted_layer_ids.push( id );
+				}
+			}
 			this.admin.remove_relationships( this.collectionName, m );
-			this.mark_collection_as_modified();
+			this.mark_collection_as_modified( m );
 		},
 		change_order_type: function( e ) {
 			var $e = $( e.currentTarget );
@@ -277,11 +287,17 @@ TODO:
 		// formTemplate: wp.template('mkl-pc-structure-layer-form'),
 
 		initialize: function( options ) {
-			this.options = options || {}; 
-			this.form_target = options.form_target; 
-			this.listenTo( this.model, 'change:active', this.activate ); 
+			this.options = options || {};
+			this.form_target = options.form_target;
+			this.listenTo( this.model, 'change:active', this.activate );
 			this.listenTo( this.model, 'change:name change:admin_label change:image', this.update_label );
-			this.listenTo( this.model, 'destroy', this.remove ); 
+			this.listenTo( this.model, 'change', this.mark_layer_modified );
+			this.listenTo( this.model, 'destroy', this.remove );
+		},
+		mark_layer_modified: function() {
+			var id = this.model.get( '_id' );
+			if ( id ) PC.app.modified_layer_ids[ id ] = true;
+			PC.app.is_modified.layers = true;
 		},
 		events: {
 			'click > button' : 'edit',
@@ -393,11 +409,22 @@ TODO:
 		update_sort: function( e ) {
 			e.stopPropagation();
 			this.model.set( this.model.collection.orderBy, $( e.currentTarget ).index() );
+			this.mark_layers_modified_for_order();
 		},
 		update_order: function( event, index, parent ) {
 			event.stopPropagation();
 			if ( parent && parent == this.model.id ) return;
 			this.model.set( { order: index, parent: parent } );
+			this.mark_layers_modified_for_order();
+		},
+		mark_layers_modified_for_order: function() {
+			PC.app.is_modified.layers = true;
+			if ( this.model.collection ) {
+				this.model.collection.each( function( m ) {
+					var id = m.get( '_id' );
+					if ( id ) PC.app.modified_layer_ids[ id ] = true;
+				} );
+			}
 		},
 		
 	});
