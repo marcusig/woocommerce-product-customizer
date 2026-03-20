@@ -256,6 +256,25 @@ PC.fe.views.configurator = Backbone.View.extend({
 	handle_modal_keydown: function( event ) {
 		if ( PC.fe.inline || ! this.$el.is( ':visible' ) ) return;
 		if ( 'Escape' === event.key ) {
+			if ( $( 'body' ).hasClass( 'mkl-pc-showing-advanced-description' ) || $( '.mkl-pc-advanced-description--container' ).length ) {
+				return;
+			}
+			var $activeLayer = this.$main_window.find( '.layers .layers-list-item.active:visible:not(.hide_in_configurator)' ).first();
+			if ( $activeLayer.length ) {
+				var activeLayerView = $activeLayer.data( 'view' );
+				if ( activeLayerView && activeLayerView.choices_location && 'in' !== activeLayerView.choices_location ) {
+					var $focusTarget = activeLayerView.$( '> button.layer-item:visible:not(:disabled)' ).first();
+					if ( ! $focusTarget.length ) {
+						$focusTarget = this.$main_window;
+					}
+					activeLayerView.show_choices( null );
+					event.preventDefault();
+					setTimeout( function() {
+						$focusTarget.trigger( 'focus' );
+					}, 0 );
+					return;
+				}
+			}
 			event.preventDefault();
 			this.close();
 			return;
