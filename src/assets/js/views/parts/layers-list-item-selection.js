@@ -63,8 +63,18 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 			}.bind( this ) );
 		}
 
-		this.$el.html( choices_names.join( ', ' ) );
+		var visible_value = choices_names.join( ', ' );
+		var selected_prefix = PC_config.lang.selected_prefix || 'Selected: %s';
+		var selected_none = PC_config.lang.selected_none || 'Selected: none';
+		var sr_value = choices_names.length ? selected_prefix.replace( '%s', visible_value ) : selected_none;
+		this.$el.text( visible_value );
+		this.$el.attr( 'aria-label', sr_value );
 		wp.hooks.doAction( 'PC.fe.set.selected_choice', choices_names, this );
+		if ( PC.fe.announce && this.model.get( 'active' ) ) {
+			var layer_name = this.model.get( 'name' ) || '';
+			var message = choices_names.length ? layer_name + '. ' + selected_prefix.replace( '%s', visible_value ) : layer_name + '. ' + selected_none;
+			PC.fe.announce( message );
+		}
 	},
 	should_display: function( model ) {
 		if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.item_is_hidden && PC.conditionalLogic.item_is_hidden( model ) ) return false;

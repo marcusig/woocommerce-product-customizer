@@ -20,6 +20,7 @@ PC.fe.views.choice = Backbone.View.extend({
 		'mouseenter > .choice-item': 'preload_image',
 		'focus > .choice-item': 'preload_image',
 		'click > button.choice-group-label': 'toggle_group',
+		'keydown > button.choice-group-label': 'toggle_group_with_keyboard',
 	},
 	render: function() {
 		/**
@@ -34,6 +35,7 @@ PC.fe.views.choice = Backbone.View.extend({
 		
 		// Render the template
 		this.$el.html( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.template_choice_data', data ) ) );
+		this.$( '> .choice-item' ).attr( 'aria-disabled', data.disable_selection ? 'true' : 'false' );
 
 		wp.hooks.doAction( 'PC.fe.configurator.choice-item.render.after-template', this );
 
@@ -117,6 +119,11 @@ PC.fe.views.choice = Backbone.View.extend({
 		if ( this.model.get( 'is_group' ) ) return;
 
 		if ( event.type == 'keydown' ) {
+			if ( event.keyCode >= 37 && event.keyCode <= 40 ) {
+				event.preventDefault();
+				this.navigate_choices( event.keyCode );
+				return;
+			}
 			if ( ! ( event.keyCode == 13 || event.keyCode == 32 ) ) {
 				return;
 			}
@@ -158,6 +165,10 @@ PC.fe.views.choice = Backbone.View.extend({
 
 
 		PC.fe.last_clicked = this;
+		if ( PC.fe.announce ) {
+			var announce_text = this.model.get_name() || this.model.get( 'name' ) || '';
+			if ( announce_text ) PC.fe.announce( announce_text );
+		}
 		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 	},
 	preload_image: function() {
@@ -169,18 +180,59 @@ PC.fe.views.choice = Backbone.View.extend({
 		// img.src = src;
 	},
 	activate: function() {
+		this.set_choice_a11y_attrs();
 		if( this.model.get('active') === true ) {
 			this.$el.addClass( 'active' );
-			this.$( '> button.choice-item' ).attr( 'aria-pressed', 'true' );
+			this.$( '> button.choice-item' ).attr( 'aria-checked', 'true' );
 			wp.hooks.doAction( 'PC.fe.choice.activate', this );
 		} else {
 			this.$el.removeClass( 'active' );
-			this.$( '> button.choice-item' ).attr( 'aria-pressed', 'false' );
+			this.$( '> button.choice-item' ).attr( 'aria-checked', 'false' );
 			wp.hooks.doAction( 'PC.fe.choice.deactivate', this );
 		}
 	},
 	toggle_group: function() {
 		this.$el.toggleClass( 'show-group-content' );
+		this.$( '> .choice-group-label' ).attr( 'aria-expanded', this.$el.is( '.show-group-content' ) ? 'true' : 'false' );
+	},
+	toggle_group_with_keyboard: function( event ) {
+		if ( ! ( event.keyCode === 13 || event.keyCode === 32 ) ) return;
+		event.preventDefault();
+		this.toggle_group();
+	},
+	get_layer_type: function() {
+		if ( this.model.collection && this.model.collection.layer ) {
+			return this.model.collection.layer.get( 'type' ) || 'simple';
+		}
+		return 'simple';
+	},
+	set_choice_a11y_attrs: function() {
+		var $choice_item = this.$( '> button.choice-item' );
+		if ( ! $choice_item.length ) return;
+		var role = 'multiple' === this.get_layer_type() ? 'checkbox' : 'radio';
+		$choice_item.attr( 'role', role );
+	},
+	navigate_choices: function( key_code ) {
+		if ( ! this.options.parent || ! this.options.parent.$list ) return;
+		var $items = this.options.parent.$list.find( '> li:not(.is-group) > .choice-item:visible:not(:disabled)' );
+		if ( ! $items.length ) return;
+		var current_index = $items.index( this.$( '> .choice-item' ) );
+		if ( -1 === current_index ) return;
+		var direction = ( key_code === 37 || key_code === 38 ) ? -1 : 1;
+		var next_index = ( current_index + direction + $items.length ) % $items.length;
+		var $next = $items.eq( next_index );
+		if ( ! $next.length ) return;
+		$next.trigger( 'focus' );
+
+		if ( 'multiple' !== this.get_layer_type() ) {
+			var next_view = $next.closest( 'li.choice' ).data( 'view' );
+			if ( next_view && next_view.model ) {
+				next_view.model.collection.selectChoice( next_view.model.id, true );
+				if ( PC.fe.announce ) {
+					PC.fe.announce( next_view.model.get_name() );
+				}
+			}
+		}
 	}
 });
 

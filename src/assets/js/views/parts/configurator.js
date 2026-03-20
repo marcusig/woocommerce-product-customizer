@@ -29,6 +29,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 		'content-is-loaded': 'start',
 		'click .close-mkl-pc': 'close',
 	},
+	focusable_selector: 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
 	render: function() {
 		if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
 			$(PC.fe.inlineTarget).empty().append(this.$el);
@@ -47,8 +48,32 @@ PC.fe.views.configurator = Backbone.View.extend({
 		this.$el.append( this.template( { bg_image: wp.hooks.applyFilters( 'PC.fe.config.bg_image', PC.fe.config.bg_image, this ) } ) ); 
 		this.$main_window = this.$el.find( '.mkl_pc_container' );
 
-		if ( !PC.fe.inline ) {
-			this.$main_window.attr( 'aria-modal', 'true' );
+		if ( ! PC.fe.inline ) {
+			this.$main_window.attr( {
+				role: 'dialog',
+				'aria-modal': 'true'
+			} );
+			this.$main_window.removeAttr( 'aria-label' );
+		} else {
+			this.$main_window.attr( {
+				role: 'region',
+				'aria-label': 'Product configurator'
+			} );
+			this.$main_window.removeAttr( 'aria-modal aria-labelledby' );
+		}
+		if ( ! this.$main_window.find( '.mkl-pc-live-region' ).length ) {
+			this.$main_window.append( '<div class="mkl-pc-live-region screen-reader-text" aria-live="polite" aria-atomic="true"></div>' );
+		}
+		if ( ! PC.fe.announce ) {
+			PC.fe.announce = function( message ) {
+				if ( ! message ) return;
+				var $region = $( '.mkl-pc-live-region' ).first();
+				if ( ! $region.length ) return;
+				$region.text( '' );
+				setTimeout( function() {
+					$region.text( message );
+				}, 15 );
+			};
 		}
 
 		return this.$el; 
@@ -58,14 +83,15 @@ PC.fe.views.configurator = Backbone.View.extend({
 
 		setTimeout( _.bind( this.$el.addClass, this.$el, 'opened' ), 10 );
 
+		this.previously_focused_el = document.activeElement;
+		this.trigger_el = PC.fe.trigger_el;
+
 		// Set focus on the first layer
 		if ( ! PC.fe.inline ) {
-			setTimeout( function() {
-				this.$el.find('.layers .layer-item').first().trigger( 'focus' );
-			}.bind(this), 300);
+			$( document ).on( 'keydown.mkl-pc-modal', this.handle_modal_keydown.bind( this ) );
+			this.apply_initial_focus();
+			setTimeout( this.apply_initial_focus.bind( this ), 300 );
 		}
-		// A11y: set focus to the modal when opening it
-		if ( !PC.fe.inline ) this.$main_window.trigger( 'focus' );
 		wp.hooks.doAction( 'PC.fe.open', this ); 
 	},
 	close: function() {
@@ -76,10 +102,12 @@ PC.fe.views.configurator = Backbone.View.extend({
 
 		// Empty the form fields to prevent adding the configuration to the cart by mistake (only if the configurator doesn't automatically close, as that would empty the field)
 		if ( ! PC.fe.config.close_configurator_on_add_to_cart ) $( 'input[name=pc_configurator_data]' ).val( '' );
+		$( document ).off( 'keydown.mkl-pc-modal' );
 
 		wp.hooks.doAction( 'PC.fe.close', this ); 
 
 		setTimeout( _.bind( this.$el.hide, this.$el ), 500 );
+		if ( ! PC.fe.inline ) this.restore_focus();
 	},
 
 	start: function( e, arg ) {
@@ -113,6 +141,8 @@ PC.fe.views.configurator = Backbone.View.extend({
 			this.$main_window.append( this.toolbar.render() ); 
 			this.$main_window.append( this.footer.render() );
 		}
+
+		this.refresh_main_window_accessibility();
 
 		// this.summary = new PC.fe.views.summary();
 		// this.$main_window.append( this.summary.$el );
@@ -159,6 +189,89 @@ PC.fe.views.configurator = Backbone.View.extend({
 
 		// Trigger an action after reseting
 		wp.hooks.doAction( 'PC.fe.reset_configurator' );
+	},
+	refresh_main_window_accessibility: function() {
+		if ( ! this.$main_window || ! this.$main_window.length ) return;
+		var $label = this.$el.find( '.mkl_pc_toolbar header .product-name, .product-name' ).first();
+		if ( ! $label.length ) return;
+		if ( ! $label.attr( 'id' ) ) {
+			$label.attr( 'id', 'mkl-pc-dialog-title-' + this.product_id );
+		}
+		this.$main_window.attr( 'aria-labelledby', $label.attr( 'id' ) );
+		if ( ! PC.fe.inline ) this.$main_window.removeAttr( 'aria-label' );
+	},
+	restore_focus: function() {
+		if ( this.trigger_el && $( this.trigger_el ).length ) {
+			$( this.trigger_el ).trigger( 'focus' );
+			return;
+		}
+		if ( this.previously_focused_el && document.contains( this.previously_focused_el ) ) {
+			this.previously_focused_el.focus();
+		}
+	},
+	get_initial_focus_target: function() {
+		var $scope = this.$main_window && this.$main_window.length ? this.$main_window : this.$el;
+		if ( ! $scope || ! $scope.length ) return $();
+
+		var $first_visible_layer = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator)' ).first();
+		if ( $first_visible_layer.length ) {
+			var $first_layer_button = $first_visible_layer.find( '> button.layer-item:visible:not(:disabled)' ).first();
+			if ( $first_layer_button.length ) return $first_layer_button;
+
+			var first_layer_id = $first_visible_layer.attr( 'data-layer' );
+			if ( first_layer_id ) {
+				var $first_layer_choice = $scope.find( '#mkl-pc-layer-choices-' + first_layer_id + ' .choice-item:visible:not(:disabled)' ).filter( function() {
+					return 'true' !== $( this ).attr( 'aria-disabled' );
+				} ).first();
+				if ( $first_layer_choice.length ) return $first_layer_choice;
+			}
+
+			var $nested_layer_button = $first_visible_layer.find( 'button.layer-item:visible:not(:disabled)' ).first();
+			if ( $nested_layer_button.length ) return $nested_layer_button;
+		}
+
+		var $layer_button = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator) > button.layer-item:visible:not(:disabled)' ).first();
+		if ( $layer_button.length ) return $layer_button;
+
+		var $choice_button = $scope.find( '.layer_choices:visible .choice-item:visible:not(:disabled)' ).filter( function() {
+			return 'true' !== $( this ).attr( 'aria-disabled' );
+		} ).first();
+		if ( $choice_button.length ) return $choice_button;
+
+		var $focusable = $scope.find( this.focusable_selector ).filter( ':visible' ).filter( function() {
+			if ( $( this ).is( ':disabled' ) ) return false;
+			return 'true' !== $( this ).attr( 'aria-disabled' );
+		} );
+		if ( $focusable.length ) return $focusable.first();
+
+		return this.$main_window && this.$main_window.length ? this.$main_window : $();
+	},
+	apply_initial_focus: function() {
+		if ( PC.fe.inline ) return;
+		var $target = this.get_initial_focus_target();
+		if ( $target && $target.length ) {
+			$target.trigger( 'focus' );
+		}
+	},
+	handle_modal_keydown: function( event ) {
+		if ( PC.fe.inline || ! this.$el.is( ':visible' ) ) return;
+		if ( 'Escape' === event.key ) {
+			event.preventDefault();
+			this.close();
+			return;
+		}
+		if ( 'Tab' !== event.key ) return;
+		var $focusable = this.$main_window.find( this.focusable_selector ).filter( ':visible' );
+		if ( ! $focusable.length ) return;
+		var first = $focusable[0];
+		var last = $focusable[ $focusable.length - 1 ];
+		if ( event.shiftKey && document.activeElement === first ) {
+			event.preventDefault();
+			last.focus();
+		} else if ( ! event.shiftKey && document.activeElement === last ) {
+			event.preventDefault();
+			first.focus();
+		}
 	}
 });
 

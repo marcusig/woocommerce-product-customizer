@@ -49,11 +49,19 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 		this.$el.append( this.template( wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', data ) ) ); 
 
-		this.$el.attr( 'aria-describedby', 'config-layer-' + this.model.id );
+		var layer_name_id = 'config-layer-name-' + this.model.id;
+		this.$( '.layer-item .layer-name' ).first().attr( 'id', layer_name_id );
+		this.$( '> button.layer-item' ).attr( {
+			'aria-labelledby': layer_name_id,
+			'aria-expanded': 'false'
+		} );
 
 		if ( PC.fe.config.show_active_choice_in_layer && ! this.model.get( 'is_step' ) ) {
 			var selection = new PC.fe.views.layers_list_item_selection( { model: this.options.model } );
 			this.$( '.layer-item .layer-name' ).after( selection.$el );
+			var selected_choice_id = 'config-layer-selected-' + this.model.id;
+			selection.$el.attr( 'id', selected_choice_id );
+			this.$( '> button.layer-item' ).attr( 'aria-describedby', selected_choice_id );
 		}
 
 		// Add classes
@@ -77,6 +85,8 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			this.$( '.layer-name' ).prependTo( this.$el );
 		}
 
+		this.set_accessibility_context();
+
 		wp.hooks.doAction( 'PC.fe.layer.beforeRenderChoices', this );
 		// Add the choices
 		this.add_choices(); 
@@ -85,6 +95,19 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		// Add display-mode class to the choices element
 		if ( this.choices && this.choices.$el && this.model.get( 'display_mode' ) ) this.choices.$el.addClass( 'display-mode-' + this.model.get( 'display_mode' ) );
 		return this.$el;
+	},
+	set_accessibility_context: function() {
+		var $layer_button = this.$( '> button.layer-item' );
+		if ( ! $layer_button.length ) return;
+		var layer_name_id = 'config-layer-name-' + this.model.id;
+		var label_ids = [ layer_name_id ];
+		if ( this.model.get( 'parent' ) ) {
+			var parent_id = 'config-layer-' + this.model.get( 'parent' );
+			if ( this.$el.closest( '.mkl_pc' ).find( '#' + parent_id ).length ) {
+				label_ids.unshift( parent_id );
+			}
+		}
+		$layer_button.attr( 'aria-labelledby', label_ids.join( ' ' ) );
 	},
 	add_choices: function() {
 
@@ -110,6 +133,8 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		}
 
 		where = wp.hooks.applyFilters( 'PC.fe.choices.where', where, this );
+		
+
 		if( ! where || 'out' == where ) {
 			this.options.parent.after( this.choices.$el );
 		} else if( 'in' == where ) {
@@ -117,7 +142,13 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 		} else if ( $( where ).length ) {
 			this.choices.$el.appendTo( $( where ) )
 		}
+		
+		this.choices_location = where;
+
 		wp.hooks.doAction( 'PC.fe.add.choices', this.choices.$el, this );
+		var layer_id = 'mkl-pc-layer-choices-' + this.model.id;
+		this.choices.$el.attr( 'id', layer_id );
+		this.$( '> button.layer-item' ).attr( 'aria-controls', layer_id );
 	},
 	on_click_layer( event ) {
 		if ( event ) {
@@ -169,8 +200,16 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				$( document ).on( 'click.mkl-pc', this.dropdown_click_outside.bind( this ) );
 			}
 
+			
 			this.model.set( 'active', true );
 
+			// // If the choices are not in the layer, focus the first choice
+			// console.log( this.choices_location );
+			
+			// if ( this.choices_location !== 'in' ) {
+			// 	this.choices.$( '.choice-item:visible' ).first().trigger( 'focus' );
+			// }
+			
 			PC.fe.current_layer = this.model;
 			wp.hooks.doAction( 'PC.fe.layer.show', this );
 		}
@@ -186,15 +225,19 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			this.$el.addClass( 'active' ); 
 			if ( this.choices ) {
 				this.choices.$el.addClass( 'active' );
-				this.choices.$( 'button:visible' ).first().trigger( 'focus' );
+				
+				setTimeout( () => {
+					this.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
+				}, 50 );
+
 			}
-			this.$( '> button.layer-item' ).attr( 'aria-pressed', 'true' );
+			this.$( '> button.layer-item' ).attr( 'aria-expanded', 'true' );
 			wp.hooks.doAction( 'PC.fe.layer.activate', this );
 		} else {
 			this.$el.removeClass( 'active' );
 			if ( this.choices ) this.choices.$el.removeClass( 'active' );
 			$( document ).off( 'click.mkl-pc' );
-			this.$( '> button.layer-item' ).attr( 'aria-pressed', 'false' );
+			this.$( '> button.layer-item' ).attr( 'aria-expanded', 'false' );
 			wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 		}
 	},

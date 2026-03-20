@@ -20,9 +20,9 @@
 	var use_button = ( PC_config.config.choice_groups_toggle && 'inherit' === data.choice_groups_toggle ) || 'enabled' === data.choice_groups_toggle;
 	
 	if ( use_button ) { #>
-		<button class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}">
+		<button class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}" aria-expanded="false">
 	<# } else { #>	
-		<div class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}">
+		<div class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}" role="button" tabindex="0" aria-expanded="false">
 	<# } #>
 			<?php do_action( 'tmpl-pc-configurator-choice-item' ); ?>
 			<?php do_action( 'tmpl-pc-configurator-choice-item--after' ); ?>

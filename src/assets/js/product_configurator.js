@@ -47,11 +47,11 @@ PC.actionParameter = 'pc_get_data';
 			}
 		} );
 
-		$( 'body' ).on( 'click', function( e ) {
-			if ( ! $( this ).hasClass( 'keyboard-navigation' ) ) return;
+		$( 'body' ).on( 'pointerdown mousedown touchstart', function() {
+			if ( !$( this ).hasClass( 'keyboard-navigation' ) ) return;
 			$( this ).removeClass( 'keyboard-navigation' );
 			PC.fe.keyboard_navigation = false;
-		} );
+		});
 
 		PC.fe.product_type = PC.fe.product_type || 'simple';
 

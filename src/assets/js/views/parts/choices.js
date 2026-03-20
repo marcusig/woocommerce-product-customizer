@@ -21,6 +21,7 @@ PC.fe.views.choices = Backbone.View.extend({
 		if ( this.model.get( 'color_swatch_size' ) ) this.$el.addClass( 'swatches-size--' + this.model.get( 'color_swatch_size' ) );
 
 		this.$list = this.$el.find('.choices-list ul'); 
+		this.set_a11y_attributes();
 		this.add_all( this.options.content ); 
 		
 		if ( this.options.content && ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
@@ -28,6 +29,25 @@ PC.fe.views.choices = Backbone.View.extend({
 			if ( av ) av.set( 'active', true );
 		}
 		return this.$el;
+	},
+	set_a11y_attributes: function() {
+		if ( ! this.$list || ! this.$list.length ) return;
+		var layer_name = this.model.get( 'name' ) || '';
+		var layer_type = this.model.get( 'type' ) || 'simple';
+		var list_id = 'mkl-pc-choice-list-' + this.model.id;
+		this.$list.attr( 'id', list_id );
+
+		if ( 'simple' === layer_type ) {
+			this.$list.attr( {
+				role: 'radiogroup',
+				'aria-label': layer_name
+			} );
+		} else if ( 'multiple' === layer_type ) {
+			this.$list.attr( {
+				role: 'group',
+				'aria-label': layer_name
+			} );
+		}
 	},
 	add_all: function( collection ) { 
 		// this.$el.empty();
@@ -58,5 +78,6 @@ PC.fe.views.choices = Backbone.View.extend({
 	close_choices: function( event ) {
 		event.preventDefault(); 
 		this.model.set('active', false);
+		$( '#config-layer-' + this.model.id ).trigger( 'focus' );
 	}
 });

@@ -179,6 +179,13 @@ button.variations_button.disabled,
     }
 }
 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer-item:focus,
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-item:focus,
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-group-label:focus {
+	outline: 2px solid var(--mkl_pc_color-primary, #1a73e8);
+	outline-offset: 2px;
+}
+
 @import "scss/configure-button-loading"; // button loading
 @import "scss/configuror-loader"; // modal loading - variable products mostly
 @import "scss/add-to-cart-modal";

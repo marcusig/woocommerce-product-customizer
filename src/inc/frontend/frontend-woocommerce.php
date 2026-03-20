@@ -410,6 +410,9 @@ class Frontend_Woocommerce {
 				'money_thousand' => esc_attr( wc_get_price_thousand_separator() ),
 				'money_format' => esc_attr( str_replace( array( '%1$s', '%2$s', '&nbsp;' ), array( '%s', '%v', ' ' ), $money_format ) ),
 				'required_error_message' => __( '%s is required', 'product-configurator-for-woocommerce' ),
+				'selected_prefix' => _x( 'Selected: %s', 'Screen reader text, Selected choices prefix', 'product-configurator-for-woocommerce' ),
+				'selected_none' => _x( 'Selected: none', 'Screen reader text, Selected choices none', 'product-configurator-for-woocommerce' ),
+				'layers_aria_label' => esc_attr_x( 'Select options for the product', 'Aria label of the choices list', 'product-configurator-for-woocommerce' )
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,
