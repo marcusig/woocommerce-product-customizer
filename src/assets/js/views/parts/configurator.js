@@ -253,6 +253,30 @@ PC.fe.views.configurator = Backbone.View.extend({
 			$target.trigger( 'focus' );
 		}
 	},
+	/**
+	 * Visible, enabled focusables (matches get_initial_focus_target filtering).
+	 */
+	filter_modal_focusable: function( $collection ) {
+		return $collection.filter( ':visible' ).filter( function() {
+			if ( $( this ).is( ':disabled' ) ) return false;
+			return 'true' !== $( this ).attr( 'aria-disabled' );
+		} );
+	},
+	/**
+	 * Tab order for drawer-style choices: all focusables inside .choices-list, then .choices-close.
+	 */
+	get_drawer_choices_tab_cycle: function( $layerChoices ) {
+		var $listFocusable = this.filter_modal_focusable( $layerChoices.find( '.choices-list' ).first().find( this.focusable_selector ) );
+		var $close = $layerChoices.find( '.choices-close' ).filter( ':visible' );
+		var cycle = [];
+		$listFocusable.each( function() {
+			cycle.push( this );
+		} );
+		if ( $close.length ) {
+			cycle.push( $close[0] );
+		}
+		return cycle;
+	},
 	handle_modal_keydown: function( event ) {
 		if ( PC.fe.inline || ! this.$el.is( ':visible' ) ) return;
 		if ( 'Escape' === event.key ) {
@@ -280,6 +304,36 @@ PC.fe.views.configurator = Backbone.View.extend({
 			return;
 		}
 		if ( 'Tab' !== event.key ) return;
+
+		var activeEl = document.activeElement;
+		var $layerChoices = $( activeEl ).closest( '.layer_choices.active' );
+		if ( $layerChoices.length ) {
+			var choicesId = $layerChoices.attr( 'id' ) || '';
+			var layerIdMatch = choicesId.match( /^mkl-pc-layer-choices-(.+)$/ );
+			var layerView = null;
+			if ( layerIdMatch ) {
+				var $layerLi = this.$main_window.find( '.layers .layers-list-item[data-layer="' + layerIdMatch[1] + '"]' ).first();
+				layerView = $layerLi.data( 'view' );
+			}
+			if ( layerView && layerView.choices_location && 'in' !== layerView.choices_location ) {
+				var cycle = this.get_drawer_choices_tab_cycle( $layerChoices );
+				if ( cycle.length ) {
+					var idx = cycle.indexOf( activeEl );
+					if ( idx !== -1 ) {
+						event.preventDefault();
+						var next;
+						if ( event.shiftKey ) {
+							next = idx === 0 ? cycle[ cycle.length - 1 ] : cycle[ idx - 1 ];
+						} else {
+							next = idx === cycle.length - 1 ? cycle[0] : cycle[ idx + 1 ];
+						}
+						$( next ).trigger( 'focus' );
+						return;
+					}
+				}
+			}
+		}
+
 		var $focusable = this.$main_window.find( this.focusable_selector ).filter( ':visible' );
 		if ( ! $focusable.length ) return;
 		var first = $focusable[0];

@@ -227,7 +227,11 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				this.choices.$el.addClass( 'active' );
 				
 				setTimeout( () => {
-					this.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
+					if ( this.model.get( 'type') === 'group' && this.choices.$( 'button.layer-item' ).length ) {
+						this.choices.$( 'button.layer-item' ).first().trigger( 'focus' );
+					} else {
+						this.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
+					}
 				}, 50 );
 
 			}

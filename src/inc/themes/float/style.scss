@@ -243,10 +243,6 @@ $inner_space: 1em;
 					padding: 0;
 					top: 30px;
 					left: 30px;
-
-					span {
-						display: none;
-					}
 					&::before,
 					&::after {
 						content:' ';

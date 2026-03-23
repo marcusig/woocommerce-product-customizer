@@ -403,10 +403,12 @@ $inner_space: 1em;
 					background: transparent;
 					border: none;
 					box-shadow: none;
-					width: 20px; height: 20px;
+					width: 40px; 
+					height: 40px;
 					padding: 0;
-					top: 30px;
-					right: 30px;
+					top: 10px;
+					right: 10px;
+					transition: all 0.2s;
 
 					span {
 						display: none;
@@ -419,15 +421,20 @@ $inner_space: 1em;
 						background: #000;
 						position: absolute;
 						top: 50%; 
-						left: 0;
+						left: 50%;
 						transform-origin: 50%;
-						transform: rotate(45deg);
+						transform: translateX(-50%) rotate(45deg);
 						transition: all 0.2s;
 						border-radius: 1px;
 						display: block;
 					}
 					&::after {
-						transform:rotate(-45deg);
+						transform: translateX(-50%) rotate(-45deg);
+					}
+					&:hover,
+					&:focus {
+						cursor: pointer;
+						transform: scale(1.2) rotate(90deg);
 					}
 				}
 				@media( max-width: $medium_screen_width ) {
@@ -459,6 +466,9 @@ $inner_space: 1em;
 						position: absolute;
 						top: 10px; 
 						right: 10px;
+						width: 20px; 
+						height: 20px;
+	
 						&::after, &::before {
 							background: #FFF;
 						}

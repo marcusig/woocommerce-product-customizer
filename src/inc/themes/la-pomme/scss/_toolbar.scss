@@ -28,10 +28,6 @@
 			top: 1.8em;
 			right: 1.4em;
 			z-index: 10;
-
-			span {
-				display: none;
-			}
 			&::before,
 			&::after {
 				content:' ';
