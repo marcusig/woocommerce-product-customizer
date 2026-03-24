@@ -117,9 +117,9 @@ footer {
 		padding-right: 0;
 	}
 
-	a.save-your-design svg path,
+	.save-your-design svg path,
 	.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
-	a.save-your-design--pdf svg path {
+	.save-your-design--pdf svg path {
 		fill: color(primary);
 	}
 }
@@ -166,7 +166,7 @@ footer {
 	}
 }
 
-a.syd-share-close {
+.syd-share-close {
     position: absolute;
     top: -60px;
     width: 40px;

@@ -49,26 +49,35 @@ PC.fe.views.choice = Backbone.View.extend({
 			}
 		}
 
+		var $choiceItem = this.$( '> .choice-item' );
+		var description = this.get_description();
+		this.set_choice_sr_text( description );
+
 		if ( window.tippy ) {
-			
-			var description = this.get_description();
 
 			/**
 			 * Customization of the tooltip can be done by using TippyJS options: atomiks.github.io/tippyjs/v6/
 			 */
 			var tooltip_options = wp.hooks.applyFilters( 'PC.fe.tooltip.options', {
+				interactive: false,
 				content: description,
 				allowHTML: true,
 				placement: 'top',
 				zIndex: 100001,
 				appendTo: 'parent',
+				trigger: 'mouseenter focus',
+				onCreate: function( instance ) {
+					if ( instance && instance.popper ) {
+						instance.popper.setAttribute( 'aria-hidden', 'true' );
+					}
+				},
 			},
 			this );
 
 			tooltip_options = wp.hooks.applyFilters( 'PC.fe.choice.tooltip.options', tooltip_options, this );
 
-			if ( tooltip_options.content && tooltip_options.content.length && this.$( '.choice-item' ).length ) {
-				tippy( this.el, tooltip_options );
+			if ( tooltip_options.content && tooltip_options.content.length && $choiceItem.length ) {
+				tippy( $choiceItem[0], tooltip_options );
 			}
 		}
 
@@ -114,6 +123,18 @@ PC.fe.views.choice = Backbone.View.extend({
 		}
 		// console.log( description );
 		return description;
+	},
+	set_choice_sr_text: function( description ) {
+		var $choice_item = this.$( '> .choice-item' );
+		if ( ! $choice_item.length ) return;
+		var details = '';
+		if ( description ) {
+			details = $( '<div />' ).html( description ).text().replace( /\s+/g, ', ' ).trim();
+		}
+		// var text = details ? ( name ? name + '. ' + details : details ) : name;
+		if ( details ) {
+			$choice_item.attr( 'aria-label', details );
+		}
 	},
 	set_choice: function( event ) {
 		if ( this.model.get( 'is_group' ) ) return;
@@ -214,7 +235,9 @@ PC.fe.views.choice = Backbone.View.extend({
 	},
 	navigate_choices: function( key_code ) {
 		if ( ! this.options.parent || ! this.options.parent.$list ) return;
-		var $items = this.options.parent.$list.find( '> li:not(.is-group) > .choice-item:visible:not(:disabled)' );
+		var $items = this.options.parent.$list.find( '.choice-item:visible:not(:disabled)' ).filter( function() {
+			return 'true' !== $( this ).attr( 'aria-disabled' );
+		} );
 		if ( ! $items.length ) return;
 		var current_index = $items.index( this.$( '> .choice-item' ) );
 		if ( -1 === current_index ) return;

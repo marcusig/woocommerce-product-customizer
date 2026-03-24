@@ -76,10 +76,11 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_fr
 function mkl_pc_frontend_configurator_footer_add_reset_button() {
 	if ( ! ( bool ) mkl_pc( 'settings')->get( 'show_reset_button' ) ) return;
 	$classes = array_merge( apply_filters( 'mkl_pc_reset_button_classes' , [ 'mkl-footer--action-button' ] ), [ 'reset-configuration' ] );
+	$label = mkl_pc( 'settings' )->get_label( 'reset_configuration_label', __( 'Reset configuration', 'product-configurator-for-woocommerce' ) );
 	?>
-		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>">
+		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
 			<?php do_action( 'mkl_pc/reset_button/before_label' ); ?>
-			<span><?php echo mkl_pc( 'settings' )->get_label( 'reset_configuration_label', __( 'Reset configuration', 'product-configurator-for-woocommerce' ) ); ?></span>
+			<span><?php echo $label; ?></span>
 		</button>
 	<?php
 }

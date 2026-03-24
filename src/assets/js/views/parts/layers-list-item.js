@@ -230,7 +230,12 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 					if ( this.model.get( 'type') === 'group' && this.choices.$( 'button.layer-item' ).length ) {
 						this.choices.$( 'button.layer-item' ).first().trigger( 'focus' );
 					} else {
-						this.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
+						var $first_field = this.choices.$( '.inputs input:visible:not(:disabled):not([type="hidden"]), .inputs textarea:visible:not(:disabled), .inputs select:visible:not(:disabled), input.overlay-text-src:visible:not(:disabled), textarea.overlay-text-src:visible:not(:disabled)' ).first();
+						if ( $first_field.length ) {
+							$first_field.trigger( 'focus' );
+						} else {
+							this.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
+						}
 					}
 				}, 50 );
 

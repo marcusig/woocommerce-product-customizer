@@ -32,6 +32,9 @@ form.cart {
 	align-items: center;
 	input.qty {
 		background: #fff;
+		font-size: 1rem;
+		padding: 10px;
+		border-radius: 8px;
 		@media (max-width: $small_screen_width) {
 			border: 2px solid #36383a;
 		}
@@ -85,7 +88,8 @@ del.pc-total--regular-price + span.pc-total-price {
 }
 
 button.configurator-add-to-cart,
-.mkl-pc--steps button {
+.mkl-pc--steps button,
+.pc_configurator_form > button {
 	background: color(primary);
 	border: 1px solid color(primary);
 	color: #FFF;
@@ -94,6 +98,10 @@ button.configurator-add-to-cart,
 	border-radius: 8px;
 	font-weight: 400;
 
+	&:hover {
+		background: color(primary_hover);
+		border-color: color(primary_hover);
+	}
 	// @media (max-width: $small_screen_width) {
 	// 	background: transparent !important;
 	// }
@@ -108,6 +116,7 @@ button.configurator-add-to-cart,
 		}
 	}
 }
+
 
 button.configurator-add-to-cart {
 	svg {

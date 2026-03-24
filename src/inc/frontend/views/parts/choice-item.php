@@ -3,7 +3,7 @@
 	<button
 		type="button"
 		id="choice_{{data.layerId}}_{{data._id}}"
-		<# if ( data.parent ) { #>aria-labelledby="choice_{{data.layerId}}_{{data.parent}}"<# } #>
+		<# if ( data.parent ) { #>aria-describedby="choice_{{data.layerId}}_{{data.parent}}"<# } #>
 		<# if ( data.disable_selection ) { #>disabled<# } #>
 		<?php do_action( 'tmpl-pc-configurator-choice-item-attributes' ); ?>
 	>
@@ -22,7 +22,7 @@
 	if ( use_button ) { #>
 		<button class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}" aria-expanded="false">
 	<# } else { #>	
-		<div class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}" role="button" tabindex="0" aria-expanded="false">
+		<div class="choice-group-label" id="choice_{{data.layerId}}_{{data._id}}">
 	<# } #>
 			<?php do_action( 'tmpl-pc-configurator-choice-item' ); ?>
 			<?php do_action( 'tmpl-pc-configurator-choice-item--after' ); ?>

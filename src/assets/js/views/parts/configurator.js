@@ -280,6 +280,10 @@ PC.fe.views.configurator = Backbone.View.extend({
 	handle_modal_keydown: function( event ) {
 		if ( PC.fe.inline || ! this.$el.is( ':visible' ) ) return;
 		if ( 'Escape' === event.key ) {
+			// Nested SYD/Share modals handle Escape themselves.
+			if ( $( 'body' ).hasClass( 'syd-modal-opened' ) || $( 'body' ).hasClass( 'syd-share-modal-opened' ) ) {
+				return;
+			}
 			if ( $( 'body' ).hasClass( 'mkl-pc-showing-advanced-description' ) || $( '.mkl-pc-advanced-description--container' ).length ) {
 				return;
 			}
