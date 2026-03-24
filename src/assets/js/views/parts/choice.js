@@ -51,7 +51,8 @@ PC.fe.views.choice = Backbone.View.extend({
 
 		var $choiceItem = this.$( '> .choice-item' );
 		var description = this.get_description();
-		this.set_choice_sr_text( description );
+		var description_screen_reader = this.get_description( false );
+		this.set_choice_sr_text( description_screen_reader );
 
 		if ( window.tippy ) {
 
@@ -102,34 +103,43 @@ PC.fe.views.choice = Backbone.View.extend({
 			$ci[0]._tippy.setContent( this.get_description() );
 		}
 	},
-	get_description: function() {
+	get_description: function( html = true) {
+		var description = [];
 		if ( wp.hooks.applyFilters( 'PC.fe.tooltip.add_all_text', 'colors' == this.model.collection.layer.get( 'display_mode' ) && ! this.model.get( 'is_group' ) ) ) {
 			this.update_tippy_on_price_update = true;
-			var description = this.$( '.choice-text' ).length ? this.$( '.choice-text' ).html() : this.$( '.choice-name' ).html();
+			if ( this.$( '.choice-text' ).length ) {
+				description.push( html ? this.$( '.choice-text' ).html() : this.$( '.choice-text' ).text() );
+			} else if ( this.$( '.choice-name' ).length ) {
+				description.push( html ? this.$( '.choice-name' ).html() : this.$( '.choice-name' ).text() );
+			}
 			if ( this.$( '.choice-price' ).length ) {
-				description += this.$( '.choice-price' ).html();
+				description.push( html ? this.$( '.choice-price' ).html() : this.$( '.choice-price' ).text() );
 				this.$( '.choice-price' ).hide();
 			}
 			if ( this.$( '.description' ).length ) {
-				description += this.$( '.description' ).html();
+				description.push( html ? this.$( '.description' ).html() : this.$( '.description' ).text() );
 				this.$( '.description' ).hide();
 			}
 			if ( this.$( '.out-of-stock' ).length ) {
-				description += this.$( '.out-of-stock' )[0].outerHTML;
+				description.push( html ? this.$( '.out-of-stock' )[0].outerHTML : this.$( '.out-of-stock' )[0].outerText );
 				// console.log('get desc', this.model.collection.layer.get( 'name' ), this.model.get( 'name' ), this.$( '.out-of-stock' ).length, this.$( '.out-of-stock' )[0].outerHTML );
 			}
 		} else if ( ! PC.fe.config.choice_description_no_tooltip ) {
-			var description = this.$( '.description' ).html();
+			description.push( html ? this.$( '.description' ).html() : this.$( '.description' ).text() );
 		}
 		// console.log( description );
-		return description;
+		if ( html ) {
+			return description.join( ' ' );
+		} else {
+			return description.join( ', ' );
+		}
 	},
 	set_choice_sr_text: function( description ) {
 		var $choice_item = this.$( '> .choice-item' );
 		if ( ! $choice_item.length ) return;
 		var details = '';
 		if ( description ) {
-			details = $( '<div />' ).html( description ).text().replace( /\s+/g, ', ' ).trim();
+			details = description.replace( /\s+/g, ' ' ).replace( /\s*,\s*/g, ', ' ).trim();
 		}
 		// var text = details ? ( name ? name + '. ' + details : details ) : name;
 		if ( details ) {
@@ -187,8 +197,18 @@ PC.fe.views.choice = Backbone.View.extend({
 
 		PC.fe.last_clicked = this;
 		if ( PC.fe.announce ) {
-			var announce_text = this.model.get_name() || this.model.get( 'name' ) || '';
-			if ( announce_text ) PC.fe.announce( announce_text );
+			var layer_name = layer && layer.get ? ( layer.get( 'name' ) || '' ) : '';
+			var choice_name = this.model.get_name() || this.model.get( 'name' ) || '';
+			var is_multiple = 'multiple' === this.get_layer_type();
+			var is_active = !! this.model.get( 'active' );
+			var action_selected = ( PC_config.lang && PC_config.lang.choice_action_selected ) ? PC_config.lang.choice_action_selected : 'selected';
+			var action_removed = ( PC_config.lang && PC_config.lang.choice_action_removed ) ? PC_config.lang.choice_action_removed : 'removed';
+			var action = is_multiple ? ( is_active ? action_selected : action_removed ) : action_selected;
+			var announce_template = ( PC_config.lang && PC_config.lang.choice_action_announce ) ? PC_config.lang.choice_action_announce : '%s: %s %s';
+			var announce_text = announce_template.replace( '%1$s', layer_name ).replace( '%2$s', action ).replace( '%3$s', choice_name );
+			announce_text = announce_text.replace( '%s', layer_name ).replace( '%s', action ).replace( '%s', choice_name );
+			if ( ! layer_name ) announce_text = ( action + ' ' + choice_name );
+			if ( choice_name ) PC.fe.announce( announce_text );
 		}
 		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 	},
@@ -251,9 +271,6 @@ PC.fe.views.choice = Backbone.View.extend({
 			var next_view = $next.closest( 'li.choice' ).data( 'view' );
 			if ( next_view && next_view.model ) {
 				next_view.model.collection.selectChoice( next_view.model.id, true );
-				if ( PC.fe.announce ) {
-					PC.fe.announce( next_view.model.get_name() );
-				}
 			}
 		}
 	}

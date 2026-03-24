@@ -186,6 +186,23 @@ button.variations_button.disabled,
 	outline-offset: 2px;
 }
 
+.tippy-content span.text,
+.tippy-content span.description,
+.tippy-content span.choice-price {
+	display: block;
+}
+
+.tippy-content span.choice-price {
+	font-size: .8em;
+	opacity: .6;
+}
+
+.tippy-content .out-of-stock {
+	position: relative;
+	display: block;
+}
+
+
 @import "scss/configure-button-loading"; // button loading
 @import "scss/configuror-loader"; // modal loading - variable products mostly
 @import "scss/add-to-cart-modal";

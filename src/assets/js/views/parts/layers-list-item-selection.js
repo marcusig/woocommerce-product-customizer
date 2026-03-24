@@ -2,6 +2,7 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 	tagName: 'span',
 	className: 'selected-choice',
 	initialize: function() {
+		this._last_announced_summary = null;
 		this.choices = PC.fe.getLayerContent( this.model.id );
 		if ( ! this.choices && 'group' !== this.model.get( 'type' ) ) return;
 		this.listenTo( this.model, 'change:cshow', this.render );
@@ -73,7 +74,11 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 		if ( PC.fe.announce && this.model.get( 'active' ) ) {
 			var layer_name = this.model.get( 'name' ) || '';
 			var message = choices_names.length ? layer_name + '. ' + selected_prefix.replace( '%s', visible_value ) : layer_name + '. ' + selected_none;
-			PC.fe.announce( message );
+			// Only announce when the summary changed to avoid duplicate speech for focused content.
+			if ( this._last_announced_summary !== message ) {
+				this._last_announced_summary = message;
+				PC.fe.announce( message );
+			}
 		}
 	},
 	should_display: function( model ) {

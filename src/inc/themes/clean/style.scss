@@ -702,16 +702,6 @@ a.save-your-design--pdf {
     display: none;
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
-    display: block;
-	font-size: 90%;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-}
-
 /* Dropdown mode */
 
 body:not( .is-mobile ) {

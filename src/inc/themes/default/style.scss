@@ -1588,17 +1588,6 @@ body.configurator_is_inline .mkl_pc {
     display: none;
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
-    display: block;
-	text-transform: uppercase;
-	font-size: 80%;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-}
-
 /* Code For Loading Screen */
 
 .mkl-configurator-inline.is-shortcode.configure-product:empty {

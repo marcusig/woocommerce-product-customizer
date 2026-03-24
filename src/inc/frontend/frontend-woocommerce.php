@@ -412,6 +412,9 @@ class Frontend_Woocommerce {
 				'required_error_message' => __( '%s is required', 'product-configurator-for-woocommerce' ),
 				'selected_prefix' => _x( 'Selected: %s', 'Screen reader text, Selected choices prefix', 'product-configurator-for-woocommerce' ),
 				'selected_none' => _x( 'Selected: none', 'Screen reader text, Selected choices none', 'product-configurator-for-woocommerce' ),
+				'choice_action_selected' => _x( 'selected', 'Screen reader text, choice action selected', 'product-configurator-for-woocommerce' ),
+				'choice_action_removed' => _x( 'removed', 'Screen reader text, choice action removed', 'product-configurator-for-woocommerce' ),
+				'choice_action_announce' => _x( '%1$s: %2$s %3$s', 'Screen reader text, choice action announcement template. 1: layer name, 2: action, 3: choice name', 'product-configurator-for-woocommerce' ),
 				'layers_aria_label' => esc_attr_x( 'Select options for the product', 'Aria label of the choices list', 'product-configurator-for-woocommerce' )
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(

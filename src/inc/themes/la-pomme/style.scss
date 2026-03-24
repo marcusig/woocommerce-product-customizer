@@ -404,17 +404,6 @@ body.configurator_is_inline .mkl-pc-preset-container .mkl_pc {
 	border-radius: 12px;
 	padding: 10px;
 }
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
-    display: block;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-
-}
-
-
 /* Elementor fix */
 .woocommerce div.product.elementor .mkl_pc .mkl_pc_container .pc_configurator_form form.cart {
 	display: inline-flex;

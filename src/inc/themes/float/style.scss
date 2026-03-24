@@ -1010,10 +1010,6 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 
 /* END Full screen display mode */ 
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
-    display: block;
-}
-
 .tippy-content .out-of-stock {
 	position: relative;
 	display: block;
@@ -1031,12 +1027,6 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 	padding-top: 6px;
 	padding-bottom: 6px;
 	border-top: 1px solid #ffffff40;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.choices-fullwidth {
