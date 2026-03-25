@@ -64,29 +64,6 @@ PC.fe.views.configurator = Backbone.View.extend({
 		if ( ! this.$main_window.find( '.mkl-pc-live-region' ).length ) {
 			this.$main_window.append( '<div class="mkl-pc-live-region screen-reader-text" aria-live="polite" aria-atomic="true"></div>' );
 		}
-		if ( ! PC.fe.announce ) {
-			PC.fe._announce_state = PC.fe._announce_state || { last_message: '', last_ts: 0 };
-			PC.fe.announce = function( message, options ) {
-				if ( ! message ) return;
-				options = options || {};
-				var dedupe_window = typeof options.dedupe_window === 'number' ? options.dedupe_window : 700;
-				var normalized = String( message ).replace( /\s+/g, ' ' ).trim();
-				if ( ! normalized ) return;
-				var now = Date.now();
-				if ( PC.fe._announce_state.last_message === normalized && ( now - PC.fe._announce_state.last_ts ) < dedupe_window ) {
-					return;
-				}
-				var $region = $( '.mkl-pc-live-region' ).first();
-				if ( ! $region.length ) return;
-				PC.fe._announce_state.last_message = normalized;
-				PC.fe._announce_state.last_ts = now;
-				$region.text( '' );
-				setTimeout( function() {
-					$region.text( normalized );
-				}, 15 );
-			};
-		}
-
 		return this.$el; 
 	},
 	open: function() {

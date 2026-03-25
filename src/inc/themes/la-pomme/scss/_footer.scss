@@ -195,9 +195,10 @@ footer {
 	// }
 
 
-	a.save-your-design svg path,
+	.save-your-design svg path,
 	.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
-	a.save-your-design--pdf svg path {
+	.save-your-design--pdf svg path,
+	.mkl-footer--action-button svg path {
 		fill: color(primary);
 	}
 }

@@ -63,7 +63,7 @@ add_action( 'tmpl-pc-configurator-choice-item-attributes', 'mkl_pc_frontend_conf
  * @return void
  */
 function mkl_pc_frontend_configurator_footer_section_left_inner__product_name() {
-	echo '<h3 class="product-name">{{{data.name}}}</h3>';
+	echo '<h3 class="product-name"><span class="screen-reader-text">' . __( 'Currently configuring product:', 'product-configurator-for-woocommerce' ) . ' </span>{{{data.name}}}</h3>';
 }
 
 add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_frontend_configurator_footer_section_left_inner__product_name', 30 );
@@ -114,7 +114,7 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_
 function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
 	<header aria-labelledby="mkl-pc-product-name-{{data.ID}}">
-		<h3 id="mkl-pc-product-name-{{data.ID}}" class="product-name">{{{data.name}}}</h3>
+		<h3 id="mkl-pc-product-name-{{data.ID}}" class="product-name"><span class="screen-reader-text"><?php _e( 'Currently configuring product:', 'product-configurator-for-woocommerce' ); ?> </span>{{{data.name}}}</h3>
 		<button class="cancel close-mkl-pc" type="button" aria-label="<?php echo esc_attr_x( 'Close the configurator app', 'Aria label of the main configurator close button', 'product-configurator-for-woocommerce' ); ?>"><span><?php _e( 'Cancel' ); ?></span></button>
 	</header>
 <?php

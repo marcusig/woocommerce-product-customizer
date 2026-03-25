@@ -1010,11 +1010,6 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 
 /* END Full screen display mode */ 
 
-.tippy-content .out-of-stock {
-	position: relative;
-	display: block;
-}
-
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li .tippy-content span.out-of-stock {
     position: relative;
     display: block;
@@ -1108,7 +1103,9 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
-a.save-your-design, a.save-your-design--pdf, a.mkl-footer--action-button {
+.save-your-design, 
+.save-your-design--pdf, 
+.mkl-footer--action-button {
 	svg {
 		transform: translateY(0);
 		fill: color(primary);
@@ -1126,7 +1123,7 @@ a.save-your-design, a.save-your-design--pdf, a.mkl-footer--action-button {
 	}
 }
 
-a.save-your-design svg path,
+.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
 .save-your-design--pdf svg path {
     fill: color(primary);
@@ -1142,6 +1139,10 @@ a.save-your-design svg path,
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+    margin: 8px var(--mkl_pc-float-spacing) 0;
 }
 
 @media (max-width: $small_screen_width) {

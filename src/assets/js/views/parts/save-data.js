@@ -146,9 +146,10 @@ PC.fe.save_data = {
 
 					// The item is out of stock, so throw an error
 					if ( false === choice.get( 'available' ) ) {
+						var separator_in = ( PC_config.lang && PC_config.lang.validation_separator_in ) ? PC_config.lang.validation_separator_in : ', ';
 						PC.fe.errors.push( {
 							choice: choice,
-							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + ' > ' + choice.get_name() )
+							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + separator_in + choice.get_name() )
 						} );
 					}
 
@@ -199,9 +200,10 @@ PC.fe.save_data = {
 
 					// The item is out of stock, so throw an error
 					if ( false === choice.get( 'available' ) ) {
+						var separator_in = ( PC_config.lang && PC_config.lang.validation_separator_in ) ? PC_config.lang.validation_separator_in : ', ';
 						PC.fe.errors.push( {
 							choice: choice,
-							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + ' > ' + choice.get_name() )
+							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + separator_in + choice.get_name() )
 						} );
 					}
 				} else if ( is_required ) {

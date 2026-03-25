@@ -1613,6 +1613,12 @@ body.configurator_is_inline .mkl_pc {
 
 @import '../../themes-common/scss/summary';
 
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	border-radius: 0;
+	margin: 0;
+	border-left-width: 4px;
+}
+
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.layers-list-item.mkl_pc_summary.type-summary {
     font-size: 1rem;
     padding: 19px;

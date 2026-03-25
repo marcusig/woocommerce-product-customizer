@@ -526,7 +526,7 @@ body.configurator_is_inline .mkl_pc {
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
-a.save-your-design, a.save-your-design--pdf {
+.save-your-design, .save-your-design--pdf, .mkl-footer--action-button {
 	svg {
 		transform: translateY(0);
 		fill: color(primary);
@@ -546,7 +546,7 @@ a.save-your-design, a.save-your-design--pdf {
 
 }
 
-a.save-your-design svg path,
+.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
 .save-your-design--pdf svg path,
 .mkl-footer--action-button svg path {

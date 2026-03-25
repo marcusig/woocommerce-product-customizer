@@ -21,6 +21,290 @@ PC.actionParameter = 'pc_get_data';
 	PC.fe.config = _.extend( {}, PC.fe.config);
 	PC.fe.products_content = PC.fe.products_content || [];
 
+	// Global helpers (validation, navigation, announcements)
+	if ( ! PC.fe.clear_validation_errors ) {
+		PC.fe.clear_validation_errors = function() {
+			var $summary = $( '.mkl-pc-validation-summary' ).first();
+			if ( $summary.length ) {
+				$summary.empty().attr( 'hidden', 'hidden' );
+			}
+			$( '.mkl_pc .mkl_pc_container .mkl_pc_toolbar [aria-invalid="true"]' ).removeAttr( 'aria-invalid' );
+			$( '.mkl_pc .mkl_pc_container .mkl_pc_toolbar [data-pc-validation-describedby]' ).each( function() {
+				var id = $( this ).attr( 'data-pc-validation-describedby' );
+				var describedby = ( $( this ).attr( 'aria-describedby' ) || '' ).split( /\s+/ ).filter( Boolean );
+				describedby = describedby.filter( function( item ) {
+					return item !== id;
+				} );
+				if ( describedby.length ) {
+					$( this ).attr( 'aria-describedby', describedby.join( ' ' ) );
+				} else {
+					$( this ).removeAttr( 'aria-describedby' );
+				}
+				$( this ).removeAttr( 'data-pc-validation-describedby' );
+			} );
+		};
+	}
+
+	if ( ! PC.fe.get_choice_validation_target ) {
+		/**
+		 * DOM node to focus / mark invalid for a choice error.
+		 * Standard layers use #choice_{layerId}_{id}; Form / Text overlay use #pc-field-{layerId}-{id} (or radio ids with a numeric suffix).
+		 */
+		PC.fe.get_choice_validation_target = function( $scope, choice ) {
+			if ( ! choice || ! $scope || ! $scope.length ) return $();
+			var layerId = choice.get( 'layerId' );
+			var choiceId = choice.id;
+			var $t = $scope.find( '#choice_' + layerId + '_' + choiceId ).first();
+			if ( $t.length ) return $t;
+			var fieldSel = '#pc-field-' + layerId + '-' + choiceId;
+			$t = $scope.find( fieldSel ).first();
+			if ( $t.length ) {
+				var tag = ( $t.prop( 'tagName' ) || '' ).toLowerCase();
+				if ( tag === 'input' || tag === 'textarea' || tag === 'select' ) {
+					return $t;
+				}
+				var $inner = $t.find( 'input:not([type="hidden"]), textarea, select' ).filter( ':visible' ).first();
+				return $inner.length ? $inner : $t;
+			}
+			return $scope.find( 'input[type="radio"][id^="pc-field-' + layerId + '-' + choiceId + '-"]' ).filter( ':visible' ).first();
+		};
+	}
+
+	if ( ! PC.fe.goto ) {
+		/**
+		 * Navigate to a layer / choice, opening its parent hierarchy if needed.
+		 * Intended for validation, summary navigation, etc.
+		 */
+		PC.fe.goto = function( item, options ) {
+			options = options || {};
+			var modal = PC.fe.modal || {};
+
+			var $container = options.$container || ( modal.$main_window && modal.$main_window.length ? modal.$main_window : $() );
+			if ( ! $container.length ) $container = $( '.mkl_pc.opened .mkl_pc_container' ).first();
+			if ( ! $container.length ) $container = $( '.mkl_pc .mkl_pc_container:visible' ).first();
+
+			var layerId = null;
+			if ( item ) {
+				// Choice model
+				if ( item.get && item.get( 'layerId' ) !== undefined && item.get( 'layerId' ) !== null ) {
+					layerId = item.get( 'layerId' );
+				// Layer model
+				} else if ( item.id !== undefined && item.get && item.get( 'type' ) !== undefined ) {
+					layerId = item.id;
+				// Plain object
+				} else if ( item.layerId !== undefined && item.layerId !== null ) {
+					layerId = item.layerId;
+				} else if ( item._id !== undefined && item._id !== null ) {
+					layerId = item._id;
+				}
+			}
+
+			var layers = options.layers || PC.fe.layers;
+			if ( ! layers || ! layerId ) {
+				if ( options.focusEl && options.focusEl.length ) {
+					setTimeout( function() { options.focusEl.trigger( 'focus' ); }, 500 );
+				}
+				return false;
+			}
+
+			var layer = layers.get ? layers.get( layerId ) : null;
+			if ( ! layer ) {
+				if ( options.focusEl && options.focusEl.length ) {
+					setTimeout( function() { options.focusEl.trigger( 'focus' ); }, 500 );
+				}
+				return false;
+			}
+
+			// Build hierarchy from root -> leaf
+			var hierarchy = [];
+			var cursor = layer;
+			var guard = 0;
+			while ( cursor && guard++ < 50 ) {
+				hierarchy.unshift( cursor.id );
+				var parentId = cursor.get ? cursor.get( 'parent' ) : null;
+				if ( ! parentId ) break;
+				cursor = ( cursor.collection && cursor.collection.get ) ? cursor.collection.get( parentId ) : ( layers.get ? layers.get( parentId ) : null );
+			}
+
+			// Activate each layer in order
+			_.each( hierarchy, function( id ) {
+				var layer_model = layers.get ? layers.get( id ) : null;
+				var is_active = layer_model && layer_model.get ? ( true === layer_model.get( 'active' ) ) : false;
+				var $li = $container.find( '.layers-list-item[data-layer="' + id + '"]' ).first();
+				if ( ! $li.length && modal.$el && modal.$el.length ) {
+					$li = modal.$el.find( '.layers-list-item[data-layer="' + id + '"]' ).first();
+				}
+				if ( $li.length ) {
+					if ( ! is_active && $li.hasClass( 'active' ) ) is_active = true;
+					if ( is_active ) return;
+					var view = $li.data( 'view' );
+					if ( view && view.show_choices ) {
+						view.show_choices( null, true );
+					} else {
+						// Avoid toggling closed: only click if not active
+						$li.find( '> button.layer-item' ).first().trigger( 'click' );
+					}
+				}
+			} );
+
+			// Focus after UI settles
+			if ( options.focusEl && options.focusEl.length ) {
+				setTimeout( function() { options.focusEl.trigger( 'focus' ); }, 50 );
+			} else if ( options.focusChoice && item && item.get && $container.length && PC.fe.get_choice_validation_target ) {
+				var $target = PC.fe.get_choice_validation_target( $container, item );
+				if ( $target && $target.length ) {
+					setTimeout( function() { $target.trigger( 'focus' ); }, 50 );
+				}
+			}
+
+			return true;
+		};
+	}
+
+	if ( ! PC.fe.show_validation_errors ) {
+		PC.fe.show_validation_errors = function( errors ) {
+			errors = errors || [];
+			var modal = PC.fe.modal || {};
+			var $container = ( modal.$main_window && modal.$main_window.length ) ? modal.$main_window : $( '.mkl_pc.opened .mkl_pc_container' ).first();
+			if ( ! $container.length ) $container = $( '.mkl_pc .mkl_pc_container:visible' ).first();
+			if ( ! $container.length ) return false;
+
+			var $toolbar = ( modal.toolbar && modal.toolbar.$el && modal.toolbar.$el.length ) ? modal.toolbar.$el : $container.find( '.mkl_pc_toolbar' ).first();
+			if ( ! $toolbar.length ) $toolbar = $container;
+
+			var $selection = ( modal.toolbar && modal.toolbar.$selection && modal.toolbar.$selection.length ) ? modal.toolbar.$selection : $toolbar.find( 'section.choices' ).first();
+
+			var $summary = $toolbar.find( '.mkl-pc-validation-summary' ).first();
+			if ( ! $summary.length ) {
+				$summary = $( '<div class="mkl-pc-validation-summary" role="alert" aria-live="assertive" aria-atomic="true" tabindex="-1" hidden="hidden"></div>' );
+				if ( $selection && $selection.length ) {
+					$summary.insertBefore( $selection );
+				} else {
+					$toolbar.prepend( $summary );
+				}
+			} else if ( $selection && $selection.length ) {
+				$summary.insertBefore( $selection );
+			}
+
+			PC.fe.clear_validation_errors();
+
+			var messages = [];
+			var first_focus_target = null;
+			var first_focus_layer_id = null;
+			var first_goto_item = null;
+			_.each( errors, function( error, index ) {
+				var plain_message = PC.utils.strip_html( error.message || '' );
+				if ( plain_message ) messages.push( plain_message );
+
+				if ( error.choice ) {
+					error.choice.set( 'has_error', error.message );
+					var $choice = PC.fe.get_choice_validation_target( $container, error.choice );
+					if ( ! first_focus_target && $choice.length ) {
+						first_focus_target = $choice;
+						first_focus_layer_id = error.choice.get( 'layerId' );
+						first_goto_item = error.choice;
+					}
+					if ( $choice.length ) {
+						$choice.attr( 'aria-invalid', 'true' );
+						var choice_error_id = 'mkl-pc-validation-error-' + index;
+						$choice.attr( 'data-pc-validation-describedby', choice_error_id );
+						var choice_describedby = ( $choice.attr( 'aria-describedby' ) || '' ).split( /\s+/ ).filter( Boolean );
+						if ( choice_describedby.indexOf( choice_error_id ) === -1 ) {
+							choice_describedby.push( choice_error_id );
+							$choice.attr( 'aria-describedby', choice_describedby.join( ' ' ) );
+						}
+					}
+				}
+				if ( error.layer ) {
+					error.layer.set( 'has_error', error.message );
+					var $layer = $container.find( '#config-layer-' + error.layer.id ).first();
+					if ( ! first_focus_target && $layer.length ) {
+						first_focus_target = $layer;
+						first_focus_layer_id = error.layer.id;
+						first_goto_item = error.layer;
+					}
+					if ( $layer.length ) {
+						$layer.attr( 'aria-invalid', 'true' );
+						var layer_error_id = 'mkl-pc-validation-error-' + index;
+						$layer.attr( 'data-pc-validation-describedby', layer_error_id );
+						var layer_describedby = ( $layer.attr( 'aria-describedby' ) || '' ).split( /\s+/ ).filter( Boolean );
+						if ( layer_describedby.indexOf( layer_error_id ) === -1 ) {
+							layer_describedby.push( layer_error_id );
+							$layer.attr( 'aria-describedby', layer_describedby.join( ' ' ) );
+						}
+					}
+				}
+			} );
+
+			var summary_title = ( PC_config.lang && PC_config.lang.validation_error_list_label ) ? PC_config.lang.validation_error_list_label : 'Please review the following errors:';
+			var summary_count_template = ( PC_config.lang && PC_config.lang.validation_errors_found ) ? PC_config.lang.validation_errors_found : '%d errors found.';
+			var count_text = summary_count_template.replace( '%d', messages.length );
+			var focus_moved_text = ( PC_config.lang && PC_config.lang.validation_focus_moved ) ? PC_config.lang.validation_focus_moved : 'Focus moved to first error.';
+			var html = '<p class="mkl-pc-validation-summary__title">' + summary_title + ' <span class="screen-reader-text">' + count_text + ' ' + focus_moved_text + '</span></p><ul>';
+			_.each( messages, function( message, idx ) {
+				html += '<li id="mkl-pc-validation-error-' + idx + '">' + message + '</li>';
+			} );
+			html += '</ul>';
+			$summary.html( html ).removeAttr( 'hidden' );
+
+			if ( PC.fe.announce ) {
+				PC.fe.announce( count_text + ' ' + focus_moved_text );
+			}
+
+			if ( first_focus_target && first_focus_target.length ) {
+				if ( first_goto_item && PC.fe.goto ) {
+					PC.fe.goto( first_goto_item, { $container: $container, focusEl: first_focus_target } );
+				} else if ( first_focus_layer_id !== null && first_focus_layer_id !== undefined && first_focus_layer_id !== '' ) {
+					var $erroredLayerLi = first_focus_target.closest( '.layers-list-item' );
+					if ( ! $erroredLayerLi.length ) {
+						$erroredLayerLi = $container.find( '.layers-list-item[data-layer="' + first_focus_layer_id + '"]' ).first();
+					}
+					if ( $erroredLayerLi.length && ! $erroredLayerLi.hasClass( 'active' ) ) {
+						var layer_view = $erroredLayerLi.data( 'view' );
+						if ( layer_view && layer_view.show_choices ) {
+							layer_view.show_choices( null, true );
+						}
+					}
+					setTimeout( function() {
+						first_focus_target.trigger( 'focus' );
+					}, 50 );
+				} else {
+					setTimeout( function() {
+						first_focus_target.trigger( 'focus' );
+					}, 50 );
+				}
+			} else {
+				setTimeout( function() {
+					$summary.trigger( 'focus' );
+				}, 50 );
+			}
+			return false;
+		};
+	}
+
+	if ( ! PC.fe.announce ) {
+		PC.fe._announce_state = PC.fe._announce_state || { last_message: '', last_ts: 0 };
+		PC.fe.announce = function( message, options ) {
+			if ( ! message ) return;
+			options = options || {};
+			var dedupe_window = typeof options.dedupe_window === 'number' ? options.dedupe_window : 700;
+			var normalized = String( message ).replace( /\s+/g, ' ' ).trim();
+			if ( ! normalized ) return;
+			var now = Date.now();
+			if ( PC.fe._announce_state.last_message === normalized && ( now - PC.fe._announce_state.last_ts ) < dedupe_window ) {
+				return;
+			}
+			var $region = $( '.mkl-pc-live-region' ).first();
+			if ( ! $region.length ) return;
+			PC.fe._announce_state.last_message = normalized;
+			PC.fe._announce_state.last_ts = now;
+			$region.text( '' );
+			setTimeout( function() {
+				$region.text( normalized );
+			}, 15 );
+		};
+	}
+
 	$( function() {
 		// adds classes to body
 		if( PC.utils._isTouch() ){
