@@ -73,7 +73,7 @@
 }
 
 .mkl-pc-addon .button span.dashicons {
-	transform: translate(4px, 4px);
+	transform: translate(4px, -1px);
 }
 .mkl-pc-addon:nth-child(3n) {
 	margin-right: 0;

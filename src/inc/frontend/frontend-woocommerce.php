@@ -417,7 +417,10 @@ class Frontend_Woocommerce {
 				'choice_action_announce' => _x( '%1$s: %2$s %3$s', 'Screen reader text, choice action announcement template. 1: layer name, 2: action, 3: choice name', 'product-configurator-for-woocommerce' ),
 				'validation_errors_found' => _x( '%d errors found.', 'Screen reader text, validation errors count', 'product-configurator-for-woocommerce' ),
 				'validation_focus_moved' => _x( 'Focus moved to first error.', 'Screen reader text, focus moved to first invalid control', 'product-configurator-for-woocommerce' ),
+				'validation_focus_moved_to_summary' => _x( 'Focus moved to validation summary.', 'Screen reader text, focus moved to validation summary', 'product-configurator-for-woocommerce' ),
 				'validation_error_list_label' => _x( 'Please review the following errors:', 'Screen reader text, validation summary heading', 'product-configurator-for-woocommerce' ),
+				'validation_go_to_first_error' => _x( 'Go to first error', 'Screen reader text, button label to move to first invalid field', 'product-configurator-for-woocommerce' ),
+				'validation_go_to_first_error_hint' => _x( 'Opens parent layers and moves focus to the first invalid field.', 'Screen reader text, helper text for the go to first error action', 'product-configurator-for-woocommerce' ),
 				'validation_separator_in' => _x( ', ', 'Screen reader text, separator used between layer and choice/group names in validation messages', 'product-configurator-for-woocommerce' ),
 				'layers_aria_label' => esc_attr_x( 'Select options for the product', 'Aria label of the choices list', 'product-configurator-for-woocommerce' )
 			),

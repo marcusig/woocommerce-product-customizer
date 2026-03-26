@@ -115,6 +115,7 @@ function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
 	<header aria-labelledby="mkl-pc-product-name-{{data.ID}}">
 		<h3 id="mkl-pc-product-name-{{data.ID}}" class="product-name"><span class="screen-reader-text"><?php _e( 'Currently configuring product:', 'product-configurator-for-woocommerce' ); ?> </span>{{{data.name}}}</h3>
+		<p id="mkl-pc-dialog-instructions-{{data.ID}}" class="screen-reader-text"><?php _e( 'Use Tab and Shift+Tab to move between Layers, Choices and Preview areas. Press Escape to close the configurator.', 'product-configurator-for-woocommerce' ); ?></p>
 		<button class="cancel close-mkl-pc" type="button" aria-label="<?php echo esc_attr_x( 'Close the configurator app', 'Aria label of the main configurator close button', 'product-configurator-for-woocommerce' ); ?>"><span><?php _e( 'Cancel' ); ?></span></button>
 	</header>
 <?php
@@ -123,7 +124,7 @@ add_action( 'mkl_pc_frontend_configurator_toolbar', 'mkl_pc_frontend_configurato
 
 function mkl_pc_frontend_configurator_toolbar__choices_section() {
 ?>
-	<section class="choices">
+	<section id="mkl-pc-choices-region-{{data.ID}}" class="choices" role="region" aria-label="<?php echo esc_attr_x( 'Choices', 'Accessible landmark label for the configurator choices area', 'product-configurator-for-woocommerce' ); ?>">
 	</section>
 <?php
 }

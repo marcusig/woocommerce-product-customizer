@@ -243,10 +243,24 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			this.$( '> button.layer-item' ).attr( 'aria-expanded', 'true' );
 			wp.hooks.doAction( 'PC.fe.layer.activate', this );
 		} else {
+			var active_el = document.activeElement;
+			var focus_was_inside_choices = !! ( this.choices && this.choices.el && active_el && this.choices.el.contains( active_el ) );
 			this.$el.removeClass( 'active' );
 			if ( this.choices ) this.choices.$el.removeClass( 'active' );
 			$( document ).off( 'click.mkl-pc' );
 			this.$( '> button.layer-item' ).attr( 'aria-expanded', 'false' );
+			// If the layer collapsed while focus was inside its choices,
+			// restore focus to the layer button to avoid Safari tabbing out of the modal.
+			if ( focus_was_inside_choices ) {
+				setTimeout( () => {
+					var $btn = this.$( '> button.layer-item:visible:not(:disabled)' ).first();
+					if ( $btn.length ) {
+						$btn.trigger( 'focus' );
+					} else if ( PC.fe.modal && PC.fe.modal.$main_window && PC.fe.modal.$main_window.length ) {
+						PC.fe.modal.$main_window.trigger( 'focus' );
+					}
+				}, 0 );
+			}
 			wp.hooks.doAction( 'PC.fe.layer.deactivate', this );
 		}
 	},

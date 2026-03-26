@@ -186,6 +186,12 @@ PC.fe.views.configurator = Backbone.View.extend({
 			$label.attr( 'id', 'mkl-pc-dialog-title-' + this.product_id );
 		}
 		this.$main_window.attr( 'aria-labelledby', $label.attr( 'id' ) );
+		var $description = this.$el.find( '.mkl_pc_toolbar #mkl-pc-dialog-instructions-' + this.product_id ).first();
+		if ( $description.length ) {
+			this.$main_window.attr( 'aria-describedby', $description.attr( 'id' ) );
+		} else {
+			this.$main_window.removeAttr( 'aria-describedby' );
+		}
 		if ( ! PC.fe.inline ) this.$main_window.removeAttr( 'aria-label' );
 	},
 	restore_focus: function() {
