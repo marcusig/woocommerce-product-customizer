@@ -68,18 +68,15 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 		var selected_prefix = PC_config.lang.selected_prefix || 'Selected: %s';
 		var selected_none = PC_config.lang.selected_none || 'Selected: none';
 		var sr_value = choices_names.length ? selected_prefix.replace( '%s', visible_value ) : selected_none;
-		this.$el.text( visible_value );
-		this.$el.attr( 'aria-label', sr_value );
+		this.$el
+			.attr( 'role', 'status' )
+			.attr( 'aria-live', 'polite' )
+			.attr( 'aria-atomic', 'true' );
+		this.$el.html(
+			'<span aria-hidden="true">' + visible_value + '</span>' +
+			'<span class="screen-reader-text">' + sr_value + '</span>'
+		);
 		wp.hooks.doAction( 'PC.fe.set.selected_choice', choices_names, this );
-		if ( PC.fe.announce && this.model.get( 'active' ) ) {
-			var layer_name = this.model.get( 'name' ) || '';
-			var message = choices_names.length ? layer_name + '. ' + selected_prefix.replace( '%s', visible_value ) : layer_name + '. ' + selected_none;
-			// Only announce when the summary changed to avoid duplicate speech for focused content.
-			if ( this._last_announced_summary !== message ) {
-				this._last_announced_summary = message;
-				PC.fe.announce( message );
-			}
-		}
 	},
 	should_display: function( model ) {
 		if ( PC.hasOwnProperty( 'conditionalLogic' ) && PC.conditionalLogic.item_is_hidden && PC.conditionalLogic.item_is_hidden( model ) ) return false;

@@ -196,20 +196,6 @@ PC.fe.views.choice = Backbone.View.extend({
 
 
 		PC.fe.last_clicked = this;
-		if ( PC.fe.announce ) {
-			var layer_name = layer && layer.get ? ( layer.get( 'name' ) || '' ) : '';
-			var choice_name = this.model.get_name() || this.model.get( 'name' ) || '';
-			var is_multiple = 'multiple' === this.get_layer_type();
-			var is_active = !! this.model.get( 'active' );
-			var action_selected = ( PC_config.lang && PC_config.lang.choice_action_selected ) ? PC_config.lang.choice_action_selected : 'selected';
-			var action_removed = ( PC_config.lang && PC_config.lang.choice_action_removed ) ? PC_config.lang.choice_action_removed : 'removed';
-			var action = is_multiple ? ( is_active ? action_selected : action_removed ) : action_selected;
-			var announce_template = ( PC_config.lang && PC_config.lang.choice_action_announce ) ? PC_config.lang.choice_action_announce : '%s: %s %s';
-			var announce_text = announce_template.replace( '%1$s', layer_name ).replace( '%2$s', action ).replace( '%3$s', choice_name );
-			announce_text = announce_text.replace( '%s', layer_name ).replace( '%s', action ).replace( '%s', choice_name );
-			if ( ! layer_name ) announce_text = ( action + ' ' + choice_name );
-			if ( choice_name ) PC.fe.announce( announce_text );
-		}
 		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
 	},
 	preload_image: function() {
