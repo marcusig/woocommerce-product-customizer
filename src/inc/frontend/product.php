@@ -183,7 +183,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			if ( $price ) $price = preg_replace( '/<script.*?\/script>/s', '', $price );
 		?>
 			<# if ( data.formated_regular_price ) { #><del class="pc-total--regular-price">{{{data.formated_regular_price}}}</del><# } #>
-			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
+			<span aria-live="polite" aria-atomic="true" class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
 		<?php 
 		}
 
@@ -239,6 +239,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
 						<span><?php echo $add_to_cart; ?></span>
+						<span class="screen-reader-text"><?php _ex( 'Total item price: ', 'Screen reader text, total price prefix for add to cart button', 'product-configurator-for-woocommerce' ); ?> <span class="pc-total-price"></span></span>
 					</button>
 					<?php do_action( 'mkl_pc_frontend_configurator_after_add_to_cart' ); ?>
 				<?php
