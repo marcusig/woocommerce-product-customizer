@@ -189,21 +189,34 @@ PC.actionParameter = 'pc_get_data';
 			PC.fe.clear_validation_errors();
 
 			var messages = [];
+			var message_items = [];
+			var goto_items_by_index = {};
 			var first_focus_target = null;
 			var first_goto_item = null;
 			_.each( errors, function( error, index ) {
 				var plain_message = PC.utils.strip_html( error.message || '' );
 				if ( plain_message ) messages.push( plain_message );
 
+				var $focus_target = null;
+				var goto_item = null;
+				var target_id = '';
+
 				if ( error.choice ) {
 					error.choice.set( 'has_error', error.message );
 					var $choice = PC.fe.get_choice_validation_target( $container, error.choice );
+					$focus_target = $choice;
+					goto_item = error.choice;
 					if ( ! first_focus_target && $choice.length ) {
 						first_focus_target = $choice;
 						first_goto_item = error.choice;
 					}
 					if ( $choice.length ) {
 						$choice.attr( 'aria-invalid', 'true' );
+						target_id = $choice.attr( 'id' ) || '';
+						if ( ! target_id ) {
+							target_id = 'mkl-pc-validation-target-' + index;
+							$choice.attr( 'id', target_id );
+						}
 						var choice_error_id = 'mkl-pc-validation-error-' + index;
 						$choice.attr( 'data-pc-validation-describedby', choice_error_id );
 						var choice_describedby = ( $choice.attr( 'aria-describedby' ) || '' ).split( /\s+/ ).filter( Boolean );
@@ -216,12 +229,23 @@ PC.actionParameter = 'pc_get_data';
 				if ( error.layer ) {
 					error.layer.set( 'has_error', error.message );
 					var $layer = $container.find( '#config-layer-' + error.layer.id ).first();
+					if ( ! $focus_target || ! $focus_target.length ) {
+						$focus_target = $layer;
+						goto_item = error.layer;
+					}
 					if ( ! first_focus_target && $layer.length ) {
 						first_focus_target = $layer;
 						first_goto_item = error.layer;
 					}
 					if ( $layer.length ) {
 						$layer.attr( 'aria-invalid', 'true' );
+						if ( ! target_id ) {
+							target_id = $layer.attr( 'id' ) || '';
+							if ( ! target_id ) {
+								target_id = 'mkl-pc-validation-target-' + index;
+								$layer.attr( 'id', target_id );
+							}
+						}
 						var layer_error_id = 'mkl-pc-validation-error-' + index;
 						$layer.attr( 'data-pc-validation-describedby', layer_error_id );
 						var layer_describedby = ( $layer.attr( 'aria-describedby' ) || '' ).split( /\s+/ ).filter( Boolean );
@@ -231,29 +255,41 @@ PC.actionParameter = 'pc_get_data';
 						}
 					}
 				}
+
+				if ( plain_message ) {
+					message_items.push( { message: plain_message, target_id: target_id, index: index } );
+					if ( goto_item || ( $focus_target && $focus_target.length ) ) {
+						goto_items_by_index[ index ] = { item: goto_item, $focus: $focus_target };
+					}
+				}
 			} );
 
 			var summary_title = ( PC_config.lang && PC_config.lang.validation_error_list_label ) ? PC_config.lang.validation_error_list_label : 'Please review the following errors:';
 			var summary_count_template = ( PC_config.lang && PC_config.lang.validation_errors_found ) ? PC_config.lang.validation_errors_found : '%d errors found.';
 			var count_text = summary_count_template.replace( '%d', messages.length );
 			var focus_moved_text = ( PC_config.lang && PC_config.lang.validation_focus_moved_to_summary ) ? PC_config.lang.validation_focus_moved_to_summary : 'Focus moved to validation summary.';
-			var goto_first_error_label = ( PC_config.lang && PC_config.lang.validation_go_to_first_error ) ? PC_config.lang.validation_go_to_first_error : 'Go to first error';
-			var goto_first_error_hint = ( PC_config.lang && PC_config.lang.validation_go_to_first_error_hint ) ? PC_config.lang.validation_go_to_first_error_hint : 'Opens parent layers and moves focus to the first invalid field.';
 			var html = '<p class="mkl-pc-validation-summary__title">' + summary_title + ' <span class="screen-reader-text">' + count_text + ' ' + focus_moved_text + '</span></p><ul>';
-			_.each( messages, function( message, idx ) {
-				html += '<li id="mkl-pc-validation-error-' + idx + '">' + message + '</li>';
+			_.each( message_items, function( item, idx ) {
+				var inner = item.message;
+				if ( item.target_id ) {
+					inner = '<a class="mkl-pc-validation-summary__error-link" href="#' + _.escape( item.target_id ) + '" data-validation-index="' + item.index + '">' + _.escape( item.message ) + '</a>';
+				} else {
+					inner = _.escape( item.message );
+				}
+				html += '<li id="mkl-pc-validation-error-' + idx + '">' + inner + '</li>';
 			} );
 			html += '</ul>';
-			if ( first_goto_item && first_focus_target && first_focus_target.length ) {
-				html += '<p class="mkl-pc-validation-summary__actions"><button type="button" class="button mkl-pc-validation-summary__goto-first">' + goto_first_error_label + '</button><span class="screen-reader-text"> ' + goto_first_error_hint + '</span></p>';
-			}
 			$summary.html( html ).removeAttr( 'hidden' );
-			$summary.find( '.mkl-pc-validation-summary__goto-first' ).on( 'click', function( event ) {
-				event.preventDefault();
-				if ( first_goto_item && PC.fe.goto ) {
-					PC.fe.goto( first_goto_item, { $container: $container, focusEl: first_focus_target } );
-				} else if ( first_focus_target && first_focus_target.length ) {
-					first_focus_target.trigger( 'focus' );
+			$summary.find( '.mkl-pc-validation-summary__error-link' ).on( 'click', function( event ) {
+				var idx = parseInt( $( this ).attr( 'data-validation-index' ), 10 );
+				if ( isNaN( idx ) ) return;
+				var payload = goto_items_by_index[ idx ];
+				if ( payload && payload.item && PC.fe.goto ) {
+					event.preventDefault();
+					PC.fe.goto( payload.item, { $container: $container, focusEl: payload.$focus } );
+				} else if ( payload && payload.$focus && payload.$focus.length ) {
+					event.preventDefault();
+					payload.$focus.trigger( 'focus' );
 				}
 			} );
 

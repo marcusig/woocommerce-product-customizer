@@ -71,7 +71,9 @@ PC.fe.views.choices = Backbone.View.extend({
 		}
 
 		/**
-		 * 
+		 * Action hook: PC.fe.choices.add_one.after
+		 * @param {PC.fe.views.choices} target_view
+		 * @param {PC.fe.views.choice} new_choice
 		 */
 		wp.hooks.doAction( 'PC.fe.choices.add_one.after', this, new_choice );
 	},
