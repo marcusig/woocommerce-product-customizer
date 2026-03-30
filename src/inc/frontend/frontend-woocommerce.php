@@ -421,7 +421,8 @@ class Frontend_Woocommerce {
 				'validation_error_list_label' => _x( 'Please review the following errors:', 'Screen reader text, validation summary heading', 'product-configurator-for-woocommerce' ),
 				'total_price_label_template' => _x( 'Total: %s', 'Screen reader text, total price label template. %s: formatted total price', 'product-configurator-for-woocommerce' ),
 				'validation_separator_in' => _x( ', ', 'Screen reader text, separator used between layer and choice/group names in validation messages', 'product-configurator-for-woocommerce' ),
-				'layers_aria_label' => esc_attr_x( 'Select options for the product', 'Aria label of the choices list', 'product-configurator-for-woocommerce' )
+				'layers_aria_label' => esc_attr_x( 'Select options for the product', 'Aria label of the choices list', 'product-configurator-for-woocommerce' ),
+				'steps_progress_current_step' => _x( 'Current step %1$s of %2$s: %3$s', 'Screen reader text, current step label template. %1$s: step number, %2$s: total steps, %3$s: step name', 'product-configurator-for-woocommerce' ),
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,

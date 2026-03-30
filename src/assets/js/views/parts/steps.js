@@ -44,6 +44,9 @@ PC.fe.steps = {
 				if ( ! breadcrumb_position ) modal.toolbar.$( 'section.choices' ).before( this.breadcrumb.$el );
 			}
 
+			this.$live = $( '<div class="mkl-pc-current-step-name screen-reader-text" aria-live="polite" aria-atomic="true"></div>' );
+			modal.toolbar.$( 'section.choices' ).before( this.$live );
+
 			this.display_step();
 		}.bind( this ), 20 );
 
@@ -52,6 +55,15 @@ PC.fe.steps = {
 		}.bind( this ) );
 
 		this.initialized = true;
+	},
+	update_live_region: function() {
+		if ( ! this.current_step ) return;
+		const current_step = this.get_index( this.current_step );
+		const total_steps = PC.fe.steps.steps.length;
+		const step_number = current_step + 1;
+		const step_name = this.current_step.get( 'name' );
+		const step_label = PC_config.lang.steps_progress_current_step.replace( '%1$s', step_number ).replace( '%2$s', total_steps ).replace( '%3$s', step_name );
+		this.$live.text( step_label );
 	},
 	clean_existing_steps: function() {
 		if ( this.steps ) this.steps = null;
@@ -139,6 +151,8 @@ PC.fe.steps = {
 			}, 50 );
 		}
 
+		this.update_live_region();
+
 		wp.hooks.doAction( 'PC.fe.steps.display_step', this );
 	},
 	get_steps: function() {
@@ -181,12 +195,15 @@ PC.fe.steps = {
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template({}) );
+			// Render once, then update state in place (preserves focus).
+			if ( ! this.$( 'button.step-previous' ).length ) {
+				this.$el.html( this.template({}) );
+			}
 			var current_index = PC.fe.steps.get_index( PC.fe.steps.current_step );
 			if ( 0 == current_index ) {
-				this.$( 'button' ).prop( 'disabled', true );
+				this.$( 'button.step-previous' ).prop( 'disabled', true );
 			} else {
-				this.$( 'button' ).prop( 'disabled', false );
+				this.$( 'button.step-previous' ).prop( 'disabled', false );
 			}
 	
 		},
@@ -209,6 +226,11 @@ PC.fe.steps = {
 			this.render();
 		},
 		render: function() {
+			// Render once, then update label/state in place (preserves focus).
+			if ( ! this.$( 'button.step-next' ).length ) {
+				this.$el.html( this.template({ label: '' }) );
+			}
+
 			var label = '';
 			if ( PC.fe.config.steps_use_layer_name ) {
 				var steps = PC.fe.steps.get_steps();
@@ -218,8 +240,9 @@ PC.fe.steps = {
 					label = next_step.get( 'next_step_button_label' ) || next_step.get( 'name' );
 				}
 			} 
-
-			this.$el.html( this.template({ label: label }) );
+			if ( label ) {
+				this.$( 'button.step-next > span:not(.screen-reader-text)' ).first().text( label );
+			}
 		},
 		next: function( e ) {
 			e.preventDefault();

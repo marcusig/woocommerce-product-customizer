@@ -51,6 +51,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 		var layer_name_id = 'config-layer-name-' + this.model.id;
 		this.$( '.layer-item .layer-name' ).first().attr( 'id', layer_name_id );
+		this.$el.attr( 'aria-describedby', 'config-layer-' + this.model.id );
 		this.$( '> button.layer-item' ).attr( {
 			'aria-labelledby': layer_name_id,
 			'aria-expanded': 'false'
@@ -89,7 +90,13 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 
 		wp.hooks.doAction( 'PC.fe.layer.beforeRenderChoices', this );
 		// Add the choices
-		this.add_choices(); 
+		this.add_choices();
+
+		if ( this.choices_location === 'in' ) {
+			this.$el.attr( 'aria-role', 'group' );
+			this.$el.attr( 'aria-labelledby', 'config-layer-name-' + this.model.id );
+		}
+
 		wp.hooks.doAction( 'PC.fe.layer.render', this );
 		
 		// Add display-mode class to the choices element
@@ -227,15 +234,24 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				this.choices.$el.addClass( 'active' );
 				
 				setTimeout( () => {
-					if ( this.model.get( 'type') === 'group' && this.choices.$( 'button.layer-item' ).length ) {
-						this.choices.$( 'button.layer-item' ).first().trigger( 'focus' );
-					} else {
-						var $first_field = this.choices.$( '.inputs input:visible:not(:disabled):not([type="hidden"]), .inputs textarea:visible:not(:disabled), .inputs select:visible:not(:disabled), input.overlay-text-src:visible:not(:disabled), textarea.overlay-text-src:visible:not(:disabled)' ).first();
-						if ( $first_field.length ) {
-							$first_field.trigger( 'focus' );
-						} else {
-							this.choices.$( 'button.choice-item:visible' ).first().trigger( 'focus' );
-						}
+					// No autofocus for steps
+					if ( this.model.get( 'is_step' ) ) return;
+
+					var $scope = this.choices.$el;
+					if ( ! $scope || ! $scope.length ) return;
+
+					// Focus the first available focusable element in DOM order (no type priority).
+					var focusable_selector = 'input, select, textarea, button, [tabindex]:not([tabindex="-1"])';
+					var $target = $scope.find( focusable_selector ).filter( ':visible' ).filter( function() {
+						var $el = $( this );
+						if ( $el.is( ':disabled' ) ) return false;
+						if ( 'true' === $el.attr( 'aria-disabled' ) ) return false;
+						if ( $el.is( 'input[type="hidden"]' ) ) return false;
+						return true;
+					} ).first();
+
+					if ( $target.length ) {
+						$target.trigger( 'focus' );
 					}
 				}, 50 );
 
