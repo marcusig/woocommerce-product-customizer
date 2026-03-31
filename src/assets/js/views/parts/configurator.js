@@ -29,7 +29,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 		'content-is-loaded': 'start',
 		'click .close-mkl-pc': 'close',
 	},
-	focusable_selector: 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+	focusable_selector: 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])',
 	render: function() {
 		if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
 			$(PC.fe.inlineTarget).empty().append(this.$el);
@@ -75,10 +75,12 @@ PC.fe.views.configurator = Backbone.View.extend({
 		this.trigger_el = PC.fe.trigger_el;
 
 		// Set focus on the first layer
-		if ( ! PC.fe.inline ) {
-			$( document ).on( 'keydown.mkl-pc-modal', this.handle_modal_keydown.bind( this ) );
-			this.apply_initial_focus();
-			setTimeout( this.apply_initial_focus.bind( this ), 300 );
+		if ( wp.hooks.applyFilters( 'PC.fe.setup_keyboard_navigation', true ) ) {
+			$( document ).on( 'keydown.mkl-pc-modal', this.handle_configurator_keydown.bind( this ) );
+			if ( !PC.fe.inline ) {
+				this.apply_initial_focus();
+				setTimeout( this.apply_initial_focus.bind( this ), 500 );
+			}
 		}
 		wp.hooks.doAction( 'PC.fe.open', this ); 
 	},
@@ -206,7 +208,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 	get_initial_focus_target: function() {
 		var $scope = this.$main_window && this.$main_window.length ? this.$main_window : this.$el;
 		if ( ! $scope || ! $scope.length ) return $();
-
+		return $scope.find( '.mkl_pc_toolbar > header' ).first();
 		var $first_visible_layer = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator)' ).first();
 		if ( $first_visible_layer.length ) {
 			var $first_layer_button = $first_visible_layer.find( '> button.layer-item:visible:not(:disabled)' ).first();
@@ -240,6 +242,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 
 		return this.$main_window && this.$main_window.length ? this.$main_window : $();
 	},
+	
 	apply_initial_focus: function() {
 		if ( PC.fe.inline ) return;
 		var $target = this.get_initial_focus_target();
@@ -247,6 +250,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 			$target.trigger( 'focus' );
 		}
 	},
+
 	/**
 	 * Visible, enabled focusables (matches get_initial_focus_target filtering).
 	 */
@@ -256,6 +260,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 			return 'true' !== $( this ).attr( 'aria-disabled' );
 		} );
 	},
+	
 	/**
 	 * Tab order for drawer-style choices: all focusables inside .choices-list, then .choices-close.
 	 */
@@ -271,8 +276,8 @@ PC.fe.views.configurator = Backbone.View.extend({
 		}
 		return cycle;
 	},
-	handle_modal_keydown: function( event ) {
-		if ( PC.fe.inline || ! this.$el.is( ':visible' ) ) return;
+	handle_configurator_keydown: function( event ) {
+		if ( ! this.$el.is( ':visible' ) ) return;
 		if ( 'Escape' === event.key ) {
 			// Nested SYD/Share modals handle Escape themselves.
 			if ( $( 'body' ).hasClass( 'syd-modal-opened' ) || $( 'body' ).hasClass( 'syd-share-modal-opened' ) ) {
@@ -297,6 +302,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 					return;
 				}
 			}
+			if ( PC.fe.inline ) return;
 			event.preventDefault();
 			this.close();
 			return;
@@ -326,16 +332,21 @@ PC.fe.views.configurator = Backbone.View.extend({
 							next = idx === cycle.length - 1 ? cycle[0] : cycle[ idx + 1 ];
 						}
 						$( next ).trigger( 'focus' );
+						console.log( 'focusing on', next );
 						return;
 					}
 				}
 			}
 		}
 
+		if ( PC.fe.inline ) return;
+
+		// Focus cycling
 		var $focusable = this.$main_window.find( this.focusable_selector ).filter( ':visible' );
 		if ( ! $focusable.length ) return;
 		var first = $focusable[0];
 		var last = $focusable[ $focusable.length - 1 ];
+		console.log( 'focusing on ', first, ' and ', last );
 		if ( event.shiftKey && document.activeElement === first ) {
 			event.preventDefault();
 			last.focus();

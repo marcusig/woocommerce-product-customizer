@@ -1,5 +1,9 @@
-/* Variable products */
+/* General reset */
+.mkl_pc * {
+	box-sizing: border-box;
+}
 
+/* Accessibility */
 .screen-reader-text,
 .screen-reader-only {
 	clip: rect(1px, 1px, 1px, 1px);
@@ -14,6 +18,9 @@
 	position: absolute !important;
 	width: 1px;
 }
+
+/* Variable products */
+
 button.variations_button.disabled,
 .variations_button.disabled button.single_add_to_cart_button {
 	display: none;

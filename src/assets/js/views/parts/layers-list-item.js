@@ -203,7 +203,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				} );
 			}
 
-			if ( event && 'dropdown' === this.model.get( 'display_mode' ) ) {
+			if ( event && 'dropdown' === this.model.get( 'display_mode' ) && 'group' !== this.model.get( 'type' ) ) {
 				$( document ).on( 'click.mkl-pc', this.dropdown_click_outside.bind( this ) );
 			}
 
@@ -241,7 +241,7 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 					if ( ! $scope || ! $scope.length ) return;
 
 					// Focus the first available focusable element in DOM order (no type priority).
-					var focusable_selector = 'input, select, textarea, button, [tabindex]:not([tabindex="-1"])';
+					var focusable_selector = 'input, select, textarea, button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
 					var $target = $scope.find( focusable_selector ).filter( ':visible' ).filter( function() {
 						var $el = $( this );
 						if ( $el.is( ':disabled' ) ) return false;

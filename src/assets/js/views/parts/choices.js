@@ -28,7 +28,33 @@ PC.fe.views.choices = Backbone.View.extend({
 			var av = this.options.content.findWhere( { available: true } );
 			if ( av ) av.set( 'active', true );
 		}
+
+		this.update_roving_tabindex();
 		return this.$el;
+	},
+	/**
+	 * Roving tabindex for simple layers (radiogroup pattern).
+	 * Ensures Tab enters the group once; arrow keys move between choices.
+	 */
+	update_roving_tabindex: function() {
+		console.log( 'update_roving_tabindex' );
+		
+		if ( ! this.$list || ! this.$list.length ) return;
+		if ( 'simple' !== ( this.model.get( 'type' ) || 'simple' ) ) return;
+
+		var $items = this.$list.find( '.choice-item:visible:not(:disabled)' ).filter( function() {
+			return 'true' !== $( this ).attr( 'aria-disabled' );
+		} );
+		console.log( 'roving items', $items );
+		if ( ! $items.length ) return;
+
+		// Make all items untabbable by default.
+		$items.attr( 'tabindex', '-1' );
+
+		// Prefer the checked one, otherwise the first available.
+		var $checked = $items.filter( '[aria-checked="true"]' ).first();
+		var $target = $checked.length ? $checked : $items.first();
+		$target.attr( 'tabindex', '0' );
 	},
 	set_a11y_attributes: function() {
 		if ( ! this.$list || ! this.$list.length ) return;

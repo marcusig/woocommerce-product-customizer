@@ -217,6 +217,9 @@ PC.fe.views.choice = Backbone.View.extend({
 			this.$( '> button.choice-item' ).attr( 'aria-checked', 'false' );
 			wp.hooks.doAction( 'PC.fe.choice.deactivate', this );
 		}
+		if ( this.options.parent && this.options.parent.update_roving_tabindex ) {
+			this.options.parent.update_roving_tabindex();
+		}
 	},
 	toggle_group: function() {
 		this.$el.toggleClass( 'show-group-content' );
