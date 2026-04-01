@@ -70,6 +70,89 @@ PC.actionParameter = 'pc_get_data';
 		};
 	}
 
+	if ( ! PC.fe.focus_without_scroll ) {
+		PC.fe.focus_without_scroll = function( $target ) {
+			if ( ! $target || ! $target.length ) return;
+			var el = $target.get( 0 );
+			if ( ! el || ! el.focus ) return;
+			try {
+				el.focus( { preventScroll: true } );
+			} catch ( error ) {
+				el.focus();
+			}
+		};
+	}
+
+	/**
+	 * Modal / toolbar focusable selector (excludes tabindex="-1", e.g. inner choice buttons).
+	 */
+	PC.fe.modal_focusable_selector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+
+	/**
+	 * Narrow selector for first focus inside a choices panel (inputs + non-skipped buttons).
+	 */
+	PC.fe.choices_panel_focusable_selector = 'input, select, textarea, button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+
+	PC.fe.is_focusable_enabled = function( el ) {
+		var $el = $( el );
+		if ( ! $el.length ) return false;
+		if ( $el.is( ':disabled' ) ) return false;
+		if ( 'true' === $el.attr( 'aria-disabled' ) ) return false;
+		if ( $el.is( 'input[type="hidden"]' ) ) return false;
+		return true;
+	};
+
+	PC.fe.filter_focusable = function( $collection ) {
+		return $collection.filter( ':visible' ).filter( function() {
+			return PC.fe.is_focusable_enabled( this );
+		} );
+	};
+
+	/**
+	 * Focus first visible enabled control in $scope matching selector (default: choices panel set).
+	 */
+	PC.fe.focus_first_in_scope = function( $scope, selector ) {
+		if ( ! $scope || ! $scope.length ) return $();
+		selector = selector || PC.fe.choices_panel_focusable_selector;
+		var $target = PC.fe.filter_focusable( $scope.find( selector ) ).first();
+		if ( $target.length ) {
+			PC.fe.focus_without_scroll( $target );
+		}
+		return $target;
+	};
+
+	/**
+	 * Run focusFn after .layer_choices transition when active, else after a short delay.
+	 */
+	PC.fe.focus_after_panel_transition = function( $panel, focusFn, options ) {
+		options = options || {};
+		var timeoutMs = options.timeoutMs !== undefined ? options.timeoutMs : 350;
+		var delayIfInactive = options.delayIfInactive !== undefined ? options.delayIfInactive : 50;
+		var namespace = options.namespace || 'mklPcFocus';
+		if ( ! $panel || ! $panel.length || ! $panel.hasClass( 'active' ) ) {
+			setTimeout( focusFn, delayIfInactive );
+			return;
+		}
+		var done = false;
+		var cleanup = function() {
+			$panel.off( 'transitionend.' + namespace );
+		};
+		var finish = function() {
+			if ( done ) return;
+			done = true;
+			cleanup();
+			focusFn();
+		};
+		$panel.on( 'transitionend.' + namespace, function( event ) {
+			if ( event && event.target !== $panel.get( 0 ) ) return;
+			finish();
+		} );
+		setTimeout( function() {
+			cleanup();
+			finish();
+		}, timeoutMs );
+	};
+
 	if ( ! PC.fe.goto ) {
 		/**
 		 * Navigate to a layer / choice, opening its parent hierarchy if needed.
@@ -102,7 +185,7 @@ PC.actionParameter = 'pc_get_data';
 			var layers = options.layers || PC.fe.layers;
 			if ( ! layers || ! layerId ) {
 				if ( options.focusEl && options.focusEl.length ) {
-					setTimeout( function() { options.focusEl.trigger( 'focus' ); }, 500 );
+					setTimeout( function() { PC.fe.focus_without_scroll( options.focusEl ); }, 500 );
 				}
 				return false;
 			}
@@ -110,7 +193,7 @@ PC.actionParameter = 'pc_get_data';
 			var layer = layers.get ? layers.get( layerId ) : null;
 			if ( ! layer ) {
 				if ( options.focusEl && options.focusEl.length ) {
-					setTimeout( function() { options.focusEl.trigger( 'focus' ); }, 500 );
+					setTimeout( function() { PC.fe.focus_without_scroll( options.focusEl ); }, 500 );
 				}
 				return false;
 			}
@@ -147,14 +230,22 @@ PC.actionParameter = 'pc_get_data';
 				}
 			} );
 
-			// Focus after UI settles
+			// Focus after UI settles (panel transitions can otherwise force scrolling).
+			var $focusTarget = $();
 			if ( options.focusEl && options.focusEl.length ) {
-				setTimeout( function() { options.focusEl.trigger( 'focus' ); }, 50 );
+				$focusTarget = options.focusEl.first();
 			} else if ( options.focusChoice && item && item.get && $container.length && PC.fe.get_choice_validation_target ) {
-				var $target = PC.fe.get_choice_validation_target( $container, item );
-				if ( $target && $target.length ) {
-					setTimeout( function() { $target.trigger( 'focus' ); }, 50 );
-				}
+				$focusTarget = PC.fe.get_choice_validation_target( $container, item );
+			}
+			if ( $focusTarget && $focusTarget.length ) {
+				var $panel = $focusTarget.closest( '.layer_choices' );
+				PC.fe.focus_after_panel_transition( $panel, function() {
+					PC.fe.focus_without_scroll( $focusTarget );
+				}, {
+					namespace: 'mklPcGotoFocus',
+					timeoutMs: 350,
+					delayIfInactive: 50,
+				} );
 			}
 
 			return true;

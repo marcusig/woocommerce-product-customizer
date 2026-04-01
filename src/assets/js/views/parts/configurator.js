@@ -31,6 +31,9 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 	focusable_selector: 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])',
 	render: function() {
+		if ( PC.fe.modal_focusable_selector ) {
+			this.focusable_selector = PC.fe.modal_focusable_selector;
+		}
 		if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
 			$(PC.fe.inlineTarget).empty().append(this.$el);
 		} else if ( PC.fe.config.inline == true && $(PC.fe.config.inlineTarget).length > 0 ) {
@@ -55,9 +58,10 @@ PC.fe.views.configurator = Backbone.View.extend({
 			} );
 			this.$main_window.removeAttr( 'aria-label' );
 		} else {
+			var inlineRegionLabel = ( typeof PC_config !== 'undefined' && PC_config.lang && PC_config.lang.inline_region_aria_label ) ? PC_config.lang.inline_region_aria_label : 'Product configurator';
 			this.$main_window.attr( {
 				role: 'region',
-				'aria-label': 'Product configurator'
+				'aria-label': inlineRegionLabel
 			} );
 			this.$main_window.removeAttr( 'aria-modal aria-labelledby' );
 		}
@@ -109,7 +113,6 @@ PC.fe.views.configurator = Backbone.View.extend({
 		this.$main_window.append( this.viewer.render() );
 		
 		if ( ! PC.fe.angles.length || ! PC.fe.layers.length || ! PC.fe.contents.content.length ) {
-			console.log( e );
 			var message = $( '<div class="error configurator-error" />' ).text( 'The product configuration seems incomplete. Please make sure Layers, angles and content are set.' );
 			if ( ! PC.fe.config.inline ) {
 				$( PC.fe.trigger_el ).after( message );
@@ -198,47 +201,58 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 	restore_focus: function() {
 		if ( this.trigger_el && $( this.trigger_el ).length ) {
-			$( this.trigger_el ).trigger( 'focus' );
+			PC.fe.focus_without_scroll( $( this.trigger_el ) );
 			return;
 		}
 		if ( this.previously_focused_el && document.contains( this.previously_focused_el ) ) {
-			this.previously_focused_el.focus();
+			PC.fe.focus_without_scroll( $( this.previously_focused_el ) );
 		}
 	},
 	get_initial_focus_target: function() {
 		var $scope = this.$main_window && this.$main_window.length ? this.$main_window : this.$el;
 		if ( ! $scope || ! $scope.length ) return $();
-		return $scope.find( '.mkl_pc_toolbar > header' ).first();
+
+		// 1) Toolbar header (tabindex -1 — valid programmatic focus target).
+		var $header = $scope.find( '.mkl_pc_toolbar > header' ).first();
+		if ( $header.length && $header.is( ':visible' ) ) {
+			return $header;
+		}
+
+		// 2) First visible layer row: primary layer button, then choices in that layer, then nested layer buttons.
 		var $first_visible_layer = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator)' ).first();
 		if ( $first_visible_layer.length ) {
 			var $first_layer_button = $first_visible_layer.find( '> button.layer-item:visible:not(:disabled)' ).first();
-			if ( $first_layer_button.length ) return $first_layer_button;
+			if ( $first_layer_button.length && PC.fe.is_focusable_enabled( $first_layer_button ) ) {
+				return $first_layer_button;
+			}
 
 			var first_layer_id = $first_visible_layer.attr( 'data-layer' );
 			if ( first_layer_id ) {
-				var $first_layer_choice = $scope.find( '#mkl-pc-layer-choices-' + first_layer_id + ' .choice-item:visible:not(:disabled)' ).filter( function() {
-					return 'true' !== $( this ).attr( 'aria-disabled' );
-				} ).first();
-				if ( $first_layer_choice.length ) return $first_layer_choice;
+				var $layerChoices = $scope.find( '#mkl-pc-layer-choices-' + first_layer_id );
+				var $first_input = PC.fe.filter_focusable( $layerChoices.find( '.choice-item-input' ) ).first();
+				if ( $first_input.length ) return $first_input;
+				var $first_choice = PC.fe.filter_focusable( $layerChoices.find( '.choice-item' ) ).first();
+				if ( $first_choice.length ) return $first_choice;
 			}
 
 			var $nested_layer_button = $first_visible_layer.find( 'button.layer-item:visible:not(:disabled)' ).first();
-			if ( $nested_layer_button.length ) return $nested_layer_button;
+			if ( $nested_layer_button.length && PC.fe.is_focusable_enabled( $nested_layer_button ) ) {
+				return $nested_layer_button;
+			}
 		}
 
 		var $layer_button = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator) > button.layer-item:visible:not(:disabled)' ).first();
-		if ( $layer_button.length ) return $layer_button;
+		if ( $layer_button.length && PC.fe.is_focusable_enabled( $layer_button ) ) return $layer_button;
 
-		var $choice_button = $scope.find( '.layer_choices:visible .choice-item:visible:not(:disabled)' ).filter( function() {
-			return 'true' !== $( this ).attr( 'aria-disabled' );
-		} ).first();
+		// 3) First choice in any open choices panel (inputs preferred for form-like layers).
+		var $choice_input = PC.fe.filter_focusable( $scope.find( '.layer_choices:visible .choice-item-input' ) ).first();
+		if ( $choice_input.length ) return $choice_input;
+		var $choice_button = PC.fe.filter_focusable( $scope.find( '.layer_choices:visible .choice-item' ) ).first();
 		if ( $choice_button.length ) return $choice_button;
 
-		var $focusable = $scope.find( this.focusable_selector ).filter( ':visible' ).filter( function() {
-			if ( $( this ).is( ':disabled' ) ) return false;
-			return 'true' !== $( this ).attr( 'aria-disabled' );
-		} );
-		if ( $focusable.length ) return $focusable.first();
+		// 4) First generic focusable in the modal.
+		var $focusable = PC.fe.filter_focusable( $scope.find( this.focusable_selector ) ).first();
+		if ( $focusable.length ) return $focusable;
 
 		return this.$main_window && this.$main_window.length ? this.$main_window : $();
 	},
@@ -247,18 +261,15 @@ PC.fe.views.configurator = Backbone.View.extend({
 		if ( PC.fe.inline ) return;
 		var $target = this.get_initial_focus_target();
 		if ( $target && $target.length ) {
-			$target.trigger( 'focus' );
+			PC.fe.focus_without_scroll( $target );
 		}
 	},
 
 	/**
-	 * Visible, enabled focusables (matches get_initial_focus_target filtering).
+	 * Visible, enabled focusables (delegates to PC.fe.filter_focusable).
 	 */
 	filter_modal_focusable: function( $collection ) {
-		return $collection.filter( ':visible' ).filter( function() {
-			if ( $( this ).is( ':disabled' ) ) return false;
-			return 'true' !== $( this ).attr( 'aria-disabled' );
-		} );
+		return PC.fe.filter_focusable( $collection );
 	},
 	
 	/**
@@ -297,7 +308,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 					activeLayerView.show_choices( null );
 					event.preventDefault();
 					setTimeout( function() {
-						$focusTarget.trigger( 'focus' );
+						PC.fe.focus_without_scroll( $focusTarget );
 					}, 0 );
 					return;
 				}
@@ -331,8 +342,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 						} else {
 							next = idx === cycle.length - 1 ? cycle[0] : cycle[ idx + 1 ];
 						}
-						$( next ).trigger( 'focus' );
-						console.log( 'focusing on', next );
+						PC.fe.focus_without_scroll( $( next ) );
 						return;
 					}
 				}
@@ -342,17 +352,16 @@ PC.fe.views.configurator = Backbone.View.extend({
 		if ( PC.fe.inline ) return;
 
 		// Focus cycling
-		var $focusable = this.$main_window.find( this.focusable_selector ).filter( ':visible' );
+		var $focusable = PC.fe.filter_focusable( this.$main_window.find( this.focusable_selector ) );
 		if ( ! $focusable.length ) return;
 		var first = $focusable[0];
 		var last = $focusable[ $focusable.length - 1 ];
-		console.log( 'focusing on ', first, ' and ', last );
 		if ( event.shiftKey && document.activeElement === first ) {
 			event.preventDefault();
-			last.focus();
+			PC.fe.focus_without_scroll( $( last ) );
 		} else if ( ! event.shiftKey && document.activeElement === last ) {
 			event.preventDefault();
-			first.focus();
+			PC.fe.focus_without_scroll( $( first ) );
 		}
 	}
 });

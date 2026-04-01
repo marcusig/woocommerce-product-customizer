@@ -232,29 +232,18 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 			this.$el.addClass( 'active' ); 
 			if ( this.choices ) {
 				this.choices.$el.addClass( 'active' );
-				
-				setTimeout( () => {
-					// No autofocus for steps
-					if ( this.model.get( 'is_step' ) ) return;
 
+				// Autofocus first control after panel transition (steps / mouse: skip).
+				if ( ! this.model.get( 'is_step' ) && PC.fe.keyboard_navigation ) {
 					var $scope = this.choices.$el;
-					if ( ! $scope || ! $scope.length ) return;
-
-					// Focus the first available focusable element in DOM order (no type priority).
-					var focusable_selector = 'input, select, textarea, button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
-					var $target = $scope.find( focusable_selector ).filter( ':visible' ).filter( function() {
-						var $el = $( this );
-						if ( $el.is( ':disabled' ) ) return false;
-						if ( 'true' === $el.attr( 'aria-disabled' ) ) return false;
-						if ( $el.is( 'input[type="hidden"]' ) ) return false;
-						return true;
-					} ).first();
-
-					if ( $target.length ) {
-						$target.trigger( 'focus' );
+					if ( $scope && $scope.length ) {
+						var view = this;
+						PC.fe.focus_after_panel_transition( $scope, function() {
+							if ( ! view.model.get( 'active' ) ) return;
+							PC.fe.focus_first_in_scope( $scope );
+						}, { namespace: 'mklPcFocus' } );
 					}
-				}, 50 );
-
+				}
 			}
 			this.$( '> button.layer-item' ).attr( 'aria-expanded', 'true' );
 			wp.hooks.doAction( 'PC.fe.layer.activate', this );
@@ -271,9 +260,9 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				setTimeout( () => {
 					var $btn = this.$( '> button.layer-item:visible:not(:disabled)' ).first();
 					if ( $btn.length ) {
-						$btn.trigger( 'focus' );
+						PC.fe.focus_without_scroll( $btn );
 					} else if ( PC.fe.modal && PC.fe.modal.$main_window && PC.fe.modal.$main_window.length ) {
-						PC.fe.modal.$main_window.trigger( 'focus' );
+						PC.fe.focus_without_scroll( PC.fe.modal.$main_window );
 					}
 				}, 0 );
 			}

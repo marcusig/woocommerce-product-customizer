@@ -556,6 +556,8 @@ $inner_space: 1em;
 							color: color(layers_button_text_color);
 							font-weight: normal;
 							white-space: normal;
+							font-size: 1rem;
+							text-transform: none;
 
  							&:hover, &:focus {
  								color: color(primary_hover);
@@ -576,8 +578,8 @@ $inner_space: 1em;
 							span.selected-choice {
 								display: block;
 								font-size: 0.6rem;
-								text-transform: uppercase;
-								opacity: 0.5;
+								text-transform: none;
+								opacity: 0.6;
 							}
 
 							@media( max-width: $small_screen_width ) {
@@ -1622,4 +1624,15 @@ body.configurator_is_inline .mkl_pc {
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.layers-list-item.mkl_pc_summary.type-summary {
     font-size: 1rem;
     padding: 19px;
+}
+
+/* twentytwentyfive theme fix */
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form button + button {
+    margin-left: 6px;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
 }

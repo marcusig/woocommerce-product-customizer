@@ -119,7 +119,7 @@ function mkl_pc_frontend_configurator_toolbar__header() {
 			<?php _e( 'Use Tab and Shift+Tab to move between Layers, Choices and Preview areas.', 'product-configurator-for-woocommerce' ); ?>
 			<# if ( ! PC.fe.inline ) { #><?php _e( 'Press Escape to close the configurator.', 'product-configurator-for-woocommerce' ); ?><# } #>
 		</p>
-		<button class="cancel close-mkl-pc" type="button" aria-label="<?php echo esc_attr_x( 'Close the configurator app', 'Aria label of the main configurator close button', 'product-configurator-for-woocommerce' ); ?>"><span><?php _e( 'Cancel' ); ?></span></button>
+		<button class="cancel close-mkl-pc" type="button" aria-label="<?php echo esc_attr_x( 'Close the configurator app', 'Aria label of the main configurator close button', 'product-configurator-for-woocommerce' ); ?>"><span><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></span></button>
 	</header>
 <?php
 }
@@ -138,8 +138,15 @@ add_action( 'mkl_pc_frontend_configurator_toolbar', 'mkl_pc_frontend_configurato
 */
 
 function mkl_pc_frontend_configurator_layer_icon() {
+	/**
+	 * Decorative layer thumbnail by default (empty alt). Return a non-empty string for an informative override.
+	 *
+	 * @param string $alt     Default alt text.
+	 * @param null   $context Reserved for future per-layer context; layer data is rendered client-side.
+	 */
+	$layer_thumbnail_alt = apply_filters( 'mkl_pc_layer_thumbnail_alt', '', null );
 	?>
-		<i class="img"><# if(data.image.url) { #><img src="{{data.image.url}}" alt="img_{{data.image.id}}" /><# } #></i>
+		<i class="img"><# if(data.image.url) { #><img src="{{data.image.url}}" alt="<?php echo esc_attr( $layer_thumbnail_alt ); ?>" /><# } #></i>
 	<?php
 }
 add_action( 'tmpl-mkl-pc-configurator-layer-item-button', 'mkl_pc_frontend_configurator_layer_icon', 5 );

@@ -37,15 +37,10 @@ PC.fe.views.choices = Backbone.View.extend({
 	 * Ensures Tab enters the group once; arrow keys move between choices.
 	 */
 	update_roving_tabindex: function() {
-		console.log( 'update_roving_tabindex' );
-		
 		if ( ! this.$list || ! this.$list.length ) return;
 		if ( 'simple' !== ( this.model.get( 'type' ) || 'simple' ) ) return;
 
-		var $items = this.$list.find( '.choice-item:visible:not(:disabled)' ).filter( function() {
-			return 'true' !== $( this ).attr( 'aria-disabled' );
-		} );
-		console.log( 'roving items', $items );
+		var $items = PC.fe.filter_focusable( this.$list.find( '.choice-item' ) );
 		if ( ! $items.length ) return;
 
 		// Make all items untabbable by default.
@@ -106,6 +101,9 @@ PC.fe.views.choices = Backbone.View.extend({
 	close_choices: function( event ) {
 		event.preventDefault(); 
 		this.model.set('active', false);
-		$( '#config-layer-' + this.model.id ).trigger( 'focus' );
+		var $layerBtn = $( '#config-layer-' + this.model.id );
+		if ( $layerBtn.length ) {
+			PC.fe.focus_without_scroll( $layerBtn );
+		}
 	}
 });
