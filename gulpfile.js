@@ -22,6 +22,18 @@ const cleanPaths = [
 
 const folder_name = 'product-configurator-for-woocommerce';
 
+/** Source fragments concatenated into dist/assets/js/product_configurator.js (order matters). */
+const productConfiguratorParts = [
+	'src/assets/js/product-configurator/parts/pc-globals.js',
+	'src/assets/js/product-configurator/parts/pc-iife-open.js',
+	'src/assets/js/product-configurator/parts/pc-fe-config.js',
+	'src/assets/js/product-configurator/parts/pc-fe-validation.js',
+	'src/assets/js/product-configurator/parts/pc-fe-a11y.js',
+	'src/assets/js/product-configurator/parts/pc-fe-main.js',
+	'src/assets/js/product-configurator/parts/pc-iife-close.js',
+	'src/assets/js/product-configurator/parts/pc-utils.js',
+];
+
 /*== Clean Dist and Zip ==*/
 var options = { allowEmpty: true };
 
@@ -35,7 +47,8 @@ gulp.task('clean', function(done){
 gulp.task('move_src', function(done) {
 	return gulp.src(
 		[
-			'src/**'
+			'src/**',
+			'!src/assets/js/product-configurator/parts/**',
 		])
 		.pipe(plumber(reportError))
 		.pipe(gulp.dest('dist'))
@@ -75,13 +88,29 @@ gulp.task('concat_js_views', function(done) {
 });
 
 gulp.task('js', function(done) {
-	return gulp.src(['src/assets/**/*.js', '!src/assets/**/*.min.js',  '!src/assets/js/views/parts/*.js'], { base: 'src', allowEmpty: true })
+	return gulp.src([
+		'src/assets/**/*.js',
+		'!src/assets/**/*.min.js',
+		'!src/assets/js/views/parts/*.js',
+		'!src/assets/js/product-configurator/parts/**',
+	], { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
 		// .pipe(sourcemaps.init())
 		.pipe(uglify())
 		// .pipe(sourcemaps.write('maps'))
 		.pipe(rename({suffix: '.min'}))
 		.pipe(gulp.dest('dist'))
+		.on('end', done);
+});
+
+gulp.task('concat_product_configurator', function(done) {
+	return gulp.src(productConfiguratorParts, { allowEmpty: true })
+		.pipe(plumber(reportError))
+		.pipe(concat('product_configurator.js'))
+		.pipe(gulp.dest('dist/assets/js/'))
+		.pipe(uglify())
+		.pipe(rename({ suffix: '.min' }))
+		.pipe(gulp.dest('dist/assets/js/'))
 		.on('end', done);
 });
 
@@ -152,6 +181,7 @@ gulp.task('build',
 		'vendor',
 		'scss',
 		'js',
+		'concat_product_configurator',
 		'concat_js_views',
 	)
 );
@@ -159,11 +189,16 @@ gulp.task('build',
 gulp.task('watch', function() {
 	gulp.watch('src/**/*.scss', gulp.parallel('scss'));
 	gulp.watch('src/assets/js/views/parts/*.js', gulp.parallel('concat_js_views'));
+	gulp.watch('src/assets/js/product-configurator/parts/*.js', gulp.series('concat_product_configurator'));
 	// gulp.watch(jsPaths, { interval: 500 }, ['js']);
 	gulp.watch('src/**/*')
 		.on('change', function(path, stats) {
 			// console.log(stats);
-			console.log('File ' + colorize.cyan(get_relative_file_path(path)) + ' was modified');
+			var rel = get_relative_file_path(path);
+			if ( rel.indexOf('assets/js/product-configurator/parts/') !== -1 ) {
+				return;
+			}
+			console.log('File ' + colorize.cyan(rel) + ' was modified');
 			return gulp.src(path, {base: 'src'})
 				.pipe(plumber(reportError))
 				.pipe(gulp.dest('dist'));
