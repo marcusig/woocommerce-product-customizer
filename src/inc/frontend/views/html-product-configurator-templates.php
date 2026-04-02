@@ -216,7 +216,7 @@ add_action( 'mkl-pc-configurator-choices--after', 'mkl_pc_frontend_configurator_
 function mkl_pc_frontend_configurator_display_mode_fullscreen() { ?>
 	<# if ( data.display_mode && 'full-screen' === data.display_mode ) { #>
 		<li class="choices-list--footer">
-			<button type="button" class="choices-close"><span class="screen-reader-text"><?php _e( 'Confirm selection and continue configuring the product', 'product-configurator-for-woocommerce' ) ?></span></button>
+			<button type="button" class="choices-close"><span><?php _e( 'Confirm selection and continue configuring the product', 'product-configurator-for-woocommerce' ) ?></span></button>
 		</li>
 	<# } #>
 <?php
