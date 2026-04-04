@@ -238,9 +238,9 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 					var $scope = this.choices.$el;
 					if ( $scope && $scope.length ) {
 						var view = this;
-						PC.fe.focus_after_panel_transition( $scope, function() {
+						PC.fe.a11y.focus_after_panel_transition( $scope, function() {
 							if ( ! view.model.get( 'active' ) ) return;
-							PC.fe.focus_first_in_scope( $scope );
+							PC.fe.a11y.focus_first_in_scope( $scope );
 						}, { namespace: 'mklPcFocus' } );
 					}
 				}
@@ -260,9 +260,9 @@ PC.fe.views.layers_list_item = Backbone.View.extend({
 				setTimeout( () => {
 					var $btn = this.$( '> button.layer-item:visible:not(:disabled)' ).first();
 					if ( $btn.length ) {
-						PC.fe.focus_without_scroll( $btn );
+						PC.fe.a11y.focus_without_scroll( $btn );
 					} else if ( PC.fe.modal && PC.fe.modal.$main_window && PC.fe.modal.$main_window.length ) {
-						PC.fe.focus_without_scroll( PC.fe.modal.$main_window );
+						PC.fe.a11y.focus_without_scroll( PC.fe.modal.$main_window );
 					}
 				}, 0 );
 			}

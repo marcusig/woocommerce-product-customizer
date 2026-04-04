@@ -267,17 +267,42 @@
 
 		var $selection = ( modal.toolbar && modal.toolbar.$selection && modal.toolbar.$selection.length ) ? modal.toolbar.$selection : $toolbar.find( 'section.choices' ).first();
 
-		var $summary = $toolbar.find( '.mkl-pc-validation-summary' ).first();
+		var default_placement = ( $selection && $selection.length )
+			? { method: 'before', $target: $selection }
+			: { method: 'prepend', $target: $toolbar };
+		var placement_context = { $container: $container, $toolbar: $toolbar, $selection: $selection, modal: modal };
+		var placement = wp.hooks.applyFilters( 'PC.fe.validation.summary_placement', default_placement, placement_context );
+		if ( ! placement || ! placement.$target || ! placement.$target.length ) {
+			placement = default_placement;
+		} else {
+			var m = placement.method;
+			if ( m !== 'before' && m !== 'prepend' && m !== 'after' && m !== 'append' ) {
+				placement = default_placement;
+			}
+		}
+
+		function place_validation_summary( $el, p ) {
+			if ( ! $el || ! $el.length || ! p || ! p.$target || ! p.$target.length ) return;
+			switch ( p.method ) {
+				case 'prepend':
+					p.$target.prepend( $el );
+					break;
+				case 'append':
+					p.$target.append( $el );
+					break;
+				case 'after':
+					$el.insertAfter( p.$target );
+					break;
+				default:
+					$el.insertBefore( p.$target );
+			}
+		}
+
+		var $summary = $container.find( '.mkl-pc-validation-summary' ).first();
 		if ( ! $summary.length ) {
 			$summary = $( '<div class="mkl-pc-validation-summary" role="alert" aria-live="assertive" aria-atomic="true" tabindex="-1" hidden="hidden"></div>' );
-			if ( $selection && $selection.length ) {
-				$summary.insertBefore( $selection );
-			} else {
-				$toolbar.prepend( $summary );
-			}
-		} else if ( $selection && $selection.length ) {
-			$summary.insertBefore( $selection );
 		}
+		place_validation_summary( $summary, placement );
 
 		PC.fe.validation.clear_errors();
 
@@ -384,7 +409,7 @@
 				PC.fe.goto( payload.item, { $container: $container, focusEl: payload.$focus } );
 			} else if ( payload && payload.$focus && payload.$focus.length ) {
 				event.preventDefault();
-				PC.fe.focus_without_scroll( payload.$focus );
+				PC.fe.a11y.focus_without_scroll( payload.$focus );
 			}
 		} );
 
@@ -399,8 +424,8 @@
 			} );
 		}
 
-		if ( PC.fe.announce ) {
-			PC.fe.announce( count_text + ' ' + focus_moved_text );
+		if ( PC.fe.a11y.announce ) {
+			PC.fe.a11y.announce( count_text + ' ' + focus_moved_text );
 		}
 
 		setTimeout( function() {

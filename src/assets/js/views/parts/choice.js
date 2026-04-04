@@ -247,7 +247,7 @@ PC.fe.views.choice = Backbone.View.extend({
 	},
 	navigate_choices: function( key_code ) {
 		if ( ! this.options.parent || ! this.options.parent.$list ) return;
-		var $items = PC.fe.filter_focusable( this.options.parent.$list.find( '.choice-item' ) );
+		var $items = PC.fe.a11y.filter_focusable( this.options.parent.$list.find( '.choice-item' ) );
 		if ( ! $items.length ) return;
 		var current_index = $items.index( this.$( '> .choice-item' ) );
 		if ( -1 === current_index ) return;
@@ -255,7 +255,7 @@ PC.fe.views.choice = Backbone.View.extend({
 		var next_index = ( current_index + direction + $items.length ) % $items.length;
 		var $next = $items.eq( next_index );
 		if ( ! $next.length ) return;
-		PC.fe.focus_without_scroll( $next );
+		PC.fe.a11y.focus_without_scroll( $next );
 
 		if ( 'multiple' !== this.get_layer_type() ) {
 			var next_view = $next.closest( 'li.choice' ).data( 'view' );

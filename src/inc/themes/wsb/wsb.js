@@ -20,6 +20,14 @@
 		return 'in';
 	} );
 
+	wp.hooks.addFilter( 'PC.fe.validation.summary_placement', 'MKL/PC/Themes/wsb', function( placement, ctx ) {
+		var $choices = ( ctx.$selection && ctx.$selection.length ) ? ctx.$selection : ctx.$toolbar.find( 'section.choices' ).first();
+		if ( $choices.length ) {
+			return { method: 'prepend', $target: $choices };
+		}
+		return placement;
+	} );
+
 	/**
 	 * On Layer activate
 	 */

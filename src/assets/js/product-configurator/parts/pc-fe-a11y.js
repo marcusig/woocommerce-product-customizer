@@ -1,5 +1,7 @@
-	if ( ! PC.fe.focus_without_scroll ) {
-		PC.fe.focus_without_scroll = function( $target ) {
+	PC.fe.a11y = PC.fe.a11y || {};
+
+	if ( ! PC.fe.a11y.focus_without_scroll ) {
+		PC.fe.a11y.focus_without_scroll = function( $target ) {
 			if ( ! $target || ! $target.length ) return;
 			var el = $target.get( 0 );
 			if ( ! el || ! el.focus ) return;
@@ -14,14 +16,14 @@
 	/**
 	 * Modal / toolbar focusable selector (excludes tabindex="-1", e.g. inner choice buttons).
 	 */
-	PC.fe.modal_focusable_selector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+	PC.fe.a11y.modal_focusable_selector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
 
 	/**
 	 * Narrow selector for first focus inside a choices panel (inputs + non-skipped buttons).
 	 */
-	PC.fe.choices_panel_focusable_selector = 'input, select, textarea, button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+	PC.fe.a11y.choices_panel_focusable_selector = 'input, select, textarea, button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
 
-	PC.fe.is_focusable_enabled = function( el ) {
+	PC.fe.a11y.is_focusable_enabled = function( el ) {
 		var $el = $( el );
 		if ( ! $el.length ) return false;
 		if ( $el.is( ':disabled' ) ) return false;
@@ -30,21 +32,21 @@
 		return true;
 	};
 
-	PC.fe.filter_focusable = function( $collection ) {
+	PC.fe.a11y.filter_focusable = function( $collection ) {
 		return $collection.filter( ':visible' ).filter( function() {
-			return PC.fe.is_focusable_enabled( this );
+			return PC.fe.a11y.is_focusable_enabled( this );
 		} );
 	};
 
 	/**
 	 * Focus first visible enabled control in $scope matching selector (default: choices panel set).
 	 */
-	PC.fe.focus_first_in_scope = function( $scope, selector ) {
+	PC.fe.a11y.focus_first_in_scope = function( $scope, selector ) {
 		if ( ! $scope || ! $scope.length ) return $();
-		selector = selector || PC.fe.choices_panel_focusable_selector;
-		var $target = PC.fe.filter_focusable( $scope.find( selector ) ).first();
+		selector = selector || PC.fe.a11y.choices_panel_focusable_selector;
+		var $target = PC.fe.a11y.filter_focusable( $scope.find( selector ) ).first();
 		if ( $target.length ) {
-			PC.fe.focus_without_scroll( $target );
+			PC.fe.a11y.focus_without_scroll( $target );
 		}
 		return $target;
 	};
@@ -52,7 +54,7 @@
 	/**
 	 * Run focusFn after .layer_choices transition when active, else after a short delay.
 	 */
-	PC.fe.focus_after_panel_transition = function( $panel, focusFn, options ) {
+	PC.fe.a11y.focus_after_panel_transition = function( $panel, focusFn, options ) {
 		options = options || {};
 		var timeoutMs = options.timeoutMs !== undefined ? options.timeoutMs : 350;
 		var delayIfInactive = options.delayIfInactive !== undefined ? options.delayIfInactive : 50;
@@ -113,7 +115,7 @@
 			var layers = options.layers || PC.fe.layers;
 			if ( ! layers || ! layerId ) {
 				if ( options.focusEl && options.focusEl.length ) {
-					setTimeout( function() { PC.fe.focus_without_scroll( options.focusEl ); }, 500 );
+					setTimeout( function() { PC.fe.a11y.focus_without_scroll( options.focusEl ); }, 500 );
 				}
 				return false;
 			}
@@ -121,7 +123,7 @@
 			var layer = layers.get ? layers.get( layerId ) : null;
 			if ( ! layer ) {
 				if ( options.focusEl && options.focusEl.length ) {
-					setTimeout( function() { PC.fe.focus_without_scroll( options.focusEl ); }, 500 );
+					setTimeout( function() { PC.fe.a11y.focus_without_scroll( options.focusEl ); }, 500 );
 				}
 				return false;
 			}
@@ -167,8 +169,8 @@
 			}
 			if ( $focusTarget && $focusTarget.length ) {
 				var $panel = $focusTarget.closest( '.layer_choices' );
-				PC.fe.focus_after_panel_transition( $panel, function() {
-					PC.fe.focus_without_scroll( $focusTarget );
+				PC.fe.a11y.focus_after_panel_transition( $panel, function() {
+					PC.fe.a11y.focus_without_scroll( $focusTarget );
 				}, {
 					namespace: 'mklPcGotoFocus',
 					timeoutMs: 350,
@@ -180,22 +182,22 @@
 		};
 	}
 
-	if ( ! PC.fe.announce ) {
-		PC.fe._announce_state = PC.fe._announce_state || { last_message: '', last_ts: 0 };
-		PC.fe.announce = function( message, options ) {
+	if ( ! PC.fe.a11y.announce ) {
+		PC.fe.a11y._announce_state = PC.fe.a11y._announce_state || { last_message: '', last_ts: 0 };
+		PC.fe.a11y.announce = function( message, options ) {
 			if ( ! message ) return;
 			options = options || {};
 			var dedupe_window = typeof options.dedupe_window === 'number' ? options.dedupe_window : 700;
 			var normalized = String( message ).replace( /\s+/g, ' ' ).trim();
 			if ( ! normalized ) return;
 			var now = Date.now();
-			if ( PC.fe._announce_state.last_message === normalized && ( now - PC.fe._announce_state.last_ts ) < dedupe_window ) {
+			if ( PC.fe.a11y._announce_state.last_message === normalized && ( now - PC.fe.a11y._announce_state.last_ts ) < dedupe_window ) {
 				return;
 			}
 			var $region = $( '.mkl-pc-live-region' ).first();
 			if ( ! $region.length ) return;
-			PC.fe._announce_state.last_message = normalized;
-			PC.fe._announce_state.last_ts = now;
+			PC.fe.a11y._announce_state.last_message = normalized;
+			PC.fe.a11y._announce_state.last_ts = now;
 			$region.text( '' );
 			setTimeout( function() {
 				$region.text( normalized );

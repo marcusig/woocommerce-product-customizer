@@ -40,7 +40,7 @@ PC.fe.views.choices = Backbone.View.extend({
 		if ( ! this.$list || ! this.$list.length ) return;
 		if ( 'simple' !== ( this.model.get( 'type' ) || 'simple' ) ) return;
 
-		var $items = PC.fe.filter_focusable( this.$list.find( '.choice-item' ) );
+		var $items = PC.fe.a11y.filter_focusable( this.$list.find( '.choice-item' ) );
 		if ( ! $items.length ) return;
 
 		// Make all items untabbable by default.
@@ -103,7 +103,7 @@ PC.fe.views.choices = Backbone.View.extend({
 		this.model.set('active', false);
 		var $layerBtn = $( '#config-layer-' + this.model.id );
 		if ( $layerBtn.length ) {
-			PC.fe.focus_without_scroll( $layerBtn );
+			PC.fe.a11y.focus_without_scroll( $layerBtn );
 		}
 	}
 });

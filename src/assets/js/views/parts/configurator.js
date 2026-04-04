@@ -31,8 +31,8 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 	focusable_selector: 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])',
 	render: function() {
-		if ( PC.fe.modal_focusable_selector ) {
-			this.focusable_selector = PC.fe.modal_focusable_selector;
+		if ( PC.fe.a11y.modal_focusable_selector ) {
+			this.focusable_selector = PC.fe.a11y.modal_focusable_selector;
 		}
 		if( PC.fe.inline == true && $(PC.fe.inlineTarget).length > 0 ) {
 			$(PC.fe.inlineTarget).empty().append(this.$el);
@@ -201,11 +201,11 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 	restore_focus: function() {
 		if ( this.trigger_el && $( this.trigger_el ).length ) {
-			PC.fe.focus_without_scroll( $( this.trigger_el ) );
+			PC.fe.a11y.focus_without_scroll( $( this.trigger_el ) );
 			return;
 		}
 		if ( this.previously_focused_el && document.contains( this.previously_focused_el ) ) {
-			PC.fe.focus_without_scroll( $( this.previously_focused_el ) );
+			PC.fe.a11y.focus_without_scroll( $( this.previously_focused_el ) );
 		}
 	},
 	get_initial_focus_target: function() {
@@ -222,36 +222,36 @@ PC.fe.views.configurator = Backbone.View.extend({
 		var $first_visible_layer = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator)' ).first();
 		if ( $first_visible_layer.length ) {
 			var $first_layer_button = $first_visible_layer.find( '> button.layer-item:visible:not(:disabled)' ).first();
-			if ( $first_layer_button.length && PC.fe.is_focusable_enabled( $first_layer_button ) ) {
+			if ( $first_layer_button.length && PC.fe.a11y.is_focusable_enabled( $first_layer_button ) ) {
 				return $first_layer_button;
 			}
 
 			var first_layer_id = $first_visible_layer.attr( 'data-layer' );
 			if ( first_layer_id ) {
 				var $layerChoices = $scope.find( '#mkl-pc-layer-choices-' + first_layer_id );
-				var $first_input = PC.fe.filter_focusable( $layerChoices.find( '.choice-item-input' ) ).first();
+				var $first_input = PC.fe.a11y.filter_focusable( $layerChoices.find( '.choice-item-input' ) ).first();
 				if ( $first_input.length ) return $first_input;
-				var $first_choice = PC.fe.filter_focusable( $layerChoices.find( '.choice-item' ) ).first();
+				var $first_choice = PC.fe.a11y.filter_focusable( $layerChoices.find( '.choice-item' ) ).first();
 				if ( $first_choice.length ) return $first_choice;
 			}
 
 			var $nested_layer_button = $first_visible_layer.find( 'button.layer-item:visible:not(:disabled)' ).first();
-			if ( $nested_layer_button.length && PC.fe.is_focusable_enabled( $nested_layer_button ) ) {
+			if ( $nested_layer_button.length && PC.fe.a11y.is_focusable_enabled( $nested_layer_button ) ) {
 				return $nested_layer_button;
 			}
 		}
 
 		var $layer_button = $scope.find( '.layers .layers-list-item:visible:not(.hide_in_configurator) > button.layer-item:visible:not(:disabled)' ).first();
-		if ( $layer_button.length && PC.fe.is_focusable_enabled( $layer_button ) ) return $layer_button;
+		if ( $layer_button.length && PC.fe.a11y.is_focusable_enabled( $layer_button ) ) return $layer_button;
 
 		// 3) First choice in any open choices panel (inputs preferred for form-like layers).
-		var $choice_input = PC.fe.filter_focusable( $scope.find( '.layer_choices:visible .choice-item-input' ) ).first();
+		var $choice_input = PC.fe.a11y.filter_focusable( $scope.find( '.layer_choices:visible .choice-item-input' ) ).first();
 		if ( $choice_input.length ) return $choice_input;
-		var $choice_button = PC.fe.filter_focusable( $scope.find( '.layer_choices:visible .choice-item' ) ).first();
+		var $choice_button = PC.fe.a11y.filter_focusable( $scope.find( '.layer_choices:visible .choice-item' ) ).first();
 		if ( $choice_button.length ) return $choice_button;
 
 		// 4) First generic focusable in the modal.
-		var $focusable = PC.fe.filter_focusable( $scope.find( this.focusable_selector ) ).first();
+		var $focusable = PC.fe.a11y.filter_focusable( $scope.find( this.focusable_selector ) ).first();
 		if ( $focusable.length ) return $focusable;
 
 		return this.$main_window && this.$main_window.length ? this.$main_window : $();
@@ -261,15 +261,15 @@ PC.fe.views.configurator = Backbone.View.extend({
 		if ( PC.fe.inline ) return;
 		var $target = this.get_initial_focus_target();
 		if ( $target && $target.length ) {
-			PC.fe.focus_without_scroll( $target );
+			PC.fe.a11y.focus_without_scroll( $target );
 		}
 	},
 
 	/**
-	 * Visible, enabled focusables (delegates to PC.fe.filter_focusable).
+	 * Visible, enabled focusables (delegates to PC.fe.a11y.filter_focusable).
 	 */
 	filter_modal_focusable: function( $collection ) {
-		return PC.fe.filter_focusable( $collection );
+		return PC.fe.a11y.filter_focusable( $collection );
 	},
 	
 	/**
@@ -308,7 +308,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 					activeLayerView.show_choices( null );
 					event.preventDefault();
 					setTimeout( function() {
-						PC.fe.focus_without_scroll( $focusTarget );
+						PC.fe.a11y.focus_without_scroll( $focusTarget );
 					}, 0 );
 					return;
 				}
@@ -342,7 +342,7 @@ PC.fe.views.configurator = Backbone.View.extend({
 						} else {
 							next = idx === cycle.length - 1 ? cycle[0] : cycle[ idx + 1 ];
 						}
-						PC.fe.focus_without_scroll( $( next ) );
+						PC.fe.a11y.focus_without_scroll( $( next ) );
 						return;
 					}
 				}
@@ -352,16 +352,16 @@ PC.fe.views.configurator = Backbone.View.extend({
 		if ( PC.fe.inline ) return;
 
 		// Focus cycling
-		var $focusable = PC.fe.filter_focusable( this.$main_window.find( this.focusable_selector ) );
+		var $focusable = PC.fe.a11y.filter_focusable( this.$main_window.find( this.focusable_selector ) );
 		if ( ! $focusable.length ) return;
 		var first = $focusable[0];
 		var last = $focusable[ $focusable.length - 1 ];
 		if ( event.shiftKey && document.activeElement === first ) {
 			event.preventDefault();
-			PC.fe.focus_without_scroll( $( last ) );
+			PC.fe.a11y.focus_without_scroll( $( last ) );
 		} else if ( ! event.shiftKey && document.activeElement === last ) {
 			event.preventDefault();
-			PC.fe.focus_without_scroll( $( first ) );
+			PC.fe.a11y.focus_without_scroll( $( first ) );
 		}
 	}
 });
