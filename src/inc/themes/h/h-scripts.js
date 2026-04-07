@@ -14,7 +14,7 @@
 			view.$el.toggleClass( 'mobile-show-form' );
 		} );
 
-		$( '.pc_configurator_form .configurator-add-to-cart' ).append( $( '.mkl_pc_toolbar .pc-total-price' ) );
+		$( '.pc_configurator_form .configurator-add-to-cart' ).append( $( '.mkl_pc_toolbar .form > .pc-total-price' ).first() );
 		
 		if ( view.$( '.pc_configurator_form input.qty' ).length ) {
 			view.$( '.pc_configurator_form' ).addClass( 'has-qty' );
@@ -82,6 +82,14 @@
 		return options;
 	} );
 
+	/* Summary placement */
+	wp.hooks.addFilter( 'PC.fe.validation.summary_placement', 'MKL/PC/Themes/H', function( placement, ctx ) {
+		if ( ctx.$container && ctx.$container.length ) {
+			return { method: 'prepend', $target: ctx.$container };
+		}
+		return placement;
+	} );
+	
 	var resize_layer_choices = function( resized ) {
 		var cow = $( '.mkl_pc.opened .mkl_pc_container' ).outerWidth();
 		var choice_el_width = pc_h_config.choice_width || 220;

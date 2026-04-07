@@ -28,6 +28,13 @@ PC.fe.save_data = {
 			} );
 		}
 		errs.length = 0;
+		var $summary = $( '.mkl-pc-validation-summary' ).first();
+		if ( $summary.length ) {
+			$summary.empty().attr( 'hidden', 'hidden' );
+		}
+		if ( PC.fe.validation.detach_live_sync ) {
+			PC.fe.validation.detach_live_sync();
+		}
 	},
 	is_layer_valid: function( layer ) {
 		this.reset_errors();

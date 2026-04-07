@@ -172,7 +172,7 @@ $inner_space: 1em;
 				form.cart {
 					padding: 0;
 				}
-				.configurator-add-to-cart {
+				.configurator-add-to-cart, .wp-element-button {
 					display: inline-block;
 					border-radius: 4px;
 					font-size: 16px;
@@ -207,6 +207,9 @@ $inner_space: 1em;
 							color: color(add_to_cart_text_color_hover);
 						}
 					}
+				}
+				button + button {
+					margin-left: 6px;
 				}
 
 				&.has-qty {
@@ -968,6 +971,13 @@ TIPPY
 }
 
 @import 'scss/dark_mode';
+
+.mkl-pc-validation-summary {
+    position: absolute;
+    right: 10px;
+    bottom: calc(var(--toolbar_height) + 10px);
+    z-index: 10;
+}
 
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {

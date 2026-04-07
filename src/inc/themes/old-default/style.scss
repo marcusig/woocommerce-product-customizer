@@ -1544,3 +1544,14 @@ body.configurator_is_inline .mkl_pc {
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
 }
+
+/* twentytwentyfive theme fix */
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form button + button {
+    margin-left: 6px;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
+}

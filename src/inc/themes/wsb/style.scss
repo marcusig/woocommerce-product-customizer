@@ -558,6 +558,28 @@ body.configurator_is_inline .mkl_pc {
 	z-index: 100000;
 }
 
+/* twentytwentyfive theme fix */
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form button {
+    padding: 1rem;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	margin: 0;
+	border-radius: 0;
+	border-width: 0 0 0 4px;
+	&:focus {
+		outline: 2px solid #7a13133b;
+		outline-offset: -2px;
+	}
+}
+
 @media ( max-width: $small_screen_width ) {
 	.mkl_pc {
 		--mkl_pc-footer-height: 35px;

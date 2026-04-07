@@ -1142,7 +1142,20 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
-    margin: 8px var(--mkl_pc-float-spacing) 0;
+	margin: 0 0 1em 0;
+	border-radius: 8px;
+}
+
+/* twentytwentyfive theme fix */
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form button {
+    padding: 1rem;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
 }
 
 @media (max-width: $small_screen_width) {

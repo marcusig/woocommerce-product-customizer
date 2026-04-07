@@ -2,14 +2,20 @@
 
 	if ( ! PC.fe.a11y.focus_without_scroll ) {
 		PC.fe.a11y.focus_without_scroll = function( $target ) {
+			PC.fe.a11y.focus( $target, true );
+		};
+	}
+
+	if ( ! PC.fe.a11y.focus ) {
+		PC.fe.a11y.focus = function( $target, prevent_scroll = false ) {
 			if ( ! $target || ! $target.length ) return;
+			if ( !prevent_scroll ) {
+				$target.trigger( 'focus' );
+				return;
+			}
 			var el = $target.get( 0 );
 			if ( ! el || ! el.focus ) return;
-			try {
-				el.focus( { preventScroll: true } );
-			} catch ( error ) {
-				el.focus();
-			}
+			el.focus( { preventScroll: true } );
 		};
 	}
 
@@ -87,9 +93,15 @@
 		/**
 		 * Navigate to a layer / choice, opening its parent hierarchy if needed.
 		 * Intended for validation, summary navigation, etc.
+		 *
+		 * @param {Object} options
+		 * @param {boolean} [options.should_scroll=false] When true, focus uses the browser default (element scrolled into view). Otherwise uses preventScroll.
 		 */
 		PC.fe.goto = function( item, options ) {
 			options = options || {};
+			var applyFocus = options.should_scroll ? PC.fe.a11y.focus : PC.fe.a11y.focus_without_scroll;
+			console.log( applyFocus, options.should_scroll );
+			
 			var modal = PC.fe.modal || {};
 
 			var $container = options.$container || ( modal.$main_window && modal.$main_window.length ? modal.$main_window : $() );
@@ -115,7 +127,7 @@
 			var layers = options.layers || PC.fe.layers;
 			if ( ! layers || ! layerId ) {
 				if ( options.focusEl && options.focusEl.length ) {
-					setTimeout( function() { PC.fe.a11y.focus_without_scroll( options.focusEl ); }, 500 );
+					setTimeout( function() { applyFocus( options.focusEl ); }, 500 );
 				}
 				return false;
 			}
@@ -123,7 +135,7 @@
 			var layer = layers.get ? layers.get( layerId ) : null;
 			if ( ! layer ) {
 				if ( options.focusEl && options.focusEl.length ) {
-					setTimeout( function() { PC.fe.a11y.focus_without_scroll( options.focusEl ); }, 500 );
+					setTimeout( function() { applyFocus( options.focusEl ); }, 500 );
 				}
 				return false;
 			}
@@ -170,7 +182,7 @@
 			if ( $focusTarget && $focusTarget.length ) {
 				var $panel = $focusTarget.closest( '.layer_choices' );
 				PC.fe.a11y.focus_after_panel_transition( $panel, function() {
-					PC.fe.a11y.focus_without_scroll( $focusTarget );
+					applyFocus( $focusTarget );
 				}, {
 					namespace: 'mklPcGotoFocus',
 					timeoutMs: 350,

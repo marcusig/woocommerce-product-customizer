@@ -406,10 +406,10 @@
 			var payload = goto_items_by_index[ idx ];
 			if ( payload && payload.item && PC.fe.goto ) {
 				event.preventDefault();
-				PC.fe.goto( payload.item, { $container: $container, focusEl: payload.$focus } );
+				PC.fe.goto( payload.item, { $container: $container, focusEl: payload.$focus, should_scroll: true } );
 			} else if ( payload && payload.$focus && payload.$focus.length ) {
 				event.preventDefault();
-				PC.fe.a11y.focus_without_scroll( payload.$focus );
+				payload.$focus.trigger( 'focus' );
 			}
 		} );
 
