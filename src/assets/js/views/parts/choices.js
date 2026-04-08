@@ -21,13 +21,54 @@ PC.fe.views.choices = Backbone.View.extend({
 		if ( this.model.get( 'color_swatch_size' ) ) this.$el.addClass( 'swatches-size--' + this.model.get( 'color_swatch_size' ) );
 
 		this.$list = this.$el.find('.choices-list ul'); 
+		this.set_a11y_attributes();
 		this.add_all( this.options.content ); 
 		
 		if ( this.options.content && ( ! this.model.get( 'default_selection' ) || 'select_first' == this.model.get( 'default_selection' ) ) && !this.options.content.findWhere( { 'active': true } ) && this.options.content.findWhere( { available: true } ) ) {
 			var av = this.options.content.findWhere( { available: true } );
 			if ( av ) av.set( 'active', true );
 		}
+
+		this.update_roving_tabindex();
 		return this.$el;
+	},
+	/**
+	 * Roving tabindex for simple layers (radiogroup pattern).
+	 * Ensures Tab enters the group once; arrow keys move between choices.
+	 */
+	update_roving_tabindex: function() {
+		if ( ! this.$list || ! this.$list.length ) return;
+		if ( 'simple' !== ( this.model.get( 'type' ) || 'simple' ) ) return;
+
+		var $items = PC.fe.a11y.filter_focusable( this.$list.find( '.choice-item' ) );
+		if ( ! $items.length ) return;
+
+		// Make all items untabbable by default.
+		$items.attr( 'tabindex', '-1' );
+
+		// Prefer the checked one, otherwise the first available.
+		var $checked = $items.filter( '[aria-checked="true"]' ).first();
+		var $target = $checked.length ? $checked : $items.first();
+		$target.attr( 'tabindex', '0' );
+	},
+	set_a11y_attributes: function() {
+		if ( ! this.$list || ! this.$list.length ) return;
+		var layer_name = this.model.get( 'name' ) || '';
+		var layer_type = this.model.get( 'type' ) || 'simple';
+		var list_id = 'mkl-pc-choice-list-' + this.model.id;
+		this.$list.attr( 'id', list_id );
+
+		if ( 'simple' === layer_type ) {
+			this.$list.attr( {
+				role: 'radiogroup',
+				'aria-label': layer_name
+			} );
+		} else if ( 'multiple' === layer_type ) {
+			this.$list.attr( {
+				role: 'group',
+				'aria-label': layer_name
+			} );
+		}
 	},
 	add_all: function( collection ) { 
 		// this.$el.empty();
@@ -51,12 +92,18 @@ PC.fe.views.choices = Backbone.View.extend({
 		}
 
 		/**
-		 * 
+		 * Action hook: PC.fe.choices.add_one.after
+		 * @param {PC.fe.views.choices} target_view
+		 * @param {PC.fe.views.choice} new_choice
 		 */
 		wp.hooks.doAction( 'PC.fe.choices.add_one.after', this, new_choice );
 	},
 	close_choices: function( event ) {
 		event.preventDefault(); 
 		this.model.set('active', false);
+		var $layerBtn = $( '#config-layer-' + this.model.id );
+		if ( $layerBtn.length ) {
+			PC.fe.a11y.focus_without_scroll( $layerBtn );
+		}
 	}
 });

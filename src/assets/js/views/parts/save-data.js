@@ -1,4 +1,6 @@
-PC.fe.errors = [];
+PC.fe.validation = PC.fe.validation || {};
+PC.fe.validation.errors = PC.fe.validation.errors || [];
+PC.fe.errors = PC.fe.validation.errors;
 
 PC.fe.save_data = {
 	choices: [],
@@ -14,8 +16,9 @@ PC.fe.save_data = {
 		return this.choices;
 	},
 	reset_errors: function() {
-		if ( PC.fe.errors.length ) {
-			_.each( PC.fe.errors, function( error ) {
+		var errs = PC.fe.validation.errors;
+		if ( errs.length ) {
+			_.each( errs, function( error ) {
 				if ( error.choice && error.choice.get( 'has_error' ) ) {
 					error.choice.set( 'has_error', false );
 				}
@@ -24,12 +27,19 @@ PC.fe.save_data = {
 				}
 			} );
 		}
-		PC.fe.errors = [];
+		errs.length = 0;
+		var $summary = $( '.mkl-pc-validation-summary' ).first();
+		if ( $summary.length ) {
+			$summary.empty().attr( 'hidden', 'hidden' );
+		}
+		if ( PC.fe.validation.detach_live_sync ) {
+			PC.fe.validation.detach_live_sync();
+		}
 	},
 	is_layer_valid: function( layer ) {
 		this.reset_errors();
 		this.validate_layer( layer );
-		return ! PC.fe.errors.length;
+		return ! PC.fe.validation.errors.length;
 	},
 	validate_layer: function( layer ) {
 		if ( 'group' == layer.get( 'type' ) ) {
@@ -38,6 +48,40 @@ PC.fe.save_data = {
 			return;
 		}
 		this.parse_choices( layer );
+	},
+
+	/**
+	 * Run validate_layer for one layer (and its descendant groups) without mutating the main errors list.
+	 * Uses the same parse_choices / hooks path as full save validation — no duplicated rules.
+	 *
+	 * @param {Backbone.Model} layer Layer model from PC.fe.layers.
+	 * @return {Array} Errors produced for that subtree only.
+	 */
+	collect_errors_for_layer: function( layer ) {
+		if ( ! layer || ! layer.get ) return [];
+		var prev = PC.fe.validation.errors;
+		var capture = [];
+		PC.fe.validation.errors = capture;
+		PC.fe.errors = capture;
+		try {
+			this.validate_layer( layer );
+			return capture.slice();
+		} finally {
+			PC.fe.validation.errors = prev;
+			PC.fe.errors = prev;
+		}
+	},
+
+	/**
+	 * Re-validate the layer that owns a choice (same as collect_errors_for_layer on that layer).
+	 *
+	 * @param {Backbone.Model} choice Choice model with layerId.
+	 * @return {Array}
+	 */
+	collect_errors_for_choice: function( choice ) {
+		if ( ! choice || ! choice.get || ! PC.fe.layers ) return [];
+		var layer = PC.fe.layers.get( choice.get( 'layerId' ) );
+		return layer ? this.collect_errors_for_layer( layer ) : [];
 	},
 	count_selected_choices_in_group: function( group_id ) {
 		var children = PC.fe.layers.filter( function( layer ) {
@@ -146,9 +190,10 @@ PC.fe.save_data = {
 
 					// The item is out of stock, so throw an error
 					if ( false === choice.get( 'available' ) ) {
-						PC.fe.errors.push( {
+						var separator_in = ( PC_config.lang && PC_config.lang.validation_separator_in ) ? PC_config.lang.validation_separator_in : ', ';
+						PC.fe.validation.errors.push( {
 							choice: choice,
-							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + ' > ' + choice.get_name() )
+							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + separator_in + choice.get_name() )
 						} );
 					}
 
@@ -199,9 +244,10 @@ PC.fe.save_data = {
 
 					// The item is out of stock, so throw an error
 					if ( false === choice.get( 'available' ) ) {
-						PC.fe.errors.push( {
+						var separator_in = ( PC_config.lang && PC_config.lang.validation_separator_in ) ? PC_config.lang.validation_separator_in : ', ';
+						PC.fe.validation.errors.push( {
 							choice: choice,
-							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + ' > ' + choice.get_name() )
+							message: PC_config.lang.out_of_stock_error_message.replace( '%s', model_data.name + separator_in + choice.get_name() )
 						} );
 					}
 				} else if ( is_required ) {
@@ -228,7 +274,7 @@ PC.fe.save_data = {
 		}
 
 		if ( require_error ) {	
-			PC.fe.errors.push( {
+			PC.fe.validation.errors.push( {
 				choice: false,
 				layer: model,
 				message: PC_config.lang.required_error_message.replace( '%s', model_data.name ) 

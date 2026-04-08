@@ -184,6 +184,9 @@ Supports: columns, color_swatches
 					}
 				}
 			}
+			.form {
+				align-items: center;
+			}
 			form.cart {
 				margin: 0;
 			}
@@ -484,10 +487,16 @@ body.configurator_is_inline .mkl_pc {
 .save-your-design-modal-container,
 .share-your-design-modal-container {
 	a {
-		&.mkl-footer--action-button {
-			display: block;
-			text-decoration: none;
+		color: color( primary );
+		&:hover,
+		&:focus,
+		&:active {
+			color: color( primary_hover );
 		}
+	}
+	.mkl-footer--action-button {
+		display: block;
+		text-decoration: none;
 		color: color( primary );
 		&:hover,
 		&:focus,
@@ -496,7 +505,7 @@ body.configurator_is_inline .mkl_pc {
 		}
 	}
 
-	a.mkl-footer--action-button {
+	.mkl-footer--action-button {
 		span {
 			display: block;
 			font-size: 10px;
@@ -526,7 +535,7 @@ body.configurator_is_inline .mkl_pc {
 	}
 }
 
-a.save-your-design--pdf {
+.save-your-design--pdf {
 	color: color( primary );
 	text-decoration: none;
 	display: block;
@@ -700,17 +709,6 @@ a.save-your-design--pdf {
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar ul.display-mode-colors li.choices-list ul li span.description,
 .mkl_pc:not(.no-tooltip) .mkl_pc_container .mkl_pc_toolbar ul.display-mode-colors li.choices-list ul li span.out-of-stock {
     display: none;
-}
-
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
-    display: block;
-	text-transform: uppercase;
-	font-size: 80%;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
 }
 
 /* Dropdown mode */
@@ -928,6 +926,24 @@ nav.mkl-pc--steps {
 	letter-spacing: 2px;
 	-webkit-animation: configurator-load 1.0s infinite ease-in-out;
 	animation: configurator-load 1.0s infinite ease-in-out; 
+}
+
+/* Error Summary */
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	margin: 0;
+	border-radius: 0;
+	border-width: 0 0 0 4px;
+	&:focus {
+		outline: 2px solid #7a13133b;
+		outline-offset: -2px;
+	}
+}
+
+/* Keyboard navigation focus */ 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer-item:focus, 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-item:focus, 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-group-label:focus {
+	outline-offset: -2px;
 }
 
 /* Divi fix */

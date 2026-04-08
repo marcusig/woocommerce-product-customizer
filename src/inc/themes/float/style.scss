@@ -243,7 +243,6 @@ $inner_space: 1em;
 					padding: 0;
 					top: 30px;
 					left: 30px;
-
 					span {
 						display: none;
 					}
@@ -418,6 +417,7 @@ $inner_space: 1em;
 					}
 					button {
 						padding-left: 60px;
+
 						&.layer-item {
 
 							transition: .2s all;
@@ -459,8 +459,7 @@ $inner_space: 1em;
 							span.selected-choice {
 								display: block;
 								font-size: 0.8em;
-								text-transform: uppercase;
-								opacity: 0.85;
+								opacity: 0.7;
 							}
 							
 							&::after {
@@ -1011,15 +1010,6 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 
 /* END Full screen display mode */ 
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
-    display: block;
-}
-
-.tippy-content .out-of-stock {
-	position: relative;
-	display: block;
-}
-
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li .tippy-content span.out-of-stock {
     position: relative;
     display: block;
@@ -1032,12 +1022,6 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 	padding-top: 6px;
 	padding-bottom: 6px;
 	border-top: 1px solid #ffffff40;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.choices-fullwidth {
@@ -1119,7 +1103,9 @@ body.configurator_is_inline.pc-full-screenlayer--opened {
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
-a.save-your-design, a.save-your-design--pdf, a.mkl-footer--action-button {
+.save-your-design, 
+.save-your-design--pdf, 
+.mkl-footer--action-button {
 	svg {
 		transform: translateY(0);
 		fill: color(primary);
@@ -1137,7 +1123,7 @@ a.save-your-design, a.save-your-design--pdf, a.mkl-footer--action-button {
 	}
 }
 
-a.save-your-design svg path,
+.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
 .save-your-design--pdf svg path {
     fill: color(primary);
@@ -1153,6 +1139,23 @@ a.save-your-design svg path,
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	margin: 0 0 1em 0;
+	border-radius: 8px;
+}
+
+/* twentytwentyfive theme fix */
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form button {
+    padding: 1rem;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
 }
 
 @media (max-width: $small_screen_width) {

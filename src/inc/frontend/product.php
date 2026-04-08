@@ -112,6 +112,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				}
 				$attributes = mkl_pc()->frontend->get_configurator_element_attributes( $product );
 				$attributes = implode( ' ', mkl_pc()->frontend->_output_data_attributes( $attributes ) );
+				echo apply_filters( 'mkl_pc_configure_button_a11y_description', '<h2 class="screen-reader-text">'. __( 'Press the Configure button to enter the product configurator (next element)', 'product-configurator-for-woocommerce' ) .'</h2>', $product );
 				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . esc_attr( $this->button_class ) . '" ' . $attributes . ' type="button"><span class="configure-button--label">'. $label .'</span><span class="loading-icon" aria-hidden="true"><i></i></span></button>' );
 			}
 		}
@@ -182,7 +183,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			if ( $price ) $price = preg_replace( '/<script.*?\/script>/s', '', $price );
 		?>
 			<# if ( data.formated_regular_price ) { #><del class="pc-total--regular-price">{{{data.formated_regular_price}}}</del><# } #>
-			<span class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
+			<span aria-live="polite" aria-atomic="true" class="pc-total-price <?php echo esc_attr( apply_filters( 'woocommerce_product_price_class', 'price' ) ); ?>"><# if ( data.formated_price ) { #>{{{data.formated_price}}}<# } else { #><?php echo $price; ?><# } #></span>
 		<?php 
 		}
 
@@ -238,6 +239,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
 						<span><?php echo $add_to_cart; ?></span>
+						<span class="screen-reader-text"><?php _ex( 'Total item price: ', 'Screen reader text, total price prefix for add to cart button', 'product-configurator-for-woocommerce' ); ?> <span class="pc-total-price"></span></span>
 					</button>
 					<?php do_action( 'mkl_pc_frontend_configurator_after_add_to_cart' ); ?>
 				<?php

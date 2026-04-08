@@ -443,16 +443,6 @@ body.configurator_is_inline .mkl_pc {
 	}
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
-    display: block;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-
-}
-
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul > li.choices-fullwidth {
 	.choices-list li {
 		width: 100%;
@@ -536,7 +526,7 @@ body.configurator_is_inline .mkl_pc {
 	animation: configurator-load 1.0s infinite ease-in-out; 
 }
 
-a.save-your-design, a.save-your-design--pdf {
+.save-your-design, .save-your-design--pdf, .mkl-footer--action-button {
 	svg {
 		transform: translateY(0);
 		fill: color(primary);
@@ -556,7 +546,7 @@ a.save-your-design, a.save-your-design--pdf {
 
 }
 
-a.save-your-design svg path,
+.save-your-design svg path,
 .mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
 .save-your-design--pdf svg path,
 .mkl-footer--action-button svg path {
@@ -566,6 +556,28 @@ a.save-your-design svg path,
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
+}
+
+/* twentytwentyfive theme fix */
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form button {
+    padding: 1rem;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
+}
+
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	margin: 0;
+	border-radius: 0;
+	border-width: 0 0 0 4px;
+	&:focus {
+		outline: 2px solid #7a13133b;
+		outline-offset: -2px;
+	}
 }
 
 @media ( max-width: $small_screen_width ) {

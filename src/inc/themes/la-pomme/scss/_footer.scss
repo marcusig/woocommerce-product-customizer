@@ -76,8 +76,8 @@ footer {
 		}
 	}
 
-	a.save-your-design--pdf,
-	a.share-your-design,
+	.save-your-design--pdf,
+	.share-your-design,
 	button.reset-configuration {
 		margin: 0;
 		padding: 4px 9px;
@@ -162,7 +162,7 @@ footer {
 		// 	padding-top: 4px;
 		// }
 
-		a.save-your-design {
+		.save-your-design {
 			span {
 				display: none;
 			}
@@ -195,9 +195,10 @@ footer {
 	// }
 
 
-	a.save-your-design svg path,
+	.save-your-design svg path,
 	.mkl_pc .mkl_pc_container .mkl-pc-show-form svg path,
-	a.save-your-design--pdf svg path {
+	.save-your-design--pdf svg path,
+	.mkl-footer--action-button svg path {
 		fill: color(primary);
 	}
 }

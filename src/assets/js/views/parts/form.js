@@ -81,20 +81,13 @@ PC.fe.views.form = Backbone.View.extend({
 		var data = PC.fe.save_data.save();
 		var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
 		if ( errors.length ) {
-			// show errors and prevent adding to cart
-			console.log( errors );
-			var messages = [];
-			_.each( errors, function( error ) {
-				if ( error.choice ) {
-					error.choice.set( 'has_error', error.message );
-				}
-				if ( error.layer ) {
-					error.layer.set( 'has_error', error.message );
-				}
-				messages.push( PC.utils.strip_html( error.message ) );
-			} );
-			alert( messages.join( "\n" ) );
+			if ( PC.fe.show_validation_errors ) {
+				PC.fe.show_validation_errors( errors );
+			}
 			return false;
+		}
+		if ( PC.fe.clear_validation_errors ) {
+			PC.fe.clear_validation_errors();
 		}
 		return data;
 	},

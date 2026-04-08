@@ -14,6 +14,9 @@ PC.fe.views.layers_list = Backbone.View.extend({
 	}, 
 	render: function() {
 		this.options.parent.$selection.append( this.$el );
+		if ( PC_config.lang.layers_aria_label ) {
+			this.$el.attr( 'aria-label', PC_config.lang.layers_aria_label );
+		}
 		this.add_all( PC.fe.layers );
 		return this.$el;
 	},

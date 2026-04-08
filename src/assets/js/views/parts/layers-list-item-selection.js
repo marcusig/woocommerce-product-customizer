@@ -2,6 +2,7 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 	tagName: 'span',
 	className: 'selected-choice',
 	initialize: function() {
+		this._last_announced_summary = null;
 		this.choices = PC.fe.getLayerContent( this.model.id );
 		if ( ! this.choices && 'group' !== this.model.get( 'type' ) ) return;
 		this.listenTo( this.model, 'change:cshow', this.render );
@@ -63,7 +64,18 @@ PC.fe.views.layers_list_item_selection = Backbone.View.extend({
 			}.bind( this ) );
 		}
 
-		this.$el.html( choices_names.join( ', ' ) );
+		var visible_value = choices_names.join( ', ' );
+		var selected_prefix = PC_config.lang.selected_prefix || 'Selected: %s';
+		var selected_none = PC_config.lang.selected_none || 'Selected: none';
+		var sr_value = choices_names.length ? selected_prefix.replace( '%s', visible_value ) : selected_none;
+		this.$el
+			.attr( 'role', 'status' )
+			.attr( 'aria-live', 'polite' )
+			.attr( 'aria-atomic', 'true' );
+		this.$el.html(
+			'<span aria-hidden="true">' + visible_value + '</span>' +
+			'<span class="screen-reader-text">' + sr_value + '</span>'
+		);
 		wp.hooks.doAction( 'PC.fe.set.selected_choice', choices_names, this );
 	},
 	should_display: function( model ) {

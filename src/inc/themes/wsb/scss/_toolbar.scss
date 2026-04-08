@@ -432,7 +432,9 @@
 			display: none;
 			position: relative;
 			transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
-
+			&.no-toggle {
+				display: block;
+			}
 			li.choices-list {
 				padding: 1.5em;
 				li { // choice

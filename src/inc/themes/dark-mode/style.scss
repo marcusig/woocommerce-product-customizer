@@ -461,9 +461,6 @@ $inner_space: 1em;
 					top: 30px;
 					right: 30px;
 
-					span {
-						display: none;
-					}
 					&::before,
 					&::after {
 						content:' ';
@@ -578,6 +575,7 @@ $inner_space: 1em;
 							border-radius: 0;
 							color: color(layers_button_text_color);
 							font-weight: normal;
+							font-size: 1rem;
  							&:hover, &:focus {
  								color: color(active_layer_button_text_color);
 							}
@@ -591,9 +589,8 @@ $inner_space: 1em;
 
 							span.selected-choice {
 								display: block;
-								font-size: 0.6rem;
-								text-transform: uppercase;
-								opacity: 0.5;
+								font-size: 0.8em;
+								opacity: 0.7;
 							}
 
 							@media( max-width: $small_screen_width ) {
@@ -1274,8 +1271,8 @@ $inner_space: 1em;
 			}
 
 			button.reset-configuration,
-			a.save-your-design, a.save-your-design--pdf,
-			a.mkl-footer--action-button {
+			.save-your-design, .save-your-design--pdf,
+			.mkl-footer--action-button {
 				// margin: 0;
 				// text-transform: none;
 				// font-size: 14px;
@@ -1301,7 +1298,7 @@ $inner_space: 1em;
 
 			@media (max-height: 500px) and (orientation: landscape) {
 				button.reset-configuration,
-				a.save-your-design, a.save-your-design--pdf {
+				.save-your-design, .save-your-design--pdf {
 					width: 40px;
 					svg {
 						transform: none;
@@ -1763,17 +1760,6 @@ nav.mkl-pc--steps {
     display: none;
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
-    display: block;
-	text-transform: uppercase;
-	font-size: 80%;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-}
-
 /* Code For Loading Screen */
 
 @keyframes configurator-load {
@@ -1812,6 +1798,60 @@ nav.mkl-pc--steps {
 
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar .text-overlay .font-selector .font-option input:checked + label {
     background: var(--mkl_pc_color-darkest);
+}
+
+/* twentytwentyfive theme fix */
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form button + button {
+    margin-left: 6px;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
+	background: var(--mkl_pc_color-ll4);
+    color: var(--mkl_pc_color-ll1);
+    border: 1px solid var(--mkl_pc_color-dark);
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices.text-overlay,
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer_choices li.choices-list li.form-item {
+    input[type="text"], textarea, select {
+        padding: 8px;
+        border: 1px solid #ffffff12;
+        color: #FFF;
+    }
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layers button.font-trigger, 
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices button.font-trigger, 
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar > ul li button.font-trigger {
+    background: var(--mkl_pc_color-dark);
+    border-color: #ffffff47;
+}
+
+/* Font selector */
+.tippy-box[data-theme~='mkl-font-selector'] {
+    background: var(--mkl_pc_color-dark);
+    border-color: #FFFFFF12;
+}
+
+/* Error Summary */
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	margin: 0;
+	border-radius: 0;
+	border-width: 0 0 0 4px;
+	&:focus {
+		outline: 2px solid #7a13133b;
+		outline-offset: -2px;
+	}
+}
+
+/* Keyboard navigation focus */ 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer-item:focus, 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-item:focus, 
+.keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-group-label:focus {
+	outline-offset: -2px;
 }
 
 /* Divi fix */

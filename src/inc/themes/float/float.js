@@ -35,6 +35,14 @@
 		}
 		return 'in';
 	} );
+
+	wp.hooks.addFilter( 'PC.fe.validation.summary_placement', 'MKL/PC/Themes/float', function( placement, ctx ) {
+		var $choices = ( ctx.$selection && ctx.$selection.length ) ? ctx.$selection : ctx.$toolbar.find( 'section.choices' ).first();
+		if ( $choices.length ) {
+			return { method: 'prepend', $target: $choices };
+		}
+		return placement;
+	} );
 	
 	function maybe_focus( view ) {
 		if ( !view.choices ) return;

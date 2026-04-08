@@ -172,7 +172,7 @@ $inner_space: 1em;
 				form.cart {
 					padding: 0;
 				}
-				.configurator-add-to-cart {
+				.configurator-add-to-cart, .wp-element-button {
 					display: inline-block;
 					border-radius: 4px;
 					font-size: 16px;
@@ -207,6 +207,9 @@ $inner_space: 1em;
 							color: color(add_to_cart_text_color_hover);
 						}
 					}
+				}
+				button + button {
+					margin-left: 6px;
 				}
 
 				&.has-qty {
@@ -579,7 +582,9 @@ $inner_space: 1em;
 	}
 	
 	@media (max-width: $small_screen_width) {		
-		a.save-your-design svg, a.save-your-design--pdf svg {
+		.save-your-design svg, 
+		.save-your-design--pdf svg,
+		.mkl-footer--action-button svg {
 			transform: translateY(0px);
 		}
 		.mkl-pc-syd-modal {
@@ -946,15 +951,6 @@ TIPPY
 	}
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price {
-    display: block;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-
-}
 
 
 /* Code For Loading Screen */
@@ -975,6 +971,13 @@ TIPPY
 }
 
 @import 'scss/dark_mode';
+
+.mkl-pc-validation-summary {
+    position: absolute;
+    right: 10px;
+    bottom: calc(var(--toolbar_height) + 10px);
+    z-index: 10;
+}
 
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {

@@ -1,0 +1,2 @@
+!( function( $, _ ) {
+	'use strict';

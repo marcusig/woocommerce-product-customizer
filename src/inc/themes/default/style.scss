@@ -403,10 +403,12 @@ $inner_space: 1em;
 					background: transparent;
 					border: none;
 					box-shadow: none;
-					width: 20px; height: 20px;
+					width: 40px; 
+					height: 40px;
 					padding: 0;
-					top: 30px;
-					right: 30px;
+					top: 10px;
+					right: 10px;
+					transition: all 0.2s;
 
 					span {
 						display: none;
@@ -419,15 +421,20 @@ $inner_space: 1em;
 						background: #000;
 						position: absolute;
 						top: 50%; 
-						left: 0;
+						left: 50%;
 						transform-origin: 50%;
-						transform: rotate(45deg);
+						transform: translateX(-50%) rotate(45deg);
 						transition: all 0.2s;
 						border-radius: 1px;
 						display: block;
 					}
 					&::after {
-						transform:rotate(-45deg);
+						transform: translateX(-50%) rotate(-45deg);
+					}
+					&:hover,
+					&:focus {
+						cursor: pointer;
+						transform: scale(1.2) rotate(90deg);
 					}
 				}
 				@media( max-width: $medium_screen_width ) {
@@ -459,6 +466,9 @@ $inner_space: 1em;
 						position: absolute;
 						top: 10px; 
 						right: 10px;
+						width: 20px; 
+						height: 20px;
+	
 						&::after, &::before {
 							background: #FFF;
 						}
@@ -546,6 +556,8 @@ $inner_space: 1em;
 							color: color(layers_button_text_color);
 							font-weight: normal;
 							white-space: normal;
+							font-size: 1rem;
+							text-transform: none;
 
  							&:hover, &:focus {
  								color: color(primary_hover);
@@ -566,8 +578,8 @@ $inner_space: 1em;
 							span.selected-choice {
 								display: block;
 								font-size: 0.6rem;
-								text-transform: uppercase;
-								opacity: 0.5;
+								text-transform: none;
+								opacity: 0.6;
 							}
 
 							@media( max-width: $small_screen_width ) {
@@ -1578,17 +1590,6 @@ body.configurator_is_inline .mkl_pc {
     display: none;
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
-    display: block;
-	text-transform: uppercase;
-	font-size: 80%;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-}
-
 /* Code For Loading Screen */
 
 .mkl-configurator-inline.is-shortcode.configure-product:empty {
@@ -1614,7 +1615,24 @@ body.configurator_is_inline .mkl_pc {
 
 @import '../../themes-common/scss/summary';
 
+.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+	border-radius: 0;
+	margin: 0;
+	border-left-width: 4px;
+}
+
 .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices > ul li.layers-list-item.mkl_pc_summary.type-summary {
     font-size: 1rem;
     padding: 19px;
+}
+
+/* twentytwentyfive theme fix */
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form button + button {
+    margin-left: 6px;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
 }

@@ -1522,17 +1522,6 @@ body.configurator_is_inline .mkl_pc {
     display: none;
 }
 
-.tippy-content span.text, .tippy-content span.description, .tippy-content span.choice-price, .tippy-content span.out-of-stock {
-    display: block;
-	text-transform: uppercase;
-	font-size: 80%;
-}
-
-.tippy-content span.choice-price {
-    font-size: .8em;
-    opacity: .6;
-}
-
 /* Code For Loading Screen */
 
 .mkl-configurator-inline.is-shortcode.configure-product:empty {
@@ -1554,4 +1543,15 @@ body.configurator_is_inline .mkl_pc {
 /* Divi fix */
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
+}
+
+/* twentytwentyfive theme fix */
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form button + button {
+    margin-left: 6px;
+}
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form input.qty {
+    font-size: 1rem;
+    padding: 1rem;
+    line-height: inherit;
 }

@@ -1,5 +1,6 @@
 PC.fe.views.stepsProgress = Backbone.View.extend( {
 	className: 'steps-progress--container',
+	tagName: 'nav',
 	initialize: function() {
 		this.render();
 		return this; 
@@ -22,7 +23,7 @@ PC.fe.views.stepsProgress = Backbone.View.extend( {
 	add_step: function( step ) {
 		var item = new PC.fe.views.stepsProgressItem( { model: step } );
 		item.$el.appendTo( this.$ol );
-	}
+	},
 } );
 
 PC.fe.views.stepsProgressItem = Backbone.View.extend( {

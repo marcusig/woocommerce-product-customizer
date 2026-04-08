@@ -28,6 +28,7 @@
 	?>
 	<button type="button" aria-label="<?php echo esc_attr( $label ); ?>" class="step-previous <?php echo esc_attr( $classes ); ?>" title="<?php esc_attr( $label ); ?>">
 		<?php do_action( 'mkl_pc/previous_step/before' ); ?>
+		<span class="screen-reader-text"><?php _ex( 'Previous step: ', 'Screen reader text, previous step button prefix', 'product-configurator-for-woocommerce' ); ?> {{{data.name}}}</span>
 		<span><# if ( data.label ) { #>{{{data.label}}}<# } else { #><?php echo $label; ?><# } #></span>
 		<?php do_action( 'mkl_pc/previous_step/after' ); ?>
 	</button>
@@ -41,6 +42,7 @@
 	?>
 	<button type="button" class="step-next <?php echo esc_attr( $classes ); ?>">
 		<?php do_action( 'mkl_pc/next_step/before' ); ?>
+		<span class="screen-reader-text"><?php _ex( 'Next step: ', 'Screen reader text, next step button prefix', 'product-configurator-for-woocommerce' ); ?> {{{data.name}}}</span>
 		<span><# if ( data.label ) { #>{{{data.label}}}<# } else { #><?php echo $label; ?><# } #></span>
 		<?php do_action( 'mkl_pc/next_step/after' ); ?>
 	</button>
