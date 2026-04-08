@@ -3,8 +3,8 @@ Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
-Tested up to: 6.9
-Stable tag: 1.5.13
+Tested up to: 7
+Stable tag: 1.6.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -145,6 +145,16 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.6.0 - 08/Apr/2026 =
+
+* Compatibility with WP 7
+* Accessibility Improvements: keyboard accessibility, voice over testing, live announcement...
+* Warning: the update contains various small markup changes, which might impact your design if you use custom styling for the configurator. E.g. `<a>` tags changed to `<button>`.
+* Error management: errors are no longer announced via an JS alert, but use a list added to the configurator. Each error links to the element that needs fixing.
+* FIX: Copy single choice not working
+* TWEAK: Improve error handling when saving configurator data
+* COMPAT: Better compatibility with YITH Quote request free, overriding two templates to allow price overrides
 
 = 1.5.13 - 26/Feb/2026 =
 
@@ -380,4 +390,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.5.11 Minor tweaks and fixes
+* 1.6.0 Accessibility Improvements
