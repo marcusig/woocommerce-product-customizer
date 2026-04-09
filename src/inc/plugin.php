@@ -21,6 +21,7 @@ class Plugin {
 	public $settings = null;
 	public $cache = null;
 	public $themes = null;
+	public $frontend_security = null;
 
 	/**
 	 * @var Extensions
@@ -87,6 +88,9 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'themes.php';
 		include_once MKL_PC_INCLUDE_PATH . 'ajax.php';
 		include_once MKL_PC_INCLUDE_PATH . 'update.php';
+		include_once MKL_PC_INCLUDE_PATH . 'security/class-rate-limiter.php';
+		include_once MKL_PC_INCLUDE_PATH . 'security/class-frontend-action-token.php';
+		include_once MKL_PC_INCLUDE_PATH . 'security/class-frontend-security.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
@@ -164,6 +168,7 @@ class Plugin {
 		$this->db = new DB();
 		$this->themes = new Themes();
 		$this->ajax = new Ajax();
+		$this->frontend_security = new Frontend_Security();
 
 		do_action( 'mkl_pc_is_loaded' );
 	}
