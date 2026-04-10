@@ -58,6 +58,7 @@
 					border-left: 2px solid #FFF;
 					opacity: 0;
 					transition: .2s all;
+					box-sizing: border-box;
 				}
 
 				&:hover {

@@ -99,6 +99,9 @@
 			width: 30px; height: 30px;
 			padding: 0;
 			order: 1;
+			span {
+				display: none;
+			}
 
 			&::before,
 			&::after {
