@@ -498,3 +498,11 @@ nav.mkl-pc--steps {
 	width: 100%;
 	margin-top: 30px;
 }
+
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices.text-overlay,
+.theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer_choices li.choices-list li.form-item {
+    input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="url"], input[type="password"], input[type="search"], input[type="date"], textarea, select {
+        padding: 1em;
+        border: 1px solid var(--mkl_pc_color-border);
+    }
+}
