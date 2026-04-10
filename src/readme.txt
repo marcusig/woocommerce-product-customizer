@@ -44,6 +44,7 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
   * Use or override linked product pricing
 * **🔤 Live Text Overlay** *(via add-on)* – Let customers preview custom text with your fonts and colors—ideal for engraving, embroidery, and personalization.
 * **🧑‍💻 Developer Friendly** – Includes hooks, filters, and a clean, commented codebase. Limited docs for now, but open support is available.
+* **🐕‍🦺 Accessible** – Full keyboard use, screen-reader friendly labels and live announcements, validation errors shown in-page with links to each field—no blocking JavaScript alerts.
 
 === Shortcodes ===
 
