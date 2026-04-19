@@ -1845,6 +1845,13 @@ nav.mkl-pc--steps {
 		outline: 2px solid #7a13133b;
 		outline-offset: -2px;
 	}
+	@media( max-width: $small_screen_width ) {
+		position: fixed;
+		top: 40px;
+    	width: 100vw;
+		left: 0;
+		transition: opacity 0.3s;
+	}
 }
 
 /* Keyboard navigation focus */ 

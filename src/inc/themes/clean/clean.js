@@ -63,4 +63,13 @@
 		}
 	} );
 
+	wp.hooks.addFilter( 'PC.fe.validation.summary_placement', 'MKL/PC/Themes/clean', function( placement, ctx ) {
+		if ( !PC.utils._isMobile() ) return placement;
+		const $container = PC.fe.modal.$main_window || PC.fe.modal.$el;
+		if ( $container.length ) {
+			return { method: 'prepend', $target: $container };
+		}
+		return placement;
+	} );
+
 })( jQuery );

@@ -144,7 +144,7 @@ button.variations_button.disabled,
 		margin-right: 8px;
 		vertical-align: middle;
 		@media (max-width: 720px) {
-			margin-right: 3;
+			margin-right: 0;
 		}
 	}
 	
@@ -194,6 +194,7 @@ button.variations_button.disabled,
 	margin: 8px 0 12px;
 	color: #7a1313;
 	font-size: 1rem;
+	max-height: 200px;
 
 	&:focus {
 		outline: 2px solid #7a1313;
@@ -209,6 +210,14 @@ button.variations_button.disabled,
 		margin: 0;
 		padding-left: 18px;
 	}
+}
+
+.is-mobile .mkl_pc.showing-choices .mkl_pc_container > .mkl-pc-validation-summary {
+	opacity: 0;
+}
+
+.is-mobile .mkl_pc .mkl_pc_container .mkl-pc-validation-summary {
+	max-height: 180px;
 }
 
 .keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer-item:focus,

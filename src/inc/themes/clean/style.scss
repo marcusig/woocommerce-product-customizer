@@ -929,7 +929,7 @@ nav.mkl-pc--steps {
 }
 
 /* Error Summary */
-.mkl_pc .mkl_pc_container .mkl_pc_toolbar .mkl-pc-validation-summary {
+.mkl_pc .mkl_pc_container .mkl-pc-validation-summary {
 	margin: 0;
 	border-radius: 0;
 	border-width: 0 0 0 4px;
@@ -939,6 +939,20 @@ nav.mkl-pc--steps {
 	}
 }
 
+.mkl_pc .mkl_pc_container > .mkl-pc-validation-summary {
+	position: absolute;
+	bottom: calc( var( --mkl_pc_footer_height ) + 10px );
+	left: var( --mkl_pc_toolbar_width );
+	width: calc( 100% - var( --mkl_pc_toolbar_width ) );
+	max-height: 180px;
+	overflow: auto;
+	z-index: 50;
+	transition: opacity 0.3s;
+}
+
+.mkl_pc.showing-choices .mkl_pc_container > .mkl-pc-validation-summary {
+	opacity: 0;
+}
 /* Keyboard navigation focus */ 
 .keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer-item:focus, 
 .keyboard-navigation .mkl_pc .mkl_pc_container .mkl_pc_toolbar .choice-item:focus, 

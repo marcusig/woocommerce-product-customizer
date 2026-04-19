@@ -147,6 +147,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* FIX: validation summary position on mobile
+
 = 1.6.2 - 10/Apr/2026 =
 
 * FIX: missing style in theme Le Bolide
