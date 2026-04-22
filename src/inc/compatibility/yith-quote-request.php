@@ -47,10 +47,13 @@ class Compat_Yith_Raq {
 		if ( ! defined( 'YITH_YWRAQ_TEMPLATE_PATH' ) ) {
 			return $template;
 		}
+
+		if ( defined( 'YITH_YWRAQ_PREMIUM' ) ) return $template;
 		$yith_path = trailingslashit( YITH_YWRAQ_TEMPLATE_PATH );
 		if ( trailingslashit( $default_path ) !== $yith_path ) {
 			return $template;
 		}
+
 		$overrides = [
 			'request-quote-view.php'       => 'request-quote-view.php',
 			'emails/request-quote.php'     => 'emails/request-quote.php',
