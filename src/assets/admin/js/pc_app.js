@@ -116,6 +116,274 @@ PC.toJSON = function( item ) {
 			var content = this.get_layer_content( layerId );
 			return content.get( choiceId ) || false;
 		},
+		/**
+		 * Max layer rows per layers delta save request (default 50).
+		 *
+		 * @return {number}
+		 */
+		get_layer_save_batch_max: function() {
+			var default_max_layers = 5;
+			if ( window.wp && wp.hooks && wp.hooks.applyFilters ) {
+				var filtered_max = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin_layer_save_batch_max', default_max_layers ), 10 );
+				return filtered_max > 0 ? filtered_max : default_max_layers;
+			}
+			return default_max_layers;
+		},
+		/**
+		 * Max total choices per content delta batch (greedy packing).
+		 *
+		 * @return {number}
+		 */
+		get_content_save_max_choices_per_batch: function() {
+			var default_max_choices = 60;
+			if ( window.wp && wp.hooks && wp.hooks.applyFilters ) {
+				var filtered_max = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin_content_save_max_choices_per_batch', default_max_choices ), 10 );
+				return filtered_max > 0 ? filtered_max : default_max_choices;
+			}
+			return default_max_choices;
+		},
+		/**
+		 * Max approx. JSON bytes per content delta batch.
+		 *
+		 * @return {number}
+		 */
+		get_content_save_max_bytes_per_batch: function() {
+			var default_max_bytes = 512 * 1024;
+			if ( window.wp && wp.hooks && wp.hooks.applyFilters ) {
+				var filtered_max = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin_content_save_max_bytes_per_batch', default_max_bytes ), 10 );
+				return filtered_max > 0 ? filtered_max : default_max_bytes;
+			}
+			return default_max_bytes;
+		},
+		count_choices_in_content_item: function( content_layer_json ) {
+			if ( ! content_layer_json || ! content_layer_json.choices ) {
+				return 0;
+			}
+			if ( Array.isArray( content_layer_json.choices ) ) {
+				return content_layer_json.choices.length;
+			}
+			return 0;
+		},
+		/**
+		 * Layer IDs with local edits, in canonical order (structure index first, then extras).
+		 *
+		 * @param {Array} layers_index
+		 * @param {Object} modified_layer_map
+		 * @return {string[]}
+		 */
+		order_modified_layer_ids_for_save: function( layers_index, modified_layer_map ) {
+			var layer_modifications = modified_layer_map || {};
+			var modified_layer_keys = Object.keys( layer_modifications );
+			var ordered_layer_ids = [];
+			var seen_layer_ids = {};
+			var structure_index;
+			var layer_identifier_string;
+			var extra_key_index;
+			for ( structure_index = 0; structure_index < layers_index.length; structure_index++ ) {
+				layer_identifier_string = String( layers_index[ structure_index ] );
+				if ( modified_layer_keys.indexOf( layer_identifier_string ) !== -1 && ! seen_layer_ids[ layer_identifier_string ] ) {
+					ordered_layer_ids.push( layer_identifier_string );
+					seen_layer_ids[ layer_identifier_string ] = true;
+				}
+			}
+			for ( extra_key_index = 0; extra_key_index < modified_layer_keys.length; extra_key_index++ ) {
+				layer_identifier_string = modified_layer_keys[ extra_key_index ];
+				if ( ! seen_layer_ids[ layer_identifier_string ] ) {
+					ordered_layer_ids.push( layer_identifier_string );
+					seen_layer_ids[ layer_identifier_string ] = true;
+				}
+			}
+			return ordered_layer_ids;
+		},
+		/**
+		 * Content layer IDs with local edits, in collection order.
+		 *
+		 * @param {Backbone.Collection} layers_collection
+		 * @param {Object} modified_content_map
+		 * @return {string[]}
+		 */
+		order_modified_content_layer_ids_for_save: function( layers_collection, modified_content_map ) {
+			var content_modifications = modified_content_map || {};
+			var modified_content_keys = Object.keys( content_modifications );
+			var ordered_content_layer_ids = [];
+			var seen_content_layer_ids = {};
+			layers_collection.each( function( layer_model ) {
+				var layer_identifier_string = String( layer_model.id );
+				if ( modified_content_keys.indexOf( layer_identifier_string ) !== -1 && ! seen_content_layer_ids[ layer_identifier_string ] ) {
+					ordered_content_layer_ids.push( layer_identifier_string );
+					seen_content_layer_ids[ layer_identifier_string ] = true;
+				}
+			} );
+			var extra_key_index;
+			var layer_identifier_string;
+			for ( extra_key_index = 0; extra_key_index < modified_content_keys.length; extra_key_index++ ) {
+				layer_identifier_string = modified_content_keys[ extra_key_index ];
+				if ( ! seen_content_layer_ids[ layer_identifier_string ] ) {
+					ordered_content_layer_ids.push( layer_identifier_string );
+					seen_content_layer_ids[ layer_identifier_string ] = true;
+				}
+			}
+			return ordered_content_layer_ids;
+		},
+		/**
+		 * Split layers delta into batches; deletions run only on the last batch.
+		 *
+		 * @param {Backbone.Collection} layers_collection
+		 * @param {Array} layers_index
+		 * @param {string[]} ordered_modified_layer_ids
+		 * @param {Array} deleted_layer_ids
+		 * @return {Array<Object>}
+		 */
+		build_layers_delta_batches: function( layers_collection, layers_index, ordered_modified_layer_ids, deleted_layer_ids ) {
+			var max_layers_per_batch = this.get_layer_save_batch_max();
+			var deleted_ids_copy = deleted_layer_ids && deleted_layer_ids.length ? deleted_layer_ids.slice() : [];
+			var layer_save_batches = [];
+			var chunk_offset;
+			var chunk_index;
+			var layer_id_chunk;
+			var layers_payload_by_id;
+			var is_final_batch;
+			if ( ordered_modified_layer_ids.length === 0 ) {
+				if ( deleted_ids_copy.length ) {
+					layer_save_batches.push( { layers_index: layers_index, layers: {}, deleted: deleted_ids_copy } );
+				}
+				return layer_save_batches;
+			}
+			for ( chunk_offset = 0; chunk_offset < ordered_modified_layer_ids.length; chunk_offset += max_layers_per_batch ) {
+				layer_id_chunk = ordered_modified_layer_ids.slice( chunk_offset, chunk_offset + max_layers_per_batch );
+				is_final_batch = ( chunk_offset + max_layers_per_batch ) >= ordered_modified_layer_ids.length;
+				layers_payload_by_id = {};
+				for ( chunk_index = 0; chunk_index < layer_id_chunk.length; chunk_index++ ) {
+					var layer_identifier = layer_id_chunk[ chunk_index ];
+					var layer_model = layers_collection.get( layer_identifier );
+					if ( layer_model ) {
+						layers_payload_by_id[ layer_identifier ] = layer_model.toJSON();
+					}
+				}
+				layer_save_batches.push( {
+					layers_index: layers_index,
+					layers: layers_payload_by_id,
+					deleted: is_final_batch ? deleted_ids_copy : [],
+				} );
+			}
+			return layer_save_batches;
+		},
+		/**
+		 * Greedy content batches by choice count and JSON size.
+		 *
+		 * @param {Backbone.Collection} content_collection
+		 * @param {string[]} ordered_content_layer_ids
+		 * @return {Array<Object>}
+		 */
+		build_content_delta_batches: function( content_collection, ordered_content_layer_ids ) {
+			var max_choices_per_batch = this.get_content_save_max_choices_per_batch();
+			var max_bytes_per_batch = this.get_content_save_max_bytes_per_batch();
+			var content_save_batches = [];
+			var current_batch_content = {};
+			var batch_choice_total = 0;
+			var batch_byte_total = 0;
+			var app_context = this;
+			var flush_current_batch = function() {
+				if ( Object.keys( current_batch_content ).length ) {
+					content_save_batches.push( { content: _.extend( {}, current_batch_content ) } );
+					current_batch_content = {};
+					batch_choice_total = 0;
+					batch_byte_total = 0;
+				}
+			};
+			ordered_content_layer_ids.forEach( function( layer_identifier ) {
+				var layer_model = content_collection.get( layer_identifier );
+				if ( ! layer_model ) {
+					return;
+				}
+				var content_layer_json = layer_model.toJSON();
+				var choice_count = app_context.count_choices_in_content_item( content_layer_json );
+				var json_byte_length = JSON.stringify( content_layer_json ).length;
+				if ( choice_count > max_choices_per_batch || json_byte_length > max_bytes_per_batch ) {
+					flush_current_batch();
+					var single_layer_content = {};
+					single_layer_content[ String( layer_identifier ) ] = content_layer_json;
+					content_save_batches.push( { content: single_layer_content } );
+					return;
+				}
+				if ( Object.keys( current_batch_content ).length && ( batch_choice_total + choice_count > max_choices_per_batch || batch_byte_total + json_byte_length > max_bytes_per_batch ) ) {
+					flush_current_batch();
+				}
+				current_batch_content[ String( layer_identifier ) ] = content_layer_json;
+				batch_choice_total += choice_count;
+				batch_byte_total += json_byte_length;
+			} );
+			flush_current_batch();
+			return content_save_batches;
+		},
+		/**
+		 * Sequential pc_set_data requests for multiple payloads of the same component.
+		 *
+		 * @param {string} collection_key
+		 * @param {Array<Object>} request_batches
+		 * @param {Object} ajax_options
+		 * @return {jQuery.Promise}
+		 */
+		send_configurator_save_batches: function( collection_key, request_batches, ajax_options ) {
+			var success_callback = ajax_options.success;
+			var error_callback = ajax_options.error;
+			var request_context = ajax_options.context || this;
+			var shared_request_data = _.extend( {}, ajax_options.data );
+			var request_chain = $.when();
+			var last_success_response;
+			request_batches.forEach( function( batch_payload ) {
+				request_chain = request_chain.then( function() {
+					var batch_ajax_options = _.extend( {}, ajax_options, {
+						data: _.extend( {}, shared_request_data ),
+					} );
+					batch_ajax_options.data[ collection_key ] = JSON.stringify( batch_payload );
+					delete batch_ajax_options.success;
+					delete batch_ajax_options.error;
+					return wp.ajax.send( batch_ajax_options ).done( function( response_body ) {
+						last_success_response = response_body;
+					} );
+				} );
+			} );
+			request_chain.done( function() {
+				if ( success_callback ) {
+					success_callback.call( request_context, last_success_response );
+				}
+			} );
+			request_chain.fail( function( jq_xhr_or_message, text_status, error_thrown ) {
+				if ( error_callback ) {
+					error_callback.call( request_context, jq_xhr_or_message, text_status, error_thrown );
+				}
+			} );
+			return request_chain.promise();
+		},
+		/**
+		 * Mark every layer and every content row as modified so save() sends batched delta payloads
+		 * (used after bulk replace such as file import — avoids stale IDs and avoids one giant full-json request).
+		 */
+		mark_all_layers_and_content_modified_for_save: function() {
+			var layer_identifier;
+			this.modified_layer_ids = {};
+			var layers_collection = this.get_collection( 'layers' );
+			if ( layers_collection && layers_collection.length ) {
+				layers_collection.each( function( layer_model ) {
+					layer_identifier = layer_model.get( '_id' );
+					if ( layer_identifier ) {
+						this.modified_layer_ids[ layer_identifier ] = true;
+					}
+				}.bind( this ) );
+			}
+			this.modified_content_layer_ids = {};
+			var product_model = this.get_product();
+			var content_collection = product_model && product_model.get( 'content' );
+			if ( content_collection && content_collection.length ) {
+				content_collection.each( function( content_row_model ) {
+					layer_identifier = content_row_model.get( 'layerId' ) || content_row_model.id;
+					if ( layer_identifier ) {
+						this.modified_content_layer_ids[ String( layer_identifier ) ] = true;
+					}
+				}.bind( this ) );
+			}
+		},
 		save_all: function( state, options ) {
 			this.saving = 0;
 			this.errors = [];
@@ -127,23 +395,31 @@ PC.toJSON = function( item ) {
 					state.$toolbar.addClass('saving');
 					state.$el.addClass('saving');
 				}
-				var count = 0;
-				var total = _.filter( _.values( this.is_modified ), function( a ) { return a === true } ).length;
-				$.each( this.is_modified, function( key, val ) {
-					count++;
-					if ( val == true ) {
-						this.saving ++;
-						this.save( key, this.get_collection( key ), {
-							// success: 'successfuil'
-							success: _.bind( this.saved_all, this, key, state, options ),
-							error: _.bind( this.error_saving, this, key, state, options ),
+				var modified_collection_keys = [];
+				_.each( this.is_modified, function( val, key ) {
+					if ( val === true ) {
+						modified_collection_keys.push( key );
+					}
+				} );
+				this.saving = modified_collection_keys.length;
+				var app = this;
+				var save_all_chain = $.when();
+				modified_collection_keys.forEach( function( collection_key, index ) {
+					save_all_chain = save_all_chain.then( function() {
+						var save_promise_or_other = app.save( collection_key, app.get_collection( collection_key ), {
+							success: _.bind( app.saved_all, app, collection_key, state, options ),
+							error: _.bind( app.error_saving, app, collection_key, state, options ),
 							data: {
-								saveCache: count === total
+								saveCache: index === modified_collection_keys.length - 1
 							}
 						} );
-					}
-
-				}.bind( this ) );
+						if ( save_promise_or_other && typeof save_promise_or_other.then === 'function' ) {
+							return save_promise_or_other;
+						}
+						// save() normally returns a promise; false is only used for skipped saves (legacy).
+						return $.when( true );
+					} );
+				} );
 			} else {
 				if ( options && options.saved_all ) options.saved_all();
 			}
@@ -224,29 +500,31 @@ PC.toJSON = function( item ) {
 			if ( collection.length > 0 ) {
 
 				if ( 'layers' === what && collection instanceof Backbone.Collection ) {
-					var layersIndex = collection.pluck( '_id' ).filter( function( id ) { return id; } );
-					var layerIds = PC.app.modified_layer_ids && typeof PC.app.modified_layer_ids === 'object' ? Object.keys( PC.app.modified_layer_ids ) : [];
-					var hasDeleted = PC.app.deleted_layer_ids && PC.app.deleted_layer_ids.length > 0;
-					if ( layerIds.length > 0 || hasDeleted ) {
-						var layersPayload = { layers_index: layersIndex, layers: {}, deleted: PC.app.deleted_layer_ids || [] };
-						layerIds.forEach( function( id ) {
-							var m = collection.get( id );
-							if ( m ) layersPayload.layers[ id ] = m.toJSON();
-						} );
-						options.data[what] = JSON.stringify( layersPayload );
+					var layers_structure_index = collection.pluck( '_id' ).filter( function( layer_id_value ) { return layer_id_value; } );
+					var modified_layer_map = PC.app.modified_layer_ids && typeof PC.app.modified_layer_ids === 'object' ? PC.app.modified_layer_ids : {};
+					var modified_layer_key_list = Object.keys( modified_layer_map );
+					var has_deleted_layers = PC.app.deleted_layer_ids && PC.app.deleted_layer_ids.length > 0;
+					if ( modified_layer_key_list.length > 0 || has_deleted_layers ) {
+						var ordered_layer_ids_for_save = this.order_modified_layer_ids_for_save( layers_structure_index, modified_layer_map );
+						var layer_save_batches = this.build_layers_delta_batches( collection, layers_structure_index, ordered_layer_ids_for_save, PC.app.deleted_layer_ids || [] );
+						if ( layer_save_batches.length > 1 ) {
+							return this.send_configurator_save_batches( what, layer_save_batches, options );
+						}
+						options.data[what] = JSON.stringify( layer_save_batches.length ? layer_save_batches[ 0 ] : { layers_index: layers_structure_index, layers: {}, deleted: PC.app.deleted_layer_ids || [] } );
 					} else {
 						options.data[what] = JSON.stringify( collection );
 					}
 				} else if ( 'content' === what && collection instanceof Backbone.Collection ) {
-					var contentLayerIds = PC.app.modified_content_layer_ids && typeof PC.app.modified_content_layer_ids === 'object' ? Object.keys( PC.app.modified_content_layer_ids ) : [];
-					if ( contentLayerIds.length > 0 ) {
-						var contentPayload = { content: {} };
-						contentLayerIds.forEach( function( layerId ) {
-							var layerModel = collection.get( layerId );
-							if ( layerModel ) contentPayload.content[ layerId ] = layerModel.toJSON();
-						} );
-						options.data[what] = JSON.stringify( contentPayload );
+					var modified_content_layer_map = PC.app.modified_content_layer_ids && typeof PC.app.modified_content_layer_ids === 'object' ? PC.app.modified_content_layer_ids : {};
+					var modified_content_key_list = Object.keys( modified_content_layer_map );
+					if ( modified_content_key_list.length > 0 ) {
 						options.data.modified_choices = PC.app.modified_choices;
+						var ordered_content_layer_ids_for_save = this.order_modified_content_layer_ids_for_save( collection, modified_content_layer_map );
+						var content_save_batches = this.build_content_delta_batches( collection, ordered_content_layer_ids_for_save );
+						if ( content_save_batches.length > 1 ) {
+							return this.send_configurator_save_batches( what, content_save_batches, options );
+						}
+						options.data[what] = JSON.stringify( content_save_batches.length ? content_save_batches[ 0 ] : { content: {} } );
 					} else {
 						options.data[what] = JSON.stringify( collection );
 						options.data.modified_choices = PC.app.modified_choices;

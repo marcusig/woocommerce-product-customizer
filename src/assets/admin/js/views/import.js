@@ -351,6 +351,9 @@ PC.import.views = PC.import.views || {};
 		},
 		process_import: function() {
 			// Import.imported_data.collections
+			// Drop stale choice/deletion tracking; layer/content deltas are rebuilt after data is loaded (see mark_all_layers_and_content_modified_for_save).
+			PC.app.deleted_layer_ids = [];
+			PC.app.modified_choices = [];
 			// Add the layers
 			PC.app.admin_data.set( 'layers', Import.imported_data.collections.layers );
 			// Add the angles
@@ -369,6 +372,8 @@ PC.import.views = PC.import.views || {};
 			} else {
 				alert( 'No content was imported' );
 			}
+
+			PC.app.mark_all_layers_and_content_modified_for_save();
 
 			// Add the conditions
 			if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
