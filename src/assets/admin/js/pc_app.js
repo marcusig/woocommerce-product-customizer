@@ -410,10 +410,13 @@ PC.toJSON = function( item ) {
 		save_all: function( state, options ) {
 			this.saving = 0;
 			this.errors = [];
+			this._chunk_storage_migration_ui = false;
+			this._migration_messaging_keys = null;
 			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
 
 				if ( this.should_migrate_chunk_storage_before_save() ) {
 					this._pending_chunk_storage_finalize = true;
+					this._chunk_storage_migration_ui = true;
 					this.mark_all_layers_and_content_modified_for_save();
 					var layers_for_migration = this.get_collection( 'layers' );
 					var product_for_migration = this.get_product();
@@ -438,6 +441,17 @@ PC.toJSON = function( item ) {
 						modified_collection_keys.push( key );
 					}
 				} );
+				if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+					this._migration_messaging_keys = [];
+					for ( var mki = 0; mki < modified_collection_keys.length; mki++ ) {
+						var mk = modified_collection_keys[ mki ];
+						if ( mk === 'layers' || mk === 'content' ) {
+							this._migration_messaging_keys.push( mk );
+						}
+					}
+					var firstMigrationPhase = this._migration_messaging_keys.length ? this._migration_messaging_keys[ 0 ] : 'finalize';
+					window.MKL_PC_DataMigrationOverlay.show( firstMigrationPhase );
+				}
 				this.saving = modified_collection_keys.length;
 				var app = this;
 				var save_all_chain = $.when();
@@ -467,6 +481,11 @@ PC.toJSON = function( item ) {
 		error_saving: function( key, state, options, error, a, b ) {
 			this.saving--;
 			if ( this.saving == 0 ) {
+				if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.hide();
+				}
+				this._chunk_storage_migration_ui = false;
+				this._migration_messaging_keys = null;
 				state.state_saved( 1 );
 				if ( error && 'string' == typeof error && error.length > 0 ) this.errors.push( error );
 				if ( error && 'object' == typeof error ) {
@@ -486,6 +505,15 @@ PC.toJSON = function( item ) {
 			if ( key === 'layers' ) { this.modified_layer_ids = {}; this.deleted_layer_ids = []; }
 			if ( key === 'content' ) this.modified_content_layer_ids = {};
 			if ( options && options.saved_one ) options.saved_one( key );
+			if ( this._chunk_storage_migration_ui && this._migration_messaging_keys && window.MKL_PC_DataMigrationOverlay ) {
+				var migKeys = this._migration_messaging_keys;
+				var migIdx = migKeys.indexOf( key );
+				if ( migIdx >= 0 && migKeys[ migIdx + 1 ] && this.saving > 0 ) {
+					window.MKL_PC_DataMigrationOverlay.setPhase( migKeys[ migIdx + 1 ] );
+				} else if ( this.saving > 0 && ( migIdx === -1 || migIdx === migKeys.length - 1 ) ) {
+					window.MKL_PC_DataMigrationOverlay.setPhase( 'other' );
+				}
+			}
 			if ( this.saving == 0 ) {
 
 				var app = this;
@@ -501,9 +529,24 @@ PC.toJSON = function( item ) {
 					}
 				};
 				if ( run_finalize ) {
-					this.run_chunk_storage_finalize_if_needed().always( finish_save_all_ui );
+					if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+						window.MKL_PC_DataMigrationOverlay.setPhase( 'finalize' );
+					}
+					var finalizeXhr = this.run_chunk_storage_finalize_if_needed();
+					if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+						finalizeXhr.done( function() {
+							window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' );
+						} );
+						finalizeXhr.fail( function() {
+							window.MKL_PC_DataMigrationOverlay.hide();
+						} );
+					}
+					finalizeXhr.always( finish_save_all_ui );
 				} else {
 					finish_save_all_ui();
+					if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+						window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' );
+					}
 				}
 
 			}
