@@ -24,7 +24,14 @@
 		postLegacyAction( 'mkl_pc_delete_legacy_configurator_blobs', $btn )
 			.done( function ( response ) {
 				if ( response && response.success ) {
-					window.location.reload();
+					if ( window.PC && PC.app && PC.app.admin_data && response.data && response.data.snapshot ) {
+						PC.app.admin_data.set( 'pc_storage', response.data.snapshot );
+					}
+					var $wrap = $btn.closest( '.mkl-pc-data-migration.migration-warning' );
+					$btn.closest( '.mkl-pc-legacy-data-notice' ).remove();
+					if ( $wrap.length && $wrap.find( '.notice' ).length === 0 ) {
+						$wrap.remove();
+					}
 				} else {
 					window.alert( PC_lang.mkl_pc_legacy_ajax_error || 'Error' );
 					$btn.prop( 'disabled', false );
