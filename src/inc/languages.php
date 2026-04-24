@@ -424,8 +424,10 @@ class Languages {
 	public function wpml_maybe_fix_duplicate_data( $post_id_from, $post_id_to, $meta_key ) {
 		$legacy_keys = [ '_mkl_product_configurator_content', '_mkl_product_configurator_layers', '_mkl_product_configurator_conditions', '_mkl_product_configurator_angles' ];
 		$chunked_index = '_mkl_product_configurator_layers_index';
+		$storage_version  = '_mkl_product_configurator_storage_format_version';
+		$integrity_cache  = '_mkl_product_configurator_integrity_cache';
 		$is_chunked = ( 0 === strpos( $meta_key, '_mkl_product_configurator_layer_' ) || 0 === strpos( $meta_key, '_mkl_product_configurator_content_' ) );
-		if ( in_array( $meta_key, $legacy_keys, true ) || $meta_key === $chunked_index || $is_chunked ) {
+		if ( in_array( $meta_key, $legacy_keys, true ) || $meta_key === $chunked_index || $meta_key === $storage_version || $meta_key === $integrity_cache || $is_chunked ) {
 			$meta = get_post_meta( $post_id_to, $meta_key, false );
 			if ( is_array( $meta ) && 1 < count( $meta ) ) {
 				$keep = end( $meta );

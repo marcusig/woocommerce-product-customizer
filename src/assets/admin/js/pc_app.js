@@ -360,6 +360,29 @@ PC.toJSON = function( item ) {
 		 * Mark every layer and every content row as modified so save() sends batched delta payloads
 		 * (used after bulk replace such as file import — avoids stale IDs and avoids one giant full-json request).
 		 */
+		should_migrate_chunk_storage_before_save: function() {
+			var pc_storage = this.admin_data && this.admin_data.get( 'pc_storage' );
+			return !!( pc_storage && pc_storage.needs_batch_migration );
+		},
+		/**
+		 * Server: verify integrity, strip legacy blobs when safe, bump storage_format_version.
+		 *
+		 * @return {jQuery.jqXHR|jQuery.Promise}
+		 */
+		run_chunk_storage_finalize_if_needed: function() {
+			var app = this;
+			var variation_id = ( this.options.product_type === 'variation' && this.options.product_id ) ? this.options.product_id : 0;
+			return $.post( ajaxurl, {
+				action: 'mkl_pc_finalize_chunked_storage',
+				nonce: PC_lang.update_nonce,
+				id: this.id,
+				variation_id: variation_id,
+			} ).done( function( response ) {
+				if ( response && response.success && response.data && response.data.snapshot && app.admin_data ) {
+					app.admin_data.set( 'pc_storage', response.data.snapshot );
+				}
+			} );
+		},
 		mark_all_layers_and_content_modified_for_save: function() {
 			var layer_identifier;
 			this.modified_layer_ids = {};
@@ -388,6 +411,20 @@ PC.toJSON = function( item ) {
 			this.saving = 0;
 			this.errors = [];
 			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
+
+				if ( this.should_migrate_chunk_storage_before_save() ) {
+					this._pending_chunk_storage_finalize = true;
+					this.mark_all_layers_and_content_modified_for_save();
+					var layers_for_migration = this.get_collection( 'layers' );
+					var product_for_migration = this.get_product();
+					var content_for_migration = product_for_migration && product_for_migration.get( 'content' );
+					if ( layers_for_migration && layers_for_migration.length ) {
+						this.is_modified.layers = true;
+					}
+					if ( content_for_migration && content_for_migration.length ) {
+						this.is_modified.content = true;
+					}
+				}
 
 				if ( state ) {
 					state.$save_button.addClass('disabled');
@@ -451,11 +488,23 @@ PC.toJSON = function( item ) {
 			if ( options && options.saved_one ) options.saved_one( key );
 			if ( this.saving == 0 ) {
 
-				if ( state && state.state_saved ) state.state_saved();
-				if ( options && options.saved_all ) options.saved_all();
-				// _.delay(function() {
-				// 	that.admin.close();
-				// }, 1500);
+				var app = this;
+				var pc_storage = this.admin_data && this.admin_data.get( 'pc_storage' );
+				var run_finalize = this._pending_chunk_storage_finalize || ( pc_storage && pc_storage.needs_format_finalize );
+				this._pending_chunk_storage_finalize = false;
+				var finish_save_all_ui = function() {
+					if ( state && state.state_saved ) {
+						state.state_saved();
+					}
+					if ( options && options.saved_all ) {
+						options.saved_all();
+					}
+				};
+				if ( run_finalize ) {
+					this.run_chunk_storage_finalize_if_needed().always( finish_save_all_ui );
+				} else {
+					finish_save_all_ui();
+				}
 
 			}
 			PC.app.modified_choices = []; 

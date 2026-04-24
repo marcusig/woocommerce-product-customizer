@@ -42,6 +42,9 @@ class Ajax {
 		add_filter( 'weglot_js-data_treat_page', array( $this, 'weglot_compat' ), 20, 4 );
 		add_action( 'wp_ajax_pc_add_to_cart', array( $this, 'add_to_cart' ) );
 		add_action( 'wp_ajax_nopriv_pc_add_to_cart', array( $this, 'add_to_cart' ) );
+		add_action( 'wp_ajax_mkl_pc_finalize_chunked_storage', array( $this, 'finalize_chunked_storage' ) );
+		add_action( 'wp_ajax_mkl_pc_delete_legacy_configurator_blobs', array( $this, 'delete_legacy_configurator_blobs' ) );
+		add_action( 'wp_ajax_mkl_pc_restore_legacy_configurator_blobs', array( $this, 'restore_legacy_configurator_blobs' ) );
 	}
 
 	/**
@@ -117,8 +120,13 @@ class Ajax {
 					}
 
 				} else {
-					$data = $this->db->get_init_data( $id );
-					$data = $this->db->escape( $data );
+					$variation_id_for_storage = isset( $_REQUEST['variation_id'] ) ? absint( $_REQUEST['variation_id'] ) : 0;
+					$data                     = $this->db->get_init_data( $id, $variation_id_for_storage );
+					$pc_storage               = isset( $data['pc_storage'] ) ? $data['pc_storage'] : null;
+					$data                     = $this->db->escape( $data );
+					if ( null !== $pc_storage && is_array( $pc_storage ) ) {
+						$data['pc_storage'] = $pc_storage;
+					}
 				}
 				break;
 			case 'menu' :
@@ -255,6 +263,80 @@ class Ajax {
 		}
 
 		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Verify chunked storage, remove legacy blobs when safe, set storage format version.
+	 */
+	public function finalize_chunked_storage() {
+		if ( ! isset( $_REQUEST['id'], $_REQUEST['nonce'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$parent_id    = absint( $_REQUEST['id'] );
+		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( $_REQUEST['variation_id'] ) : 0;
+		if ( ! $parent_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid product.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		if ( ! check_ajax_referer( 'update-pc-post_' . $parent_id, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		if ( ! current_user_can( 'edit_post', $parent_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		$result = $this->db->maybe_finalize_chunked_storage( $parent_id, $variation_id );
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Remove legacy layers/content blob metas (chunked storage unchanged).
+	 */
+	public function delete_legacy_configurator_blobs() {
+		if ( ! isset( $_REQUEST['parent_id'], $_REQUEST['nonce'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$parent_id    = absint( $_REQUEST['parent_id'] );
+		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( $_REQUEST['variation_id'] ) : 0;
+		if ( ! $parent_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid product.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		if ( ! check_ajax_referer( 'update-pc-post_' . $parent_id, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		if ( ! current_user_can( 'edit_post', $parent_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		$this->db->delete_legacy_configurator_blobs( $parent_id, $variation_id );
+		wp_send_json_success(
+			array(
+				'snapshot' => $this->db->get_pc_storage_state_for_editor( $parent_id, $variation_id, false ),
+			)
+		);
+	}
+
+	/**
+	 * Rebuild legacy blob metas from chunked (or current) storage reads.
+	 */
+	public function restore_legacy_configurator_blobs() {
+		if ( ! isset( $_REQUEST['parent_id'], $_REQUEST['nonce'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$parent_id    = absint( $_REQUEST['parent_id'] );
+		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( $_REQUEST['variation_id'] ) : 0;
+		if ( ! $parent_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid product.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		if ( ! check_ajax_referer( 'update-pc-post_' . $parent_id, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		if ( ! current_user_can( 'edit_post', $parent_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		$this->db->restore_legacy_configurator_blobs_from_chunks( $parent_id, $variation_id );
+		wp_send_json_success(
+			array(
+				'snapshot' => $this->db->get_pc_storage_state_for_editor( $parent_id, $variation_id, false ),
+			)
+		);
 	}
 
 	/**

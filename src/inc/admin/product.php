@@ -42,6 +42,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
 			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
+			add_action( 'mkl_pc_admin_instructions_before_content', array( $this, 'home_tab_migration_notice') );
 			add_action( 'admin_footer', array($this, 'editor' ) ); 
 
 		}
@@ -136,6 +137,46 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			<?php
 		}
 
+		public function home_tab_migration_notice() {
+			if ( ! $this->_product || ! $this->ID || ! mkl_pc_is_configurable( $this->ID ) ) {
+				return;
+			}
+			$db = mkl_pc()->db;
+			$parent_id    = $this->_product->is_type( 'variation' ) ? (int) $this->_product->get_parent_id() : (int) $this->_product->get_id();
+			$variation_id = $this->_product->is_type( 'variation' ) ? (int) $this->_product->get_id() : 0;
+			$storage      = $db->get_pc_storage_state_for_editor( $parent_id, $variation_id, false );
+
+			$pending_migration = ! empty( $storage['needs_batch_migration'] ) || ! empty( $storage['needs_format_finalize'] );
+			$legacy_still      = (int) $storage['storage_format_version'] === DB::STORAGE_FORMAT_CHUNKED_VERIFIED
+				&& $db->has_legacy_configurator_blobs( $parent_id, $variation_id );
+
+			if ( ! $pending_migration && ! $legacy_still ) {
+				return;
+			}
+
+			$persist_nonce = wp_create_nonce( 'update-pc-post_' . $parent_id );
+			?>
+			<div class="migration-warning">
+				<?php if ( $pending_migration ) : ?>
+					<div class="notice notice-warning">
+						<h3><?php esc_html_e( 'Data migration required', 'product-configurator-for-woocommerce' ); ?></h3>
+						<p><?php esc_html_e( 'Configuration storage will be migrated to the new format the next time you save.', 'product-configurator-for-woocommerce' ); ?></p>
+					</div>
+				<?php endif; ?>
+				<?php if ( $legacy_still ) : ?>
+					<div class="notice notice-warning mkl-pc-legacy-data-notice">
+						<p><?php esc_html_e( 'Legacy storage data is still present alongside the new format. You can delete it after you have verified everything, or restore it from the current configuration.', 'product-configurator-for-woocommerce' ); ?></p>
+						<p>
+							<button type="button" class="button button-secondary mkl-pc-delete-legacy-config" data-nonce="<?php echo esc_attr( $persist_nonce ); ?>" data-parent-id="<?php echo esc_attr( (string) $parent_id ); ?>" data-variation-id="<?php echo esc_attr( (string) $variation_id ); ?>"><?php esc_html_e( 'Delete legacy data', 'product-configurator-for-woocommerce' ); ?></button>
+							<button type="button" class="button mkl-pc-restore-legacy-config" data-nonce="<?php echo esc_attr( $persist_nonce ); ?>" data-parent-id="<?php echo esc_attr( (string) $parent_id ); ?>" data-variation-id="<?php echo esc_attr( (string) $variation_id ); ?>"><?php esc_html_e( 'Restore legacy data', 'product-configurator-for-woocommerce' ); ?></button>
+						</p>
+					</div>
+				<?php endif; ?>
+			</div>
+			<?php
+		}
+
+
 		/**
 		 * Home tab content, displayed in the product configurator editor modal
 		 *
@@ -145,6 +186,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			?>
 			<div class="instructions">
 				<h2><?php _e( 'You are configuring', 'product-configurator-for-woocommerce' ); echo ' "' . get_the_title( $this->ID ); ?>"</h2>
+				<?php do_action( 'mkl_pc_admin_instructions_before_content', $this->ID ); ?>
 				<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
 				<p><?php _e( 'To proceed, follow the instructions:', 'product-configurator-for-woocommerce' ); ?></p>
 				<ol>
@@ -263,7 +305,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
 				);
 
-				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
+				if ( current_user_can( 'edit_post', $this->ID ) ) {
+					$pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
+				}
+				$pc_lang['mkl_pc_delete_legacy_confirm'] = __( 'Delete the legacy copy of layers and content? Chunked storage will not be removed.', 'product-configurator-for-woocommerce' );
+				$pc_lang['mkl_pc_legacy_ajax_error']       = __( 'Could not update legacy storage.', 'product-configurator-for-woocommerce' );
 				if ( current_user_can( 'delete_post', $this->ID ) ) $pc_lang['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $this->ID );
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );
