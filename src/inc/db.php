@@ -30,7 +30,203 @@ class DB {
 	public function __construct() {
 		// Add tne import section at the end of the menu
 		add_filter( 'mkl_product_configurator_admin_menu', [ $this, 'add_import_section' ], 1200 );
+		add_action( 'mkl_pc_saved_configurator_data', [ $this, 'invalidate_integrity_cache_on_configuration_save' ], 10, 3 );
 
+	}
+
+	/**
+	 * After layers/content AJAX saves, force the next integrity pass (parent product).
+	 *
+	 * @param int    $id
+	 * @param int    $ref_id
+	 * @param string $component
+	 * @return void
+	 */
+	public function invalidate_integrity_cache_on_configuration_save( $id, $ref_id, $component ) {
+		if ( ! in_array( $component, array( 'layers', 'content' ), true ) ) {
+			return;
+		}
+		$parent_id = (int) $ref_id;
+		if ( $parent_id > 0 ) {
+			$this->set_integrity_cache_value( $parent_id, 0 );
+		}
+	}
+
+	/**
+	 * @param int $parent_id
+	 * @param int $value      1 = ok cache, 0 = invalidate / recompute.
+	 * @return void
+	 */
+	private function set_integrity_cache_value( $parent_id, $value ) {
+		$parent = wc_get_product( (int) $parent_id );
+		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+			return;
+		}
+		$parent->update_meta_data( self::META_INTEGRITY_CACHE, (int) $value );
+		$parent->save();
+		do_action( 'wpml_sync_custom_field', (int) $parent_id, self::META_INTEGRITY_CACHE );
+	}
+
+	/**
+	 * @param \WC_Product $product
+	 * @return array<int, array<string, mixed>>|array{}
+	 */
+	private function get_legacy_layers_blob_array( $product ) {
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return array();
+		}
+		$data = $product->get_meta( '_mkl_product_configurator_layers', true );
+		if ( '' === $data || false === $data ) {
+			return array();
+		}
+		$data = maybe_unserialize( $data );
+		if ( is_string( $data ) ) {
+			$data = json_decode( stripslashes( $data ), true );
+		}
+		return is_array( $data ) ? $data : array();
+	}
+
+	/**
+	 * @param \WC_Product $product
+	 * @return array<int, array<string, mixed>>|array{}
+	 */
+	private function get_legacy_content_blob_array( $product ) {
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return array();
+		}
+		$data = $product->get_meta( '_mkl_product_configurator_content', true );
+		if ( '' === $data || false === $data ) {
+			return array();
+		}
+		$data = maybe_unserialize( $data );
+		if ( is_string( $data ) ) {
+			$data = json_decode( stripslashes( $data ), true );
+		}
+		return is_array( $data ) ? $data : array();
+	}
+
+	/**
+	 * @param array $legacy_layers
+	 * @param int   $layer_id
+	 * @return bool
+	 */
+	private function layer_id_exists_in_legacy_layers_array( $legacy_layers, $layer_id ) {
+		foreach ( $legacy_layers as $row ) {
+			if ( is_array( $row ) && isset( $row['_id'] ) && (int) $row['_id'] === (int) $layer_id ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param array $legacy_content
+	 * @param int   $layer_id
+	 * @return bool
+	 */
+	private function content_row_exists_in_legacy_content_array( $legacy_content, $layer_id ) {
+		foreach ( $legacy_content as $row ) {
+			if ( is_array( $row ) && isset( $row['layerId'] ) && (int) $row['layerId'] === (int) $layer_id ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Whether this layer is expected to have a content row (choices UI).
+	 *
+	 * @param array    $layer_row Layer attributes (from chunk or legacy blob).
+	 * @param int|null $layer_id  For filters.
+	 * @return bool
+	 */
+	private function layer_requires_content_row( $layer_row, $layer_id = null ) {
+		if ( ! is_array( $layer_row ) ) {
+			return true;
+		}
+		$nac = isset( $layer_row['not_a_choice'] ) ? $layer_row['not_a_choice'] : false;
+		if ( true === $nac || 1 === $nac || '1' === $nac || 'true' === $nac ) {
+			return false;
+		}
+		$type = isset( $layer_row['type'] ) ? strtolower( (string) $layer_row['type'] ) : 'simple';
+		if ( 'group' === $type ) {
+			return false;
+		}
+		return (bool) apply_filters( 'mkl_pc_layer_requires_content_row', true, $layer_row, $layer_id );
+	}
+
+	/**
+	 * Layer definition from chunked meta, else from legacy layers array.
+	 *
+	 * @param \WC_Product $parent
+	 * @param int         $layer_id
+	 * @param bool        $has_legacy_l
+	 * @param array       $legacy_layers
+	 * @return array<string, mixed>|null
+	 */
+	private function get_layer_row_for_integrity( $parent, $layer_id, $has_legacy_l, $legacy_layers ) {
+		$raw = $parent->get_meta( '_mkl_product_configurator_layer_' . $layer_id, true );
+		$raw = maybe_unserialize( $raw );
+		if ( is_string( $raw ) ) {
+			$raw = json_decode( stripslashes( $raw ), true );
+		}
+		if ( is_array( $raw ) && isset( $raw['_id'] ) ) {
+			return $raw;
+		}
+		if ( $has_legacy_l ) {
+			foreach ( $legacy_layers as $row ) {
+				if ( is_array( $row ) && isset( $row['_id'] ) && (int) $row['_id'] === (int) $layer_id ) {
+					return $row;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Quick status labels when integrity cache says OK (avoid re-reading all chunks).
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return array{layers_status:string,content_status:string}
+	 */
+	private function classify_storage_statuses_for_cache_hit( $parent_id, $variation_id ) {
+		$parent = wc_get_product( $parent_id );
+		if ( ! $parent ) {
+			return array(
+				'layers_status'  => 'empty',
+				'content_status' => 'empty',
+			);
+		}
+		$has_legacy_l = $this->legacy_layers_blob_is_non_empty( $parent );
+		$layers_chunk = false !== $this->get_layers_chunked( $parent_id, $parent );
+		$layers_st    = 'empty';
+		if ( $has_legacy_l && ! $layers_chunk ) {
+			$layers_st = 'legacy';
+		} elseif ( $has_legacy_l && $layers_chunk ) {
+			$layers_st = 'mixed';
+		} elseif ( $layers_chunk ) {
+			$layers_st = 'chunked';
+		}
+
+		$content_pid = $this->get_product_id_for_content( $parent_id, $variation_id );
+		$content_p   = wc_get_product( $content_pid );
+		$content_st  = 'empty';
+		if ( $content_p ) {
+			$has_legacy_c = $this->legacy_content_blob_is_non_empty( $content_p );
+			$content_ch   = false !== $this->get_content_chunked( $content_pid, $content_p );
+			if ( $has_legacy_c && ! $content_ch ) {
+				$content_st = 'legacy';
+			} elseif ( $has_legacy_c && $content_ch ) {
+				$content_st = 'mixed';
+			} elseif ( $content_ch ) {
+				$content_st = 'chunked';
+			}
+		}
+		return array(
+			'layers_status'  => $layers_st,
+			'content_status' => $content_st,
+		);
 	}
 
 	/**
@@ -240,6 +436,570 @@ class DB {
 		$cache[ $cache_key ] = $indexed;
 
 		return $indexed;
+	}
+
+	/**
+	 * Post meta: verified chunked storage (index + per-layer metas; legacy blobs removed).
+	 */
+	const STORAGE_FORMAT_CHUNKED_VERIFIED = 2;
+
+	/**
+	 * Post meta key on the parent configurable product.
+	 */
+	const META_STORAGE_FORMAT_VERSION = '_mkl_product_configurator_storage_format_version';
+
+	/**
+	 * Post meta on parent: 1 = last integrity check passed (skip deep verify until invalidated); 0 / missing / negative = recompute.
+	 */
+	const META_INTEGRITY_CACHE = '_mkl_product_configurator_integrity_cache';
+
+	/**
+	 * Read layers index array from a product meta (no cache).
+	 *
+	 * @param \WC_Product $product
+	 * @return int[]
+	 */
+	private function read_layers_index_array( $product ) {
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return array();
+		}
+		$index = $product->get_meta( '_mkl_product_configurator_layers_index', true );
+		$index = maybe_unserialize( $index );
+		if ( is_string( $index ) ) {
+			$index = json_decode( stripslashes( $index ), true );
+		}
+		if ( ! is_array( $index ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( $index as $layer_id ) {
+			$out[] = (int) $layer_id;
+		}
+		return $out;
+	}
+
+	/**
+	 * Whether legacy layers blob meta holds a non-empty array.
+	 *
+	 * @param \WC_Product $product
+	 * @return bool
+	 */
+	private function legacy_layers_blob_is_non_empty( $product ) {
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+		$data = $product->get_meta( '_mkl_product_configurator_layers', true );
+		if ( '' === $data || false === $data ) {
+			return false;
+		}
+		$data = maybe_unserialize( $data );
+		if ( is_string( $data ) ) {
+			$data = json_decode( stripslashes( $data ), true );
+		}
+		return is_array( $data ) && count( $data ) > 0;
+	}
+
+	/**
+	 * Whether legacy content blob meta holds a non-empty array.
+	 *
+	 * @param \WC_Product $product
+	 * @return bool
+	 */
+	private function legacy_content_blob_is_non_empty( $product ) {
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+			return false;
+		}
+		$data = $product->get_meta( '_mkl_product_configurator_content', true );
+		if ( '' === $data || false === $data ) {
+			return false;
+		}
+		$data = maybe_unserialize( $data );
+		if ( is_string( $data ) ) {
+			$data = json_decode( stripslashes( $data ), true );
+		}
+		return is_array( $data ) && count( $data ) > 0;
+	}
+
+	/**
+	 * List orphan per-layer meta keys (numeric suffix not in index) for a product.
+	 *
+	 * @param int   $post_id
+	 * @param int[] $index_ids
+	 * @param string $prefix e.g. _mkl_product_configurator_layer_
+	 * @return string[]
+	 */
+	private function find_orphan_chunk_meta_keys( $post_id, $index_ids, $prefix ) {
+		global $wpdb;
+		$post_id = (int) $post_id;
+		if ( $post_id < 1 ) {
+			return array();
+		}
+		$allowed = array_flip( array_map( 'intval', $index_ids ) );
+		$like    = $wpdb->esc_like( $prefix ) . '%';
+		$keys    = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT meta_key FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key LIKE %s",
+				$post_id,
+				$like
+			)
+		);
+		if ( ! is_array( $keys ) ) {
+			return array();
+		}
+		$orphans = array();
+		$pattern = '/^' . preg_quote( $prefix, '/' ) . '(\d+)$/';
+		foreach ( $keys as $meta_key ) {
+			if ( preg_match( $pattern, $meta_key, $m ) ) {
+				$lid = (int) $m[1];
+				if ( $lid && ! isset( $allowed[ $lid ] ) ) {
+					$orphans[] = $meta_key;
+				}
+			}
+		}
+		return $orphans;
+	}
+
+	/**
+	 * Full integrity check for chunked layers + content storage (parent + content product).
+	 *
+	 * Uses {@see self::META_INTEGRITY_CACHE}: when 1 and $force_refresh is false, returns a cached OK result with fresh status labels.
+	 * When no legacy blobs exist on parent (layers) and content product, integrity is considered OK without requiring every optional content chunk.
+	 * When legacy exists, missing chunked rows may be satisfied by matching entries in the legacy arrays.
+	 *
+	 * @param int  $parent_id      Product ID where layer structure + layer chunks live (variable parent or simple).
+	 * @param int  $variation_id   Variation ID when editing a variation (0 otherwise).
+	 * @param bool $force_refresh  Bypass positive integrity cache (e.g. after finalize).
+	 * @return array{
+	 *   ok: bool,
+	 *   layers_ok: bool,
+	 *   content_ok: bool,
+	 *   layers_status: string,
+	 *   content_status: string,
+	 *   issues: string[]
+	 * }
+	 */
+	public function verify_chunked_storage_integrity( $parent_id, $variation_id = 0, $force_refresh = false ) {
+		$parent_id    = (int) $parent_id;
+		$variation_id = (int) $variation_id;
+		$issues       = array();
+		$parent       = wc_get_product( $parent_id );
+		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+			return array(
+				'ok'             => false,
+				'layers_ok'      => false,
+				'content_ok'     => false,
+				'layers_status'  => 'empty',
+				'content_status' => 'empty',
+				'issues'         => array( 'invalid_parent_product' ),
+			);
+		}
+
+		$integrity_cache = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
+		if ( ! $force_refresh && $integrity_cache >= 1 ) {
+			$statuses = $this->classify_storage_statuses_for_cache_hit( $parent_id, $variation_id );
+			$cached   = array(
+				'ok'             => true,
+				'layers_ok'      => true,
+				'content_ok'     => true,
+				'layers_status'  => $statuses['layers_status'],
+				'content_status' => $statuses['content_status'],
+				'issues'         => array(),
+			);
+			return apply_filters( 'mkl_pc_verify_chunked_storage_integrity', $cached, $parent_id, $variation_id, $force_refresh );
+		}
+
+		$legacy_l_array = $this->get_legacy_layers_blob_array( $parent );
+		$has_legacy_l   = count( $legacy_l_array ) > 0;
+
+		$content_product_id = $this->get_product_id_for_content( $parent_id, $variation_id );
+		$content_product    = wc_get_product( $content_product_id );
+		$legacy_c_array     = ( $content_product && is_a( $content_product, 'WC_Product' ) )
+			? $this->get_legacy_content_blob_array( $content_product )
+			: array();
+		$has_legacy_c       = count( $legacy_c_array ) > 0;
+
+		if ( ! $content_product || ! is_a( $content_product, 'WC_Product' ) ) {
+			$issues[] = 'invalid_content_product';
+		}
+
+		$parent_index        = $this->read_layers_index_array( $parent );
+		$layers_chunked_data = $this->get_layers_chunked( $parent_id, $parent );
+
+		$layers_ok     = true;
+		$layers_status = 'empty';
+		if ( ! $has_legacy_l ) {
+			$layers_ok = true;
+			if ( false !== $layers_chunked_data ) {
+				$layers_status = 'chunked';
+			} elseif ( ! empty( $parent_index ) ) {
+				$layers_status = 'chunked';
+			} else {
+				$layers_status = 'empty';
+			}
+		} elseif ( empty( $parent_index ) && false === $layers_chunked_data ) {
+			$layers_status = 'legacy';
+			$layers_ok     = false;
+			$issues[]      = 'legacy_layers_blob_present';
+		} else {
+			$layers_status = ( false !== $layers_chunked_data && ! empty( $parent_index ) ) ? 'mixed' : 'legacy';
+			foreach ( $parent_index as $layer_id ) {
+				$raw = $parent->get_meta( '_mkl_product_configurator_layer_' . $layer_id, true );
+				$raw = maybe_unserialize( $raw );
+				if ( is_string( $raw ) ) {
+					$raw = json_decode( stripslashes( $raw ), true );
+				}
+				$chunk_ok = is_array( $raw ) && isset( $raw['_id'] ) && (int) $raw['_id'] === (int) $layer_id;
+				if ( ! $chunk_ok && ! $this->layer_id_exists_in_legacy_layers_array( $legacy_l_array, $layer_id ) ) {
+					$layers_ok = false;
+					$issues[]  = 'invalid_layer_chunk:' . (int) $layer_id;
+				}
+			}
+			if ( $layers_ok && false !== $layers_chunked_data ) {
+				$orphans = $this->find_orphan_chunk_meta_keys( $parent_id, $parent_index, '_mkl_product_configurator_layer_' );
+				if ( count( $orphans ) > 0 ) {
+					$layers_ok = false;
+					$issues[]  = 'orphan_layer_chunk_metas:' . implode( ',', array_slice( $orphans, 0, 20 ) );
+				}
+			}
+		}
+
+		$content_ok     = true;
+		$content_status = 'empty';
+		if ( ! $content_product ) {
+			$content_ok = false;
+			$issues[]   = 'missing_content_product';
+		} else {
+			$content_index  = $this->read_layers_index_array( $content_product );
+			$content_data   = $this->get_content_chunked( $content_product_id, $content_product );
+			$index_mismatch = false;
+			if ( $content_product_id !== $parent_id ) {
+				$parent_sorted  = $parent_index;
+				$content_sorted = $content_index;
+				sort( $parent_sorted );
+				sort( $content_sorted );
+				if ( $parent_sorted !== $content_sorted && ( count( $parent_sorted ) || count( $content_sorted ) ) ) {
+					$index_mismatch   = true;
+					$content_ok       = false;
+					$issues[]         = 'content_layers_index_mismatch_parent';
+					$content_status   = 'mixed';
+				}
+			}
+
+			if ( ! $index_mismatch ) {
+				if ( ! $has_legacy_c ) {
+					$content_ok = true;
+					if ( false !== $content_data ) {
+						$content_status = 'chunked';
+					} elseif ( ! empty( $content_index ) ) {
+						$content_status = 'chunked';
+					} else {
+						$content_status = 'empty';
+					}
+					foreach ( $content_index as $layer_id ) {
+						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
+						$raw = maybe_unserialize( $raw );
+						if ( is_string( $raw ) ) {
+							$raw = json_decode( stripslashes( $raw ), true );
+						}
+						if ( is_array( $raw ) ) {
+							if ( ! isset( $raw['layerId'] ) || (int) $raw['layerId'] !== (int) $layer_id ) {
+								$content_ok = false;
+								$issues[]   = 'content_layerId_mismatch:' . (int) $layer_id;
+							}
+						}
+					}
+				} elseif ( false === $content_data && empty( $content_index ) ) {
+					$content_status = 'legacy';
+					$content_ok     = false;
+					$issues[]       = 'legacy_content_blob_present';
+				} else {
+					$content_status = ( false !== $content_data && ! empty( $content_index ) ) ? 'mixed' : 'legacy';
+					foreach ( $content_index as $layer_id ) {
+						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
+						$raw = maybe_unserialize( $raw );
+						if ( is_string( $raw ) ) {
+							$raw = json_decode( stripslashes( $raw ), true );
+						}
+						$chunk_ok = is_array( $raw ) && isset( $raw['layerId'] ) && (int) $raw['layerId'] === (int) $layer_id;
+						if ( $chunk_ok ) {
+							continue;
+						}
+						$layer_row = $this->get_layer_row_for_integrity( $parent, $layer_id, $has_legacy_l, $legacy_l_array );
+						if ( ! $this->layer_requires_content_row( $layer_row, $layer_id ) ) {
+							continue;
+						}
+						if ( $this->content_row_exists_in_legacy_content_array( $legacy_c_array, $layer_id ) ) {
+							continue;
+						}
+						$content_ok = false;
+						$issues[]   = 'invalid_content_chunk:' . (int) $layer_id;
+					}
+					if ( $content_ok && false !== $content_data ) {
+						$orphans_c = $this->find_orphan_chunk_meta_keys( $content_product_id, $content_index, '_mkl_product_configurator_content_' );
+						if ( count( $orphans_c ) > 0 ) {
+							$content_ok = false;
+							$issues[]   = 'orphan_content_chunk_metas:' . implode( ',', array_slice( $orphans_c, 0, 20 ) );
+						}
+					}
+				}
+			}
+		}
+
+		$empty_both = ( 'empty' === $layers_status && 'empty' === $content_status );
+		$ok         = ( $layers_ok && $content_ok ) || $empty_both;
+
+		$result = array(
+			'ok'             => $ok,
+			'layers_ok'      => $layers_ok,
+			'content_ok'     => $content_ok,
+			'layers_status'  => $layers_status,
+			'content_status' => $content_status,
+			'issues'         => $issues,
+		);
+
+		$this->set_integrity_cache_value( $parent_id, $ok ? 1 : 0 );
+
+		return apply_filters( 'mkl_pc_verify_chunked_storage_integrity', $result, $parent_id, $variation_id, $force_refresh );
+	}
+
+	/**
+	 * If integrity passes, set storage format version on parent and clear caches. Legacy blobs are not removed here.
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return array Snapshot for admin (includes verify result + version).
+	 */
+	public function maybe_finalize_chunked_storage( $parent_id, $variation_id = 0 ) {
+		$parent_id    = (int) $parent_id;
+		$variation_id = (int) $variation_id;
+		$parent       = wc_get_product( $parent_id );
+		if ( ! $parent ) {
+			return array(
+				'ok'                     => false,
+				'layers_ok'              => false,
+				'content_ok'             => false,
+				'layers_status'          => 'empty',
+				'content_status'         => 'empty',
+				'issues'                 => array( 'missing_parent_product' ),
+				'storage_format_version' => 0,
+				'snapshot'               => $this->get_pc_storage_state_for_editor( $parent_id, $variation_id, false ),
+			);
+		}
+
+		$current_version  = (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true );
+		$integrity_cached = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
+		if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version && $integrity_cached >= 1 ) {
+			$verify = array(
+				'ok'             => true,
+				'layers_ok'      => true,
+				'content_ok'     => true,
+				'issues'         => array(),
+				'storage_format_version' => $current_version,
+				'snapshot'       => $this->get_pc_storage_state_for_editor( $parent_id, $variation_id, true ),
+			);
+			$statuses = $this->classify_storage_statuses_for_cache_hit( $parent_id, $variation_id );
+			$verify['layers_status']  = $statuses['layers_status'];
+			$verify['content_status'] = $statuses['content_status'];
+			return $verify;
+		}
+
+		$verify = $this->verify_chunked_storage_integrity( $parent_id, $variation_id, true );
+
+		if ( ! $verify['ok'] ) {
+			if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version ) {
+				$parent->delete_meta_data( self::META_STORAGE_FORMAT_VERSION );
+				$parent->save();
+			}
+			$verify['storage_format_version'] = (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true );
+			$verify['snapshot']               = $this->get_pc_storage_state_for_editor( $parent_id, $variation_id, false );
+			return $verify;
+		}
+
+		$content_product_id = $this->get_product_id_for_content( $parent_id, $variation_id );
+
+		$parent->update_meta_data( self::META_STORAGE_FORMAT_VERSION, self::STORAGE_FORMAT_CHUNKED_VERIFIED );
+		$parent->save();
+		do_action( 'wpml_sync_custom_field', $parent_id, self::META_STORAGE_FORMAT_VERSION );
+
+		$this->invalidate_layers_cache( $parent_id );
+		wp_cache_delete( 'mkl_pc_data_layers_' . $parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_layers_index_' . $parent_id, 'mkl_pc' );
+		if ( $content_product_id && $content_product_id !== $parent_id ) {
+			$this->invalidate_layers_cache( $content_product_id );
+			wp_cache_delete( 'mkl_pc_data_content_' . $content_product_id, 'mkl_pc' );
+		}
+
+		$verify['storage_format_version'] = self::STORAGE_FORMAT_CHUNKED_VERIFIED;
+		$verify['snapshot']               = $this->get_pc_storage_state_for_editor( $parent_id, $variation_id, true );
+
+		do_action( 'mkl_pc_chunked_storage_finalized', $parent_id, $variation_id, $verify );
+
+		return $verify;
+	}
+
+	/**
+	 * Build pc_storage payload for admin init / AJAX (layers + content classification + integrity + version).
+	 *
+	 * @param int  $parent_id
+	 * @param int  $variation_id
+	 * @param bool $skip_deep_verify If true, trust STORAGE_FORMAT_CHUNKED_VERIFIED + positive integrity cache (no full verify pass).
+	 * @return array
+	 */
+	public function get_pc_storage_state_for_editor( $parent_id, $variation_id = 0, $skip_deep_verify = false ) {
+		$parent_id    = (int) $parent_id;
+		$variation_id = (int) $variation_id;
+		$parent       = wc_get_product( $parent_id );
+		$version      = $parent ? (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true ) : 0;
+
+		if ( $skip_deep_verify && self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $parent ) {
+			$integrity_cached = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
+			if ( $integrity_cached >= 1 ) {
+				$statuses = $this->classify_storage_statuses_for_cache_hit( $parent_id, $variation_id );
+				return array(
+					'layers'                    => $statuses['layers_status'],
+					'content'                   => $statuses['content_status'],
+					'storage_format_version'    => $version,
+					'integrity_ok'              => true,
+					'integrity_issues'          => array(),
+					'needs_batch_migration'     => false,
+					'needs_format_finalize'     => false,
+				);
+			}
+		}
+
+		$verify     = $this->verify_chunked_storage_integrity( $parent_id, $variation_id );
+		$empty_both = ( 'empty' === $verify['layers_status'] && 'empty' === $verify['content_status'] );
+
+		$needs_batch = false;
+		if ( ! $empty_both ) {
+			if ( in_array( $verify['layers_status'], array( 'legacy', 'mixed' ), true )
+				|| in_array( $verify['content_status'], array( 'legacy', 'mixed' ), true ) ) {
+				$needs_batch = true;
+			} elseif ( ! $verify['ok'] ) {
+				$needs_batch = true;
+			}
+		}
+
+		$needs_finalize = ! $empty_both && $verify['ok'] && self::STORAGE_FORMAT_CHUNKED_VERIFIED !== $version;
+
+		return array(
+			'layers'                    => $verify['layers_status'],
+			'content'                   => $verify['content_status'],
+			'storage_format_version'    => $version,
+			'integrity_ok'              => (bool) $verify['ok'],
+			'integrity_issues'          => $verify['issues'],
+			'needs_batch_migration'     => $needs_batch,
+			'needs_format_finalize'     => $needs_finalize,
+		);
+	}
+
+	/**
+	 * Whether legacy single-blob layers and/or content metas still exist (alongside chunked metas or alone).
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return bool
+	 */
+	public function has_legacy_configurator_blobs( $parent_id, $variation_id = 0 ) {
+		$parent_id = (int) $parent_id;
+		$parent     = wc_get_product( $parent_id );
+		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+			return false;
+		}
+		if ( $this->legacy_layers_blob_is_non_empty( $parent ) ) {
+			return true;
+		}
+		$content_pid = $this->get_product_id_for_content( $parent_id, (int) $variation_id );
+		$content_p   = wc_get_product( $content_pid );
+		return $content_p && $this->legacy_content_blob_is_non_empty( $content_p );
+	}
+
+	/**
+	 * Remove legacy blob metas only; chunked layer/content metas and index are unchanged.
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return bool
+	 */
+	public function delete_legacy_configurator_blobs( $parent_id, $variation_id = 0 ) {
+		$parent_id = (int) $parent_id;
+		$parent    = wc_get_product( $parent_id );
+		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+			return false;
+		}
+		$parent->delete_meta_data( '_mkl_product_configurator_layers' );
+		$parent->save();
+		do_action( 'wpml_sync_custom_field', $parent_id, '_mkl_product_configurator_layers' );
+
+		$content_pid = $this->get_product_id_for_content( $parent_id, (int) $variation_id );
+		$content_p   = wc_get_product( $content_pid );
+		if ( $content_p && is_a( $content_p, 'WC_Product' ) ) {
+			$content_p->delete_meta_data( '_mkl_product_configurator_content' );
+			$content_p->save();
+			do_action( 'wpml_sync_custom_field', $content_pid, '_mkl_product_configurator_content' );
+		}
+
+		wp_cache_delete( 'mkl_pc_data_layers_' . $parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_layers_index_' . $parent_id, 'mkl_pc' );
+		$this->invalidate_layers_cache( $parent_id );
+		if ( $content_pid && $content_pid !== $parent_id ) {
+			wp_cache_delete( 'mkl_pc_data_content_' . $content_pid, 'mkl_pc' );
+			$this->invalidate_layers_cache( $content_pid );
+		}
+		$this->set_integrity_cache_value( $parent_id, 0 );
+		return true;
+	}
+
+	/**
+	 * Rebuild legacy blob metas from the current effective layers/content (chunked reads first).
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return bool
+	 */
+	public function restore_legacy_configurator_blobs_from_chunks( $parent_id, $variation_id = 0 ) {
+		$parent_id = (int) $parent_id;
+		$parent    = wc_get_product( $parent_id );
+		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+			return false;
+		}
+
+		wp_cache_delete( 'mkl_pc_data_layers_' . $parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_layers_index_' . $parent_id, 'mkl_pc' );
+
+		$layers = $this->get( 'layers', $parent_id );
+		if ( is_array( $layers ) && count( $layers ) > 0 ) {
+			$parent->update_meta_data( '_mkl_product_configurator_layers', $layers );
+		} else {
+			$parent->delete_meta_data( '_mkl_product_configurator_layers' );
+		}
+		$parent->save();
+		do_action( 'wpml_sync_custom_field', $parent_id, '_mkl_product_configurator_layers' );
+
+		$content_pid = $this->get_product_id_for_content( $parent_id, (int) $variation_id );
+		$content_p   = wc_get_product( $content_pid );
+		if ( $content_p && is_a( $content_p, 'WC_Product' ) ) {
+			wp_cache_delete( 'mkl_pc_data_content_' . $content_pid, 'mkl_pc' );
+			wp_cache_delete( 'mkl_pc_data_layers_' . $content_pid, 'mkl_pc' );
+			$content = $this->get( 'content', $content_pid );
+			if ( is_array( $content ) && count( $content ) > 0 ) {
+				$content_p->update_meta_data( '_mkl_product_configurator_content', $content );
+			} else {
+				$content_p->delete_meta_data( '_mkl_product_configurator_content' );
+			}
+			$content_p->save();
+			do_action( 'wpml_sync_custom_field', $content_pid, '_mkl_product_configurator_content' );
+		}
+
+		$this->invalidate_layers_cache( $parent_id );
+		if ( $content_pid && $content_pid !== $parent_id ) {
+			$this->invalidate_layers_cache( $content_pid );
+		}
+		$this->set_integrity_cache_value( $parent_id, 0 );
+		return true;
 	}
 
 	/**
@@ -858,7 +1618,7 @@ class DB {
 	 * @param integer $id - The product's ID
 	 * @return array
 	 */
-	public function get_init_data( $id ) {
+	public function get_init_data( $id, $variation_id_for_storage = 0 ) {
 
 		$product = wc_get_product( $id );
 		if ( 'variation' === $product->get_type() ) {
@@ -875,7 +1635,8 @@ class DB {
 				'update' => false,
 				'delete' => false,
 			),
-			'product_info' => array()
+			'product_info' => array(),
+			'pc_storage'   => $this->get_pc_storage_state_for_editor( $parent_id, (int) $variation_id_for_storage ),
 		);
 		
 		if ( 'variable' === $product->get_type()) {

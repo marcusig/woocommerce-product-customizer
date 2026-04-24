@@ -120,6 +120,7 @@ PC.views = PC.views || {};
 				this.loading ++;
 
 				PC.app.admin_data.fetch({
+					data: this.product.id != PC.app.id ? { variation_id: this.product.id } : {},
 					success: _.bind(function( model, res, options ) {
 						
 						this.admin.set_data();

@@ -504,6 +504,20 @@ html .pc-modal-container {
 			padding: 0;
 			@media ( min-width: 800px ) {
 				display: flex;
+				flex-wrap: wrap;
+			}
+			.migration-warning {
+				flex: 1 1 100%;
+				width: 100%;
+				padding: 12px 20px 0;
+				box-sizing: border-box;
+				.notice {
+					margin: 0 0 12px;
+					box-sizing: border-box;
+				}
+				.notice p:last-child {
+					margin-bottom: 0;
+				}
 			}
 			.instructions {
 				overflow: auto;
