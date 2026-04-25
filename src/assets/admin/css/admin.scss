@@ -136,7 +136,7 @@ body.pc-modal-opened {
 	overflow: hidden;
 }
 .pc-modal-backdrop {
-	z-index: 149000;
+	z-index: 149000 !important;
 }
 html .media-modal.pc-modal {
 	z-index: 150000!important;
@@ -1342,6 +1342,29 @@ a.mkl-pc-link--external::before {
 		}
 	}
 	
+}
+
+.mkl-pc-global-configurator--banner {
+    display: none;
+}
+
+.pc-modal-container.mkl-pc-configurator-is-global .media-modal-content {
+    top: 35px;
+}
+
+.mkl-pc-configurator-is-global .mkl-pc-global-configurator--banner {
+    display: flex;
+    background: #3858e9;
+    height: 35px;
+    color: #FFF;
+    /* padding: 3px 17px; */
+    /* text-align: center; */
+    justify-content: center;
+    align-items: anchor-center;
+}
+
+.mkl-pc-configurator-is-global button.media-modal-close {
+    top: 35px;
 }
 
 @keyframes mkl-slide-down {

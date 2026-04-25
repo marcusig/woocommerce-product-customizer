@@ -2,6 +2,10 @@
 
 namespace MKL\PC;
 
+use MKL\PC\Global_Configurators\Owner_Resolver;
+use MKL\PC\Global_Configurators\Schema;
+use MKL\PC\Global_Configurators\Storage_Owner;
+
 
 /**
  * Data functions
@@ -35,6 +39,37 @@ class DB {
 	}
 
 	/**
+	 * Return a Storage_Owner for a product, variation, or global configurator CPT id.
+	 *
+	 * Centralizes `wc_get_product()` so that CPT-backed configurators get a meta API that
+	 * mirrors WC_Product (get_meta / update_meta_data / delete_meta_data / save).
+	 *
+	 * @param int $post_id
+	 * @return \MKL\PC\Global_Configurators\Storage_Owner|null
+	 */
+	private function get_owner( $post_id ) {
+		if ( ! class_exists( Storage_Owner::class ) ) {
+			return null;
+		}
+		return Storage_Owner::for_post( (int) $post_id );
+	}
+
+	/**
+	 * Resolve the effective storage owner id for a selling context, honoring global links.
+	 *
+	 * @param int    $product_id
+	 * @param int    $variation_id
+	 * @param string $component
+	 * @return int
+	 */
+	private function resolve_storage_owner_id( $product_id, $variation_id = 0, $component = '' ) {
+		if ( class_exists( Owner_Resolver::class ) ) {
+			return Owner_Resolver::resolve_storage_owner_id( (int) $product_id, (int) $variation_id, $component );
+		}
+		return (int) $product_id;
+	}
+
+	/**
 	 * After layers/content AJAX saves, force the next integrity pass (parent product).
 	 *
 	 * @param int    $id
@@ -58,8 +93,8 @@ class DB {
 	 * @return void
 	 */
 	private function set_integrity_cache_value( $parent_id, $value ) {
-		$parent = wc_get_product( (int) $parent_id );
-		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+		$parent = $this->get_owner( (int) $parent_id );
+		if ( ! $parent ) {
 			return;
 		}
 		$parent->update_meta_data( self::META_INTEGRITY_CACHE, (int) $value );
@@ -68,11 +103,11 @@ class DB {
 	}
 
 	/**
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @return array<int, array<string, mixed>>|array{}
 	 */
 	private function get_legacy_layers_blob_array( $product ) {
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		if ( ! $product ) {
 			return array();
 		}
 		$data = $product->get_meta( '_mkl_product_configurator_layers', true );
@@ -87,11 +122,11 @@ class DB {
 	}
 
 	/**
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @return array<int, array<string, mixed>>|array{}
 	 */
 	private function get_legacy_content_blob_array( $product ) {
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		if ( ! $product ) {
 			return array();
 		}
 		$data = $product->get_meta( '_mkl_product_configurator_content', true );
@@ -191,7 +226,8 @@ class DB {
 	 * @return array{layers_status:string,content_status:string}
 	 */
 	private function classify_storage_statuses_for_cache_hit( $parent_id, $variation_id ) {
-		$parent = wc_get_product( $parent_id );
+		$owner_parent_id = $this->resolve_storage_owner_id( $parent_id, 0, 'layers' );
+		$parent          = $this->get_owner( $owner_parent_id );
 		if ( ! $parent ) {
 			return array(
 				'layers_status'  => 'empty',
@@ -199,7 +235,7 @@ class DB {
 			);
 		}
 		$has_legacy_l = $this->legacy_layers_blob_is_non_empty( $parent );
-		$layers_chunk = false !== $this->get_layers_chunked( $parent_id, $parent );
+		$layers_chunk = false !== $this->get_layers_chunked( $owner_parent_id, $parent );
 		$layers_st    = 'empty';
 		if ( $has_legacy_l && ! $layers_chunk ) {
 			$layers_st = 'legacy';
@@ -210,11 +246,12 @@ class DB {
 		}
 
 		$content_pid = $this->get_product_id_for_content( $parent_id, $variation_id );
-		$content_p   = wc_get_product( $content_pid );
+		$content_owner_pid = $this->resolve_storage_owner_id( $content_pid, $variation_id, 'content' );
+		$content_p   = $this->get_owner( $content_owner_pid );
 		$content_st  = 'empty';
 		if ( $content_p ) {
 			$has_legacy_c = $this->legacy_content_blob_is_non_empty( $content_p );
-			$content_ch   = false !== $this->get_content_chunked( $content_pid, $content_p );
+			$content_ch   = false !== $this->get_content_chunked( $content_owner_pid, $content_p );
 			if ( $has_legacy_c && ! $content_ch ) {
 				$content_st = 'legacy';
 			} elseif ( $has_legacy_c && $content_ch ) {
@@ -262,8 +299,8 @@ class DB {
 		if ( false !== $cached ) {
 			return $cached;
 		}
-		$product = wc_get_product( $product_id );
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		$product = $this->get_owner( $product_id );
+		if ( ! $product ) {
 			return false;
 		}
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
@@ -290,24 +327,29 @@ class DB {
 
 		if ( ! is_string( $that ) ) return false;
 
-		$cache_key = "mkl_pc_data_{$that}_{$product_id}";
+		$owner_id = $this->resolve_storage_owner_id( $product_id, 0, $that );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $product_id;
+		}
+
+		$cache_key = "mkl_pc_data_{$that}_{$owner_id}";
 		$cached = wp_cache_get( $cache_key, 'mkl_pc' );
 		if ( false !== $cached ) {
 			return $cached;
 		}
-		if ( ! $this->is_product( $product_id ) ) return false;
+		if ( ! $this->is_product( $owner_id ) ) return false;
 
-		$product = wc_get_product( $product_id );
+		$product = $this->get_owner( $owner_id );
 
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return false;
+		if ( ! $product ) return false;
 
 		if ( 'layers' === $that ) {
-			$data = $this->get_layers_chunked( $product_id, $product );
+			$data = $this->get_layers_chunked( $owner_id, $product );
 			if ( false === $data ) {
 				$data = $this->get_legacy_meta( $product, '_mkl_product_configurator_layers' );
 			}
 		} elseif ( 'content' === $that ) {
-			$data = $this->get_content_chunked( $product_id, $product );
+			$data = $this->get_content_chunked( $owner_id, $product );
 			if ( false === $data ) {
 				$data = $this->get_legacy_meta( $product, '_mkl_product_configurator_content' );
 			}
@@ -324,9 +366,9 @@ class DB {
 		 *
 		 * @param $data       - The data filtered
 		 * @param $that       - The slug of the meta data fetched - e.g 'content', 'angles', 'layers'...
-		 * @param $product_id - The product ID
+		 * @param $product_id - The product ID (may be redirected to a global configurator owner id)
 		 */
-		$data = apply_filters( 'mkl_pc/db/get', $data, $that, $product_id );
+		$data = apply_filters( 'mkl_pc/db/get', $data, $that, $owner_id );
 		wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
 		return $data;
 	}
@@ -456,11 +498,11 @@ class DB {
 	/**
 	 * Read layers index array from a product meta (no cache).
 	 *
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @return int[]
 	 */
 	private function read_layers_index_array( $product ) {
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		if ( ! $product ) {
 			return array();
 		}
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index', true );
@@ -481,11 +523,11 @@ class DB {
 	/**
 	 * Whether legacy layers blob meta holds a non-empty array.
 	 *
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @return bool
 	 */
 	private function legacy_layers_blob_is_non_empty( $product ) {
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		if ( ! $product ) {
 			return false;
 		}
 		$data = $product->get_meta( '_mkl_product_configurator_layers', true );
@@ -502,11 +544,11 @@ class DB {
 	/**
 	 * Whether legacy content blob meta holds a non-empty array.
 	 *
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @return bool
 	 */
 	private function legacy_content_blob_is_non_empty( $product ) {
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		if ( ! $product ) {
 			return false;
 		}
 		$data = $product->get_meta( '_mkl_product_configurator_content', true );
@@ -582,8 +624,9 @@ class DB {
 		$parent_id    = (int) $parent_id;
 		$variation_id = (int) $variation_id;
 		$issues       = array();
-		$parent       = wc_get_product( $parent_id );
-		if ( ! $parent || ! is_a( $parent, 'WC_Product' ) ) {
+		$owner_parent_id = $this->resolve_storage_owner_id( $parent_id, 0, 'layers' );
+		$parent          = $this->get_owner( $owner_parent_id );
+		if ( ! $parent ) {
 			return array(
 				'ok'             => false,
 				'layers_ok'      => false,
@@ -612,18 +655,19 @@ class DB {
 		$has_legacy_l   = count( $legacy_l_array ) > 0;
 
 		$content_product_id = $this->get_product_id_for_content( $parent_id, $variation_id );
-		$content_product    = wc_get_product( $content_product_id );
-		$legacy_c_array     = ( $content_product && is_a( $content_product, 'WC_Product' ) )
+		$content_owner_id   = $this->resolve_storage_owner_id( $content_product_id, $variation_id, 'content' );
+		$content_product    = $this->get_owner( $content_owner_id );
+		$legacy_c_array     = $content_product
 			? $this->get_legacy_content_blob_array( $content_product )
 			: array();
 		$has_legacy_c       = count( $legacy_c_array ) > 0;
 
-		if ( ! $content_product || ! is_a( $content_product, 'WC_Product' ) ) {
+		if ( ! $content_product ) {
 			$issues[] = 'invalid_content_product';
 		}
 
 		$parent_index        = $this->read_layers_index_array( $parent );
-		$layers_chunked_data = $this->get_layers_chunked( $parent_id, $parent );
+		$layers_chunked_data = $this->get_layers_chunked( $owner_parent_id, $parent );
 
 		$layers_ok     = true;
 		$layers_status = 'empty';
@@ -655,7 +699,7 @@ class DB {
 				}
 			}
 			if ( $layers_ok && false !== $layers_chunked_data ) {
-				$orphans = $this->find_orphan_chunk_meta_keys( $parent_id, $parent_index, '_mkl_product_configurator_layer_' );
+				$orphans = $this->find_orphan_chunk_meta_keys( $owner_parent_id, $parent_index, '_mkl_product_configurator_layer_' );
 				if ( count( $orphans ) > 0 ) {
 					$layers_ok = false;
 					$issues[]  = 'orphan_layer_chunk_metas:' . implode( ',', array_slice( $orphans, 0, 20 ) );
@@ -670,7 +714,7 @@ class DB {
 			$issues[]   = 'missing_content_product';
 		} else {
 			$content_index  = $this->read_layers_index_array( $content_product );
-			$content_data   = $this->get_content_chunked( $content_product_id, $content_product );
+			$content_data   = $this->get_content_chunked( $content_owner_id, $content_product );
 			$index_mismatch = false;
 			if ( $content_product_id !== $parent_id ) {
 				$parent_sorted  = $parent_index;
@@ -735,7 +779,7 @@ class DB {
 						$issues[]   = 'invalid_content_chunk:' . (int) $layer_id;
 					}
 					if ( $content_ok && false !== $content_data ) {
-						$orphans_c = $this->find_orphan_chunk_meta_keys( $content_product_id, $content_index, '_mkl_product_configurator_content_' );
+						$orphans_c = $this->find_orphan_chunk_meta_keys( $content_owner_id, $content_index, '_mkl_product_configurator_content_' );
 						if ( count( $orphans_c ) > 0 ) {
 							$content_ok = false;
 							$issues[]   = 'orphan_content_chunk_metas:' . implode( ',', array_slice( $orphans_c, 0, 20 ) );
@@ -770,9 +814,10 @@ class DB {
 	 * @return array Snapshot for admin (includes verify result + version).
 	 */
 	public function maybe_finalize_chunked_storage( $parent_id, $variation_id = 0 ) {
-		$parent_id    = (int) $parent_id;
-		$variation_id = (int) $variation_id;
-		$parent       = wc_get_product( $parent_id );
+		$parent_id       = (int) $parent_id;
+		$variation_id    = (int) $variation_id;
+		$owner_parent_id = $this->resolve_storage_owner_id( $parent_id, 0, 'layers' );
+		$parent          = $this->get_owner( $owner_parent_id );
 		if ( ! $parent ) {
 			return array(
 				'ok'                     => false,
@@ -816,18 +861,19 @@ class DB {
 		}
 
 		$content_product_id = $this->get_product_id_for_content( $parent_id, $variation_id );
+		$content_owner_id   = $this->resolve_storage_owner_id( $content_product_id, $variation_id, 'content' );
 
 		$parent->update_meta_data( self::META_STORAGE_FORMAT_VERSION, self::STORAGE_FORMAT_CHUNKED_VERIFIED );
 		$parent->save();
-		do_action( 'wpml_sync_custom_field', $parent_id, self::META_STORAGE_FORMAT_VERSION );
+		do_action( 'wpml_sync_custom_field', $owner_parent_id, self::META_STORAGE_FORMAT_VERSION );
 
-		$this->invalidate_layers_cache( $parent_id );
-		wp_cache_delete( 'mkl_pc_data_layers_' . $parent_id, 'mkl_pc' );
-		wp_cache_delete( 'mkl_pc_data_content_' . $parent_id, 'mkl_pc' );
-		wp_cache_delete( 'mkl_pc_layers_index_' . $parent_id, 'mkl_pc' );
-		if ( $content_product_id && $content_product_id !== $parent_id ) {
-			$this->invalidate_layers_cache( $content_product_id );
-			wp_cache_delete( 'mkl_pc_data_content_' . $content_product_id, 'mkl_pc' );
+		$this->invalidate_layers_cache( $owner_parent_id );
+		wp_cache_delete( 'mkl_pc_data_layers_' . $owner_parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $owner_parent_id, 'mkl_pc' );
+		wp_cache_delete( 'mkl_pc_layers_index_' . $owner_parent_id, 'mkl_pc' );
+		if ( $content_owner_id && $content_owner_id !== $owner_parent_id ) {
+			$this->invalidate_layers_cache( $content_owner_id );
+			wp_cache_delete( 'mkl_pc_data_content_' . $content_owner_id, 'mkl_pc' );
 		}
 
 		$verify['storage_format_version'] = self::STORAGE_FORMAT_CHUNKED_VERIFIED;
@@ -847,10 +893,11 @@ class DB {
 	 * @return array
 	 */
 	public function get_pc_storage_state_for_editor( $parent_id, $variation_id = 0, $skip_deep_verify = false ) {
-		$parent_id    = (int) $parent_id;
-		$variation_id = (int) $variation_id;
-		$parent       = wc_get_product( $parent_id );
-		$version      = $parent ? (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true ) : 0;
+		$parent_id       = (int) $parent_id;
+		$variation_id    = (int) $variation_id;
+		$owner_parent_id = $this->resolve_storage_owner_id( $parent_id, 0, 'layers' );
+		$parent          = $this->get_owner( $owner_parent_id );
+		$version         = $parent ? (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true ) : 0;
 
 		if ( $skip_deep_verify && self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $parent ) {
 			$integrity_cached = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
@@ -925,16 +972,26 @@ class DB {
 		} else {
 			$data = $raw_data;
 		}
-		$data = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
-		$product = wc_get_product( $id );
+		$data     = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
+		$owner_id = $this->resolve_storage_owner_id( $id, 0, $component );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $id;
+		}
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) {
+			return false;
+		}
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->update_meta_data( '_mkl_product_configurator_' . $component, $data );
 		$product->save();
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_' . $component );
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_' . $component );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 		do_action( 'mkl_pc_saved_product_configuration_' . $component, $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
-		wp_cache_delete( "mkl_pc_data_{$component}_{$id}", 'mkl_pc' );
+		wp_cache_delete( "mkl_pc_data_{$component}_{$owner_id}", 'mkl_pc' );
+		if ( $owner_id !== (int) $id ) {
+			wp_cache_delete( "mkl_pc_data_{$component}_{$id}", 'mkl_pc' );
+		}
 		return $data;
 	}
 
@@ -972,14 +1029,18 @@ class DB {
 	 * @return array|false
 	 */
 	private function set_layers( $id, $ref_id, $raw_data ) {
-		$product = wc_get_product( $id );
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		$owner_id = $this->resolve_storage_owner_id( $id, 0, 'layers' );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $id;
+		}
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) {
 			return false;
 		}
 
 		// Delta: { layers_index: [], layers: { id => layer_data }, deleted: [] }
 		if ( is_array( $raw_data ) && isset( $raw_data['layers_index'] ) && isset( $raw_data['layers'] ) ) {
-			return $this->set_layers_delta( $id, $product, $raw_data );
+			return $this->set_layers_delta( $id, $product, $raw_data, $owner_id );
 		}
 
 		if ( 'empty' === $raw_data ) {
@@ -1003,8 +1064,11 @@ class DB {
 			$product->delete_meta_data( '_mkl_product_configurator_layers' );
 			$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 			$product->save();
-			$this->invalidate_layers_cache( $id );
-			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layers_index' );
+			$this->invalidate_layers_cache( $owner_id );
+			if ( $owner_id !== (int) $id ) {
+				$this->invalidate_layers_cache( $id );
+			}
+			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
 			do_action( 'mkl_pc_saved_product_configuration_layers', $id, array() );
 			do_action( 'mkl_pc_saved_product_configuration', $id );
 			return array();
@@ -1029,22 +1093,25 @@ class DB {
 		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 
 		foreach ( $data as $layer ) {
 			$layer_id = isset( $layer['_id'] ) ? (int) $layer['_id'] : 0;
 			if ( ! $layer_id ) continue;
 			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layer_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layer_' . $layer_id );
 		}
 
 		$this->delete_layer_chunk_metas( $product, $layer_ids, $old_index );
 		$product->delete_meta_data( '_mkl_product_configurator_layers' );
 		$product->save();
 
-		$this->invalidate_layers_cache( $id );
+		$this->invalidate_layers_cache( $owner_id );
+		if ( $owner_id !== (int) $id ) {
+			$this->invalidate_layers_cache( $id );
+		}
 		do_action( 'mkl_pc_saved_product_configuration_layers', $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 		return $data;
@@ -1053,12 +1120,16 @@ class DB {
 	/**
 	 * Set layers from delta payload.
 	 *
-	 * @param int         $id
-	 * @param \WC_Product $product
-	 * @param array       $payload { layers_index: [], layers: { id => data }, deleted: [] }
+	 * @param int         $id       Logical product id (source of change).
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product Storage owner (may be CPT when linked globally).
+	 * @param array       $payload  { layers_index: [], layers: { id => data }, deleted: [] }
+	 * @param int|null    $owner_id Storage owner id (defaults to $id when not provided).
 	 * @return array
 	 */
-	private function set_layers_delta( $id, $product, $payload ) {
+	private function set_layers_delta( $id, $product, $payload, $owner_id = null ) {
+		if ( null === $owner_id ) {
+			$owner_id = (int) $id;
+		}
 		$layer_ids = isset( $payload['layers_index'] ) && is_array( $payload['layers_index'] ) ? $payload['layers_index'] : array();
 		$layers = isset( $payload['layers'] ) && is_array( $payload['layers'] ) ? $payload['layers'] : array();
 		$deleted = isset( $payload['deleted'] ) && is_array( $payload['deleted'] ) ? $payload['deleted'] : array();
@@ -1066,8 +1137,8 @@ class DB {
 		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 
 		foreach ( $layers as $layer_id => $layer ) {
 			$layer_id = (int) $layer_id;
@@ -1078,7 +1149,7 @@ class DB {
 			$layer = isset( $layer[0] ) ? $layer[0] : $layer;
 			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_layer_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layer_' . $layer_id );
 		}
 
 		foreach ( $deleted as $layer_id ) {
@@ -1090,7 +1161,10 @@ class DB {
 		$product->save();
 
 		$data = $this->get( 'layers', $id );
-		$this->invalidate_layers_cache( $id );
+		$this->invalidate_layers_cache( $owner_id );
+		if ( $owner_id !== (int) $id ) {
+			$this->invalidate_layers_cache( $id );
+		}
 		do_action( 'mkl_pc_saved_product_configuration_layers', $id, $data ? $data : array() );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 		return $data ? $data : array();
@@ -1123,14 +1197,18 @@ class DB {
 	 * @return array|false
 	 */
 	private function set_content( $id, $ref_id, $raw_data, $modified_choices = false ) {
-		$product = wc_get_product( $id );
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		$owner_id = $this->resolve_storage_owner_id( $id, 0, 'content' );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $id;
+		}
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) {
 			return false;
 		}
 
 		// Delta: { content: { layerId => { layerId, choices } } }
 		if ( is_array( $raw_data ) && isset( $raw_data['content'] ) && is_array( $raw_data['content'] ) ) {
-			return $this->set_content_delta( $id, $product, $raw_data, $modified_choices );
+			return $this->set_content_delta( $id, $product, $raw_data, $modified_choices, $owner_id );
 		}
 
 		if ( 'empty' === $raw_data ) {
@@ -1168,17 +1246,21 @@ class DB {
 			if ( ! $layer_id ) continue;
 			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_content_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
 		}
 
 		$this->delete_content_chunk_metas( $product, $layer_ids, $current_index );
 		$product->delete_meta_data( '_mkl_product_configurator_content' );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 
-		$this->invalidate_layers_cache( $id );
-		wp_cache_delete( 'mkl_pc_data_content_' . $id, 'mkl_pc' );
+		$this->invalidate_layers_cache( $owner_id );
+		wp_cache_delete( 'mkl_pc_data_content_' . $owner_id, 'mkl_pc' );
+		if ( $owner_id !== (int) $id ) {
+			$this->invalidate_layers_cache( $id );
+			wp_cache_delete( 'mkl_pc_data_content_' . $id, 'mkl_pc' );
+		}
 		do_action( 'mkl_pc_saved_product_configuration_content', $id, $data );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 		return $data;
@@ -1187,13 +1269,17 @@ class DB {
 	/**
 	 * Set content from delta payload.
 	 *
-	 * @param int         $id
-	 * @param \WC_Product $product
-	 * @param array       $payload { content: { layerId => { layerId, choices } } }
+	 * @param int         $id       Logical product id (source of change).
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product Storage owner (may be CPT when linked globally).
+	 * @param array       $payload  { content: { layerId => { layerId, choices } } }
 	 * @param mixed       $modified_choices
+	 * @param int|null    $owner_id Storage owner id (defaults to $id).
 	 * @return array
 	 */
-	private function set_content_delta( $id, $product, $payload, $modified_choices = false ) {
+	private function set_content_delta( $id, $product, $payload, $modified_choices = false, $owner_id = null ) {
+		if ( null === $owner_id ) {
+			$owner_id = (int) $id;
+		}
 		$content_chunks = isset( $payload['content'] ) && is_array( $payload['content'] ) ? $payload['content'] : array();
 		foreach ( $content_chunks as $layer_id => $item ) {
 			$layer_id = (int) $layer_id;
@@ -1207,14 +1293,20 @@ class DB {
 			}
 			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_content_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
 		}
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
-		do_action( 'wpml_sync_custom_field', $id, '_mkl_product_configurator_last_updated' );
-		wp_cache_delete( 'mkl_pc_data_content_' . $id, 'mkl_pc' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $owner_id, 'mkl_pc' );
+		if ( $owner_id !== (int) $id ) {
+			wp_cache_delete( 'mkl_pc_data_content_' . $id, 'mkl_pc' );
+		}
 		$data = $this->get( 'content', $id );
-		$this->invalidate_layers_cache( $id );
+		$this->invalidate_layers_cache( $owner_id );
+		if ( $owner_id !== (int) $id ) {
+			$this->invalidate_layers_cache( $id );
+		}
 		do_action( 'mkl_pc_saved_product_configuration_content', $id, $data ? $data : array() );
 		do_action( 'mkl_pc_saved_product_configuration', $id );
 		return $data ? $data : array();
@@ -1261,7 +1353,7 @@ class DB {
 	 * @return int
 	 */
 	public function get_product_id_for_content( $product_id, $variation_id ) {
-		$product = wc_get_product( $product_id );
+		$product = $this->get_owner( $product_id );
 		if ( ! $product ) return 0;
 		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
 		if ( ( ! $mode || 'share_layers_config' == $mode ) && $variation_id ) {
@@ -1278,8 +1370,12 @@ class DB {
 	 * @return array|false { layerId, choices } or false
 	 */
 	public function get_content_layer( $product_id, $layer_id ) {
-		$product = wc_get_product( $product_id );
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		$owner_id = $this->resolve_storage_owner_id( $product_id, 0, 'content' );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $product_id;
+		}
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) {
 			return false;
 		}
 		$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
@@ -1316,8 +1412,12 @@ class DB {
 	 * @return bool
 	 */
 	public function set_content_layer( $product_id, $layer_id, $layer_content ) {
-		$product = wc_get_product( $product_id );
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		$owner_id = $this->resolve_storage_owner_id( $product_id, 0, 'content' );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $product_id;
+		}
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) {
 			return false;
 		}
 		if ( ! isset( $layer_content['layerId'] ) ) {
@@ -1326,9 +1426,12 @@ class DB {
 		$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $layer_content );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
-		do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_content_' . $layer_id );
-		do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_last_updated' );
-		wp_cache_delete( 'mkl_pc_data_content_' . $product_id, 'mkl_pc' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
+		wp_cache_delete( 'mkl_pc_data_content_' . $owner_id, 'mkl_pc' );
+		if ( $owner_id !== (int) $product_id ) {
+			wp_cache_delete( 'mkl_pc_data_content_' . $product_id, 'mkl_pc' );
+		}
 		do_action( 'mkl_pc_saved_product_configuration_content', $product_id, array( $layer_content ) );
 		do_action( 'mkl_pc_saved_product_configuration', $product_id );
 		return true;
@@ -1512,7 +1615,14 @@ class DB {
 	 */
 	public function get_init_data( $id, $variation_id_for_storage = 0 ) {
 
+		if ( Schema::is_global_configurator_id( $id ) ) {
+			return $this->get_init_data_for_global_configurator( (int) $id );
+		}
+
 		$product = wc_get_product( $id );
+		if ( ! $product ) {
+			return array();
+		}
 		if ( 'variation' === $product->get_type() ) {
 			$parent_id = $product->get_parent_id();
 		} else {
@@ -1529,8 +1639,10 @@ class DB {
 			),
 			'product_info' => array(),
 			'pc_storage'   => $this->get_pc_storage_state_for_editor( $parent_id, (int) $variation_id_for_storage ),
+			'configurator_source' => Owner_Resolver::get_source( $parent_id ),
+			'global_configurator' => $this->get_global_configurator_info( $parent_id ),
 		);
-		
+
 		if ( 'variable' === $product->get_type()) {
 			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
 			$init_data['product_info']['variations'] = array(); 
@@ -1547,6 +1659,72 @@ class DB {
 		}
 
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $product );
+	}
+
+	/**
+	 * Build editor init data when a global configurator CPT is being edited directly.
+	 *
+	 * @param int $cpt_id
+	 * @return array
+	 */
+	private function get_init_data_for_global_configurator( $cpt_id ) {
+		$post = get_post( $cpt_id );
+		if ( ! $post || Schema::CPT_SLUG !== $post->post_type ) {
+			return array();
+		}
+		$init_data = array(
+			'layers'              => $this->get( 'layers', $cpt_id ),
+			'angles'              => $this->get( 'angles', $cpt_id ),
+			'nonces'              => array(
+				'update' => false,
+				'delete' => false,
+			),
+			'product_info'        => array(
+				'title'        => get_the_title( $cpt_id ),
+				'product_type' => Schema::OWNER_TYPE_GLOBAL,
+			),
+			'pc_storage'          => $this->get_pc_storage_state_for_editor( $cpt_id, 0 ),
+			'configurator_source' => Schema::SOURCE_GLOBAL,
+			'global_configurator' => array(
+				'id'                => (int) $cpt_id,
+				'title'             => get_the_title( $cpt_id ),
+				'is_editing_global' => true,
+				'consumer_ids'      => Owner_Resolver::get_consumer_product_ids( $cpt_id ),
+				'consumer_count'    => count( Owner_Resolver::get_consumer_product_ids( $cpt_id ) ),
+			),
+		);
+		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $post );
+	}
+
+	/**
+	 * Return a summary of the global configurator a product is linked to (when in global mode).
+	 *
+	 * @param int $product_id
+	 * @return array|null
+	 */
+	private function get_global_configurator_info( $product_id ) {
+		$source = Owner_Resolver::get_source( $product_id );
+		if ( Schema::SOURCE_GLOBAL !== $source ) {
+			return null;
+		}
+		$cpt_id = Owner_Resolver::get_global_id( $product_id );
+		if ( $cpt_id <= 0 ) {
+			return array(
+				'id'                => 0,
+				'title'             => '',
+				'is_editing_global' => false,
+				'consumer_ids'      => array(),
+				'consumer_count'    => 0,
+			);
+		}
+		$consumers = Owner_Resolver::get_consumer_product_ids( $cpt_id );
+		return array(
+			'id'                => (int) $cpt_id,
+			'title'             => get_the_title( $cpt_id ),
+			'is_editing_global' => false,
+			'consumer_ids'      => $consumers,
+			'consumer_count'    => count( $consumers ),
+		);
 	}
 
 	/**
@@ -1599,14 +1777,13 @@ class DB {
 	}
 
 	/**
-	 * Wether the post is a supported post type
+	 * Wether the post is a supported configurator owner (product, variation, or global configurator CPT).
 	 *
 	 * @param integer $id - The product / post ID
 	 * @return boolean
 	 */
 	public function is_product( $id ) {
-		return Utils::is_product( $id );
-		// return in_array( get_post_type( $id ), apply_filters( 'mkl_pc_product_post_types', array( 'product', 'product_variation' ) ) );
+		return Utils::is_configurator_owner( $id );
 	}
 
 	/**
@@ -1937,8 +2114,8 @@ class DB {
 	 * Scan and fix images (per-layer chunks for content and layers).
 	 */
 	public function scan_product_images( $product_id ) {
-		$product = wc_get_product( $product_id );
-		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) {
+		$product = $this->get_owner( $product_id );
+		if ( ! $product ) {
 			return $this->changed_items_count;
 		}
 

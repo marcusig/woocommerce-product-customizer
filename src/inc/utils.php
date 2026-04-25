@@ -144,6 +144,25 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
+		 * Check if a post id is either a product/variation or a global configurator CPT.
+		 *
+		 * Used by configurator storage/AJAX layers to decide whether a post can own configurator meta.
+		 *
+		 * @param integer|null $post_id
+		 * @return boolean
+		 */
+		public static function is_configurator_owner( $post_id = NULL ) {
+			if ( self::is_product( $post_id ) ) {
+				return true;
+			}
+			$post_type = ( NULL !== $post_id ) ? get_post_type( $post_id ) : get_post_type();
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Schema' ) ) {
+				return \MKL\PC\Global_Configurators\Schema::CPT_SLUG === $post_type;
+			}
+			return false;
+		}
+
+		/**
 		 * Retreives an attachment id from its URL
 		 * credit: https://pippinsplugins.com/retrieve-attachment-id-from-image-url/
 		 *

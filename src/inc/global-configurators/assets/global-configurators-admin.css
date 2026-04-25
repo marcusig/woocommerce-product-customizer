@@ -1,0 +1,48 @@
+.mkl-pc-configurator-source-group { border-top: 1px solid #eee; margin-top: 1em; padding-top: 1em; }
+.mkl-pc-configurator-source-group .mkl-pc-configurator-source-field label,
+.mkl-pc-configurator-source-group .mkl-pc-configurator-picker-field label { font-weight: 600; }
+
+.mkl-pc-global-picker { position: relative; display: inline-block; width: 100%; max-width: 520px; }
+.mkl-pc-global-picker-search { width: 100%; }
+.mkl-pc-global-picker-selected { display: block; margin-top: 4px; color: #1d2327; }
+.mkl-pc-global-picker-selected a.mkl-pc-global-picker-edit { margin-left: 8px; }
+.mkl-pc-global-picker-results {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 100%;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-top: none;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	max-height: 220px;
+	overflow-y: auto;
+	z-index: 10;
+}
+.mkl-pc-global-picker-results li {
+	padding: 8px 10px;
+	cursor: pointer;
+	border-bottom: 1px solid #f0f0f1;
+	margin: 0;
+}
+.mkl-pc-global-picker-results li:last-child { border-bottom: none; }
+.mkl-pc-global-picker-results li:hover { background: #f6f7f7; }
+.mkl-pc-global-picker-results li.empty { color: #646970; cursor: default; }
+.mkl-pc-global-picker-results li .count { color: #646970; font-size: 12px; }
+
+.mkl-pc-configurator-source-warning .description.notice { display: inline-block; padding: 6px 10px; }
+
+.mkl-pc-configurator-actions-hint { color: #646970; font-style: italic; }
+
+.mkl-pc-global-editor-notice { border-left-width: 4px; padding: 8px 12px; }
+.mkl-pc-global-editor-notice p { margin: 0.25em 0; }
+
+.mkl-pc-home-tab-actions { margin-top: 0.75em; }
+.mkl-pc-home-tab-actions .button + .description { margin-left: 8px; color: #646970; }
+.mkl-pc-home-tab-actions--local {
+	border-top: 1px solid #eee;
+	margin-top: 1em;
+	padding-top: 0.75em;
+}
