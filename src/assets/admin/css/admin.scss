@@ -266,6 +266,7 @@ html .media-modal.pc-modal {
 		}
 		.components-panel__body-toggle.components-button {
 			background: linear-gradient(180deg, #FFF, transparent);
+			box-sizing: border-box;
 		}
 		.setting-section:not(.is-opened) {
 			.components-panel__body-toggle.components-button .components-panel__arrow {
@@ -1381,4 +1382,3 @@ a.mkl-pc-link--external::before {
 .layer.mkl-list-item.active.just-added {
     animation: mkl-slide-down .2s;
 }
-
