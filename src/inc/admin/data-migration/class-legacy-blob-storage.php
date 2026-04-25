@@ -8,6 +8,8 @@
 namespace MKL\PC\Admin\Data_Migration;
 
 use MKL\PC\DB;
+use MKL\PC\Global_Configurators\Owner_Resolver;
+use MKL\PC\Global_Configurators\Storage_Owner;
 use WC_Product;
 use WP_Error;
 
@@ -24,18 +26,18 @@ final class Legacy_Blob_Storage {
 	 * @return bool
 	 */
 	public static function has_legacy_blobs( $parent_id, $variation_id = 0 ) {
-		$parent_id = (int) $parent_id;
-		$parent    = wc_get_product( $parent_id );
-		if ( ! $parent || ! is_a( $parent, WC_Product::class ) ) {
+		$parent_id    = (int) $parent_id;
+		$owner_parent = self::resolve_owner( $parent_id, 0 );
+		if ( ! $owner_parent ) {
 			return false;
 		}
-		if ( self::layers_blob_is_non_empty( $parent ) ) {
+		if ( self::layers_blob_is_non_empty( $owner_parent ) ) {
 			return true;
 		}
-		$db         = mkl_pc()->db;
+		$db          = mkl_pc()->db;
 		$content_pid = $db->get_product_id_for_content( $parent_id, (int) $variation_id );
-		$content_p   = wc_get_product( $content_pid );
-		return $content_p && self::content_blob_is_non_empty( $content_p );
+		$owner_c     = self::resolve_owner( $content_pid, (int) $variation_id, 'content' );
+		return $owner_c && self::content_blob_is_non_empty( $owner_c );
 	}
 
 	/**
@@ -44,29 +46,31 @@ final class Legacy_Blob_Storage {
 	 * @return bool
 	 */
 	public static function delete_legacy_blobs( $parent_id, $variation_id = 0 ) {
-		$parent_id = (int) $parent_id;
-		$parent    = wc_get_product( $parent_id );
-		if ( ! $parent || ! is_a( $parent, WC_Product::class ) ) {
+		$parent_id    = (int) $parent_id;
+		$owner_parent = self::resolve_owner( $parent_id, 0 );
+		if ( ! $owner_parent ) {
 			return false;
 		}
-		$parent->delete_meta_data( '_mkl_product_configurator_layers' );
-		$parent->save();
-		do_action( 'wpml_sync_custom_field', $parent_id, '_mkl_product_configurator_layers' );
+		$owner_parent_id = $owner_parent->get_id();
+		$owner_parent->delete_meta( '_mkl_product_configurator_layers' );
+		$owner_parent->save();
+		do_action( 'wpml_sync_custom_field', $owner_parent_id, '_mkl_product_configurator_layers' );
 
-		$db          = mkl_pc()->db;
-		$content_pid = $db->get_product_id_for_content( $parent_id, (int) $variation_id );
-		$content_p   = wc_get_product( $content_pid );
-		if ( $content_p && is_a( $content_p, WC_Product::class ) ) {
-			$content_p->delete_meta_data( '_mkl_product_configurator_content' );
-			$content_p->save();
-			do_action( 'wpml_sync_custom_field', $content_pid, '_mkl_product_configurator_content' );
+		$db              = mkl_pc()->db;
+		$content_pid     = $db->get_product_id_for_content( $parent_id, (int) $variation_id );
+		$owner_content   = self::resolve_owner( $content_pid, (int) $variation_id, 'content' );
+		$owner_content_id = $owner_content ? $owner_content->get_id() : 0;
+		if ( $owner_content ) {
+			$owner_content->delete_meta( '_mkl_product_configurator_content' );
+			$owner_content->save();
+			do_action( 'wpml_sync_custom_field', $owner_content_id, '_mkl_product_configurator_content' );
 		}
 
-		self::flush_object_caches( $parent_id );
-		if ( $content_pid && $content_pid !== $parent_id ) {
-			self::flush_object_caches( $content_pid );
+		self::flush_object_caches( $owner_parent_id );
+		if ( $owner_content_id && $owner_content_id !== $owner_parent_id ) {
+			self::flush_object_caches( $owner_content_id );
 		}
-		self::invalidate_integrity_cache( $parent_id );
+		self::invalidate_integrity_cache( $owner_parent_id );
 		return true;
 	}
 
@@ -88,49 +92,71 @@ final class Legacy_Blob_Storage {
 				__( 'Restoring is only possible when legacy storage data is still present (for example after a failed migration).', 'product-configurator-for-woocommerce' )
 			);
 		}
-		$parent = wc_get_product( $parent_id );
-		if ( ! $parent || ! is_a( $parent, WC_Product::class ) ) {
+		$owner_parent = self::resolve_owner( $parent_id, 0 );
+		if ( ! $owner_parent ) {
 			return new WP_Error( 'mkl_pc_invalid_product', __( 'Invalid product.', 'product-configurator-for-woocommerce' ) );
 		}
+		$owner_parent_id = $owner_parent->get_id();
 
-		self::delete_chunk_metas_matching_regexp_on_product( $parent, '^_mkl_product_configurator_layer_[0-9]+$' );
-		$parent->delete_meta_data( '_mkl_product_configurator_layers_index' );
-		$parent->delete_meta_data( DB::META_STORAGE_FORMAT_VERSION );
-		$parent->delete_meta_data( DB::META_INTEGRITY_CACHE );
+		self::delete_chunk_metas_matching_regexp_on_owner( $owner_parent, '^_mkl_product_configurator_layer_[0-9]+$' );
+		$owner_parent->delete_meta( '_mkl_product_configurator_layers_index' );
+		$owner_parent->delete_meta( DB::META_STORAGE_FORMAT_VERSION );
+		$owner_parent->delete_meta( DB::META_INTEGRITY_CACHE );
 
-		$db          = mkl_pc()->db;
-		$content_pid = (int) $db->get_product_id_for_content( $parent_id, (int) $variation_id );
+		$db              = mkl_pc()->db;
+		$content_pid     = (int) $db->get_product_id_for_content( $parent_id, (int) $variation_id );
+		$owner_content   = self::resolve_owner( $content_pid, (int) $variation_id, 'content' );
+		$owner_content_id = $owner_content ? $owner_content->get_id() : 0;
 
-		if ( $content_pid && $content_pid !== $parent_id ) {
-			$content_p = wc_get_product( $content_pid );
-			if ( $content_p && is_a( $content_p, WC_Product::class ) ) {
-				self::delete_chunk_metas_matching_regexp_on_product( $content_p, '^_mkl_product_configurator_content_[0-9]+$' );
-				$content_p->save();
-			}
+		if ( $owner_content && $owner_content_id !== $owner_parent_id ) {
+			self::delete_chunk_metas_matching_regexp_on_owner( $owner_content, '^_mkl_product_configurator_content_[0-9]+$' );
+			$owner_content->save();
 		} else {
-			self::delete_chunk_metas_matching_regexp_on_product( $parent, '^_mkl_product_configurator_content_[0-9]+$' );
+			self::delete_chunk_metas_matching_regexp_on_owner( $owner_parent, '^_mkl_product_configurator_content_[0-9]+$' );
 		}
 
-		$parent->save();
-		do_action( 'wpml_sync_custom_field', $parent_id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $parent_id, DB::META_STORAGE_FORMAT_VERSION );
-		do_action( 'wpml_sync_custom_field', $parent_id, DB::META_INTEGRITY_CACHE );
+		$owner_parent->save();
+		do_action( 'wpml_sync_custom_field', $owner_parent_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_parent_id, DB::META_STORAGE_FORMAT_VERSION );
+		do_action( 'wpml_sync_custom_field', $owner_parent_id, DB::META_INTEGRITY_CACHE );
 
-		self::flush_object_caches( $parent_id );
-		if ( $content_pid && $content_pid !== $parent_id ) {
-			self::flush_object_caches( $content_pid );
+		self::flush_object_caches( $owner_parent_id );
+		if ( $owner_content_id && $owner_content_id !== $owner_parent_id ) {
+			self::flush_object_caches( $owner_content_id );
 		}
 		return true;
 	}
 
 	/**
-	 * @param WC_Product $product
-	 * @param string     $regexp Full PCRE pattern for meta_key (MySQL REGEXP).
+	 * Resolve a {@see Storage_Owner} that can be a product, variation, or global configurator CPT.
+	 *
+	 * @param int    $post_id
+	 * @param int    $variation_id
+	 * @param string $component
+	 * @return Storage_Owner|null
+	 */
+	private static function resolve_owner( $post_id, $variation_id = 0, $component = 'layers' ) {
+		$post_id = (int) $post_id;
+		if ( $post_id <= 0 ) {
+			return null;
+		}
+		$owner_id = class_exists( Owner_Resolver::class )
+			? (int) Owner_Resolver::resolve_storage_owner_id( $post_id, (int) $variation_id, (string) $component )
+			: $post_id;
+		if ( $owner_id <= 0 ) {
+			$owner_id = $post_id;
+		}
+		return Storage_Owner::for_post( $owner_id );
+	}
+
+	/**
+	 * @param Storage_Owner $owner
+	 * @param string        $regexp Full PCRE pattern for meta_key (MySQL REGEXP).
 	 * @return void
 	 */
-	private static function delete_chunk_metas_matching_regexp_on_product( WC_Product $product, $regexp ) {
+	private static function delete_chunk_metas_matching_regexp_on_owner( Storage_Owner $owner, $regexp ) {
 		global $wpdb;
-		$post_id = (int) $product->get_id();
+		$post_id = (int) $owner->get_id();
 		if ( $post_id < 1 ) {
 			return;
 		}
@@ -145,13 +171,13 @@ final class Legacy_Blob_Storage {
 			return;
 		}
 		foreach ( $keys as $meta_key ) {
-			$product->delete_meta_data( $meta_key );
+			$owner->delete_meta( $meta_key );
 			do_action( 'wpml_sync_custom_field', $post_id, $meta_key );
 		}
 	}
 
 	/**
-	 * @param WC_Product $product
+	 * @param Storage_Owner|WC_Product $product
 	 * @return bool
 	 */
 	private static function layers_blob_is_non_empty( $product ) {
@@ -167,7 +193,7 @@ final class Legacy_Blob_Storage {
 	}
 
 	/**
-	 * @param WC_Product $product
+	 * @param Storage_Owner|WC_Product $product
 	 * @return bool
 	 */
 	private static function content_blob_is_non_empty( $product ) {
@@ -198,12 +224,12 @@ final class Legacy_Blob_Storage {
 	 * @return void
 	 */
 	private static function invalidate_integrity_cache( $parent_id ) {
-		$parent = wc_get_product( (int) $parent_id );
-		if ( ! $parent || ! is_a( $parent, WC_Product::class ) ) {
+		$owner = Storage_Owner::for_post( (int) $parent_id );
+		if ( ! $owner ) {
 			return;
 		}
-		$parent->update_meta_data( DB::META_INTEGRITY_CACHE, 0 );
-		$parent->save();
+		$owner->update_meta( DB::META_INTEGRITY_CACHE, 0 );
+		$owner->save();
 		do_action( 'wpml_sync_custom_field', (int) $parent_id, DB::META_INTEGRITY_CACHE );
 	}
 }

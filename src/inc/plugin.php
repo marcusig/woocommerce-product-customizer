@@ -83,6 +83,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'base/configuration.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'cache.php';
+		require_once MKL_PC_INCLUDE_PATH . 'global-configurators/bootstrap.php';
 		include_once MKL_PC_INCLUDE_PATH . 'db.php';
 		include_once MKL_PC_INCLUDE_PATH . 'themes.php';
 		include_once MKL_PC_INCLUDE_PATH . 'ajax.php';

@@ -2,6 +2,9 @@
 
 namespace MKL\PC;
 
+use MKL\PC\Global_Configurators\Owner_Resolver;
+use MKL\PC\Global_Configurators\Schema;
+
 /**
  * Product functions
  *
@@ -217,6 +220,11 @@ class Ajax {
 
 		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) ) {
 			wp_send_json_error( [ 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ], 403 );
+		}
+
+		$owner_id = class_exists( Owner_Resolver::class ) ? (int) Owner_Resolver::resolve_storage_owner_id( (int) $ref_id, (int) $id !== (int) $ref_id ? (int) $id : 0 ) : (int) $ref_id;
+		if ( $owner_id > 0 && $owner_id !== (int) $id && $owner_id !== (int) $ref_id && ! current_user_can( 'edit_post', $owner_id ) ) {
+			wp_send_json_error( [ 'message' => __( 'You are not allowed to edit the linked global configurator.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
 
 		if ( !isset( $_REQUEST['data'] ) ) {

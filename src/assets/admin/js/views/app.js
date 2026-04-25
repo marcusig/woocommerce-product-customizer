@@ -122,7 +122,9 @@ PC.views = PC.views || {};
 				PC.app.admin_data.fetch({
 					data: this.product.id != PC.app.id ? { variation_id: this.product.id } : {},
 					success: _.bind(function( model, res, options ) {
-						
+						const configurator_source = PC.app.admin_data.get( 'configurator_source' ) || 'local';
+						this.$el.addClass( 'mkl-pc-configurator-is-' + configurator_source );
+
 						this.admin.set_data();
 
 						this.fetched( model, res, options );

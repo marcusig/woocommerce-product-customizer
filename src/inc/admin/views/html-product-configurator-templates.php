@@ -29,6 +29,7 @@ GENERAL TEMPLATES
 <?php do_action('mkl_pc_admin_templates_before') ?>
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo $class; ?>">
+		<div class="mkl-pc-global-configurator--banner"> <?php _e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?> <?php _e( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' ); ?></div>
 		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close media panel' ); ?></span></span></button>
 		<div class="media-modal-content">
 			<div class="media-frame wp-core-ui">

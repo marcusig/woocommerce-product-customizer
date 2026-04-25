@@ -42,8 +42,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
 			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
-			add_action( 'admin_footer', array($this, 'editor' ) ); 
+			add_action( 'admin_footer', array($this, 'editor' ) );
 
+			add_action( 'add_meta_boxes', array( $this, 'add_global_configurator_meta_box' ) );
 		}
 
 		/**
@@ -67,13 +68,17 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function init_product_data() {
 			global $post;
 			
-			if ( ! $this->_current_screen_is( 'product' ) ) return false;
+			if ( ! $this->_is_configurator_admin_screen() ) return false;
 
 			// exit early if we don't have a post (Problem found using Yith Product addons plugin)
 			if ( ! $post ) return;
 
 			$this->ID = $post->ID;
-			$this->_product = wc_get_product( $this->ID ); 
+			if ( $this->_current_screen_is( 'product' ) ) {
+				$this->_product = wc_get_product( $this->ID );
+			} else {
+				$this->_product = null;
+			}
 		}
 
 		/**
@@ -172,14 +177,17 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function editor() {
-			if ( ! $this->_current_screen_is( 'product' ) ) return false;
-			if ( ! $this->_product ) return;
+			if ( ! $this->_is_configurator_admin_screen() ) return false;
 
 			$structure = get_post_meta( $this->ID, MKL_PC_PREFIX.'structure', true );
 			// Make variables available to the included template
 			$data = json_encode( $structure );
-			$product_type = $this->_product->get_type(); 
-			
+			if ( $this->_product ) {
+				$product_type = $this->_product->get_type();
+			} else {
+				$product_type = \MKL\PC\Global_Configurators\Schema::OWNER_TYPE_GLOBAL;
+			}
+
 			include_once 'views/html-product-configurator-templates.php';
 
 		}
@@ -226,11 +234,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// array('backbone', 'admin.js'),
 			);
 
-			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) ) {
+			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) || $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) ) {
 				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], filemtime( MKL_PC_ASSETS_PATH . 'admin/css/admin.css' ) );
 			}
 
-			if ( $this->_current_screen_is( 'product' ) ) {
+			if ( $this->_is_configurator_admin_screen() ) {
 
 				
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
@@ -240,10 +248,27 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				wp_enqueue_style( 'wp-color-picker' );
 				wp_enqueue_script( 'wp-color-picker' );
 
+				// `wp.template()` (used throughout backbone views) is provided by `wp-util` (declared
+				// in each script's dependency list below). WooCommerce product edit screens often load
+				// this transitively; the global configurator CPT screen does not.
+				// The editor uses `wp.media` for the media modal (e.g. pc_app.js). WC enqueues this on
+				// product screens; for global configurators, load the media experience explicitly.
+				if ( (int) $this->ID > 0 ) {
+					wp_enqueue_media( array( 'post' => (int) $this->ID ) );
+				} else {
+					wp_enqueue_media();
+				}
+
 				// LOAD BACKBONE SCRIPTS
-				foreach($scripts as $script) {
+				foreach ( $scripts as $script ) {
 					list( $key, $file ) = $script;
-					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), filemtime( MKL_PC_ASSETS_PATH . 'admin/js/'. $file ), true );
+					wp_enqueue_script(
+						'mkl_pc/js/admin/' . $key,
+						MKL_PC_ASSETS_URL . 'admin/js/' . $file,
+						array( 'jquery', 'backbone', 'wp-util' ),
+						filemtime( MKL_PC_ASSETS_PATH . 'admin/js/' . $file ),
+						true
+					);
 				}
 
 				$pc_lang = array(
@@ -291,6 +316,75 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			$screen = get_current_screen();
 			
 			return $screen->post_type === $name && 'post' === $screen->base;
+		}
+
+		/**
+		 * Whether the current admin screen is a configurator owner edit screen (product or CPT).
+		 *
+		 * @return bool
+		 */
+		private function _is_configurator_admin_screen() {
+			if ( $this->_current_screen_is( 'product' ) ) {
+				return true;
+			}
+			if ( class_exists( \MKL\PC\Global_Configurators\Schema::class ) && $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) ) {
+				return true;
+			}
+			return false;
+		}
+
+		/**
+		 * Add a meta box on the global configurator CPT edit screen with the "Start configurator" button,
+		 * so editors can open the same backbone editor used for products.
+		 *
+		 * @return void
+		 */
+		public function add_global_configurator_meta_box() {
+			if ( ! class_exists( \MKL\PC\Global_Configurators\Schema::class ) ) {
+				return;
+			}
+			add_meta_box(
+				'mkl_pc_global_configurator',
+				__( 'Configurator', 'product-configurator-for-woocommerce' ),
+				array( $this, 'render_global_configurator_meta_box' ),
+				\MKL\PC\Global_Configurators\Schema::CPT_SLUG,
+				'normal',
+				'high'
+			);
+		}
+
+		/**
+		 * Renders the "Start configurator" button inside the CPT meta box.
+		 *
+		 * @param \WP_Post $post
+		 * @return void
+		 */
+		public function render_global_configurator_meta_box( $post ) {
+			if ( ! $post || ! isset( $post->ID ) ) {
+				return;
+			}
+			if ( 'auto-draft' === ( isset( $post->post_status ) ? $post->post_status : '' ) ) {
+				echo '<p>' . esc_html__( 'Save the post once to enable the configurator editor.', 'product-configurator-for-woocommerce' ) . '</p>';
+				return;
+			}
+			$consumer_count = 0;
+			if ( class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class ) ) {
+				$consumer_count = count( \MKL\PC\Global_Configurators\Owner_Resolver::get_consumer_product_ids( (int) $post->ID ) );
+			}
+			?>
+			<p>
+				<?php
+				echo wp_kses_post(
+					sprintf(
+						/* translators: %d: number of products currently using this configurator. */
+						_n( '%d product currently uses this configurator.', '%d products currently use this configurator.', max( 1, $consumer_count ), 'product-configurator-for-woocommerce' ),
+						(int) $consumer_count
+					)
+				);
+				?>
+			</p>
+			<p><?php echo $this->start_button( (int) $post->ID ); ?></p>
+			<?php
 		}
 
 		/**

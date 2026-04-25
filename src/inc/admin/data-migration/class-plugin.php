@@ -8,6 +8,8 @@
 namespace MKL\PC\Admin\Data_Migration;
 
 use MKL\PC\DB;
+use MKL\PC\Global_Configurators\Owner_Resolver;
+use MKL\PC\Global_Configurators\Schema;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -39,19 +41,31 @@ final class Plugin {
 	 */
 	public static function render_home_migration_notices( $product_id, $product = null ) {
 		$product_id = (int) $product_id;
-		if ( ! $product_id || ! mkl_pc_is_configurable( $product_id ) ) {
-			return;
-		}
-		if ( ! $product || ! is_a( $product, \WC_Product::class ) ) {
-			$product = wc_get_product( $product_id );
-		}
-		if ( ! $product || ! is_a( $product, \WC_Product::class ) ) {
+		if ( ! $product_id ) {
 			return;
 		}
 
+		$is_cpt = class_exists( Schema::class ) && Schema::is_global_configurator_id( $product_id );
+		if ( ! $is_cpt && ! mkl_pc_is_configurable( $product_id ) ) {
+			return;
+		}
+		if ( ! $is_cpt ) {
+			if ( ! $product || ! is_a( $product, \WC_Product::class ) ) {
+				$product = wc_get_product( $product_id );
+			}
+			if ( ! $product || ! is_a( $product, \WC_Product::class ) ) {
+				return;
+			}
+		}
+
 		$db           = mkl_pc()->db;
-		$parent_id    = $product->is_type( 'variation' ) ? (int) $product->get_parent_id() : (int) $product->get_id();
-		$variation_id = $product->is_type( 'variation' ) ? (int) $product->get_id() : 0;
+		if ( $is_cpt ) {
+			$parent_id    = $product_id;
+			$variation_id = 0;
+		} else {
+			$parent_id    = $product->is_type( 'variation' ) ? (int) $product->get_parent_id() : (int) $product->get_id();
+			$variation_id = $product->is_type( 'variation' ) ? (int) $product->get_id() : 0;
+		}
 		$storage      = $db->get_pc_storage_state_for_editor( $parent_id, $variation_id, false );
 
 		$pending_migration = ! empty( $storage['needs_batch_migration'] ) || ! empty( $storage['needs_format_finalize'] );
