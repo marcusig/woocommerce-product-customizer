@@ -1,12 +1,24 @@
 .mkl-pc-configurator-source-group { border-top: 1px solid #eee; margin-top: 1em; padding-top: 1em; }
 .mkl-pc-configurator-source-group .mkl-pc-configurator-source-field label,
-.mkl-pc-configurator-source-group .mkl-pc-configurator-picker-field label { font-weight: 600; }
+.mkl-pc-configurator-source-group .mkl-pc-configurator-picker-field .mkl-pc-global-configurator-label { display: block; font-weight: 600; }
 
-.mkl-pc-global-picker { position: relative; display: inline-block; width: 100%; max-width: 520px; }
+.mkl-pc-global-picker { position: relative; display: inline-block; width: 100%; max-width: 520px; z-index: 1; }
+.mkl-pc-global-picker-search-wrap { position: relative; }
 .mkl-pc-global-picker-search { width: 100%; }
-.mkl-pc-global-picker-selected { display: block; margin-top: 4px; color: #1d2327; }
-.mkl-pc-global-picker-selected a.mkl-pc-global-picker-edit { margin-left: 8px; }
+.mkl-pc-global-picker-summary { display: none; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.mkl-pc-global-picker--has-value:not(.mkl-pc-global-picker--picking) .mkl-pc-global-picker-summary { display: flex; }
+.mkl-pc-global-picker--has-value:not(.mkl-pc-global-picker--picking) .mkl-pc-global-picker-search-wrap { display: none; }
+.mkl-pc-global-picker--no-value .mkl-pc-global-picker-search-wrap { display: block; }
+.mkl-pc-global-picker--has-value.mkl-pc-global-picker--picking .mkl-pc-global-picker-search-wrap { display: block; }
+.mkl-pc-global-picker--has-value.mkl-pc-global-picker--picking .mkl-pc-global-picker-summary { display: none; }
+.mkl-pc-global-picker--no-value .mkl-pc-global-picker-summary { display: none; }
+.mkl-pc-global-picker-selected { color: #1d2327; }
+.mkl-pc-global-picker--has-value:not(.mkl-pc-global-picker--picking) .mkl-pc-global-picker-selected { cursor: pointer; }
+.mkl-pc-global-picker-selected a.mkl-pc-global-picker-edit { margin-left: 4px; }
+.mkl-pc-global-picker-change.button { height: auto; }
 .mkl-pc-global-picker-results {
+	/* Do not use the [hidden] attribute on the same element we toggle: UA display:none !important. */
+	display: none;
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -19,7 +31,32 @@
 	list-style: none;
 	max-height: 220px;
 	overflow-y: auto;
-	z-index: 10;
+	z-index: 100100;
+	box-shadow: 0 8px 18px -10px #0000003d;
+}
+
+input#mkl_pc_global_picker_search {
+    float: none;
+	width: 100%;
+}
+
+
+.mkl-pc-configurator-picker-field {
+    margin-left: 20px;
+    padding: 8px;
+    border: 1px solid #EEE;
+    margin-bottom: 18px;
+    margin-right: 20px;
+    border-radius: 3px;
+}
+@media (min-width: 500px) {
+    .mkl-pc-configurator-picker-field {
+        margin-left: 163px;
+    }
+}
+
+.mkl-pc-global-picker-results.mkl-pc-is-open {
+	display: block;
 }
 .mkl-pc-global-picker-results li {
 	padding: 8px 10px;
@@ -30,6 +67,14 @@
 .mkl-pc-global-picker-results li:last-child { border-bottom: none; }
 .mkl-pc-global-picker-results li:hover { background: #f6f7f7; }
 .mkl-pc-global-picker-results li.empty { color: #646970; cursor: default; }
+.mkl-pc-global-picker-results li.mkl-pc-global-picker-status {
+	color: #646970;
+	cursor: default;
+	font-size: 13px;
+}
+.mkl-pc-global-picker--searching .mkl-pc-global-picker-search {
+	cursor: progress;
+}
 .mkl-pc-global-picker-results li .count { color: #646970; font-size: 12px; }
 
 .mkl-pc-configurator-source-warning .description.notice { display: inline-block; padding: 6px 10px; }

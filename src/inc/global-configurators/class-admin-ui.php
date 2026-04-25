@@ -26,7 +26,7 @@ final class Admin_Ui {
 		}
 		self::$did_init = true;
 
-		add_action( 'mkl_pc_admin_general_tab', array( __CLASS__, 'render_general_tab_controls' ), 20 );
+		add_action( 'mkl_pc_admin_general_tab_before_start_button', array( __CLASS__, 'render_general_tab_controls' ), 20 );
 		add_action( 'woocommerce_process_product_meta_simple', array( __CLASS__, 'save_product_settings' ) );
 		add_action( 'woocommerce_process_product_meta_variable', array( __CLASS__, 'save_product_settings' ) );
 
@@ -38,6 +38,30 @@ final class Admin_Ui {
 
 		add_action( 'mkl_pc_admin_scripts_product_page', array( __CLASS__, 'enqueue_assets' ) );
 		add_filter( 'PC_lang', array( __CLASS__, 'filter_pc_lang' ), 30, 1 );
+	}
+
+	/**
+	 * Decode entity sequences in a post title so the UI shows real apostrophes, quotes, etc.
+	 * Some sources store e.g. &#8217; literally in post_title; a second pass covers &amp;#8217;.
+	 *
+	 * @param string $title Title from get_the_title or post_title.
+	 * @return string
+	 */
+	private static function decode_post_title( $title ) {
+		if ( '' === $title || null === $title ) {
+			return '';
+		}
+		$s   = (string) $title;
+		$out = $s;
+		// Up to 2 passes: &#8217; and double-encoded &amp;#8217;.
+		for ( $i = 0; $i < 2; $i++ ) {
+			$next = html_entity_decode( $out, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+			if ( $next === $out ) {
+				break;
+			}
+			$out = $next;
+		}
+		return $out;
 	}
 
 	/**
@@ -58,9 +82,11 @@ final class Admin_Ui {
 		}
 		$current_global_id = (int) get_post_meta( $product_id, Schema::META_GLOBAL_ID, true );
 		$can_use_global    = Owner_Resolver::can_use_global( $product_id );
-		$global_title      = $current_global_id > 0 ? get_the_title( $current_global_id ) : '';
+		$global_title      = $current_global_id > 0 ? self::decode_post_title( get_the_title( $current_global_id ) ) : '';
 
-		$nonce = wp_create_nonce( 'mkl_pc_global_configurators_admin_' . $product_id );
+		$nonce         = wp_create_nonce( 'mkl_pc_global_configurators_admin_' . $product_id );
+		$picker_class  = 'mkl-pc-global-picker';
+		$picker_class .= ( $current_global_id > 0 ? ' mkl-pc-global-picker--has-value' : ' mkl-pc-global-picker--no-value' );
 		?>
 		<div class="options_group mkl-pc-configurator-source-group show_if_is_configurable">
 			<p class="form-field mkl-pc-configurator-source-field">
@@ -80,29 +106,31 @@ final class Admin_Ui {
 				</p>
 			<?php endif; ?>
 
-			<p class="form-field mkl-pc-configurator-picker-field" data-show-when-source="<?php echo esc_attr( Schema::SOURCE_GLOBAL ); ?>">
-				<label for="mkl_pc_global_configurator_id"><?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?></label>
-				<span class="mkl-pc-global-picker"
+			<div class="form-field mkl-pc-configurator-picker-field" data-show-when-source="<?php echo esc_attr( Schema::SOURCE_GLOBAL ); ?>">
+				<span class="mkl-pc-global-configurator-label"><?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?></span>
+				<div class="<?php echo esc_attr( $picker_class ); ?>"
 					data-product-id="<?php echo esc_attr( (string) $product_id ); ?>"
 					data-nonce="<?php echo esc_attr( $nonce ); ?>"
 					data-current-id="<?php echo esc_attr( (string) $current_global_id ); ?>"
 					data-current-title="<?php echo esc_attr( $global_title ); ?>">
 					<input type="hidden" id="mkl_pc_global_configurator_id" name="<?php echo esc_attr( Schema::META_GLOBAL_ID ); ?>" value="<?php echo esc_attr( (string) $current_global_id ); ?>">
-					<input type="text" class="mkl-pc-global-picker-search" placeholder="<?php esc_attr_e( 'Search global configurators…', 'product-configurator-for-woocommerce' ); ?>" <?php disabled( ! $can_use_global ); ?>>
-					<span class="mkl-pc-global-picker-selected">
-						<?php if ( $current_global_id > 0 ) : ?>
-							<strong><?php echo esc_html( $global_title ); ?></strong>
-							(#<?php echo esc_html( (string) $current_global_id ); ?>)
-							<a class="mkl-pc-global-picker-edit" href="<?php echo esc_url( get_edit_post_link( $current_global_id ) ); ?>" target="_blank"><?php esc_html_e( 'Edit', 'product-configurator-for-woocommerce' ); ?></a>
-						<?php endif; ?>
-					</span>
-					<ul class="mkl-pc-global-picker-results" hidden></ul>
-				</span>
-			</p>
-
-			<p class="form-field mkl-pc-configurator-actions-hint description">
-				<?php esc_html_e( 'Conversion actions (turn this product into a global configurator, or make a local copy from a linked one) are available from the configurator editor\'s Home tab.', 'product-configurator-for-woocommerce' ); ?>
-			</p>
+					<div class="mkl-pc-global-picker-search-wrap">
+						<input type="text" id="mkl_pc_global_picker_search" class="mkl-pc-global-picker-search" placeholder="<?php esc_attr_e( 'Search global configurators…', 'product-configurator-for-woocommerce' ); ?>" autocomplete="off" <?php disabled( ! $can_use_global ); ?>>
+						<ul class="mkl-pc-global-picker-results" role="listbox" aria-hidden="true"></ul>
+					</div>
+					<div class="mkl-pc-global-picker-summary">
+						<span class="mkl-pc-global-picker-selected">
+							<?php if ( $current_global_id > 0 ) : ?>
+								<strong><?php echo esc_html( $global_title ); ?></strong> <?php echo esc_html( ' (#' . (string) $current_global_id . ') ' ); ?>
+								<a class="mkl-pc-global-picker-edit" href="<?php echo esc_url( get_edit_post_link( $current_global_id ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Edit', 'product-configurator-for-woocommerce' ); ?></a>
+							<?php endif; ?>
+						</span>
+						<button type="button" class="button mkl-pc-global-picker-change" <?php disabled( ! $can_use_global ); ?>>
+							<?php esc_html_e( 'Change', 'product-configurator-for-woocommerce' ); ?>
+						</button>
+					</div>
+				</div>
+			</div>
 		</div>
 		<?php
 	}
@@ -280,7 +308,7 @@ final class Admin_Ui {
 				$pid = (int) $pid;
 				$items[] = array(
 					'id'             => $pid,
-					'title'          => get_the_title( $pid ),
+					'title'          => self::decode_post_title( get_the_title( $pid ) ),
 					'consumer_count' => count( Owner_Resolver::get_consumer_product_ids( $pid ) ),
 					'edit_url'       => get_edit_post_link( $pid, 'raw' ),
 				);
@@ -320,7 +348,7 @@ final class Admin_Ui {
 		wp_send_json_success(
 			array(
 				'global_id'    => (int) $new_id,
-				'global_title' => get_the_title( (int) $new_id ),
+				'global_title' => self::decode_post_title( get_the_title( (int) $new_id ) ),
 				'edit_url'     => get_edit_post_link( (int) $new_id, 'raw' ),
 			)
 		);
@@ -377,7 +405,10 @@ final class Admin_Ui {
 		}
 		$pc_lang['mkl_pc_global_confirm_turn_global']  = __( 'Create a new global configurator from this product\'s configurator and link the product to it? The product\'s own configurator data will be replaced by the link.', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_confirm_make_local']   = __( 'Copy the global configurator\'s data onto this product and unlink it? Future changes will only affect this product.', 'product-configurator-for-woocommerce' );
-		$pc_lang['mkl_pc_global_picker_no_results']    = __( 'No global configurators found.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_picker_searching']     = __( 'Searching…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_picker_request_failed'] = __( 'Search failed. Please refresh the page and try again.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_picker_edit']            = __( 'Edit', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_picker_no_results']     = __( 'No global configurators found.', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_picker_placeholder']   = __( 'Search global configurators…', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_consumer_count_label'] = __( '%d using', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_editor_readonly_note'] = __( 'This product is linked to a shared configurator. Editing is redirected to the global configurator.', 'product-configurator-for-woocommerce' );
