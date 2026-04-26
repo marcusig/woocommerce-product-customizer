@@ -179,7 +179,7 @@ PC.views = PC.views || {};
 		},
 
 		events: {
-			'click .media-modal-close': 'close',
+			'click .mkl-pc-admin-ui__close': 'close',
 			// 'click .pc-modal-backdrop': 'close',
 		},
 
@@ -193,7 +193,7 @@ PC.views = PC.views || {};
 				this.modal = this.$('.pc-modal');
 				this.backdrop = this.$('.pc-modal-backdrop');
 			
-				this.modal_content = this.modal.find('.media-frame');
+				this.modal_content = this.modal.find('.mkl-pc-admin-ui__main');
 				this.statesView = new PC.views.states( { el: this.modal_content, parent:this } );
 			}
 			

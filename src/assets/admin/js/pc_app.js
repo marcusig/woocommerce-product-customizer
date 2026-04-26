@@ -739,7 +739,7 @@ PC.toJSON = function( item ) {
 		},
 
 		ready: function() {
-			// $( '.media-modal' ).addClass( 'no-sidebar smaller' ); 
+			// $( '.mkl-pc-admin-ui' ).addClass( 'no-sidebar smaller' ); 
 		},
 
 		select: function() {
