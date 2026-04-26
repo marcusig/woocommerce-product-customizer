@@ -11,7 +11,7 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.append( this.template() );
 			if ( this.app.states.length ) {
-				this.$menu = this.$('.media-menu').html('');
+				this.$menu = this.$('.mkl-pc-admin-ui__nav').html('');
 				this.create_menu();
 			}
 			return this;
@@ -46,7 +46,7 @@ PC.views = PC.views || {};
 
 	PC.views.menu_item = Backbone.View.extend({
 		tagName: 'a',
-		className: 'media-menu-item',
+		className: 'mkl-pc-admin-ui__nav-item',
 		initialize: function(options) {
 			this.options = options || {};
 
@@ -92,22 +92,22 @@ PC.views = PC.views || {};
 
 	PC.views.state = Backbone.View.extend({
 		tagName: 'div',
-		className: 'modal-frame-target',
+		className: 'mkl-pc-admin-ui__state',
 		events: {
 			'click .pc-main-save': 'save_state', 
 			'click .pc-main-save-all': 'save_all', 
 			'click .pc-main-cancel': 'cancel', 
-			'click .media-frame-menu-toggle': 'show_mobile_menu',
+			'click .mkl-pc-admin-ui__menu-toggle': 'show_mobile_menu',
 		},
 		initialize: function( args ){
 
 			this.options = args.options || {};
 
 			if ( State = PC.views[this.model.get( 'menu_id' )] ) {
-				// modal-frame-target //mkl-pc-frame-title
-				// Defines which is the target for the main frame .modal-frame-target
+				// mkl-pc-admin-ui__state //mkl-pc-frame-title
+				// Main frame target: .mkl-pc-admin-ui__state
 				if( this.state ) this.state.remove();
-				// this.$el = this.options.app.$('.modal-frame-target');
+				// this.$el = this.options.app.$('.mkl-pc-admin-ui__state');
 				// Empties the target
 				this.$el.empty(); 
 				// Get the Frame's title Template (contains Title + description)
@@ -137,13 +137,13 @@ PC.views = PC.views || {};
 			this.$el.append( this.state.$el );
 			this.$el.append( this.toolbar_template(this.model.attributes) );
 
-			this.state.$toolbar = this.$toolbar = this.$('.media-frame-toolbar');
+			this.state.$toolbar = this.$toolbar = this.$('.mkl-pc-admin-ui__footer');
 
 			this.menu = this.model.get('menu');
 
 			if( this.menu && this.menu.length > 1 ) {
 				var menu_target = new PC.views.button_group();
-				this.$('.media-toolbar-primary').append( menu_target.render().el ); 
+				this.$('.mkl-pc-admin-ui__toolbar-primary').append( menu_target.render().el ); 
 				_.each( this.menu, function( menu_item, ind ) {
 					var button = new PC.views.button( menu_item );
 					menu_target.$el.append( button.render().el );
@@ -231,7 +231,7 @@ PC.views = PC.views || {};
 	})
 
 	PC.views.button_group = Backbone.View.extend({
-		className: 'button-group media-button-group',
+		className: 'button-group mkl-pc-admin-ui__button-group',
 		render: function() {
 			return this;
 		}
@@ -239,7 +239,7 @@ PC.views = PC.views || {};
 
 	PC.views.button = Backbone.View.extend({
 		tagName: 'button',
-		className: 'button media-button button-large',
+		className: 'button mkl-pc-admin-ui__action-btn button-large',
 		initialize: function( options ) {
 			this.options = _.defaults( options, { text: ' - ', class:'' } );
 

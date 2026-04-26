@@ -35,10 +35,12 @@ GENERAL TEMPLATES
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo esc_attr( $class ); ?>">
 		<div class="mkl-pc-global-configurator--banner"> <?php _e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?> <?php _e( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' ); ?></div>
-		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php esc_html_e( 'Close media panel', 'product-configurator-for-woocommerce' ); ?></span></span></button>
-		<div class="media-modal-content">
-			<div class="media-frame wp-core-ui">
-				
+		<button type="button" class="mkl-pc-admin-ui__close">
+			<span class="mkl-pc-admin-ui__close-icon" aria-hidden="true"></span>
+			<span class="screen-reader-text"><?php esc_html_e( 'Close configurator', 'product-configurator-for-woocommerce' ); ?></span>
+		</button>
+		<div class="mkl-pc-admin-ui__body">
+			<div class="mkl-pc-admin-ui__main wp-core-ui">
 			</div>
 		</div>
 		<div class="loading-screen">
@@ -46,13 +48,13 @@ GENERAL TEMPLATES
 		</div>
 		<div class="notice-container"></div>
 	</div>
-	<div class="media-modal-backdrop pc-modal-backdrop"></div>
+	<div class="mkl-pc-admin-ui__backdrop pc-modal-backdrop"></div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-menu">	
-	<h2 class="media-frame-menu-heading"><?php esc_html_e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h2>
-	<div class="media-frame-menu">
-		<div role="tablist" aria-orientation="vertical" class="media-menu">
+	<h2 class="mkl-pc-admin-ui__sidebar-heading"><?php esc_html_e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h2>
+	<div class="mkl-pc-admin-ui__sidebar">
+		<div role="tablist" aria-orientation="vertical" class="mkl-pc-admin-ui__nav">
 			<div class="loading-placeholder"></div>
 			<div class="loading-placeholder"></div>
 			<div class="loading-placeholder"></div>
@@ -63,19 +65,19 @@ GENERAL TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-frame-title">
-	<div class="media-frame-title">
+	<div class="mkl-pc-admin-ui__header">
 		<h1>{{data.title}}</h1>
-		<button type="button" class="button button-link media-frame-menu-toggle" aria-expanded="false">
-			<?php esc_html_e( 'Menu', 'product-configurator-for-woocommerce' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
+		<button type="button" class="button button-link mkl-pc-admin-ui__menu-toggle" aria-expanded="false">
+			<?php esc_html_e( 'Menu' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
 		</button>
 		<span class="description">{{data.description}}</span>
 	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-toolbar">
-	<div class="media-frame-toolbar">
-		<div class="media-toolbar">
-			<div class="media-toolbar-primary">
+	<div class="mkl-pc-admin-ui__footer">
+		<div class="mkl-pc-admin-ui__toolbar">
+			<div class="mkl-pc-admin-ui__toolbar-primary">
 				<span class="spinner"></span><span class="saved-message"><?php esc_html_e( 'Saved', 'product-configurator-for-woocommerce' ); ?></span>
 			</div>
 		</div>
@@ -83,9 +85,9 @@ GENERAL TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-frame-title-buttons-notused">
-	<div class="button-group media-button-group">
-		<button type="button" class="button media-button button-large pc-main-cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
-		<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php esc_html_e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
+	<div class="button-group mkl-pc-admin-ui__button-group">
+		<button type="button" class="button button-large pc-main-cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+		<button type="button" class="button button-primary button-large pc-main-save-all"><?php esc_html_e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 </script>
 <?php 
@@ -97,7 +99,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
  ?>
 
 <script type="text/html" id="tmpl-mkl-pc-structure">
-	<div class="media-frame-content structure">
+	<div class="mkl-pc-admin-ui__content structure">
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
@@ -113,7 +115,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			</div>
 			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
 				<div class="order-toolbar">
-					<div class="button-group media-button-group">
+					<div class="button-group mkl-pc-admin-ui__button-group">
 						<button data-order_type="order" type="button" class="button button-primary order-layers"><span><?php esc_html_e( 'Reorder the menu', 'product-configurator-for-woocommerce' ); ?></span></button>
 						<button data-order_type="image_order" type="button" class="button order-layers"><span><?php esc_html_e( 'Reorder the images', 'product-configurator-for-woocommerce' ); ?></span></button>
 					</div>
@@ -125,7 +127,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	</div>
 </script>
 <script type="text/html" id="tmpl-mkl-pc-home">
-	<div class="media-frame-content home">
+	<div class="mkl-pc-admin-ui__content home">
 		<div class="tab_content">
 		<?php do_action( 'mkl_pc_admin_home_tab' ); ?>
 		</div>
@@ -134,7 +136,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <?php if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) ) : ?>
 <script type="text/html" id="tmpl-mkl-pc-conditional-placeholder">
-	<div class="media-frame-content conditional">
+	<div class="mkl-pc-admin-ui__content conditional">
 		<div class="tab_content">
 			<p>
 				<?php
@@ -240,7 +242,7 @@ CONTENT TEMPLATES
  ?>
 
 <script type="text/html" id="tmpl-mkl-pc-content">
-	<div class="media-frame-content content">
+	<div class="mkl-pc-admin-ui__content content">
 		<div class="content-col content-layers-list"></div>
 		<div class="content-col content-choices-list"></div>
 		<div class="content-col content-choice pc-sidebar choice-details "></div>
@@ -432,7 +434,7 @@ CONTENT TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-no-data">
-	<div class="media-frame-content content">
+	<div class="mkl-pc-admin-ui__content content">
 		<div class="no-data">
 			<p>
 				<?php esc_html_e( 'You need to have Layers and Angles set before entering any content.', 'product-configurator-for-woocommerce' ); ?>
@@ -459,7 +461,7 @@ IMPORT / EXPORT
 */
  ?>
 <script type="text/html" id="tmpl-mkl-pc-import-export">
-	<div class="media-frame-content import-export">
+	<div class="mkl-pc-admin-ui__content import-export">
 		<div class="import-export-content">
 			<div class="import">
 				<h3><?php esc_html_e( 'Import', 'product-configurator-for-woocommerce' ); ?></h3>
