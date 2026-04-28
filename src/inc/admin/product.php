@@ -313,6 +313,14 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'user_preferences_nonce' => wp_create_nonce( 'mkl_pc_user_preferences' ),
 					'languages' => mkl_pc( 'languages' )->get_languages(),
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
+					'layer_types' => apply_filters( 'mkl_pc_layer_types', array(
+						'simple' => __( 'Simple', 'product-configurator-for-woocommerce' ),
+						'multiple' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ),
+						'group' => __( 'Group', 'product-configurator-for-woocommerce' ),
+						'form' => __( 'Form', 'product-configurator-for-woocommerce' ),
+						'summary' => __( 'Summary', 'product-configurator-for-woocommerce' ),
+						'text_overlay' => __( 'Text overlay', 'product-configurator-for-woocommerce' ),
+					) ),
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) {

@@ -299,6 +299,7 @@ TODO:
 		tagName: 'div',
 		className: 'layer mkl-list-item',
 		template: wp.template('mkl-pc-structure-layer'),
+		object_type: 'layer',
 		edit_view: function(){ return PC.views.layer_form; },
 		// formTemplate: wp.template('mkl-pc-structure-layer-form'),
 
@@ -316,7 +317,7 @@ TODO:
 			PC.app.is_modified.layers = true;
 		},
 		events: {
-			'click > button' : 'edit',
+			'click .mkl-pc-admin-list-row__hit' : 'edit',
 			'drop': 'drop',
 			'update-sort': 'update_sort',
 			'update_order': 'update_order',
@@ -325,8 +326,8 @@ TODO:
 			this.$el.data( 'view', this );
 			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
 			if ( ! this.label ) {
-				this.label = new PC.views.layerLabel( { model: this.model } );
-				this.$( 'h3' ).append( this.label.$el );
+				this.label = new PC.views.layerLabel( { model: this.model, object_type: this.object_type } );
+				this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
 			}
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
@@ -448,13 +449,15 @@ TODO:
 	});
 
 	PC.views.layerLabel = Backbone.View.extend( {
-		tagName: 'span',
+		tagName: 'div',
+		className: 'mkl-pc-admin-list-row__label',
 		template: wp.template('mkl-pc-content-layer-list-item--label'),
-		initialize: function() {
+		initialize: function( options ) {
+			this.options = options || {};
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template( this.model.attributes ) );
+			this.$el.html( this.template( { ...this.model.attributes, object_type: this.options.object_type } ) );
 		}
 	} );
 
