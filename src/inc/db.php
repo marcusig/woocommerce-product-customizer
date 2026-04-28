@@ -1502,12 +1502,8 @@ class DB {
 				'type' 	=> 'part',
 				'menu_id' 	=> 'layers',
 				'label' => __( 'Layers', 'product-configurator-for-woocommerce' ),
-				'title' => __( 'Layers of the product ', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Layers', 'product-configurator-for-woocommerce' ),
 				'menu' => array(
-					array(
-						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
-					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
 						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
@@ -1521,12 +1517,8 @@ class DB {
 				'type' 	=> 'part',
 				'menu_id' 	=> 'angles',
 				'label' => __( 'Views', 'product-configurator-for-woocommerce' ),
-				'title' => __( 'Angles of the product ', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Views', 'product-configurator-for-woocommerce' ),
 				'menu' => array(
-					array(
-						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
-					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
 						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
@@ -1540,12 +1532,8 @@ class DB {
 				'type' 	=> 'part',
 				'menu_id' 	=> 'content',
 				'label' => __( 'Content', 'product-configurator-for-woocommerce' ),
-				'title' => __( 'Contents ', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Content', 'product-configurator-for-woocommerce' ),
 				'menu' => array(
-					array(
-						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
-					),
 					array(
 						'class' => 'button-primary pc-main-save-all',
 						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
@@ -1568,12 +1556,7 @@ class DB {
 				'menu_id' 	=> 'conditional_placeholder',
 				'label' => __( 'Conditional settings', 'product-configurator-for-woocommerce' ),
 				'title' => __( 'Conditional settings ', 'product-configurator-for-woocommerce' ),
-				'menu' => array(
-					array(
-						'class' => 'pc-main-cancel',
-						'text' => __( 'Cancel', 'product-configurator-for-woocommerce' ),
-					),
-				),
+				'menu' => array(),
 				'description' => __( 'Define the conditions for displaying or not the choices / layers', 'product-configurator-for-woocommerce' ),
 				'order' => 101,
 			);			

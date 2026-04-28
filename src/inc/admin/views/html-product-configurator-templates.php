@@ -52,14 +52,38 @@ GENERAL TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-menu">	
-	<h2 class="mkl-pc-admin-ui__sidebar-heading"><?php esc_html_e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h2>
 	<div class="mkl-pc-admin-ui__sidebar">
-		<div role="tablist" aria-orientation="vertical" class="mkl-pc-admin-ui__nav">
-			<div class="loading-placeholder"></div>
-			<div class="loading-placeholder"></div>
-			<div class="loading-placeholder"></div>
-			<div class="separator"></div>
-			<div class="loading-placeholder"></div>
+		<div class="mkl-pc-admin-ui__sidebar-top">
+			<a class="mkl-pc-admin-ui__product-name" href="#" target="_blank" rel="noopener noreferrer"></a>
+			<button type="button" class="mkl-pc-admin-ui__back-to-product">
+				<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
+				<span class="mkl-pc-admin-ui__back-text"></span>
+			</button>
+		</div>
+		<p class="screen-reader-text mkl-pc-admin-ui__sidebar-heading"><?php esc_html_e( 'Configurator', 'product-configurator-for-woocommerce' ); ?></p>
+		<div class="mkl-pc-admin-ui__sidebar-mid">
+			<div class="mkl-pc-admin-ui__nav-wrap mkl-pc-admin-ui__nav-wrap--primary">
+				<nav role="tablist" aria-orientation="vertical" class="mkl-pc-admin-ui__nav">
+					<div class="loading-placeholder"></div>
+					<div class="loading-placeholder"></div>
+					<div class="loading-placeholder"></div>
+					<div class="separator"></div>
+					<div class="loading-placeholder"></div>
+				</nav>
+			</div>
+			<div class="mkl-pc-admin-ui__sidebar-layers" hidden aria-hidden="true">
+				<h2 class="mkl-pc-admin-ui__sidebar-layers-heading"><?php esc_html_e( 'Content', 'product-configurator-for-woocommerce' ); ?></h2>
+				<div class="mkl-pc-admin-ui__sidebar-layers-list"></div>
+			</div>
+		</div>
+		<div class="mkl-pc-admin-ui__sidebar-footer">
+			<div class="mkl-pc-admin-ui__sidebar-status">
+				<span class="spinner"></span>
+				<span class="saved-message"><?php echo esc_html( __( 'Saved' ) ); ?></span>
+			</div>
+			<button type="button" class="mkl-pc-admin-ui__sidebar-primary-save button button-primary button-large pc-main-save pc-main-save-all">
+				<?php esc_html_e( 'Save', 'product-configurator-for-woocommerce' ); ?>
+			</button>
 		</div>
 	</div>
 </script>
@@ -86,7 +110,6 @@ GENERAL TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-frame-title-buttons-notused">
 	<div class="button-group mkl-pc-admin-ui__button-group">
-		<button type="button" class="button button-large pc-main-cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 		<button type="button" class="button button-primary button-large pc-main-save-all"><?php esc_html_e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 </script>
@@ -102,6 +125,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<div class="mkl-pc-admin-ui__content structure">
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
+				<h1>{{data.title}}</h1>
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 				<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 			</div>
@@ -243,14 +267,17 @@ CONTENT TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-content">
 	<div class="mkl-pc-admin-ui__content content">
-		<div class="content-col content-layers-list"></div>
-		<div class="content-col content-choices-list"></div>
-		<div class="content-col content-choice pc-sidebar choice-details "></div>
+		<div class="content-col content-choices-list">
+			<p class="mkl-pc-content-placeholder"><?php esc_html_e( 'No layer selected', 'product-configurator-for-woocommerce' ); ?></p>
+		</div>
+		<div class="content-col content-choice pc-sidebar choice-details">
+			<p class="mkl-pc-content-placeholder"><?php esc_html_e( 'Choice details', 'product-configurator-for-woocommerce' ); ?></p>
+		</div>
 	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer">
-	<a href="#" class="layer mkl-list-item">
+	<button type="button" class="layer mkl-list-item">
 		<span class="name">
 			<# if ( data.admin_label && data.admin_label != '' ) { #>
 				{{data.admin_label}}
@@ -262,7 +289,7 @@ CONTENT TEMPLATES
 			<span class="icon"><img src="{{data.image.url}}" class="layer-img" /></span>
 		<# } #>
 		<span class="number-of-choices">{{data.choices_number}}</span>
-	</a>
+	</button>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer-back-link">
@@ -278,8 +305,9 @@ CONTENT TEMPLATES
 
 
 <script type="text/html" id="tmpl-mkl-pc-choices">
-	<button class="active-layer"></button>
-	<div class="structure-toolbar">
+	<button type="button" class="active-layer"></button>
+	<div class="structure-toolbar structure-toolbar--choices">
+		<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>
 		<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
 		<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 	</div>

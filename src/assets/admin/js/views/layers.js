@@ -66,7 +66,7 @@ TODO:
 		render: function( ) {
 			this.col.orderBy = 'order';
 			this.col.sort();
-			this.$el.append( this.template({ input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
+			this.$el.append( this.template({ ...this.model.attributes, input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.pc-sidebar'); 
 			this.$new_input = this.$('.structure-toolbar input'); 
@@ -350,7 +350,7 @@ TODO:
 							item.set( 'active', item.collection.last_clicked.model.get( 'active' ) );
 						}.bind( this ) );
 					}
-					this.form_target.empty();
+					this.form_target.children().not( '.mkl-pc-content-placeholder' ).remove();
 					this.model.collection.last_clicked = this;
 					this.model.collection.trigger( 'multiple-selection' );
 					return;
@@ -370,7 +370,8 @@ TODO:
 					this.model.set( 'active' , true );
 					this.activate();
 					this.form = new editView( this.options );
-					this.form_target.html( this.form.render().el );
+					this.form_target.children().not( '.mkl-pc-content-placeholder' ).remove();
+					this.form_target.append( this.form.render().el );
 				}
 			} else {
 				if( this.model.get( 'active' ) == false || this.model.get('active') == 'false' || this.model.collection.where( { active: true } ).length > 1 ) {
@@ -381,7 +382,8 @@ TODO:
 
 					if( this.form ) this.form.remove();
 					this.form = new editView( this.options );
-					this.form_target.html( this.form.render().el );
+					this.form_target.children().not( '.mkl-pc-content-placeholder' ).remove();
+					this.form_target.append( this.form.render().el );
 				}
 			}
 			this.model.collection.last_clicked = this;

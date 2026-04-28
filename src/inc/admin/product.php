@@ -319,6 +319,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				}
 				if ( current_user_can( 'delete_post', $this->ID ) ) $pc_lang['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $this->ID );
 
+				$pc_lang['editor_product_name']       = (string) get_the_title( $this->ID );
+				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );
+				$pc_lang['editor_back_to_product']    = __( 'Back to product', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_save']                = __( 'Save', 'product-configurator-for-woocommerce' );
+
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );
 				
 		
