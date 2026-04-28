@@ -127,7 +127,7 @@ PC.views = PC.views || {};
 	});
 
 	PC.views.menu_item = Backbone.View.extend({
-		tagName: 'a',
+		tagName: 'button',
 		className: 'mkl-pc-admin-ui__nav-item',
 		initialize: function(options) {
 			this.options = options || {};
@@ -144,8 +144,10 @@ PC.views = PC.views || {};
 		activate: function(){
 			if(this.model.get('active') === true) {
 				this.$el.addClass('active');
+				this.$el.attr( 'aria-selected', 'true' );
 			} else {
 				this.$el.removeClass('active');
+				this.$el.attr( 'aria-selected', 'false' );
 				if( this.state ) this.state.remove();
 			}
 		},
@@ -169,7 +171,9 @@ PC.views = PC.views || {};
 			var menuId = this.model.get( 'menu_id' );
 			var label = this.model.get( 'label' );
 			var iconClass = mkl_pc_nav_icon_class( menuId );
-			this.$el.attr( 'href', '#' );
+			this.$el.attr( 'type', 'button' );
+			this.$el.attr( 'role', 'tab' );
+			this.$el.attr( 'aria-selected', this.model.get( 'active' ) === true ? 'true' : 'false' );
 			this.$el.attr( 'data-menu-id', menuId );
 			this.$el.attr( 'data-mkl-hint', label );
 			this.$el.attr( 'aria-label', label );

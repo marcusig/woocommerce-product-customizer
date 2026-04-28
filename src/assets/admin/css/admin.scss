@@ -46,81 +46,14 @@ ul.wc-pc-tabs-sub,
 .image-selectors {
 	display: none;
 
-} 
-html .mkl-pc-admin-ui.pc-modal {
-	.hidden {
-		display: none;
-	}
-	.delete:not(.button-primary) {
-		color: #a00;
-	}
-
-	.form-details .actions-container button + button {
-		margin-left: 6px;
-	}
-
-	.button-primary.delete {
-		background: #DB3434;
-		border-color: #a00;
-		text-shadow: 0 -1px 1px #a00, 1px 0 1px #a00, 0 1px 1px #a00, -1px 0 1px #a00;
-		box-shadow: 0 1px 0 #a00;
-		&:hover,
-		&:focus {
-			background: lighten(#DB3434, 7);
-			border-color: #DB3434;
-			box-shadow: 0 1px 0 #DB3434;
-		}
-		&:active {
-			background: lighten(#DB3434, 7);
-			border-color: #DB3434;
-			box-shadow: inset 0 2px 5px -3px rgba( 0, 0, 0, 0.5 );
-			transform: translateY(1px);
-			outline: none;
-		}
-	}
-
-	.notice-container {
-		z-index: 100000;
-		position: absolute;
-		bottom: 10px;
-		left: 10px;
-		/* background: red; */
-	}
-
-	.pc-notice {
-		padding: 15px;
-		min-width: 200px;
-		max-width: 300px;
-		border-radius: 8px;
-		background: #000000e3;
-		color: #FFF;
-		a {
-			color: #FFF;
-		}
-	}
-	.pc-notice + .pc-notice {
-		margin-top: 8px;
-	}
-
-	.pc-notice .dashicons {
-		font-size: 30px;
-		width: 30px;
-		height: 30px;
-		margin-right: 10px;
-		vertical-align:middle;
-	}
-
-	.pc-notice.notice-success .dashicons {
-		color: #00a32a;
-	}
-
-
 }
 
-
 /*
-PC MODAL 
-*/
+ * Product Configurator — admin modal (`admin.scss`)
+ *
+ * Sections (approximate): WC product metabox tweaks → Modal shell (.mkl-pc-admin-ui) → Sidebar + canvas
+ * → Structures / Forms → Lists & toolbars → Content tab placeholders → Import-export → Globals / misc.
+ */
 
 $modal-spacing: 16px; // 16px 24px
 $light-border-color: #dddddd;
@@ -135,6 +68,7 @@ $tablet-left-col-width: 270px;
 
 $pc-admin-sidebar-bg: #1e1e1e;
 $pc-admin-sidebar-fg: #e0e0e0;
+$pc-admin-sidebar-fg-mutted: #949494;
 $pc-admin-sidebar-muted: #a0a5aa;
 $pc-admin-canvas-chrome: #dcdcde;
 
@@ -161,6 +95,65 @@ html .mkl-pc-admin-ui.pc-modal {
 	overflow: hidden;
 	font-size: 13px;
 	line-height: 1.4;
+
+	.hidden {
+		display: none;
+	}
+	.delete:not(.button-primary) {
+		color: #a00;
+	}
+	.form-details .actions-container button + button {
+		margin-left: 6px;
+	}
+	.button-primary.delete {
+		background: #DB3434;
+		border-color: #a00;
+		text-shadow: 0 -1px 1px #a00, 1px 0 1px #a00, 0 1px 1px #a00, -1px 0 1px #a00;
+		box-shadow: 0 1px 0 #a00;
+		&:hover,
+		&:focus {
+			background: lighten(#DB3434, 7);
+			border-color: #DB3434;
+			box-shadow: 0 1px 0 #DB3434;
+		}
+		&:active {
+			background: lighten(#DB3434, 7);
+			border-color: #DB3434;
+			box-shadow: inset 0 2px 5px -3px rgba(0, 0, 0, 0.5);
+			transform: translateY(1px);
+			outline: none;
+		}
+	}
+	.notice-container {
+		z-index: 100000;
+		position: absolute;
+		bottom: 10px;
+		left: 10px;
+	}
+	.pc-notice {
+		padding: 15px;
+		min-width: 200px;
+		max-width: 300px;
+		border-radius: 8px;
+		background: #000000e3;
+		color: #fff;
+		a {
+			color: #fff;
+		}
+	}
+	.pc-notice + .pc-notice {
+		margin-top: 8px;
+	}
+	.pc-notice .dashicons {
+		font-size: 30px;
+		width: 30px;
+		height: 30px;
+		margin-right: 10px;
+		vertical-align: middle;
+	}
+	.pc-notice.notice-success .dashicons {
+		color: #00a32a;
+	}
 
 	.mkl-pc-admin-ui__body {
 		flex: 1;
@@ -195,8 +188,7 @@ html .mkl-pc-admin-ui.pc-modal {
 			color: $pc-admin-sidebar-fg;
 			.mkl-pc-admin-ui__sidebar-top {
 				flex: 0 0 auto;
-				padding: 12px 14px 10px;
-				border-bottom: 1px solid #2c2c2c;
+				padding: 12px 14px 35px;
 			}
 			.mkl-pc-admin-ui__product-name {
 				display: block;
@@ -205,31 +197,53 @@ html .mkl-pc-admin-ui.pc-modal {
 				font-weight: 500;
 				line-height: 1.35;
 				text-decoration: none;
-				word-break: break-word;
+				position: relative;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				overflow: hidden;
+				padding-right: 35px;
+				
+				&::after {
+					content: "↗";
+					font-weight: 400;
+					opacity: 0;
+					position: absolute;
+					right: 0;
+					transition: opacity 0.12s ease;
+				}
+
 				&:hover,
 				&:focus {
 					color: #fff;
+					&::after {
+						opacity: 1;
+					}
 				}
 			}
 			.mkl-pc-admin-ui__back-to-product {
 				display: inline-flex;
 				align-items: center;
-				gap: 2px;
-				margin-top: 10px;
+				gap: 10px;
+				margin-top: 30px;
 				padding: 0;
+				padding-left: 12px;
 				border: 0;
 				background: transparent;
 				color: $pc-admin-sidebar-muted;
-				font-size: 12px;
+				font-size: 14px;
 				cursor: pointer;
 				&:hover,
 				&:focus {
 					color: #fff;
 				}
 			}
-			.mkl-pc-admin-ui__back-chevron::before {
-				font: normal 16px/1 dashicons;
-				content: "\f340";
+			.mkl-pc-admin-ui__back-chevron {
+				height: 20px;
+				width: 20px;
+				&::before {
+					font: normal 16px/1 dashicons;
+					content: "\f341";
+				}
 			}
 			.mkl-pc-admin-ui__sidebar-mid {
 				flex: 1 1 auto;
@@ -303,8 +317,8 @@ html .mkl-pc-admin-ui.pc-modal {
 			}
 			.mkl-pc-admin-ui__sidebar-layers-heading {
 				margin: 0 0 6px;
-				padding: 4px 2px 8px 6px;
-				font-size: 13px;
+				padding: 4px 2px 10px 8px;
+				font-size: 15px;
 				font-weight: 600;
 				color: #fff;
 				line-height: 1.3;
@@ -428,6 +442,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				.mkl-pc-admin-ui__sidebar-mid {
 					flex-direction: row;
 					align-items: flex-start;
+					border-top: 1px solid #2c2c2c;
 				}
 				.mkl-pc-admin-ui__nav-wrap--primary {
 					flex: 0 0 $pc-admin-nav-rail;
@@ -523,7 +538,7 @@ html .mkl-pc-admin-ui.pc-modal {
 						margin: 0 0 2px;
 						border: 0;
 						border-radius: 6px;
-						color: $pc-admin-sidebar-fg;
+						color: $pc-admin-sidebar-fg-mutted;
 						text-decoration: none;
 						background: transparent;
 						&:hover,
@@ -563,12 +578,18 @@ html .mkl-pc-admin-ui.pc-modal {
 			margin: 0 0 1px;
 			padding: 0 8px 0 2px;
 			min-height: 44px;
+			width: 100%;
+			max-width: 100%;
 			box-sizing: border-box;
-			color: $pc-admin-sidebar-fg;
+			color: $pc-admin-sidebar-fg-mutted;
 			text-decoration: none;
 			border: 0;
 			box-shadow: none;
+			font-family: inherit;
 			font-size: 13px;
+			text-align: left;
+			-webkit-appearance: none;
+			appearance: none;
 			line-height: 1.35;
 			font-weight: 400;
 			background: transparent;
@@ -576,8 +597,8 @@ html .mkl-pc-admin-ui.pc-modal {
 			position: relative;
 			border-radius: 4px;
 			.mkl-pc-admin-ui__nav-item-icon {
-				flex: 0 0 24px;
-				width: 24px;
+				flex: 0 0 36px;
+				width: 36px;
 				height: 24px;
 				display: flex;
 				align-items: center;
@@ -659,12 +680,6 @@ html .mkl-pc-admin-ui.pc-modal {
 		} 
 	}
 
-	.mkl-pc-admin-ui__content {
-		flex: 1;
-		min-height: 0;
-		position: relative;
-	}
-
 	.mkl-pc-admin-ui__close {
 		position: absolute;
 		top: 0;
@@ -698,6 +713,9 @@ html .mkl-pc-admin-ui.pc-modal {
 	}
 
 	.mkl-pc-admin-ui__content {
+		flex: 1;
+		min-height: 0;
+		position: relative;
 
 		.mkl-list {
 			padding-bottom: 32px;
@@ -834,16 +852,6 @@ html .mkl-pc-admin-ui.pc-modal {
 				transform: translateY(-50%) rotate(180deg);
 			}
 		}
-		
-		// .components-panel__body.is-opened {
-		// 	padding: 26px;
-		// 	.components-panel__body-title {
-		// 		margin: -26px -26px 5px;
-		// 		.components-panel__body-toggle.components-button {
-		// 			padding-left: 26px;
-		// 		}
-		// 	}
-		// }
 		.setting {
 			grid-column: 1 / -1;
 			&.col-half {
@@ -1153,9 +1161,7 @@ html .pc-modal-container {
 		top: 50%;
 		transform: translateY(-50%);
 	}
-	// h3 {
-	// 	margin: 0;
-	// 	padding: 0;
+
 	.sort {
 		width: 24px;
 		height: 24px;
@@ -1228,19 +1234,6 @@ html .pc-modal-container {
 				color: #1e1e1e;
 			}
 		}
-		
-		// &::after {
-		// 	right: 0;
-		// 	border: solid 8px transparent;
-		// 	content: " ";
-		// 	height: 0;
-		// 	width: 0;
-		// 	position: absolute;
-		// 	pointer-events: none;
-		// 	border-right-color: #ffffff;
-		// 	top: 50%;
-		// 	margin-top: -8px;						
-		// }
 		> .sort svg {
 			fill: #FFF;
 		}
@@ -1264,8 +1257,6 @@ html .pc-modal-container {
 		background: #efefef;
 		border-radius: 4px;
 	}
-	// padding: $modal-spacing - 5;
-	// padding-left: $modal-spacing + 5;
 }
 
 .mkl-list-item__placeholder {
@@ -1273,9 +1264,7 @@ html .pc-modal-container {
     border: 2px dashed #CCC;
 }
 
-//.layers,
-.structure-toolbar,
-.choices-toolbar {
+.structure-toolbar {
 	position: sticky;
 	top: 0;
 	z-index: 3;
@@ -1356,8 +1345,8 @@ html .pc-modal-container {
 }
 
 /*
-CONTENT
-*/
+ * Content tab — choices columns. Base rules below; canonical layout under .mkl-pc-admin-ui--content-mode.
+ */
 .content-col {
 	position: absolute;
 	left: 0;
@@ -1367,50 +1356,17 @@ CONTENT
 	overflow: auto;
 }
 
-.content-layers-list,
-.content-choices-list {
-	width: $left-col-width;
-	background: $very-light-bg-color;
-	border-right: 1px solid $light-border-color;
-	z-index: 2;
-	transition: all 0.2s;
-	.layers {
-		padding: 0;
-		margin: 0;
-		li {
-			margin: 0; 
-			padding: 0; 
-			a {
-				display: block;
-				padding: $modal-spacing;
-				border-bottom: 1px solid $light-border-color;
-			}
-			&.active {
-				> a {
-					background: #fff;
-					color: $text-color;
-					
-				}
-				background: $light-bg-color;
-			}
-			.layer-details {
-				box-shadow: inset 0px 3px 2px rgba(0, 0, 0, 0.05), inset 0px -3px 2px rgba(0, 0, 0, 0.05);
-
-			}
-		}
-	}
-	@media(max-width: 900px) {
-		width: $tablet-left-col-width;
-	}
-}
-
+/* Legacy two-step panel slide (choices list vs detail); superseded where --content-mode sets grid */
 .content-choices-list {
 	width: $left-col-width + 45;
 	padding-left: 45px;
 	visibility: hidden;
 	transform: translateX(300px);
-	transition: transform 0.2s;
+	transition: transform 0.2s, visibility 0.2s;
 	overflow: hidden;
+	background: $very-light-bg-color;
+	border-right: 1px solid $light-border-color;
+	z-index: 2;
 	@media(max-width: 900px) {
 		width: $tablet-left-col-width; 
 	}
@@ -1496,25 +1452,8 @@ CONTENT
 
 }
 
-
-.add-choice-container {
-	padding: $modal-spacing;
-	border-bottom: 1px solid $light-border-color;
-}
-.content-choices {
-	width: 100%;
-	padding-left: $left-col-width;
-	z-index: 1;
-	background: #f3f3f3;
-	@media(max-width: 900px) {
-		padding-left: $tablet-left-col-width;
-	}
-}
 .choice-details {
 	visibility: hidden;
-	// transform: translateX(-80px);
-	// transition: transform 0.2s;
-	// padding: $modal-spacing;
 	right: 0;
 	left: 344px;
 	background: #F8F8F8;
@@ -1562,28 +1501,11 @@ CONTENT
 					max-width: 80px;
 				}
 			}
-
-			// & ~ .view .pictures .picture.thumbnail-picture {
-			// 	display: none;
-			// }
 		}
 	}
 }
 .mkl-pc-setting--container {
 	width: 100%;
-}
-.show-choices {
-	.content-layers-list {
-		transform: translateX(-300px);
-	}
-	.content-choices-list {
-		transform: translateX(0);
-		visibility: visible;
-	}
-	.choice-details {
-		transform: translateX(0);
-		visibility: visible;
-	}
 }
 .mkl-pc-admin-ui--content-mode {
 	.mkl-pc-admin-ui__content.content {
@@ -1654,10 +1576,6 @@ CONTENT
 
 	.mkl-choice-list-inner .active-layer {
 		display: none;
-	}
-	.content-choices {
-		padding-left: 0;
-		background: transparent;
 	}
 }
 .tab_content {
@@ -1915,8 +1833,6 @@ a.mkl-pc-link--external::before {
 	border: 1px solid #CCC;
 
 	button {
-		.dashicons {
-		}		
 		&.remove-option span {
 			display: none;
 		}
