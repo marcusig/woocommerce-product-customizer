@@ -277,6 +277,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'layers_new_placeholder' => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
 					'angles_new_placeholder' => __( 'New Angle Name', 'product-configurator-for-woocommerce' ),
 					'choice_new_placeholder' => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
+					'list_filter_placeholder' => __( 'Filter list…', 'product-configurator-for-woocommerce' ),
 					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'angles_no_delete_message' => __( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,

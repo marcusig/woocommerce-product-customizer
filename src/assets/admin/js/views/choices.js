@@ -47,7 +47,8 @@ PC.views = PC.views || {};
 			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
 			// 'click .paste-items': 'paste_items',
-			'keypress .structure-toolbar input': 'create',
+			'keypress .structure-toolbar--choices h4 input': 'create',
+			'input .mkl-pc-list-filter-input': 'on_list_filter',
 			'remove': 'cleanup_on_remove', 
 		},
 		remove_item: function( item ) {
@@ -93,7 +94,8 @@ PC.views = PC.views || {};
 			this.$active_layer = this.$('.active-layer');
 			var al_button = wp.template('mkl-pc-content-layer-back-link');
 			this.$active_layer.html( al_button( this.model.attributes ) );
-			this.$new_input = this.$('.structure-toolbar input'); 
+			this.$new_input = this.$('.structure-toolbar--choices h4 input'); 
+			this.$list_filter = this.$('.structure-toolbar--choices .mkl-pc-list-filter-input'); 
 			this.$list = this.$('.choices');
 			this.$form = this.state.$('.choice-details'); 
 			this.add_all();
@@ -146,6 +148,17 @@ PC.views = PC.views || {};
 
 		add_all: function(){
 			this.col.each( this.add_one, this );
+			this.apply_list_filter();
+		},
+
+		on_list_filter: function( e ) {
+			if ( typeof PC.applyAdminListFilter !== 'function' ) return;
+			PC.applyAdminListFilter( this.$list, $( e.target ).val(), {} );
+		},
+		apply_list_filter: function() {
+			if ( typeof PC.applyAdminListFilter !== 'function' || ! this.$list || ! this.$list.length ) return;
+			var val = this.$list_filter && this.$list_filter.length ? this.$list_filter.val() : '';
+			PC.applyAdminListFilter( this.$list, val, {} );
 		},
 
 		setup_sortable: function() {
@@ -178,6 +191,7 @@ PC.views = PC.views || {};
 
 			this.col.sort( { silent: true } );
 			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
+			this.apply_list_filter();
 		},
 
 		hide_choices: function( e ) {
@@ -228,6 +242,7 @@ PC.views = PC.views || {};
 			PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
 
 			this.$new_input.val('');
+			this.apply_list_filter();
 		},
 
 		// paste_items: function( e ) {

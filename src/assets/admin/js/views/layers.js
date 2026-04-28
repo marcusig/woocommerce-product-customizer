@@ -54,7 +54,8 @@ TODO:
 		events: {
 			'click .add-layer': 'create',
 			'click .order-toolbar button': 'change_order_type',
-			'keypress .structure-toolbar input': 'create',
+			'keypress .structure-toolbar h4 input': 'create',
+			'input .mkl-pc-list-filter-input': 'on_list_filter',
 			'remove': 'cleanup_on_remove', 
 			'save-state': 'save_layers',
 
@@ -66,10 +67,15 @@ TODO:
 		render: function( ) {
 			this.col.orderBy = 'order';
 			this.col.sort();
-			this.$el.append( this.template({ ...this.model.attributes, input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
+			this.$el.append( this.template( _.extend( {}, this.model.attributes, {
+				input_placeholder: PC.lang[this.collectionName + '_new_placeholder'],
+				filter_placeholder: PC.lang.list_filter_placeholder || '',
+				collectionName: this.collectionName,
+			} ) ) );
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.pc-sidebar'); 
-			this.$new_input = this.$('.structure-toolbar input'); 
+			this.$new_input = this.$('.structure-toolbar h4 input'); 
+			this.$list_filter = this.$('.structure-toolbar .mkl-pc-list-filter-input'); 
 			this.floating_add = new PC.views.floating_add_button( { el: this.$( '.floating-add' ).first(), list: this.$list, parent: this } );
 			this.add_all(); 
 			return this;
@@ -175,6 +181,16 @@ TODO:
 				}.bind( this )
 				
 			} );
+			this.apply_list_filter();
+		},
+		on_list_filter: function( e ) {
+			if ( typeof PC.applyAdminListFilter !== 'function' ) return;
+			PC.applyAdminListFilter( this.$list, $( e.target ).val(), {} );
+		},
+		apply_list_filter: function() {
+			if ( typeof PC.applyAdminListFilter !== 'function' || ! this.$list || ! this.$list.length ) return;
+			var val = this.$list_filter && this.$list_filter.length ? this.$list_filter.val() : '';
+			PC.applyAdminListFilter( this.$list, val, {} );
 		},
 		create: function( event ) {
 			
@@ -190,8 +206,8 @@ TODO:
 			this.col.create( this.new_attributes( this.$new_input.val().trim() ) ); 
 			
 
-			this.$new_input.val(''); 			
-			
+			this.$new_input.val( '' );
+			this.apply_list_filter();
 		},
 		layers_changed: function(e) {
 			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;

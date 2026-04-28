@@ -29,11 +29,18 @@ PC.views = PC.views || {};
 		},
 		remove: function() {
 			if ( this.main_view && this.main_view.$el && this.main_view.$el.length ) {
+				this.main_view.$el.off( 'input.mklPcContentSidebarFilter' );
 				this.main_view.$el.removeClass( 'mkl-pc-admin-ui--content-mode' );
 				this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers-list' ).empty();
 				this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers' ).attr( 'hidden', 'hidden' ).attr( 'aria-hidden', 'true' );
 			}
 			return Backbone.View.prototype.remove.call( this );
+		},
+		applySidebarLayersFilter: function() {
+			if ( typeof PC.applyAdminListFilter !== 'function' || ! this.layers || ! this.layers.$el || ! this.layers.$el.length ) return;
+			var $in = this.main_view && this.main_view.$el ? this.main_view.$( '.mkl-pc-list-filter-input--sidebar-layers' ) : $();
+			var val = $in.length ? $in.val() : '';
+			PC.applyAdminListFilter( this.layers.$el, val, { mode: 'flat-li' } );
 		},
 		render: function() {
 			if( !this.admin.layers || !this.admin.angles || this.admin.layers.length < 1 || this.admin.angles.length < 1) {
@@ -44,6 +51,15 @@ PC.views = PC.views || {};
 					this.main_view.$el.addClass( 'mkl-pc-admin-ui--content-mode' );
 					this.$list = this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers-list' );
 					this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers' ).removeAttr( 'hidden' ).attr( 'aria-hidden', 'false' );
+					var selfSidebar = this;
+					this.main_view.$el.off( 'input.mklPcContentSidebarFilter' ).on(
+						'input.mklPcContentSidebarFilter',
+						'.mkl-pc-list-filter-input--sidebar-layers',
+						function( e ) {
+							if ( typeof PC.applyAdminListFilter !== 'function' || ! selfSidebar.layers || ! selfSidebar.layers.$el ) return;
+							PC.applyAdminListFilter( selfSidebar.layers.$el, $( e.target ).val(), { mode: 'flat-li' } );
+						}
+					);
 				} else {
 					this.$list = $();
 				}
@@ -53,6 +69,7 @@ PC.views = PC.views || {};
 				if ( this.$list && this.$list.length ) {
 					this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } );
 					this.$list.append( this.layers.el );
+					this.applySidebarLayersFilter();
 					var self = this;
 					window.requestAnimationFrame( function() {
 						self.focusSidebarLayerButton();
@@ -91,7 +108,10 @@ PC.views = PC.views || {};
 		},
 		render: function() {
 			this.$el.empty(); 
-			PC.app.admin.layers.each( this.add_one, this ); 
+			PC.app.admin.layers.each( this.add_one, this );
+			if ( this.options.state && this.options.state.applySidebarLayersFilter ) {
+				this.options.state.applySidebarLayersFilter();
+			}
 		},
 
 		add_one: function( model ) {

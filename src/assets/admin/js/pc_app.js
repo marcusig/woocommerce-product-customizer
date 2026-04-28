@@ -854,5 +854,65 @@ PC.toJSON = function( item ) {
 		setTimeout(() => el.remove(), 5000);
 	}
 
+	/**
+	 * Filter admin list rows by visible label (layers, angles, choices). Supports nested groups.
+	 * @param {JQuery} $listRoot — scroll list: `.mkl-list` or `ul.layers` (direct children are rows).
+	 * @param {string} rawQuery
+	 * @param {{ mode?: 'nested'|'flat-li' }} options — `flat-li` for Content sidebar `ul.layers > li`.
+	 */
+	PC.applyAdminListFilter = function( $listRoot, rawQuery, options ) {
+		options = options || {};
+		var q = ( rawQuery || '' ).trim().toLowerCase();
+		var mode = options.mode || 'nested';
+
+		function labelFromMklItem( $item ) {
+			var $b = $item.find( '> button' ).first();
+			var h = $b.find( 'h3' ).text() || '';
+			var n = $b.find( '.name' ).first().text() || '';
+			var t = ( h || n || $b.text() || '' ).trim();
+			return t.toLowerCase();
+		}
+
+		function walkNested( $item ) {
+			var $group = $item.children( '.group-list' );
+			var childVisible = false;
+			if ( $group.length ) {
+				$group.first().children( '.mkl-list-item' ).each( function() {
+					if ( walkNested( $( this ) ) ) {
+						childVisible = true;
+					}
+				} );
+			}
+			var selfMatch = q && labelFromMklItem( $item ).indexOf( q ) !== -1;
+			var show = ! q || selfMatch || childVisible;
+			$item.toggleClass( 'mkl-list-item--filtered-out', ! show );
+			if ( show ) {
+				$item.removeAttr( 'aria-hidden' );
+			} else {
+				$item.attr( 'aria-hidden', 'true' );
+			}
+			return show;
+		}
+
+		if ( mode === 'flat-li' ) {
+			$listRoot.children( 'li' ).each( function() {
+				var $li = $( this );
+				var text = ( $li.find( 'button.layer .name' ).text() || '' ).trim().toLowerCase();
+				var show = ! q || text.indexOf( q ) !== -1;
+				$li.toggleClass( 'mkl-list-item--filtered-out', ! show );
+				if ( show ) {
+					$li.removeAttr( 'aria-hidden' );
+				} else {
+					$li.attr( 'aria-hidden', 'true' );
+				}
+			} );
+			return;
+		}
+
+		$listRoot.children( '.mkl-list-item' ).each( function() {
+			walkNested( $( this ) );
+		} );
+	};
+
 
 } ) ( jQuery, PC._us || window._ );
