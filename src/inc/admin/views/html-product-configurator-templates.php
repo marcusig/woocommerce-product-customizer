@@ -123,12 +123,16 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<div class="mkl-pc-admin-ui__content structure">
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
-				<h1>{{data.title}}</h1>
+				<div class="structure-toolbar__primary">
+					<h1>{{data.title}}</h1>
+					<div class="structure-toolbar__add">
+						<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
+						<button type="button" class="button-primary add-layer"><span><?php _e( 'Add' ); ?></span></button>
+					</div>
+				</div>
 				<div class="structure-toolbar__filter">
 					<input type="search" class="mkl-pc-list-filter-input" placeholder="{{data.filter_placeholder}}" autocomplete="off" />
 				</div>
-				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
-				<button type="button" class="button-primary add-layer"><span><?php _e( 'Add' ); ?></span></button>
 			</div>
 			<div class="mkl-list layers ui-sortable sortable-list">
 			</div>
@@ -172,24 +176,42 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 <?php endif; ?>
 
 <script type="text/html" id="tmpl-mkl-pc-structure-layer">
-	<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
-	<button type="button">
-		<h3></h3>
-	</button>
+	<div class="mkl-pc-admin-list-row__inner">
+		<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
+		<button type="button" class="mkl-pc-admin-list-row__hit">
+			<span class="screen-reader-text"><?php echo esc_html__( 'Select layer', 'product-configurator-for-woocommerce' ); ?>: <# print( data.admin_label && data.admin_label != '' ? data.admin_label : data.name ); #></span>
+		</button>
+		<div class="mkl-pc-admin-list-row__body"></div>
+	</div>
 	<# if ( 'group' == data.type && 'order' == data.orderAttr ) { #>
 		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
 	<# } #>		
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer-list-item--label">
-	<# if ( data.admin_label && data.admin_label != '' ) { #>
-		{{data.admin_label}}
-	<# } else { #>
-		{{data.name}}
-	<# } #>
-	<# if ( data.image.url != '' ) { #>
-		<img src="{{data.image.url}}" class="layer-img" />
-	<# } #>
+	<div class="layer-item--image">
+		<# if ( data.image.url != '' ) { #>
+			<img src="{{data.image.url}}" class="layer-img" />
+		<# } #>
+	</div>
+	<div class="layer-label-container">
+		<div class="layer-label--name">
+			<# if ( data.admin_label && data.admin_label != '' ) { #>
+				{{data.admin_label}}
+			<# } else { #>
+				{{data.name}}
+			<# } #>
+		</div>
+		<# if ( 'group' != data.type && 'angle' != data.object_type ) { #>
+		<div class="layer-label--type">
+			<# if ( data.not_a_choice ) { #>
+				<span class="layer-label--type-icon not-a-choice"></span> <span class="layer-label--type-label"><?php _e( 'Not a choice', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else { #>
+				<span class="layer-label--type-icon {{data.type}}"></span> <span class="layer-label--type-label">{{PC.get_layer_type_label( data.type )}}</span>
+			<# } #>
+		</div>
+		<# } #>
+	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-structure-angle-form">
@@ -275,9 +297,6 @@ CONTENT TEMPLATES
 				{{data.name}}
 			<# } #>
 		</span>
-		<# if ( data.image.url != '' ) { #>
-			<span class="icon"><img src="{{data.image.url}}" class="layer-img" /></span>
-		<# } #>
 		<span class="number-of-choices">{{data.choices_number}}</span>
 	</button>
 </script>
@@ -297,12 +316,16 @@ CONTENT TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-choices">
 	<button type="button" class="active-layer"></button>
 	<div class="structure-toolbar structure-toolbar--choices">
-		<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>
+		<div class="structure-toolbar__primary">
+			<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>
+			<div class="structure-toolbar__add">
+				<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
+				<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
+			</div>
+		</div>
 		<div class="structure-toolbar__filter">
 			<input type="search" class="mkl-pc-list-filter-input" placeholder="{{PC.lang.list_filter_placeholder}}" autocomplete="off" />
 		</div>
-		<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
-		<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
 	</div>
 	<div class="mkl-list choices ui-sortable sortable-list">
 	</div>
@@ -314,10 +337,17 @@ CONTENT TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-list-item">
-<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
-	<button type="button">
-		<h3><# if ( data.display_label ) { #>{{data.name}}<# } #></h3>
-	</button>
+	<div class="mkl-pc-admin-list-row__inner">
+		<div class="tips sort ui-sortable-handle"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
+		<button type="button" class="mkl-pc-admin-list-row__hit">
+			<span class="screen-reader-text"><?php echo esc_html__( 'Select choice', 'product-configurator-for-woocommerce' ); ?>: <# print( data.admin_label && data.admin_label != '' ? data.admin_label : data.name ); #></span>
+		</button>
+		<div class="mkl-pc-admin-list-row__body">
+			<# if ( data.display_label ) { #>
+				<h3>{{data.name}}</h3>
+			<# } #>
+		</div>
+	</div>
 	<# if ( data.is_group ) { #>
 		<div class="choices group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
 	<# } #>

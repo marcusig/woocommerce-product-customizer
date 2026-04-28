@@ -343,6 +343,7 @@ PC.views = PC.views || {};
 
 	PC.views.choiceLabel = Backbone.View.extend( {
 		tagName: 'span',
+		className: 'choice-label-container',
 		template: wp.template('mkl-pc-content-choice-list-item--label'),
 		initialize: function() {
 			this.render();
@@ -355,7 +356,7 @@ PC.views = PC.views || {};
 	PC.views.choice = PC.views.layer.extend( {
 		edit_view: function(){ return PC.views.choiceDetails; },
 		events: {
-			'click > button' : 'edit',
+			'click .mkl-pc-admin-list-row__hit' : 'edit',
 			'drop': 'drop',
 			'update_order': 'update_order',
 		},
@@ -374,7 +375,7 @@ PC.views = PC.views || {};
 			this.$el.html( this.template( this.model.attributes ) );
 			if ( ! this.label ) {
 				this.label = new PC.views.choiceLabel( { model: this.model } );
-				this.$( 'h3' ).append( this.label.$el );
+				this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
 			}
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;

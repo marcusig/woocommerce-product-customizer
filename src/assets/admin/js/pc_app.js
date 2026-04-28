@@ -782,9 +782,13 @@ PC.toJSON = function( item ) {
 				}
 			}.bind( this ) );
 			this.frame().open();
-		}
-
+		},
+		
 	};
+	
+	PC.get_layer_type_label = function( type ) {
+		return PC.lang.layer_types[ type ] || type;
+	}
 
 	PC.copy_items = function( view ) {
 		var data = {
@@ -866,7 +870,30 @@ PC.toJSON = function( item ) {
 		var mode = options.mode || 'nested';
 
 		function labelFromMklItem( $item ) {
-			var $b = $item.find( '> button' ).first();
+			var $listLabel = $item.find( '.layer-label-container' ).first();
+			if ( !$listLabel.length ) {
+				$listLabel = $item.find( '.choice-label-container' ).first();
+			}
+			if ( $listLabel.length ) {
+				var lbl = ( $listLabel.text() || '' ).trim();
+				if ( lbl ) {
+					return lbl.toLowerCase();
+				}
+			}
+			var $bodyHeading = $item.find( '.mkl-pc-admin-list-row__body h3' ).first();
+			if ( $bodyHeading.length ) {
+				var headingText = ( $bodyHeading.text() || '' ).trim();
+				if ( headingText ) {
+					return headingText.toLowerCase();
+				}
+			}
+			var $b = $item.find( '> .mkl-pc-admin-list-row__inner > button.mkl-pc-admin-list-row__hit' ).first();
+			if ( !$b.length ) {
+				$b = $item.find( '> button' ).first();
+			}
+			if ( !$b.length ) {
+				return '';
+			}
 			var h = $b.find( 'h3' ).text() || '';
 			var n = $b.find( '.name' ).first().text() || '';
 			var t = ( h || n || $b.text() || '' ).trim();
