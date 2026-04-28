@@ -58,6 +58,20 @@ PC.views = PC.views || {};
 			this.col.each( function( item ) {
 				item.set( 'active', false );
 			} );
+			if ( this.edit_multiple_items_form ) {
+				this.edit_multiple_items_form.remove();
+				this.edit_multiple_items_form = null;
+			}
+			_.each( this.items, function( iv ) {
+				if ( iv.form ) {
+					iv.form.remove();
+					iv.form = null;
+				}
+			} );
+			// Drop choice / multi-edit forms from the sidebar panel (keep empty-state placeholders)
+			if ( this.$form && this.$form.length ) {
+				this.$form.children().not( '.mkl-pc-content-placeholder' ).remove();
+			}
 			// Remove views
 			this.remove_views();
 			this.stopListening();
@@ -168,10 +182,26 @@ PC.views = PC.views || {};
 
 		hide_choices: function( e ) {
 			e.preventDefault();
+			if ( this.state.layers && this.state.layers.$el ) {
+				this.state.layers.$el.children( 'li' ).removeClass( 'active' );
+				this.state.layers.$el.find( 'button.layer' ).attr( 'aria-pressed', 'false' );
+			}
 			this.state.$el.removeClass( 'show-choices' );
+			if ( this.edit_multiple_items_form ) {
+				this.edit_multiple_items_form.remove();
+				this.edit_multiple_items_form = null;
+			}
+			_.each( this.items, function( iv ) {
+				if ( iv.form ) {
+					iv.form.remove();
+					iv.form = null;
+				}
+			} );
 			this.remove_views();
 			this.$el.empty();
-			this.$form.empty();
+			if ( this.$form && this.$form.length ) {
+				this.$form.children().not( '.mkl-pc-content-placeholder' ).remove();
+			}
 		},
 
 		remove_views: function() {

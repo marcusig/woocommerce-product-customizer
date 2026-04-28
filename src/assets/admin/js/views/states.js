@@ -1,20 +1,102 @@
 var PC = PC || {};
 PC.views = PC.views || {};
 ( function( _ ) {
+	/**
+	 * Dashicon classes per menu_id (24px via CSS). Add-ons can add keys; unknown ids fall back below.
+	 */
+	var MKL_PC_NAV_ICONS = {
+		home: 'dashicons-admin-home',
+		layers: 'dashicons-screenoptions',
+		angles: 'dashicons-visibility',
+		content: 'dashicons-list-view',
+		conditional_placeholder: 'dashicons-randomize',
+		import: 'dashicons-migrate',
+		conditional: 'dashicons-randomize',
+		fonts: 'dashicons-editor-textcolor',
+		form_builder: 'dashicons-editor-table',
+		'mkl-pc__bulk': 'dashicons-tickets-alt',
+		extra_price: 'dashicons-tag',
+	};
+
+	function mkl_pc_nav_icon_class( menuId ) {
+		if ( ! menuId ) {
+			return 'dashicons-admin-generic';
+		}
+		if ( MKL_PC_NAV_ICONS[ menuId ] ) {
+			return MKL_PC_NAV_ICONS[ menuId ];
+		}
+		if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+			var filtered = wp.hooks.applyFilters( 'mkl_pc_admin_nav_icon', '', menuId );
+			if ( filtered ) {
+				return filtered;
+			}
+		}
+		return 'dashicons-admin-generic';
+	}
+
 	PC.views.states = Backbone.View.extend({
 		items: [],
 		template: wp.template('mkl-pc-menu'),
+		events: {
+			'click .mkl-pc-admin-ui__sidebar-primary-save': 'on_sidebar_save',
+			'click .mkl-pc-admin-ui__back-to-product': 'on_back_to_product',
+		},
 		initialize: function( params ) {
 			this.app = params.parent;
 			this.render();
 		},
 		render: function() {
-			this.$el.append( this.template() );
+			// Only mount the shell once. editor.refresh() calls render() again after
+			// states load; appending here would duplicate the sidebar.
+			if ( ! this.$( '.mkl-pc-admin-ui__sidebar' ).length ) {
+				this.$el.append( this.template() );
+			}
+			this.populateSidebarContext();
 			if ( this.app.states.length ) {
 				this.$menu = this.$('.mkl-pc-admin-ui__nav').html('');
 				this.create_menu();
 			}
 			return this;
+		},
+		populateSidebarContext: function() {
+			var lang = ( typeof window.PC_lang === 'object' && window.PC_lang ) ? window.PC_lang : {};
+			var name = ( typeof lang.editor_product_name === 'string' ) ? lang.editor_product_name : '';
+			var url = ( typeof lang.editor_product_permalink === 'string' ) ? lang.editor_product_permalink : '';
+			var back = ( typeof lang.editor_back_to_product === 'string' ) ? lang.editor_back_to_product : '';
+			var save = ( typeof lang.editor_save === 'string' ) ? lang.editor_save : 'Save';
+			if ( name ) {
+				this.$( '.mkl-pc-admin-ui__product-name' ).text( name );
+			}
+			if ( url ) {
+				this.$( '.mkl-pc-admin-ui__product-name' ).attr( 'href', url );
+			}
+			this.$( '.mkl-pc-admin-ui__back-text' ).text( back || '' );
+			this.$( '.mkl-pc-admin-ui__sidebar-primary-save' ).text( save );
+		},
+		getActiveStateView: function() {
+			if ( ! this.items || ! this.items.length ) {
+				return null;
+			}
+			for ( var i = 0; i < this.items.length; i++ ) {
+				var it = this.items[ i ];
+				if ( it && it.model && it.model.get( 'active' ) === true && it.state ) {
+					return it.state;
+				}
+			}
+			return null;
+		},
+		on_sidebar_save: function( e ) {
+			e.preventDefault();
+			var st = this.getActiveStateView();
+			if ( st && st.save_all ) {
+				st.save_all();
+			}
+		},
+		on_back_to_product: function( e ) {
+			e.preventDefault();
+			if ( PC.app && PC.app.get_admin && PC.app.get_admin().close ) {
+				PC.app.get_admin().close();
+			}
 		},
 		reset_active: function(){
 
@@ -84,8 +166,19 @@ PC.views = PC.views || {};
 
 		},
 		render: function() {
-			this.$el.attr('href', '#'); 
-			this.$el.html( this.model.get('label') );
+			var menuId = this.model.get( 'menu_id' );
+			var label = this.model.get( 'label' );
+			var iconClass = mkl_pc_nav_icon_class( menuId );
+			this.$el.attr( 'href', '#' );
+			this.$el.attr( 'data-menu-id', menuId );
+			this.$el.attr( 'data-mkl-hint', label );
+			this.$el.attr( 'aria-label', label );
+			this.$el.addClass( 'mkl-pc-admin-ui__nav-item--' + String( menuId ).replace( /[^a-z0-9_-]/gi, '' ) );
+			this.$el.html(
+				'<span class="mkl-pc-admin-ui__nav-item-icon" aria-hidden="true"><span class="dashicons ' + iconClass + '"></span></span>' +
+				'<span class="mkl-pc-admin-ui__nav-item-text">' + _.escape( label ) + '</span>' +
+				'<span class="mkl-pc-admin-ui__nav-item-chevron" aria-hidden="true"></span>'
+			);
 			return this;
 		}
 	});
@@ -96,7 +189,6 @@ PC.views = PC.views || {};
 		events: {
 			'click .pc-main-save': 'save_state', 
 			'click .pc-main-save-all': 'save_all', 
-			'click .pc-main-cancel': 'cancel', 
 			'click .mkl-pc-admin-ui__menu-toggle': 'show_mobile_menu',
 		},
 		initialize: function( args ){
@@ -111,12 +203,10 @@ PC.views = PC.views || {};
 				// Empties the target
 				this.$el.empty(); 
 				// Get the Frame's title Template (contains Title + description)
-				this.title_template = wp.template('mkl-pc-frame-title'); 
-				// Get the Toolbar's template (Bottom toolbar)
-				this.toolbar_template = wp.template('mkl-pc-toolbar'); 
+				// this.title_template = wp.template('mkl-pc-frame-title'); 
 
 				// Instantiates the main view for the current state
-				this.state = new State( { app: this.options.app } ); 
+				this.state = new State( { app: this.options.app, model: this.model, main_view: this.options.main_view } );
 
 				PC.app.state = this.state;
 
@@ -132,27 +222,21 @@ PC.views = PC.views || {};
 			}
 
 		} ,
-		render: function() {
-			this.$el.append( this.title_template(this.model.attributes) ); 
-			this.$el.append( this.state.$el );
-			this.$el.append( this.toolbar_template(this.model.attributes) );
-
-			this.state.$toolbar = this.$toolbar = this.$('.mkl-pc-admin-ui__footer');
-
-			this.menu = this.model.get('menu');
-
-			if( this.menu && this.menu.length > 1 ) {
-				var menu_target = new PC.views.button_group();
-				this.$('.mkl-pc-admin-ui__toolbar-primary').append( menu_target.render().el ); 
-				_.each( this.menu, function( menu_item, ind ) {
-					var button = new PC.views.button( menu_item );
-					menu_target.$el.append( button.render().el );
-				});
-
+		remove: function() {
+			if ( this.state && typeof this.state.remove === 'function' ) {
+				this.state.remove();
 			}
+			return Backbone.View.prototype.remove.call( this );
+		},
+		render: function() {
+			this.$el.append( this.state.$el );
 
-			this.state.$save_button = this.$save_button = this.$('.pc-main-save');
-			this.state.$save_all_button = this.$save_all_button = this.$('.pc-main-save-all');
+			var $sb = this.options.main_view.$el;
+			this.state.$toolbar = this.$toolbar = $sb.find( '.mkl-pc-admin-ui__sidebar-footer' );
+			this.menu = this.model.get( 'menu' );
+			// Main Save lives in the left sidebar; keep legacy btn refs for save_state / save_all / PC.app.save_all
+			this.state.$save_button = this.$save_button = $sb.find( '.mkl-pc-admin-ui__sidebar .pc-main-save' );
+			this.state.$save_all_button = this.$save_all_button = $sb.find( '.mkl-pc-admin-ui__sidebar .pc-main-save-all' );
 
 			return this;
 		},
@@ -207,12 +291,8 @@ PC.views = PC.views || {};
 			PC.app.save_all( this );
 		},
 
-		cancel: function() {
-			PC.app.get_admin().close();
-		},
 		show_mobile_menu: function( e ) {
-			console.log(this, this.options);
-			this.options.main_view.$menu.toggleClass('visible');
+			this.options.main_view.$menu.toggleClass( 'visible' );
 		}
 		// save_state: function() {
 		// 	this.state.$el.trigger('save-state');
@@ -221,7 +301,7 @@ PC.views = PC.views || {};
 
 	PC.views.separator = Backbone.View.extend({
 		tagName: 'div',
-		className: 'separator',
+		className: 'separator mkl-pc-admin-ui__nav-separator',
 		initialize: function() {
 			this.render();
 		},
@@ -229,30 +309,6 @@ PC.views = PC.views || {};
 			return this;
 		}
 	})
-
-	PC.views.button_group = Backbone.View.extend({
-		className: 'button-group mkl-pc-admin-ui__button-group',
-		render: function() {
-			return this;
-		}
-	});
-
-	PC.views.button = Backbone.View.extend({
-		tagName: 'button',
-		className: 'button mkl-pc-admin-ui__action-btn button-large',
-		initialize: function( options ) {
-			this.options = _.defaults( options, { text: ' - ', class:'' } );
-
-			this.render();
-		},
-		render: function() {
-			this.$el.attr('type', 'button');
-			this.$el.html( this.options.text );
-			this.$el.addClass( this.options.class );
-			return this;
-		},
-
-	});
 
 	// PC.view.title = Backbone.View.extend({
 	// 	template: 'mkl-pc-frame-title'
