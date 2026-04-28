@@ -73,6 +73,9 @@ GENERAL TEMPLATES
 			</div>
 			<div class="mkl-pc-admin-ui__sidebar-layers" hidden aria-hidden="true">
 				<h2 class="mkl-pc-admin-ui__sidebar-layers-heading"><?php esc_html_e( 'Content', 'product-configurator-for-woocommerce' ); ?></h2>
+				<div class="mkl-pc-admin-ui__sidebar-layers-filter">
+					<input type="search" class="mkl-pc-list-filter-input mkl-pc-list-filter-input--sidebar-layers" placeholder="<?php echo esc_attr( __( 'Filter layers…', 'product-configurator-for-woocommerce' ) ); ?>" autocomplete="off" aria-label="<?php echo esc_attr( __( 'Filter layers', 'product-configurator-for-woocommerce' ) ); ?>" />
+				</div>
 				<div class="mkl-pc-admin-ui__sidebar-layers-list"></div>
 			</div>
 		</div>
@@ -126,6 +129,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
 				<h1>{{data.title}}</h1>
+				<div class="structure-toolbar__filter">
+					<input type="search" class="mkl-pc-list-filter-input" placeholder="{{data.filter_placeholder}}" autocomplete="off" />
+				</div>
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 				<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 			</div>
@@ -308,6 +314,9 @@ CONTENT TEMPLATES
 	<button type="button" class="active-layer"></button>
 	<div class="structure-toolbar structure-toolbar--choices">
 		<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>
+		<div class="structure-toolbar__filter">
+			<input type="search" class="mkl-pc-list-filter-input" placeholder="{{PC.lang.list_filter_placeholder}}" autocomplete="off" />
+		</div>
 		<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
 		<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 	</div>

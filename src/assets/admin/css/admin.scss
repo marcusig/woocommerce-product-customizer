@@ -423,7 +423,11 @@ html .mkl-pc-admin-ui.pc-modal {
 			// background: $pc-admin-canvas-chrome;
 			box-shadow: none;
 		}
-		> .mkl-pc-admin-ui__state:has( .state.home ) {
+		> .mkl-pc-admin-ui__state:has( .state.home ),
+		> .mkl-pc-admin-ui__state:has( .font-library-app ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.price-bulk-edit ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.import-export ), {
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.conditional ) {
 			border-radius: 8px;
 			background: #FFF;
 			box-shadow: none;
@@ -1264,6 +1268,21 @@ html .pc-modal-container {
     border: 2px dashed #CCC;
 }
 
+.mkl-list .mkl-list-item.mkl-list-item--filtered-out,
+ul.layers > li.mkl-list-item--filtered-out {
+	display: none !important;
+}
+
+.mkl-pc-admin-ui__sidebar-layers-filter {
+	padding: 0 0 8px;
+	box-sizing: border-box;
+	.mkl-pc-list-filter-input {
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+	}
+}
+
 .structure-toolbar {
 	position: sticky;
 	top: 0;
@@ -1284,6 +1303,15 @@ html .pc-modal-container {
 		line-height: 1.3;
 		color: $text-color;
 		min-width: 0;
+	}
+	.structure-toolbar__filter {
+		flex: 1 1 100%;
+		min-width: 0;
+		.mkl-pc-list-filter-input {
+			width: 100%;
+			max-width: 100%;
+			box-sizing: border-box;
+		}
 	}
 	h4 {
 		flex: 1 1 200px;
