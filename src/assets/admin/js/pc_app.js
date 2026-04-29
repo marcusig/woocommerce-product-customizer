@@ -408,13 +408,17 @@ PC.toJSON = function( item ) {
 			}
 		},
 		save_all: function( state, options ) {
+			options = options || {};
 			this.saving = 0;
 			this.errors = [];
 			this._chunk_storage_migration_ui = false;
 			this._migration_messaging_keys = null;
+			this._bulk_save_overlay = !! options.bulk_save_overlay;
 			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
 
+				var migrationSaveUi = false;
 				if ( this.should_migrate_chunk_storage_before_save() ) {
+					migrationSaveUi = true;
 					this._pending_chunk_storage_finalize = true;
 					this._chunk_storage_migration_ui = true;
 					this.mark_all_layers_and_content_modified_for_save();
@@ -427,6 +431,8 @@ PC.toJSON = function( item ) {
 					if ( content_for_migration && content_for_migration.length ) {
 						this.is_modified.content = true;
 					}
+				} else if ( this._bulk_save_overlay ) {
+					this._chunk_storage_migration_ui = true;
 				}
 
 				if ( state ) {
@@ -451,7 +457,8 @@ PC.toJSON = function( item ) {
 						}
 					}
 					var firstMigrationPhase = this._migration_messaging_keys.length ? this._migration_messaging_keys[ 0 ] : 'finalize';
-					window.MKL_PC_DataMigrationOverlay.show( firstMigrationPhase );
+					var overlayMode = migrationSaveUi ? 'migration' : ( this._bulk_save_overlay ? 'bulk_save' : 'migration' );
+					window.MKL_PC_DataMigrationOverlay.show( firstMigrationPhase, overlayMode );
 				}
 				this.saving = modified_collection_keys.length;
 				var app = this;
@@ -487,6 +494,7 @@ PC.toJSON = function( item ) {
 				}
 				this._chunk_storage_migration_ui = false;
 				this._migration_messaging_keys = null;
+				this._bulk_save_overlay = false;
 				state.state_saved( 1 );
 				if ( error && 'string' == typeof error && error.length > 0 ) this.errors.push( error );
 				if ( error && 'object' == typeof error ) {
@@ -704,6 +712,7 @@ PC.toJSON = function( item ) {
 				$btn.html(
 					'<span class="mkl-pc-sidebar-save__content">' +
 						'<span class="mkl-pc-sidebar-save__icon dashicons" aria-hidden="true"></span>' +
+						'<span class="mkl-pc-sidebar-save__spinner mkl-pc-spinner mkl-pc-spinner--sm" aria-hidden="true"></span>' +
 						'<span class="mkl-pc-sidebar-save__label"></span>' +
 					'</span>'
 				);
@@ -718,7 +727,7 @@ PC.toJSON = function( item ) {
 				$btn.attr( 'aria-label', savingLabel );
 				$btn.addClass( 'is-loading' );
 				$label.text( savingLabel );
-				$icon.removeClass( 'dashicons-saved dashicons-yes' ).addClass( 'dashicons-update' ).show();
+				$icon.removeClass( 'dashicons-saved dashicons-yes' );
 				return;
 			}
 

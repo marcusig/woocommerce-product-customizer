@@ -32,6 +32,30 @@
 		},
 	};
 
+	var bulkMessages = {
+		layers: function () {
+			return PC_lang().mkl_pc_bulk_save_layers || messages.layers();
+		},
+		content: function () {
+			return PC_lang().mkl_pc_bulk_save_content || messages.content();
+		},
+		finalize: function () {
+			return PC_lang().mkl_pc_bulk_save_finalize || messages.finalize();
+		},
+		other: function () {
+			return PC_lang().mkl_pc_bulk_save_other || messages.other();
+		},
+		complete: function () {
+			return PC_lang().mkl_pc_bulk_save_complete || messages.complete();
+		},
+		note: function () {
+			return PC_lang().mkl_pc_bulk_save_note || '';
+		},
+		dismiss: function () {
+			return PC_lang().mkl_pc_bulk_save_dismiss || messages.dismiss();
+		},
+	};
+
 	function ensureDom() {
 		if ( $( '.mkl-pc-migration-overlay' ).length ) {
 			return $( '.mkl-pc-migration-overlay' );
@@ -39,7 +63,7 @@
 		var $el = $(
 			'<div class="mkl-pc-migration-overlay" role="dialog" aria-modal="true" aria-labelledby="mkl-pc-migration-overlay-status">' +
 				'<div class="mkl-pc-migration-overlay__panel">' +
-					'<div class="mkl-pc-migration-overlay__spinner" aria-hidden="true"></div>' +
+					'<div class="mkl-pc-migration-overlay__spinner mkl-pc-spinner" aria-hidden="true"></div>' +
 					'<p id="mkl-pc-migration-overlay-status" class="mkl-pc-migration-overlay__status"></p>' +
 					'<p class="mkl-pc-migration-overlay__note"></p>' +
 					'<button type="button" class="button button-primary mkl-pc-migration-overlay__dismiss"></button>' +
@@ -55,9 +79,11 @@
 
 	window.MKL_PC_DataMigrationOverlay = {
 		active: false,
+		_mode: 'migration',
 
-		show: function ( phase ) {
+		show: function ( phase, mode ) {
 			this.active = true;
+			this._mode = mode || 'migration';
 			var $root = ensureDom();
 			$root.removeClass( 'is-complete' ).addClass( 'is-visible' ).attr( 'aria-busy', 'true' );
 			$root.find( '.mkl-pc-migration-overlay__note' ).empty().hide();
@@ -73,33 +99,41 @@
 			if ( ! $root.length ) {
 				return;
 			}
+			var m = this._mode === 'bulk_save' ? bulkMessages : messages;
 			var $status = $root.find( '.mkl-pc-migration-overlay__status' );
 			if ( phase === 'complete' ) {
 				$root.addClass( 'is-complete' ).attr( 'aria-busy', 'false' );
-				$status.text( messages.complete() );
-				$root.find( '.mkl-pc-migration-overlay__note' ).text( messages.note() ).show();
-				$root.find( '.mkl-pc-migration-overlay__dismiss' ).text( messages.dismiss() ).show();
+				$status.text( m.complete() );
+				var noteText = m.note();
+				if ( noteText ) {
+					$root.find( '.mkl-pc-migration-overlay__note' ).text( noteText ).show();
+				} else {
+					$root.find( '.mkl-pc-migration-overlay__note' ).empty().hide();
+				}
+				$root.find( '.mkl-pc-migration-overlay__dismiss' ).text( m.dismiss() ).show();
 				return;
 			}
 			var line = '';
 			if ( phase === 'layers' ) {
-				line = messages.layers();
+				line = m.layers();
 			} else if ( phase === 'content' ) {
-				line = messages.content();
+				line = m.content();
 			} else if ( phase === 'finalize' ) {
-				line = messages.finalize();
+				line = m.finalize();
 			} else if ( phase === 'other' ) {
-				line = messages.other();
+				line = m.other();
 			}
 			$status.text( line );
 		},
 
 		hide: function () {
 			this.active = false;
+			this._mode = 'migration';
 			$( '.mkl-pc-migration-overlay' ).removeClass( 'is-visible is-complete' ).remove();
 			if ( window.PC && PC.app ) {
 				PC.app._chunk_storage_migration_ui = false;
 				PC.app._migration_messaging_keys = null;
+				PC.app._bulk_save_overlay = false;
 			}
 		},
 	};

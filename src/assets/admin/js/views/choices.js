@@ -104,11 +104,13 @@ PC.views = PC.views || {};
 			return this;
 		},
 
-		choices_changed: function(e,f) {
-			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
-			// console.log( e );
-			if ( -1 == PC.app.modified_choices.indexOf( e.get( 'layerId' ) + '_' + e.id ) ) {
-				PC.app.modified_choices.push( e.get( 'layerId' ) + '_' + e.id );
+		choices_changed: function( model ) {
+			var changed = model.changedAttributes && model.changedAttributes();
+			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
+				return;
+			}
+			if ( -1 == PC.app.modified_choices.indexOf( model.get( 'layerId' ) + '_' + model.id ) ) {
+				PC.app.modified_choices.push( model.get( 'layerId' ) + '_' + model.id );
 			}
 			this.mark_collection_as_modified();
 		},

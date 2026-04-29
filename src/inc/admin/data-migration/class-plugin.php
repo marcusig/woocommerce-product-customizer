@@ -211,6 +211,13 @@ final class Plugin {
 		$pc_lang['mkl_pc_migration_legacy_note']  = __( 'A copy of your data may still exist in the previous (legacy) format until you delete it from the home tab. If a migration went wrong while that copy still exists, you can use “Restore legacy data” there to remove chunked storage and load the legacy copy again.', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_migration_dismiss']     = __( 'OK', 'product-configurator-for-woocommerce' );
 
+		$pc_lang['mkl_pc_bulk_save_layers']   = __( 'Saving layers…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_bulk_save_content']  = __( 'Saving content…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_bulk_save_finalize'] = __( 'Finishing storage update…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_bulk_save_other']    = __( 'Saving configuration…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_bulk_save_complete'] = __( 'Save complete', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_bulk_save_dismiss']   = __( 'OK', 'product-configurator-for-woocommerce' );
+
 		return $pc_lang;
 	}
 }
