@@ -337,6 +337,14 @@ TODO:
 		},
 		edit: function( event ) {
 			if ( PC.selection.adding_group ) return;
+			// Nested group rows live inside a parent .mkl-list-item; delegated hit clicks would match
+			// every ancestor view unless we only handle the row that actually owns the hit target.
+			if ( event && event.currentTarget ) {
+				var row = $( event.currentTarget ).closest( '.mkl-list-item' )[ 0 ];
+				if ( row !== this.el ) {
+					return;
+				}
+			}
 			if ( event && ( event.shiftKey || event.metaKey || event.ctrlKey ) ) {
 
 				// Multiple select
