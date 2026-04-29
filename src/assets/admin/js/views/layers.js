@@ -86,6 +86,9 @@ TODO:
 				var id = model.get && model.get( '_id' ) || model.id;
 				if ( id ) PC.app.modified_layer_ids[ id ] = true;
 			}
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 		removed_model: function( m ) {
 			if ( this.collectionName === 'layers' && m ) {
@@ -212,8 +215,10 @@ TODO:
 		layers_changed: function(e) {
 			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
 			// if something has changed in the layers collection
-			PC.app.is_modified[this.collectionName] = true; 
-
+			PC.app.is_modified[this.collectionName] = true;
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 		layers_loaded: function( e ) {
 			this.render();
@@ -315,6 +320,9 @@ TODO:
 			var id = this.model.get( '_id' );
 			if ( id ) PC.app.modified_layer_ids[ id ] = true;
 			PC.app.is_modified.layers = true;
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 		events: {
 			'click .mkl-pc-admin-list-row__hit' : 'edit',
@@ -968,6 +976,9 @@ TODO:
 			} );
 
 			PC.app.is_modified[ 'content' ] = true;
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		}
 
 		return new_layer;
