@@ -251,7 +251,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/views/content', 'views/content.js'),
 				array('backbone/views/import', 'views/import.js'),
 				array('backbone/views/app', 'views/app.js'),
-				array('backbone/views/product_selector', 'views/product_selector.js'),
+				array('backbone/views/product_selector', 'views/product_selector.js', array( 'wc-enhanced-select' ) ),
 				array('backbone/views/field_repeater', 'views/field-repeater.js'),
 				//APP
 				array('backbone/app', 'pc_app.js'), 
@@ -287,11 +287,14 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 				// LOAD BACKBONE SCRIPTS
 				foreach ( $scripts as $script ) {
-					list( $key, $file ) = $script;
+					$key   = $script[0];
+					$file  = $script[1];
+					$extra = isset( $script[2] ) && is_array( $script[2] ) ? $script[2] : array();
+					$deps  = array_values( array_unique( array_merge( array( 'jquery', 'backbone', 'wp-util' ), $extra ) ) );
 					wp_enqueue_script(
 						'mkl_pc/js/admin/' . $key,
 						MKL_PC_ASSETS_URL . 'admin/js/' . $file,
-						array( 'jquery', 'backbone', 'wp-util' ),
+						$deps,
 						filemtime( MKL_PC_ASSETS_PATH . 'admin/js/' . $file ),
 						true
 					);
