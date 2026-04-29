@@ -122,6 +122,9 @@ PC.views = PC.views || {};
 					PC.app.modified_content_layer_ids[ layerId ] = true;
 				}
 			}
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 
 		add_one: function( model ) {
@@ -694,6 +697,9 @@ PC.views = PC.views || {};
 			if ( this.model && this.model.get( 'layerId' ) ) {
 				PC.app.modified_content_layer_ids = PC.app.modified_content_layer_ids || {};
 				PC.app.modified_content_layer_ids[ this.model.get( 'layerId' ) ] = true;
+			}
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
 			}
 		},
 		edit_attachment: function(e) {

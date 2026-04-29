@@ -82,6 +82,9 @@ PC.views = PC.views || {};
 				if ( content.get( model.id ) ) {
 					content.remove( model.id );
 					PC.app.is_modified[ 'content' ] = true;
+					if ( PC.app.syncSidebarSaveButtonState ) {
+						PC.app.syncSidebarSaveButtonState();
+					}
 				}
 			}
 
@@ -96,6 +99,9 @@ PC.views = PC.views || {};
 					
 				}, this );
 				PC.app.is_modified[ 'content' ] = true;
+				if ( PC.app.syncSidebarSaveButtonState ) {
+					PC.app.syncSidebarSaveButtonState();
+				}
 			}
 		},
 		get_current_product: function() { return this.current_product; },

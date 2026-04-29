@@ -75,12 +75,11 @@ GENERAL TEMPLATES
 			</div>
 		</div>
 		<div class="mkl-pc-admin-ui__sidebar-footer">
-			<div class="mkl-pc-admin-ui__sidebar-status">
-				<span class="spinner"></span>
-				<span class="saved-message"><?php echo esc_html( __( 'Saved' ) ); ?></span>
-			</div>
-			<button type="button" class="mkl-pc-admin-ui__sidebar-primary-save button button-primary button-large pc-main-save pc-main-save-all">
-				<?php esc_html_e( 'Save', 'product-configurator-for-woocommerce' ); ?>
+			<button type="button" class="mkl-pc-admin-ui__sidebar-primary-save button button-primary button-large pc-main-save pc-main-save-all" aria-disabled="true" aria-busy="false">
+				<span class="mkl-pc-sidebar-save__content">
+					<span class="mkl-pc-sidebar-save__icon dashicons dashicons-saved" aria-hidden="true"></span>
+					<span class="mkl-pc-sidebar-save__label"><?php esc_html_e( 'Saved', 'product-configurator-for-woocommerce' ); ?></span>
+				</span>
 			</button>
 		</div>
 	</div>

@@ -430,10 +430,11 @@ PC.toJSON = function( item ) {
 				}
 
 				if ( state ) {
-					state.$save_button.addClass('disabled');
-					state.$save_all_button.addClass('disabled');
 					state.$toolbar.addClass('saving');
 					state.$el.addClass('saving');
+					if ( this.syncSidebarSaveButtonState ) {
+						this.syncSidebarSaveButtonState();
+					}
 				}
 				var modified_collection_keys = [];
 				_.each( this.is_modified, function( val, key ) {
@@ -678,6 +679,61 @@ PC.toJSON = function( item ) {
 
 		get_data_from_clipboard: function() {
 			// PCCOPY-choices-
+		},
+
+		/**
+		 * Site-editor-like sidebar save control: aria-disabled + checkmark when clean (still focusable), Save when dirty, loading on the button while saving.
+		 */
+		syncSidebarSaveButtonState: function() {
+			var $btn = $( '.mkl-pc-admin-ui .mkl-pc-admin-ui__sidebar-primary-save' ).first();
+			if ( ! $btn.length ) {
+				return;
+			}
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			var saveLabel = lang.editor_save || 'Save';
+			var savedLabel = lang.editor_saved || 'Saved';
+			var savingLabel = lang.editor_saving || 'Saving…';
+			var dirty = _.indexOf( _.values( this.is_modified ), true ) !== -1;
+			var $toolbar = $btn.closest( '.mkl-pc-admin-ui__sidebar-footer' );
+			var footIsSaving = $toolbar.hasClass( 'saving' );
+			var appIsSaving = this.saving > 0;
+
+			var $label = $btn.find( '.mkl-pc-sidebar-save__label' );
+			var $icon = $btn.find( '.mkl-pc-sidebar-save__icon' );
+			if ( ! $label.length ) {
+				$btn.html(
+					'<span class="mkl-pc-sidebar-save__content">' +
+						'<span class="mkl-pc-sidebar-save__icon dashicons" aria-hidden="true"></span>' +
+						'<span class="mkl-pc-sidebar-save__label"></span>' +
+					'</span>'
+				);
+				$label = $btn.find( '.mkl-pc-sidebar-save__label' );
+				$icon = $btn.find( '.mkl-pc-sidebar-save__icon' );
+			}
+
+			$btn.removeClass( 'is-loading disabled' ).prop( 'disabled', false ).removeAttr( 'disabled' );
+
+			if ( footIsSaving || appIsSaving ) {
+				$btn.attr( 'aria-disabled', 'true' ).attr( 'aria-busy', 'true' );
+				$btn.attr( 'aria-label', savingLabel );
+				$btn.addClass( 'is-loading' );
+				$label.text( savingLabel );
+				$icon.removeClass( 'dashicons-saved dashicons-yes' ).addClass( 'dashicons-update' ).show();
+				return;
+			}
+
+			$btn.attr( 'aria-busy', 'false' );
+			if ( dirty ) {
+				$btn.attr( 'aria-disabled', 'false' );
+				$label.text( saveLabel );
+				$btn.attr( 'aria-label', saveLabel );
+				$icon.removeClass( 'dashicons-saved dashicons-yes dashicons-update' ).hide();
+			} else {
+				$btn.attr( 'aria-disabled', 'true' );
+				$label.text( savedLabel );
+				$btn.attr( 'aria-label', savedLabel );
+				$icon.removeClass( 'dashicons-update' ).addClass( 'dashicons-saved' ).show();
+			}
 		}
 	};
 

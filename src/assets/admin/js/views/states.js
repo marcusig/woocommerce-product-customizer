@@ -63,7 +63,6 @@ PC.views = PC.views || {};
 			var name = ( typeof lang.editor_product_name === 'string' ) ? lang.editor_product_name : '';
 			var url = ( typeof lang.editor_product_permalink === 'string' ) ? lang.editor_product_permalink : '';
 			var back = ( typeof lang.editor_back_to_product === 'string' ) ? lang.editor_back_to_product : '';
-			var save = ( typeof lang.editor_save === 'string' ) ? lang.editor_save : 'Save';
 			if ( name ) {
 				this.$( '.mkl-pc-admin-ui__product-name' ).text( name );
 			}
@@ -71,7 +70,9 @@ PC.views = PC.views || {};
 				this.$( '.mkl-pc-admin-ui__product-name' ).attr( 'href', url );
 			}
 			this.$( '.mkl-pc-admin-ui__back-text' ).text( back || '' );
-			this.$( '.mkl-pc-admin-ui__sidebar-primary-save' ).text( save );
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 		getActiveStateView: function() {
 			if ( ! this.items || ! this.items.length ) {
@@ -87,6 +88,9 @@ PC.views = PC.views || {};
 		},
 		on_sidebar_save: function( e ) {
 			e.preventDefault();
+			if ( jQuery( e.currentTarget ).attr( 'aria-disabled' ) === 'true' ) {
+				return;
+			}
 			var st = this.getActiveStateView();
 			if ( st && st.save_all ) {
 				st.save_all();
@@ -250,11 +254,10 @@ PC.views = PC.views || {};
 				return false;
 			}
 
-
-
-			this.$save_button.addClass('disabled');
-			this.$save_all_button.addClass('disabled');
-			this.$toolbar.addClass('saving'); 
+			this.$toolbar.addClass('saving');
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 
 			PC.app.save( this.collectionName, this.col, {
 				// success: 'successfuil'
@@ -265,19 +268,11 @@ PC.views = PC.views || {};
 		},
 
 		state_saved: function( has_errors ) { 
-			// when the layers are succesfully saved,
-			this.$save_button.removeClass('disabled'); 
-			this.$save_all_button.removeClass('disabled'); 
 			this.$toolbar.removeClass('saving'); 
 			this.$el.removeClass('saving'); 
-			this.$toolbar.addClass('saved'); 
-			this.$el.addClass('saved'); 
-			var that = this;
-			// show "saved" for 2.5s
-			_.delay(function() {
-				that.$toolbar.removeClass('saved'); 
-				that.$el.removeClass('saved'); 
-			}, 2500);
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 			// reset 'modified'
 			if ( ! has_errors ) {
 				PC.app.is_modified[this.collectionName] = false;
@@ -286,9 +281,10 @@ PC.views = PC.views || {};
 			}
 		},
 		error_saving: function(r, s) {
-			this.$save_button.removeClass('disabled'); 
-			this.$save_all_button.removeClass('disabled'); 
 			this.$toolbar.removeClass('saving'); 
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 			alert(r);
 		},
 		save_all: function() {

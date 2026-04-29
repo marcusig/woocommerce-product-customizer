@@ -332,51 +332,70 @@ html .mkl-pc-admin-ui.pc-modal {
 			}
 			.mkl-pc-admin-ui__sidebar-footer {
 				flex: 0 0 auto;
-				padding: 10px 12px 12px;
+				padding: 10px 16px 16px;
 				border-top: 1px solid #2c2c2c;
 			}
-			.mkl-pc-admin-ui__sidebar-status {
-				display: flex;
+			.mkl-pc-sidebar-save__content {
+				display: inline-flex;
 				align-items: center;
-				min-height: 22px;
-				margin-bottom: 8px;
-				.spinner {
-					float: none;
-					margin: 0 6px 0 0;
-					visibility: hidden;
-				}
-				.saved-message {
-					display: none;
-					color: $pc-admin-sidebar-muted;
-					font-size: 12px;
-				}
+				justify-content: center;
+				gap: 8px;
 			}
-			.mkl-pc-admin-ui__sidebar-footer.saving .mkl-pc-admin-ui__sidebar-status .spinner {
-				visibility: visible;
+			.mkl-pc-sidebar-save__icon.dashicons {
+				width: 20px;
+				height: 20px;
+				font-size: 20px;
+				line-height: 1;
+				flex-shrink: 0;
+				margin-top: 1px;
 			}
-			.mkl-pc-admin-ui__sidebar-footer.saved .mkl-pc-admin-ui__sidebar-status .saved-message {
-				display: inline-block;
+			.mkl-pc-admin-ui__sidebar-primary-save[aria-disabled="false"] .mkl-pc-sidebar-save__icon.dashicons {
+				color: inherit;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-sidebar-save__icon.dashicons-update {
+				animation: mkl-pc-save-spin 0.75s linear infinite;
+				color: #1e1e1e;
+			}
+			@keyframes mkl-pc-save-spin {
+				to {
+					transform: rotate(360deg);
+				}
 			}
 			.mkl-pc-admin-ui__sidebar-primary-save {
-				display: block;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 				width: 100%;
 				text-align: center;
 				margin: 0;
-				background: #fff !important;
-				border-color: #fff !important;
-				color: #1e1e1e !important;
 				text-shadow: none !important;
 				box-shadow: none !important;
 				&.disabled,
-				&:disabled {
-					opacity: 0.5;
-					cursor: not-allowed;
+				&[aria-disabled="true"] {
+					opacity: 1;
+					cursor: default;
+					background: rgba(255, 255, 255, 0.14) !important;
+					border-color: transparent !important;
+					color: #949494 !important;
 				}
-				&:not(:disabled):hover,
-				&:not(:disabled):focus {
+				&[aria-disabled="true"] .mkl-pc-sidebar-save__icon.dashicons-saved {
+					// color: #68de7c;
+				}
+				&[aria-disabled="true"]:focus-visible {
+					outline: 2px solid #72aee6;
+					outline-offset: 2px;
+				}
+				&[aria-disabled="false"]:hover,
+				&[aria-disabled="false"]:focus {
 					background: #f0f0f0 !important;
 					border-color: #f0f0f0 !important;
 					color: #000 !important;
+				}
+			}
+			.mkl-pc-admin-ui__sidebar-footer:not(.saving) {
+				.mkl-pc-admin-ui__sidebar-primary-save[aria-disabled="true"]:not(.is-loading) {
+					justify-content: start;
+					background: transparent !important;
 				}
 			}
 			@media ( max-width: 900px ) {
@@ -404,7 +423,7 @@ html .mkl-pc-admin-ui.pc-modal {
 			display: flex;
 			flex-direction: column;
 			background: transparent;
-			margin: 10px 10px 10px 0;
+			margin: 16px 16px 16px 0;
 			overflow: hidden;
 			@media ( max-width: 900px ) {
 				margin: 0;
@@ -730,7 +749,7 @@ html .mkl-pc-admin-ui.pc-modal {
 			display: flex;
 			flex-direction: row;
 			align-items: stretch;
-			gap: 10px;
+			gap: 16px;
 			box-sizing: border-box;
 			flex: 1 1 0%;
 			min-height: 0;
@@ -750,6 +769,9 @@ html .mkl-pc-admin-ui.pc-modal {
 				overflow-y: auto;
 				-webkit-overflow-scrolling: touch;
 				box-sizing: border-box;
+				&:empty {
+					opacity: .2;
+				}
 			}
 			> .structure-content {
 				max-width: min(420px, 50%);
@@ -1440,7 +1462,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 }
 
 .mkl-pc-admin-ui__sidebar-layers-filter {
-	padding: 0 0 8px;
+	padding: 0 0 25px;
 	box-sizing: border-box;
 
 	.mkl-pc-list-filter-input {
@@ -1606,6 +1628,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 			box-sizing: border-box;
 			min-height: 32px;
 			padding-left: 30px;
+			font-size: 12px;
 		}
 	}
 

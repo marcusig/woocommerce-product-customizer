@@ -385,6 +385,10 @@ PC.import.views = PC.import.views || {};
 			// Hook
 			wp.hooks.doAction( 'PC.admin.import.process_import', Import );
 
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+
 			Import.state.current_tool.next();
 		}
 	});
