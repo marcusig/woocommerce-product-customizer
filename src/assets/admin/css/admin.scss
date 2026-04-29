@@ -164,6 +164,11 @@ html .mkl-pc-admin-ui.pc-modal {
 			outline: none;
 		}
 	}
+	
+	&.wp-core-ui .button-link {
+		border-color: transparent;
+	}
+
 	.notice-container {
 		z-index: 100000;
 		position: absolute;
@@ -472,13 +477,14 @@ html .mkl-pc-admin-ui.pc-modal {
 				top: 0;
 				bottom: 0;
 				left: 0;
-				width: min( 300px, 90vw );
+				width: min( 340px, 92vw );
 				grid-column: auto;
 				grid-row: auto;
 				transform: translateX(-100%);
 				transition: transform 0.2s ease;
 				box-shadow: 2px 0 20px rgba(0, 0, 0, 0.35);
-				&:has( .mkl-pc-admin-ui__nav.visible ) {
+				&:has( .mkl-pc-admin-ui__nav.visible ),
+				&.mkl-pc-admin-ui__sidebar--open {
 					transform: translateX(0);
 				}
 			}
@@ -650,6 +656,48 @@ html .mkl-pc-admin-ui.pc-modal {
 						color: $pc-admin-sidebar-fg;
 					}
 				}
+				@media ( max-width: 900px ) {
+					.mkl-pc-admin-ui__sidebar-mid {
+						flex-direction: column;
+						align-items: stretch;
+					}
+					.mkl-pc-admin-ui__nav-wrap--primary {
+						flex: 1 1 auto;
+						width: 100%;
+						max-width: none;
+						align-self: stretch;
+						position: relative;
+						top: auto;
+					}
+					.mkl-pc-admin-ui__nav .mkl-pc-admin-ui__nav-item {
+						justify-content: flex-start;
+						padding-left: 2px;
+						padding-right: 8px;
+						.mkl-pc-admin-ui__nav-item-text {
+							position: static;
+							width: auto;
+							height: auto;
+							padding: 0;
+							margin: 0;
+							overflow: visible;
+							clip: auto;
+							white-space: nowrap;
+							border: 0;
+						}
+						.mkl-pc-admin-ui__nav-item-chevron {
+							display: flex;
+						}
+						&::after {
+							content: none;
+							display: none;
+						}
+					}
+					.mkl-pc-admin-ui__sidebar-layers {
+						border-left: none;
+						border-top: 1px solid #2c2c2c;
+						padding-top: 8px;
+					}
+				}
 			}
 		}
 	}
@@ -746,6 +794,11 @@ html .mkl-pc-admin-ui.pc-modal {
 		border-bottom: 1px solid $light-border-color;
 		background: #fff;
 		flex: 0 0 auto;
+
+		@media ( min-width: 900px ) {
+			display: none;
+		}
+
 		h1 {
 			flex: 1;
 			margin: 0;
@@ -871,6 +924,26 @@ html .mkl-pc-admin-ui.pc-modal {
 				padding: 0;
 				z-index: 1;
 			}
+			@media ( max-width: 900px ) {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 12px;
+				flex: 1 1 auto;
+				> .structure-content,
+				> .pc-sidebar {
+					flex: 1 1 auto;
+					max-width: none;
+				}
+				> .structure-content {
+					max-width: none;
+					flex: 0 1 auto;
+					min-height: 0;
+				}
+				> .pc-sidebar {
+					flex: 1 1 auto;
+					min-height: 0;
+				}
+			}
 		}
 
 		.form-details {
@@ -989,12 +1062,11 @@ html .mkl-pc-admin-ui.pc-modal {
 			}
 			
 			.selection {
-				padding: 8px 9px;
+				padding: 0 9px;
 				border: 1px solid #00000014;
-				display: inline-block;
-				line-height: 1;
-				vertical-align: middle;
-				min-height: 8px;
+				display: inline-flex;
+				align-items: center;
+				min-height: 40px;
 				border-radius: 3px;
 			}
 
