@@ -168,6 +168,8 @@ PC.views = PC.views || {};
 				this.state = new PC.views.state({model: this.model, options: this.options});
 				this.options.main_view.$el.append( this.state.$el );
 				this.options.main_view.$menu.removeClass( 'visible' );
+				this.options.main_view.$( '.mkl-pc-admin-ui__sidebar' ).removeClass( 'mkl-pc-admin-ui__sidebar--open' );
+				this.options.main_view.$( '.mkl-pc-admin-ui__menu-toggle' ).attr( 'aria-expanded', 'false' );
 			}
 
 		},
@@ -204,14 +206,8 @@ PC.views = PC.views || {};
 			this.options = args.options || {};
 
 			if ( State = PC.views[this.model.get( 'menu_id' )] ) {
-				// mkl-pc-admin-ui__state //mkl-pc-frame-title
-				// Main frame target: .mkl-pc-admin-ui__state
 				if( this.state ) this.state.remove();
-				// this.$el = this.options.app.$('.mkl-pc-admin-ui__state');
-				// Empties the target
-				this.$el.empty(); 
-				// Get the Frame's title Template (contains Title + description)
-				// this.title_template = wp.template('mkl-pc-frame-title'); 
+				this.$el.empty();
 
 				// Instantiates the main view for the current state
 				this.state = new State( { app: this.options.app, model: this.model, main_view: this.options.main_view } );
@@ -237,6 +233,11 @@ PC.views = PC.views || {};
 			return Backbone.View.prototype.remove.call( this );
 		},
 		render: function() {
+			var desc = this.model.get( 'description' );
+			this.$el.append( wp.template( 'mkl-pc-frame-title' )( {
+				title: this.model.get( 'title' ) || '',
+				description: desc ? desc : '',
+			} ) );
 			this.$el.append( this.state.$el );
 
 			var $sb = this.options.main_view.$el;
@@ -292,8 +293,15 @@ PC.views = PC.views || {};
 		},
 
 		show_mobile_menu: function( e ) {
-			this.options.main_view.$menu.toggleClass( 'visible' );
-		}
+			var $menu = this.options.main_view.$menu;
+			var $sidebar = this.options.main_view.$( '.mkl-pc-admin-ui__sidebar' );
+			$menu.toggleClass( 'visible' );
+			var open = $menu.hasClass( 'visible' );
+			$sidebar.toggleClass( 'mkl-pc-admin-ui__sidebar--open', open );
+			if ( e && e.currentTarget ) {
+				e.currentTarget.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+			}
+		},
 		// save_state: function() {
 		// 	this.state.$el.trigger('save-state');
 		// } 
