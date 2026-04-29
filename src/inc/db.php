@@ -890,7 +890,7 @@ class DB {
 	 * @param int  $parent_id
 	 * @param int  $variation_id
 	 * @param bool $skip_deep_verify If true, trust STORAGE_FORMAT_CHUNKED_VERIFIED + positive integrity cache (no full verify pass).
-	 * @return array
+	 * @return array{layers:string,content:string,storage_format_version:int,integrity_ok:bool,integrity_issues:array,needs_batch_migration:bool,needs_format_finalize:bool,needs_migration_banner:bool}
 	 */
 	public function get_pc_storage_state_for_editor( $parent_id, $variation_id = 0, $skip_deep_verify = false ) {
 		$parent_id       = (int) $parent_id;
@@ -911,6 +911,7 @@ class DB {
 					'integrity_issues'          => array(),
 					'needs_batch_migration'     => false,
 					'needs_format_finalize'     => false,
+					'needs_migration_banner'    => false,
 				);
 			}
 		}
@@ -930,6 +931,12 @@ class DB {
 
 		$needs_finalize = ! $empty_both && $verify['ok'] && self::STORAGE_FORMAT_CHUNKED_VERIFIED !== $version;
 
+		// needs_format_finalize: version stamp / silent finalize after save (JS). Native chunked-only configs
+		// may need this while never having been "migrated" from legacy — do not show a migration warning for that.
+		$has_legacy_or_mixed = in_array( $verify['layers_status'], array( 'legacy', 'mixed' ), true )
+			|| in_array( $verify['content_status'], array( 'legacy', 'mixed' ), true );
+		$needs_migration_banner = $needs_batch || ( $needs_finalize && $has_legacy_or_mixed );
+
 		return array(
 			'layers'                    => $verify['layers_status'],
 			'content'                   => $verify['content_status'],
@@ -938,6 +945,7 @@ class DB {
 			'integrity_issues'          => $verify['issues'],
 			'needs_batch_migration'     => $needs_batch,
 			'needs_format_finalize'     => $needs_finalize,
+			'needs_migration_banner'    => $needs_migration_banner,
 		);
 	}
 
