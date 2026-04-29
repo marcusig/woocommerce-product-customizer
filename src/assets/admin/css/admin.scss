@@ -1125,8 +1125,42 @@ html .pc-modal-container {
 			display: flex;
 			align-items: center;
 			justify-content: center;
+			flex-direction: column;
 		}
-
+		.mkl-pc-editor-load--busy {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 12px;
+		}
+	}
+	&.load-error {
+		.loading-screen {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-direction: column;
+			padding: 24px;
+			box-sizing: border-box;
+		}
+		.mkl-pc-editor-load--busy {
+			display: none !important;
+		}
+		.mkl-pc-editor-load--error {
+			display: block !important;
+			max-width: 420px;
+			text-align: center;
+		}
+		.mkl-pc-editor-load__message {
+			margin: 0 0 16px;
+			color: #fff;
+			font-size: 15px;
+			line-height: 1.5;
+		}
+		.mkl-pc-editor-load__retry {
+			margin-top: 4px;
+		}
 	}
 	.success {
 		color: #41B841;

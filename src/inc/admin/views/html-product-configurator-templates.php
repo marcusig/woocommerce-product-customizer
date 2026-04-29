@@ -39,7 +39,14 @@ GENERAL TEMPLATES
 			</div>
 		</div>
 		<div class="loading-screen">
-			<span class="mkl-pc-spinner"></span>
+			<div class="mkl-pc-editor-load mkl-pc-editor-load--busy">
+				<span class="mkl-pc-spinner" aria-hidden="true"></span>
+				<p class="screen-reader-text mkl-pc-editor-load__sr-busy"><?php esc_html_e( 'Loading configurator…', 'product-configurator-for-woocommerce' ); ?></p>
+			</div>
+			<div class="mkl-pc-editor-load mkl-pc-editor-load--error" hidden>
+				<p class="mkl-pc-editor-load__message" role="alert"></p>
+				<button type="button" class="button button-primary mkl-pc-editor-load__retry"><?php esc_html_e( 'Retry', 'product-configurator-for-woocommerce' ); ?></button>
+			</div>
 		</div>
 		<div class="notice-container"></div>
 	</div>

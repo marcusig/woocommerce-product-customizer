@@ -200,6 +200,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function load_scripts() {
 			$this->init_product_data();
 			wp_enqueue_script( 'wp-hooks' );
+			wp_enqueue_script( 'wp-a11y' );
 			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
 
 			$scripts = array(
@@ -309,6 +310,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['editor_save']                = __( 'Save', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saved']               = __( 'Saved', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saving']              = __( 'Saving…', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_load_failed']        = __( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_close_after_load_error'] = __( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
+				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu();
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );
 				
