@@ -572,17 +572,17 @@ html .mkl-pc-admin-ui.pc-modal {
 		.mkl-pc-admin-ui__nav-separator,
 		.separator {
 			height: 1px;
-			margin: 8px 4px 8px 2px;
-			background: #3c434a;
+			margin: 13px 4px 8px 2px;
+			background: transparent;
 			pointer-events: none;
 		}
 		.mkl-pc-admin-ui__nav-item {
 			display: flex;
 			align-items: center;
-			gap: 12px;
+			gap: 5px;
 			margin: 0 0 1px;
 			padding: 0 8px 0 2px;
-			min-height: 38px;
+			min-height: 32px;
 			width: 100%;
 			max-width: 100%;
 			box-sizing: border-box;
@@ -1299,7 +1299,7 @@ html .pc-modal-container {
 		height: 24px;
 		position: absolute;
 		z-index: 30;
-		left: 10px;
+		left: 6px;
 		top: 50%;
 		transform: translateY(-50%);
 		vertical-align: middle;
