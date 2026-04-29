@@ -212,9 +212,11 @@ TODO:
 			this.$new_input.val( '' );
 			this.apply_list_filter();
 		},
-		layers_changed: function(e) {
-			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
-			// if something has changed in the layers collection
+		layers_changed: function( model ) {
+			var changed = model.changedAttributes && model.changedAttributes();
+			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
+				return;
+			}
 			PC.app.is_modified[this.collectionName] = true;
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
@@ -317,6 +319,10 @@ TODO:
 			this.listenTo( this.model, 'destroy', this.remove );
 		},
 		mark_layer_modified: function() {
+			var changed = this.model.changedAttributes && this.model.changedAttributes();
+			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
+				return;
+			}
 			var id = this.model.get( '_id' );
 			if ( id ) PC.app.modified_layer_ids[ id ] = true;
 			PC.app.is_modified.layers = true;

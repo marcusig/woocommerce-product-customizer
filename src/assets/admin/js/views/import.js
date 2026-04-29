@@ -409,7 +409,10 @@ PC.import.views = PC.import.views || {};
 		},
 		save: function( e ) {
 			$( e.currentTarget ).addClass( 'disabled' ).prop( 'disabled', true );
-			PC.app.save_all( false, { saved_all: this.on_saved.bind( this ) } );
+			PC.app.save_all( false, {
+				bulk_save_overlay: true,
+				saved_all: this.on_saved.bind( this )
+			} );
 		},
 		on_saved: function() {
 			console.log( 'saved', this );
@@ -417,7 +420,10 @@ PC.import.views = PC.import.views || {};
 		},
 		save_and_fix: function( e ) {
 			$( e.currentTarget ).addClass( 'disabled' ).prop( 'disabled', true );
-			PC.app.save_all( false, { saved_all: this.fix.bind( this ) } );
+			PC.app.save_all( false, {
+				bulk_save_overlay: true,
+				saved_all: this.fix.bind( this )
+			} );
 		},
 		fix: function() {
 			if ( ! PC_lang.update_nonce ) {

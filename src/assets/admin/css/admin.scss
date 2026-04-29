@@ -74,6 +74,44 @@ $pc-admin-sidebar-fg-mutted: #949494;
 $pc-admin-sidebar-muted: #a0a5aa;
 $pc-admin-canvas-chrome: #dcdcde;
 
+/* --------------------------------------------------------------------------
+ * Shared UI — loading indicator (migration overlay, sidebar save, etc.)
+ * -------------------------------------------------------------------------- */
+
+@keyframes mkl-pc-spinner-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.mkl-pc-spinner {
+	display: inline-block;
+	flex-shrink: 0;
+	width: 36px;
+	height: 36px;
+	box-sizing: border-box;
+	border: 3px solid #c3c4c7;
+	border-top-color: var(--wp-admin-theme-color, #007cba);
+	border-radius: 50%;
+	animation: mkl-pc-spinner-rotate 0.8s linear infinite;
+	vertical-align: middle;
+}
+
+.mkl-pc-spinner--sm {
+	width: 20px;
+	height: 20px;
+	border-width: 2px;
+}
+
+.mkl-pc-migration-overlay__spinner.mkl-pc-spinner {
+	display: block;
+	margin: 0 auto 16px;
+}
+
+.mkl-pc-migration-overlay.is-complete .mkl-pc-migration-overlay__spinner {
+	display: none;
+}
+
 body.pc-modal-opened {
 	overflow: hidden;
 }
@@ -192,10 +230,35 @@ html .mkl-pc-admin-ui.pc-modal {
 				flex: 0 0 auto;
 				padding: 12px 14px 35px;
 			}
+
+			button.mkl-pc-admin-ui__product-icon-back-button {
+				max-width: 40px;
+				padding: 2px;
+				border-radius: 6px;
+				line-height: 1;
+				background: transparent;
+				border: none;
+			}
+			
+			svg.edit-site-site-icon__icon {
+				max-width: 100%;
+				height: auto;
+			}
+			
+			svg.edit-site-site-icon__icon path {
+				fill: #FFF;
+			}
+			
+			.mkl-pc-admin-ui__product-name--container {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+			}
+			
 			.mkl-pc-admin-ui__product-name {
-				display: block;
+				display: inline-block;
 				color: $pc-admin-sidebar-fg;
-				font-size: 12px;
+				font-size: 15px;
 				font-weight: 500;
 				line-height: 1.35;
 				text-decoration: none;
@@ -203,7 +266,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				text-overflow: ellipsis;
 				white-space: nowrap;
 				overflow: hidden;
-				padding-right: 35px;
+				padding-right: 20px;
 				
 				&::after {
 					content: "↗";
@@ -228,7 +291,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				gap: 10px;
 				margin-top: 30px;
 				padding: 0;
-				padding-left: 12px;
+				padding-left: 16px;
 				border: 0;
 				background: transparent;
 				color: $pc-admin-sidebar-muted;
@@ -243,7 +306,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				height: 20px;
 				width: 20px;
 				&::before {
-					font: normal 16px/1 dashicons;
+					font: normal 20px/1 dashicons;
 					content: "\f341";
 				}
 			}
@@ -349,17 +412,22 @@ html .mkl-pc-admin-ui.pc-modal {
 				flex-shrink: 0;
 				margin-top: 1px;
 			}
+			.mkl-pc-sidebar-save__spinner {
+				display: none;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-sidebar-save__spinner {
+				display: inline-block;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-sidebar-save__icon {
+				display: none !important;
+			}
+			/* Lighter ring on dark sidebar “saving” state */
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-spinner--sm {
+				border-color: rgba(255, 255, 255, 0.28);
+				border-top-color: #fff;
+			}
 			.mkl-pc-admin-ui__sidebar-primary-save[aria-disabled="false"] .mkl-pc-sidebar-save__icon.dashicons {
 				color: inherit;
-			}
-			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-sidebar-save__icon.dashicons-update {
-				animation: mkl-pc-save-spin 0.75s linear infinite;
-				color: #1e1e1e;
-			}
-			@keyframes mkl-pc-save-spin {
-				to {
-					transform: rotate(360deg);
-				}
 			}
 			.mkl-pc-admin-ui__sidebar-primary-save {
 				display: flex;
@@ -565,6 +633,7 @@ html .mkl-pc-admin-ui.pc-modal {
 						color: $pc-admin-sidebar-fg-mutted;
 						text-decoration: none;
 						background: transparent;
+						text-align: left;
 						&:hover,
 						&:focus {
 							color: #fff;
@@ -658,7 +727,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				color: #fff;
 				font-weight: 500;
 				.mkl-pc-admin-ui__nav-item-chevron::before {
-					font: normal 16px/1 dashicons;
+					font: normal 12px/1 dashicons;
 					display: block;
 					color: $pc-admin-sidebar-muted;
 					content: "\f345";
@@ -842,16 +911,8 @@ html .mkl-pc-admin-ui.pc-modal {
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background-color: rgba(255,255,255,0.6);
 		z-index: 200;
-		.spinner {
-			position: absolute;
-			left: 50%;
-			top: 50%;
-			float: none;
-			transform: translateX(-50%) translateY(-50%);
-			visibility: visible;
-		}
+		background-color: #000000c7;
 	}
 
 	.pc-sidebar {
@@ -1061,7 +1122,9 @@ html .mkl-pc-admin-ui.pc-modal {
 html .pc-modal-container {
 	&.loading {
 		.loading-screen {
-			display: block;
+			display: flex;
+			align-items: center;
+			justify-content: center;
 		}
 
 	}
