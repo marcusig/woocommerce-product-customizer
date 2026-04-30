@@ -186,7 +186,15 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		
 		public function init() {
 
-			register_setting( 'mlk_pc_settings', 'mkl_pc__settings' );
+			register_setting(
+				'mlk_pc_settings',
+				'mkl_pc__settings',
+				[
+					'type'              => 'array',
+					'sanitize_callback' => [ $this, 'sanitize_settings' ],
+					'default'           => [],
+				]
+			);
 
 			add_settings_section(
 				'settings_section', 
@@ -1055,6 +1063,92 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			}
 
 			do_action( 'mkl_pc/register_settings', $this );
+		}
+
+		/**
+		 * Sanitize settings saved in the `mkl_pc__settings` option.
+		 *
+		 * @param mixed $input Raw settings from the request.
+		 * @return array
+		 */
+		public function sanitize_settings( $input ) {
+			if ( ! is_array( $input ) ) {
+				return [];
+			}
+
+			$output = [];
+
+			foreach ( $input as $key => $value ) {
+				$key = is_string( $key ) ? sanitize_key( $key ) : '';
+				if ( '' === $key ) {
+					continue;
+				}
+
+				$output[ $key ] = $this->sanitize_setting_value( $key, $value );
+			}
+
+			return $output;
+		}
+
+		/**
+		 * Sanitize a single setting value (supports nested arrays).
+		 *
+		 * @param string $key
+		 * @param mixed  $value
+		 * @return mixed
+		 */
+		private function sanitize_setting_value( $key, $value ) {
+			// Handle nested arrays (eg. multiple checkboxes).
+			if ( is_array( $value ) ) {
+				$sanitized = [];
+				foreach ( $value as $sub_key => $sub_value ) {
+					$sub_key = is_string( $sub_key ) ? sanitize_key( $sub_key ) : '';
+					if ( '' === $sub_key ) {
+						continue;
+					}
+					$sanitized[ $sub_key ] = $this->sanitize_setting_value( $key . '_' . $sub_key, $sub_value );
+				}
+				return $sanitized;
+			}
+
+			// Checkboxes in this settings page store "on".
+			if ( true === $value || 'on' === $value ) {
+				return 'on';
+			}
+			if ( false === $value || '' === $value || 0 === $value || '0' === $value ) {
+				return '';
+			}
+
+			// Only sanitize scalars going forward.
+			if ( ! is_scalar( $value ) ) {
+				return '';
+			}
+
+			$string_value = (string) $value;
+
+			// Key-based heuristics for common types.
+			if ( false !== strpos( $key, 'email' ) ) {
+				return sanitize_email( $string_value );
+			}
+
+			if ( false !== strpos( $key, 'url' ) || false !== strpos( $key, 'link' ) ) {
+				return esc_url_raw( $string_value );
+			}
+
+			if ( false !== strpos( $key, 'color' ) ) {
+				$color = sanitize_hex_color( $string_value );
+				return $color ? $color : sanitize_text_field( $string_value );
+			}
+
+			if ( false !== strpos( $key, 'id' ) && is_numeric( $string_value ) ) {
+				return absint( $string_value );
+			}
+
+			if ( is_numeric( $string_value ) && false !== strpos( $key, 'size' ) ) {
+				return (string) floatval( $string_value );
+			}
+
+			return sanitize_text_field( $string_value );
 		}
 
 		public function styling_section_callback() {
