@@ -62,6 +62,13 @@ gulp.task('vendor', function(done){
 	.on('end', done);
 });
 
+gulp.task('composer', function(done) {
+	return gulp.src('composer.json', { allowEmpty: true })
+		.pipe(plumber(reportError))
+		.pipe(gulp.dest('dist'))
+		.on('end', done);
+});
+
 gulp.task('scss', function(done) {
 	return gulp.src('src/**/*.scss', { base: 'src', allowEmpty: true })
 		.pipe(sourcemaps.init())
@@ -177,6 +184,7 @@ gulp.task('build',
 	gulp.series(
 		'clean',
 		'move_src',
+		'composer',
 		'pot',
 		'vendor',
 		'scss',
