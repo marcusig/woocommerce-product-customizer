@@ -42,7 +42,7 @@ add_action( 'mkl_pc_frontend_templates_before', 'mkl_pc_float_theme_remove_title
 function mkl_pc_float_theme_add_mobile_form_button() {
 	$icon  = wp_kses_post( mkl_pc( 'frontend' )->product->get_cart_icon() );
 	$label = \MKL\PC\Utils::kses_basic_inline_html( apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'product-configurator-for-woocommerce' ) ) );
-	echo '<button class="mkl-pc-show-form">' . $icon . '<span class="screen-reader-text">' . esc_html( $label ) . '</span></button>';
+	echo '<button class="mkl-pc-show-form">' . wp_kses_post( $icon ) . '<span class="screen-reader-text">' . esc_html( $label ) . '</span></button>';
 }
 add_action( 'mkl_pc_frontend_configurator_footer_form_before', 'mkl_pc_float_theme_add_mobile_form_button', 20 );
 

@@ -18,7 +18,7 @@ function mkl_pc_is_configurable( $product_id = NULL ) {
 if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 
 	function request_is_frontend_ajax() {
-		$script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : '';
+		$script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? wp_unslash( $_SERVER['SCRIPT_FILENAME'] ) : '';
 		// Try to figure out if frontend AJAX request... If we are DOING_AJAX; let's look closer
 		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$ref = '';

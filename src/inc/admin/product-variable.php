@@ -67,7 +67,7 @@ class Admin_Variable_Product {
 	public function general_tab_help_text() {
 		?>
 		<p class="show_if_variable">
-			<?php _e( 'Each variation also has to be set individualy as Configurable. ', 'product-configurator-for-woocommerce' ); ?>
+			<?php esc_html_e( 'Each variation also has to be set individualy as Configurable. ', 'product-configurator-for-woocommerce' ); ?>
 		</p>
 		<?php
 	}
@@ -81,14 +81,14 @@ class Admin_Variable_Product {
 	public function variation_options($loop, $variation_data, $variation) {
 		$configurable = get_post_meta( $variation->ID, MKL_PC_PREFIX.'_is_configurable', true);
 		?>
-		<label><input type="checkbox" class="checkbox variable_is_configurable" name="<?php echo MKL_PC_PREFIX.'_is_configurable[' .$loop ?>]" <?php checked( isset( $configurable ) ? $configurable : '', 'yes' ); ?> /> <?php _e( 'Configurable', 'product-configurator-for-woocommerce' ); ?> <?php echo wc_help_tip( __( 'Enable this option if variation is configurable', 'product-configurator-for-woocommerce' ) ); ?></label>
+		<label><input type="checkbox" class="checkbox variable_is_configurable" name="<?php echo esc_attr( MKL_PC_PREFIX.'_is_configurable[' .$loop . ']' ); ?>" <?php checked( isset( $configurable ) ? $configurable : '', 'yes' ); ?> /> <?php esc_html_e( 'Configurable', 'product-configurator-for-woocommerce' ); ?> <?php echo \wc_help_tip( esc_html__( 'Enable this option if variation is configurable', 'product-configurator-for-woocommerce' ) ); ?></label>
 		<?php
 	}
 	public function product_variation_data_fields($loop, $variation_data, $variation) {
 		
 		?>
 		<div class="toolbar show_if_variation_is_configurable">
-		<?php echo Plugin::instance()->admin->product->start_button( $variation->ID, $variation->post_parent ) ?>
+		<?php echo wp_kses_post( Plugin::instance()->admin->product->start_button( $variation->ID, $variation->post_parent ) ) ?>
 		</div>
 		<?php
 	}

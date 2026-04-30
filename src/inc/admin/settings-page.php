@@ -1228,7 +1228,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
 			if ( ! isset( $field_options[ 'options' ] ) ) {
 				$options_missing = $field_options[ 'setting_name' ];
-				/*  translators: %s is the name of the select field */
+				/* translators: %s is the name of the select field */
 				echo esc_html( sprintf( __( 'Options are missing for the this select field: %s' , 'product-configurator-for-woocommerce' ), $options_missing ) );
 				return;
 			}
