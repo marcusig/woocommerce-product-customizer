@@ -33,15 +33,15 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				if ( '_' == substr( $id, 0, 1 ) && isset( $options[ 'fields' ] ) ) {
 					$is_opened = ( ! isset( $options[ 'collapsible' ] ) || ! $options[ 'collapsible' ] ) 
 						? 'is-opened' 
-						: '<# if ( data.toggled_status && data.toggled_status["' . $options[ 'id' ] .'"] && "closed" == data.toggled_status["' . $options[ 'id' ] .'"] ) { #>is-closed<# } else { #>is-opened<# } #>';
+						: '<# if ( data.toggled_status && data.toggled_status["' . esc_attr( $options[ 'id' ] ) .'"] && "closed" == data.toggled_status["' . esc_attr( $options[ 'id' ] ) .'"] ) { #>is-closed<# } else { #>is-opened<# } #>';
 
 					echo '<div class="components-panel__body ' . $is_opened . ' setting setting-section" data-section="'.$options[ 'id' ].'">';
 					if ( ! isset( $options[ 'collapsible' ] ) || ! $options[ 'collapsible' ] ) {
-						echo '<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle">' . $options[ 'label' ] . '</span></h2>';
+						echo '<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle">' . esc_html( $options[ 'label' ] ) . '</span></h2>';
 					} else {
 						echo '<h2 class="components-panel__body-title"><button class="components-button components-panel__body-toggle" type="button">'
 							. '<span aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="components-panel__arrow" aria-hidden="true" focusable="false"><path d="M17.5 11.6L12 16l-5.5-4.4.9-1.2L12 14l4.5-3.6 1 1.2z"></path></svg></span>' 
-							. $options[ 'label' ] 
+							. esc_html( $options[ 'label' ] ) 
 							. '</button>'
 							. '</h2>';
 					}
@@ -94,7 +94,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			if ( ( empty($options['id'] ) || empty( $options['label'] ) ) && 'separator' != $options['type'] ) {
 				$output = '<div class="error">Setting options must have and `id` and `label` fields</div>';
-				$output .= '<pre>' . esc_html( print_r( $options, true ) ) . '</pre>';
+				$output .= '<pre>' . wp_kses_post( print_r( $options, true ) ) . '</pre>';
 
 				if ($echo) {
 					echo wp_kses_post( $output );
@@ -112,14 +112,14 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 					break;
 				case 'actions':
 					$field = '<div class="actions-container">
-						<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
-						'<button type="button" class="button-link duplicate duplicate-item">' . __('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
-						'<button type="button" class="button-link copy copy-item">' . __('Copy', 'product-configurator-for-woocommerce' ) . '</button>' .
+						<button type="button" class="button-link delete delete-item" data-delete="prompt">' . esc_html__( 'Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+						'<button type="button" class="button-link duplicate duplicate-item">' . esc_html__( 'Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
+						'<button type="button" class="button-link copy copy-item">' . esc_html__( 'Copy', 'product-configurator-for-woocommerce' ) . '</button>' .
 						'<div class="prompt-delete hidden mkl-pc-setting--warning">' .
-							'<p>' . __( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
+							'<p>' . esc_html__( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
 							'<p>' .
-								'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
-								'<button type="button" class="button cancel-delete" data-delete="cancel">' . __('Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
+								'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . esc_html__( 'Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+								'<button type="button" class="button cancel-delete" data-delete="cancel">' . esc_html__( 'Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
 							'</p>' .
 						'</div>' .
 					'</div>';

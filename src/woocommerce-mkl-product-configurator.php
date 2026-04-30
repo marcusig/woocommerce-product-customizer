@@ -71,7 +71,7 @@ function mkl_pc_fail_php_version() {
 function mkl_pc_fail_loading_woocommerce() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'WooCommerce has to be active for WooCommerce Product configurator to work.', 'product-configurator-for-woocommerce' ) ?> </p>
+		<p><?php esc_html_e( 'WooCommerce has to be active for WooCommerce Product configurator to work.', 'product-configurator-for-woocommerce' ) ?> </p>
 	</div>
 	<?php
 }
@@ -79,7 +79,7 @@ function mkl_pc_fail_loading_woocommerce() {
 function mkl_pc_fail_woocommerce_version() {
 	?>
 	<div class="notice notice-warning is-dismissible">
-		<p><?php _e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work.', 'product-configurator-for-woocommerce' ); ?><br> <?php _e( 'WooCommerce Version 3+ required.', 'product-configurator-for-woocommerce' ); ?> </p>
+		<p><?php esc_html_e( 'Your WooCommerce version is too old for WooCommerce Product Configurator to work.', 'product-configurator-for-woocommerce' ); ?><br> <?php esc_html_e( 'WooCommerce Version 3+ required.', 'product-configurator-for-woocommerce' ); ?> </p>
 	</div>
 	<?php
 }
