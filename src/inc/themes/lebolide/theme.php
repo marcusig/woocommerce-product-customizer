@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 function mkl_pc_lebolide_theme_scripts() {
 	wp_enqueue_script( 'mkl/pc/themes/lebolide', plugin_dir_url( __FILE__ ) . 'lebolide.js', [ 'wp-hooks', 'jquery', 'mkl_pc/js/vendor/tippy' ], filemtime( plugin_dir_path( __FILE__ ) . 'lebolide.js' ), true );
 }

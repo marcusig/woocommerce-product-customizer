@@ -1,7 +1,7 @@
 <?php
 namespace MKL\PC;
 
-if ( ! defined( 'ABSPATH' ) ) return;
+if ( ! defined( 'ABSPATH' ) ) die();
 
 /**
  * Compatibility with the plugin WooCommerce Wholesale Prices

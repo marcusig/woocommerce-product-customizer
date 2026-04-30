@@ -1,7 +1,7 @@
 <?php
 namespace MKL\PC;
 
-if ( ! defined( 'ABSPATH' ) ) return;
+if ( ! defined( 'ABSPATH' ) ) die();
 
 class Compat_Theme_Botiga {
 	public function __construct() {}

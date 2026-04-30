@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 function mkl_pc_lapomme_theme_scripts() {
 	wp_enqueue_script( 'mkl/pc/themes/lapomme', plugin_dir_url( __FILE__ ) . 'lapomme.js', [ 'wp-hooks', 'jquery', 'mkl_pc/js/vendor/tippy' ], filemtime( plugin_dir_path( __FILE__ ) . 'lapomme.js' ), true );
 }

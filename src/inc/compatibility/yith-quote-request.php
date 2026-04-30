@@ -1,7 +1,7 @@
 <?php
 namespace MKL\PC;
 
-if ( ! defined( 'ABSPATH' ) ) return;
+if ( ! defined( 'ABSPATH' ) ) die();
 
 class Compat_Yith_Raq {
 	public function __construct() {}

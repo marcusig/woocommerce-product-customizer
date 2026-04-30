@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 function mkl_pc_wsb_theme_scripts() {
 	wp_enqueue_script( 'mkl/pc/themes/wsb', plugin_dir_url( __FILE__ ) . 'wsb.js', [ 'wp-hooks', 'jquery' ], filemtime( plugin_dir_path( __FILE__ ) . 'wsb.js' ), true );
 }

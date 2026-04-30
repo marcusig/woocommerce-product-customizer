@@ -327,6 +327,151 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
+		 * Read a file using WP_Filesystem (preferred over direct PHP filesystem calls).
+		 *
+		 * @param string $file_path Absolute path to the file.
+		 * @return string|false File contents, or false on failure.
+		 */
+		public static function fs_get_contents( $file_path ) {
+			if ( ! is_string( $file_path ) || '' === $file_path ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return $wp_filesystem->get_contents( $file_path );
+		}
+
+		/**
+		 * Create a directory using WP_Filesystem.
+		 *
+		 * @param string $dir_path Absolute directory path.
+		 * @param int    $chmod    Optional chmod.
+		 * @return bool
+		 */
+		public static function fs_mkdir( $dir_path, $chmod = null ) {
+			if ( ! is_string( $dir_path ) || '' === $dir_path ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return (bool) $wp_filesystem->mkdir( $dir_path, $chmod );
+		}
+
+		/**
+		 * Write a file using WP_Filesystem.
+		 *
+		 * @param string $file_path Absolute file path.
+		 * @param string $contents  File contents.
+		 * @param int    $mode      Optional file mode (FS_CHMOD_FILE).
+		 * @return bool
+		 */
+		public static function fs_put_contents( $file_path, $contents, $mode = null ) {
+			if ( ! is_string( $file_path ) || '' === $file_path ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			if ( null === $mode ) {
+				$mode = defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : false;
+			}
+
+			return (bool) $wp_filesystem->put_contents( $file_path, (string) $contents, $mode );
+		}
+
+		/**
+		 * Delete a file or directory using WP_Filesystem.
+		 *
+		 * @param string $path      Absolute path.
+		 * @param bool   $recursive Whether to recurse into directories.
+		 * @param string $type      'f' for file, 'd' for directory, or false for auto.
+		 * @return bool
+		 */
+		public static function fs_delete( $path, $recursive = false, $type = false ) {
+			if ( ! is_string( $path ) || '' === $path ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return (bool) $wp_filesystem->delete( $path, $recursive, $type );
+		}
+
+		/**
+		 * List a directory using WP_Filesystem.
+		 *
+		 * @param string $dir_path Absolute directory path.
+		 * @param bool   $recursive Whether to recurse.
+		 * @return array|false
+		 */
+		public static function fs_dirlist( $dir_path, $recursive = false ) {
+			if ( ! is_string( $dir_path ) || '' === $dir_path ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return $wp_filesystem->dirlist( $dir_path, $recursive );
+		}
+
+		/**
 		 * Read an SVG file and return sanitized markup for inline output.
 		 *
 		 * @param string $file_path Absolute path to an SVG file.
@@ -346,8 +491,8 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 				return '';
 			}
 
-			$svg = file_get_contents( $real );
-			if ( false === $svg ) {
+			$svg = self::fs_get_contents( $real );
+			if ( false === $svg || '' === $svg ) {
 				return '';
 			}
 

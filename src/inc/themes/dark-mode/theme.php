@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 function mkl_pc_dark_theme_scripts() {
 	wp_enqueue_script( 'mkl/pc/themes/dark-mode', plugin_dir_url( __FILE__ ) . 'dark-mode.js', [ 'wp-hooks', 'jquery' ], filemtime( plugin_dir_path( __FILE__ ) . 'dark-mode.js' ), true );
 }

@@ -10,6 +10,10 @@
  * @var $raq_content array
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
+
 $product_column_colspan = apply_filters( 'ywraq_item_thumbnail', ! wp_is_mobile() ) ? 2 : 1;
 $hide_price             = 'yes' === get_option( 'ywraq_hide_price', 'no' );
 

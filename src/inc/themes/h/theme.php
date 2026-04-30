@@ -1,4 +1,8 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 function mkl_pc_float_theme_scripts() {
 	wp_enqueue_style( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.css" );
 	wp_enqueue_script( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.min.js" );

@@ -2,7 +2,9 @@
 
 namespace MKL\PC;
 
-if ( ! defined( 'ABSPATH' ) ) return;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
 
 class Compat_Curcy {
 	public function __construct() {}
