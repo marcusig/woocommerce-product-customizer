@@ -494,7 +494,7 @@ class Frontend_Woocommerce {
 			$args['config']['open_configurator'] = true;
 		}
 
-		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', apply_filters( 'mkl_pc_frontend_js_config', $args ) );
+		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', esc_js( apply_filters( 'mkl_pc_frontend_js_config', $args ) ) );
 
 		if ( $prod && ! mkl_pc( 'settings')->get( 'async_data' ) ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
