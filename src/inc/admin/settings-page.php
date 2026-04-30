@@ -1325,15 +1325,15 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				</figure>
 				<h4>
 					<?php echo esc_textarea( $addon->label ); ?>
-					<?php if ( $is_installed ) { echo ' <span class="installed">' . __( 'installed' ) . '</span>'; } ?>
+					<?php if ( $is_installed ) { echo ' <span class="installed">' . __( 'installed', 'product-configurator-for-woocommerce' ) . '</span>'; } ?>
 				</h4>
 				<div class="desc">
 					<?php echo esc_textarea( $addon->description ); ?>
 				</div>
 				<?php if ( ! $is_installed ) : ?>
-					<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now' ) ?> <span class="dashicons dashicons-external"></span></a>
+					<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php _e( 'Get the addon now', 'product-configurator-for-woocommerce' ) ?> <span class="dashicons dashicons-external"></span></a>
 				<?php elseif(isset($addon->doc_url) && $addon->doc_url):  ?>
-				<a href="<?php echo esc_url( $addon->doc_url ) ?>" class="button button-primary button-large"><?php _e( 'Documentation' ) ?> <span class="dashicons dashicons-external"></span></a>
+				<a href="<?php echo esc_url( $addon->doc_url ) ?>" class="button button-primary button-large"><?php _e( 'Documentation', 'product-configurator-for-woocommerce' ) ?> <span class="dashicons dashicons-external"></span></a>
 				<?php endif; ?>
 			</div>
 		<?php
@@ -1370,7 +1370,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					<div class="content">
 						<h4>{{data.Name}}</h4>
 						<p>{{{data.Description}}}</p>
-						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change' ); ?></button>
+						<button type="button" class="button mkl-pc--change-theme button"><?php _e( 'Change', 'product-configurator-for-woocommerce' ); ?></button>
 					</div>
 				<# } else { #>
 						<p class="no-theme"><?php _e( 'No theme is in use.', 'product-configurator-for-woocommerce' ); ?></p>
@@ -1384,7 +1384,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<div class="selection"></div>
 						<div class="actions">
 							<button type="button" class="button button-primary select-theme"><?php _e( 'Select the theme', 'product-configurator-for-woocommerce' ); ?></button>
-							<button type="button" class="button cancel"><?php _e( 'Cancel' ); ?></button>
+							<button type="button" class="button cancel"><?php _e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 						</div>
 					</footer>
 				</div>

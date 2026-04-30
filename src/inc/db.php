@@ -336,7 +336,7 @@ class DB {
 						'text' => __( 'Cancel', 'product-configurator-for-woocommerce' ),
 					),
 				),
-				'description' => __( 'Define the conditions for displaying or not the choices / layers', 'mkl-pc-conditional-logic' ),
+				'description' => __( 'Define the conditions for displaying or not the choices / layers', 'product-configurator-for-woocommerce' ),
 				'order' => 101,
 			);			
 		}

@@ -242,7 +242,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 				),
 				'_stock_management' => array(
 					'id' => 'stock_management',
-					'label' => __( 'Stock management' ),
+					'label' => __( 'Stock management', 'product-configurator-for-woocommerce' ),
 					'priority' => 40,
 					'collapsible' => true,
 					'fields' => [],

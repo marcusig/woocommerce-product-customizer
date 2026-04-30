@@ -67,7 +67,7 @@ class Admin_Variable_Product {
 	public function general_tab_help_text() {
 		?>
 		<p class="show_if_variable">
-			<?php _e( 'Each variation also has to be set individualy as Configurable. ', 'mkl-pc-variable-product' ); ?>
+			<?php _e( 'Each variation also has to be set individualy as Configurable. ', 'product-configurator-for-woocommerce' ); ?>
 		</p>
 		<?php
 	}
@@ -81,7 +81,7 @@ class Admin_Variable_Product {
 	public function variation_options($loop, $variation_data, $variation) {
 		$configurable = get_post_meta( $variation->ID, MKL_PC_PREFIX.'_is_configurable', true);
 		?>
-		<label><input type="checkbox" class="checkbox variable_is_configurable" name="<?php echo MKL_PC_PREFIX.'_is_configurable[' .$loop ?>]" <?php checked( isset( $configurable ) ? $configurable : '', 'yes' ); ?> /> <?php _e( 'Configurable', 'mkl-pc-variable-product' ); ?> <?php echo wc_help_tip( __( 'Enable this option if variation is configurable', 'mkl-pc-variable-product' ) ); ?></label>
+		<label><input type="checkbox" class="checkbox variable_is_configurable" name="<?php echo MKL_PC_PREFIX.'_is_configurable[' .$loop ?>]" <?php checked( isset( $configurable ) ? $configurable : '', 'yes' ); ?> /> <?php _e( 'Configurable', 'product-configurator-for-woocommerce' ); ?> <?php echo wc_help_tip( __( 'Enable this option if variation is configurable', 'product-configurator-for-woocommerce' ) ); ?></label>
 		<?php
 	}
 	public function product_variation_data_fields($loop, $variation_data, $variation) {
