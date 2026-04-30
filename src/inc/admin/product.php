@@ -335,8 +335,10 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function start_button($id, $parent_id = NULL) {
 			ob_start();
+			$id = absint( $id );
+			$parent_id = is_null( $parent_id ) ? null : absint( $parent_id );
 			?>
-				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo $id ?>" <?php echo ($parent_id !== NULL) ? 'data-parent-id="' . $parent_id . '"' : ''; ?>><?php _e("Start product's configurator", 'product-configurator-for-woocommerce') ?></a>
+				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo esc_attr( $id ); ?>" <?php echo ( null !== $parent_id ) ? 'data-parent-id="' . esc_attr( $parent_id ) . '"' : ''; ?>><?php esc_html_e( "Start product's configurator", 'product-configurator-for-woocommerce' ); ?></a>
 			<?php 
 			$return = ob_get_clean();
 			return $return;

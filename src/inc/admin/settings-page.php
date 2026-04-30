@@ -92,7 +92,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
 					<?php
 					foreach( $tabs as $tab_id => $tab ) { ?>
-						<a href="#" class="nav-tab<?php echo ( $active === $tab_id ? ' nav-tab-active' : '' ); ?>" data-content="<?php echo esc_attr( $tab_id ); ?>"><?php echo $tab; ?></a>
+						<a href="#" class="nav-tab<?php echo ( $active === $tab_id ? ' nav-tab-active' : '' ); ?>" data-content="<?php echo esc_attr( $tab_id ); ?>"><?php echo esc_html( $tab ); ?></a>
 					<?php 
 					} ?>
 				</nav>
@@ -107,9 +107,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 														
 								foreach ( (array) $wp_settings_sections[ 'mlk_pc_settings' ] as $section ) {
 									// if ( 'labels' == $section['id'] ) continue;
-									echo '<section id="' . $section['id'] .'">';
+									echo '<section id="' . esc_attr( $section['id'] ) .'">';
 										if ( $section['title'] ) {
-											echo "<h2>{$section['title']}</h2>\n";
+											echo '<h2>' . esc_html( $section['title'] ) . "</h2>\n";
 										}
 								
 										if ( $section['callback'] ) {
@@ -1162,7 +1162,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			?>
 			<div class="theme_setting">
 				<div class="theme_setting_view"></div>
-				<input type='hidden' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? $options[$field_options[ 'setting_name' ] ] : ''; ?>'>
+				<input type='hidden' name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' value='<?php echo isset( $options[ $field_options[ 'setting_name' ] ] ) ? esc_attr( $options[ $field_options[ 'setting_name' ] ] ) : ''; ?>'>
 			</div>
 			<p><a href="<?php echo add_query_arg( [ 'autofocus[section]' => 'mlk_pc', 'return' => urlencode( esc_url_raw( remove_query_arg( wp_removable_query_args(), wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) ) ], wp_customize_url() ); ?>"><?php _e( 'Edit the theme settings in the customizer', 'product-configurator-for-woocommerce' ); ?></a></p>
 			<?php
@@ -1182,13 +1182,13 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<fieldset class="checkboxes">
 			
 			<?php foreach ( $field_options[ 'options' ] as $key => $label ) {
-				printf( '<label><input name="mkl_pc__settings[' . esc_attr( $field_options[ 'setting_name' ] ) .'][' . esc_attr( $key ) .']" id="mkl_pc__settings-' . esc_attr( $field_options['setting_name'] ) . '-' . esc_attr( $key ) .'" type="checkbox" value="%s"%s>%s</label>', 'on', checked( in_array( $key, $value ), true, false ), $label );
+				printf( '<label><input name="mkl_pc__settings[' . esc_attr( $field_options[ 'setting_name' ] ) .'][' . esc_attr( $key ) .']" id="mkl_pc__settings-' . esc_attr( $field_options['setting_name'] ) . '-' . esc_attr( $key ) .'" type="checkbox" value="%s"%s>%s</label>', 'on', checked( in_array( $key, $value ), true, false ), esc_html( $label ) );
 			} ?>
 
 			</fieldset>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
-				<span class="field-description"><?php echo $field_options['description']; ?></span>
+				<span class="field-description"><?php echo wp_kses_post( $field_options['description'] ); ?></span>
 			<?php }
 		}
 
@@ -1209,7 +1209,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<input <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>type='<?php echo esc_attr( $type ); ?>' name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' value='<?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? esc_attr( $options[$field_options[ 'setting_name' ] ] ) : ''; ?>'>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
-				<p class="field-description"><?php echo $field_options['description']; ?></p>
+				<p class="field-description"><?php echo wp_kses_post( $field_options['description'] ); ?></p>
 			<?php }
 		}
 
@@ -1220,14 +1220,14 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<textarea <?php echo isset( $field_options[ 'placeholder' ] ) ? 'placeholder="' . esc_attr( $field_options[ 'placeholder' ] ) .'" ' : ''; ?>name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' class="widefat"><?php echo isset( $options[$field_options[ 'setting_name' ] ] ) ? esc_textarea( $options[$field_options[ 'setting_name' ] ] ) : ''; ?></textarea>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
-				<p class="field-description"><?php echo $field_options['description']; ?></p>
+				<p class="field-description"><?php echo wp_kses_post( $field_options['description'] ); ?></p>
 			<?php }
 		}
 
 		public function callback_select( $field_options = [] ) {
 			if ( ! isset( $field_options[ 'setting_name' ] ) ) return;
 			if ( ! isset( $field_options[ 'options' ] ) ) {
-				echo 'Options are missing for the this select field: ' . $field_options[ 'setting_name' ];
+				echo esc_html( 'Options are missing for the this select field: ' . $field_options[ 'setting_name' ] );
 				return;
 			}
 
@@ -1245,12 +1245,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			?>
 			<select name='mkl_pc__settings[<?php echo $field_options[ 'setting_name' ]; ?>]' id='mkl_pc__settings-<?php echo $field_options['setting_name']; ?>'>
 				<?php foreach ( $field_options[ 'options' ] as $key => $label ) {
-					printf( '<option value="%s"%s>%s</option>', $key, selected( $value, $key, false ), $label );
+					printf( '<option value="%s"%s>%s</option>', esc_attr( $key ), selected( $value, $key, false ), esc_html( $label ) );
 				} ?>
 			</select>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
-				<span class="field-description"><?php echo $field_options['description']; ?></span>
+				<span class="field-description"><?php echo wp_kses_post( $field_options['description'] ); ?></span>
 			<?php }
 		}
 
@@ -1262,12 +1262,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				<?php foreach ( $field_options['options'] as $key => $label ) {
 					printf( '<label for="wpuf-%1$s[%2$s][%3$s]">',  'mkl_pc__settings', $field_options['setting_name'], $key );
 					printf( '<input type="radio" class="radio" id="wpuf-%1$s[%2$s][%3$s]" name="%1$s[%2$s]" value="%3$s" %4$s />', 'mkl_pc__settings', $field_options['setting_name'], $key, checked( $value, $key, false ) );
-					printf( '%1$s</label><br>', $label );
+					printf( '%1$s</label><br>', esc_html( $label ) );
 				} ?>
 			</fieldset>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
-				<span class="field-description"><?php echo $field_options['description']; ?></span>
+				<span class="field-description"><?php echo wp_kses_post( $field_options['description'] ); ?></span>
 			<?php }
 		}
 
@@ -1275,10 +1275,10 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			if ( ! isset( $field_options['setting_name'] ) ) return;
 			$value = $this->get_setting( $field_options[ 'setting_name' ] );
 			?>
-			<input type='checkbox' name='mkl_pc__settings[<?php echo $field_options['setting_name']; ?>]' <?php checked( $value, 'on' ); ?>>
+			<input type='checkbox' name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' <?php checked( $value, 'on' ); ?>>
 			<?php
 			if ( isset( $field_options['description'] ) ) { ?>
-				<span class="field-description"><?php echo $field_options['description']; ?></span>
+				<span class="field-description"><?php echo wp_kses_post( $field_options['description'] ); ?></span>
 			<?php }
 		}
 

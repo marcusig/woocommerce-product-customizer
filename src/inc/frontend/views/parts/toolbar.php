@@ -26,10 +26,10 @@
 		$classes = apply_filters( 'mkl_pc/previous_step/button_classes', '' );
 		$label = esc_html( mkl_pc( 'settings' )->get_label( 'previous_step_label', esc_html_x( 'Previous', 'Previous step button label', 'product-configurator-for-woocommerce' ) ) );
 	?>
-	<button type="button" aria-label="<?php echo esc_attr( $label ); ?>" class="step-previous <?php echo esc_attr( $classes ); ?>" title="<?php esc_attr( $label ); ?>">
+	<button type="button" aria-label="<?php echo esc_attr( $label ); ?>" class="step-previous <?php echo esc_attr( $classes ); ?>" title="<?php echo esc_attr( $label ); ?>">
 		<?php do_action( 'mkl_pc/previous_step/before' ); ?>
 		<span class="screen-reader-text"><?php esc_html_x( 'Previous step: ', 'Screen reader text, previous step button prefix', 'product-configurator-for-woocommerce' ); ?> {{{data.name}}}</span>
-		<span><# if ( data.label ) { #>{{{data.label}}}<# } else { #><?php echo $label; ?><# } #></span>
+		<span><# if ( data.label ) { #>{{{data.label}}}<# } else { #><?php echo esc_html( $label ); ?><# } #></span>
 		<?php do_action( 'mkl_pc/previous_step/after' ); ?>
 	</button>
 </script>

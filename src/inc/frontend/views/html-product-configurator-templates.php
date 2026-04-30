@@ -80,7 +80,7 @@ function mkl_pc_frontend_configurator_footer_add_reset_button() {
 	?>
 		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
 			<?php do_action( 'mkl_pc/reset_button/before_label' ); ?>
-			<span><?php echo $label; ?></span>
+			<span><?php echo esc_html( $label ); ?></span>
 		</button>
 	<?php
 }

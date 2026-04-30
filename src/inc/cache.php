@@ -172,7 +172,7 @@ class Cache {
 					header('Content-Type: application/javascript');
 	
 					// Output the regenerated content
-					echo $content;
+					echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JS response body
 					exit;
 				}
 			}

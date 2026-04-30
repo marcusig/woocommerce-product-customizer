@@ -94,10 +94,10 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			if ( ( empty($options['id'] ) || empty( $options['label'] ) ) && 'separator' != $options['type'] ) {
 				$output = '<div class="error">Setting options must have and `id` and `label` fields</div>';
-				$output .= '<pre>' . print_r( $options, true ) . '</pre>';
+				$output .= '<pre>' . esc_html( print_r( $options, true ) ) . '</pre>';
 
 				if ($echo) {
-					echo $output;
+					echo wp_kses_post( $output );
 				} else {
 					return $output;
 				}
@@ -238,7 +238,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			if ( $options['condition'] ) $condition = $options['condition'];
 			$output = '<# if ( wp.hooks.applyFilters( "PC.admin.' . $this->type . '.display_option",' . $condition .', data, "' . $options['id'] . '" ) ) { #>' . $output . '<# } #>';
 			if ($echo) {
-				echo $output;
+				echo wp_kses_post( $output );
 			} else {
 				return $output;
 			}

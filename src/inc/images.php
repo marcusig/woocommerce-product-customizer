@@ -45,7 +45,7 @@ class Images {
 				} );
 			}
 
-			echo $the_image->response();
+			echo $the_image->response(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary image response
 			exit;
 
 		} elseif ( 'file' === $output && is_dir( $where ) ) {

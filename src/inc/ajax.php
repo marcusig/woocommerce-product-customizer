@@ -181,9 +181,9 @@ class Ajax {
 			 */
 			$output = apply_filters( 'mkl_pc_get_configurator_data_js_output', $output, $id, $data );
 			if ( $gzip ) {
-				echo gzencode( $output );
+				echo gzencode( $output ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JS response body
 			} else {
-				echo $output;
+				echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JS response body
 			}
 			wp_die();
 		} else { 
