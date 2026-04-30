@@ -8,6 +8,7 @@
 * Author URI: http://mklacroix.com
 * Version: 1.6.4
 * Requires PHP: 7.4
+* Requires Plugins: woocommerce
 * WC requires at least: 8
 * WC tested up to: 10
 *
