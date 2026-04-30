@@ -238,7 +238,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			if ( $options['condition'] ) $condition = $options['condition'];
 			$output = '<# if ( wp.hooks.applyFilters( "PC.admin.' . $this->type . '.display_option",' . $condition .', data, "' . $options['id'] . '" ) ) { #>' . $output . '<# } #>';
 			if ($echo) {
-				echo wp_kses_post( $output );
+				echo $output;
 			} else {
 				return $output;
 			}
