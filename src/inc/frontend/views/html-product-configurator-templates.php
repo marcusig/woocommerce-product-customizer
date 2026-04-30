@@ -19,7 +19,7 @@ function mkl_pc_frontend_configurator__main_view__main_container() {
 ?>
 	<div class="mkl_pc_container" tabindex="0">
 		<?php if ( get_option( 'mkl_pc_theme_use_viewer_bg' ) || is_customize_preview() )  : ?>
-			<div class="mkl_pc_bg<# if ( data.bg_image && '<?php echo MKL_PC_ASSETS_URL.'images/default-bg.jpg'; ?>' == data.bg_image ) { #> default-bg<# } #>"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
+			<div class="mkl_pc_bg<# if ( data.bg_image && '<?php echo esc_url( MKL_PC_ASSETS_URL.'images/default-bg.jpg' ); ?>' == data.bg_image ) { #> default-bg<# } #>"<# if ( data.bg_image ) { #> style="background-image: url({{data.bg_image}}); "<# } #>></div>
 		<?php endif; ?>
 		<?php do_action( 'mkl_pc_container' ); ?>
 	</div>
@@ -30,7 +30,7 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__loader() {
 	?>
 	<div class="mkl-loader">
-		<div class="header"><?php _e( 'Loading Data', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="header"><?php esc_html_e( 'Loading Data', 'product-configurator-for-woocommerce' ); ?> </div>
 		<div class="spinner"></div>
 	</div>
 <?php
@@ -63,7 +63,7 @@ add_action( 'tmpl-pc-configurator-choice-item-attributes', 'mkl_pc_frontend_conf
  * @return void
  */
 function mkl_pc_frontend_configurator_footer_section_left_inner__product_name() {
-	echo '<h3 class="product-name"><span class="screen-reader-text">' . __( 'Currently configuring product:', 'product-configurator-for-woocommerce' ) . ' </span>{{{data.name}}}</h3>';
+	echo '<h3 class="product-name"><span class="screen-reader-text">' . esc_html_x( 'Currently configuring product:', 'Screen reader text, currently configuring product', 'product-configurator-for-woocommerce' ) . ' </span>{{{data.name}}}</h3>';
 }
 
 add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_frontend_configurator_footer_section_left_inner__product_name', 30 );
@@ -76,7 +76,7 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_left_inner', 'mkl_pc_fr
 function mkl_pc_frontend_configurator_footer_add_reset_button() {
 	if ( ! ( bool ) mkl_pc( 'settings')->get( 'show_reset_button' ) ) return;
 	$classes = array_merge( apply_filters( 'mkl_pc_reset_button_classes' , [ 'mkl-footer--action-button' ] ), [ 'reset-configuration' ] );
-	$label = mkl_pc( 'settings' )->get_label( 'reset_configuration_label', __( 'Reset configuration', 'product-configurator-for-woocommerce' ) );
+	$label = esc_html( mkl_pc( 'settings' )->get_label( 'reset_configuration_label', esc_html_x( 'Reset configuration', 'Label for the reset configuration button', 'product-configurator-for-woocommerce' ) ) );
 	?>
 		<button type="button" class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
 			<?php do_action( 'mkl_pc/reset_button/before_label' ); ?>
@@ -114,10 +114,10 @@ add_action( 'mkl_pc_frontend_configurator_footer_section_right_before', 'mkl_pc_
 function mkl_pc_frontend_configurator_toolbar__header() {
 ?>
 	<header aria-labelledby="mkl-pc-product-name-{{data.ID}}" aria-describedby="mkl-pc-dialog-instructions-{{data.ID}}" tabindex="-1">
-		<h3 id="mkl-pc-product-name-{{data.ID}}" class="product-name"><span class="screen-reader-text"><?php _e( 'Currently configuring product:', 'product-configurator-for-woocommerce' ); ?> </span>{{{data.name}}}</h3>
+		<h3 id="mkl-pc-product-name-{{data.ID}}" class="product-name"><span class="screen-reader-text"><?php esc_html_e( 'Currently configuring product:', 'product-configurator-for-woocommerce' ); ?> </span>{{{data.name}}}</h3>
 		<p id="mkl-pc-dialog-instructions-{{data.ID}}" class="screen-reader-text">
-			<?php _e( 'Use Tab and Shift+Tab to move between Layers, Choices and Preview areas.', 'product-configurator-for-woocommerce' ); ?>
-			<# if ( ! PC.fe.inline ) { #><?php _e( 'Press Escape to close the configurator.', 'product-configurator-for-woocommerce' ); ?><# } #>
+			<?php esc_html_e( 'Use Tab and Shift+Tab to move between Layers, Choices and Preview areas.', 'product-configurator-for-woocommerce' ); ?>
+			<# if ( ! PC.fe.inline ) { #><?php esc_html_e( 'Press Escape to close the configurator.', 'product-configurator-for-woocommerce' ); ?><# } #>
 		</p>
 		<button class="cancel close-mkl-pc" type="button" aria-label="<?php echo esc_attr_x( 'Close the configurator app', 'Aria label of the main configurator close button', 'product-configurator-for-woocommerce' ); ?>"><span><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></span></button>
 	</header>
@@ -216,7 +216,7 @@ add_action( 'mkl-pc-configurator-choices--after', 'mkl_pc_frontend_configurator_
 function mkl_pc_frontend_configurator_display_mode_fullscreen() { ?>
 	<# if ( data.display_mode && 'full-screen' === data.display_mode ) { #>
 		<li class="choices-list--footer">
-			<button type="button" class="choices-close"><span><?php _e( 'Confirm selection and continue configuring the product', 'product-configurator-for-woocommerce' ) ?></span></button>
+			<button type="button" class="choices-close"><span><?php esc_html_e( 'Confirm selection and continue configuring the product', 'product-configurator-for-woocommerce' ) ?></span></button>
 		</li>
 	<# } #>
 <?php
@@ -225,7 +225,7 @@ function mkl_pc_frontend_configurator_display_mode_fullscreen() { ?>
 add_action( 'tmpl-mkl-pc-atc-redirection-content', 'mkl_pc_frontend_added_to_cart_redirection_message' );
 function mkl_pc_frontend_added_to_cart_redirection_message() {
 	?>
-		<div class="header"><?php _ex( 'Done!', 'Part of message displayed when the product is successfully added to the cart', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="header"><?php esc_html_x( 'Done!', 'Part of message displayed when the product is successfully added to the cart', 'product-configurator-for-woocommerce' ); ?> </div>
 		<p>{{{data.messages}}}</p>
 		<div class="spinner"></div>
 	<?php

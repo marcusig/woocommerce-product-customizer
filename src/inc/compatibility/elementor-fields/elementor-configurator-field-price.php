@@ -63,7 +63,7 @@ class Elementor_Configuration_Field_Price extends \ElementorPro\Modules\Forms\Fi
 				// 'type' => 'hidden',
 			]
 		);
-		echo '<input type="hidden" ' . $form->get_render_attribute_string( 'input' . $item_index ) . '>';
+		echo '<input type="hidden" ' . esc_attr( $form->get_render_attribute_string( 'input' . $item_index ) ) . '>';
 		echo '<div class="elementor-configuration-field-price"></div>';
 	}
 
@@ -181,7 +181,7 @@ class Elementor_Configuration_Field_Price extends \ElementorPro\Modules\Forms\Fi
 		jQuery( document ).ready( () => {
 
 			elementor.hooks.addFilter(
-				'elementor_pro/forms/content_template/field/<?php echo $this->get_type(); ?>',
+				'elementor_pro/forms/content_template/field/<?php echo esc_attr( $this->get_type() ); ?>',
 				function ( inputField, item, i ) {
 					const fieldType    = 'hidden';
 					const fieldId      = `form_field_${i}`;

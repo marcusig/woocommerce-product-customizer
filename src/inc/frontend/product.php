@@ -112,8 +112,8 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 				}
 				$attributes = mkl_pc()->frontend->get_configurator_element_attributes( $product );
 				$attributes = implode( ' ', mkl_pc()->frontend->_output_data_attributes( $attributes ) );
-				echo apply_filters( 'mkl_pc_configure_button_a11y_description', '<h2 class="screen-reader-text">'. __( 'Press the Configure button to enter the product configurator (next element)', 'product-configurator-for-woocommerce' ) .'</h2>', $product );
-				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . esc_attr( $this->button_class ) . '" ' . $attributes . ' type="button"><span class="configure-button--label">'. $label .'</span><span class="loading-icon" aria-hidden="true"><i></i></span></button>' );
+				echo apply_filters( 'mkl_pc_configure_button_a11y_description', '<h2 class="screen-reader-text">'. esc_html_x( 'Press the Configure button to enter the product configurator (next element)', 'Accessibility description for the configure button', 'product-configurator-for-woocommerce' ) .'</h2>', $product );
+				echo apply_filters( 'mkl_pc_configure_button', '<button class="configure-product configure-product-'. $product->get_type().' ' . esc_attr( $this->button_class ) . '" ' . $attributes . ' type="button"><span class="configure-button--label">'. esc_html( $label ) .'</span><span class="loading-icon" aria-hidden="true"><i></i></span></button>' );
 			}
 		}
 
@@ -239,7 +239,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> configurator-add-to-cart">
 						<?php echo $this->get_cart_icon(); ?>
 						<span><?php echo $add_to_cart; ?></span>
-						<span class="screen-reader-text"><?php _ex( 'Total item price: ', 'Screen reader text, total price prefix for add to cart button', 'product-configurator-for-woocommerce' ); ?> <span class="pc-total-price"></span></span>
+						<span class="screen-reader-text"><?php esc_html_x( 'Total item price: ', 'Screen reader text, total price prefix for add to cart button', 'product-configurator-for-woocommerce' ); ?> <span class="pc-total-price"></span></span>
 					</button>
 					<?php do_action( 'mkl_pc_frontend_configurator_after_add_to_cart' ); ?>
 				<?php
@@ -260,7 +260,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					/**
 					 * Filters the button text "Edit item in cart"
 					 */
-					echo apply_filters( 'mkl_pc/edit_item_in_cart_button/label', mkl_pc( 'settings' )->get_label( 'edit_item_in_cart', __( 'Edit item in cart', 'product-configurator-for-woocommerce' ) ) );
+					echo apply_filters( 'mkl_pc/edit_item_in_cart_button/label', esc_html( mkl_pc( 'settings' )->get_label( 'edit_item_in_cart', esc_html_x( 'Edit item in cart', 'Label for the edit item in cart button', 'product-configurator-for-woocommerce' ) ) ) );
 				?></span>
 			</button>
 			<?php 
@@ -273,14 +273,14 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 			if ( ! class_exists( 'Addify_Request_For_Quote' ) ) return;
 			?>
 			<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> add-to-quote">
-				<span><?php _e( 'Add to Quote', 'addify_rfq' ); ?></span>
+				<span><?php esc_html_e( 'Add to Quote', 'addify_rfq' ); ?></span>
 			</button>
 			<?php
 		}
 
 		public function get_add_to_cart_label() {
 			global $post;
-			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'woocommerce' ) );
+			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', esc_html_x( 'Add to cart', 'Default label for the add to cart button', 'woocommerce' ) );
 			if ( $post  ) {
 				// Quotes for WooCommerce
 				if ( function_exists( 'product_quote_enabled' ) ) {
@@ -305,7 +305,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 		}
 
 		public function variable_empty_configurator_content() {
-			_e( 'Please select a variation to configure', 'product-configurator-for-woocommerce' );
+			esc_html_e( 'Please select a variation to configure', 'product-configurator-for-woocommerce' );
 		}
 
 		public function body_class( $classes ) {

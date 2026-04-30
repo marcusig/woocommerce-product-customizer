@@ -45,7 +45,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 * @return array
 		 */
 		public function plugin_settings_link( $links ) {
-			$settings_link = '<a href="' . admin_url( 'options-general.php?page=mkl_pc_settings' ) . '">' . __( 'Settings' ) . '</a>';
+			$settings_link = '<a href="' . admin_url( 'options-general.php?page=mkl_pc_settings' ) . '">' . __( 'Settings', 'product-configurator-for-woocommerce' ) . '</a>';
 			array_unshift($links, $settings_link);
 			return $links;
 		}

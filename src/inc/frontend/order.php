@@ -55,7 +55,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$config = wc_get_order_item_meta( $item_id, '_configurator_data_raw', true );
 			if ( ! $config ) return;
 			$view_link = add_query_arg( array( 'load_config_from_order' => $item_id, 'open_configurator'=> 1 ), get_permalink( $item->get_product_id() ) );
-			echo '<div class="configuration-link"><a href="' . esc_url( $view_link ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
+			echo '<div class="configuration-link"><a href="' . esc_url( $view_link ) . '" target="_blank">' . esc_html( mkl_pc( 'settings' )->get_label( 'view_configuration', esc_html_x( 'View configuration', 'Label for the view configuration link', 'product-configurator-for-woocommerce' ) ) ) . '</a></div>';
 		}
 
 		public function add_image_download_link( $item_id, $item, $order ) {
@@ -74,7 +74,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 			$config_image = $this->get_order_item_image( $item, 'url', 'full' );
 			if ( $config_image && 'blank.gif' !== substr( $config_image, -9 ) ) {
-				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'download_config_image', __( 'Download configuration image', 'product-configurator-for-woocommerce' ) ) . '</a></div>';
+				echo '<div class="configuration-image-link"><a href="' . esc_url( $config_image ) . '" target="_blank">' . esc_html( mkl_pc( 'settings' )->get_label( 'download_config_image', esc_html_x( 'Download configuration image', 'Label for the download configuration image link', 'product-configurator-for-woocommerce' ) ) ) . '</a></div>';
 			}
 		}
 
@@ -85,13 +85,13 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				$item->add_meta_data( '_configurator_data', $configurator_data, false );
 				$item->add_meta_data( '_configurator_data_raw', $values['configurator_data_raw'], false );
 				$item->add_meta_data( 
-					apply_filters( 'mkl_pc/order_created/saved_data/label', mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $item ),
+					apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
 					$this->get_formatted_configurator_data( $configurator_data, $item ), 
 					false
 				);
 				if ( $sku = $this->get_sku( $configurator_data ) ) {
 					$item->add_meta_data(
-						mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
+						esc_html( mkl_pc( 'settings')->get_label( 'sku_label', esc_html_x( 'SKU', 'Label for the SKU meta data', 'product-configurator-for-woocommerce' ) ) ),
 						$sku
 					);
 
@@ -227,7 +227,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 						$order_meta_for_configuration = $this->get_configuration_choices_for_display( $configurator_data, $order_item );
 
 						if ( ! empty( $order_meta_for_configuration ) ) {
-							$display_key = apply_filters( 'mkl_pc/order_created/get_data/label', mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ), $order_item, $configurator_data );
+							$display_key = apply_filters( 'mkl_pc/order_created/get_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $order_item, $configurator_data );
 							$display_key = apply_filters_deprecated( 'mkl_pc/order_created/saved_data/label', array( $display_key, $order_item, '', [], $order_item->get_order() ), '1.2.35', 'mkl_pc/order_created/get_data/label' );
 
 							$formatted_meta[ $k ]->display_key = apply_filters( 'woocommerce_order_item_display_meta_key', $display_key, $meta, $order_item );
@@ -272,7 +272,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			
 			if ( $config_image = $this->get_order_item_image( $order_item ) ) {				
 				if ( $full_size_link = $this->get_order_item_image( $order_item, 'url', 'full' ) ) {
-					$config_image = '<a class="configurator-full-size-image" href="' . $full_size_link .'" target="_blank">' . $config_image . '</a>'; 
+					$config_image = '<a class="configurator-full-size-image" href="' . esc_url( $full_size_link ) .'" target="_blank">' . $config_image . '</a>'; 
 				}
 				return $config_image;
 			}

@@ -3,7 +3,7 @@
 	
 	function mkl_pc_frontend_configurator_summary__header() { ?>
 		<header>
-			<h3><?php _e( 'Summary', 'product-configurator-for-woocommerce' ); ?></h3>
+			<h3><?php esc_html_e( 'Summary', 'product-configurator-for-woocommerce' ); ?></h3>
 		</header>
 	<?php }
 	if ( mkl_pc( 'settings' )->get( 'display_summary_header', false ) ) add_action( 'mkl_pc_frontend_configurator_summary', 'mkl_pc_frontend_configurator_summary__header', 20 );

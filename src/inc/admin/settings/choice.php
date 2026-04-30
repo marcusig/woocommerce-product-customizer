@@ -171,7 +171,13 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'priority' => 10,
 					'section' => 'stock_management',
 					'html' => '<div class="addon-setting-info">' 
-						. '<p>' . sprintf( _x( '%s is available as %san add-on%s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Stock management and linked product', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/stock-management-and-linked-product/" target="_blank" class="mkl-pc-link--external">', '</a>' ) . '</p>'
+						. '<p>' . sprintf(
+							/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
+							_x( '%1$s is available as %2$san add-on%3$s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ),
+							__( 'Stock management and linked product', 'product-configurator-for-woocommerce' ),
+							'<a href="https://wc-product-configurator.com/product/stock-management-and-linked-product/" target="_blank" class="mkl-pc-link--external">',
+							'</a>'
+						) . '</p>'
 						. '<p>' . __( 'Manage stock, add a linked product to the cart.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '<p>' . __( 'Create complex composite products, and easily export your order data to third party services and ERP platforms.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '<p><a href="#" class="hide-addon-placeholder">' . __( 'Hide this notice', 'product-configurator-for-woocommerce' ) . '</a>'
@@ -187,7 +193,13 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type' => 'html',
 					'priority' => 31,
 					'html' => '<div class="addon-setting-info">' 
-						. '<p>' . sprintf( _x( '%s is available as %san add-on%s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Extra price', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/extra-price/" target="_blank" class="mkl-pc-link--external">', '</a>' ) . '</p>'
+						. '<p>' . sprintf(
+							/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
+							_x( '%1$s is available as %2$san add-on%3$s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ),
+							__( 'Extra price', 'product-configurator-for-woocommerce' ),
+							'<a href="https://wc-product-configurator.com/product/extra-price/" target="_blank" class="mkl-pc-link--external">',
+							'</a>'
+						) . '</p>'
 						. '<p>' . __( 'Add a price to your choices.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '<p>' . ' ' . __( 'Together with the Form fields add-on, calculate complex prices.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '<p><a href="#" class="hide-addon-placeholder">' . __( 'Hide this notice', 'product-configurator-for-woocommerce' ) . '</a>'
@@ -205,7 +217,13 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'priority' => 10,
 					'section' => 'form_fields',
 					'html' => '<div class="addon-setting-info">' 
-						. '<p>' . sprintf( _x( '%s is available as %san add-on%s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ), __( 'Form fields', 'product-configurator-for-woocommerce' ), '<a href="https://wc-product-configurator.com/product/form-fields/" target="_blank" class="mkl-pc-link--external">', '</a>' ) . '</p>'
+						. '<p>' . sprintf(
+							/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
+							_x( '%1$s is available as %2$san add-on%3$s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ),
+							__( 'Form fields', 'product-configurator-for-woocommerce' ),
+							'<a href="https://wc-product-configurator.com/product/form-fields/" target="_blank" class="mkl-pc-link--external">',
+							'</a>'
+						) . '</p>'
 						. '<p>' . __( 'Add form fields to your choices: text, number, files and more.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '<p>' . ' ' . __( 'Together with the Extra price add-on, calculate complex prices.', 'product-configurator-for-woocommerce' ) . '</p>'
 						. '<p><a href="#" class="hide-addon-placeholder">' . __( 'Hide this notice', 'product-configurator-for-woocommerce' ) . '</a>'

@@ -148,9 +148,24 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
 				<p><?php _e( 'To proceed, follow the instructions:', 'product-configurator-for-woocommerce' ); ?></p>
 				<ol>
-				<li><?php printf( __( 'define the structure of the product in %sLayers%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
-				<li><?php printf( __( 'define the views / angles in which your product will be visible in %sViews%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
-				<li><?php printf( __( 'add the Images for each of your choices in %sContent%s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' ); ?></li>
+				<li>
+					<?php
+					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
+					printf( __( 'define the structure of the product in %1$sLayers%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
+					?>
+				</li>
+				<li>
+					<?php
+					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
+					printf( __( 'define the views / angles in which your product will be visible in %1$sViews%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
+					?>
+				</li>
+				<li>
+					<?php
+					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
+					printf( __( 'add the Images for each of your choices in %1$sContent%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
+					?>
+				</li>
 				</ol>
 				<?php do_action( 'mkl_pc_admin_instructions_after', $this->ID ); ?>
 			</div>
@@ -158,9 +173,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php _e( 'Do you need more functionality?', 'product-configurator-for-woocommerce') ; ?></h2>
 				<p><a href="<?php echo admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ); ?>"><?php _e( 'Check out the available addons and themes.', 'product-configurator-for-woocommerce' ); ?></a></p>
 				<h2><span class="dashicons dashicons-star-filled"></span> <?php _e( 'Do you like the plugin?', 'product-configurator-for-woocommerce') ; ?></h2>
-				<p><?php printf( __( 'Give it a review on %swordpress.org%s', 'product-configurator-for-woocommerce' ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/#new-post">', '</a>' ); ?></p>
+				<p>
+					<?php
+					/* translators: 1: opening link tag, 2: closing link tag */
+					printf( __( 'Give it a review on %1$swordpress.org%2$s', 'product-configurator-for-woocommerce' ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/#new-post">', '</a>' );
+					?>
+				</p>
 				<h2><span class="dashicons dashicons-admin-comments"></span> <?php _e( 'Do you think it could be improved?', 'product-configurator-for-woocommerce' ); ?></h2>
-				<p><?php printf( __( 'Start a support topic on %swordpress.org%s', 'product-configurator-for-woocommerce' ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/#new-topic-0">', '</a>' ); ?></p>
+				<p>
+					<?php
+					/* translators: 1: opening link tag, 2: closing link tag */
+					printf( __( 'Start a support topic on %1$swordpress.org%2$s', 'product-configurator-for-woocommerce' ), '<a target="_blank" href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/#new-topic-0">', '</a>' );
+					?>
+				</p>
 			</div>
 			<?php 
 		}

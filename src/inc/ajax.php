@@ -307,6 +307,7 @@ class Ajax {
 
 		wp_send_json_success( [
 			'mode' => ! $mode,
+			/* translators: %d: number of database rows affected */
 			'message' => sprintf( __( '%d rows were affected', 'product-configurator-for-woocommerce' ), $res )
 		] );
 	}

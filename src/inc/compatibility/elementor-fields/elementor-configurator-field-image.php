@@ -64,7 +64,7 @@ class Elementor_Configuration_Field_Image extends \ElementorPro\Modules\Forms\Fi
 				// 'type' => 'hidden',
 			]
 		);
-		echo '<input type="hidden" ' . $form->get_render_attribute_string( 'input' . $item_index ) . '>';
+		echo '<input type="hidden" ' . esc_attr( $form->get_render_attribute_string( 'input' . $item_index ) ) . '>';
 		if ( isset( $item['show-config-in-form'] ) && 'yes' === $item['show-config-in-form'] ) {
 			echo '<div class="elementor-configuration-field-summary"></div>';
 		}
@@ -180,7 +180,7 @@ class Elementor_Configuration_Field_Image extends \ElementorPro\Modules\Forms\Fi
 		jQuery( document ).ready( () => {
 
 			elementor.hooks.addFilter(
-				'elementor_pro/forms/content_template/field/<?php echo $this->get_type(); ?>',
+				'elementor_pro/forms/content_template/field/<?php echo esc_attr( $this->get_type() ); ?>',
 				function ( inputField, item, i ) {
 					const fieldType    = 'hidden';
 					const fieldId      = `form_field_${i}`;

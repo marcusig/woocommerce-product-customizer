@@ -37,10 +37,17 @@ class Themes {
 			$this->themes[$theme_id] = $location;
 			return true;
 		} else {
-			if ( isset( $this->themes[$theme_id] ) ) return new WP_Error( 'theme-exists', sprintf( __( 'A theme called %s is already registered.', '' ), $theme_id ) );
-			if ( ! file_exists( $location ) ) return new WP_Error( 'theme-missing', sprintf( __( 'The provided location for the theme "%s" does not exist: %s', '' ), $theme_id, $location ) );
+			if ( isset( $this->themes[$theme_id] ) ) {
+				/* translators: %s: theme ID (slug) */
+				return new WP_Error( 'theme-exists', sprintf( __( 'A theme called %s is already registered.', 'product-configurator-for-woocommerce' ), $theme_id ) );
+			}
+			if ( ! file_exists( $location ) ) {
+				/* translators: 1: theme ID (slug), 2: filesystem path */
+				return new WP_Error( 'theme-missing', sprintf( __( 'The provided location for the theme "%1$s" does not exist: %2$s', 'product-configurator-for-woocommerce' ), $theme_id, $location ) );
+			}
 		}
-		return new WP_Error( 'theme-error', sprintf( __( 'The theme "%s" could not be registered for an unknowned reason.', '' ), "$theme_id ($location)" ) );
+		/* translators: %s: theme ID and location */
+		return new WP_Error( 'theme-error', sprintf( __( 'The theme "%s" could not be registered for an unknowned reason.', 'product-configurator-for-woocommerce' ), "$theme_id ($location)" ) );
 	}
 
 	/**
@@ -88,7 +95,10 @@ class Themes {
 	public function verify_theme( $theme, $location ) {
 		$errors = new WP_Error();
 		// A theme must contain a file named style.css
-		if ( ! file_exists ( trailingslashit( $location ) . 'style.css' ) ) $errors->add( 'error', sprintf( __( 'The file style.css is missing for the theme %s.', '' ), $theme ) );
+		if ( ! file_exists ( trailingslashit( $location ) . 'style.css' ) ) {
+			/* translators: %s: theme ID (slug) */
+			$errors->add( 'error', sprintf( __( 'The file style.css is missing for the theme %s.', 'product-configurator-for-woocommerce' ), $theme ) );
+		}
 		if ( $errors->has_errors() ) return $errors;
 		return true;
 	}

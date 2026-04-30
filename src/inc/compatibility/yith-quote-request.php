@@ -254,8 +254,8 @@ class Compat_Yith_Raq {
 		if ( ! function_exists( 'ywraq_get_label' ) ) return;
 		$frontend = mkl_pc( 'frontend' )->product;
 		?>
-		<button type="button" class="<?php echo $frontend->button_class ?> yith-raq add-to-quote">
-			<span><?php echo \ywraq_get_label( 'btn_link_text' ); ?></span>
+		<button type="button" class="<?php echo esc_attr( $frontend->button_class ); ?> yith-raq add-to-quote">
+			<span><?php echo esc_html( \ywraq_get_label( 'btn_link_text' ) ); ?></span>
 		</button>
 		<?php
 
