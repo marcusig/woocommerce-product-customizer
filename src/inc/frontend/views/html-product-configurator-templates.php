@@ -49,7 +49,7 @@ function mkl_pc_frontend_configurator__choice_item_attrs() {
 			$attrs_string .= esc_attr( $name ) . '="' . esc_attr( $value ) . '"';
 		}
 	}
-	echo ' ' . $attrs_string;
+	echo ' ' . $attrs_string; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Each attribute name/value is escaped when building the string.
 }
 add_action( 'tmpl-pc-configurator-choice-item-attributes', 'mkl_pc_frontend_configurator__choice_item_attrs' );
 

@@ -89,12 +89,12 @@ function mkl_pc_lapomme_syd_icon() {
 add_filter( 'PC.syd.svg.icon', 'mkl_pc_lapomme_syd_icon' );
 
 function mkl_pc_clean_add_reset_icon() {
-	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG output is sanitized via Utils::inline_svg().
 }
 add_action( 'mkl_pc/reset_button/before_label', 'mkl_pc_clean_add_reset_icon' );
 
 function mkl_pc_lapomme_save_pdf_icon() {
-	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/download.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/download.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG output is sanitized via Utils::inline_svg().
 }
 add_action( 'PC.syd.pdf_download.svg.icon', 'mkl_pc_lapomme_save_pdf_icon' );
 

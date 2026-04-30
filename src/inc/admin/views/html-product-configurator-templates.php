@@ -1,4 +1,8 @@
-<?php 
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 global $is_IE;
 $class = 'media-modal wp-core-ui pc-modal';
 $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
@@ -29,8 +33,8 @@ GENERAL TEMPLATES
  ?>
 <?php do_action('mkl_pc_admin_templates_before') ?>
 <script type="text/html" id="tmpl-mkl-modal">
-	<div class="<?php echo $class; ?>">
-		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php _e( 'Close media panel', 'product-configurator-for-woocommerce' ); ?></span></span></button>
+	<div class="<?php echo esc_attr( $class ); ?>">
+		<button type="button" class="media-modal-close"><span class="media-modal-icon"><span class="screen-reader-text"><?php esc_html_e( 'Close media panel', 'product-configurator-for-woocommerce' ); ?></span></span></button>
 		<div class="media-modal-content">
 			<div class="media-frame wp-core-ui">
 				
@@ -45,7 +49,7 @@ GENERAL TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-menu">	
-	<h2 class="media-frame-menu-heading"><?php _e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h2>
+	<h2 class="media-frame-menu-heading"><?php esc_html_e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h2>
 	<div class="media-frame-menu">
 		<div role="tablist" aria-orientation="vertical" class="media-menu">
 			<div class="loading-placeholder"></div>
@@ -61,7 +65,7 @@ GENERAL TEMPLATES
 	<div class="media-frame-title">
 		<h1>{{data.title}}</h1>
 		<button type="button" class="button button-link media-frame-menu-toggle" aria-expanded="false">
-			<?php _e( 'Menu', 'product-configurator-for-woocommerce' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
+			<?php esc_html_e( 'Menu', 'product-configurator-for-woocommerce' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
 		</button>
 		<span class="description">{{data.description}}</span>
 	</div>
@@ -71,7 +75,7 @@ GENERAL TEMPLATES
 	<div class="media-frame-toolbar">
 		<div class="media-toolbar">
 			<div class="media-toolbar-primary">
-				<span class="spinner"></span><span class="saved-message"><?php _e( 'Saved', 'product-configurator-for-woocommerce' ); ?></span>
+				<span class="spinner"></span><span class="saved-message"><?php esc_html_e( 'Saved', 'product-configurator-for-woocommerce' ); ?></span>
 			</div>
 		</div>
 	</div>
@@ -79,8 +83,8 @@ GENERAL TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-frame-title-buttons-notused">
 	<div class="button-group media-button-group">
-		<button type="button" class="button media-button button-large pc-main-cancel"><?php _e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
-		<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php _e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
+		<button type="button" class="button media-button button-large pc-main-cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+		<button type="button" class="button media-button button-primary button-large pc-main-save-all"><?php esc_html_e( 'Save', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 </script>
 <?php 
@@ -96,21 +100,21 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
 			<div class="structure-toolbar">
 				<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
-				<button type="button" class="button-primary add-layer"><span><?php _e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
+				<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 			</div>
 			<div class="mkl-list layers ui-sortable sortable-list">
 			</div>
 			<div class="floating-add">
 				<button class="mkl-floating-add-item">
 					<i class="dashicons dashicons-plus-alt2"></i>
-					<span class="screen-reader-text"><?php _e( 'Add item here', 'product-configurator-for-woocommerce' ); ?></span>
+					<span class="screen-reader-text"><?php esc_html_e( 'Add item here', 'product-configurator-for-woocommerce' ); ?></span>
 				</button>
 			</div>
 			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
 				<div class="order-toolbar">
 					<div class="button-group media-button-group">
-						<button data-order_type="order" type="button" class="button button-primary order-layers"><span><?php _e( 'Reorder the menu', 'product-configurator-for-woocommerce' ); ?></span></button>
-						<button data-order_type="image_order" type="button" class="button order-layers"><span><?php _e( 'Reorder the images', 'product-configurator-for-woocommerce' ); ?></span></button>
+						<button data-order_type="order" type="button" class="button button-primary order-layers"><span><?php esc_html_e( 'Reorder the menu', 'product-configurator-for-woocommerce' ); ?></span></button>
+						<button data-order_type="image_order" type="button" class="button order-layers"><span><?php esc_html_e( 'Reorder the images', 'product-configurator-for-woocommerce' ); ?></span></button>
 					</div>
 				</div>
 			<# } #>
@@ -134,12 +138,13 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<p>
 				<?php
 				/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
-				printf(
+				$msg = sprintf(
 					_x( '%1$s is available as %2$san add-on%3$s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ),
-					__( 'Conditional logic', 'product-configurator-for-woocommerce' ),
-					'<a href="https://wc-product-configurator.com/product/conditional-logic/" target="_blank" class="mkl-pc-link--external">',
+					esc_html__( 'Conditional logic', 'product-configurator-for-woocommerce' ),
+					'<a href="' . esc_url( 'https://wc-product-configurator.com/product/conditional-logic/' ) . '" target="_blank" class="mkl-pc-link--external">',
 					'</a>'
 				);
+				echo wp_kses_post( $msg );
 				?>
 			</p>
 			<p><?php _e( 'Create complex configurations with the ability, among others, to show, hide or select items depending on various actions.', 'product-configurator-for-woocommerce' ) ?></p>

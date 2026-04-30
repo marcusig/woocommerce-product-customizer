@@ -14,12 +14,12 @@ function mkl_pc_clean_theme_scripts() {
 add_action( 'mkl_pc_scripts_product_page_before', 'mkl_pc_clean_theme_scripts', 20 );
 
 function mkl_pc_clean_override_syd_icon() {
-	return \MKL\PC\Utils::inline_svg( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/save.svg' );
+	return \MKL\PC\Utils::inline_svg( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/save.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG output is sanitized via Utils::inline_svg().
 }
 add_filter( 'PC.syd.svg.icon', 'mkl_pc_clean_override_syd_icon' );
 
 function mkl_pc_clean_add_reset_icon() {
-	echo \MKL\PC\Utils::inline_svg( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/reset.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( plugin_dir_path( __FILE__ ) ) . 'images/reset.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG output is sanitized via Utils::inline_svg().
 }
 add_action( 'mkl_pc/reset_button/before_label', 'mkl_pc_clean_add_reset_icon' );
 

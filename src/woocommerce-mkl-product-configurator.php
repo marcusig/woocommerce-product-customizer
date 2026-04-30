@@ -16,8 +16,8 @@
 * Domain Path: /languages/
 *
 * Copyright: © 2015 mklacroix (email : marcus_lacroix@yahoo.fr)
-* License: GNU General Public License v3.0
-* License URI: http://www.gnu.org/licenses/gpl-3.0.html
+* License: GPLv2 or later
+* License URI: https://www.gnu.org/licenses/gpl-2.0.html
 */
 
 if ( ! defined( 'ABSPATH' ) ) {

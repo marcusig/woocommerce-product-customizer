@@ -441,7 +441,9 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . esc_attr( $classes ) . '"' : '' ) . '>', $choice['choice'] );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>', $choice['choice'] );
 				$key = $choice['key'] ? stripslashes( $choice['key'] ) : '';
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $key .'</strong>' . ( $key ? '<span class="semicol">:</span> ' : ' ' ) . stripslashes( $choice['value'] ) . $after, $key, $choice['value'], $before, $after );
+				$label_html = Utils::kses_basic_inline_html( $key );
+				$value_html = Utils::kses_basic_inline_html( stripslashes( $choice['value'] ) );
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $label_html . '</strong>' . ( $key ? '<span class="semicol">:</span> ' : ' ' ) . $value_html . $after, $key, $choice['value'], $before, $after );
 			}
 
 			return $output;

@@ -35,7 +35,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 						? 'is-opened' 
 						: '<# if ( data.toggled_status && data.toggled_status["' . esc_attr( $options[ 'id' ] ) .'"] && "closed" == data.toggled_status["' . esc_attr( $options[ 'id' ] ) .'"] ) { #>is-closed<# } else { #>is-opened<# } #>';
 
-					echo '<div class="components-panel__body ' . $is_opened . ' setting setting-section" data-section="'.$options[ 'id' ].'">';
+					echo '<div class="components-panel__body ' . $is_opened . ' setting setting-section" data-section="' . esc_attr( $options[ 'id' ] ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $is_opened contains JS template syntax by design.
 					if ( ! isset( $options[ 'collapsible' ] ) || ! $options[ 'collapsible' ] ) {
 						echo '<h2 class="components-panel__body-title"><span class="components-button components-panel__body-toggle">' . esc_html( $options[ 'label' ] ) . '</span></h2>';
 					} else {

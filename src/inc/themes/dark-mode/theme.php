@@ -12,7 +12,7 @@ add_filter( 'mkl_pc_bg_image', function( $bg ) {
 }, 30 );
 
 function mkl_pc_dark_theme_add_reset_icon() {
-	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG output is sanitized via Utils::inline_svg().
 }
 add_action( 'mkl_pc/reset_button/before_label', 'mkl_pc_dark_theme_add_reset_icon' );
 

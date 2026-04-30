@@ -4,8 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 function mkl_pc_float_theme_scripts() {
-	wp_enqueue_style( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.css" );
-	wp_enqueue_script( 'mkl/pc/themes/h/simplebar', "https://cdn.jsdelivr.net/npm/simplebar@latest/dist/simplebar.min.js" );
 	wp_enqueue_script( 'mkl/pc/themes/h', plugin_dir_url( __FILE__ ) . 'h-scripts.js', [ 'flexslider' ], MKL_PC_VERSION, true );
 	wp_localize_script( 'mkl/pc/themes/h', 'pc_h_config', [
 		'color_mode' => get_option( MKL\PC\Customizer::PREFIX . 'color_mode', 'dark' ),
@@ -42,7 +40,9 @@ function mkl_pc_float_theme_remove_title() {
 add_action( 'mkl_pc_frontend_templates_before', 'mkl_pc_float_theme_remove_title', 20 );
 
 function mkl_pc_float_theme_add_mobile_form_button() {
-	echo '<button class="mkl-pc-show-form">' . mkl_pc( 'frontend' )->product->get_cart_icon() .'<span class="screen-reader-text">' . apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'woocommerce' ) ) . '</span></button>';
+	$icon  = wp_kses_post( mkl_pc( 'frontend' )->product->get_cart_icon() );
+	$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', __( 'Add to cart', 'product-configurator-for-woocommerce' ) );
+	echo '<button class="mkl-pc-show-form">' . $icon . '<span class="screen-reader-text">' . esc_html( $label ) . '</span></button>';
 }
 add_action( 'mkl_pc_frontend_configurator_footer_form_before', 'mkl_pc_float_theme_add_mobile_form_button', 20 );
 

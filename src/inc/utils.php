@@ -152,7 +152,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		 */
 		public static function get_image_id ( $image_url ) {
 			global $wpdb;
-			$attachment = $wpdb->get_col($wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE guid='%s';", $image_url )); 
+			$attachment = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE guid = %s", $image_url ) );
 			return $attachment ? $attachment[0] : false;
 		}
 
@@ -172,7 +172,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			if (!file_exists($template_file)) {
 				error_log("MKL Product Configurator: template not found: ".$template_file);
-				echo __('Error:', 'product-configurator-for-woocommerce').' '.__('template not found', 'product-configurator-for-woocommerce')." (".$template_file.")";
+				echo esc_html__( 'Error:', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'template not found', 'product-configurator-for-woocommerce' ) . ' (' . esc_html( $template_file ) . ')';
 			} else {
 				extract($extract_these, EXTR_SKIP);
 				include $template_file;
@@ -324,6 +324,35 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 					'stroke-width' => true,
 				],
 			];
+		}
+
+		/**
+		 * Allowlist for "basic HTML" labels (choice names, etc).
+		 *
+		 * @return array
+		 */
+		public static function allowed_basic_inline_html_tags() {
+			return [
+				'span' => [
+					'class' => true,
+				],
+				'br' => [],
+				'strong' => [],
+				'em' => [],
+				'b' => [],
+				'i' => [],
+				'small' => [],
+			];
+		}
+
+		/**
+		 * KSES helper for basic inline HTML.
+		 *
+		 * @param string $html Raw HTML.
+		 * @return string
+		 */
+		public static function kses_basic_inline_html( $html ) {
+			return wp_kses( (string) $html, self::allowed_basic_inline_html_tags() );
 		}
 
 		/**

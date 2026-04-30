@@ -240,14 +240,14 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		}
 
 		public function set_order_item_meta( $layer, $product ) {
-			$value = $layer->get_choice( 'name' );
+			$value = Utils::kses_basic_inline_html( $layer->get_choice( 'name' ) );
 			
 			if ( $layer->get_choice( 'show_group_label_in_cart' ) ) {
 				$parent_id = $layer->get_choice( 'parent' );
 				if ( $parent_id && is_callable( [ $layer, 'get_choice_by_id' ] ) ) {
 					$parent = $layer->get_choice_by_id( $parent_id );
 					if ( $parent && isset( $parent[ 'name' ] ) ) {
-						$value = '<span class="pc-group-name">' . $parent[ 'name' ] . '</span> ' . $value;
+						$value = '<span class="pc-group-name">' . Utils::kses_basic_inline_html( $parent[ 'name' ] ) . '</span> ' . $value;
 					}
 				}		
 			}
@@ -295,7 +295,9 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				$classes = Utils::sanitize_html_classes( array_filter( apply_filters( 'mkl_pc_cart_item_choice__classes', $classes, $choice['layer'] ) ) );
 				$before = apply_filters( 'mkl_pc_cart_item_choice_before', '<div' . ( $classes ? ' class="' . $classes . '"' : '' ) . '>', $choice );
 				$after = apply_filters( 'mkl_pc_cart_item_choice_after', '</div>' );
-				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $choice['label'] .'</strong>' . ( $choice['label'] ? '<span class="semicol">:</span> ' : '' ) . $choice['value'] . $after, $choice['label'], $choice['value'], $before, $after );
+				$label_html = Utils::kses_basic_inline_html( $choice['label'] );
+				$value_html = Utils::kses_basic_inline_html( $choice['value'] );
+				$output .= apply_filters( 'mkl_pc_cart_item_choice', $before . '<strong>' . $label_html . '</strong>' . ( $choice['label'] ? '<span class="semicol">:</span> ' : '' ) . $value_html . $after, $choice['label'], $choice['value'], $before, $after );
 			}
 
 			return '<div class="order-configuration">' . $output . '</div>';

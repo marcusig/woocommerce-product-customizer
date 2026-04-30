@@ -148,11 +148,11 @@ class Ajax {
 
 		$view = isset( $_REQUEST['view'] ) ? sanitize_key( wp_unslash( $_REQUEST['view'] ) ) : '';
 		if ( 'dump' === $view && defined('WP_DEBUG') && WP_DEBUG === true ) {
-			echo 'get_configurator_data was executed in ' . (microtime(true) - $start) *1000 . 'ms and we are about to dump';
+			echo esc_html( 'get_configurator_data was executed in ' . (microtime(true) - $start) *1000 . 'ms and we are about to dump' );
 			echo '<pre>';
-			var_dump($data);
+			var_dump($data); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_dump
 			echo '</pre>';
-			echo 'this data was dumped after ' . (microtime(true) - $start) *1000 . 'ms since get_configurator_data executed';
+			echo esc_html( 'this data was dumped after ' . (microtime(true) - $start) *1000 . 'ms since get_configurator_data executed' );
 			wp_die();
 		} elseif ( 'js' === $view ) {
 			header( 'Content-Type: application/javascript; charset=UTF-8' );
@@ -297,9 +297,13 @@ class Ajax {
 		}
 
 		global $wpdb;
+		$like = '%mkl-pc-config-images%';
 		$res = $wpdb->query(
 			$wpdb->prepare(
-				"UPDATE $wpdb->posts SET `post_status` = '$new_status' WHERE `post_type` = 'attachment' AND `guid` LIKE '%mkl-pc-config-images%'"
+				"UPDATE {$wpdb->posts} SET post_status = %s WHERE post_type = %s AND guid LIKE %s",
+				$new_status,
+				'attachment',
+				$like
 			)
 		);
 

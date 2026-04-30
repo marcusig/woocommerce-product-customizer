@@ -81,12 +81,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<div class="wrap">
 				<header>
 					<h1>
-						<img src="<?php echo MKL_PC_ASSETS_URL; ?>admin/images/mkl-live-product-configurator-for-woocommerce.png" alt="Product Configurator for WooCommerce"/>
-						<span class="version"><?php echo MKL_PC_VERSION; ?></span>
+						<img src="<?php echo esc_url( MKL_PC_ASSETS_URL . 'admin/images/mkl-live-product-configurator-for-woocommerce.png' ); ?>" alt="<?php echo esc_attr__( 'Product Configurator for WooCommerce', 'product-configurator-for-woocommerce' ); ?>"/>
+						<span class="version"><?php echo esc_html( MKL_PC_VERSION ); ?></span>
 						<span class="by">by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></span>
 					</h1>
 					<div class="links">
-						<a href="http://wc-product-configurator.com"><?php _e( 'Product Configurator website', 'product-configurator-for-woocommerce' ); ?></a><!--  | <a href="http://wc-product-configurator.com"><?php _e( 'Addons', 'product-configurator-for-woocommerce' ); ?></a> | <a href="http://wc-product-configurator.com"><?php _e( 'Themes', 'product-configurator-for-woocommerce' ); ?></a> -->
+						<a href="https://wc-product-configurator.com"><?php esc_html_e( 'Product Configurator website', 'product-configurator-for-woocommerce' ); ?></a><!--  | <a href="http://wc-product-configurator.com"><?php esc_html_e( 'Addons', 'product-configurator-for-woocommerce' ); ?></a> | <a href="http://wc-product-configurator.com"><?php esc_html_e( 'Themes', 'product-configurator-for-woocommerce' ); ?></a> -->
 					</div>
 				</header>
 				<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
@@ -1243,7 +1243,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			$value = $this->get_setting( $field_options[ 'setting_name' ], $default );
 
 			?>
-			<select name='mkl_pc__settings[<?php echo $field_options[ 'setting_name' ]; ?>]' id='mkl_pc__settings-<?php echo $field_options['setting_name']; ?>'>
+			<select name='mkl_pc__settings[<?php echo esc_attr( $field_options[ 'setting_name' ] ); ?>]' id='mkl_pc__settings-<?php echo esc_attr( $field_options['setting_name'] ); ?>'>
 				<?php foreach ( $field_options[ 'options' ] as $key => $label ) {
 					printf( '<option value="%s"%s>%s</option>', esc_attr( $key ), selected( $value, $key, false ), esc_html( $label ) );
 				} ?>
