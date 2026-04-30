@@ -146,8 +146,9 @@ class Elementor_Configuration_Field extends \ElementorPro\Modules\Forms\Fields\F
 	public function process_field( $field, $record, $ajax_handler ) {
 		if ( isset( $_REQUEST['configurator_data_raw'] ) ) {
 			$id = $field['id'];
-			$record->update_field( $id, 'value', apply_filters( 'mkl_pc/elementor_field/configuration_value', $field['value'], sanitize_text_field( $_REQUEST['configurator_data_raw'] ) ) );
-			$record->update_field( $id, 'raw_value', sanitize_text_field( $_REQUEST['configurator_data_raw'] ) );
+			$configurator_data_raw = sanitize_text_field( wp_unslash( $_REQUEST['configurator_data_raw'] ) );
+			$record->update_field( $id, 'value', apply_filters( 'mkl_pc/elementor_field/configuration_value', $field['value'], $configurator_data_raw ) );
+			$record->update_field( $id, 'raw_value', $configurator_data_raw );
 		}
 	}
 

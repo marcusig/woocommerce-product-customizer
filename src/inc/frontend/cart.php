@@ -56,7 +56,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$product_id = $variation_id;
 			}
 
-			if ( mkl_pc_is_configurable( $product_id ) && empty( $_POST['pc_configurator_data'] ) && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
+			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
+			if ( mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				throw new \Exception( __( 'Configuration data is missing, the product could not be added to the cart.', 'product-configurator-for-woocommerce' ) );
 			}
 		}
@@ -86,7 +87,16 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 */
 		public function addify_add_quote_item_data( $quote_item_data, $product_id, $variation_id, $quantity, $form_data ) {
 			if ( ! mkl_pc_is_configurable( $product_id ) || ! isset( $form_data['pc_configurator_data'] ) || '' == $form_data['pc_configurator_data'] ) return $quote_item_data;
-			if ( $data = json_decode( stripcslashes( $form_data['pc_configurator_data'] ) ) ) {
+			$raw_configurator_data = wp_unslash( $form_data['pc_configurator_data'] );
+			if ( ! is_string( $raw_configurator_data ) ) {
+				return $quote_item_data;
+			}
+
+			$data = json_decode( $raw_configurator_data );
+			if ( ! $data ) {
+				$data = json_decode( stripcslashes( $raw_configurator_data ) );
+			}
+			if ( $data ) {
 				$data = Plugin::instance()->db->sanitize( $data );
 				$configuration = new Configuration( 
 					null,
@@ -114,19 +124,26 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
 
-				if ( isset( $_POST['pc_configurator_data'] ) && '' != $_POST['pc_configurator_data'] ) { 
+				$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
+				if ( is_string( $raw_configurator_data ) && '' !== $raw_configurator_data ) { 
 
 					/**
 					 * Editing the cart: Delete and replace the item from the cart
 					 */
 					if ( isset( $_POST['pc_cart_item_key'] ) ) {
+						$cart_item_key = sanitize_text_field( wp_unslash( $_POST['pc_cart_item_key'] ) );
 						$cart = WC()->cart;
-						if ( $cart->get_cart_item( $_POST['pc_cart_item_key'] ) );
-						$cart->remove_cart_item( $_POST['pc_cart_item_key'] );
+						if ( $cart_item_key && $cart->get_cart_item( $cart_item_key ) ) {
+							$cart->remove_cart_item( $cart_item_key );
+						}
 					}
 
 
-					if ( $data = json_decode( stripcslashes( $_POST['pc_configurator_data'] ) ) ) {
+					$data = json_decode( $raw_configurator_data );
+					if ( ! $data ) {
+						$data = json_decode( stripcslashes( $raw_configurator_data ) );
+					}
+					if ( $data ) {
 						$data = Plugin::instance()->db->sanitize( $data );
 						$item_weight = 0;
 						$layers = array();

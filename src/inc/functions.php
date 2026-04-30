@@ -23,9 +23,9 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$ref = '';
 			if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) {
-				$ref = wp_unslash( $_REQUEST['_wp_http_referer'] );
+				$ref = esc_url_raw( wp_unslash( $_REQUEST['_wp_http_referer'] ) );
 			} elseif ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
-				$ref = wp_unslash( $_SERVER['HTTP_REFERER'] );
+				$ref = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
 			}
 
 			// Include specific POST variables which indicate the request being from the admin, in case the next check fails

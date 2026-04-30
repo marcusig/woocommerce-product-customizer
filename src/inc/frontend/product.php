@@ -213,7 +213,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					$qty_input = woocommerce_quantity_input( array(
 						'min_value'   => apply_filters( 'woocommerce_quantity_input_min', 1, $product ),
 						'max_value'   => apply_filters( 'woocommerce_quantity_input_max', $product->backorders_allowed() ? '' : $product->get_stock_quantity(), $product ),
-						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( intval( $_POST['quantity'] ) ) : 1 )
+						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( absint( wp_unslash( $_POST['quantity'] ) ) ) : 1 )
 					), $product, false );
 					$qty_input = preg_replace( '/<script.*?\/script>/s', '', $qty_input );
 					echo $qty_input;

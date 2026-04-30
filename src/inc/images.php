@@ -36,8 +36,10 @@ class Images {
 
 		if ( 'print' == $output || '' == $output ) {
 			if ( isset( $_REQUEST[ 'width' ] ) && isset( $_REQUEST[ 'height' ] ) ) {
+				$width  = absint( wp_unslash( $_REQUEST['width'] ) );
+				$height = absint( wp_unslash( $_REQUEST['height'] ) );
 
-				$the_image->resize( intval( $_REQUEST[ 'width' ] ) ? intval( $_REQUEST[ 'width' ] ) : null , intval( $_REQUEST[ 'height' ] ) ? intval( $_REQUEST[ 'height' ] ) : null, function ( $constraint ) {
+				$the_image->resize( $width ? $width : null , $height ? $height : null, function ( $constraint ) {
 					$constraint->aspectRatio();
 					$constraint->upsize();
 				} );

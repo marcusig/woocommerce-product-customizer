@@ -13,7 +13,7 @@
 $product_column_colspan = apply_filters( 'ywraq_item_thumbnail', ! wp_is_mobile() ) ? 2 : 1;
 $hide_price             = 'yes' === get_option( 'ywraq_hide_price', 'no' );
 
-if ( isset( $_REQUEST['sent'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+if ( isset( $_REQUEST['sent'] ) && absint( wp_unslash( $_REQUEST['sent'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	return;
 }
 

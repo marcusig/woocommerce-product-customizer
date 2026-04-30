@@ -377,8 +377,10 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function hide_addon_setting() {
-			if ( ! wp_verify_nonce( sanitize_key( $_REQUEST['security'] ), 'mkl_pc_user_preferences' ) ) wp_send_json_error('', 401 );
-			$setting_name = sanitize_key( $_REQUEST[ 'setting' ] );
+			$security = isset( $_REQUEST['security'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['security'] ) ) : '';
+			if ( ! wp_verify_nonce( $security, 'mkl_pc_user_preferences' ) ) wp_send_json_error('', 401 );
+			$setting_name = isset( $_REQUEST['setting'] ) ? sanitize_key( wp_unslash( $_REQUEST[ 'setting' ] ) ) : '';
+			if ( '' === $setting_name ) wp_send_json_error('', 400 );
 			delete_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name );
 			update_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name, 1 );
 			wp_send_json_success();

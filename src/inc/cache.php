@@ -149,13 +149,13 @@ class Cache {
 	public function check_and_regenerate_js_file() {
 		if ( is_404() ) {
 			
-			$request_uri = $_SERVER['REQUEST_URI'];
+			$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 	
 			// Check if the requested file is a missing JS file
 			if ( strpos( $request_uri, 'wp-content/uploads/mkl_product_configurations/product_configuration_') !== false && strpos($request_uri, '.js') !== false ) {
 				preg_match('/product_configuration_(\d+)\.js/', $request_uri, $matches);
 				if ( $matches ) {
-					$product_id = $matches[1];
+					$product_id = absint( $matches[1] );
 					// $file_path = WP_CONTENT_DIR . "/uploads/mkl_product_configurations/product_configuration_{$product_id}.js";
 	
 					// Regenerate the JavaScript content

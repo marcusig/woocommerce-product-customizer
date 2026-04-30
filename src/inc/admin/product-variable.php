@@ -28,7 +28,7 @@ class Admin_Variable_Product {
 	 */
 	public function save_mode( $product_id ) {
 		if ( isset( $_POST[MKL_PC_PREFIX.'_variable_configuration_mode'] ) ) {
-			update_post_meta( $product_id, MKL_PC_PREFIX.'_variable_configuration_mode', sanitize_key( $_POST[MKL_PC_PREFIX.'_variable_configuration_mode'] ) );
+			update_post_meta( $product_id, MKL_PC_PREFIX.'_variable_configuration_mode', sanitize_key( wp_unslash( $_POST[MKL_PC_PREFIX.'_variable_configuration_mode'] ) ) );
 		}
 		update_post_meta( $product_id, MKL_PC_PREFIX.'_all_variations_are_configurable', isset( $_POST[MKL_PC_PREFIX.'_all_variations_are_configurable'] ) ? 'yes' : 'no' );
 	}
@@ -73,7 +73,7 @@ class Admin_Variable_Product {
 	}
 
 	public function set_configurable( $variation_id, $loop ) {
-		$variable_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? $_POST[MKL_PC_PREFIX.'_is_configurable'] : array();
+		$variable_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? (array) wp_unslash( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) : array();
 		$_is_configurable = isset( $variable_is_configurable[$loop] ) ? 'yes' : 'no';
 		update_post_meta( $variation_id, MKL_PC_PREFIX.'_is_configurable', $_is_configurable );
 	}

@@ -98,27 +98,37 @@ class Compat_Yith_Raq {
 	 * @return void
 	 */
 	public function yith_raq_updated() {
-		$is_adding_configured_item = isset( $_POST['action'] ) && 'yith_ywraq_action' === $_POST['action'] && isset( $_POST['ywraq_action'] ) && 'add_item' === $_POST['ywraq_action'] && isset( $_POST['pc_configurator_data'] );
+		$action       = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+		$ywraq_action = isset( $_POST['ywraq_action'] ) ? sanitize_key( wp_unslash( $_POST['ywraq_action'] ) ) : '';
+		$is_adding_configured_item = ( 'yith_ywraq_action' === $action ) && ( 'add_item' === $ywraq_action ) && isset( $_POST['pc_configurator_data'] );
 		if ( ! $is_adding_configured_item ) return;
 		static $added = false;
 		if ( $added ) return;
 		$rq = YITH_Request_Quote();
 		$item_id = false;
 	
-		if ( isset( $_REQUEST['variation_id'] ) ) {
+		$product_id   = isset( $_REQUEST['product_id'] ) ? absint( wp_unslash( $_REQUEST['product_id'] ) ) : 0;
+		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( wp_unslash( $_REQUEST['variation_id'] ) ) : 0;
+
+		if ( $variation_id ) {
 			// single product.
-			$item_id = md5( $_REQUEST['product_id'] . $_REQUEST['variation_id'] );
+			$item_id = md5( $product_id . $variation_id );
 		} else {
-			$item_id = md5( $_REQUEST['product_id'] );
+			$item_id = md5( $product_id );
 		}
 
 		if ( isset( $rq->raq_content[ $item_id ] ) ) {
 			$raq = $rq->raq_content[ $item_id ];
-			$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = wp_unslash( $_POST['pc_configurator_data'] );
+			$raw_configurator_data = wp_unslash( $_POST['pc_configurator_data'] );
+			if ( ! is_string( $raw_configurator_data ) ) {
+				return;
+			}
 
-			$data = json_decode( wp_unslash( $_POST['pc_configurator_data'] ) );
+			$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = $raw_configurator_data;
+
+			$data = json_decode( $raw_configurator_data );
 			if ( ! $data ) {
-				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( wp_unslash( $_POST['pc_configurator_data'] ) );
+				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( $raw_configurator_data );
 				$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
 			}
 			if ( $data ) {
@@ -258,9 +268,10 @@ class Compat_Yith_Raq {
 	 * @return array
 	 */
 	public function load_quote_configuration_in_configurator( $config_data ) {
-		if ( $config_data || ! isset( $_REQUEST['load_config_from_cart'], $_REQUEST['context'] ) || 'configuration_to_yithraq' != $_REQUEST['context'] ) return $config_data;
+		$context = isset( $_REQUEST['context'] ) ? sanitize_key( wp_unslash( $_REQUEST['context'] ) ) : '';
+		if ( $config_data || ! isset( $_REQUEST['load_config_from_cart'], $_REQUEST['context'] ) || 'configuration_to_yithraq' !== $context ) return $config_data;
 		$rq = YITH_Request_Quote();
-		$item_id = $_REQUEST['load_config_from_cart'];
+		$item_id = sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) );
 		if ( isset( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] ) ) {
 			$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
 			if ( $data ) return $data;

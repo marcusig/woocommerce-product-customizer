@@ -199,10 +199,10 @@ class Elementor_Configuration_Field_Image extends \ElementorPro\Modules\Forms\Fi
 	public function process_field( $field, $record, $ajax_handler ) {
 		if ( isset( $_REQUEST['configurator_data_raw'] ) && isset( $_REQUEST['configured_product_id'] ) ) {
 			$id = $field['id'];
-			$config = new Config( null, [ 'product_id' => intval( $_REQUEST['configured_product_id'] ) ] );
-			$config->set_content( sanitize_text_field( $_REQUEST['configurator_data_raw'] ) );
+			$config = new Config( null, [ 'product_id' => absint( wp_unslash( $_REQUEST['configured_product_id'] ) ) ] );
+			$config->set_content( sanitize_text_field( wp_unslash( $_REQUEST['configurator_data_raw'] ) ) );
 			$config->get_image_url();
-			$record->update_field( $id, 'value', sanitize_text_field( $config->get_image_url() ) );
+			$record->update_field( $id, 'value', esc_url_raw( $config->get_image_url() ) );
 		}
 	}
 

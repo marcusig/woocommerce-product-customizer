@@ -33,7 +33,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 * @return void
 		 */
 		public function updated_settings() {
-			if ( ! isset( $_REQUEST['option_page'] ) || 'mlk_pc_settings' != $_REQUEST['option_page'] ) return;
+			$option_page = isset( $_REQUEST['option_page'] ) ? sanitize_key( wp_unslash( $_REQUEST['option_page'] ) ) : '';
+			if ( 'mlk_pc_settings' !== $option_page ) return;
 			mkl_pc( 'cache' )->purge();
 		}
 
@@ -70,7 +71,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function display() {
-			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( $_REQUEST['tab'] ) : 'settings';
+			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( wp_unslash( $_REQUEST['tab'] ) ) : 'settings';
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
 				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),
@@ -1346,7 +1347,8 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 
 		public function add_backbone_templates() {
 			global $pagenow;
-			if ( 'options-general.php' != $pagenow || ! isset( $_GET['page'] ) || 'mkl_pc_settings' != $_GET['page'] ) return;
+			$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+			if ( 'options-general.php' !== $pagenow || 'mkl_pc_settings' !== $page ) return;
 			
 			$themes = mkl_pc( 'themes' )->get_themes();
 			$data = [];

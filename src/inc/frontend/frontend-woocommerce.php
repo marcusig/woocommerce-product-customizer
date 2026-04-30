@@ -469,7 +469,7 @@ class Frontend_Woocommerce {
 			$args['config']['load_config_content'] = $saved_configuration_content;
 
 			if ( isset( $_REQUEST['edit_config_from_cart'] ) ) {
-				$args['config']['cart_item_key'] = esc_attr( $_REQUEST['load_config_from_cart'] );
+				$args['config']['cart_item_key'] = esc_attr( esc_html( sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) ) ) );
 			}
 		} 
 
@@ -533,14 +533,15 @@ class Frontend_Woocommerce {
 		$configuration_to_load = [];
 		if ( isset( $_REQUEST['load_config_from_cart'] ) ) {
 
+			$item_id = sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) );
 			$wc_cart = WC()->cart;
-			$cart_item = $wc_cart->get_cart_item($_REQUEST['load_config_from_cart']);
+			$cart_item = $wc_cart->get_cart_item($item_id);
 
 			// Check for removed items
 			if ( empty( $cart_item ) ) {
 				$removed_items = $wc_cart->get_removed_cart_contents();
-				if ( isset( $removed_items[$_REQUEST['load_config_from_cart']] ) ) {
-					$cart_item = $removed_items[$_REQUEST['load_config_from_cart']];
+				if ( isset( $removed_items[$item_id] ) ) {
+					$cart_item = $removed_items[$item_id];
 				}
 			}
 
@@ -554,7 +555,7 @@ class Frontend_Woocommerce {
 		if ( isset( $_REQUEST['load_config_from_order'] ) ) {
 			$current_user_can_view_config = current_user_can( 'manage_woocommerce' );
 			if ( ! $current_user_can_view_config ) {
-				$order_id = wc_get_order_id_by_order_item_id( $_REQUEST['load_config_from_order'] );
+				$order_id = wc_get_order_id_by_order_item_id( sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_order'] ) ) );
 				$order = wc_get_order( $order_id );
 				if ( is_a( $order, 'WC_Order' ) ) {
 					if ( $order->get_customer_id() === get_current_user_id() ) {
@@ -568,13 +569,13 @@ class Frontend_Woocommerce {
 			 * Default to true if the current user can "manage_woocommerce", or the current user is the order's customer.
 			 */
 			if ( apply_filters( 'mkl_pc/current_user_can_view_order_config', $current_user_can_view_config ) ) {
-				$config = wc_get_order_item_meta( (int) $_REQUEST['load_config_from_order'], '_configurator_data_raw', true );
+				$config = wc_get_order_item_meta( (int) sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_order'] ) ), '_configurator_data_raw', true );
 				if ( $config ) $configuration_to_load = $config;
 			}
 		}
 
 		if ( isset( $_REQUEST['load-preset'] ) ) {
-			$p = get_post( (int) $_REQUEST['load-preset'] );
+			$p = get_post( (int) sanitize_text_field( wp_unslash( $_REQUEST['load-preset'] ) ) );
 			if ( $p && 'mkl_pc_configuration' === $p->post_type && 'preset' === $p->post_status ) {
 				$configuration_to_load = json_decode( $p->post_content );
 			}
