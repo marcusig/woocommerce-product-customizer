@@ -243,5 +243,115 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			// Not a registered size
 			return false;
 		}
+
+		/**
+		 * Allowlist for inline SVG output.
+		 *
+		 * @return array
+		 */
+		private static function allowed_svg_tags() {
+			return [
+				'svg' => [
+					'xmlns' => true,
+					'viewbox' => true,
+					'width' => true,
+					'height' => true,
+					'fill' => true,
+					'stroke' => true,
+					'class' => true,
+					'role' => true,
+					'aria-hidden' => true,
+					'focusable' => true,
+				],
+				'title' => [],
+				'desc' => [],
+				'g' => [
+					'fill' => true,
+					'stroke' => true,
+					'class' => true,
+					'transform' => true,
+				],
+				'path' => [
+					'd' => true,
+					'fill' => true,
+					'stroke' => true,
+					'stroke-width' => true,
+					'stroke-linecap' => true,
+					'stroke-linejoin' => true,
+					'transform' => true,
+				],
+				'polyline' => [
+					'points' => true,
+					'fill' => true,
+					'stroke' => true,
+					'stroke-width' => true,
+					'stroke-linecap' => true,
+					'stroke-linejoin' => true,
+					'transform' => true,
+				],
+				'polygon' => [
+					'points' => true,
+					'fill' => true,
+					'stroke' => true,
+					'stroke-width' => true,
+					'transform' => true,
+				],
+				'circle' => [
+					'cx' => true,
+					'cy' => true,
+					'r' => true,
+					'fill' => true,
+					'stroke' => true,
+					'stroke-width' => true,
+				],
+				'rect' => [
+					'x' => true,
+					'y' => true,
+					'width' => true,
+					'height' => true,
+					'rx' => true,
+					'ry' => true,
+					'fill' => true,
+					'stroke' => true,
+					'stroke-width' => true,
+				],
+				'line' => [
+					'x1' => true,
+					'x2' => true,
+					'y1' => true,
+					'y2' => true,
+					'stroke' => true,
+					'stroke-width' => true,
+				],
+			];
+		}
+
+		/**
+		 * Read an SVG file and return sanitized markup for inline output.
+		 *
+		 * @param string $file_path Absolute path to an SVG file.
+		 * @return string Sanitized SVG markup, or empty string.
+		 */
+		public static function inline_svg( $file_path ) {
+			if ( ! is_string( $file_path ) || '' === $file_path ) {
+				return '';
+			}
+
+			$real = realpath( $file_path );
+			if ( ! $real || ! is_readable( $real ) ) {
+				return '';
+			}
+
+			if ( 'svg' !== strtolower( pathinfo( $real, PATHINFO_EXTENSION ) ) ) {
+				return '';
+			}
+
+			$svg = file_get_contents( $real );
+			if ( false === $svg ) {
+				return '';
+			}
+
+			return wp_kses( $svg, self::allowed_svg_tags() );
+		}
 	}
 }

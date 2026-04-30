@@ -9,7 +9,7 @@ add_filter( 'mkl_pc_bg_image', function( $bg ) {
 }, 30 );
 
 function mkl_pc_dark_theme_add_reset_icon() {
-	echo file_get_contents( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/reset.svg' );
 }
 add_action( 'mkl_pc/reset_button/before_label', 'mkl_pc_dark_theme_add_reset_icon' );
 
