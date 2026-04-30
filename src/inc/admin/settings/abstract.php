@@ -190,7 +190,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 								if ( strpos( $choice['image'], 'viewBox' ) ) {
 									$field .= $choice['image'];
 								} elseif ( esc_url_raw( $choice['image'] ) ) {
-									$field .= '<img src="'. esc_url_raw( $choice['image'] ) . '" alt="">';
+									$field .= '<img src="'. esc_url( $choice['image'] ) . '" alt="">';
 								}
 							}
 							$field .= $choice['label'];

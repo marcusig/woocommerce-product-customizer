@@ -494,7 +494,11 @@ class Frontend_Woocommerce {
 			$args['config']['open_configurator'] = true;
 		}
 
-		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', esc_js( apply_filters( 'mkl_pc_frontend_js_config', $args ) ) );
+		$localized_config = apply_filters( 'mkl_pc_frontend_js_config', $args );
+		if ( ! is_array( $localized_config ) ) {
+			$localized_config = [];
+		}
+		wp_localize_script( 'mkl_pc/js/product_configurator', 'PC_config', $localized_config );
 
 		if ( $prod && ! mkl_pc( 'settings')->get( 'async_data' ) ) {
 			wp_enqueue_script( 'mkl_pc/js/fe_data_'.$post->ID, Plugin::instance()->cache->get_config_file($post->ID), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
@@ -532,10 +536,16 @@ class Frontend_Woocommerce {
 		}
 
 		if ( 'underscore' === $handle ) {
-			$dir = MKL_PC_ASSETS_URL . 'js';
-			$tag = "<script src='{$dir}/underscore-before.min.js'></script>\n"
-			       . $tag
-			       . "<script src='{$dir}/underscore-after.min.js'></script>\n";
+			// Load wrapper code via WP APIs (Plugin Check disallows raw script tags).
+			wp_enqueue_script( 'underscore' );
+			$before = \MKL\PC\Utils::fs_get_contents( MKL_PC_ASSETS_PATH . 'js/underscore-before.min.js' );
+			if ( $before ) {
+				wp_add_inline_script( 'underscore', $before, 'before' );
+			}
+			$after = \MKL\PC\Utils::fs_get_contents( MKL_PC_ASSETS_PATH . 'js/underscore-after.min.js' );
+			if ( $after ) {
+				wp_add_inline_script( 'underscore', $after, 'after' );
+			}
 		}
 
 		return $tag;
