@@ -44,10 +44,11 @@ class Languages {
 	public function get_translatable_options_defaults() {
 		return apply_filters( 'mkl_pc_translatable_settings_defaults', [
 			'mkl_pc__button_label' => __( 'Configure', 'product-configurator-for-woocommerce' ),
-			'sku_glue' => __( '', 'product-configurator-for-woocommerce' ),
+			'sku_glue' => '',
 			'sku_label' => __( 'SKU', 'product-configurator-for-woocommerce' ),
 			'mc_max_items_message' => __( 'You have reached the maximum number of selectable items', 'product-configurator-for-woocommerce' ),
 			'mc_max_items_message_global' => __( 'You have reached the maximum number of selectable items for this product', 'product-configurator-for-woocommerce' ),
+			/* translators: %i: number of items, %s: layer name */
 			'mc_min_items_required_message' => __( 'Select at least %i items in %s', 'product-configurator-for-woocommerce' ),
 			'reset_configuration_label' => __( 'Reset configuration', 'product-configurator-for-woocommerce' ),
 			'edit_configuration_label' => __( 'Edit configuration', 'product-configurator-for-woocommerce' ),
