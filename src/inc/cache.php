@@ -94,14 +94,17 @@ class Cache {
 
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name($product_id);
-		if ( wp_mkdir_p( $location['path'] ) ) {
-			$file_handle = @fopen( trailingslashit( $location['path'] ) . $file_name, 'w' );
-			if ( $file_handle ) {
-				fwrite( $file_handle, $data );
-				fclose( $file_handle );
-			}
-			return trailingslashit( $location['path'] ) . $file_name;
+		$dir = untrailingslashit( $location['path'] );
+		if ( ! Utils::fs_mkdir( $dir ) ) {
+			// Fallback to core helper for hosts where FS is not ready.
+			wp_mkdir_p( $dir );
 		}
+
+		$file_path = trailingslashit( $location['path'] ) . $file_name;
+		if ( ! Utils::fs_put_contents( $file_path, $data ) ) {
+			return '';
+		}
+		return $file_path;
 		return '';
 	}
 
@@ -113,33 +116,25 @@ class Cache {
 	public function delete_config_file( $product_id ) {
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id );
-		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) {
-			unlink( trailingslashit( $location['path'] ) . $file_name );
-		}
+		Utils::fs_delete( trailingslashit( $location['path'] ) . $file_name, false, 'f' );
 	}
 
 	public function purge() {
 		$location = $this->get_cache_location();
 		$src = $location[ 'path' ];
 		
-		if ( ! file_exists( $src ) ) return;
-
-		$handle = opendir($src);
-
-		if (false === $handle) return;
-
-		$file = readdir($handle);
-
 		$allowed_file_extensions = [ 'js', 'css', 'map' ];
+		$listing = Utils::fs_dirlist( $src, false );
+		if ( ! is_array( $listing ) ) return;
 
-		while (false !== $file) {
-
-			if ('.' != $file && '..' != $file && is_file($src . '/' . $file) && in_array( pathinfo( $file, PATHINFO_EXTENSION ), $allowed_file_extensions ) ) {
-				unlink($src . '/' . $file);
+		foreach ( $listing as $name => $info ) {
+			if ( empty( $info['type'] ) || 'f' !== $info['type'] ) {
+				continue;
 			}
-
-			$file = readdir($handle);
-
+			$ext = pathinfo( $name, PATHINFO_EXTENSION );
+			if ( in_array( $ext, $allowed_file_extensions, true ) ) {
+				Utils::fs_delete( trailingslashit( $src ) . $name, false, 'f' );
+			}
 		}
 	}
 
@@ -163,7 +158,10 @@ class Cache {
 
 					if ( ! $file_path || ! file_exists( $file_path ) ) return;
 					
-					$content = file_get_contents( $file_path );
+					$content = \MKL\PC\Utils::fs_get_contents( $file_path );
+					if ( false === $content ) {
+						return;
+					}
 	
 					// Change the response code to 200 (OK) instead of 404
 					status_header(200);

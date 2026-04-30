@@ -58,18 +58,21 @@ class Configuration {
 		$this->upload_dir_path = $wp_upload_dir['basedir'] .'/mkl-pc-config-images'; 
 		$this->upload_dir_url = $wp_upload_dir['baseurl'] .'/mkl-pc-config-images'; 
 
-		// Add an empty index to prevent directory listing if the server doesn't prevent it
-		if ( ! file_exists( $this->upload_dir_path . '/index.html' ) ) {
-			// Delete existing php file
-			if ( file_exists( $this->upload_dir_path . '/index.php' ) ) unlink( $this->upload_dir_path . '/index.php' );
-			$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . 'index.html', 'w' );
-			if ( $file_handle ) {
-				fclose( $file_handle );
+		// Ensure upload directory exists.
+		if ( ! is_dir( $this->upload_dir_path ) ) {
+			Utils::fs_mkdir( $this->upload_dir_path );
+			if ( ! is_dir( $this->upload_dir_path ) ) {
+				wp_mkdir_p( $this->upload_dir_path );
 			}
 		}
 
-		if ( ! is_dir( $this->upload_dir_path ) ) {
-			mkdir( $this->upload_dir_path ); 
+		// Add an empty index to prevent directory listing if the server doesn't prevent it
+		if ( ! file_exists( $this->upload_dir_path . '/index.html' ) ) {
+			// Delete existing php file
+			if ( file_exists( $this->upload_dir_path . '/index.php' ) ) {
+				Utils::fs_delete( $this->upload_dir_path . '/index.php', false, 'f' );
+			}
+			Utils::fs_put_contents( trailingslashit( $this->upload_dir_path ) . 'index.html', '' );
 		}
 
 		if ( null != $ID && intval( $ID ) ) {
@@ -397,11 +400,7 @@ class Configuration {
 		if ( 'save_to_disk' === $mode ) {
 			if ( $lazy ) {
 				$tempfile = $this->get_configuration_image_name() . '-temp-' . wp_create_nonce( 'generate-image-from-temp-file' );
-				$file_handle = @fopen( trailingslashit( $this->upload_dir_path ) . $tempfile, 'w' );
-				if ( $file_handle ) {
-					fwrite( $file_handle, json_encode( $this->content ) );
-					fclose( $file_handle );
-				}				
+				Utils::fs_put_contents( trailingslashit( $this->upload_dir_path ) . $tempfile, wp_json_encode( $this->content ) );
 				return [
 					'lazy' => $tempfile,
 					'url'  => apply_filters( 'mkl_pc_get_image_url_default_empty_image', includes_url( 'images/blank.gif' ) ),
@@ -470,13 +469,13 @@ class Configuration {
 			$real_path = realpath( $tempfile );
 			if ( ( false === $real_path ) || ( false === strpos( $real_path, $this->upload_dir_path ) ) ) return 0;
 			if ( ! file_exists( $tempfile ) ) return 0;
-			$content = file_get_contents( $tempfile );
+			$content = Utils::fs_get_contents( $tempfile );
 			if ( $content ) {
 				$content = json_decode( $content );
 				$this->content = $content;
 			}
 
-			unlink( $tempfile );
+			Utils::fs_delete( $tempfile, false, 'f' );
 		}
 
 		// The image already exists

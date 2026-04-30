@@ -93,7 +93,10 @@ class Frontend_Woocommerce {
 	public function serve_image( $data ) {
 		if ( ! Utils::check_image_requirements() ) {
 			header("Content-type: image/png");
-			readfile( MKL_PC_ASSETS_PATH . 'images/image-error.png' );
+			$image = Utils::fs_get_contents( MKL_PC_ASSETS_PATH . 'images/image-error.png' );
+			if ( false !== $image ) {
+				echo $image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary image response
+			}
 			return;
 		}
 
@@ -101,7 +104,10 @@ class Frontend_Woocommerce {
 		$images = explode( '-', $data->get_param( 'images' ) );
 		if ( empty( $images ) ) {
 			header("Content-type: image/gif");
-			readfile( WPINC . '/images/blank.gif' );
+			$image = Utils::fs_get_contents( WPINC . '/images/blank.gif' );
+			if ( false !== $image ) {
+				echo $image; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary image response
+			}
 			return;
 		}
 		$content = [];
