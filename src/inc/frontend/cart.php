@@ -380,7 +380,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( is_string( $attachment_id ) && str_contains( $attachment_id, '-replace-with-' ) ) {
 				$pos = strpos( $attachment_id, '-replace-with-' );
 				$url = substr( $attachment_id, $pos + 14 );
-				$parts = parse_url( $url );
+				$parts = \wp_parse_url( $url );
 				$query = [];
 				if ( isset( $parts['query'] ) ) {
 					parse_str( $parts['query'], $query );
