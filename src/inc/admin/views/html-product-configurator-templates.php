@@ -371,7 +371,7 @@ CONTENT TEMPLATES
 			<# if(data.image.url != '' ) { #>
 			<img class="edit-attachment" src="{{data.image.url}}" alt="">
 			<# } else { #>
-			<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
+			<img class="edit-attachment" src="<?php echo esc_url( MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ); ?>" alt="">
 			<# } #>
 
 			<a class="edit-attachment" href="#">
@@ -394,7 +394,7 @@ CONTENT TEMPLATES
 				<# if ( data.thumbnail.url != '' ) { #>
 				<img class="edit-attachment" src="{{data.thumbnail.url}}" alt="">
 				<# } else { #>
-				<img class="edit-attachment" src="<?= MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ?>" alt="">
+				<img class="edit-attachment" src="<?php echo esc_url( MKL_PC_ASSETS_URL.'admin/images/empty.jpg' ); ?>" alt="">
 				<# } #>
 
 				<a class="edit-attachment" href="#">
