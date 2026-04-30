@@ -137,8 +137,8 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="tab_content">
 			<p>
 				<?php
-				/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
 				$msg = sprintf(
+					/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
 					_x( '%1$s is available as %2$san add-on%3$s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ),
 					esc_html__( 'Conditional logic', 'product-configurator-for-woocommerce' ),
 					'<a href="' . esc_url( 'https://wc-product-configurator.com/product/conditional-logic/' ) . '" target="_blank" class="mkl-pc-link--external">',
