@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 global $is_IE;
-$class = 'media-modal wp-core-ui pc-modal';
+$class = 'mkl-pc-admin-ui media-modal wp-core-ui pc-modal';
 $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
 if ( $is_IE && strpos( $user_agent, 'MSIE 7' ) !== false )
 	$class .= ' ie7';
@@ -30,11 +30,11 @@ function mkl_pc_get_admin_actions() {
 GENERAL TEMPLATES
 
 */
- ?>
+?>
 <?php do_action('mkl_pc_admin_templates_before') ?>
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo esc_attr( $class ); ?>">
-		<div class="mkl-pc-global-configurator--banner"> <?php _e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?> <?php _e( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' ); ?></div>
+		<div class="mkl-pc-global-configurator--banner"> <?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?> <?php esc_html_e( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' ); ?></div>
 		<button type="button" class="mkl-pc-admin-ui__close">
 			<span class="mkl-pc-admin-ui__close-icon" aria-hidden="true"></span>
 			<span class="screen-reader-text"><?php esc_html_e( 'Close configurator', 'product-configurator-for-woocommerce' ); ?></span>
@@ -144,7 +144,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					<h1>{{data.title}}</h1>
 					<div class="structure-toolbar__add">
 						<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
-						<button type="button" class="button-primary add-layer"><span><?php _e( 'Add' ); ?></span></button>
+						<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 					</div>
 				</div>
 				<div class="structure-toolbar__filter">
@@ -232,7 +232,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<# if ( 'group' != data.type && 'angle' != data.object_type ) { #>
 		<div class="layer-label--type">
 			<# if ( data.not_a_choice ) { #>
-				<span class="layer-label--type-icon not-a-choice"></span> <span class="layer-label--type-label"><?php _e( 'Not a choice', 'product-configurator-for-woocommerce' ); ?></span>
+				<span class="layer-label--type-icon not-a-choice"></span> <span class="layer-label--type-label"><?php esc_html_e( 'Not a choice', 'product-configurator-for-woocommerce' ); ?></span>
 			<# } else { #>
 				<span class="layer-label--type-icon {{data.type}}"></span> <span class="layer-label--type-label">{{PC.get_layer_type_label( data.type )}}</span>
 			<# } #>
@@ -347,7 +347,7 @@ CONTENT TEMPLATES
 			<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>
 			<div class="structure-toolbar__add">
 				<h4><input type="text" placeholder="{{PC.lang.choice_new_placeholder}}"></h4>
-				<button type="button" class="button-primary add-layer"><span><?php _e('Add'); ?></span></button>
+				<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
 			</div>
 		</div>
 		<div class="structure-toolbar__filter">
@@ -485,7 +485,7 @@ CONTENT TEMPLATES
 			<# } #>
 		</div>
 		<# } #>
-		<# if ( data?.angle?.has_thumbnails ) { #>
+		<# if ( data && data.angle && data.angle.has_thumbnails ) { #>
 			<div class="picture thumbnail-picture" data-edit="thumbnail">
 				<# if ( ! data.is_group ) { #><span><?php esc_html_e( 'Thumbnail', 'product-configurator-for-woocommerce' ); ?></span><# } #>
 				<# if ( data.thumbnail.url != '' ) { #>
@@ -714,7 +714,7 @@ IMPORT / EXPORT
 		<# } else { #>
 			<span class="dashicons dashicons-plus"></span>
 		<# } #>
-		{{data.name}} <# if ( data.image.urls ) { #><img src="{{data.image.url}}" alt=""><# } #>
+		{{data.name}} <# if ( data.image && data.image.url ) { #><img src="{{data.image.url}}" alt=""><# } #>
 	</a>
 </script>
 
