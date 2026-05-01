@@ -43,6 +43,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
 			add_action( 'admin_footer', array($this, 'editor' ) );
+			add_action( 'mkl_pc_admin_documentation_content', array( $this, 'home_documentation_content' ) );
 
 			add_action( 'add_meta_boxes', array( $this, 'add_global_configurator_meta_box' ) );
 		}
@@ -149,30 +150,34 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function home_tab() {
 			?>
 			<div class="instructions">
-				<h2><?php esc_html_e( 'You are configuring', 'product-configurator-for-woocommerce' ); echo ' "' . esc_html( get_the_title( $this->ID ) ); ?>"</h2>
+				<div class="instructions-header">
+					<div class="instructions-header__thumbnail">
+						<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
+					</div>
+					<h2><?php esc_html_e( 'You are configuring', 'product-configurator-for-woocommerce' ); echo ' "' . esc_html( get_the_title( $this->ID ) ); ?>"</h2>
+				</div>
 				<?php do_action( 'mkl_pc_admin_instructions_before_content', $this->ID, $this->_product ); ?>
-				<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
-				<p><?php esc_html_e( 'To proceed, follow the instructions:', 'product-configurator-for-woocommerce' ); ?></p>
-				<ol>
-				<li>
-					<?php
-					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
-					printf( esc_html__( 'define the structure of the product in %1$sLayers%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
-					?>
-				</li>
-				<li>
-					<?php
-					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
-					printf( esc_html__( 'define the views / angles in which your product will be visible in %1$sViews%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
-					?>
-				</li>
-				<li>
-					<?php
-					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
-					printf( esc_html__( 'add the Images for each of your choices in %1$sContent%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
-					?>
-				</li>
-				</ol>
+
+				<div class="instructions-content">
+					<h3><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ); ?></h3>
+					<div class="mkl-home-documentation-content mkl-home-section">
+						<?php do_action( 'mkl_pc_admin_documentation_content', $this->ID, $this->_product ); ?>
+					</div>
+					<?php if ( $this->get_home_actions() ) : ?>
+						<h3><?php esc_html_e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h3>
+						<div class="mkl-home-actions-content mkl-home-section">
+							<?php 
+								foreach ( $this->get_home_actions() as $action ) {
+									echo '<a href="' . $action['url'] . '" class="button button-hero">' . $action['label'] . '</a>';
+								}
+								do_action( 'mkl_pc_admin_home_actions_after', $this->ID, $this->_product ); 
+							?>
+						</div>
+					<?php endif; ?>
+
+					<h3><?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?></h3>
+					<?php do_action( 'mkl_pc_admin_global_configurator_content', $this->ID, $this->_product ); ?>
+				</div>
 				<?php do_action( 'mkl_pc_admin_instructions_after', $this->ID ); ?>
 			</div>
 			<div class="more">
@@ -531,6 +536,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			delete_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name );
 			update_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name, 1 );
 			wp_send_json_success();
+		}
+
+		public function home_documentation_content() {
+			?>
+			<a class="button button-hero" nofollow noreferrer noopener href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/getting-started/" target="_blank"><?php esc_html_e( 'Getting started', 'product-configurator-for-woocommerce' ); ?></a>
+			<a class="button button-hero" nofollow noreferrer noopener href="https://wc-product-configurator.com/docs/" target="_blank"><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ); ?></a>
+			<?php
+		}
+
+		public function get_home_actions() {
+			return apply_filters( 'mkl_pc_admin_home_actions', array(
+
+			), $this->ID, $this->_product );
 		}
 
 	}

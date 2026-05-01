@@ -30,7 +30,7 @@ final class Admin_Ui {
 		add_action( 'woocommerce_process_product_meta_simple', array( __CLASS__, 'save_product_settings' ) );
 		add_action( 'woocommerce_process_product_meta_variable', array( __CLASS__, 'save_product_settings' ) );
 
-		add_action( 'mkl_pc_admin_instructions_before_content', array( __CLASS__, 'render_home_global_notice' ), 10, 2 );
+		add_action( 'mkl_pc_admin_global_configurator_content', array( __CLASS__, 'render_home_global_notice' ), 10, 2 );
 
 		add_action( 'wp_ajax_mkl_pc_search_global_configurators', array( __CLASS__, 'ajax_search_global_configurators' ) );
 		add_action( 'wp_ajax_mkl_pc_create_global_from_product', array( __CLASS__, 'ajax_create_global_from_product' ) );
@@ -200,7 +200,7 @@ final class Admin_Ui {
 		if ( Schema::is_global_configurator_id( $post_id ) ) {
 			$consumer_count = count( Owner_Resolver::get_consumer_product_ids( $post_id ) );
 			?>
-			<div class="notice notice-info mkl-pc-global-editor-notice">
+			<div class="notice notice-info mkl-pc-global-editor-notice mkl-home-section">
 				<p><strong><?php esc_html_e( 'You are editing a global configurator.', 'product-configurator-for-woocommerce' ); ?></strong></p>
 				<p>
 					<?php
@@ -226,7 +226,7 @@ final class Admin_Ui {
 
 		if ( $global_id > 0 ) {
 			?>
-			<div class="notice notice-warning mkl-pc-global-editor-notice">
+			<div class="mkl-pc-global-editor-notice mkl-home-section">
 				<p>
 					<strong><?php esc_html_e( 'This product uses a shared global configurator.', 'product-configurator-for-woocommerce' ); ?></strong>
 				</p>
@@ -259,7 +259,7 @@ final class Admin_Ui {
 			return;
 		}
 		?>
-		<div class="mkl-pc-home-tab-actions mkl-pc-home-tab-actions--local">
+		<div class="mkl-pc-home-tab-actions mkl-pc-home-tab-actions--local mkl-home-section">
 			<p class="description">
 				<?php esc_html_e( 'Want to reuse this configurator across multiple products?', 'product-configurator-for-woocommerce' ); ?>
 			</p>

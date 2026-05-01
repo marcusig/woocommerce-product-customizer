@@ -1247,10 +1247,38 @@ html .pc-modal-container {
 			}
 			.instructions {
 				overflow: auto;
-				padding: 20px;
+				padding: 30px;
+				flex: 1;
+				.instructions-header {
+					display: flex;
+					align-items: center;
+					gap: 20px;
+					margin-bottom: 20px;
+				}
+				.instructions-header__thumbnail {
+					width: 80px;
+					height: 80px;
+					border-radius: 4px;
+					overflow: hidden;
+					border: 1px solid #CCC;
+					background: #f6f6f6;
+					box-sizing: border-box;
+					img {
+						width: 100%;
+						height: 100%;
+						object-fit: cover;
+					}
+				}
+				.notice {
+					margin-left: 0;
+					margin-right: 0;
+				}
 				@media ( min-width: 800px ) {
 					width: calc( 100% - 400px );
 				}
+			}
+			.mkl-home-section {
+				margin-bottom: 30px;
 			}
 			.more {
 				padding: 20px;
