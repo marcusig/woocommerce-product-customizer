@@ -410,6 +410,7 @@ final class Admin_Ui {
 		$pc_lang['mkl_pc_global_picker_edit']            = __( 'Edit', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_picker_no_results']     = __( 'No global configurators found.', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_picker_placeholder']   = __( 'Search global configurators…', 'product-configurator-for-woocommerce' );
+		/* translators: %d: number of products using the global configurator */
 		$pc_lang['mkl_pc_global_consumer_count_label'] = __( '%d using', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_editor_readonly_note'] = __( 'This product is linked to a shared configurator. Editing is redirected to the global configurator.', 'product-configurator-for-woocommerce' );
 		return $pc_lang;

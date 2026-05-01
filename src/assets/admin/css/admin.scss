@@ -382,7 +382,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				height: 100%;
 				border-left: 1px solid #2c2c2c;
 				overflow: visible;
-				padding: 0 8px 8px 8px;
+				padding: 10px 8px 8px 8px;
 				box-sizing: border-box;
 			}
 			.mkl-pc-admin-ui__sidebar-layers-heading {
@@ -548,6 +548,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					max-width: $pc-admin-nav-rail;
 					min-width: 0;
 					padding: 0 4px;
+					padding-top: 3px;
 					display: flex;
 					flex-direction: column;
 					align-self: flex-start;

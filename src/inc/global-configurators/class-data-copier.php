@@ -89,6 +89,7 @@ final class Data_Copier {
 			$post = get_post( $source_product_id );
 			$title = $post ? (string) $post->post_title : '';
 			if ( '' === $title ) {
+				/* translators: %d: product/post ID */
 				$title = sprintf( __( 'Configurator #%d', 'product-configurator-for-woocommerce' ), $source_product_id );
 			}
 		}
