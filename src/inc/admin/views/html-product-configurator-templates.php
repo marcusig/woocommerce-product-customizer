@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 global $is_IE;
-$class = 'mkl-pc-admin-ui media-modal wp-core-ui pc-modal';
+$class = 'mkl-pc-admin-ui wp-core-ui pc-modal';
 $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
 if ( $is_IE && strpos( $user_agent, 'MSIE 7' ) !== false )
 	$class .= ' ie7';
