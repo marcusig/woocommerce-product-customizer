@@ -11,14 +11,14 @@ if ( $is_IE && strpos( $user_agent, 'MSIE 7' ) !== false )
 
 function mkl_pc_get_admin_actions() {
 	return '' .
-		'<button type="button" class="button-link delete delete-item" data-delete="prompt">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
-		'<button type="button" class="button-link duplicate duplicate-item">' . __('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
-		'<button type="button" class="button-link copy copy-item">' . __('Copy', 'product-configurator-for-woocommerce' ) . '</button>' .
+		'<button type="button" class="button-link delete delete-item" data-delete="prompt">' . esc_html__('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+		'<button type="button" class="button-link duplicate duplicate-item">' . esc_html__('Duplicate', 'product-configurator-for-woocommerce' ) . '</button>' .
+		'<button type="button" class="button-link copy copy-item">' . esc_html__('Copy', 'product-configurator-for-woocommerce' ) . '</button>' .
 		'<div class="prompt-delete hidden mkl-pc-setting--warning">' .
-			'<p>' . __( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
+			'<p>' . esc_html__( 'Do you realy want to delete this item?', 'product-configurator-for-woocommerce' ) . '</p>' .
 			'<p>' .
-				'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . __('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
-				'<button type="button" class="button cancel-delete" data-delete="cancel">' . __('Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
+				'<button type="button" class="button button-primary delete confirm-delete" data-delete="confirm">' . esc_html__('Delete', 'product-configurator-for-woocommerce' ) . '</button>' .
+				'<button type="button" class="button cancel-delete" data-delete="cancel">' . esc_html__('Cancel', 'product-configurator-for-woocommerce' ) . '</button>' .
 			'</p>' .
 		'</div>';
 }
@@ -144,7 +144,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					<div class="structure-toolbar__add">
 						<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 						<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
-						<# if ( data.collectionName && 'layers' == data.collectionName ) { #><button type="button" class="button-primary import-layer"><span><?php _e( 'Import' ); ?></span></button><# } #>
+						<# if ( data.collectionName && 'layers' == data.collectionName ) { #><button type="button" class="button-primary import-layer"><span><?php esc_html_e( 'Import', 'product-configurator-for-woocommerce' ); ?></span></button><# } #>
 					</div>
 				</div>
 				<div class="structure-toolbar__filter">
@@ -281,7 +281,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<div class="actions-container">
 				<?php echo mkl_pc_get_admin_actions(); ?>
 				<# if ( !data.is_global ) { #>
-					<button type="button" class="button-link make-global"><?php _e('Make Global', 'product-configurator-for-woocommerce' ); ?></button>
+					<button type="button" class="button-link make-global"><?php esc_html_e( 'Make Global', 'product-configurator-for-woocommerce' ); ?></button>
 				<# } #>
 			</div>
 		</header>
@@ -289,11 +289,11 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<div class="mkl-pc-global-layer-heading">
 			<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
 			<# if ( data.is_editing_global_layer ) { #>
-				<button type="button" class="button save-global"><?php _e('Save changes to global layer', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button cancel-global"><?php _e('Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button save-global"><?php esc_html_e( 'Save changes to global layer', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button cancel-global"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 			<# } else { #>
-				<button type="button" class="button unlink-global"><?php _e('Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button edit-global"><?php _e('Edit global layer', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button unlink-global"><?php esc_html_e( 'Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button edit-global"><?php esc_html_e( 'Edit global layer', 'product-configurator-for-woocommerce' ); ?></button>
 			<# } #>
 		</div>
 		<# } #>
@@ -762,7 +762,7 @@ IMPORT / EXPORT
 <script type="text/html" id="tmpl-mkl-pc-import-global-layer">
 	<div class="media-frame-content import-global-layer">
 		<div class="import-global-layer-header">
-			<h2><?php _e( 'Import Global Layer', 'product-configurator-for-woocommerce' ); ?></h2>
+			<h2><?php esc_html_e( 'Import Global Layer', 'product-configurator-for-woocommerce' ); ?></h2>
 			<div class="filter-container">
 				<input type="text" class="global-layers-filter" placeholder="<?php esc_attr_e( 'Filter by name...', 'product-configurator-for-woocommerce' ); ?>" />
 			</div>
@@ -772,8 +772,8 @@ IMPORT / EXPORT
 		</div>
 		<div class="media-toolbar">
 			<div class="media-toolbar-primary">
-				<button type="button" class="button button-primary import-selected" disabled><?php _e( 'Import Selected', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button cancel"><?php _e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button button-primary import-selected" disabled><?php esc_html_e( 'Import Selected', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 			</div>
 		</div>
 	</div>
@@ -789,7 +789,7 @@ IMPORT / EXPORT
 					<img src="{{data.image.url}}" class="layer-thumbnail" alt="">
 				<# } #>
 				<# if ( data.type ) { #>
-					<span class="layer-type"><?php _e( 'Type:', 'product-configurator-for-woocommerce' ); ?> {{data.type}}</span>
+					<span class="layer-type"><?php esc_html_e( 'Type:', 'product-configurator-for-woocommerce' ); ?> {{data.type}}</span>
 				<# } #>
 			</div>
 		</label>
