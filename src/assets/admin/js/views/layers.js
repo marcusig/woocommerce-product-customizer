@@ -354,9 +354,10 @@ TODO:
 			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
 			if ( ! this.label ) {
 				this.label = new PC.views.layerLabel( { model: this.model, object_type: this.object_type } );
-				this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
 			}
-			this.$( 'h3' ).prepend( this.label.$el );
+			// Re-append after every render — this.$el.html() detaches the label view from the DOM.
+			this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
+			this.label.render();
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
 		},
@@ -641,7 +642,15 @@ TODO:
 			var content_data = choices_data;
 			
 			// Save to server immediately (creating new global layer with global_id = 0)
-			PC.app.get_global_layers().save_global_layer( 0, layer_data, content_data, {
+			var hideMigrationOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.hide();
+				}
+			};
+			if ( window.MKL_PC_DataMigrationOverlay ) {
+				window.MKL_PC_DataMigrationOverlay.show( 'make_global' );
+			}
+			var saveXhr = PC.app.get_global_layers().save_global_layer( 0, layer_data, content_data, {
 				success: function( model, response ) {
 					// wp.ajax.post automatically unwraps the response, so response is the data object
 					if ( response && response.global_id ) {
@@ -691,6 +700,11 @@ TODO:
 					console.error( 'Save global layer error:', error );
 				}
 			} );
+			if ( saveXhr && typeof saveXhr.always === 'function' ) {
+				saveXhr.always( hideMigrationOverlay );
+			} else {
+				hideMigrationOverlay();
+			}
 		},
 		on_unlink_global: function( e ) {
 			e.preventDefault();

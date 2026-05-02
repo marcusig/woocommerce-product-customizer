@@ -218,6 +218,8 @@ final class Plugin {
 		$pc_lang['mkl_pc_bulk_save_complete'] = __( 'Save complete', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_bulk_save_dismiss']   = __( 'OK', 'product-configurator-for-woocommerce' );
 
+		$pc_lang['mkl_pc_make_global_progress'] = __( 'Creating global layer…', 'product-configurator-for-woocommerce' );
+
 		return $pc_lang;
 	}
 }

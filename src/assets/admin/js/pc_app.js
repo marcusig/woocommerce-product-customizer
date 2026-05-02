@@ -862,7 +862,26 @@ PC.toJSON = function( item ) {
 	
 	PC.get_layer_type_label = function( type ) {
 		return PC.lang.layer_types[ type ] || type;
-	}
+	};
+
+	/**
+	 * Dashicon class for layer type row (admin list). Extend via filter mkl_pc_layer_type_dashicon.
+	 */
+	PC.layer_type_dashicon_class = function( type ) {
+		var map = {
+			simple: 'dashicons-format-image',
+			multiple: 'dashicons-list-view',
+			group: 'dashicons-category',
+			form: 'dashicons-feedback',
+			summary: 'dashicons-text-page',
+			text_overlay: 'dashicons-editor-textcolor',
+		};
+		var icon = map[ type ] || 'dashicons-admin-generic';
+		if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+			return wp.hooks.applyFilters( 'mkl_pc_layer_type_dashicon', icon, type );
+		}
+		return icon;
+	};
 
 	PC.copy_items = function( view ) {
 		var data = {

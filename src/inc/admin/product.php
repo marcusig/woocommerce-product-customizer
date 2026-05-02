@@ -250,13 +250,18 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/collections/products', 'collections/products.js'),
 				//VIEWS
 				array('backbone/views/home', 'views/configurator_home.js'),
-				array('backbone/views/layers', 'views/layers.js'),
+				array( 'backbone/views/layers', 'views/layers.js', array( 'mkl_pc-data-migration-overlay' ) ),
 				array('backbone/views/choices', 'views/choices.js'),
 				array('backbone/views/states', 'views/states.js'),
 				array('backbone/views/angles', 'views/angles.js'),
 				array('backbone/views/content', 'views/content.js'),
 				array('backbone/views/import', 'views/import.js'),
-				array('backbone/views/import_global_layer', 'views/import-global-layer.js'),
+				array( 'backbone/views/admin_dialog', 'views/admin-dialog.js', array( 'wp-hooks' ) ),
+				array(
+					'backbone/views/import_global_layer',
+					'views/import-global-layer.js',
+					array( 'mkl_pc/js/admin/backbone/views/admin_dialog' ),
+				),
 				array('backbone/views/app', 'views/app.js'),
 				array('backbone/views/product_selector', 'views/product_selector.js', array( 'wc-enhanced-select' ) ),
 				array('backbone/views/field_repeater', 'views/field-repeater.js'),
@@ -308,14 +313,14 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				}
 
 				$pc_lang = array(
-					'media_title' => __( 'Select a picture', 'product-configurator-for-woocommerce' ),
-					'media_select_button' => __( 'Choose', 'product-configurator-for-woocommerce' ),
-					'layers_new_placeholder' => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
-					'angles_new_placeholder' => __( 'New Angle Name', 'product-configurator-for-woocommerce' ),
-					'choice_new_placeholder' => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
-					'list_filter_placeholder' => __( 'Filter list…', 'product-configurator-for-woocommerce' ),
-					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
-					'angles_no_delete_message' => __( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
+					'media_title' => esc_html__( 'Select a picture', 'product-configurator-for-woocommerce' ),
+					'media_select_button' => esc_html__( 'Choose', 'product-configurator-for-woocommerce' ),
+					'layers_new_placeholder' => esc_html__( 'New Layer Name', 'product-configurator-for-woocommerce' ),
+					'angles_new_placeholder' => esc_html__( 'New Angle Name', 'product-configurator-for-woocommerce' ),
+					'choice_new_placeholder' => esc_html__( 'New Choice Name', 'product-configurator-for-woocommerce' ),
+					'list_filter_placeholder' => esc_html__( 'Filter list…', 'product-configurator-for-woocommerce' ),
+					'group_with_content_warning' => esc_html__( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
+					'angles_no_delete_message' => esc_html__( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
 					'use_steps' => mkl_pc( 'settings' )->get( 'use_steps', false ),
 					'is_rest_enabled' => true,
@@ -325,12 +330,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'languages' => mkl_pc( 'languages' )->get_languages(),
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
 					'layer_types' => apply_filters( 'mkl_pc_layer_types', array(
-						'simple' => __( 'Simple', 'product-configurator-for-woocommerce' ),
-						'multiple' => __( 'Multiple choice', 'product-configurator-for-woocommerce' ),
-						'group' => __( 'Group', 'product-configurator-for-woocommerce' ),
-						'form' => __( 'Form', 'product-configurator-for-woocommerce' ),
-						'summary' => __( 'Summary', 'product-configurator-for-woocommerce' ),
-						'text_overlay' => __( 'Text overlay', 'product-configurator-for-woocommerce' ),
+						'simple' => esc_html__( 'Simple', 'product-configurator-for-woocommerce' ),
+						'multiple' => esc_html__( 'Multiple choice', 'product-configurator-for-woocommerce' ),
+						'group' => esc_html__( 'Group', 'product-configurator-for-woocommerce' ),
+						'form' => esc_html__( 'Form', 'product-configurator-for-woocommerce' ),
+						'summary' => esc_html__( 'Summary', 'product-configurator-for-woocommerce' ),
+						'text_overlay' => esc_html__( 'Text overlay', 'product-configurator-for-woocommerce' ),
 					) ),
 				);
 
@@ -338,16 +343,22 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					$pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
 				}
 				if ( current_user_can( 'delete_post', $this->ID ) ) $pc_lang['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $this->ID );
-				if ( current_user_can( 'edit_posts' ) ) $pc_lang['global_layers_nonce'] = wp_create_nonce( 'mkl_pc_global_layers' );
+				if ( current_user_can( 'edit_posts' ) ) {
+					$pc_lang['global_layers_nonce'] = wp_create_nonce( 'mkl_pc_global_layers' );
+					$pc_lang['import_global_layer_title']    = esc_html__( 'Import Global Layer', 'product-configurator-for-woocommerce' );
+					$pc_lang['import_global_layer_importing'] = esc_html__( 'Importing…', 'product-configurator-for-woocommerce' );
+					$pc_lang['import_selected']             = esc_html__( 'Import Selected', 'product-configurator-for-woocommerce' );
+				}
 
 				$pc_lang['editor_product_name']       = (string) get_the_title( $this->ID );
+				$pc_lang['global_configurator_banner_label'] = esc_html__( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );
-				$pc_lang['editor_back_to_product']    = __( 'Back to product', 'product-configurator-for-woocommerce' );
-				$pc_lang['editor_save']                = __( 'Save', 'product-configurator-for-woocommerce' );
-				$pc_lang['editor_saved']               = __( 'Saved', 'product-configurator-for-woocommerce' );
-				$pc_lang['editor_saving']              = __( 'Saving…', 'product-configurator-for-woocommerce' );
-				$pc_lang['editor_load_failed']        = __( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
-				$pc_lang['editor_close_after_load_error'] = __( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_back_to_product']    = esc_html__( 'Back to product', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_save']                = esc_html__( 'Save', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_saved']               = esc_html__( 'Saved', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_saving']              = esc_html__( 'Saving…', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_load_failed']        = esc_html__( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_close_after_load_error'] = esc_html__( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
 				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu();
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );

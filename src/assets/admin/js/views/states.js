@@ -70,8 +70,55 @@ PC.views = PC.views || {};
 				this.$( '.mkl-pc-admin-ui__product-name' ).attr( 'href', url );
 			}
 			this.$( '.mkl-pc-admin-ui__back-text' ).text( back || '' );
+			this.applyGlobalConfiguratorBanner();
 			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
+			}
+		},
+		/**
+		 * Global configurator subtitle: link to CPT when editing a linked product; plain text when already on the CPT.
+		 * Banner text: global configurator post title prepended to the "Global configurator" label.
+		 */
+		applyGlobalConfiguratorBanner: function() {
+			var $link = this.$( '.mkl-pc-global-configurator--banner-link' );
+			var $plain = this.$( '.mkl-pc-global-configurator--banner-plain' );
+			if ( ! $link.length || ! $plain.length ) {
+				return;
+			}
+			var lang = ( typeof window.PC_lang === 'object' && window.PC_lang ) ? window.PC_lang : {};
+			var bannerLabel = ( typeof lang.global_configurator_banner_label === 'string' )
+				? lang.global_configurator_banner_label
+				: 'Global configurator';
+			var admin = PC.app && PC.app.admin_data;
+			if ( ! admin || admin.get( 'configurator_source' ) !== 'global' ) {
+				$link.attr( 'hidden', true ).hide();
+				$plain.attr( 'hidden', true ).hide();
+				return;
+			}
+			var gc = admin.get( 'global_configurator' );
+			if ( ! gc ) {
+				$link.attr( 'hidden', true ).hide();
+				$plain.attr( 'hidden', true ).hide();
+				return;
+			}
+			var bannerText = ( gc.title && String( gc.title ).trim() !== '' )
+				? ( String( gc.title ).trim() + '\u00a0\u2014\u00a0' + bannerLabel )
+				: bannerLabel;
+			$link.prop( 'title', bannerText );
+			// $plain.text( bannerText );
+			if ( gc.is_editing_global ) {
+				$link.attr( 'hidden', true ).hide();
+				$plain.removeAttr( 'hidden' ).show();
+				return;
+			}
+			var editUrl = gc.edit_url && typeof gc.edit_url === 'string' ? gc.edit_url : '';
+			if ( editUrl ) {
+				$link.attr( 'href', editUrl );
+				$link.removeAttr( 'hidden' ).show();
+				$plain.attr( 'hidden', true ).hide();
+			} else {
+				$link.attr( 'hidden', true ).hide();
+				$plain.removeAttr( 'hidden' ).show();
 			}
 		},
 		getActiveStateView: function() {

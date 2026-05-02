@@ -1132,7 +1132,11 @@ class DB {
 
 		foreach ( $data as $layer ) {
 			$layer_id = isset( $layer['_id'] ) ? (int) $layer['_id'] : 0;
-			if ( ! $layer_id ) continue;
+			if ( ! $layer_id ) {
+				continue;
+			}
+			$stripped = $this->strip_global_layers_to_references( array( $layer ) );
+			$layer    = isset( $stripped[0] ) ? $stripped[0] : $layer;
 			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layer_' . $layer_id );
@@ -1181,6 +1185,8 @@ class DB {
 			$layer = isset( $layer[0] ) ? $layer[0] : $layer;
 			$layer = apply_filters( 'mkl_product_configurator/data/set/layers', array( $layer ), $id );
 			$layer = isset( $layer[0] ) ? $layer[0] : $layer;
+			$stripped = $this->strip_global_layers_to_references( array( $layer ) );
+			$layer    = isset( $stripped[0] ) ? $stripped[0] : $layer;
 			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layer_' . $layer_id );
@@ -1277,7 +1283,11 @@ class DB {
 
 		foreach ( $data as $item ) {
 			$layer_id = isset( $item['layerId'] ) ? (int) $item['layerId'] : 0;
-			if ( ! $layer_id ) continue;
+			if ( ! $layer_id ) {
+				continue;
+			}
+			$stripped = $this->strip_global_content_to_references( array( $item ) );
+			$item     = isset( $stripped[0] ) ? $stripped[0] : $item;
 			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
@@ -1325,6 +1335,8 @@ class DB {
 			if ( ! isset( $item['layerId'] ) ) {
 				$item['layerId'] = $layer_id;
 			}
+			$stripped = $this->strip_global_content_to_references( array( $item ) );
+			$item     = isset( $stripped[0] ) ? $stripped[0] : $item;
 			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
@@ -1689,6 +1701,15 @@ class DB {
 		if ( ! $post || Schema::CPT_SLUG !== $post->post_type ) {
 			return array();
 		}
+		$consumers           = Owner_Resolver::get_consumer_product_ids( $cpt_id );
+		$global_config_block = array(
+			'id'                => (int) $cpt_id,
+			'title'             => get_the_title( $cpt_id ),
+			'is_editing_global' => true,
+			'edit_url'          => '',
+			'consumer_ids'      => $consumers,
+			'consumer_count'    => count( $consumers ),
+		);
 		$init_data = array(
 			'layers'              => $this->get( 'layers', $cpt_id ),
 			'angles'              => $this->get( 'angles', $cpt_id ),
@@ -1702,13 +1723,7 @@ class DB {
 			),
 			'pc_storage'          => $this->get_pc_storage_state_for_editor( $cpt_id, 0 ),
 			'configurator_source' => Schema::SOURCE_GLOBAL,
-			'global_configurator' => array(
-				'id'                => (int) $cpt_id,
-				'title'             => get_the_title( $cpt_id ),
-				'is_editing_global' => true,
-				'consumer_ids'      => Owner_Resolver::get_consumer_product_ids( $cpt_id ),
-				'consumer_count'    => count( Owner_Resolver::get_consumer_product_ids( $cpt_id ) ),
-			),
+			'global_configurator' => $global_config_block,
 		);
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $post );
 	}
@@ -1730,15 +1745,18 @@ class DB {
 				'id'                => 0,
 				'title'             => '',
 				'is_editing_global' => false,
+				'edit_url'          => '',
 				'consumer_ids'      => array(),
 				'consumer_count'    => 0,
 			);
 		}
 		$consumers = Owner_Resolver::get_consumer_product_ids( $cpt_id );
+		$edit_url = get_edit_post_link( $cpt_id, 'raw' );
 		return array(
 			'id'                => (int) $cpt_id,
 			'title'             => get_the_title( $cpt_id ),
 			'is_editing_global' => false,
+			'edit_url'          => is_string( $edit_url ) ? $edit_url : '',
 			'consumer_ids'      => $consumers,
 			'consumer_count'    => count( $consumers ),
 		);
@@ -2364,13 +2382,24 @@ class DB {
 				if ( is_array( $global ) && isset( $global['layer'] ) && is_array( $global['layer'] ) ) {
 					$resolved = $global['layer'];
 					// Preserve local layer id and basic flags
-					if ( isset( $layer['id'] ) ) $resolved['id'] = $layer['id'];
-					if ( isset( $layer['layerId'] ) && ! isset( $resolved['id'] ) ) $resolved['id'] = $layer['layerId'];
+					if ( isset( $layer['_id'] ) ) {
+						$resolved['_id'] = $layer['_id'];
+					}
+					if ( isset( $layer['id'] ) ) {
+						$resolved['id'] = $layer['id'];
+					}
+					if ( isset( $layer['layerId'] ) && ! isset( $resolved['_id'] ) && ! isset( $resolved['id'] ) ) {
+						$resolved['id'] = $layer['layerId'];
+					}
 					$resolved['is_global'] = true;
 					$resolved['global_id'] = intval( $layer['global_id'] );
-					if ( isset( $layer['order'] ) ) $resolved['order'] = $layer['order'];
-					if ( isset( $layer['image_order'] ) ) $resolved['image_order'] = $layer['image_order'];
-					$layers[$index] = $resolved;
+					if ( isset( $layer['order'] ) ) {
+						$resolved['order'] = $layer['order'];
+					}
+					if ( isset( $layer['image_order'] ) ) {
+						$resolved['image_order'] = $layer['image_order'];
+					}
+					$layers[ $index ] = $resolved;
 				}
 			}
 		}
@@ -2387,11 +2416,20 @@ class DB {
 			if ( isset( $entry['global_id'] ) && $entry['global_id'] ) {
 				$global = Global_Layers::get( intval( $entry['global_id'] ) );
 				if ( is_array( $global ) && isset( $global['content'] ) && is_array( $global['content'] ) ) {
-					$resolved = $global['content'];
-					// Ensure the local layerId is preserved
-					if ( isset( $entry['layerId'] ) ) $resolved['layerId'] = $entry['layerId'];
+					$gc = $global['content'];
+					// Global CPT stores either a bare list of choices or { layerId, choices }.
+					if ( isset( $gc['choices'] ) && is_array( $gc['choices'] ) ) {
+						$resolved = $gc;
+					} else {
+						$resolved = array(
+							'choices' => array_values( $gc ),
+						);
+					}
+					if ( isset( $entry['layerId'] ) ) {
+						$resolved['layerId'] = $entry['layerId'];
+					}
 					$resolved['global_id'] = intval( $entry['global_id'] );
-					$content[$index] = $resolved;
+					$content[ $index ]     = $resolved;
 				}
 			}
 		}
@@ -2405,14 +2443,27 @@ class DB {
 		if ( ! is_array( $layers ) ) return $layers;
 		foreach ( $layers as $index => $layer ) {
 			if ( isset( $layer['is_global'] ) && $layer['is_global'] && ! empty( $layer['global_id'] ) ) {
+				$local_id = null;
+				if ( isset( $layer['_id'] ) ) {
+					$local_id = $layer['_id'];
+				} elseif ( isset( $layer['id'] ) ) {
+					$local_id = $layer['id'];
+				} elseif ( isset( $layer['layerId'] ) ) {
+					$local_id = $layer['layerId'];
+				}
 				$ref = array(
-					'id' => isset( $layer['id'] ) ? $layer['id'] : ( isset( $layer['layerId'] ) ? $layer['layerId'] : null ),
+					'_id'       => $local_id,
+					'id'        => $local_id,
 					'is_global' => true,
 					'global_id' => intval( $layer['global_id'] ),
 				);
-				if ( isset( $layer['order'] ) ) $ref['order'] = $layer['order'];
-				if ( isset( $layer['image_order'] ) ) $ref['image_order'] = $layer['image_order'];
-				$layers[$index] = $ref;
+				if ( isset( $layer['order'] ) ) {
+					$ref['order'] = $layer['order'];
+				}
+				if ( isset( $layer['image_order'] ) ) {
+					$ref['image_order'] = $layer['image_order'];
+				}
+				$layers[ $index ] = $ref;
 			}
 		}
 		return $layers;

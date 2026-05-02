@@ -58,7 +58,8 @@ ul.wc-pc-tabs-sub,
 /*
  * Product Configurator — admin modal (`admin.scss`)
  *
- * Sections (approximate): WC product metabox tweaks → Modal shell (.mkl-pc-admin-ui) → Sidebar + canvas
+ * Sections (approximate): WC product metabox tweaks → Modal shell (.mkl-pc-admin-ui) → Reusable admin
+ * dialog (.mkl-pc-admin-dialog) → Sidebar + canvas
  * → Structures / Forms → Lists & toolbars → Content tab placeholders → Import-export → Globals / misc.
  */
 
@@ -242,16 +243,24 @@ html .mkl-pc-admin-ui.pc-modal {
 			}
 
 			button.mkl-pc-admin-ui__product-icon-back-button {
-				max-width: 40px;
+				flex: 0 0 auto;
+				align-self: flex-start;
+				width: 40px;
+				min-width: 40px;
+				height: 40px;
 				padding: 2px;
 				border-radius: 6px;
 				line-height: 1;
 				background: transparent;
 				border: none;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
 			}
 			
 			svg.edit-site-site-icon__icon {
 				max-width: 100%;
+				max-height: 36px;
 				height: auto;
 			}
 			
@@ -261,12 +270,22 @@ html .mkl-pc-admin-ui.pc-modal {
 			
 			.mkl-pc-admin-ui__product-name--container {
 				display: flex;
-				align-items: center;
-				gap: 10px;
+				align-items: flex-start;
+				gap: 12px;
+				min-width: 0;
+			}
+
+			.mkl-pc-admin-ui__product-heading {
+				flex: 1 1 auto;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+				align-items: stretch;
+				gap: 4px;
 			}
 			
 			.mkl-pc-admin-ui__product-name {
-				display: inline-block;
+				display: block;
 				color: $pc-admin-sidebar-fg;
 				font-size: 15px;
 				font-weight: 500;
@@ -1422,7 +1441,7 @@ html .pc-modal-container {
 			min-width: 0;
 			display: flex;
 			align-items: center;
-			padding: 10px 0;
+			padding: 12px 0;
 			pointer-events: none;
 		}
 
@@ -1471,10 +1490,44 @@ html .pc-modal-container {
 			color: #1e1e1e;
 			flex: 1 1 auto;
 			min-width: 0;
-			.layer-label--type {
+
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		
+			.layer-label--extras {
 				font-size: 12px;
 				font-weight: normal;
 				opacity: 0.7;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.layer-label--type-icon.dashicons {
+				width: 16px;
+				height: 16px;
+				font-size: 16px;
+				line-height: 1;
+				flex: 0 0 auto;
+				opacity: 0.95;
+			}
+
+			.mkl-pc--global {
+				display: inline-flex;
+				align-items: center;
+				gap: 4px;
+				vertical-align: middle;
+				color: var(--global-layer-primary, #3858e9);
+			}
+
+			.mkl-pc--global-icon.dashicons {
+				width: 14px;
+				height: 14px;
+				font-size: 14px;
+				line-height: 1;
+				opacity: 0.95;
+				color: var(--global-layer-primary, #3858e9);
 			}
 		}
 
@@ -2425,27 +2478,64 @@ a.mkl-pc-link--external::before {
 }
 
 .mkl-pc-global-configurator--banner {
-    display: none;
+	display: none;
+	align-items: center;
+	gap: 6px;
+	margin-top: 0;
+	padding: 0;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.35;
+	color: rgba(255, 255, 255, 0.78);
+}
+.global-configurator-icon {
+	width: 28px;
+	height: 28px;
+	font-size: 28px;
+	line-height: 1;
+	display: none;
 }
 
-/* Global mode: banner is first in flow; no offset needed on the body. */
+.mkl-pc-global-configurator--banner-link,
+.mkl-pc-global-configurator--banner-plain {
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	color: inherit;
+}
+
+.mkl-pc-global-configurator--banner-link {
+	text-decoration: none;
+
+	&:hover,
+	&:focus {
+		color: #fff;
+		text-decoration: underline;
+	}
+}
+
+.mkl-pc-global-configurator--banner-plain {
+	cursor: default;
+}
+
+/* Global mode: compact banner under sidebar title */
+.pc-modal-container.mkl-pc-configurator-is-global .mkl-pc-global-configurator--banner {
+	display: flex;
+}
+
+.pc-modal-container.mkl-pc-configurator-is-global .global-configurator-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+}
+
+.pc-modal-container.mkl-pc-configurator-is-global .edit-site-site-icon__icon {
+	display: none;
+}
+
 .pc-modal-container.mkl-pc-configurator-is-global .mkl-pc-admin-ui__body {
-    min-height: 0;
-}
-
-.mkl-pc-configurator-is-global .mkl-pc-global-configurator--banner {
-    display: flex;
-    background: #3858e9;
-    height: 35px;
-    color: #FFF;
-    /* padding: 3px 17px; */
-    /* text-align: center; */
-    justify-content: center;
-    align-items: anchor-center;
-}
-
-.mkl-pc-configurator-is-global .mkl-pc-admin-ui__close {
-    top: 35px;
+	min-height: 0;
 }
 
 @keyframes mkl-pc-sidebar-layers-in {
@@ -2460,14 +2550,245 @@ a.mkl-pc-link--external::before {
 }
 /* global layers */
 
-.mkl-pc-badge--global {
-	--mkl_pc-badge-background: var(--global-layer-primary);
+/*
+ * Reusable admin dialog — tmpl-mkl-pc-admin-dialog, PC.views.admin_dialog (views/admin-dialog.js).
+ * Separate from the main configurator shell (.mkl-pc-admin-ui.pc-modal).
+ */
+html .mkl-pc-admin-dialog-mount {
+	position: fixed;
+	inset: 0;
+	z-index: 150000;
+	box-sizing: border-box;
 }
 
-html .media-modal.pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened {
+.mkl-pc-admin-dialog {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+		max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+	box-sizing: border-box;
+	font-size: 13px;
+	line-height: 1.4;
+	color: #1d2327;
+
+	&__backdrop {
+		position: absolute;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		cursor: pointer;
+	}
+
+	&__panel {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		width: min(100%, 560px);
+		max-height: min(90vh, 720px);
+		background: #fff;
+		border-radius: 8px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+		overflow: hidden;
+		box-sizing: border-box;
+	}
+
+	&__header {
+		flex: 0 0 auto;
+		position: relative;
+		min-height: 48px;
+		padding: 12px 48px 12px 16px;
+		border-bottom: 1px solid $light-border-color;
+		box-sizing: border-box;
+	}
+
+	&__title {
+		margin: 0;
+		font-size: 1.15em;
+		font-weight: 600;
+		line-height: 1.35;
+		padding-right: 8px;
+	}
+
+	&__close {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		width: 40px;
+		height: 40px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 4px;
+		background: transparent;
+		color: #787c82;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 2;
+		&:hover,
+		&:focus {
+			color: #1d2327;
+			background: rgba(0, 0, 0, 0.06);
+		}
+	}
+
+	&__close-icon {
+		display: block;
+		width: 20px;
+		height: 20px;
+		&::before {
+			font: normal 20px/1 dashicons;
+			content: "\f158";
+		}
+	}
+
+	&__body {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+	}
+
+	&__footer-actions {
+		flex: 0 0 auto;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		padding: 12px 16px;
+		border-top: 1px solid $light-border-color;
+		background: #f6f7f7;
+		box-sizing: border-box;
+	}
+}
+
+.mkl-pc-admin-dialog--import-global-layer {
+	.mkl-pc-import-global-layer {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		max-height: min(55vh, 480px);
+	}
+
+	.mkl-pc-import-global-layer__toolbar {
+		flex: 0 0 auto;
+		padding: 12px 16px 10px;
+		border-bottom: 1px solid $light-border-color;
+		box-sizing: border-box;
+
+		.global-layers-filter {
+			width: 100%;
+			max-width: 100%;
+			box-sizing: border-box;
+		}
+	}
+
+	.global-layers-list {
+		flex: 1;
+		min-height: 120px;
+		overflow: auto;
+		padding: 12px 16px;
+		box-sizing: border-box;
+
+		> p {
+			margin: 1em 0;
+			color: #646970;
+
+			&.error {
+				color: #b32d2e;
+			}
+		}
+
+		.mkl-pc-spinner {
+			display: block;
+			margin: 24px auto;
+		}
+	}
+
+	.global-layer-item {
+		label {
+			display: flex;
+			align-items: flex-start;
+			gap: 12px;
+			padding: 12px 14px;
+			margin: 0 0 10px;
+			border: 1px solid $light-border-color;
+			border-radius: 6px;
+			cursor: pointer;
+			box-sizing: border-box;
+			transition: border-color 0.12s ease, background 0.12s ease;
+
+			&:hover {
+				border-color: var(--wp-admin-theme-color, #2271b1);
+				background: #f6f7f7;
+			}
+		}
+
+		input[type="radio"] {
+			margin-top: 4px;
+		}
+
+		.layer-info {
+			flex: 1;
+			min-width: 0;
+		}
+
+		h4 {
+			margin: 0 0 6px;
+			font-size: 13px;
+			font-weight: 600;
+			line-height: 1.35;
+		}
+
+		.admin-label {
+			font-weight: 400;
+			opacity: 0.85;
+		}
+
+		.layer-thumbnail {
+			display: block;
+			max-width: 56px;
+			height: auto;
+			margin-top: 4px;
+			border-radius: 4px;
+			border: 1px solid #dcdcde;
+		}
+
+		.layer-type {
+			display: block;
+			margin-top: 4px;
+			font-size: 12px;
+			color: #646970;
+		}
+	}
+}
+
+.mkl-pc-badge--global {
+	--mkl_pc-badge-background: var(--global-layer-primary);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+
+	.dashicons {
+		width: 12px;
+		height: 12px;
+		font-size: 12px;
+		line-height: 1;
+	}
+}
+
+html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened {
     position: relative;
 }
-html .media-modal.pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before {
+html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before {
     content: '';
     display: block;
     position: absolute;
@@ -2479,6 +2800,11 @@ html .media-modal.pc-modal .pc-sidebar .is-global-locked .setting-section.is-ope
     background: #ffffff6e;
 }
 
+.layer-form.is-global.is-global-locked .setting-section .section-fields, 
+.layer-form.is-global.is-global-locked .mkl-pc-image-settings {
+    pointer-events: none;
+    cursor: no-drop;
+}
 
 .is-layer-locked.is-global-layer .actions-container button.delete-item, 
 .is-layer-locked.is-global-layer .actions-container button.duplicate-item {

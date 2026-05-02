@@ -33,7 +33,6 @@ GENERAL TEMPLATES
 <?php do_action('mkl_pc_admin_templates_before') ?>
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo esc_attr( $class ); ?>">
-		<div class="mkl-pc-global-configurator--banner"> <?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?> <?php esc_html_e( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' ); ?></div>
 		<button type="button" class="mkl-pc-admin-ui__close">
 			<span class="mkl-pc-admin-ui__close-icon" aria-hidden="true"></span>
 			<span class="screen-reader-text"><?php esc_html_e( 'Close configurator', 'product-configurator-for-woocommerce' ); ?></span>
@@ -57,14 +56,38 @@ GENERAL TEMPLATES
 	<div class="mkl-pc-admin-ui__backdrop pc-modal-backdrop"></div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-admin-dialog">
+	<div class="mkl-pc-admin-dialog wp-core-ui <# if ( data.extraClass ) { #>{{ data.extraClass }}<# } #>" role="dialog" aria-modal="true"<# if ( data.title ) { #> aria-labelledby="{{ data.titleId }}"<# } #>>
+		<div class="mkl-pc-admin-dialog__backdrop" data-mkl-pc-dialog-dismiss tabindex="-1"></div>
+		<div class="mkl-pc-admin-dialog__panel">
+			<div class="mkl-pc-admin-dialog__header">
+				<# if ( data.title ) { #>
+					<h2 id="{{ data.titleId }}" class="mkl-pc-admin-dialog__title">{{ data.title }}</h2>
+				<# } #>
+				<button type="button" class="mkl-pc-admin-dialog__close" data-mkl-pc-dialog-dismiss aria-label="<?php echo esc_attr__( 'Close dialog', 'product-configurator-for-woocommerce' ); ?>">
+					<span class="mkl-pc-admin-dialog__close-icon" aria-hidden="true"></span>
+				</button>
+			</div>
+			<div class="mkl-pc-admin-dialog__body"></div>
+		</div>
+	</div>
+</script>
+
 <script type="text/html" id="tmpl-mkl-pc-menu">	
 	<div class="mkl-pc-admin-ui__sidebar">
 		<div class="mkl-pc-admin-ui__sidebar-top">
 			<div class="mkl-pc-admin-ui__product-name--container">
 				<button type="button" class="mkl-pc-admin-ui__product-icon-back-button" aria-label="<?php esc_html_e( 'Back to product', 'product-configurator-for-woocommerce' ); ?>">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 24 24" width="48" height="48" class="edit-site-site-icon__icon" aria-hidden="true" focusable="false"><path d="M20 10c0-5.51-4.49-10-10-10C4.48 0 0 4.49 0 10c0 5.52 4.48 10 10 10 5.51 0 10-4.48 10-10zM7.78 15.37L4.37 6.22c.55-.02 1.17-.08 1.17-.08.5-.06.44-1.13-.06-1.11 0 0-1.45.11-2.37.11-.18 0-.37 0-.58-.01C4.12 2.69 6.87 1.11 10 1.11c2.33 0 4.45.87 6.05 2.34-.68-.11-1.65.39-1.65 1.58 0 .74.45 1.36.9 2.1.35.61.55 1.36.55 2.46 0 1.49-1.4 5-1.4 5l-3.03-8.37c.54-.02.82-.17.82-.17.5-.05.44-1.25-.06-1.22 0 0-1.44.12-2.38.12-.87 0-2.33-.12-2.33-.12-.5-.03-.56 1.2-.06 1.22l.92.08 1.26 3.41zM17.41 10c.24-.64.74-1.87.43-4.25.7 1.29 1.05 2.71 1.05 4.25 0 3.29-1.73 6.24-4.4 7.78.97-2.59 1.94-5.2 2.92-7.78zM6.1 18.09C3.12 16.65 1.11 13.53 1.11 10c0-1.3.23-2.48.72-3.59C3.25 10.3 4.67 14.2 6.1 18.09zm4.03-6.63l2.58 6.98c-.86.29-1.76.45-2.71.45-.79 0-1.57-.11-2.29-.33.81-2.38 1.62-4.74 2.42-7.1z"></path></svg>
+					<span class="dashicons dashicons-admin-site-alt3 global-configurator-icon" aria-hidden="true"></span>
 				</button>
-				<a class="mkl-pc-admin-ui__product-name" href="#" target="_blank" rel="noopener noreferrer"></a>
+				<div class="mkl-pc-admin-ui__product-heading">
+					<a class="mkl-pc-admin-ui__product-name" href="#" target="_blank" rel="noopener noreferrer"></a>
+					<div class="mkl-pc-global-configurator--banner">
+						<a class="mkl-pc-global-configurator--banner-link" href="#" title="<?php echo esc_attr__( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' ); ?>"><?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?></a>
+						<span class="mkl-pc-global-configurator--banner-plain" hidden><?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?></span>
+					</div>
+				</div>
 			</div>
 			<button type="button" class="mkl-pc-admin-ui__back-to-product">
 				<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
@@ -208,11 +231,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<button type="button" class="mkl-pc-admin-list-row__hit">
 			<span class="screen-reader-text"><?php echo esc_html__( 'Select layer', 'product-configurator-for-woocommerce' ); ?>: <# print( data.admin_label && data.admin_label != '' ? data.admin_label : data.name ); #></span>
 		</button>
-		<div class="mkl-pc-admin-list-row__body">
-			<div class="mkl-pc-badges"><# if ( data.is_global ) { #>
-					<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
-			<# } #></div>
-		</div>
+		<div class="mkl-pc-admin-list-row__body"></div>
 	</div>
 	<# if ( 'group' == data.type && 'order' == data.orderAttr ) { #>
 		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
@@ -234,11 +253,23 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<# } #>
 		</div>
 		<# if ( 'group' != data.type && 'angle' != data.object_type ) { #>
-		<div class="layer-label--type">
+		<div class="layer-label--extras">
 			<# if ( data.not_a_choice ) { #>
-				<span class="layer-label--type-icon not-a-choice"></span> <span class="layer-label--type-label"><?php esc_html_e( 'Not a choice', 'product-configurator-for-woocommerce' ); ?></span>
+				<div class="layer-label--extras-item layer-label--extras-item--type">
+					<span class="layer-label--type-icon dashicons dashicons-dismiss" aria-hidden="true"></span> <span class="layer-label--type-label"><?php esc_html_e( 'Not a choice', 'product-configurator-for-woocommerce' ); ?></span>
+				</div>
 			<# } else { #>
-				<span class="layer-label--type-icon {{data.type}}"></span> <span class="layer-label--type-label">{{PC.get_layer_type_label( data.type )}}</span>
+				<div class="layer-label--extras-item layer-label--extras-item--type">
+					<span class="layer-label--type-icon dashicons <# print( PC.layer_type_dashicon_class( data.type ) ); #>" aria-hidden="true"></span> <span class="layer-label--type-label">{{PC.get_layer_type_label( data.type )}}</span>
+				</div>
+			<# } #>
+			<# if ( data.is_global ) { #>
+				<div class="layer-label--extras-item layer-label--extras-item--global">
+					<span class="mkl-pc--global" title="<?php esc_attr_e( 'Global Layer', 'product-configurator-for-woocommerce' ); ?>">
+						<span class="mkl-pc--global-icon dashicons dashicons-networking" aria-hidden="true"></span>
+						<span class="mkl-pc--global-text"><?php esc_html_e( 'Global', 'product-configurator-for-woocommerce' ); ?></span>
+					</span>
+				</div>
 			<# } #>
 		</div>
 		<# } #>
@@ -354,7 +385,7 @@ CONTENT TEMPLATES
 			<# } #>
 		</span>
 		<# if ( data.is_global ) { #>
-			<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
+			<span class="mkl-pc-badge mkl-pc-badge--global" title="<?php esc_attr_e( 'Global Layer', 'product-configurator-for-woocommerce' ); ?>"><span class="dashicons dashicons-networking" aria-hidden="true"></span> <?php esc_html_e( 'Global', 'product-configurator-for-woocommerce' ); ?></span>
 		<# } #>
 		<span class="number-of-choices">{{data.choices_number}}</span>
 	</button>
@@ -760,21 +791,16 @@ IMPORT / EXPORT
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-import-global-layer">
-	<div class="media-frame-content import-global-layer">
-		<div class="import-global-layer-header">
-			<h2><?php esc_html_e( 'Import Global Layer', 'product-configurator-for-woocommerce' ); ?></h2>
-			<div class="filter-container">
-				<input type="text" class="global-layers-filter" placeholder="<?php esc_attr_e( 'Filter by name...', 'product-configurator-for-woocommerce' ); ?>" />
-			</div>
+	<div class="mkl-pc-import-global-layer">
+		<div class="mkl-pc-import-global-layer__toolbar">
+			<input type="text" class="global-layers-filter" placeholder="<?php esc_attr_e( 'Filter by name…', 'product-configurator-for-woocommerce' ); ?>" autocomplete="off" />
 		</div>
 		<div class="global-layers-list">
-			<div class="spinner"></div>
+			<div class="mkl-pc-spinner" aria-hidden="true"></div>
 		</div>
-		<div class="media-toolbar">
-			<div class="media-toolbar-primary">
-				<button type="button" class="button button-primary import-selected" disabled><?php esc_html_e( 'Import Selected', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
-			</div>
+		<div class="mkl-pc-admin-dialog__footer-actions">
+			<button type="button" class="button button-primary import-selected" disabled><?php esc_html_e( 'Import Selected', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button mkl-pc-admin-dialog__cancel cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 		</div>
 	</div>
 </script>

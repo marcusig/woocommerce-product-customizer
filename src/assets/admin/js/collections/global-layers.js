@@ -35,7 +35,12 @@ var PC = PC || {};
 		 */
 		process_content_layer_id: function( choices, target_layer_id ) {
 			if ( ! choices || ! target_layer_id ) return choices;
-			
+
+			// CPT may store { choices: [...] } or a bare choice list; normalize to an array of choices.
+			if ( choices && typeof choices === 'object' && ! Array.isArray( choices ) && Array.isArray( choices.choices ) ) {
+				choices = choices.choices;
+			}
+
 			// Global layers should always be an array of choices
 			if ( Array.isArray( choices ) ) {
 				return _.map( choices, function( choice ) {
@@ -167,7 +172,9 @@ var PC = PC || {};
 				if ( content_data ) {
 					model.set( 'content', content_data );
 				}
-				options.success( model, response );
+				if ( options.success ) {
+					options.success( model, response );
+				}
 			}.bind( this ) ).fail( function( error ) {
 				if ( options.error ) options.error( model, error );
 			}.bind( this ) );

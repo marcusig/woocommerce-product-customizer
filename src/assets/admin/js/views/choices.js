@@ -116,6 +116,12 @@ PC.views = PC.views || {};
 			// Always update lock state if layer is global - this ensures edit mode persists
 			if ( this.model.get( 'is_global' ) ) {
 				this.update_lock_state();
+			} else {
+				// Leaving a locked global layer leaves is-layer-locked on the content root; clear it for local layers
+				this.$el.removeClass( 'is-layer-locked' );
+				if ( this.state && this.state.$el ) {
+					this.state.$el.removeClass( 'is-layer-locked' );
+				}
 			}
 			// Ensure parent view has correct classes for button visibility
 			this.state.$el.toggleClass( 'is-global-layer', this.model.get( 'is_global' ) );
@@ -272,7 +278,7 @@ PC.views = PC.views || {};
 			if ( this.state ) {
 				this.state.active_layer = null;
 				// Remove classes when closing layer (buttons will be hidden)
-				this.state.$el.removeClass( 'is-global-layer is-global-locked' );
+				this.state.$el.removeClass( 'is-global-layer is-global-locked is-layer-locked' );
 				if ( this.state.update_global_actions_visibility ) {
 					this.state.update_global_actions_visibility();
 				}
@@ -847,13 +853,11 @@ PC.views = PC.views || {};
 		update_lock_state: function() {
 			if ( ! this.$el || ! this.$el.length ) return;
 			
-			// Get current edit state from parent state view or global layers collection
-			var is_editing = false;
+			// Local layers are always editable. Only global layers respect lock/edit mode.
+			var is_editing = true;
 			if ( this.layer && this.layer.get( 'is_global' ) && this.layer.get( 'global_id' ) ) {
 				var global_id = this.layer.get( 'global_id' );
 				is_editing = PC.app.get_global_layers() ? PC.app.get_global_layers().is_editing_choices( global_id ) : false;
-			} else if ( this.state && typeof this.state.editing_choices !== 'undefined' ) {
-				is_editing = this.state.editing_choices;
 			}
 			
 			// Disable inputs when locked (locked = not editing)
