@@ -54,7 +54,8 @@ TODO:
 		events: {
 			'click .add-layer': 'create',
 			'click .import-layer': 'import_global_layer',
-			'click .order-toolbar button': 'change_order_type',
+			'click .mkl-pc-toolbar-more': 'on_toolbar_more_click',
+			'click .order-layers': 'change_order_type',
 			'keypress .structure-toolbar h4 input': 'create',
 			'input .mkl-pc-list-filter-input': 'on_list_filter',
 			'remove': 'cleanup_on_remove', 
@@ -62,6 +63,9 @@ TODO:
 
 		}, 
 		cleanup_on_remove: function() {
+			if ( this.collectionName === 'layers' && this.cid ) {
+				$( document ).off( '.mklPcToolbarDD' + this.cid );
+			}
 			_.each( this.items, this.remove_item );
 			this.stopListening();
 		},
@@ -78,8 +82,52 @@ TODO:
 			this.$new_input = this.$('.structure-toolbar h4 input'); 
 			this.$list_filter = this.$('.structure-toolbar .mkl-pc-list-filter-input'); 
 			this.floating_add = new PC.views.floating_add_button( { el: this.$( '.floating-add' ).first(), list: this.$list, parent: this } );
+			this.bind_toolbar_dropdown_document_listeners();
 			this.add_all(); 
 			return this;
+		},
+		bind_toolbar_dropdown_document_listeners: function() {
+			if ( this.collectionName !== 'layers' ) {
+				return;
+			}
+			var self = this;
+			var ns = 'mklPcToolbarDD' + this.cid;
+			$( document ).off( '.' + ns );
+			$( document ).on( 'click.' + ns, function( e ) {
+				if ( ! $( e.target ).closest( '.mkl-pc-toolbar-dropdown' ).length ) {
+					self.closeToolbarDropdown();
+				}
+			} );
+			$( document ).on( 'keydown.' + ns, function( e ) {
+				if ( e.keyCode === 27 ) {
+					self.closeToolbarDropdown();
+				}
+			} );
+		},
+		closeToolbarDropdown: function() {
+			var $menu = this.$( '.mkl-pc-toolbar-dropdown__menu' );
+			var $btn = this.$( '.mkl-pc-toolbar-more' );
+			if ( ! $menu.length ) {
+				return;
+			}
+			$menu.attr( 'hidden', true );
+			$btn.attr( 'aria-expanded', 'false' );
+		},
+		on_toolbar_more_click: function( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $menu = this.$( '.mkl-pc-toolbar-dropdown__menu' );
+			var $btn = this.$( '.mkl-pc-toolbar-more' );
+			if ( ! $menu.length || ! $btn.length ) {
+				return;
+			}
+			var isHidden = $menu.prop( 'hidden' ) === true || $menu.is( '[hidden]' );
+			if ( ! isHidden ) {
+				this.closeToolbarDropdown();
+			} else {
+				$menu.removeAttr( 'hidden' );
+				$btn.attr( 'aria-expanded', 'true' );
+			}
 		},
 		mark_collection_as_modified: function( model ) {
 			PC.app.is_modified[this.collectionName] = true;
@@ -103,8 +151,9 @@ TODO:
 			this.mark_collection_as_modified( m );
 		},
 		change_order_type: function( e ) {
+			e.preventDefault();
 			var $e = $( e.currentTarget );
-			var selection = $e.data( 'order_type' );
+			var selection = $e.attr( 'data-order_type' ) || $e.data( 'order_type' );
 
 			// check if it's the first time
 			if ( 'image_order' == selection ) {
@@ -117,13 +166,15 @@ TODO:
 			}
 
 			if ( selection && this.orderAttr != selection ) {
-				$e.closest( '.button-group' ).find( 'button' ).removeClass( 'button-primary' );
-				$e.addClass( 'button-primary' );
+				var $menu = this.$( '.mkl-pc-toolbar-dropdown__menu' );
+				$menu.find( '.order-layers' ).removeClass( 'mkl-pc-toolbar-dropdown__item--active' ).attr( 'aria-checked', 'false' );
+				$e.addClass( 'mkl-pc-toolbar-dropdown__item--active' ).attr( 'aria-checked', 'true' );
 				this.orderAttr = selection;
 				this.col.orderBy = selection;
 
 				this.col.sort({silent: true});
 				this.add_all();
+				this.closeToolbarDropdown();
 			}
 		},
 		add_one: function( layer ) {
@@ -215,6 +266,7 @@ TODO:
 		},
 		import_global_layer: function( e ) {
 			e.preventDefault();
+			this.closeToolbarDropdown();
 			if ( ! PC.views.import_global_layer ) {
 				console.error( 'Import global layer view not found. Make sure import-global-layer.js is loaded.' );
 				return;

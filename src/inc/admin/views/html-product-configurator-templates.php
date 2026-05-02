@@ -160,14 +160,49 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure">
 	<div class="mkl-pc-admin-ui__content structure">
-		<div class="structure-content has-toolbar <# if ( data.collectionName && 'layers' == data.collectionName ) { #> has-bottom-toolbar<# } #>">
+		<div class="structure-content has-toolbar">
 			<div class="structure-toolbar">
 				<div class="structure-toolbar__primary">
 					<h1>{{data.title}}</h1>
 					<div class="structure-toolbar__add">
 						<h4><input type="text" placeholder="{{data.input_placeholder}}"></h4>
 						<button type="button" class="button-primary add-layer"><span><?php esc_html_e( 'Add', 'product-configurator-for-woocommerce' ); ?></span></button>
-						<# if ( data.collectionName && 'layers' == data.collectionName ) { #><button type="button" class="button-primary import-layer"><span><?php esc_html_e( 'Import', 'product-configurator-for-woocommerce' ); ?></span></button><# } #>
+						<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
+						<div class="mkl-pc-toolbar-dropdown">
+							<button type="button" class="button mkl-pc-toolbar-more" aria-expanded="false" aria-haspopup="true" aria-label="<?php echo esc_attr__( 'More actions', 'product-configurator-for-woocommerce' ); ?>" title="<?php echo esc_attr__( 'More actions', 'product-configurator-for-woocommerce' ); ?>">
+								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 19h-2v-2h2v2zm0-6h-2v-2h2v2zm0-6h-2V5h2v2z" /></svg>
+							</button>
+							<div class="mkl-pc-toolbar-dropdown__menu" role="menu" hidden>
+								<button type="button" role="menuitem" class="mkl-pc-toolbar-dropdown__item import-layer">
+									<?php echo esc_html_x( 'Import global layer', 'Layers tab: more menu', 'product-configurator-for-woocommerce' ); ?>
+								</button>
+								<?php
+								/**
+								 * Add extra items at the top of the layers “more” menu (after Import).
+								 */
+								do_action( 'mkl_pc_layers_toolbar_dropdown_top' );
+								?>
+								<div class="mkl-pc-toolbar-dropdown__sep" role="separator" aria-hidden="true"></div>
+								<div class="mkl-pc-toolbar-dropdown__label" id="mkl-pc-toolbar-order-layers-label">
+									<?php echo esc_html_x( 'Order layers:', 'Layers tab: more menu section', 'product-configurator-for-woocommerce' ); ?>
+								</div>
+								<div class="mkl-pc-toolbar-dropdown__group" role="group" aria-labelledby="mkl-pc-toolbar-order-layers-label">
+									<button type="button" role="menuitemradio" data-order_type="order" class="mkl-pc-toolbar-dropdown__item mkl-pc-toolbar-dropdown__item--choice order-layers mkl-pc-toolbar-dropdown__item--active" aria-checked="true">
+										<?php echo esc_html_x( 'Order the menu', 'Layer list ordering mode', 'product-configurator-for-woocommerce' ); ?>
+									</button>
+									<button type="button" role="menuitemradio" data-order_type="image_order" class="mkl-pc-toolbar-dropdown__item mkl-pc-toolbar-dropdown__item--choice order-layers" aria-checked="false">
+										<?php echo esc_html_x( 'Order the images', 'Layer list ordering mode', 'product-configurator-for-woocommerce' ); ?>
+									</button>
+								</div>
+								<?php
+								/**
+								 * Add extra items at the bottom of the layers “more” menu.
+								 */
+								do_action( 'mkl_pc_layers_toolbar_dropdown' );
+								?>
+							</div>
+						</div>
+						<# } #>
 					</div>
 				</div>
 				<div class="structure-toolbar__filter">
@@ -182,14 +217,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					<span class="screen-reader-text"><?php esc_html_e( 'Add item here', 'product-configurator-for-woocommerce' ); ?></span>
 				</button>
 			</div>
-			<# if ( data.collectionName && 'layers' == data.collectionName ) { #>
-				<div class="order-toolbar">
-					<div class="button-group mkl-pc-admin-ui__button-group">
-						<button data-order_type="order" type="button" class="button button-primary order-layers"><span><?php esc_html_e( 'Reorder the menu', 'product-configurator-for-woocommerce' ); ?></span></button>
-						<button data-order_type="image_order" type="button" class="button order-layers"><span><?php esc_html_e( 'Reorder the images', 'product-configurator-for-woocommerce' ); ?></span></button>
-					</div>
-				</div>
-			<# } #>
 		</div>
 		<div class="pc-sidebar visible"></div>
 	</div>
