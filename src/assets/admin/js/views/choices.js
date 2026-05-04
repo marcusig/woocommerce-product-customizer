@@ -52,7 +52,6 @@ PC.views = PC.views || {};
 			this.render(); 
 		},
 		events: {
-			'click .active-layer': 'hide_choices',
 			'click .add-layer': 'create',
 			// 'click .paste-items': 'paste_items',
 			'keypress .structure-toolbar--choices h4 input': 'create',
@@ -103,9 +102,6 @@ PC.views = PC.views || {};
 			this.$el.html( this.template( _.extend( { has_clipboard_data: this.has_clipboard_data(), is_editing_choices: this.editing_choices }, this.model.attributes ) ) );
 			this.remove_views();
 
-			this.$active_layer = this.$('.active-layer');
-			var al_button = wp.template('mkl-pc-content-layer-back-link');
-			this.$active_layer.html( al_button( this.model.attributes ) );
 			this.$new_input = this.$('.structure-toolbar--choices h4 input'); 
 			this.$list_filter = this.$('.structure-toolbar--choices .mkl-pc-list-filter-input'); 
 			this.$list = this.$('.choices');

@@ -334,6 +334,20 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure-layer-form">
 	<div class="form-details">
+		<# if ( data.is_global ) { #>
+			<div class="mkl-pc-global-layer-heading">
+				<h4><span class="dashicons dashicons-networking" aria-hidden="true"></span> <?php esc_html_e( 'Global layer', 'product-configurator-for-woocommerce' ); ?></h4>
+				<div class="mkl-pc-global-layer--actions">
+					<# if ( data.is_editing_global_layer ) { #>
+						<button type="button" class="button button-small button-primary save-global"><?php esc_html_e( 'Save changes to global layer', 'product-configurator-for-woocommerce' ); ?></button>
+						<button type="button" class="button button-small cancel-global"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+					<# } else { #>
+						<button type="button" class="button button-small unlink-global"><?php esc_html_e( 'Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
+						<button type="button" class="button button-small button-primary edit-global"><?php esc_html_e( 'Edit global layer', 'product-configurator-for-woocommerce' ); ?></button>
+					<# } #>
+				</div>
+			</div>
+		<# } #>
 		<header>
 			<h2><?php esc_html_e('Details', 'product-configurator-for-woocommerce' ) ?> - [ID: {{data._id}}]</h2>
 			<div class="actions-container">
@@ -343,18 +357,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<# } #>
 			</div>
 		</header>
-		<# if ( data.is_global ) { #>
-		<div class="mkl-pc-global-layer-heading">
-			<span class="mkl-pc-badge mkl-pc-badge--global" title="Global Layer">Global</span>
-			<# if ( data.is_editing_global_layer ) { #>
-				<button type="button" class="button save-global"><?php esc_html_e( 'Save changes to global layer', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button cancel-global"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
-			<# } else { #>
-				<button type="button" class="button unlink-global"><?php esc_html_e( 'Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button edit-global"><?php esc_html_e( 'Edit global layer', 'product-configurator-for-woocommerce' ); ?></button>
-			<# } #>
-		</div>
-		<# } #>
 
 		<?php do_action('mkl_pc_layer_fields') ?>
 
@@ -392,12 +394,6 @@ CONTENT TEMPLATES
 		</div>
 		<div class="content-col content-choice pc-sidebar choice-details">
 			<p class="mkl-pc-content-placeholder"><?php esc_html_e( 'Choice details', 'product-configurator-for-woocommerce' ); ?></p>
-			<div class="global-actions-container">
-				<h3><span class="dashicons dashicons-lock"></span><span class="dashicons dashicons-unlock"></span> <?php _e('Global layer', 'product-configurator-for-woocommerce' ); ?></h3>
-				<button type="button" class="button button-primary save-choices"><?php _e('Save choices', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button cancel-edit-choices"><?php _e('Cancel', 'product-configurator-for-woocommerce' ); ?></button>
-				<button type="button" class="button edit-choices"><?php _e('Edit choices', 'product-configurator-for-woocommerce' ); ?></button>
-			</div>
 		</div>
 	</div>
 </script>
@@ -431,8 +427,13 @@ CONTENT TEMPLATES
 
 
 <script type="text/html" id="tmpl-mkl-pc-choices">
-	<button type="button" class="active-layer"></button>
 	<div class="structure-toolbar structure-toolbar--choices">
+		<div class="global-actions-container">
+			<h3><span class="dashicons dashicons-lock" aria-hidden="true"></span><span class="dashicons dashicons-unlock" aria-hidden="true"></span> <?php esc_html_e( 'Global layer', 'product-configurator-for-woocommerce' ); ?></h3>
+			<button type="button" class="button button-small button-primary save-choices"><?php esc_html_e( 'Save choices', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button button-small cancel-edit-choices"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button button-small edit-choices"><?php esc_html_e( 'Edit choices', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
 		<# if ( !data.is_global || data.is_editing_choices ) { #>
 		<div class="structure-toolbar__primary">
 			<h1><?php esc_html_e( 'Choices', 'product-configurator-for-woocommerce' ); ?></h1>

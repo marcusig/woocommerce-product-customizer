@@ -70,11 +70,9 @@ PC.views = PC.views || {};
 				this.$choices = this.$('.content-choices-list');
 				this.$form = this.$('.content-choice');
 				if ( this.$list && this.$list.length ) {
-					
 
-					this.$global_actions = this.$('.global-actions-container');
 					this.active_layer = null;
-	
+
 					this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } ); 
 					this.$list.append(this.layers.el);
 					this.update_global_actions_visibility();

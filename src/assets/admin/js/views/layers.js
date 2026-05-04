@@ -112,6 +112,7 @@ TODO:
 			}
 			$menu.attr( 'hidden', true );
 			$btn.attr( 'aria-expanded', 'false' );
+			this.$el.find( '.structure-content' ).first().removeClass( 'mkl-pc-structure-content--toolbar-menu-open' );
 		},
 		on_toolbar_more_click: function( e ) {
 			e.preventDefault();
@@ -127,6 +128,10 @@ TODO:
 			} else {
 				$menu.removeAttr( 'hidden' );
 				$btn.attr( 'aria-expanded', 'true' );
+				this.$el.find( '.structure-content' ).first().addClass( 'mkl-pc-structure-content--toolbar-menu-open' );
+				if ( this.floating_add ) {
+					this.floating_add.hideTransient();
+				}
 			}
 		},
 		mark_collection_as_modified: function( model ) {
@@ -1094,59 +1099,82 @@ TODO:
 		initialize: function( options ) {
 			this.list = options.list;
 			this.parent = options.parent;
+			this.listHoverActive = false;
+
 			this.$el.on( 'mouseenter', function() {
 				this.active = true;
 			}.bind( this ) );
 			this.$el.on( 'mouseleave', function() {
 				this.active = false;
 			}.bind( this ) );
+
+			this._onListMouseMove = _.debounce( function( e ) {
+				if ( ! this.listHoverActive ) {
+					return;
+				}
+				var $item = $( e.target ).closest( '.mkl-list-item' );
+				if ( ! $item.length ) {
+					return;
+				}
+				var item_dimensions = $item[0].getBoundingClientRect();
+				var list_position = this.list[0].getBoundingClientRect();
+				var pos = item_dimensions.y - list_position.y + this.list.position().top;
+				this.list_item = $item;
+				if ( e.clientY < item_dimensions.y + 20 ) {
+					this.where = 'before';
+					this.$el.css( {
+						'transform': 'translateY(' + pos + 'px)',
+						'width': item_dimensions.width,
+						'left': item_dimensions.x - list_position.x
+					} );
+					this.$el.addClass( 'showing' );
+				} else if ( e.clientY > ( item_dimensions.y + item_dimensions.height - 20 ) ) {
+					this.where = 'after';
+					this.$el.css( {
+						'transform': 'translateY(' + ( pos + item_dimensions.height ) + 'px)',
+						'width': item_dimensions.width,
+						'left': item_dimensions.x - list_position.x
+					} );
+					this.$el.addClass( 'showing' );
+					this.$el.css( 'width', item_dimensions.width );
+				} else {
+					if ( ! this.active ) {
+						this.$el.removeClass( 'showing' );
+					}
+				}
+			}.bind( this ), 100 );
+
 			this.render();
 		},
 		render: function() {
-			this.list.on( 'mouseenter', function( e ) {
-				this.list.on( 'mousemove', this.calculate_position.bind( this ) );
+			this.list.off( '.mklPcFloatingAdd' );
+
+			this.list.on( 'mouseenter.mklPcFloatingAdd', function() {
+				this.listHoverActive = true;
+				this.list.on( 'mousemove.mklPcFloatingAdd', this._onListMouseMove );
 			}.bind( this ) );
 
-			this.list.on( 'mouseleave', function( e ) {
-				this.list.off( 'mousemove', this.calculate_position );
+			this.list.on( 'mouseleave.mklPcFloatingAdd', function() {
+				this.listHoverActive = false;
+				this.list.off( 'mousemove.mklPcFloatingAdd' );
+				if ( this._onListMouseMove && _.isFunction( this._onListMouseMove.cancel ) ) {
+					this._onListMouseMove.cancel();
+				}
+				var self = this;
 				setTimeout( function() {
-					if ( ! this.active ) this.$el.removeClass( 'showing' );
-				}.bind( this ), 60 );
+					if ( ! self.active ) {
+						self.$el.removeClass( 'showing' );
+					}
+				}, 60 );
 			}.bind( this ) );
 
-			this.list.on( 'scroll', function( e ) {
+			this.list.on( 'scroll.mklPcFloatingAdd', function() {
 				this.$el.removeClass( 'showing' );
 			}.bind( this ) );
 		},
-		calculate_position: _.debounce( function( e ) {
-			var $el = $( e.target ).closest( '.mkl-list-item' );
-			if ( ! $el.length ) return;
-			var item_dimensions = $el[0].getBoundingClientRect();
-			var list_position = this.list[0].getBoundingClientRect();
-			var pos = item_dimensions.y - list_position.y + this.list.position().top;
-			this.list_item = $el;
-			if ( e.clientY < item_dimensions.y + 20 ) {
-				this.$el.css( {
-					'transform': 'translateY(' + pos + 'px)',
-					'width': item_dimensions.width,
-					'left': item_dimensions.x - list_position.x
-				} );
-				this.where = 'before';
-				this.$el.addClass( 'showing' );
-			} else if ( e.clientY > ( item_dimensions.y + item_dimensions.height - 20 ) ) {
-				this.where = 'after';
-				this.$el.css( {
-					'transform': 'translateY(' + ( pos + item_dimensions.height ) + 'px)',
-					'width': item_dimensions.width,
-					'left': item_dimensions.x - list_position.x
-				} );
-
-				this.$el.addClass( 'showing' );
-				this.$el.css( 'width', item_dimensions.width );
-			} else {
-				if ( ! this.active ) this.$el.removeClass( 'showing' );
-			}
-		}, 100 ),
+		hideTransient: function() {
+			this.$el.removeClass( 'showing' );
+		},
 		events: {
 			'click .mkl-floating-add-item': 'create',
 		},
