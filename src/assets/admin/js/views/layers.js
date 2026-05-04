@@ -284,6 +284,10 @@ TODO:
 			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
 				return;
 			}
+			if ( model.get( 'is_global' ) && model.get( 'global_id' ) && PC.app.get_global_layers &&
+					PC.app.get_global_layers().is_editing_layer( model.get( 'global_id' ) ) ) {
+				return;
+			}
 			PC.app.is_modified[this.collectionName] = true;
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
@@ -391,6 +395,11 @@ TODO:
 		mark_layer_modified: function() {
 			var changed = this.model.changedAttributes && this.model.changedAttributes();
 			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
+				return;
+			}
+			// Global layer attribute edits are persisted via "Save changes to global layer", not the product save.
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) && PC.app.get_global_layers &&
+					PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) ) ) {
 				return;
 			}
 			var id = this.model.get( '_id' );
@@ -790,15 +799,86 @@ TODO:
 		},
 		save_global: function( e ) {
 			if ( e ) e.preventDefault();
-			// Let external handler perform AJAX to save to CPT
-			wp.hooks.doAction( 'PC.admin.layer.saveGlobal', this.model, this );
-			// Assume save success; lock UI again and clear edit state
-			this.global_editing = false;
-			if ( this.model.get( 'global_id' ) ) {
-				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), false );
+			var self = this;
+			var global_id = this.model.get( 'global_id' );
+			if ( ! global_id ) {
+				return;
 			}
-			this.update_global_lock_state();
-			this.render();
+
+			try {
+				wp.hooks.doAction( 'PC.admin.layer.saveGlobal', this.model, this );
+			} catch ( err ) {}
+
+			if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+				if ( ! wp.hooks.applyFilters( 'mkl_pc_layer_save_global_use_default', true, this.model, this ) ) {
+					return;
+				}
+			}
+
+			var layer_data = PC.toJSON( this.model );
+			var choices_data = [];
+			var layer_content = PC.app.get_layer_content( this.model.id );
+			if ( layer_content && layer_content.length ) {
+				layer_content.each( function( choice ) {
+					choices_data.push( choice.toJSON() );
+				} );
+			}
+
+			var showOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.show( 'save_global_layer' );
+				}
+			};
+			var hideOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.hide();
+				}
+			};
+
+			showOverlay();
+			this.$el.addClass( 'is-saving' );
+
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, layer_data, choices_data, {
+				success: function( model, response ) {
+					self.global_editing = false;
+					PC.app.get_global_layers().set_editing_layer( global_id, false );
+					if ( response && response.layer ) {
+						var global_model = PC.app.get_global_layers().get_or_create( global_id );
+						global_model.set( { layer: response.layer, content: response.content } );
+					}
+					if ( PC.app.clearDirtyStateForLayer ) {
+						PC.app.clearDirtyStateForLayer( self.model );
+					}
+					self.update_global_lock_state();
+					self.render();
+					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', self.model, self, response );
+				},
+				error: function( model, error ) {
+					var error_message = 'Unknown error';
+					if ( error && error.data ) {
+						if ( typeof error.data === 'string' ) {
+							error_message = error.data;
+						} else if ( error.data.message ) {
+							error_message = error.data.message;
+						} else {
+							error_message = JSON.stringify( error.data );
+						}
+					} else if ( error && error.message ) {
+						error_message = error.message;
+					}
+					window.alert( 'Error saving global layer: ' + error_message );
+				}
+			} );
+
+			var finishUi = function() {
+				hideOverlay();
+				self.$el.removeClass( 'is-saving' );
+			};
+			if ( xhr && typeof xhr.always === 'function' ) {
+				xhr.always( finishUi );
+			} else {
+				finishUi();
+			}
 		},
 		cancel_global: function( e ) {
 			if ( e ) e.preventDefault();

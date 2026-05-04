@@ -120,22 +120,20 @@ PC.views = PC.views || {};
 			if ( ! is_global || ! global_id ) return;
 			
 			var self = this;
-			
-			// Allow external handlers to hook into save
+
 			var handled = false;
 			try {
 				wp.hooks.doAction( 'PC.admin.choices.save', this.active_layer.model, this.active_layer, function() {
 					handled = true;
 				} );
-			} catch(e) {}
-			
+			} catch ( err ) {}
+
 			if ( handled ) {
 				this.active_layer.editing_choices = false;
 				PC.app.get_global_layers().set_editing_choices( global_id, false );
 				if ( this.active_layer.render ) {
 					this.active_layer.render();
 				}
-				// Trigger event for choiceDetails views to update lock state
 				if ( this.active_layer.$el ) {
 					this.active_layer.$el.trigger( 'choices-edit-mode-changed' );
 				}
@@ -143,7 +141,23 @@ PC.views = PC.views || {};
 				this.update_global_actions_visibility();
 				return;
 			}
-			
+
+			var showSaveOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.show( 'save_global_layer' );
+				}
+			};
+			var hideSaveOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.hide();
+				}
+			};
+
+			showSaveOverlay();
+			if ( self.active_layer && self.active_layer.$el && self.active_layer.$el.length ) {
+				self.active_layer.$el.addClass( 'is-saving-global-choices' );
+			}
+
 			// Get choices data
 			var choices_data = [];
 			if ( this.active_layer.col ) {
@@ -151,16 +165,15 @@ PC.views = PC.views || {};
 					choices_data.push( choice.toJSON() );
 				} );
 			}
-			
+
 			// Save using global_layers collection
-			PC.app.get_global_layers().save_global_layer( global_id, null, PC.app.state.active_layer.col.toJSON(), {
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, null, PC.app.state.active_layer.col.toJSON(), {
 				success: function( model, response ) {
 					// Save successful
 					self.active_layer.editing_choices = false;
 					PC.app.get_global_layers().set_editing_choices( global_id, false );
-					// Mark collection as saved
-					if ( self.active_layer.collectionName ) {
-						PC.app.is_modified[self.active_layer.collectionName] = false;
+					if ( PC.app.clearDirtyStateForLayer ) {
+						PC.app.clearDirtyStateForLayer( self.active_layer.model );
 					}
 					if ( self.active_layer.render ) {
 						self.active_layer.render();
@@ -190,6 +203,18 @@ PC.views = PC.views || {};
 					console.error( 'Save choices error response:', error );
 				}
 			} );
+
+			var finishChoicesSaveUi = function() {
+				hideSaveOverlay();
+				if ( self.active_layer && self.active_layer.$el && self.active_layer.$el.length ) {
+					self.active_layer.$el.removeClass( 'is-saving-global-choices' );
+				}
+			};
+			if ( xhr && typeof xhr.always === 'function' ) {
+				xhr.always( finishChoicesSaveUi );
+			} else {
+				finishChoicesSaveUi();
+			}
 		},
 		on_cancel_edit_choices: function( e ) {
 			if ( e ) e.preventDefault();

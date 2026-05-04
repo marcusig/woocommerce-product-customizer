@@ -151,6 +151,10 @@ PC.views = PC.views || {};
 		},
 
 		mark_collection_as_modified: function() {
+			if ( this.collectionName === 'content' && this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) &&
+					PC.app.get_global_layers && PC.app.get_global_layers().is_editing_choices( this.model.get( 'global_id' ) ) ) {
+				return;
+			}
 			PC.app.is_modified[this.collectionName] = true;
 			if ( this.collectionName === 'content' && this.model ) {
 				var layerId = this.model.get && this.model.get( 'layerId' ) || this.model.id;
@@ -881,10 +885,23 @@ PC.views = PC.views || {};
 
 		},
 		has_changed: function() {
+			var layerId = this.model && this.model.get( 'layerId' );
+			if ( ! layerId && this.options && this.options.choice ) {
+				layerId = this.options.choice.get( 'layerId' );
+			}
+			if ( layerId && PC.app.admin && PC.app.admin.layers && PC.app.get_global_layers ) {
+				var adminLayer = PC.app.admin.layers.find( function( m ) {
+					return String( m.get( '_id' ) ) === String( layerId );
+				} );
+				if ( adminLayer && adminLayer.get( 'is_global' ) && adminLayer.get( 'global_id' ) &&
+						PC.app.get_global_layers().is_editing_choices( adminLayer.get( 'global_id' ) ) ) {
+					return;
+				}
+			}
 			PC.app.is_modified[this.collectionName] = true;
-			if ( this.model && this.model.get( 'layerId' ) ) {
+			if ( layerId ) {
 				PC.app.modified_content_layer_ids = PC.app.modified_content_layer_ids || {};
-				PC.app.modified_content_layer_ids[ this.model.get( 'layerId' ) ] = true;
+				PC.app.modified_content_layer_ids[ layerId ] = true;
 			}
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();

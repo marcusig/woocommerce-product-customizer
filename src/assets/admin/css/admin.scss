@@ -1,7 +1,8 @@
 :root {
 	--global-layer-primary: #642077;
 	--global-layer-primary-rgb: 100, 32, 119;
-	--global-layer-bg: rgba(calc(var(--global-layer-primary-rgb) / 2), 0.08);
+	/* Comma-separated channels so this expands to rgba(100, 32, 119, 0.08) */
+	--global-layer-bg: rgba(var(--global-layer-primary-rgb), 0.08);
 }
 
 #woocommerce-product-data .panel .wc-metaboxes-wrapper {
@@ -2840,6 +2841,18 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 .layer-form.is-global.is-global-locked .mkl-pc-image-settings {
     pointer-events: none;
     cursor: no-drop;
+}
+
+.layer-form.is-saving {
+	position: relative;
+	pointer-events: none;
+	opacity: 0.65;
+}
+
+.mkl-choice-list-inner.is-saving-global-choices {
+	position: relative;
+	pointer-events: none;
+	opacity: 0.65;
 }
 
 .is-layer-locked.is-global-layer .actions-container button.delete-item, 

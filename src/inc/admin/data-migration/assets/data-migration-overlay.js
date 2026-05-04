@@ -122,6 +122,8 @@
 				line = m.finalize();
 			} else if ( phase === 'make_global' ) {
 				line = PC_lang().mkl_pc_make_global_progress || 'Creating global layer…';
+			} else if ( phase === 'save_global_layer' ) {
+				line = PC_lang().mkl_pc_save_global_layer_progress || 'Saving global layer…';
 			} else if ( phase === 'other' ) {
 				line = m.other();
 			}

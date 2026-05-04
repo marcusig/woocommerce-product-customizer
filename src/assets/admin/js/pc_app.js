@@ -126,6 +126,30 @@ PC.toJSON = function( item ) {
 			return content.get( choiceId ) || false;
 		},
 		/**
+		 * After a global layer CPT save, drop this layer from product delta maps and refresh sidebar save state.
+		 *
+		 * @param {Backbone.Model|number|string} layerModelOrId Layer model or local layer _id.
+		 */
+		clearDirtyStateForLayer: function( layerModelOrId ) {
+			var lid = layerModelOrId;
+			if ( layerModelOrId && typeof layerModelOrId.get === 'function' ) {
+				lid = layerModelOrId.get( '_id' );
+			}
+			if ( lid != null && lid !== '' ) {
+				delete this.modified_layer_ids[ lid ];
+			}
+			var strId = lid != null ? String( lid ) : '';
+			if ( this.modified_content_layer_ids && strId !== '' ) {
+				delete this.modified_content_layer_ids[ strId ];
+				delete this.modified_content_layer_ids[ lid ];
+			}
+			this.is_modified.layers = ! _.isEmpty( this.modified_layer_ids );
+			this.is_modified.content = ! _.isEmpty( this.modified_content_layer_ids );
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+		},
+		/**
 		 * Max layer rows per layers delta save request (default 50).
 		 *
 		 * @return {number}
