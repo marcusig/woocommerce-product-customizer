@@ -355,6 +355,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );
 				$pc_lang['editor_back_to_product']    = esc_html__( 'Back to product', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_save']                = esc_html__( 'Save', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_save_global_layer']  = esc_html__( 'Save global layer', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_fallback_title'] = esc_html__( 'Global layer', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_focus_help'] = esc_html__( 'You are editing a global layer. Changes will affect all configurators using this data.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_focus_back'] = esc_html__( 'Back', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_focus_back_aria'] = esc_attr__( 'Exit global layer editing', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_unsaved_discard'] = esc_html__( 'You have unsaved changes to this global layer. Leave without saving?', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saved']               = esc_html__( 'Saved', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saving']              = esc_html__( 'Saving…', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_load_failed']        = esc_html__( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );

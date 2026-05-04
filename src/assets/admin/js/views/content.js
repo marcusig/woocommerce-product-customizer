@@ -98,6 +98,11 @@ PC.views = PC.views || {};
 		on_edit_choices: function( e ) {
 			if ( e ) e.preventDefault();
 			if ( this.active_layer && this.active_layer.on_edit_choices ) {
+				if ( this.active_layer.model && this.active_layer.model.get( 'is_global' ) && this.active_layer.model.get( 'global_id' ) ) {
+					if ( PC.app.clearGlobalSessionDirty ) {
+						PC.app.clearGlobalSessionDirty();
+					}
+				}
 				this.active_layer.on_edit_choices( e );
 				// Store edit state in global collection
 				if ( this.active_layer.model && this.active_layer.model.get( 'is_global' ) ) {
@@ -175,6 +180,9 @@ PC.views = PC.views || {};
 					if ( PC.app.clearDirtyStateForLayer ) {
 						PC.app.clearDirtyStateForLayer( self.active_layer.model );
 					}
+					if ( PC.app.clearGlobalSessionDirty ) {
+						PC.app.clearGlobalSessionDirty();
+					}
 					if ( self.active_layer.render ) {
 						self.active_layer.render();
 					}
@@ -215,6 +223,7 @@ PC.views = PC.views || {};
 			} else {
 				finishChoicesSaveUi();
 			}
+			return xhr;
 		},
 		on_cancel_edit_choices: function( e ) {
 			if ( e ) e.preventDefault();
@@ -327,6 +336,14 @@ PC.views = PC.views || {};
 		},
 		toggleLayer: function(e) {
 			e.preventDefault();
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				var ctx = PC.app.getGlobalLayerFocusContext();
+				if ( ctx && ctx.layerModel && this.model !== ctx.layerModel ) {
+					if ( ! PC.app.requestLeaveGlobalLayerFocus() ) {
+						return;
+					}
+				}
+			}
 			if ( this.state.layers && this.state.layers.$el ) {
 				this.state.layers.$el.children( 'li' ).removeClass( 'active' );
 				this.state.layers.$el.find( 'button.layer' ).attr( 'aria-pressed', 'false' );

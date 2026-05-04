@@ -40,6 +40,7 @@ PC.views = PC.views || {};
 		events: {
 			'click .mkl-pc-admin-ui__sidebar-primary-save': 'on_sidebar_save',
 			'click .mkl-pc-admin-ui__back-to-product': 'on_back_to_product',
+			'click .mkl-pc-global-focus__back': 'on_global_focus_back',
 		},
 		initialize: function( params ) {
 			this.app = params.parent;
@@ -70,9 +71,17 @@ PC.views = PC.views || {};
 				this.$( '.mkl-pc-admin-ui__product-name' ).attr( 'href', url );
 			}
 			this.$( '.mkl-pc-admin-ui__back-text' ).text( back || '' );
+			var focusHelp = ( typeof lang.editor_global_layer_focus_help === 'string' ) ? lang.editor_global_layer_focus_help : '';
+			var focusBack = ( typeof lang.editor_global_layer_focus_back === 'string' ) ? lang.editor_global_layer_focus_back : '';
+			this.$( '.mkl-pc-global-focus__help' ).text( focusHelp );
+			this.$( '.mkl-pc-global-focus__back-text' ).text( focusBack );
+			this.$( '.mkl-pc-global-focus__back' ).attr( 'aria-label', focusBack || ( lang.editor_global_layer_focus_back_aria || 'Exit global layer editing' ) );
 			this.applyGlobalConfiguratorBanner();
 			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
+			}
+			if ( PC.app && PC.app.syncGlobalLayerFocusChrome ) {
+				PC.app.syncGlobalLayerFocusChrome();
 			}
 		},
 		/**
@@ -138,13 +147,30 @@ PC.views = PC.views || {};
 			if ( jQuery( e.currentTarget ).attr( 'aria-disabled' ) === 'true' ) {
 				return;
 			}
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() && PC.app.global_layer_session_dirty ) {
+				if ( PC.app.saveGlobalLayerFromSidebar ) {
+					PC.app.saveGlobalLayerFromSidebar();
+				}
+				return;
+			}
 			var st = this.getActiveStateView();
 			if ( st && st.save_all ) {
 				st.save_all();
 			}
 		},
+		on_global_focus_back: function( e ) {
+			e.preventDefault();
+			if ( PC.app && PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+				return;
+			}
+		},
 		on_back_to_product: function( e ) {
 			e.preventDefault();
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return;
+				}
+			}
 			if ( PC.app && PC.app.get_admin && PC.app.get_admin().close ) {
 				PC.app.get_admin().close();
 			}
@@ -207,6 +233,11 @@ PC.views = PC.views || {};
 			event.preventDefault();
 			// Checks if selected item is not active.
 			if(this.model.get('active') === false) {
+				if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+					if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+						return;
+					}
+				}
 
 				this.collection.each(function(model) {
 					model.set('active', false);

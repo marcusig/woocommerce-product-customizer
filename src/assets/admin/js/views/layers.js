@@ -286,6 +286,9 @@ TODO:
 			}
 			if ( model.get( 'is_global' ) && model.get( 'global_id' ) && PC.app.get_global_layers &&
 					PC.app.get_global_layers().is_editing_layer( model.get( 'global_id' ) ) ) {
+				if ( PC.app.markGlobalSessionDirty ) {
+					PC.app.markGlobalSessionDirty();
+				}
 				return;
 			}
 			PC.app.is_modified[this.collectionName] = true;
@@ -400,6 +403,9 @@ TODO:
 			// Global layer attribute edits are persisted via "Save changes to global layer", not the product save.
 			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) && PC.app.get_global_layers &&
 					PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) ) ) {
+				if ( PC.app.markGlobalSessionDirty ) {
+					PC.app.markGlobalSessionDirty();
+				}
 				return;
 			}
 			var id = this.model.get( '_id' );
@@ -436,6 +442,19 @@ TODO:
 		},
 		edit: function( event ) {
 			if ( PC.selection.adding_group ) return;
+			// Only guard layer-structure rows, not content choice rows (choice models carry layerId).
+			var isChoiceOrNonStructureRow = this.model && this.model.get( 'layerId' ) != null;
+			if ( event && ! isChoiceOrNonStructureRow && PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				var ctx = PC.app.getGlobalLayerFocusContext();
+				if ( ctx && ctx.layerModel && this.model !== ctx.layerModel ) {
+					if ( ! PC.app.requestLeaveGlobalLayerFocus() ) {
+						if ( event.preventDefault ) {
+							event.preventDefault();
+						}
+						return;
+					}
+				}
+			}
 			// Nested group rows live inside a parent .mkl-list-item; delegated hit clicks would match
 			// every ancestor view unless we only handle the row that actually owns the hit target.
 			if ( event && event.currentTarget ) {
@@ -609,7 +628,7 @@ TODO:
 			'click .make-global': 'on_make_global',
 			'click .unlink-global': 'on_unlink_global',
 			'click .edit-global': 'edit_global',
-			'click .save-global': 'save_global',
+			// 'click .save-global': 'save_global',
 			'click .cancel-global': 'cancel_global',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
@@ -792,6 +811,9 @@ TODO:
 			this.global_editing = true;
 			// Store edit state in global collection
 			if ( this.model.get( 'global_id' ) ) {
+				if ( PC.app.clearGlobalSessionDirty ) {
+					PC.app.clearGlobalSessionDirty();
+				}
 				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), true );
 			}
 			this.update_global_lock_state();
@@ -802,7 +824,7 @@ TODO:
 			var self = this;
 			var global_id = this.model.get( 'global_id' );
 			if ( ! global_id ) {
-				return;
+				return null;
 			}
 
 			try {
@@ -811,7 +833,7 @@ TODO:
 
 			if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
 				if ( ! wp.hooks.applyFilters( 'mkl_pc_layer_save_global_use_default', true, this.model, this ) ) {
-					return;
+					return null;
 				}
 			}
 
@@ -849,6 +871,9 @@ TODO:
 					if ( PC.app.clearDirtyStateForLayer ) {
 						PC.app.clearDirtyStateForLayer( self.model );
 					}
+					if ( PC.app.clearGlobalSessionDirty ) {
+						PC.app.clearGlobalSessionDirty();
+					}
 					self.update_global_lock_state();
 					self.render();
 					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', self.model, self, response );
@@ -879,6 +904,7 @@ TODO:
 			} else {
 				finishUi();
 			}
+			return xhr;
 		},
 		cancel_global: function( e ) {
 			if ( e ) e.preventDefault();

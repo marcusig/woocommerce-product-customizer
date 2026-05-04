@@ -341,6 +341,41 @@ html .mkl-pc-admin-ui.pc-modal {
 					content: "\f341";
 				}
 			}
+			.mkl-pc-admin-ui__global-focus {
+				margin-top: 8px;
+				.mkl-pc-global-focus__back {
+					display: inline-flex;
+					align-items: center;
+					gap: 10px;
+					padding: 0;
+					margin: 0 0 10px;
+					border: 0;
+					background: transparent;
+					color: $pc-admin-sidebar-muted;
+					font-size: 14px;
+					cursor: pointer;
+					&:hover,
+					&:focus {
+						color: #fff;
+					}
+				}
+				.mkl-pc-global-focus__title {
+					font-size: 18px;
+					font-weight: 600;
+					color: #fff;
+					line-height: 1.25;
+					margin: 0 0 8px;
+					padding-left: 2px;
+				}
+				.mkl-pc-global-focus__help {
+					margin: 0;
+					font-size: 12px;
+					line-height: 1.45;
+					color: $pc-admin-sidebar-muted;
+					padding-left: 2px;
+					max-width: 100%;
+				}
+			}
 			.mkl-pc-admin-ui__sidebar-mid {
 				flex: 1 1 auto;
 				display: flex;
@@ -726,6 +761,34 @@ html .mkl-pc-admin-ui.pc-modal {
 					}
 				}
 			}
+		}
+	}
+
+	&.is-global-layer-focus {
+		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
+			button.mkl-pc-admin-ui__product-icon-back-button {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__back-to-product {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__global-focus {
+				display: block;
+			}
+			.mkl-pc-admin-ui__nav-wrap {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-layers {
+				display: none !important;
+			}
+		}
+		.mkl-pc-admin-ui__header .mkl-pc-admin-ui__menu-toggle,
+		.structure-content {
+			display: none !important;
+		}
+		.mkl-pc-admin-ui__sidebar-mid {
+			overflow: hidden !important;
+			transform: translateX(-100%);
 		}
 	}
 
@@ -2889,7 +2952,7 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 	display: flex;
 }
 .is-global-locked .global-actions-container {
-	.save-choices, .cancel-edit-choices, span.dashicons-unlock {
+	.cancel-edit-choices, span.dashicons-unlock {
 		display: none;
 	}
 }

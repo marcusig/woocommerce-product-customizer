@@ -39,11 +39,404 @@ PC.toJSON = function( item ) {
 		deleted_layer_ids: [],
 		modified_content_layer_ids: {},
 		state: null,
+		/** True when the user changed global layer data while in focus mode (not product delta). */
+		global_layer_session_dirty: false,
 		get_global_layers: function() {
 			if ( ! this.global_layers ) {
 				this.global_layers = new PC.global_layers();
 			}
 			return this.global_layers;
+		},
+		/**
+		 * @return {null|{ global_id: number, globalModel: Backbone.Model, layerModel: Backbone.Model }}
+		 */
+		getGlobalLayerFocusContext: function() {
+			var gl = this.get_global_layers();
+			var found = null;
+			gl.each( function( gm ) {
+				var gid = gm.get( 'global_id' );
+				if ( ! gid || found ) {
+					return;
+				}
+				if ( gm.get( 'is_editing_layer' ) || gm.get( 'is_editing_choices' ) ) {
+					found = gm;
+				}
+			} );
+			if ( ! found ) {
+				return null;
+			}
+			var global_id = found.get( 'global_id' );
+			var layerModel = this.getProductLayerByGlobalId( global_id );
+			return { global_id: global_id, globalModel: found, layerModel: layerModel };
+		},
+		/**
+		 * Find the product layer row for a global CPT id (loose id match: number vs string).
+		 * @return {Backbone.Model|null}
+		 */
+		getProductLayerByGlobalId: function( global_id ) {
+			if ( ! this.admin || ! this.admin.layers || global_id == null ) {
+				return null;
+			}
+			var gid = String( global_id );
+			return this.admin.layers.find( function( m ) {
+				if ( ! m.get( 'is_global' ) ) {
+					return false;
+				}
+				var g = m.get( 'global_id' );
+				return g != null && String( g ) === gid;
+			} ) || null;
+		},
+		/**
+		 * Display name for focus chrome: admin_label if non-empty, else name, else fallback string.
+		 */
+		getGlobalLayerDisplayTitle: function( layerModel ) {
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			if ( ! layerModel ) {
+				return lang.editor_global_layer_fallback_title || 'Global layer';
+			}
+			var admin = layerModel.get( 'admin_label' );
+			if ( admin != null && String( admin ).trim() !== '' ) {
+				return String( admin ).trim();
+			}
+			var name = layerModel.get( 'name' );
+			if ( name != null && String( name ).trim() !== '' ) {
+				return String( name ).trim();
+			}
+			return lang.editor_global_layer_fallback_title || 'Global layer';
+		},
+		isGlobalLayerFocusActive: function() {
+			return !! this.getGlobalLayerFocusContext();
+		},
+		markGlobalSessionDirty: function() {
+			if ( ! this.isGlobalLayerFocusActive() ) {
+				return;
+			}
+			this.global_layer_session_dirty = true;
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+		},
+		clearGlobalSessionDirty: function() {
+			this.global_layer_session_dirty = false;
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+		},
+		/**
+		 * Toggle sidebar / shell chrome for isolated global layer editing.
+		 */
+		syncGlobalLayerFocusChrome: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			var $modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			var $sidebar = $modal.find( '.mkl-pc-admin-ui__sidebar' ).first();
+			if ( ! $sidebar.length ) {
+				return;
+			}
+			var $backRow = $sidebar.find( '.mkl-pc-admin-ui__back-to-product' );
+			var $focus = $sidebar.find( '.mkl-pc-admin-ui__global-focus' );
+			var $title = $focus.find( '.mkl-pc-global-focus__title' );
+			if ( ctx ) {
+				$modal.addClass( 'is-global-layer-focus' );
+				$sidebar.addClass( 'is-global-layer-focus' );
+				var displayName = this.getGlobalLayerDisplayTitle( ctx.layerModel );
+				$title.text( displayName );
+				$backRow.attr( 'hidden', 'hidden' ).hide();
+				$focus.removeAttr( 'hidden' ).show();
+			} else {
+				$modal.removeClass( 'is-global-layer-focus' );
+				$sidebar.removeClass( 'is-global-layer-focus' );
+				$backRow.removeAttr( 'hidden' ).show();
+				$focus.attr( 'hidden', 'hidden' ).hide();
+			}
+		},
+		/** @return {Backbone.View|null} PC.views.layer list item view for a layer model */
+		findLayerListItemViewForModel: function( layerModel ) {
+			if ( ! layerModel ) {
+				return null;
+			}
+			var found = null;
+			var $scope = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			if ( ! $scope.length ) {
+				$scope = $( document );
+			}
+			$scope.find( '.layers-state .layer.mkl-list-item' ).each( function() {
+				var v = $( this ).data( 'view' );
+				if ( v && v.model === layerModel ) {
+					found = v;
+					return false;
+				}
+			} );
+			return found;
+		},
+		/**
+		 * Save global layer CPT from layer model data (same payload as layer_form.save_global).
+		 * Used when the layer form view is not mounted. Returns jqXHR or null if skipped by filter.
+		 */
+		persistGlobalLayerCpt: function( global_id, layerModel ) {
+			var self = this;
+			if ( ! global_id || ! layerModel ) {
+				return null;
+			}
+			try {
+				wp.hooks.doAction( 'PC.admin.layer.saveGlobal', layerModel, null );
+			} catch ( err ) {}
+			if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+				if ( ! wp.hooks.applyFilters( 'mkl_pc_layer_save_global_use_default', true, layerModel, null ) ) {
+					return null;
+				}
+			}
+			var layer_data = PC.toJSON( layerModel );
+			var choices_data = [];
+			var layer_content = PC.app.get_layer_content( layerModel.id );
+			if ( layer_content && layer_content.length ) {
+				layer_content.each( function( choice ) {
+					choices_data.push( choice.toJSON() );
+				} );
+			}
+			var showOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.show( 'save_global_layer' );
+				}
+			};
+			var hideOverlay = function() {
+				if ( window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.hide();
+				}
+			};
+			showOverlay();
+			var layerView = self.findLayerListItemViewForModel( layerModel );
+			if ( layerView && layerView.form && layerView.form.$el && layerView.form.$el.length ) {
+				layerView.form.$el.addClass( 'is-saving' );
+			}
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, layer_data, choices_data, {
+				success: function( model, response ) {
+					PC.app.get_global_layers().set_editing_layer( global_id, false );
+					if ( response && response.layer ) {
+						var global_model = PC.app.get_global_layers().get_or_create( global_id );
+						global_model.set( { layer: response.layer, content: response.content } );
+					}
+					if ( PC.app.clearDirtyStateForLayer ) {
+						PC.app.clearDirtyStateForLayer( layerModel );
+					}
+					if ( PC.app.clearGlobalSessionDirty ) {
+						PC.app.clearGlobalSessionDirty();
+					}
+					var lv = PC.app.findLayerListItemViewForModel( layerModel );
+					if ( lv && lv.form ) {
+						lv.form.global_editing = false;
+						if ( lv.form.update_global_lock_state ) {
+							lv.form.update_global_lock_state();
+						}
+						lv.form.render();
+					}
+					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', layerModel, lv && lv.form, response );
+				},
+				error: function( model, error ) {
+					var error_message = 'Unknown error';
+					if ( error && error.data ) {
+						if ( typeof error.data === 'string' ) {
+							error_message = error.data;
+						} else if ( error.data.message ) {
+							error_message = error.data.message;
+						} else {
+							error_message = JSON.stringify( error.data );
+						}
+					} else if ( error && error.message ) {
+						error_message = error.message;
+					}
+					window.alert( 'Error saving global layer: ' + error_message );
+				}
+			} );
+			var finishUi = function() {
+				hideOverlay();
+				if ( layerView && layerView.form && layerView.form.$el && layerView.form.$el.length ) {
+					layerView.form.$el.removeClass( 'is-saving' );
+				}
+			};
+			if ( xhr && typeof xhr.always === 'function' ) {
+				xhr.always( finishUi );
+			} else {
+				finishUi();
+			}
+			return xhr;
+		},
+		/**
+		 * Persist global layer CPT from sidebar (attributes and/or choices).
+		 * @return {jQuery.Promise|jqXHR|undefined}
+		 */
+		saveGlobalLayerFromSidebar: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx || ! ctx.global_id ) {
+				return;
+			}
+			var gl = this.get_global_layers();
+			var gid = ctx.global_id;
+			var editingLayer = gl.is_editing_layer( gid );
+			var editingChoices = gl.is_editing_choices( gid );
+			var self = this;
+			var $footer = $( '.mkl-pc-admin-ui__sidebar-footer' ).first();
+			var finishFooter = function() {
+				$footer.removeClass( 'saving' );
+				if ( self.syncSidebarSaveButtonState ) {
+					self.syncSidebarSaveButtonState();
+				}
+			};
+			$footer.addClass( 'saving' );
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+
+			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
+			if ( editingLayer ) {
+				if ( ! ctx.layerModel ) {
+					finishFooter();
+					return;
+				}
+				if ( layerView && layerView.form && typeof layerView.form.save_global === 'function' ) {
+					var xhr = layerView.form.save_global( { preventDefault: function() {} } );
+					if ( xhr && typeof xhr.always === 'function' ) {
+						xhr.always( finishFooter );
+					} else {
+						finishFooter();
+					}
+					return xhr;
+				}
+				var xhrPersist = this.persistGlobalLayerCpt( gid, ctx.layerModel );
+				if ( xhrPersist && typeof xhrPersist.always === 'function' ) {
+					xhrPersist.always( finishFooter );
+				} else {
+					finishFooter();
+				}
+				return xhrPersist;
+			}
+
+			if ( editingChoices && this.state && this.state.collectionName === 'content' && typeof this.state.on_save_choices === 'function' ) {
+				var xhr2 = this.state.on_save_choices( { preventDefault: function() {} } );
+				if ( xhr2 && typeof xhr2.always === 'function' ) {
+					xhr2.always( finishFooter );
+				} else {
+					finishFooter();
+				}
+				return xhr2;
+			}
+
+			finishFooter();
+			return;
+		},
+		/**
+		 * Exit global focus: optional confirm if dirty; discard reloads global data where applicable.
+		 * @return {boolean} false if user cancelled staying (aborted navigation).
+		 */
+		requestLeaveGlobalLayerFocus: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx ) {
+				return true;
+			}
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			if ( this.global_layer_session_dirty ) {
+				if ( ! window.confirm( lang.editor_global_layer_unsaved_discard || 'You have unsaved changes to this global layer. Leave without saving?' ) ) {
+					return false;
+				}
+				this.discardGlobalLayerFocusSession();
+			} else {
+				this.exitGlobalLayerFocusClean();
+			}
+			return true;
+		},
+		/**
+		 * Leave global edit mode without server refetch (no unsaved edits).
+		 */
+		exitGlobalLayerFocusClean: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx ) {
+				return;
+			}
+			var gid = ctx.global_id;
+			var gl = this.get_global_layers();
+			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
+			if ( gl.is_editing_layer( gid ) && layerView && layerView.form && typeof layerView.form.cancel_global === 'function' ) {
+				layerView.form.cancel_global( { preventDefault: function() {} } );
+			} else if ( gl.is_editing_layer( gid ) ) {
+				gl.set_editing_layer( gid, false );
+			}
+			if ( gl.is_editing_choices( gid ) && this.state && this.state.collectionName === 'content' && this.state.active_layer ) {
+				var al = this.state.active_layer;
+				if ( al.model && al.model.get( 'global_id' ) === gid ) {
+					al.editing_choices = false;
+					gl.set_editing_choices( gid, false );
+					if ( al.render ) {
+						al.render();
+					}
+					if ( al.$el ) {
+						al.$el.trigger( 'choices-edit-mode-changed' );
+					}
+					if ( typeof wp !== 'undefined' && wp.hooks ) {
+						wp.hooks.doAction( 'PC.admin.choices.editModeChanged', al.model, al );
+					}
+					if ( this.state.update_global_actions_visibility ) {
+						this.state.update_global_actions_visibility();
+					}
+				} else {
+					gl.set_editing_choices( gid, false );
+				}
+			} else if ( gl.is_editing_choices( gid ) ) {
+				gl.set_editing_choices( gid, false );
+			}
+			this.clearGlobalSessionDirty();
+			if ( this.syncGlobalLayerFocusChrome ) {
+				this.syncGlobalLayerFocusChrome();
+			}
+		},
+		discardGlobalLayerFocusSession: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx ) {
+				this.clearGlobalSessionDirty();
+				return;
+			}
+			var gid = ctx.global_id;
+			var gl = this.get_global_layers();
+			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
+
+			if ( gl.is_editing_choices( gid ) && this.state && this.state.collectionName === 'content' && this.state.active_layer && typeof this.state.on_cancel_edit_choices === 'function' ) {
+				if ( this.state.active_layer.model && this.state.active_layer.model.get( 'global_id' ) === gid ) {
+					this.state.on_cancel_edit_choices( { preventDefault: function() {} } );
+				} else {
+					gl.set_editing_choices( gid, false );
+				}
+			}
+			if ( gl.is_editing_layer( gid ) && layerView && layerView.form && typeof layerView.form.cancel_global === 'function' ) {
+				layerView.form.cancel_global( { preventDefault: function() {} } );
+			}
+			if ( gl.is_editing_layer( gid ) || gl.is_editing_choices( gid ) ) {
+				gl.set_editing_layer( gid, false );
+				gl.set_editing_choices( gid, false );
+			}
+			var self = this;
+			if ( ctx.layerModel ) {
+				gl.fetch_global_layer( gid, {
+					success: function() {
+						var stored = gl.get( gid );
+						var layerJson = stored && stored.get( 'layer' );
+						if ( layerJson && typeof layerJson === 'object' ) {
+							ctx.layerModel.set( layerJson );
+						}
+						if ( layerView && layerView.form ) {
+							layerView.form.remove();
+							layerView.form = null;
+						}
+						if ( layerView && layerView.model && layerView.model.get( 'active' ) ) {
+							layerView.edit();
+						}
+						if ( self.syncGlobalLayerFocusChrome ) {
+							self.syncGlobalLayerFocusChrome();
+						}
+					}
+				} );
+			}
+			this.clearGlobalSessionDirty();
+			if ( this.syncGlobalLayerFocusChrome ) {
+				this.syncGlobalLayerFocusChrome();
+			}
 		},
 		init: function( options ) {
 			PC.lang = PC_lang || {};
@@ -64,6 +457,18 @@ PC.toJSON = function( item ) {
 
 			// Ensure global layers collection is initialized
 			this.get_global_layers();
+
+			$( window ).off( 'beforeunload.mklPcGlobalLayer' ).on( 'beforeunload.mklPcGlobalLayer', function( unloadEv ) {
+				if ( PC.app && PC.app.global_layer_session_dirty && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+					var msg = ( typeof PC_lang === 'object' && PC_lang && PC_lang.editor_global_layer_unsaved_discard )
+						? PC_lang.editor_global_layer_unsaved_discard
+						: '';
+					if ( msg ) {
+						unloadEv.returnValue = msg;
+						return msg;
+					}
+				}
+			} );
 
 			// document.addEventListener( 'paste', ( e ) => {
 			// 	if ( !app.configuratorView?.isVisible() ) return;
@@ -731,10 +1136,14 @@ PC.toJSON = function( item ) {
 				return;
 			}
 			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
-			var saveLabel = lang.editor_save || 'Save';
+			var focusActive = this.isGlobalLayerFocusActive && this.isGlobalLayerFocusActive();
+			var saveLabel = focusActive ? ( lang.editor_save_global_layer || 'Save global layer' ) : ( lang.editor_save || 'Save' );
 			var savedLabel = lang.editor_saved || 'Saved';
 			var savingLabel = lang.editor_saving || 'Saving…';
 			var dirty = _.indexOf( _.values( this.is_modified ), true ) !== -1;
+			if ( focusActive && this.global_layer_session_dirty ) {
+				dirty = true;
+			}
 			var $toolbar = $btn.closest( '.mkl-pc-admin-ui__sidebar-footer' );
 			var footIsSaving = $toolbar.hasClass( 'saving' );
 			var appIsSaving = this.saving > 0;

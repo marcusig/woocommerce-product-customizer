@@ -153,6 +153,9 @@ PC.views = PC.views || {};
 		mark_collection_as_modified: function() {
 			if ( this.collectionName === 'content' && this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) &&
 					PC.app.get_global_layers && PC.app.get_global_layers().is_editing_choices( this.model.get( 'global_id' ) ) ) {
+				if ( PC.app.markGlobalSessionDirty ) {
+					PC.app.markGlobalSessionDirty();
+				}
 				return;
 			}
 			PC.app.is_modified[this.collectionName] = true;
@@ -318,6 +321,9 @@ PC.views = PC.views || {};
 			this.editing_choices = true;
 			// Store in global collection
 			if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				if ( PC.app.clearGlobalSessionDirty ) {
+					PC.app.clearGlobalSessionDirty();
+				}
 				PC.app.get_global_layers().set_editing_choices( this.model.get( 'global_id' ), true );
 			}
 			this.render();
@@ -895,6 +901,9 @@ PC.views = PC.views || {};
 				} );
 				if ( adminLayer && adminLayer.get( 'is_global' ) && adminLayer.get( 'global_id' ) &&
 						PC.app.get_global_layers().is_editing_choices( adminLayer.get( 'global_id' ) ) ) {
+					if ( PC.app.markGlobalSessionDirty ) {
+						PC.app.markGlobalSessionDirty();
+					}
 					return;
 				}
 			}

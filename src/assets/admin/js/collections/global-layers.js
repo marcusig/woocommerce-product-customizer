@@ -80,6 +80,12 @@ var PC = PC || {};
 			var model = this.get_or_create( global_id );
 			model.set( 'is_editing_layer', !! is_editing );
 			this.edit_states[global_id] = { is_editing_layer: !! is_editing };
+			if ( PC.app && PC.app.syncGlobalLayerFocusChrome ) {
+				PC.app.syncGlobalLayerFocusChrome();
+			}
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 
 		/**
@@ -90,6 +96,12 @@ var PC = PC || {};
 			model.set( 'is_editing_choices', !! is_editing );
 			if ( ! this.edit_states[global_id] ) this.edit_states[global_id] = {};
 			this.edit_states[global_id].is_editing_choices = !! is_editing;
+			if ( PC.app && PC.app.syncGlobalLayerFocusChrome ) {
+				PC.app.syncGlobalLayerFocusChrome();
+			}
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 
 		/**

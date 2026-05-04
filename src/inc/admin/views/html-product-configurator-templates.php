@@ -93,6 +93,14 @@ GENERAL TEMPLATES
 				<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
 				<span class="mkl-pc-admin-ui__back-text"></span>
 			</button>
+			<div class="mkl-pc-admin-ui__global-focus" hidden>
+				<button type="button" class="mkl-pc-global-focus__back button button-link">
+					<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
+					<span class="mkl-pc-global-focus__back-text"></span>
+				</button>
+				<div class="mkl-pc-global-focus__title"></div>
+				<p class="mkl-pc-global-focus__help description"></p>
+			</div>
 		</div>
 		<p class="screen-reader-text mkl-pc-admin-ui__sidebar-heading"><?php esc_html_e( 'Configurator', 'product-configurator-for-woocommerce' ); ?></p>
 		<div class="mkl-pc-admin-ui__sidebar-mid">
@@ -339,7 +347,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<h4><span class="dashicons dashicons-networking" aria-hidden="true"></span> <?php esc_html_e( 'Global layer', 'product-configurator-for-woocommerce' ); ?></h4>
 				<div class="mkl-pc-global-layer--actions">
 					<# if ( data.is_editing_global_layer ) { #>
-						<button type="button" class="button button-small button-primary save-global"><?php esc_html_e( 'Save changes to global layer', 'product-configurator-for-woocommerce' ); ?></button>
 						<button type="button" class="button button-small cancel-global"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 					<# } else { #>
 						<button type="button" class="button button-small unlink-global"><?php esc_html_e( 'Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
@@ -430,7 +437,6 @@ CONTENT TEMPLATES
 	<div class="structure-toolbar structure-toolbar--choices">
 		<div class="global-actions-container">
 			<h3><span class="dashicons dashicons-lock" aria-hidden="true"></span><span class="dashicons dashicons-unlock" aria-hidden="true"></span> <?php esc_html_e( 'Global layer', 'product-configurator-for-woocommerce' ); ?></h3>
-			<button type="button" class="button button-small button-primary save-choices"><?php esc_html_e( 'Save choices', 'product-configurator-for-woocommerce' ); ?></button>
 			<button type="button" class="button button-small cancel-edit-choices"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 			<button type="button" class="button button-small edit-choices"><?php esc_html_e( 'Edit choices', 'product-configurator-for-woocommerce' ); ?></button>
 		</div>

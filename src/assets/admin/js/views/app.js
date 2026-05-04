@@ -316,7 +316,12 @@ PC.views = PC.views || {};
 				if ( ! window.confirm( closeMsg ) ) {
 					return false;
 				}
-			} else if ( _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) {
+			} else if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() && PC.app.global_layer_session_dirty ) {
+				if ( ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return false;
+				}
+			}
+			if ( _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) {
 				if( !confirm( PC.lang.confirm_closing || 'Some values have not been saved. Are you sure you want to close?' ) )
 					return false;
 			}
