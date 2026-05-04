@@ -1,0 +1,56 @@
+---
+description: WooCommerce Product Customizer monorepo layout, add-on paths, and WordPress-style snake_case
+alwaysApply: true
+---
+
+# WooCommerce Product Customizer ecosystem
+
+## Repository layout
+
+Repositories are sibling folders under `app/src/`:
+
+- **Main plugin**: `woocommerce-product-customizer/`
+- **Add-ons** (separate packages; coordinate with the main plugin's hooks, filters, REST, and persisted data shapes):
+  - `advanced-description/`
+  - `conditional-logic/`
+  - `extra-price/`
+  - `form-builder/`
+  - `multiple-choice/`
+  - `stock-management/`
+  - `save-your-design/`
+  - `text-overlay/`
+
+When touching shared behavior (hooks, filters, REST, data shapes), assume add-ons may depend on stable contracts from the main plugin.
+
+## Naming and code style
+
+- **Functions and variables**: use `snake_case` (PHP, JavaScript, and elsewhere unless the file already follows an unavoidable external API).
+- **Formatting**: align with **WordPress coding standards** where they apply:
+  - PHP: [WordPress PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/) (spacing, braces, Yoda conditions when required by PHPCS rulesets, escaping/sanitization, i18n).
+  - JavaScript: [WordPress JS Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/) for layout and general style, while keeping **snake_case** identifiers as the project convention.
+
+```php
+// ✅ GOOD — snake_case, WordPress-style spacing
+function wpc_get_option_value( $product_id ) {
+	$stored_value = get_post_meta( $product_id, '_wpc_example', true );
+	return $stored_value;
+}
+```
+
+```javascript
+// ✅ GOOD — snake_case for locals and project functions
+function wpc_format_layer_label( raw_label ) {
+	const trimmed_label = raw_label.trim();
+	return trimmed_label;
+}
+```
+
+```javascript
+// ❌ BAD — camelCase for project-owned identifiers
+function wpcFormatLayerLabel(rawLabel) {
+	const trimmedLabel = rawLabel.trim();
+	return trimmedLabel;
+}
+```
+
+External APIs (React, WordPress globals, third-party SDKs) keep their required names; wrap or alias in snake_case at boundaries when practical.
