@@ -40,6 +40,14 @@ class Frontend_Security {
 						'required' => false,
 						'type'     => 'integer',
 					],
+					'cf-turnstile-response' => [
+						'required' => false,
+						'type'     => 'string',
+					],
+					'h-captcha-response' => [
+						'required' => false,
+						'type'     => 'string',
+					],
 				],
 			]
 		);
@@ -54,8 +62,23 @@ class Frontend_Security {
 		if ( is_wp_error( $limited ) ) {
 			return $limited;
 		}
-		$purpose   = $request->get_param( 'purpose' );
+		$purpose    = $request->get_param( 'purpose' );
 		$product_id = $request->get_param( 'product_id' );
+
+		if ( ! is_user_logged_in() ) {
+			$require_captcha = (bool) apply_filters( 'mkl_pc_frontend_action_token_require_captcha', false, $purpose, $request );
+			if ( $require_captcha ) {
+				$provider = (string) apply_filters( 'mkl_pc_frontend_action_token_captcha_provider', 'auto', $purpose, $request );
+				if ( 'auto' === $provider || '' === $provider ) {
+					$supported = Captcha_Adapters::detect_supported_providers();
+					$provider  = ! empty( $supported['turnstile'] ) ? 'turnstile' : ( ! empty( $supported['hcaptcha'] ) ? 'hcaptcha' : '' );
+				}
+				$verified = Captcha_Adapters::verify( $provider, $request );
+				if ( is_wp_error( $verified ) ) {
+					return $verified;
+				}
+			}
+		}
 		$meta      = [];
 		if ( null !== $product_id && '' !== $product_id ) {
 			$meta['product_id'] = (int) $product_id;

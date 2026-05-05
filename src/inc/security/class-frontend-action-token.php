@@ -43,7 +43,8 @@ class Frontend_Action_Token {
 		if ( ! $purpose || ! in_array( $purpose, $this->get_allowed_purposes(), true ) ) {
 			return new \WP_Error( 'mkl_pc_token_bad_purpose', __( 'Invalid action.', 'product-configurator-for-woocommerce' ), [ 'status' => 400 ] );
 		}
-		$token = wp_generate_password( 43, true, true );
+		// Alphanumeric only so the token survives typical request sanitizers (e.g. sanitize_text_field strips several symbols).
+		$token = wp_generate_password( 56, false, false );
 		$hash  = hash( 'sha256', $token );
 		$data  = [
 			'purpose'   => $purpose,
@@ -78,7 +79,6 @@ class Frontend_Action_Token {
 		$hash = hash( 'sha256', $token );
 		$key  = 'mkl_pc_fat_' . $hash;
 		$data = get_transient( $key );
-		delete_transient( $key );
 		if ( ! is_array( $data ) || empty( $data['purpose'] ) || $data['purpose'] !== $purpose ) {
 			return new \WP_Error( 'mkl_pc_token_invalid', __( 'This session has expired. Please try again.', 'product-configurator-for-woocommerce' ), [ 'status' => 403 ] );
 		}
@@ -90,6 +90,8 @@ class Frontend_Action_Token {
 		if ( ! empty( $data['user_id'] ) && is_user_logged_in() && (int) $data['user_id'] !== (int) get_current_user_id() ) {
 			return new \WP_Error( 'mkl_pc_token_mismatch', __( 'This session has expired. Please try again.', 'product-configurator-for-woocommerce' ), [ 'status' => 403 ] );
 		}
+		delete_transient( $key );
+
 		return true;
 	}
 }

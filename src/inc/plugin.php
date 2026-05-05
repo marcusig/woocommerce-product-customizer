@@ -90,6 +90,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'update.php';
 		include_once MKL_PC_INCLUDE_PATH . 'security/class-rate-limiter.php';
 		include_once MKL_PC_INCLUDE_PATH . 'security/class-frontend-action-token.php';
+		include_once MKL_PC_INCLUDE_PATH . 'security/class-captcha-adapters.php';
 		include_once MKL_PC_INCLUDE_PATH . 'security/class-frontend-security.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
