@@ -2480,9 +2480,9 @@ a.mkl-pc-link--external::before {
 		width: 28px;
 		padding: 0;
 		i {
-			vertical-align: middle;
 			border-radius: 3px;
-			line-height: 1;
+			line-height: 28px;
+			height: 28px;
 		}
 	}
 	&.showing {
@@ -2901,7 +2901,8 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 }
 
 .layer-form.is-global.is-global-locked .setting-section .section-fields, 
-.layer-form.is-global.is-global-locked .mkl-pc-image-settings {
+.layer-form.is-global.is-global-locked .mkl-pc-image-settings,
+.is-global-locked.is-global-layer .mkl-pc-image-settings {
     pointer-events: none;
     cursor: no-drop;
 }

@@ -147,28 +147,9 @@ PC.views = PC.views || {};
 				return;
 			}
 
-			var showSaveOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.show( 'save_global_layer' );
-				}
-			};
-			var hideSaveOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.hide();
-				}
-			};
-
-			showSaveOverlay();
+			PC.app.setDataMigrationOverlay( 'save_global_layer' );
 			if ( self.active_layer && self.active_layer.$el && self.active_layer.$el.length ) {
 				self.active_layer.$el.addClass( 'is-saving-global-choices' );
-			}
-
-			// Get choices data
-			var choices_data = [];
-			if ( this.active_layer.col ) {
-				this.active_layer.col.each( function( choice ) {
-					choices_data.push( choice.toJSON() );
-				} );
 			}
 
 			// Save using global_layers collection
@@ -194,35 +175,18 @@ PC.views = PC.views || {};
 					self.update_global_actions_visibility();
 				},
 				error: function( model, error ) {
-					// Error response
-					var error_message = 'Unknown error';
-					if ( error && error.data ) {
-						if ( typeof error.data === 'string' ) {
-							error_message = error.data;
-						} else if ( error.data.message ) {
-							error_message = error.data.message;
-						} else {
-							error_message = JSON.stringify( error.data );
-						}
-					} else if ( error && error.message ) {
-						error_message = error.message;
-					}
-					alert( 'Error saving choices: ' + error_message );
+					alert( 'Error saving choices: ' + PC.app.formatLayerAjaxErrorMessage( error ) );
 					console.error( 'Save choices error response:', error );
 				}
 			} );
 
 			var finishChoicesSaveUi = function() {
-				hideSaveOverlay();
+				PC.app.setDataMigrationOverlay();
 				if ( self.active_layer && self.active_layer.$el && self.active_layer.$el.length ) {
 					self.active_layer.$el.removeClass( 'is-saving-global-choices' );
 				}
 			};
-			if ( xhr && typeof xhr.always === 'function' ) {
-				xhr.always( finishChoicesSaveUi );
-			} else {
-				finishChoicesSaveUi();
-			}
+			PC.app.afterJqXHR( xhr, finishChoicesSaveUi );
 			return xhr;
 		},
 		on_cancel_edit_choices: function( e ) {

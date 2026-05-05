@@ -711,30 +711,13 @@ TODO:
 				return;
 			}
 			
-			// Get layer data
-			var layer_data = PC.toJSON( this.model );
-			
-			// Get existing choices for this layer
-			var choices_data = [];
-			var layer_content = PC.app.get_layer_content( this.model.id );
-			if ( layer_content && layer_content.length ) {
-				layer_content.each( function( choice ) {
-					choices_data.push( choice.toJSON() );
-				} );
-			}
-			
-			// Save just the choices array (no layerId wrapper - layerId is product-specific)
-			var content_data = choices_data;
-			
+			// Get layer data + choices (same shape as save_global)
+			var payload = PC.app.buildGlobalLayerSavePayloadFromModel( this.model );
+			var layer_data = payload.layer_data;
+			var content_data = payload.choices_data;
+
 			// Save to server immediately (creating new global layer with global_id = 0)
-			var hideMigrationOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.hide();
-				}
-			};
-			if ( window.MKL_PC_DataMigrationOverlay ) {
-				window.MKL_PC_DataMigrationOverlay.show( 'make_global' );
-			}
+			PC.app.setDataMigrationOverlay( 'make_global' );
 			var saveXhr = PC.app.get_global_layers().save_global_layer( 0, layer_data, content_data, {
 				success: function( model, response ) {
 					// wp.ajax.post automatically unwraps the response, so response is the data object
@@ -769,27 +752,13 @@ TODO:
 					}
 				},
 				error: function( model, error ) {
-					var error_message = 'Unknown error';
-					if ( error && error.data ) {
-						if ( typeof error.data === 'string' ) {
-							error_message = error.data;
-						} else if ( error.data.message ) {
-							error_message = error.data.message;
-						} else {
-							error_message = JSON.stringify( error.data );
-						}
-					} else if ( error && error.message ) {
-						error_message = error.message;
-					}
-					alert( 'Error creating global layer: ' + error_message );
+					alert( 'Error creating global layer: ' + PC.app.formatLayerAjaxErrorMessage( error ) );
 					console.error( 'Save global layer error:', error );
 				}
 			} );
-			if ( saveXhr && typeof saveXhr.always === 'function' ) {
-				saveXhr.always( hideMigrationOverlay );
-			} else {
-				hideMigrationOverlay();
-			}
+			PC.app.afterJqXHR( saveXhr, function() {
+				PC.app.setDataMigrationOverlay();
+			} );
 		},
 		on_unlink_global: function( e ) {
 			e.preventDefault();
@@ -837,30 +806,12 @@ TODO:
 				}
 			}
 
-			var layer_data = PC.toJSON( this.model );
-			var choices_data = [];
-			var layer_content = PC.app.get_layer_content( this.model.id );
-			if ( layer_content && layer_content.length ) {
-				layer_content.each( function( choice ) {
-					choices_data.push( choice.toJSON() );
-				} );
-			}
+			var payload = PC.app.buildGlobalLayerSavePayloadFromModel( this.model );
 
-			var showOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.show( 'save_global_layer' );
-				}
-			};
-			var hideOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.hide();
-				}
-			};
-
-			showOverlay();
+			PC.app.setDataMigrationOverlay( 'save_global_layer' );
 			this.$el.addClass( 'is-saving' );
 
-			var xhr = PC.app.get_global_layers().save_global_layer( global_id, layer_data, choices_data, {
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, payload.layer_data, payload.choices_data, {
 				success: function( model, response ) {
 					self.global_editing = false;
 					PC.app.get_global_layers().set_editing_layer( global_id, false );
@@ -879,31 +830,15 @@ TODO:
 					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', self.model, self, response );
 				},
 				error: function( model, error ) {
-					var error_message = 'Unknown error';
-					if ( error && error.data ) {
-						if ( typeof error.data === 'string' ) {
-							error_message = error.data;
-						} else if ( error.data.message ) {
-							error_message = error.data.message;
-						} else {
-							error_message = JSON.stringify( error.data );
-						}
-					} else if ( error && error.message ) {
-						error_message = error.message;
-					}
-					window.alert( 'Error saving global layer: ' + error_message );
+					window.alert( 'Error saving global layer: ' + PC.app.formatLayerAjaxErrorMessage( error ) );
 				}
 			} );
 
 			var finishUi = function() {
-				hideOverlay();
+				PC.app.setDataMigrationOverlay();
 				self.$el.removeClass( 'is-saving' );
 			};
-			if ( xhr && typeof xhr.always === 'function' ) {
-				xhr.always( finishUi );
-			} else {
-				finishUi();
-			}
+			PC.app.afterJqXHR( xhr, finishUi );
 			return xhr;
 		},
 		cancel_global: function( e ) {

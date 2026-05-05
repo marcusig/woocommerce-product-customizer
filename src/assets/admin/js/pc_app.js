@@ -122,6 +122,54 @@ PC.toJSON = function( item ) {
 				this.syncSidebarSaveButtonState();
 			}
 		},
+		/** Stub event for programmatic save/cancel calls (no real DOM event). */
+		syntheticMouseEvent: {
+			preventDefault: $.noop,
+			stopPropagation: $.noop
+		},
+		formatLayerAjaxErrorMessage: function( error ) {
+			if ( error && error.data ) {
+				if ( typeof error.data === 'string' ) {
+					return error.data;
+				}
+				if ( error.data.message ) {
+					return error.data.message;
+				}
+				return JSON.stringify( error.data );
+			}
+			if ( error && error.message ) {
+				return error.message;
+			}
+			return 'Unknown error';
+		},
+		buildGlobalLayerSavePayloadFromModel: function( layerModel ) {
+			var layer_data = PC.toJSON( layerModel );
+			var choices_data = [];
+			var layer_content = this.get_layer_content( layerModel.id );
+			if ( layer_content && layer_content.length ) {
+				layer_content.each( function( choice ) {
+					choices_data.push( choice.toJSON() );
+				} );
+			}
+			return { layer_data: layer_data, choices_data: choices_data };
+		},
+		setDataMigrationOverlay: function( phase ) {
+			if ( ! window.MKL_PC_DataMigrationOverlay ) {
+				return;
+			}
+			if ( phase ) {
+				window.MKL_PC_DataMigrationOverlay.show( phase );
+			} else {
+				window.MKL_PC_DataMigrationOverlay.hide();
+			}
+		},
+		afterJqXHR: function( xhr, callback ) {
+			if ( xhr && typeof xhr.always === 'function' ) {
+				xhr.always( callback );
+			} else {
+				callback();
+			}
+		},
 		/**
 		 * Toggle sidebar / shell chrome for isolated global layer editing.
 		 */
@@ -137,14 +185,12 @@ PC.toJSON = function( item ) {
 			var $title = $focus.find( '.mkl-pc-global-focus__title' );
 			if ( ctx ) {
 				$modal.addClass( 'is-global-layer-focus' );
-				$sidebar.addClass( 'is-global-layer-focus' );
 				var displayName = this.getGlobalLayerDisplayTitle( ctx.layerModel );
 				$title.text( displayName );
 				$backRow.attr( 'hidden', 'hidden' ).hide();
 				$focus.removeAttr( 'hidden' ).show();
 			} else {
 				$modal.removeClass( 'is-global-layer-focus' );
-				$sidebar.removeClass( 'is-global-layer-focus' );
 				$backRow.removeAttr( 'hidden' ).show();
 				$focus.attr( 'hidden', 'hidden' ).hide();
 			}
@@ -185,25 +231,10 @@ PC.toJSON = function( item ) {
 					return null;
 				}
 			}
-			var layer_data = PC.toJSON( layerModel );
-			var choices_data = [];
-			var layer_content = PC.app.get_layer_content( layerModel.id );
-			if ( layer_content && layer_content.length ) {
-				layer_content.each( function( choice ) {
-					choices_data.push( choice.toJSON() );
-				} );
-			}
-			var showOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.show( 'save_global_layer' );
-				}
-			};
-			var hideOverlay = function() {
-				if ( window.MKL_PC_DataMigrationOverlay ) {
-					window.MKL_PC_DataMigrationOverlay.hide();
-				}
-			};
-			showOverlay();
+			var payload = this.buildGlobalLayerSavePayloadFromModel( layerModel );
+			var layer_data = payload.layer_data;
+			var choices_data = payload.choices_data;
+			this.setDataMigrationOverlay( 'save_global_layer' );
 			var layerView = self.findLayerListItemViewForModel( layerModel );
 			if ( layerView && layerView.form && layerView.form.$el && layerView.form.$el.length ) {
 				layerView.form.$el.addClass( 'is-saving' );
@@ -232,32 +263,16 @@ PC.toJSON = function( item ) {
 					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', layerModel, lv && lv.form, response );
 				},
 				error: function( model, error ) {
-					var error_message = 'Unknown error';
-					if ( error && error.data ) {
-						if ( typeof error.data === 'string' ) {
-							error_message = error.data;
-						} else if ( error.data.message ) {
-							error_message = error.data.message;
-						} else {
-							error_message = JSON.stringify( error.data );
-						}
-					} else if ( error && error.message ) {
-						error_message = error.message;
-					}
-					window.alert( 'Error saving global layer: ' + error_message );
+					window.alert( 'Error saving global layer: ' + self.formatLayerAjaxErrorMessage( error ) );
 				}
 			} );
 			var finishUi = function() {
-				hideOverlay();
+				self.setDataMigrationOverlay();
 				if ( layerView && layerView.form && layerView.form.$el && layerView.form.$el.length ) {
 					layerView.form.$el.removeClass( 'is-saving' );
 				}
 			};
-			if ( xhr && typeof xhr.always === 'function' ) {
-				xhr.always( finishUi );
-			} else {
-				finishUi();
-			}
+			this.afterJqXHR( xhr, finishUi );
 			return xhr;
 		},
 		/**
@@ -293,30 +308,18 @@ PC.toJSON = function( item ) {
 					return;
 				}
 				if ( layerView && layerView.form && typeof layerView.form.save_global === 'function' ) {
-					var xhr = layerView.form.save_global( { preventDefault: function() {} } );
-					if ( xhr && typeof xhr.always === 'function' ) {
-						xhr.always( finishFooter );
-					} else {
-						finishFooter();
-					}
+					var xhr = layerView.form.save_global( this.syntheticMouseEvent );
+					this.afterJqXHR( xhr, finishFooter );
 					return xhr;
 				}
 				var xhrPersist = this.persistGlobalLayerCpt( gid, ctx.layerModel );
-				if ( xhrPersist && typeof xhrPersist.always === 'function' ) {
-					xhrPersist.always( finishFooter );
-				} else {
-					finishFooter();
-				}
+				this.afterJqXHR( xhrPersist, finishFooter );
 				return xhrPersist;
 			}
 
 			if ( editingChoices && this.state && this.state.collectionName === 'content' && typeof this.state.on_save_choices === 'function' ) {
-				var xhr2 = this.state.on_save_choices( { preventDefault: function() {} } );
-				if ( xhr2 && typeof xhr2.always === 'function' ) {
-					xhr2.always( finishFooter );
-				} else {
-					finishFooter();
-				}
+				var xhr2 = this.state.on_save_choices( this.syntheticMouseEvent );
+				this.afterJqXHR( xhr2, finishFooter );
 				return xhr2;
 			}
 
@@ -355,7 +358,7 @@ PC.toJSON = function( item ) {
 			var gl = this.get_global_layers();
 			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
 			if ( gl.is_editing_layer( gid ) && layerView && layerView.form && typeof layerView.form.cancel_global === 'function' ) {
-				layerView.form.cancel_global( { preventDefault: function() {} } );
+				layerView.form.cancel_global( this.syntheticMouseEvent );
 			} else if ( gl.is_editing_layer( gid ) ) {
 				gl.set_editing_layer( gid, false );
 			}
@@ -399,13 +402,13 @@ PC.toJSON = function( item ) {
 
 			if ( gl.is_editing_choices( gid ) && this.state && this.state.collectionName === 'content' && this.state.active_layer && typeof this.state.on_cancel_edit_choices === 'function' ) {
 				if ( this.state.active_layer.model && this.state.active_layer.model.get( 'global_id' ) === gid ) {
-					this.state.on_cancel_edit_choices( { preventDefault: function() {} } );
+					this.state.on_cancel_edit_choices( this.syntheticMouseEvent );
 				} else {
 					gl.set_editing_choices( gid, false );
 				}
 			}
 			if ( gl.is_editing_layer( gid ) && layerView && layerView.form && typeof layerView.form.cancel_global === 'function' ) {
-				layerView.form.cancel_global( { preventDefault: function() {} } );
+				layerView.form.cancel_global( this.syntheticMouseEvent );
 			}
 			if ( gl.is_editing_layer( gid ) || gl.is_editing_choices( gid ) ) {
 				gl.set_editing_layer( gid, false );
