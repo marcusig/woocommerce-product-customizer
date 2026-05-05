@@ -2919,8 +2919,8 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 	opacity: 0.65;
 }
 
-.is-layer-locked.is-global-layer .actions-container button.delete-item, 
-.is-layer-locked.is-global-layer .actions-container button.duplicate-item {
+.is-global-locked.is-global-layer .actions-container button.delete-item, 
+.is-global-locked.is-global-layer .actions-container button.duplicate-item {
     display: none;
 }
 
