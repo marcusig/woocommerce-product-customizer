@@ -1352,7 +1352,10 @@ PC.toJSON = function( item ) {
 
 		navigator.clipboard.writeText( JSON.stringify( data ) )
 			.then( c => {
-				PC.show_notice( 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + v" to paste.' );
+				var msg = ( typeof PC_lang !== 'undefined' && PC_lang.editor_config_copied_clipboard )
+					? PC_lang.editor_config_copied_clipboard
+					: 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + V" to paste.';
+				PC.show_notice( msg );
 			} );
 	};
 

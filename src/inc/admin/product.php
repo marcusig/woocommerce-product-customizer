@@ -363,6 +363,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['editor_global_layer_unsaved_discard'] = esc_html__( 'You have unsaved changes to this global layer. Leave without saving?', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saved']               = esc_html__( 'Saved', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saving']              = esc_html__( 'Saving…', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_config_copied_clipboard'] = esc_html__( 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + V" to paste.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_config_paste_not_allowed'] = esc_html__( 'The configuration cannot be pasted here, unlock the global layer to paste it.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_load_failed']        = esc_html__( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_close_after_load_error'] = esc_html__( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
 				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu();

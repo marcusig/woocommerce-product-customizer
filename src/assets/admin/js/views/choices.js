@@ -461,6 +461,14 @@ PC.views = PC.views || {};
 		on_paste( json ) {
 			if (!json || json.type !== 'choices' || !json.models) return;
 
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				var global_id = this.model.get( 'global_id' );
+				if ( PC.app.get_global_layers && ! PC.app.get_global_layers().is_editing_choices( global_id ) ) {
+					PC.show_notice( PC_lang.editor_config_paste_not_allowed, 'error' );
+					return;
+				}
+			}
+
 			const id_map = []; // { original_id, new_id }
 			const new_choices = [];
 			

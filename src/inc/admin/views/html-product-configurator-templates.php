@@ -349,8 +349,8 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 					<# if ( data.is_editing_global_layer ) { #>
 						<button type="button" class="button button-small cancel-global"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
 					<# } else { #>
-						<button type="button" class="button button-small unlink-global"><?php esc_html_e( 'Unlink from Global', 'product-configurator-for-woocommerce' ); ?></button>
-						<button type="button" class="button button-small button-primary edit-global"><?php esc_html_e( 'Edit global layer', 'product-configurator-for-woocommerce' ); ?></button>
+						<button type="button" class="button button-small unlink-global"><?php esc_html_e( 'Disconnect from global layer', 'product-configurator-for-woocommerce' ); ?></button>
+						<button type="button" class="button button-small button-primary edit-global"><?php echo esc_html_x( 'Edit original', 'Layer form: edit global layer button', 'product-configurator-for-woocommerce' ); ?></button>
 					<# } #>
 				</div>
 			</div>
