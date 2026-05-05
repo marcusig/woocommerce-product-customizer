@@ -231,7 +231,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			$this->init_product_data();
 			wp_enqueue_script( 'wp-hooks' );
 			wp_enqueue_script( 'wp-a11y' );
-			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
+			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '8.16.0', true );
 
 			$scripts = array(
 				array('admin', 'admin.js'),
