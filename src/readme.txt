@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 1.6.5
+Stable tag: 1.6.6
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -146,6 +146,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.6.6 - 7/May/2026 =
+
+* FIX: Quantity field stripped by wrong escaping function
+* FIX: Compatibility with latest WooCommerce Paypal Payments (caused Add to cart error notice out of context)
 
 = 1.6.5 - 30/Apr/2026 =
 
