@@ -43,6 +43,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'addify_add_quote_item_data', array( $this, 'addify_add_quote_item_data' ), 20, 5 );
 
 			add_filter( 'wc_stripe_hide_payment_request_on_product_page', array( $this, 'maybe_remove_stripe_express_checkout' ), 10, 2 );
+			add_filter( 'woocommerce_paypal_payments_simulate_cart_enabled', array( $this, 'maybe_disable_ppcp_simulate_cart' ), 10 );
 
 			// Attach short description filter.
 			// add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
@@ -73,6 +74,24 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			// If the product is configurable and enable_default_add_to_cart is false, hide express checkout
 			if ( mkl_pc_is_configurable( $post->ID ) && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) return true;
 			return $hide_express_checkout;
+		}
+
+		/**
+		 * Disable WooCommerce PayPal Payments "simulate cart" for configurable products.
+		 *
+		 * PayPal Payments can trigger regular add-to-cart flows without our configuration payload.
+		 * Disabling simulate cart for configurable products avoids those side effects.
+		 *
+		 * @param bool       $enabled  Whether simulate cart is enabled.
+		 * @return bool
+		 */
+		public function maybe_disable_ppcp_simulate_cart( $enabled ) {
+			global $product;
+			// Disable simulate cart if the product is not set or not a WC_Product instance
+			if ( ! $product || !is_a( $product, 'WC_Product' ) ) return false;
+			// Disable simulate cart if the product is configurable
+			if ( mkl_pc_is_configurable( $product->get_id() ) ) return false;
+			return $enabled;
 		}
 
 		/**
