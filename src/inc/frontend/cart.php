@@ -338,10 +338,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 */
 		public function cart_item_thumbnail( $image, $cart_item, $cart_item_key ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
-			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
+			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
 				$configuration = $this->_get_configuration_for_cart_item( $cart_item );
-				$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
-				$img = $configuration->get_image( $size );
+				$size          = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
+				$img           = $this->get_configuration_cart_thumbnail_html( $configuration, $size );
 
 				if ( $img ) return $img;
 			}
@@ -366,7 +366,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
 					$configuration = $this->_get_configuration_for_cart_item( $cart_item );
 					$img_url = $configuration->get_image_url( false, $size );
-
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
 
 					if ( 'save_to_disk' === mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ) ) {
@@ -552,6 +551,52 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return $weight;
 		}
 
+		/**
+		 * Cart thumbnail HTML: use merged preview URL from Configuration::get_image_url()
+		 * so on-the-fly configs use the REST merge endpoint. Configuration::get_image()
+		 * may short-circuit to a single attachment before merge URLs are considered.
+		 *
+		 * @param Configuration $configuration Configuration instance.
+		 * @param string|array  $size          Image size name or dimensions array.
+		 * @return string
+		 */
+		private function get_configuration_cart_thumbnail_html( $configuration, $size ) {
+			$img_url = $configuration->get_image_url( false, $size );
+			if ( ! $img_url || ! is_string( $img_url ) ) {
+				return $configuration->get_image( $size );
+			}
+
+			$attachment_id = Utils::get_image_id( $img_url );
+			if ( $attachment_id ) {
+				return wp_get_attachment_image( $attachment_id, $size, false, array() );
+			}
+
+			$size_class = $size;
+			if ( is_array( $size_class ) ) {
+				$size_class = join( 'x', $size_class );
+			}
+
+			$default_attr = array(
+				'src'   => $img_url,
+				'class' => 'attachment-' . $size_class . ' size-' . $size_class . ' configuration-image',
+				'alt'   => '',
+			);
+
+			if ( function_exists( 'wp_lazy_loading_enabled' ) && wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' ) ) {
+				$default_attr['loading'] = 'lazy';
+			}
+
+			$attr = array_map( 'esc_attr', $default_attr );
+			$html = '<img';
+
+			foreach ( $attr as $name => $value ) {
+				$html .= ' ' . $name . '="' . $value . '"';
+			}
+
+			$html .= ' />';
+
+			return $html;
+		}
 
 		private function _get_cart_item_context( $cart_item = false ) {
 			if ( function_exists( 'WC' ) && is_callable( [ WC(), 'is_store_api_request' ] ) ) {
@@ -592,7 +637,14 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			usort( $configurator_data, [ $this, '_order_images' ] );
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer ) continue;
-				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
+				/**
+				 * Filter merge payload image token per cart choice (attachment ID, temp basename, etc.).
+				 *
+				 * @param string|int    $choice_image Image token from {@see Choice::get_image_id()}.
+				 * @param \MKL\PC\Choice $layer        Cart choice instance.
+				 */
+				$choice_image = apply_filters( 'mkl_pc/cart_item/merge_layer_image_id', $layer->get_image_id( 'image' ), $layer );
+				if ( $choice_image ) {
 					$choices[] = [ 'image' => $choice_image ];
 				}
 			}
