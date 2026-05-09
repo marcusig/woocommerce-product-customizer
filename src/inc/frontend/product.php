@@ -289,7 +289,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 		public function get_add_to_cart_label() {
 			global $post;
-			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', esc_html_x( 'Add to cart', 'Default label for the add to cart button', 'woocommerce' ) );
+			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', esc_html__( 'Add to cart', 'woocommerce' ) );
 			if ( $post  ) {
 				// Quotes for WooCommerce
 				if ( function_exists( 'product_quote_enabled' ) ) {
