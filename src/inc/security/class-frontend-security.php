@@ -65,7 +65,19 @@ class Frontend_Security {
 		$purpose    = $request->get_param( 'purpose' );
 		$product_id = $request->get_param( 'product_id' );
 
-		if ( ! is_user_logged_in() ) {
+		/**
+		 * Whether to skip captcha for this token mint request (e.g. authenticated users).
+		 *
+		 * Defaults to is_user_logged_in() so guests still run `mkl_pc_frontend_action_token_require_captcha`.
+		 * Integrations may widen this when the REST request carries another trusted session signal.
+		 *
+		 * @param bool             $skip    Whether to skip captcha verification.
+		 * @param string           $purpose Token purpose slug.
+		 * @param \WP_REST_Request $request REST request.
+		 */
+		$skip_captcha = (bool) apply_filters( 'mkl_pc_frontend_action_token_skip_captcha', is_user_logged_in(), $purpose, $request );
+
+		if ( ! $skip_captcha ) {
 			$require_captcha = (bool) apply_filters( 'mkl_pc_frontend_action_token_require_captcha', false, $purpose, $request );
 			if ( $require_captcha ) {
 				$provider = (string) apply_filters( 'mkl_pc_frontend_action_token_captcha_provider', 'auto', $purpose, $request );

@@ -23,6 +23,10 @@ class Captcha_Adapters {
 	 * @return true|\WP_Error
 	 */
 	public static function verify( $provider, $request ) {
+		if ( is_user_logged_in() ) {
+			return true;
+		}
+
 		$provider = sanitize_key( $provider );
 
 		if ( 'turnstile' === $provider ) {
