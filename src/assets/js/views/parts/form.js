@@ -181,6 +181,14 @@ PC.fe.views.form = Backbone.View.extend({
 					}
 				});
 
+				/**
+				 * Append extra multipart fields (add-ons). Default FormData is unchanged.
+				 *
+				 * @param {FormData} request_body Body sent to `pc_add_to_cart`.
+				 * @param {Backbone.View} form_view This form view instance.
+				 */
+				wp.hooks.doAction( 'PC.fe.add_to_cart.append_ajax_request_body', request_body, this );
+
 				/* 
 					Add to cart request
 				*/
@@ -216,6 +224,14 @@ PC.fe.views.form = Backbone.View.extend({
 				.catch( error => {
 					console.error( 'Configurator: Error in form submission' );
 					console.error( error );
+				} )
+				.finally( () => {
+					/**
+					 * Run after ajax add-to-cart settles (success, error, or network failure).
+					 *
+					 * @param {Backbone.View} form_view This form view instance.
+					 */
+					wp.hooks.doAction( 'PC.fe.add_to_cart.ajax_request_finally', this );
 				} );
 
 				return;
@@ -302,7 +318,6 @@ PC.fe.views.form = Backbone.View.extend({
 	qty_change: function( e ) {
 		
 		PC.fe.currentProductData.product_info.qty = $( e.target ).val();
-		console.log( 'qty_change', PC.fe.currentProductData.product_info.qty, typeof pc_get_extra_price );
 		// If Extra price is not installed, check if price needs an update
 		if ( 'undefined' === typeof pc_get_extra_price && PC.fe.currentProductData.product_info?.price_tiers ) {
 			$( '.pc-total-price' ).html( PC.utils.formatMoney( PC.fe.get_product_price() ) );
