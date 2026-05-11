@@ -147,6 +147,8 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+
+* TWEAK: Fix add to cart validation
 * DEV: Upgraded Pixi to current version (v8)
 
 = 1.6.6 - 7/May/2026 =
