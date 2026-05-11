@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 1.6.6
+Stable tag: 1.7.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -147,9 +147,14 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.7.0 - 11/May/2026 =
 
-* TWEAK: Fix add to cart validation
-* DEV: Upgraded Pixi to current version (v8)
+* UPGRADE: Upgraded Pixi to current version (v8)
+* FIX: "Add to cart" language domain (removed context string)
+* FIX: Add style attribute to kses_basic_inline_html 
+* TWEAK: Fix add to cart validation (Validate before the item is added to the cart)
+* DEV: added JS action 'PC.fe.add_to_cart.append_ajax_request_body'
+* DEV: added JS action 'PC.fe.add_to_cart.ajax_request_finally'
 
 = 1.6.6 - 7/May/2026 =
 
@@ -420,4 +425,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.6.0 Accessibility Improvements
+* 1.7.0 Upgraded Pixi library to latest version (v8) - Text overlay and Save your design add-ons need to be updated to work with this latest update
