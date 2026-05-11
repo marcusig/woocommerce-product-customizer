@@ -18,7 +18,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		private function _hooks() {
-			add_action( 'woocommerce_add_to_cart', array( $this, 'on_add_to_cart' ), 1, 6 );
+			add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'validate_add_to_cart' ), 10, 6 );
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 
 			add_filter( 'woocommerce_add_cart_item', array( $this, 'add_weight_to_product' ), 10 );
@@ -52,15 +52,22 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		/**
 		 * Check configuration on add to cart
 		 */
-		public function on_add_to_cart( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data ) {
+		public function validate_add_to_cart( $passed, $product_id, $quantity, $variation_id = 0, $variation = array(), $cart_item_data = array() ) {
 			if ( $variation_id ) {
 				$product_id = $variation_id;
 			}
 
 			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
-			if ( mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
-				throw new \Exception( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ) );
+			if ( '' === $raw_configurator_data && ! empty( $cart_item_data['configurator_data_raw'] ) ) {
+				$raw_configurator_data = $cart_item_data['configurator_data_raw'];
 			}
+
+			if ( $passed && mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
+				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
+				return false;
+			}
+
+			return $passed;
 		}
 
 		/**
