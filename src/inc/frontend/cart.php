@@ -58,6 +58,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
+			if ( '' === $raw_configurator_data && ! empty( $cart_item_data['configurator_data_raw'] ) ) {
+				$raw_configurator_data = $cart_item_data['configurator_data_raw'];
+			}
+
 			if ( $passed && mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
 				return false;
