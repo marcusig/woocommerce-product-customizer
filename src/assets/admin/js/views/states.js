@@ -41,6 +41,7 @@ PC.views = PC.views || {};
 			'click .mkl-pc-admin-ui__sidebar-primary-save': 'on_sidebar_save',
 			'click .mkl-pc-admin-ui__back-to-product': 'on_back_to_product',
 			'click .mkl-pc-global-focus__back': 'on_global_focus_back',
+			'click .mkl-pc-admin-ui__sidebar-mobile-scrim': 'on_sidebar_mobile_scrim_click',
 		},
 		initialize: function( params ) {
 			this.app = params.parent;
@@ -51,6 +52,17 @@ PC.views = PC.views || {};
 			// states load; appending here would duplicate the sidebar.
 			if ( ! this.$( '.mkl-pc-admin-ui__sidebar' ).length ) {
 				this.$el.append( this.template() );
+			}
+			if ( ! this.$( '.mkl-pc-admin-ui__sidebar-mobile-scrim' ).length ) {
+				var lang = ( typeof window.PC_lang === 'object' && window.PC_lang ) ? window.PC_lang : {};
+				var close_label = ( typeof lang.editor_close_sidebar_menu === 'string' )
+					? lang.editor_close_sidebar_menu
+					: 'Close menu';
+				var escaped = _.escape( close_label );
+				this.$el.prepend(
+					'<button type="button" class="mkl-pc-admin-ui__sidebar-mobile-scrim" aria-label="' + escaped + '">' +
+					'<span class="screen-reader-text">' + escaped + '</span></button>'
+				);
 			}
 			this.populateSidebarContext();
 			if ( this.app.states.length ) {
@@ -175,6 +187,26 @@ PC.views = PC.views || {};
 				PC.app.get_admin().close();
 			}
 		},
+		/**
+		 * Collapse the mobile navigation drawer (menu rail + sidebar chrome).
+		 */
+		close_mobile_sidebar: function() {
+			if ( ! this.$menu || ! this.$menu.length ) {
+				return;
+			}
+			var $sidebar = this.$( '.mkl-pc-admin-ui__sidebar' );
+			if ( ! this.$menu.hasClass( 'visible' ) && ! $sidebar.hasClass( 'mkl-pc-admin-ui__sidebar--open' ) ) {
+				return;
+			}
+			this.$menu.removeClass( 'visible' );
+			$sidebar.removeClass( 'mkl-pc-admin-ui__sidebar--open' );
+			this.$( '.mkl-pc-admin-ui__menu-toggle' ).attr( 'aria-expanded', 'false' );
+		},
+		on_sidebar_mobile_scrim_click: function( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.close_mobile_sidebar();
+		},
 		reset_active: function(){
 
 		},
@@ -245,9 +277,7 @@ PC.views = PC.views || {};
 				if( this.state ) this.state.remove(); 
 				this.state = new PC.views.state({model: this.model, options: this.options});
 				this.options.main_view.$el.append( this.state.$el );
-				this.options.main_view.$menu.removeClass( 'visible' );
-				this.options.main_view.$( '.mkl-pc-admin-ui__sidebar' ).removeClass( 'mkl-pc-admin-ui__sidebar--open' );
-				this.options.main_view.$( '.mkl-pc-admin-ui__menu-toggle' ).attr( 'aria-expanded', 'false' );
+				this.options.main_view.close_mobile_sidebar();
 			}
 
 		},
@@ -371,13 +401,17 @@ PC.views = PC.views || {};
 		},
 
 		show_mobile_menu: function( e ) {
-			var $menu = this.options.main_view.$menu;
-			var $sidebar = this.options.main_view.$( '.mkl-pc-admin-ui__sidebar' );
-			$menu.toggleClass( 'visible' );
-			var open = $menu.hasClass( 'visible' );
-			$sidebar.toggleClass( 'mkl-pc-admin-ui__sidebar--open', open );
-			if ( e && e.currentTarget ) {
-				e.currentTarget.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+			var main_view = this.options.main_view;
+			var $menu = main_view.$menu;
+			var open_next = ! $menu.hasClass( 'visible' );
+			if ( open_next ) {
+				$menu.addClass( 'visible' );
+				main_view.$( '.mkl-pc-admin-ui__sidebar' ).addClass( 'mkl-pc-admin-ui__sidebar--open' );
+				if ( e && e.currentTarget ) {
+					e.currentTarget.setAttribute( 'aria-expanded', 'true' );
+				}
+			} else {
+				main_view.close_mobile_sidebar();
 			}
 		},
 		// save_state: function() {

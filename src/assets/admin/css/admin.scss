@@ -227,10 +227,31 @@ html .mkl-pc-admin-ui.pc-modal {
 		min-height: 0;
 		min-width: 0;
 		background: $pc-admin-sidebar-bg;
+
+		.mkl-pc-admin-ui__sidebar-mobile-scrim {
+			display: none;
+		}
+
 		@media ( max-width: 900px ) {
 			display: block;
 			position: relative;
 			height: 100%;
+
+			&:has( .mkl-pc-admin-ui__sidebar.mkl-pc-admin-ui__sidebar--open ) .mkl-pc-admin-ui__sidebar-mobile-scrim,
+			&:has( .mkl-pc-admin-ui__nav.visible ) .mkl-pc-admin-ui__sidebar-mobile-scrim {
+				display: block;
+				position: fixed;
+				inset: 0;
+				z-index: 200000;
+				margin: 0;
+				padding: 0;
+				border: 0;
+				border-radius: 0;
+				background: rgba(0, 0, 0, 0.35);
+				cursor: pointer;
+				-webkit-appearance: none;
+				appearance: none;
+			}
 		}
 		> .mkl-pc-admin-ui__sidebar {
 			display: flex;
@@ -544,11 +565,13 @@ html .mkl-pc-admin-ui.pc-modal {
 				grid-column: auto;
 				grid-row: auto;
 				transform: translateX(-100%);
-				transition: transform 0.2s ease;
-				box-shadow: 2px 0 20px rgba(0, 0, 0, 0.35);
+				transition: transform 0.2s ease, box-shadow 0.2s ease;
+				box-shadow: 2px 0 20px rgba(0, 0, 0, 0);
+				will-change: transform, box-shadow;
 				&:has( .mkl-pc-admin-ui__nav.visible ),
 				&.mkl-pc-admin-ui__sidebar--open {
 					transform: translateX(0);
+					box-shadow: 2px 0 20px rgba(0, 0, 0, 0.35);
 				}
 			}
 		}
@@ -574,6 +597,11 @@ html .mkl-pc-admin-ui.pc-modal {
 				min-width: 0;
 				display: flex;
 				flex-direction: column;
+				@media ( max-width: 900px ) {
+					&.home {
+						overflow: auto;
+					}
+				}
 			}
 		}
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.structure ),
@@ -585,9 +613,11 @@ html .mkl-pc-admin-ui.pc-modal {
 		> .mkl-pc-admin-ui__state:has( .font-library-app ),
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.price-bulk-edit ),
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.import-export ) {
-			border-radius: 8px;
 			background: #FFF;
 			box-shadow: none;
+			@media ( min-width: 900px ) {
+				border-radius: 8px;
+			}
 		}
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content ) {
 			// background: $pc-admin-canvas-chrome;
@@ -1021,7 +1051,8 @@ html .mkl-pc-admin-ui.pc-modal {
 			@media ( max-width: 900px ) {
 				flex-direction: column;
 				align-items: stretch;
-				gap: 12px;
+				gap: 10px;
+				margin-top: 10px;
 				flex: 1 1 auto;
 
 				> .mkl-pc-mobile-structure-toolbar {
@@ -1942,13 +1973,22 @@ ul.layers > li.mkl-list-item--filtered-out {
 			flex: 0 0 auto;
 			white-space: nowrap;
 			@media (max-width: 900px) {
-				font-size: 16px;
 				height: auto;
-				padding-left: 4px;
-				padding-right: 4px;
+				padding-left: 10px;
+				padding-right: 10px;
+				line-height: 1;
 
 				span {
-					display: none;
+					position: absolute;
+					clip: rect(0 0 0 0);
+					overflow: hidden;
+					width: 1px;
+					height: 1px;
+					border: 0;
+					margin: -1px;
+					padding: 0;
+					white-space: nowrap;
+					pointer-events: none;
 				}
 
 				&::before {
@@ -2301,6 +2341,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 			flex-direction: column;
 			gap: 10px;
 			min-height: 0;
+			margin-top: 10px;
 
 			> .mkl-pc-mobile-content-toolbar--choices-back,
 			> .mkl-pc-mobile-content-toolbar--layers-back {

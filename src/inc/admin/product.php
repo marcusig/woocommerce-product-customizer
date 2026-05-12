@@ -354,6 +354,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['global_configurator_banner_label'] = esc_html__( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );
 				$pc_lang['editor_back_to_product']    = esc_html__( 'Back to product', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_close_sidebar_menu'] = esc_attr__( 'Close menu', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_save']                = esc_html__( 'Save', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_save_global_layer']  = esc_html__( 'Save global layer', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_global_layer_fallback_title'] = esc_html__( 'Global layer', 'product-configurator-for-woocommerce' );
