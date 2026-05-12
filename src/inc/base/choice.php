@@ -179,7 +179,7 @@ class Choice {
 	
 	public function get_image_id( $type = 'image' ){
 		$image = $this->get_image( $type );
-		return $image ? $image['id'] : '';
+		return $image && isset( $image['id'] ) ? $image['id'] : '';
 	}
 
 	public function get_choice_by_id( $id ) {

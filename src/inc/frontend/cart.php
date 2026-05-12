@@ -18,7 +18,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		private function _hooks() {
-			add_action( 'woocommerce_add_to_cart', array( $this, 'on_add_to_cart' ), 1, 6 );
+			add_filter( 'woocommerce_add_to_cart_validation', array( $this, 'validate_add_to_cart' ), 10, 6 );
 			add_filter( 'woocommerce_add_cart_item_data', array( $this, 'wc_cart_add_item_data' ), 10, 3 ); 
 
 			add_filter( 'woocommerce_add_cart_item', array( $this, 'add_weight_to_product' ), 10 );
@@ -43,6 +43,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'addify_add_quote_item_data', array( $this, 'addify_add_quote_item_data' ), 20, 5 );
 
 			add_filter( 'wc_stripe_hide_payment_request_on_product_page', array( $this, 'maybe_remove_stripe_express_checkout' ), 10, 2 );
+			add_filter( 'woocommerce_paypal_payments_simulate_cart_enabled', array( $this, 'maybe_disable_ppcp_simulate_cart' ), 10 );
 
 			// Attach short description filter.
 			// add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
@@ -51,15 +52,22 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		/**
 		 * Check configuration on add to cart
 		 */
-		public function on_add_to_cart( $cart_item_key, $product_id, $quantity, $variation_id, $variation, $cart_item_data ) {
+		public function validate_add_to_cart( $passed, $product_id, $quantity, $variation_id = 0, $variation = array(), $cart_item_data = array() ) {
 			if ( $variation_id ) {
 				$product_id = $variation_id;
 			}
 
 			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
-			if ( mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
-				throw new \Exception( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ) );
+			if ( '' === $raw_configurator_data && ! empty( $cart_item_data['configurator_data_raw'] ) ) {
+				$raw_configurator_data = $cart_item_data['configurator_data_raw'];
 			}
+
+			if ( $passed && mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
+				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
+				return false;
+			}
+
+			return $passed;
 		}
 
 		/**
@@ -73,6 +81,24 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			// If the product is configurable and enable_default_add_to_cart is false, hide express checkout
 			if ( mkl_pc_is_configurable( $post->ID ) && !mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) return true;
 			return $hide_express_checkout;
+		}
+
+		/**
+		 * Disable WooCommerce PayPal Payments "simulate cart" for configurable products.
+		 *
+		 * PayPal Payments can trigger regular add-to-cart flows without our configuration payload.
+		 * Disabling simulate cart for configurable products avoids those side effects.
+		 *
+		 * @param bool       $enabled  Whether simulate cart is enabled.
+		 * @return bool
+		 */
+		public function maybe_disable_ppcp_simulate_cart( $enabled ) {
+			global $product;
+			// Disable simulate cart if the product is not set or not a WC_Product instance
+			if ( ! $product || !is_a( $product, 'WC_Product' ) ) return false;
+			// Disable simulate cart if the product is configurable
+			if ( mkl_pc_is_configurable( $product->get_id() ) ) return false;
+			return $enabled;
 		}
 
 		/**
@@ -319,10 +345,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 */
 		public function cart_item_thumbnail( $image, $cart_item, $cart_item_key ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
-			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) { 
+			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
 				$configuration = $this->_get_configuration_for_cart_item( $cart_item );
-				$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
-				$img = $configuration->get_image( $size );
+				$size          = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
+				$img           = $this->get_configuration_cart_thumbnail_html( $configuration, $size );
 
 				if ( $img ) return $img;
 			}
@@ -347,7 +373,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
 					$configuration = $this->_get_configuration_for_cart_item( $cart_item );
 					$img_url = $configuration->get_image_url( false, $size );
-
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
 
 					if ( 'save_to_disk' === mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ) ) {
@@ -533,6 +558,52 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return $weight;
 		}
 
+		/**
+		 * Cart thumbnail HTML: use merged preview URL from Configuration::get_image_url()
+		 * so on-the-fly configs use the REST merge endpoint. Configuration::get_image()
+		 * may short-circuit to a single attachment before merge URLs are considered.
+		 *
+		 * @param Configuration $configuration Configuration instance.
+		 * @param string|array  $size          Image size name or dimensions array.
+		 * @return string
+		 */
+		private function get_configuration_cart_thumbnail_html( $configuration, $size ) {
+			$img_url = $configuration->get_image_url( false, $size );
+			if ( ! $img_url || ! is_string( $img_url ) ) {
+				return $configuration->get_image( $size );
+			}
+
+			$attachment_id = Utils::get_image_id( $img_url );
+			if ( $attachment_id ) {
+				return wp_get_attachment_image( $attachment_id, $size, false, array() );
+			}
+
+			$size_class = $size;
+			if ( is_array( $size_class ) ) {
+				$size_class = join( 'x', $size_class );
+			}
+
+			$default_attr = array(
+				'src'   => $img_url,
+				'class' => 'attachment-' . $size_class . ' size-' . $size_class . ' configuration-image',
+				'alt'   => '',
+			);
+
+			if ( function_exists( 'wp_lazy_loading_enabled' ) && wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' ) ) {
+				$default_attr['loading'] = 'lazy';
+			}
+
+			$attr = array_map( 'esc_attr', $default_attr );
+			$html = '<img';
+
+			foreach ( $attr as $name => $value ) {
+				$html .= ' ' . $name . '="' . $value . '"';
+			}
+
+			$html .= ' />';
+
+			return $html;
+		}
 
 		private function _get_cart_item_context( $cart_item = false ) {
 			if ( function_exists( 'WC' ) && is_callable( [ WC(), 'is_store_api_request' ] ) ) {
@@ -573,7 +644,14 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			usort( $configurator_data, [ $this, '_order_images' ] );
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer ) continue;
-				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
+				/**
+				 * Filter merge payload image token per cart choice (attachment ID, temp basename, etc.).
+				 *
+				 * @param string|int    $choice_image Image token from {@see Choice::get_image_id()}.
+				 * @param \MKL\PC\Choice $layer        Cart choice instance.
+				 */
+				$choice_image = apply_filters( 'mkl_pc/cart_item/merge_layer_image_id', $layer->get_image_id( 'image' ), $layer );
+				if ( $choice_image ) {
 					$choices[] = [ 'image' => $choice_image ];
 				}
 			}

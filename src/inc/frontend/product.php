@@ -224,7 +224,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 						'input_value' => ( isset( $_POST['quantity'] ) ? wc_stock_amount( absint( wp_unslash( $_POST['quantity'] ) ) ) : 1 )
 					), $product, false );
 					$qty_input = preg_replace( '/<script.*?\/script>/s', '', $qty_input );
-					echo wp_kses_post( $qty_input );
+					echo $qty_input;
 				}
 				echo '<# } #>';
 				?>
@@ -237,7 +237,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 								<?php 
 									$qty_input = woocommerce_quantity_input( [], $product, false );
 									$qty_input = preg_replace( '/<script.*?\/script>/s', '', $qty_input );
-									echo wp_kses_post( $qty_input );
+									echo $qty_input;
 								?>
 							<# } #>
 							<?php do_action( 'mkl_pc_frontend_configurator_cart_form' ); ?>
@@ -289,7 +289,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 
 		public function get_add_to_cart_label() {
 			global $post;
-			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', esc_html_x( 'Add to cart', 'Default label for the add to cart button', 'woocommerce' ) );
+			$label = apply_filters( 'mkl_pc/add_to_cart_button/default_label', esc_html__( 'Add to cart', 'woocommerce' ) );
 			if ( $post  ) {
 				// Quotes for WooCommerce
 				if ( function_exists( 'product_quote_enabled' ) ) {

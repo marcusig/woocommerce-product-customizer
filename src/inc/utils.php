@@ -354,6 +354,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			return [
 				'span' => [
 					'class' => true,
+					'style' => true,
 				],
 				'br' => [],
 				'strong' => [],
