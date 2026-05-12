@@ -12,6 +12,8 @@ PC.views = PC.views || {};
 			'click .edit-choices': 'on_edit_choices',
 			'click .save-choices': 'on_save_choices',
 			'click .cancel-edit-choices': 'on_cancel_edit_choices',
+			'click .mkl-pc-mobile-back-to-choices-list': 'on_mobile_back_to_choices_list',
+			'click .mkl-pc-mobile-back-to-layers': 'on_mobile_back_to_layers',
 		},
 		collectionName: 'content',
 		initialize: function( options ) {
@@ -31,18 +33,63 @@ PC.views = PC.views || {};
 			this.render();
 		},
 		remove: function() {
+			if ( this._on_window_resize_layer_mount ) {
+				$( window ).off( 'resize.mklPcContentLayerMount', this._on_window_resize_layer_mount );
+				this._on_window_resize_layer_mount = null;
+			}
+			if ( this.layers ) {
+				this.layers.remove();
+				this.layers = null;
+			}
 			if ( this.main_view && this.main_view.$el && this.main_view.$el.length ) {
 				this.main_view.$el.off( 'input.mklPcContentSidebarFilter' );
 				this.main_view.$el.removeClass( 'mkl-pc-admin-ui--content-mode' );
 				this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers-list' ).empty();
 				this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers' ).attr( 'hidden', 'hidden' ).attr( 'aria-hidden', 'true' );
 			}
+			this.$( '.mkl-pc-content-main-layers-list' ).empty();
 			return Backbone.View.prototype.remove.call( this );
 		},
+		is_narrow_content_editor: function() {
+			return typeof window.matchMedia === 'function' && window.matchMedia( '(max-width: 900px)' ).matches;
+		},
+		get_layer_list_mount: function() {
+			if ( this.is_narrow_content_editor() && this.$list_main && this.$list_main.length ) {
+				return this.$list_main;
+			}
+			return this.$list_sidebar && this.$list_sidebar.length ? this.$list_sidebar : this.$list_main;
+		},
+		sync_layer_list_mount_for_viewport: function() {
+			if ( ! this.layers || ! this.layers.$el || ! this.layers.$el.length ) {
+				return;
+			}
+			var target = this.get_layer_list_mount();
+			if ( ! target || ! target.length ) {
+				return;
+			}
+			if ( this.layers.$el.parent()[ 0 ] === target[ 0 ] ) {
+				this.$list = target;
+				return;
+			}
+			this.layers.$el.detach();
+			this.$list = target;
+			this.$list.append( this.layers.$el );
+			this.applySidebarLayersFilter();
+		},
 		applySidebarLayersFilter: function() {
-			if ( typeof PC.applyAdminListFilter !== 'function' || ! this.layers || ! this.layers.$el || ! this.layers.$el.length ) return;
-			var $in = this.main_view && this.main_view.$el ? this.main_view.$( '.mkl-pc-list-filter-input--sidebar-layers' ) : $();
-			var val = $in.length ? $in.val() : '';
+			if ( typeof PC.applyAdminListFilter !== 'function' || ! this.layers || ! this.layers.$el || ! this.layers.$el.length ) {
+				return;
+			}
+			var $in_sidebar = this.main_view && this.main_view.$el ? this.main_view.$( '.mkl-pc-list-filter-input--sidebar-layers' ) : $();
+			var $in_main = this.$el && this.$el.length ? this.$( '.mkl-pc-list-filter-input--content-main-layers' ) : $();
+			var val = '';
+			if ( this.is_narrow_content_editor() && $in_main.length ) {
+				val = $in_main.val() || '';
+			} else if ( $in_sidebar.length ) {
+				val = $in_sidebar.val() || '';
+			} else if ( $in_main.length ) {
+				val = $in_main.val() || '';
+			}
 			PC.applyAdminListFilter( this.layers.$el, val, { mode: 'flat-li' } );
 		},
 		render: function() {
@@ -52,29 +99,43 @@ PC.views = PC.views || {};
 			} else {
 				if ( this.main_view && this.main_view.$el && this.main_view.$el.length ) {
 					this.main_view.$el.addClass( 'mkl-pc-admin-ui--content-mode' );
-					this.$list = this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers-list' );
+					this.$list_sidebar = this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers-list' );
 					this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers' ).removeAttr( 'hidden' ).attr( 'aria-hidden', 'false' );
 					var selfSidebar = this;
 					this.main_view.$el.off( 'input.mklPcContentSidebarFilter' ).on(
 						'input.mklPcContentSidebarFilter',
-						'.mkl-pc-list-filter-input--sidebar-layers',
+						'.mkl-pc-list-filter-input--sidebar-layers, .mkl-pc-list-filter-input--content-main-layers',
 						function( e ) {
-							if ( typeof PC.applyAdminListFilter !== 'function' || ! selfSidebar.layers || ! selfSidebar.layers.$el ) return;
-							PC.applyAdminListFilter( selfSidebar.layers.$el, $( e.target ).val(), { mode: 'flat-li' } );
+							if ( typeof PC.applyAdminListFilter !== 'function' || ! selfSidebar.layers || ! selfSidebar.layers.$el ) {
+								return;
+							}
+							var val = $( e.target ).val();
+							if ( selfSidebar.main_view && selfSidebar.main_view.$el ) {
+								selfSidebar.main_view.$( '.mkl-pc-list-filter-input--sidebar-layers' ).val( val );
+							}
+							if ( selfSidebar.$el && selfSidebar.$el.length ) {
+								selfSidebar.$( '.mkl-pc-list-filter-input--content-main-layers' ).val( val );
+							}
+							PC.applyAdminListFilter( selfSidebar.layers.$el, val, { mode: 'flat-li' } );
 						}
 					);
 				} else {
-					this.$list = $();
+					this.$list_sidebar = $();
 				}
 				this.$el.append( this.template() );
-				this.$choices = this.$('.content-choices-list');
-				this.$form = this.$('.content-choice');
+				this.$choices = this.$( '.content-choices-list' );
+				this.$form = this.$( '.content-choice' );
+				this.$list_main = this.$( '.mkl-pc-content-main-layers-list' );
+				this.$list = this.get_layer_list_mount();
 				if ( this.$list && this.$list.length ) {
-
 					this.active_layer = null;
-
-					this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } ); 
-					this.$list.append(this.layers.el);
+					this.layers = new PC.views.content_layers( { list_el: this.$list, edit_el: this.$form, state: this } );
+					this.$list.append( this.layers.el );
+					var selfResize = this;
+					this._on_window_resize_layer_mount = _.debounce( function() {
+						selfResize.sync_layer_list_mount_for_viewport();
+					}, 150 );
+					$( window ).on( 'resize.mklPcContentLayerMount', this._on_window_resize_layer_mount );
 					this.update_global_actions_visibility();
 					this.applySidebarLayersFilter();
 					var self = this;
@@ -94,6 +155,51 @@ PC.views = PC.views || {};
 			if ( $btn.length ) {
 				$btn.trigger( 'focus' );
 			}
+		},
+		on_mobile_back_to_choices_list: function( e ) {
+			if ( e ) {
+				e.preventDefault();
+			}
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return;
+				}
+			}
+			if ( this.active_layer && this.active_layer.clear_choice_detail_panel ) {
+				this.active_layer.clear_choice_detail_panel();
+			}
+		},
+		on_mobile_back_to_layers: function( e ) {
+			if ( e ) {
+				e.preventDefault();
+			}
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return;
+				}
+			}
+			this.clear_content_layer_selection();
+			this.sync_layer_list_mount_for_viewport();
+			var self = this;
+			window.requestAnimationFrame( function() {
+				self.focusSidebarLayerButton();
+			} );
+		},
+		clear_content_layer_selection: function() {
+			if ( this.active_layer ) {
+				this.active_layer.remove();
+				this.active_layer = null;
+			}
+			if ( this.$choices && this.$choices.length ) {
+				this.$choices.find( '.mkl-choice-list-inner' ).remove();
+			}
+			PC.selection.reset();
+			this.$el.removeClass( 'show-choices' );
+			if ( this.layers && this.layers.$el ) {
+				this.layers.$el.children( 'li' ).removeClass( 'active' );
+				this.layers.$el.find( 'button.layer' ).attr( 'aria-pressed', 'false' );
+			}
+			this.update_global_actions_visibility();
 		},
 		on_edit_choices: function( e ) {
 			if ( e ) e.preventDefault();

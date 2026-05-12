@@ -58,6 +58,7 @@ TODO:
 			'click .order-layers': 'change_order_type',
 			'keypress .structure-toolbar h4 input': 'create',
 			'input .mkl-pc-list-filter-input': 'on_list_filter',
+			'click .mkl-pc-mobile-back-to-structure-list': 'on_mobile_back_to_structure_list',
 			'remove': 'cleanup_on_remove', 
 			'save-state': 'save_layers',
 
@@ -324,6 +325,43 @@ TODO:
 		edit_simple: function() {
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
 			PC.selection.reset();
+		},
+		on_mobile_back_to_structure_list: function( e ) {
+			e.preventDefault();
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return;
+				}
+			}
+			this.clear_structure_detail_panel();
+		},
+		clear_structure_detail_panel: function() {
+			if ( this.edit_multiple_items_form ) {
+				this.edit_multiple_items_form.remove();
+				this.edit_multiple_items_form = null;
+			}
+			_.each( this.items, function( item ) {
+				if ( item.form ) {
+					item.form.remove();
+					item.form = null;
+				}
+			} );
+			if ( this.$form && this.$form.length ) {
+				this.$form.children().not( '.mkl-pc-content-placeholder' ).remove();
+			}
+			if ( this.col ) {
+				this.col.each( function( model ) {
+					model.set( 'active', false );
+				} );
+			}
+			this.edit_simple();
+			var $hit = this.$list.find( '.mkl-list-item.active .mkl-pc-admin-list-row__hit' ).first();
+			if ( ! $hit.length ) {
+				$hit = this.$list.find( '.mkl-pc-admin-list-row__hit' ).first();
+			}
+			if ( $hit.length ) {
+				$hit.trigger( 'focus' );
+			}
 		},
 		update_sorting: function() {
 			this.$( '.layers .mkl-list-item' ).each( function( i, listItem ) {

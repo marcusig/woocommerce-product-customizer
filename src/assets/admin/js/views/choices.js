@@ -455,6 +455,40 @@ PC.views = PC.views || {};
 				this.$form.append( this.edit_multiple_items_form.$el );
 			}
 		},
+		clear_choice_detail_panel: function() {
+			if ( this.edit_multiple_items_form ) {
+				this.edit_multiple_items_form.remove();
+				this.edit_multiple_items_form = null;
+			}
+			_.each( this.items, function( iv ) {
+				if ( iv.form ) {
+					iv.form.remove();
+					iv.form = null;
+				}
+			} );
+			if ( this.$form && this.$form.length ) {
+				this.$form.children().not( '.mkl-pc-content-placeholder' ).remove();
+			}
+			if ( this.col ) {
+				this.col.each( function( model ) {
+					model.set( 'active', false );
+				} );
+			}
+			this.edit_simple();
+			if ( PC.selection && PC.selection.reset ) {
+				PC.selection.reset();
+			}
+			if ( this.state && this.state.update_global_actions_visibility ) {
+				this.state.update_global_actions_visibility();
+			}
+			var $hit = this.$list.find( '.choice.mkl-list-item.active .mkl-pc-admin-list-row__hit' ).first();
+			if ( ! $hit.length ) {
+				$hit = this.$list.find( '.mkl-pc-admin-list-row__hit' ).first();
+			}
+			if ( $hit.length ) {
+				$hit.trigger( 'focus' );
+			}
+		},
 		edit_simple: function() {
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
 		},

@@ -136,7 +136,7 @@ GENERAL TEMPLATES
 <script type="text/html" id="tmpl-mkl-pc-frame-title">
 	<div class="mkl-pc-admin-ui__header">
 		<h1>{{data.title}}</h1>
-		<button type="button" class="button button-link mkl-pc-admin-ui__menu-toggle" aria-expanded="false">
+		<button type="button" class="button mkl-pc-admin-ui__menu-toggle" aria-expanded="false">
 			<?php esc_html_e( 'Menu' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
 		</button>
 		<span class="description">{{data.description}}</span>
@@ -168,6 +168,12 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure">
 	<div class="mkl-pc-admin-ui__content structure">
+		<div class="mkl-pc-mobile-structure-toolbar">
+			<button type="button" class="button-link mkl-pc-mobile-back-to-structure-list" aria-label="<?php echo esc_attr_x( 'Back to list', 'Structure tab: accessible label for back from editor', 'product-configurator-for-woocommerce' ); ?>">
+				<span class="mkl-pc-mobile-back-to-structure-list__icon dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
+				<span class="mkl-pc-mobile-back-to-structure-list__text"><?php echo esc_html_x( 'Back to list', 'Structure tab: return from layer or angle editor on small screens', 'product-configurator-for-woocommerce' ); ?></span>
+			</button>
+		</div>
 		<div class="structure-content has-toolbar">
 			<div class="structure-toolbar">
 				<div class="structure-toolbar__primary">
@@ -396,6 +402,25 @@ CONTENT TEMPLATES
 
 <script type="text/html" id="tmpl-mkl-pc-content">
 	<div class="mkl-pc-admin-ui__content content">
+		<div class="mkl-pc-mobile-content-toolbar mkl-pc-mobile-content-toolbar--choices-back">
+			<button type="button" class="button-link mkl-pc-mobile-back-to-choices-list" aria-label="<?php echo esc_attr_x( 'Back to choices', 'Content tab: accessible label for back from choice editor', 'product-configurator-for-woocommerce' ); ?>">
+				<span class="mkl-pc-mobile-back-to-choices-list__icon dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
+				<span class="mkl-pc-mobile-back-to-choices-list__text"><?php echo esc_html_x( 'Back to choices', 'Content tab: return from choice editor on small screens', 'product-configurator-for-woocommerce' ); ?></span>
+			</button>
+		</div>
+		<div class="mkl-pc-mobile-content-toolbar mkl-pc-mobile-content-toolbar--layers-back">
+			<button type="button" class="button-link mkl-pc-mobile-back-to-layers" aria-label="<?php echo esc_attr_x( 'Back to layers', 'Content tab: leave choices and pick another layer on small screens', 'product-configurator-for-woocommerce' ); ?>">
+				<span class="mkl-pc-mobile-back-to-layers__icon dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
+				<span class="mkl-pc-mobile-back-to-layers__text"><?php echo esc_html_x( 'Back to layers', 'Content tab: return from choices list to layer list on small screens', 'product-configurator-for-woocommerce' ); ?></span>
+			</button>
+		</div>
+		<div class="mkl-pc-content-main-layer-panel">
+			<h2 class="mkl-pc-content-main-layer-panel__heading"><?php esc_html_e( 'Layers', 'product-configurator-for-woocommerce' ); ?></h2>
+			<div class="mkl-pc-content-main-layer-panel__filter">
+				<input type="search" class="mkl-pc-list-filter-input mkl-pc-list-filter-input--content-main-layers" placeholder="<?php echo esc_attr( __( 'Filter layers…', 'product-configurator-for-woocommerce' ) ); ?>" autocomplete="off" aria-label="<?php echo esc_attr( __( 'Filter layers', 'product-configurator-for-woocommerce' ) ); ?>" />
+			</div>
+			<div class="mkl-pc-content-main-layers-list"></div>
+		</div>
 		<div class="content-col content-choices-list">
 			<p class="mkl-pc-content-placeholder"><?php esc_html_e( 'No layer selected', 'product-configurator-for-woocommerce' ); ?></p>
 		</div>
