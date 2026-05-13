@@ -248,7 +248,11 @@ PC.views = PC.views || {};
 				var global_id = this.model.get( 'global_id' );
 				PC.app.get_global_layers().set_editing_choices( global_id, this.editing_choices );
 			}
-			this.state.$el.removeClass( 'show-choices' );
+			if ( this.state.mobile_stack_router ) {
+				this.state.mobile_stack_router.set_content_stack( PC.admin.CONTENT_STACK_LAYERS );
+			} else {
+				this.state.$el.removeClass( 'show-choices' );
+			}
 			if ( this.edit_multiple_items_form ) {
 				this.edit_multiple_items_form.remove();
 				this.edit_multiple_items_form = null;
@@ -480,6 +484,9 @@ PC.views = PC.views || {};
 			}
 			if ( this.state && this.state.update_global_actions_visibility ) {
 				this.state.update_global_actions_visibility();
+			}
+			if ( this.state && this.state.mobile_stack_router ) {
+				this.state.mobile_stack_router.set_content_stack( PC.admin.CONTENT_STACK_CHOICES );
 			}
 			var $hit = this.$list.find( '.choice.mkl-list-item.active .mkl-pc-admin-list-row__hit' ).first();
 			if ( ! $hit.length ) {
@@ -723,6 +730,10 @@ PC.views = PC.views || {};
 			this.update_lock_state();
 			
 			wp.hooks.doAction( 'PC.admin.choiceDetails.render', this );
+
+			if ( this.state && this.state.mobile_stack_router ) {
+				this.state.mobile_stack_router.set_content_stack( PC.admin.CONTENT_STACK_CHOICE_DETAIL );
+			}
 
 			return this;
 		},

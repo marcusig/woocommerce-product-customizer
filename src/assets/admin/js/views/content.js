@@ -33,6 +33,10 @@ PC.views = PC.views || {};
 			this.render();
 		},
 		remove: function() {
+			if ( this.mobile_stack_router && typeof this.mobile_stack_router.destroy === 'function' ) {
+				this.mobile_stack_router.destroy();
+				this.mobile_stack_router = null;
+			}
 			if ( this._on_window_resize_layer_mount ) {
 				$( window ).off( 'resize.mklPcContentLayerMount', this._on_window_resize_layer_mount );
 				this._on_window_resize_layer_mount = null;
@@ -123,6 +127,9 @@ PC.views = PC.views || {};
 					this.$list_sidebar = $();
 				}
 				this.$el.append( this.template() );
+				if ( PC.admin && PC.admin.mobile_stack_router && typeof PC.admin.mobile_stack_router.install_content_router === 'function' ) {
+					this.mobile_stack_router = PC.admin.mobile_stack_router.install_content_router( this );
+				}
 				this.$choices = this.$( '.content-choices-list' );
 				this.$form = this.$( '.content-choice' );
 				this.$list_main = this.$( '.mkl-pc-content-main-layers-list' );
@@ -194,7 +201,11 @@ PC.views = PC.views || {};
 				this.$choices.find( '.mkl-choice-list-inner' ).remove();
 			}
 			PC.selection.reset();
-			this.$el.removeClass( 'show-choices' );
+			if ( this.mobile_stack_router ) {
+				this.mobile_stack_router.set_content_stack( PC.admin.CONTENT_STACK_LAYERS );
+			} else {
+				this.$el.removeClass( 'show-choices' );
+			}
 			if ( this.layers && this.layers.$el ) {
 				this.layers.$el.children( 'li' ).removeClass( 'active' );
 				this.layers.$el.find( 'button.layer' ).attr( 'aria-pressed', 'false' );
@@ -447,7 +458,11 @@ PC.views = PC.views || {};
 			if ( this.model.get( 'is_global' ) && global_id ) {
 				choices_view.render();
 			}
-			this.state.$el.addClass('show-choices');
+			if ( this.state.mobile_stack_router ) {
+				this.state.mobile_stack_router.set_content_stack( PC.admin.CONTENT_STACK_CHOICES );
+			} else {
+				this.state.$el.addClass( 'show-choices' );
+			}
 			this.$el.addClass( 'active' );
 			this.$( 'button.layer' ).attr( 'aria-pressed', 'true' );
 			// Update button visibility

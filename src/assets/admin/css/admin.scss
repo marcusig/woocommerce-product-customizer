@@ -210,6 +210,17 @@ html .mkl-pc-admin-ui.pc-modal {
 		color: #00a32a;
 	}
 
+	@media ( max-width: 900px ) {
+		@media ( prefers-reduced-motion: no-preference ) {
+			.mkl-pc-admin-ui__content.content.mkl-pc-mobile-stack--animating,
+			.mkl-pc-admin-ui__content.structure.mkl-pc-mobile-stack--animating {
+				transition: opacity 0.18s ease;
+				// opacity: 0.88;
+				// translate: translateY(-100%);
+			}
+		}
+	}
+
 	.mkl-pc-admin-ui__body {
 		flex: 1;
 		min-height: 0;
@@ -982,7 +993,8 @@ html .mkl-pc-admin-ui.pc-modal {
 		flex: 1;
 		min-height: 0;
 		position: relative;
-
+		transition: transform 0.18s ease;
+		will-change: transform;
 		.mkl-list {
 			padding-bottom: 32px;
 		}
@@ -1079,25 +1091,29 @@ html .mkl-pc-admin-ui.pc-modal {
 					}
 				}
 
-				&:not( :has( > .pc-sidebar .layer-form ) ) > .pc-sidebar {
+				/* Detail panel: structure uses .layer-form; conditional tab uses .condition-details */
+				&:not( :has( > .pc-sidebar .layer-form ) ):not( :has( > .pc-sidebar .condition-details ) ) > .pc-sidebar {
 					display: none;
 				}
 
-				&:not( :has( > .pc-sidebar .layer-form ) ) > .structure-content {
+				&:not( :has( > .pc-sidebar .layer-form ) ):not( :has( > .pc-sidebar .condition-details ) ) > .structure-content {
 					flex: 1 1 auto;
 					max-width: none;
 					min-height: 0;
 				}
 
-				&:has( > .pc-sidebar .layer-form ) > .mkl-pc-mobile-structure-toolbar {
+				&:has( > .pc-sidebar .layer-form ) > .mkl-pc-mobile-structure-toolbar,
+				&:has( > .pc-sidebar .condition-details ) > .mkl-pc-mobile-structure-toolbar {
 					display: flex;
 				}
 
-				&:has( > .pc-sidebar .layer-form ) > .structure-content {
+				&:has( > .pc-sidebar .layer-form ) > .structure-content,
+				&:has( > .pc-sidebar .condition-details ) > .structure-content {
 					display: none !important;
 				}
 
-				&:has( > .pc-sidebar .layer-form ) > .pc-sidebar {
+				&:has( > .pc-sidebar .layer-form ) > .pc-sidebar,
+				&:has( > .pc-sidebar .condition-details ) > .pc-sidebar {
 					flex: 1 1 auto;
 					max-width: none;
 					min-height: 0;
@@ -2506,7 +2522,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 				min-height: 0;
 			}
 
-			&:not( :has( > .content-choice.choice-details .choice-form ) ):not( :has( > .content-choice.choice-details .layer-form ) ) {
+			&:not( :has( > .content-choice.choice-details .choice-form ) ):not( :has( > .content-choice.choice-details .layer-form ) ):not( [data-mkl-pc-content-stack="choice_detail"] ) {
 				> .content-choice.choice-details {
 					display: none;
 				}
@@ -2518,7 +2534,8 @@ ul.layers > li.mkl-list-item--filtered-out {
 			}
 
 			&:has( > .content-choice.choice-details .choice-form ),
-			&:has( > .content-choice.choice-details .layer-form ) {
+			&:has( > .content-choice.choice-details .layer-form ),
+			&[data-mkl-pc-content-stack="choice_detail"] {
 				> .mkl-pc-mobile-content-toolbar--choices-back {
 					display: flex;
 				}
@@ -2548,7 +2565,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 			display: none !important;
 		}
 
-		.state.content-state.show-choices > .mkl-pc-admin-ui__content.content:not( :has( > .content-choice.choice-details .choice-form ) ):not( :has( > .content-choice.choice-details .layer-form ) ) > .mkl-pc-mobile-content-toolbar--layers-back {
+		.state.content-state.show-choices > .mkl-pc-admin-ui__content.content:not( :has( > .content-choice.choice-details .choice-form ) ):not( :has( > .content-choice.choice-details .layer-form ) ):not( [data-mkl-pc-content-stack="choice_detail"] ) > .mkl-pc-mobile-content-toolbar--layers-back {
 			display: flex;
 		}
 	}

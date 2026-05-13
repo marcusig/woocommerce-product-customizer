@@ -250,11 +250,15 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/collections/products', 'collections/products.js'),
 				//VIEWS
 				array('backbone/views/home', 'views/configurator_home.js'),
-				array( 'backbone/views/layers', 'views/layers.js', array( 'mkl_pc-data-migration-overlay' ) ),
-				array('backbone/views/choices', 'views/choices.js'),
+				array( 'backbone/views/mobile_admin_stack_router', 'views/mobile_admin_stack_router.js' ),
+				array( 'backbone/views/layers', 'views/layers.js', array(
+					'mkl_pc-data-migration-overlay',
+					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
+				) ),
+				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array('backbone/views/states', 'views/states.js'),
 				array('backbone/views/angles', 'views/angles.js'),
-				array('backbone/views/content', 'views/content.js'),
+				array( 'backbone/views/content', 'views/content.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array('backbone/views/import', 'views/import.js'),
 				array( 'backbone/views/admin_dialog', 'views/admin-dialog.js', array( 'wp-hooks' ) ),
 				array(

@@ -64,6 +64,10 @@ TODO:
 
 		}, 
 		cleanup_on_remove: function() {
+			if ( this.mobile_stack_router && typeof this.mobile_stack_router.destroy === 'function' ) {
+				this.mobile_stack_router.destroy();
+				this.mobile_stack_router = null;
+			}
 			if ( this.collectionName === 'layers' && this.cid ) {
 				$( document ).off( '.mklPcToolbarDD' + this.cid );
 			}
@@ -84,6 +88,9 @@ TODO:
 			this.$list_filter = this.$('.structure-toolbar .mkl-pc-list-filter-input'); 
 			this.floating_add = new PC.views.floating_add_button( { el: this.$( '.floating-add' ).first(), list: this.$list, parent: this } );
 			this.bind_toolbar_dropdown_document_listeners();
+			if ( ! this.mobile_stack_router && this.$( '.mkl-pc-admin-ui__content.structure' ).length && PC.admin && PC.admin.mobile_stack_router ) {
+				this.mobile_stack_router = PC.admin.mobile_stack_router.install_structure_router( this );
+			}
 			this.add_all(); 
 			return this;
 		},
@@ -188,7 +195,13 @@ TODO:
 			//if ( 'image_order' == this.orderAttr && 'group' == layer.get( 'type' ) ) return;
 
 			var singleView = this.single_view();
-			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col, orderAttr: this.orderAttr });
+			var new_layer = new singleView( _.extend( {}, {
+				model: layer,
+				form_target: this.$form,
+				collection: this.col,
+				orderAttr: this.orderAttr,
+				structure_state: this,
+			} ) );
 			this.items.push( new_layer );
 			this.$list.append( new_layer.render().el );
 		},
@@ -320,6 +333,9 @@ TODO:
 			if ( this.col.where( { active: true } ).length ) {
 				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col, view: this } );
 				this.$form.append( this.edit_multiple_items_form.$el );
+				if ( this.mobile_stack_router ) {
+					this.mobile_stack_router.set_structure_stack( PC.admin.STRUCTURE_STACK_DETAIL );
+				}
 			}
 		},
 		edit_simple: function() {
@@ -336,6 +352,9 @@ TODO:
 			this.clear_structure_detail_panel();
 		},
 		clear_structure_detail_panel: function() {
+			if ( this.mobile_stack_router ) {
+				this.mobile_stack_router.set_structure_stack( PC.admin.STRUCTURE_STACK_LIST );
+			}
 			if ( this.edit_multiple_items_form ) {
 				this.edit_multiple_items_form.remove();
 				this.edit_multiple_items_form = null;
@@ -427,6 +446,7 @@ TODO:
 		initialize: function( options ) {
 			this.options = options || {};
 			this.form_target = options.form_target;
+			this.structure_state = options.structure_state || null;
 			this.listenTo( this.model, 'change:active', this.activate );
 			this.listenTo( this.model, 'change:name change:admin_label change:image', this.update_label );
 			this.listenTo( this.model, 'change', this.mark_layer_modified );
@@ -470,6 +490,11 @@ TODO:
 			this.label.render();
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
+		},
+		sync_structure_mobile_stack: function() {
+			if ( this.structure_state && this.structure_state.mobile_stack_router && this.form && this.form.$el && this.form.$el.hasClass( 'layer-form' ) ) {
+				this.structure_state.mobile_stack_router.set_structure_stack( PC.admin.STRUCTURE_STACK_DETAIL );
+			}
 		},
 		update_label: function() {
 			this.label.render();
@@ -568,6 +593,7 @@ TODO:
 				}
 			}
 			this.model.collection.last_clicked = this;
+			this.sync_structure_mobile_stack();
 		},
 		activate: function(){
 			if (this.model.get('active') === true) {
