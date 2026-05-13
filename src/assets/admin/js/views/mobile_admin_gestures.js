@@ -15,7 +15,17 @@ PC.admin = PC.admin || {};
 	var listening = false;
 	var min_horizontal = 56;
 	var swipe_ratio = 1.25;
-	var edge_px = 110;
+	/** Narrow band from the modal’s physical left for edge-open menu (avoids column back). */
+	var menu_open_edge_min_px = 16;
+	var menu_open_edge_max_px = 36;
+	var menu_open_edge_width_ratio = 0.055;
+	/**
+	 * Column stack “back” swipe: strip from the column’s left edge, biased slightly toward center
+	 * (fraction of column width, clamped).
+	 */
+	var column_back_edge_min_px = 52;
+	var column_back_edge_max_px = 88;
+	var column_back_edge_width_ratio = 0.28;
 	/** Looser swipe for “open menu” only (easier on real devices). */
 	var open_menu_min_horizontal = 40;
 	var open_menu_swipe_ratio = 1.15;
@@ -54,7 +64,10 @@ PC.admin = PC.admin || {};
 			return 0;
 		}
 		var rect = modal.getBoundingClientRect();
-		var band = Math.max( 65, Math.min( 110, rect.width * 0.14 ) );
+		var band = Math.max(
+			menu_open_edge_min_px,
+			Math.min( menu_open_edge_max_px, rect.width * menu_open_edge_width_ratio )
+		);
 		return rect.left + band;
 	}
 
@@ -127,17 +140,13 @@ PC.admin = PC.admin || {};
 		if ( delta_x <= 0 || ! is_open_menu_horizontal_swipe( delta_x, delta_y ) ) {
 			return false;
 		}
-		console.log( 'hi 1');
-		
 		if ( ! is_start_in_modal_left_edge_for_menu_open( start_x, start_el ) ) {
 			return false;
 		}
-		console.log( 'hi 2');
 		if ( $( start_el ).closest( 'input, textarea, select, [contenteditable="true"]' ).length ) {
 			return false;
 		}
 		var states_view = get_editor_states_view();
-		console.log( 'hi 3', states_view );
 		if ( ! states_view || ! is_mobile_menu_closed( states_view ) ) {
 			return false;
 		}
@@ -170,41 +179,36 @@ PC.admin = PC.admin || {};
 		return true;
 	}
 
-	function client_in_left_edge( client_x, column_el ) {
+	function client_in_column_back_strip( client_x, column_el ) {
 		var rect = column_el.getBoundingClientRect();
-		console.log( 'client_in_left_edge', client_x, rect.left, rect.left + edge_px, edge_px );
-		
-		return client_x <= rect.left + edge_px;
+		var strip = Math.max(
+			column_back_edge_min_px,
+			Math.min( column_back_edge_max_px, rect.width * column_back_edge_width_ratio )
+		);
+		return client_x <= rect.left + strip;
 	}
 
 	function try_mobile_stack_back( start_el, start_x, delta_x, delta_y ) {
 		if ( delta_x <= 0 || ! is_horizontal_swipe( delta_x, delta_y ) ) {
 			return false;
 		}
-		console.log( 'hi 1');
-		
 		if ( start_x <= get_menu_open_back_exclusion_cutoff_x() ) {
 			return false;
 		}
-		console.log( 'hi 2');
 		if ( $( start_el ).closest( 'input, textarea, select, [contenteditable="true"]' ).length ) {
 			return false;
 		}
-		console.log( 'hi 3');
 		var $column = $( start_el ).closest( '.mkl-pc-admin-layout__column.current' );
 		if ( ! $column.length ) {
 			return false;
 		}
-		console.log( 'hi 3=4=');
-		if ( ! client_in_left_edge( start_x, $column[ 0 ] ) ) {
+		if ( ! client_in_column_back_strip( start_x, $column[ 0 ] ) ) {
 			return false;
 		}
-		console.log( 'hi 5');
 		var $modal = $( get_configurator_modal_root() || [] );
 		if ( ! $modal.length ) {
 			return false;
 		}
-		console.log( 'hi 6');
 		var $content = $modal.find( '.mkl-pc-admin-ui__content.content' ).first();
 		if ( $content.length && PC.admin ) {
 			var content_stack = $content.attr( 'data-mkl-pc-content-stack' ) || '';
