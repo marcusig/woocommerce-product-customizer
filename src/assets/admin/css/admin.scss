@@ -989,6 +989,64 @@ html .mkl-pc-admin-ui.pc-modal {
 		}
 	}
 
+	/*
+	 * Shared admin layout hooks (Structure, Content, Conditional): markup adds
+	 * .mkl-pc-admin-layout on the section root with --two-column or --three-column;
+	 * .mkl-pc-admin-layout__toolbar on mobile back rows; .mkl-pc-admin-layout__column
+	 * with --list / --detail (two-column) or --layers / --choices / --detail (content).
+	 * Legacy class names (.structure-content, .choice-details, …) stay for existing CSS/JS.
+	 */
+
+	.mkl-pc-admin-layout__column-track {
+		display: contents;
+	}
+
+	@media ( max-width: 900px ) {
+		.mkl-pc-admin-layout__column-track {
+			display: block;
+			flex: 1 1 auto;
+			min-height: 0;
+			position: relative;
+			overflow: hidden;
+			align-self: stretch;
+			width: 100%;
+		}
+
+		.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+			position: absolute;
+			left: 0;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			width: 100%;
+			box-sizing: border-box;
+			margin: 0;
+			overflow-x: hidden;
+			overflow-y: auto;
+			-webkit-overflow-scrolling: touch;
+			flex: none;
+			transform: translateX(-100%);
+			transition: transform 0.22s ease;
+			will-change: transform;
+			z-index: 1;
+		}
+
+		@media ( prefers-reduced-motion: reduce ) {
+			.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+				transition: none;
+			}
+		}
+
+		.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column.current {
+			transform: translateX(0);
+			z-index: 2;
+		}
+
+		.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column.current ~ .mkl-pc-admin-layout__column {
+			transform: translateX(100%);
+		}
+	}
+
 	.mkl-pc-admin-ui__content {
 		flex: 1;
 		min-height: 0;
@@ -1015,8 +1073,8 @@ html .mkl-pc-admin-ui.pc-modal {
 				display: none;
 			}
 
-			> .structure-content,
-			> .pc-sidebar {
+			> .mkl-pc-admin-layout__column-track > .structure-content,
+			> .mkl-pc-admin-layout__column-track > .pc-sidebar {
 				background: #fff;
 				border: 1px solid $light-border-color;
 				border-radius: 8px;
@@ -1032,7 +1090,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					opacity: .2;
 				}
 			}
-			> .structure-content {
+			> .mkl-pc-admin-layout__column-track > .structure-content {
 				max-width: min(420px, 50%);
 				display: flex;
 				flex-direction: column;
@@ -1053,7 +1111,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					overflow-y: auto;
 				}
 			}
-			.pc-sidebar {
+			> .mkl-pc-admin-layout__column-track > .pc-sidebar {
 				position: relative;
 				width: auto;
 				flex: 1 1 0%;
@@ -1091,37 +1149,32 @@ html .mkl-pc-admin-ui.pc-modal {
 					}
 				}
 
-				/* Detail panel: structure uses .layer-form; conditional tab uses .condition-details */
-				&:not( :has( > .pc-sidebar .layer-form ) ):not( :has( > .pc-sidebar .condition-details ) ) > .pc-sidebar {
-					display: none;
-				}
+				/* Empty detail column hidden; :has() works with .pc-sidebar nested in the track */
+				// &:not( :has( .pc-sidebar .layer-form ) ):not( :has( .pc-sidebar .condition-details ) ) > .mkl-pc-admin-layout__column-track > .pc-sidebar {
+				// 	display: none;
+				// }
 
-				&:not( :has( > .pc-sidebar .layer-form ) ):not( :has( > .pc-sidebar .condition-details ) ) > .structure-content {
+				&:not( :has( .pc-sidebar .layer-form ) ):not( :has( .pc-sidebar .condition-details ) ) > .mkl-pc-admin-layout__column-track > .structure-content {
 					flex: 1 1 auto;
 					max-width: none;
 					min-height: 0;
 				}
 
-				&:has( > .pc-sidebar .layer-form ) > .mkl-pc-mobile-structure-toolbar,
-				&:has( > .pc-sidebar .condition-details ) > .mkl-pc-mobile-structure-toolbar {
+				&:has( .pc-sidebar .layer-form ) > .mkl-pc-mobile-structure-toolbar,
+				&:has( .pc-sidebar .condition-details ) > .mkl-pc-mobile-structure-toolbar {
 					display: flex;
 				}
 
-				&:has( > .pc-sidebar .layer-form ) > .structure-content,
-				&:has( > .pc-sidebar .condition-details ) > .structure-content {
-					display: none !important;
-				}
-
-				&:has( > .pc-sidebar .layer-form ) > .pc-sidebar,
-				&:has( > .pc-sidebar .condition-details ) > .pc-sidebar {
-					flex: 1 1 auto;
+				> .mkl-pc-admin-layout__column-track > .structure-content.mkl-pc-admin-layout__column,
+				> .mkl-pc-admin-layout__column-track > .pc-sidebar.mkl-pc-admin-layout__column {
+					position: absolute;
+					left: 0;
+					top: 0;
+					right: 0;
+					bottom: 0;
+					width: 100%;
 					max-width: none;
-					min-height: 0;
-				}
-
-				> .structure-content,
-				> .pc-sidebar {
-					max-width: none;
+					flex: none;
 				}
 			}
 		}
@@ -2297,7 +2350,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 			display: none;
 		}
 
-		> .mkl-pc-content-main-layer-panel {
+		> .mkl-pc-admin-layout__column-track > .mkl-pc-content-main-layer-panel {
 			display: none;
 		}
 		.content-choices-list,
@@ -2359,6 +2412,11 @@ ul.layers > li.mkl-list-item--filtered-out {
 			min-height: 0;
 			margin-top: 10px;
 
+			> .mkl-pc-admin-layout__column-track {
+				flex: 1 1 auto;
+				min-height: 0;
+			}
+
 			> .mkl-pc-mobile-content-toolbar--choices-back,
 			> .mkl-pc-mobile-content-toolbar--layers-back {
 				display: none;
@@ -2386,7 +2444,7 @@ ul.layers > li.mkl-list-item--filtered-out {
 				}
 			}
 
-			> .mkl-pc-content-main-layer-panel {
+			> .mkl-pc-admin-layout__column-track > .mkl-pc-content-main-layer-panel {
 				display: flex;
 				flex-direction: column;
 				flex: 1 1 auto;
@@ -2522,19 +2580,14 @@ ul.layers > li.mkl-list-item--filtered-out {
 				min-height: 0;
 			}
 
-			&:not( :has( > .content-choice.choice-details .choice-form ) ):not( :has( > .content-choice.choice-details .layer-form ) ):not( [data-mkl-pc-content-stack="choice_detail"] ) {
-				> .content-choice.choice-details {
+			&:not( :has( .content-choice.choice-details .choice-form ) ):not( :has( .content-choice.choice-details .layer-form ) ):not( [data-mkl-pc-content-stack="choice_detail"] ) {
+				> .mkl-pc-admin-layout__column-track > .content-choice.choice-details {
 					display: none;
-				}
-
-				> .content-choices-list {
-					flex: 1 1 auto;
-					min-height: 0;
 				}
 			}
 
-			&:has( > .content-choice.choice-details .choice-form ),
-			&:has( > .content-choice.choice-details .layer-form ),
+			&:has( .content-choice.choice-details .choice-form ),
+			&:has( .content-choice.choice-details .layer-form ),
 			&[data-mkl-pc-content-stack="choice_detail"] {
 				> .mkl-pc-mobile-content-toolbar--choices-back {
 					display: flex;
@@ -2543,30 +2596,24 @@ ul.layers > li.mkl-list-item--filtered-out {
 				> .mkl-pc-mobile-content-toolbar--layers-back {
 					display: none !important;
 				}
-
-				> .content-choices-list {
-					display: none !important;
-				}
-
-				> .content-choice.choice-details {
-					flex: 1 1 auto;
-					min-height: 0;
-				}
 			}
-		}
-	}
 
-	@media ( max-width: 900px ) {
-		.state.content-state:not( .show-choices ) > .mkl-pc-admin-ui__content.content > .content-choices-list {
-			display: none !important;
-		}
+			&[data-mkl-pc-content-stack="choices"] > .mkl-pc-mobile-content-toolbar--layers-back {
+				display: flex;
+			}
 
-		.state.content-state.show-choices > .mkl-pc-admin-ui__content.content > .mkl-pc-content-main-layer-panel {
-			display: none !important;
-		}
-
-		.state.content-state.show-choices > .mkl-pc-admin-ui__content.content:not( :has( > .content-choice.choice-details .choice-form ) ):not( :has( > .content-choice.choice-details .layer-form ) ):not( [data-mkl-pc-content-stack="choice_detail"] ) > .mkl-pc-mobile-content-toolbar--layers-back {
-			display: flex;
+			> .mkl-pc-admin-layout__column-track > .mkl-pc-content-main-layer-panel.mkl-pc-admin-layout__column,
+			> .mkl-pc-admin-layout__column-track > .content-choices-list.mkl-pc-admin-layout__column,
+			> .mkl-pc-admin-layout__column-track > .content-choice.choice-details.mkl-pc-admin-layout__column {
+				position: absolute;
+				left: 0;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				width: 100%;
+				max-width: none;
+				flex: none;
+			}
 		}
 	}
 
