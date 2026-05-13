@@ -251,6 +251,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				//VIEWS
 				array('backbone/views/home', 'views/configurator_home.js'),
 				array( 'backbone/views/mobile_admin_stack_router', 'views/mobile_admin_stack_router.js' ),
+				array(
+					'backbone/views/mobile_admin_gestures',
+					'views/mobile_admin_gestures.js',
+					array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ),
+				),
 				array( 'backbone/views/layers', 'views/layers.js', array(
 					'mkl_pc-data-migration-overlay',
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
