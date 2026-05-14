@@ -1,6 +1,240 @@
 var PC = PC || {};
 // Backbone.emulateHTTP = true;
 
+PC.actions = PC.actions || {};
+PC.threeD = PC.threeD || {};
+
+// Generic file select/remove actions for settings fields of type "file".
+// Value at data-setting path is always { attachment_id, url }. No filename stored.
+if ( ! PC.actions.pc_file_select ) {
+	PC.actions.pc_file_select = function ( $el, context ) {
+		if ( ! context || ! context.model || ! window.wp || ! window.wp.media ) return;
+
+		var $container = $el.closest( '.mkl-pc-setting--file' );
+		if ( ! $container.length ) return;
+
+		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
+		var allowed = $container.attr( 'data-allowed-types' ) || 'image';
+
+		if ( ! settingPath ) return;
+
+		var mediaArgs = {
+			title: ( PC.lang && PC.lang.media_title_file ) ? PC.lang.media_title_file : 'Select file',
+			button: {
+				text: ( PC.lang && PC.lang.media_select_button_file ) ? PC.lang.media_select_button_file : 'Use this file',
+			},
+			multiple: false,
+		};
+
+		if ( allowed === 'image' ) {
+			mediaArgs.library = { type: 'image' };
+		}
+
+		var frame = window.wp.media( mediaArgs );
+
+		var setPath = function( model, path, value ) {
+			if ( ! path ) return;
+			path = String( path );
+			if ( path.indexOf( '.' ) === -1 ) {
+				model.set( path, value );
+				return;
+			}
+			var parts = path.split( '.' );
+			var rootKey = parts[0];
+			var obj = model.get( rootKey );
+			obj = obj && typeof obj === 'object' ? _.extend( {}, obj ) : {};
+			var cursor = obj;
+			for ( var i = 1; i < parts.length - 1; i++ ) {
+				var key = parts[i];
+				cursor[ key ] = cursor[ key ] && typeof cursor[ key ] === 'object' ? _.extend( {}, cursor[ key ] ) : {};
+				cursor = cursor[ key ];
+			}
+			cursor[ parts[ parts.length - 1 ] ] = value;
+			model.set( rootKey, obj );
+		};
+
+		frame.on( 'select', function () {
+			var selection = frame.state().get( 'selection' );
+			var att = selection && selection.first ? selection.first().toJSON() : null;
+			if ( ! att ) return;
+
+			var url = att.gltf_url || att.url || '';
+			setPath( context.model, settingPath, {
+				attachment_id: att.id,
+				url: url,
+			} );
+
+			if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
+				window.PC.app.is_modified[ context.collectionName ] = true;
+			}
+
+			if ( context.render ) {
+				context.render();
+			}
+		} );
+
+		frame.open();
+	};
+}
+
+if ( ! PC.actions.pc_file_remove ) {
+	PC.actions.pc_file_remove = function ( $el, context ) {
+		if ( ! context || ! context.model ) return;
+
+		var $container = $el.closest( '.mkl-pc-setting--file' );
+		if ( ! $container.length ) return;
+
+		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
+		if ( ! settingPath ) return;
+
+		var setPath = function( model, path, value ) {
+			if ( ! path ) return;
+			path = String( path );
+			if ( path.indexOf( '.' ) === -1 ) {
+				model.set( path, value );
+				return;
+			}
+			var parts = path.split( '.' );
+			var rootKey = parts[0];
+			var obj = model.get( rootKey );
+			obj = obj && typeof obj === 'object' ? _.extend( {}, obj ) : {};
+			var cursor = obj;
+			for ( var i = 1; i < parts.length - 1; i++ ) {
+				var key = parts[i];
+				cursor[ key ] = cursor[ key ] && typeof cursor[ key ] === 'object' ? _.extend( {}, cursor[ key ] ) : {};
+				cursor = cursor[ key ];
+			}
+			cursor[ parts[ parts.length - 1 ] ] = value;
+			model.set( rootKey, obj );
+		};
+
+		setPath( context.model, settingPath, { attachment_id: null, url: '' } );
+
+		if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
+			window.PC.app.is_modified[ context.collectionName ] = true;
+		}
+
+		if ( context.render ) {
+			context.render();
+		}
+	};
+}
+
+// Provide the 3D model media frame even if 3D settings haven't been opened yet.
+if ( ! PC.threeD.openModelMediaFrame ) {
+	PC.threeD.openModelMediaFrame = function ( opts = {} ) {
+		const selectedId = opts.selectedId != null ? opts.selectedId : null;
+		const title = opts.title || 'Upload 3D Model';
+		const buttonText = opts.buttonText || 'Use this file';
+		const onSelect = typeof opts.onSelect === 'function' ? opts.onSelect : null;
+		if ( ! window.wp || ! window.wp.media ) return null;
+
+		const frame = window.wp.media( {
+			title: title,
+			button: { text: buttonText },
+			multiple: false,
+			selected: selectedId,
+			library: {
+				type: [ 'model/gltf-binary', 'model/gltf+json', 'application/zip' ],
+			},
+		} );
+
+		frame.on( 'open', function () {
+			const selection = frame.state().get( 'selection' );
+			if ( selectedId ) {
+				const attachment = window.wp.media.attachment( selectedId );
+				selection.add( attachment ? [ attachment ] : [] );
+			} else {
+				selection.reset( null );
+			}
+		} );
+
+		if ( frame.uploader?.options?.uploader?.params ) {
+			frame.uploader.options.uploader.params.context = 'configurator_assets';
+		}
+
+		if ( onSelect ) {
+			frame.on( 'select', () => {
+				const attachment = frame.state().get( 'selection' ).first().toJSON();
+				onSelect( attachment );
+			} );
+		}
+
+		frame.open();
+		return frame;
+	};
+}
+
+// 3D Objects upload actions (used by Object3D settings fields). Store only { attachment_id, url } at gltf.
+if ( ! PC.actions.edit_object3d_upload ) {
+	PC.actions.edit_object3d_upload = function ( $el, context ) {
+		if ( ! context || ! context.model || ! PC.threeD.openModelMediaFrame ) return;
+		const gltf = context.model.get( 'gltf' );
+		const selectedId = ( gltf && gltf.attachment_id != null ) ? gltf.attachment_id : null;
+		PC.threeD.openModelMediaFrame( {
+			selectedId: selectedId,
+			onSelect: function ( attachment ) {
+				const url = attachment.gltf_url || attachment.url || '';
+				context.model.set( 'gltf', {
+					attachment_id: attachment.id,
+					url: url,
+				} );
+				if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
+					window.PC.app.is_modified[ 'objects3d' ] = true;
+				}
+				if ( context.$el && $el && $el.data ) {
+					const setting = $el.data( 'setting' ) || 'gltf';
+					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
+				}
+				// If GLTF contains lights, offer to import them as objects3d of type Light
+				if ( url && window.PC.threeD && window.PC.threeD.store && typeof window.PC.threeD.store.get === 'function' && window.PC.threeD.getLightsFromSceneForImport ) {
+					window.PC.threeD.store.get( url, function ( err, data ) {
+						if ( err || ! data || ! data.gltf || ! data.gltf.scene ) return;
+						const lights = window.PC.threeD.getLightsFromSceneForImport( data.gltf.scene );
+						if ( ! lights.length ) return;
+						const n = lights.length;
+						const msg = ( typeof PC_lang !== 'undefined' && PC_lang.import_lights_from_gltf )
+							? PC_lang.import_lights_from_gltf.replace( '%d', String( n ) )
+							: 'This model contains ' + n + ' light(s). Import them as 3D Objects?';
+						if ( ! window.confirm( msg ) ) return;
+						const col = context.model && context.model.collection;
+						if ( ! col || ! col.create_object ) return;
+						lights.forEach( function ( light ) {
+							const attrs = col.create_object( {
+								object_type: 'light',
+								name: light.name,
+								light_position: light.position,
+								light_type: light.type,
+								light_color: light.color,
+								light_intensity: light.intensity,
+								cast_shadows: light.cast_shadows === true,
+								light_target: light.target,		
+							} );
+							col.add( attrs );
+						} );
+						if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.objects3d = true;
+					} );
+				}
+			},
+		} );
+	};
+}
+
+if ( ! PC.actions.remove_object3d_upload ) {
+	PC.actions.remove_object3d_upload = function ( $el, context ) {
+		if ( ! context || ! context.model ) return;
+		context.model.set( 'gltf', { attachment_id: null, url: '' } );
+		if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
+			window.PC.app.is_modified[ 'objects3d' ] = true;
+		}
+		if ( context.$el && $el && $el.data ) {
+			const setting = $el.data( 'setting' ) || 'gltf';
+			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
+		}
+		context.render();
+	};
+}
+
 PC.toJSON = function( item ) {
 	var _ = PC._us || window._;
 	if ( item instanceof Backbone.Collection ) {
@@ -33,6 +267,8 @@ PC.toJSON = function( item ) {
 			layers: false,
 			angles: false,
 			content: false,
+			settings_3d: false,
+			'objects3d': false,
 		},
 		modified_choices: [],
 		modified_layer_ids: {},
@@ -518,6 +754,10 @@ PC.toJSON = function( item ) {
 					return this.get_product().get( key );
 				case 'layers':
 				case 'angles':
+				case 'objects3d':
+					return this.admin[ key ];
+				case 'settings_3d':
+					return this.get_admin().settings_3d;
 				default :
 					return this.admin[ key ];
 			}
@@ -1004,8 +1244,13 @@ PC.toJSON = function( item ) {
 
 		},
 		save: function( what, collection, options ) {
-			if ( ! what || ! collection ) {
-				console.log( 'A collection name and data must be set in order to save proprerly.' );
+			if ( ! what ) {
+				console.log( 'A data key must be set in order to save properly.' );
+				return;
+			}
+			// settings_3d and similar state data use a plain object; others use a collection
+			if ( ! collection && what !== 'settings_3d' ) {
+				console.log( 'Collection or data must be set in order to save properly.' );
 				return;
 			}
 			var save_id = this.id;
@@ -1039,7 +1284,10 @@ PC.toJSON = function( item ) {
 				options.data.parent_id = this.id;
 			}
 
-			if ( collection.length > 0 ) {
+			// Plain object (e.g. settings_3d) — no collection or array
+			if ( collection && typeof collection === 'object' && ! ( collection instanceof Backbone.Collection ) && ! ( collection instanceof Array ) ) {
+				options.data[what] = JSON.stringify( collection );
+			} else if ( collection && collection.length > 0 ) {
 
 				if ( 'layers' === what && collection instanceof Backbone.Collection ) {
 					var layers_structure_index = collection.pluck( '_id' ).filter( function( layer_id_value ) { return layer_id_value; } );

@@ -1521,10 +1521,12 @@ class DB {
 	/**
 	 * Get the menu
 	 *
+	 * @param integer $id
 	 * @return array
 	 */
-	public function get_menu(){
-		$default_menu = array(
+	public function get_menu( $id = null ) {
+
+				$default_menu = array(
 			array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'home',
@@ -1591,6 +1593,7 @@ class DB {
 			),
 		);
 
+
 		if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__conditional_placeholder', true )  ) {
 			$default_menu[] = array(
 				'type' 	=> 'separator',
@@ -1606,6 +1609,45 @@ class DB {
 				'description' => __( 'Define the conditions for displaying or not the choices / layers', 'product-configurator-for-woocommerce' ),
 				'order' => 101,
 			);			
+		}
+		
+		if ( $id && '3d' === mkl_pc_get_configurator_type( $id ) ) {
+			$default_menu[] = array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'objects3d',
+				'label' => __( '3D Objects', 'product-configurator-for-woocommerce' ),
+				'title' => __( '3D Objects', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Manage 3D models and assets used by this product', 'product-configurator-for-woocommerce' ),
+				'order' => 45,
+			);
+			$default_menu[] = array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'settings_3D',
+				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'pc-main-cancel',
+						'text' => __( 'Cancel' , 'product-configurator-for-woocommerce' ),
+					),
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save settings' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'Manage the main 3D settings for this product', 'product-configurator-for-woocommerce' ),
+				'order' => 50,
+			);
 		}
 
 		return apply_filters( 'mkl_product_configurator_admin_menu', $default_menu );
@@ -1633,6 +1675,69 @@ class DB {
 					// __( 'Description for I/E of the product ', 'product-configurator-for-woocommerce' ),
 				),
 			)
+		);
+	}
+
+	/**
+	 * Default 3D settings structure (Environment, Background, Ground, Renderer, Lighting).
+	 *
+	 * @return array
+	 */
+	/**
+	 * Default 3D object names that are automatically hidden in the viewer.
+	 * Filterable so themes/plugins can add or remove names.
+	 *
+	 * @return array List of object names to hide.
+	 */
+	public static function get_default_hidden_object_names() {
+		$defaults = array( 'product_bounding_box', 'material_placeholders' );
+		return apply_filters( 'mkl_pc_3d_default_hidden_object_names', $defaults );
+	}
+
+	public static function get_default_settings_3d() {
+		return array(
+			'hidden_object_names' => '',
+			'environment'     => array(
+				'mode'                   => 'preset',
+				'preset'                 => 'outdoor',
+				'object_id'              => '',
+				'intensity'              => 1,
+				'rotation'               => 0,
+				'orbit_min_polar_angle'  => 0,
+				'orbit_max_polar_angle'  => 90,
+				'orbit_min_azimuth_angle' => -180,
+				'orbit_max_azimuth_angle' => 180,
+				'orbit_min_distance'     => null,
+				'orbit_max_distance'     => null,
+				'orbit_zoom_limits_enabled' => true,
+			),
+			'background'      => array(
+				'mode'         => 'environment',
+				'color'        => '#ffffff',
+			),
+			'ground'          => array(
+				'enabled'        => true,
+				'size'           => 10,
+				'shadow_opacity' => 0.5,
+				'shadow_blur'    => 5,
+			),
+			'enable_shadows'  => false,
+			'renderer'        => array(
+				'tone_mapping'       => 'linear',
+				'exposure'           => 1,
+				'output_color_space' => 'srgb',
+				'alpha'              => false,
+			),
+			'lighting'        => array(),
+			'postprocessing'  => array(
+				'ssr'             => false,
+				'ssao'            => false,
+				'bloom'           => false,
+				'smaa'            => false,
+				'bloom_strength'  => 0.05,
+				'bloom_radius'    => 0.04,
+				'bloom_threshold' => 0.85,
+			),
 		);
 	}
 
@@ -1671,6 +1776,14 @@ class DB {
 			'configurator_source' => Owner_Resolver::get_source( $parent_id ),
 			'global_configurator' => $this->get_global_configurator_info( $parent_id ),
 		);
+		
+		if ( '3d' === mkl_pc_get_configurator_type( $parent_id ) ) {
+			$stored = $this->get( 'settings_3d', $parent_id );
+			$defaults = self::get_default_settings_3d();
+			$init_data['settings_3d'] = is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults;
+			$stored_objects = $this->get( 'objects3d', $parent_id );
+			$init_data['objects3d'] = is_array( $stored_objects ) ? $stored_objects : array();
+		}
 
 		if ( 'variable' === $product->get_type()) {
 			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
@@ -1784,11 +1897,13 @@ class DB {
 
 		$product_type = apply_filters( 'mkl_product_configurator_get_front_end_data/product_type', $product->get_type(), $product );
 		// get the products 'title' attribute
+		$parent_id_for_type = ( 'variation' === $product_type ) ? $product->get_parent_id() : $id;
 		$init_data['product_info'] = array_merge(
 			$init_data['product_info'], 
 			array(
-				'title'          => apply_filters( 'the_title', $product->get_title(), $id ),
-				'product_type'   => $product_type,
+				'title'               => apply_filters( 'the_title', $product->get_title(), $id ),
+				'product_type'        => $product_type,
+				'configurator_type'   => mkl_pc_get_configurator_type( $parent_id_for_type ),
 				'show_qty'       => ! $product->is_sold_individually(),
 				'is_in_stock'    => $product->is_in_stock() || $product->backorders_allowed(), 
 				'is_purchasable' => $product->is_purchasable(), 
@@ -1806,6 +1921,10 @@ class DB {
 			$init_data['content'] = $this->get( 'content', $id );
 			$init_data['product_info']['price'] = (float) $product->get_price();
 			$init_data['product_info']['price_excl_tax'] = (float) wc_get_price_excluding_tax( $product ); 
+		}
+
+		if ( isset( $init_data['settings_3d'] ) ) {
+			$init_data['default_hidden_object_names'] = self::get_default_hidden_object_names();
 		}
 
 		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
@@ -1868,6 +1987,14 @@ class DB {
 				'width' => [ 
 					'sanitize' => 'intval',
 					'escape' => 'intval',
+				],
+				'rect_width' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'rect_height' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
 				],
 				'rotation' => [ 
 					'sanitize' => 'intval',
@@ -1977,6 +2104,18 @@ class DB {
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
 				],
+				'camera_target_object_id' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'camera_target_model' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'camera_focus_object_ids' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_focus_object_ids' ],
+					'escape' => [ __CLASS__, 'escape_camera_focus_object_ids' ],
+				],
 				'bg_image' => [
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
@@ -1988,6 +2127,234 @@ class DB {
 				'parent' => [ 
 					'sanitize' => 'intval',
 					'escape' => 'intval',
+				],
+				'x' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'y' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'z' => [ 
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				// settings_3d: top-level and environment
+				'hidden_object_names' => [
+					'sanitize' => [ __CLASS__, 'sanitize_hidden_object_names_textarea' ],
+					'escape'   => 'esc_textarea',
+				],
+				'filename' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_html',
+				],
+				'object_type' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'loading_strategy' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'object_3d_id' => [
+					'sanitize' => [ $this, 'sanitize_nullable_int' ],
+					'escape' => [ $this, 'sanitize_nullable_int' ],
+				],
+				'target_object_id' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'attachment_id' => [
+					'sanitize' => [ $this, 'sanitize_nullable_int' ],
+					'escape' => [ $this, 'sanitize_nullable_int' ],
+				],
+				'mode' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'preset' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'custom_hdr_url' => [
+					'sanitize' => 'esc_url_raw',
+					'escape' => [ $this, 'esc_url' ],
+				],
+				'intensity' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_min_polar_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_max_polar_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_min_azimuth_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_max_azimuth_angle' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'orbit_min_distance' => [
+					'sanitize' => [ $this, 'sanitize_nullable_float' ],
+					'escape' => [ $this, 'sanitize_nullable_float' ],
+				],
+				'orbit_max_distance' => [
+					'sanitize' => [ $this, 'sanitize_nullable_float' ],
+					'escape' => [ $this, 'sanitize_nullable_float' ],
+				],
+				'orbit_zoom_limits_enabled' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				// settings_3d: background, ground, renderer
+				'color' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'enabled' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'size' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_opacity' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_blur' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'enable_shadows' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'tone_mapping' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'exposure' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'output_color_space' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'alpha' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				// settings_3d: postprocessing
+				'ssr' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'ssao' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'bloom' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'smaa' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'type' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'cast_shadow' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'cast_shadows' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'animation_target_model' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'animation_clips' => [
+					'sanitize' => [ __CLASS__, 'sanitize_animation_clips' ],
+					'escape' => [ __CLASS__, 'escape_animation_clips' ],
+				],
+				'animation_triggers_enter' => [
+					'sanitize' => [ __CLASS__, 'sanitize_animation_triggers' ],
+					'escape' => [ __CLASS__, 'escape_animation_triggers' ],
+				],
+				'animation_triggers_leave' => [
+					'sanitize' => [ __CLASS__, 'sanitize_animation_triggers' ],
+					'escape' => [ __CLASS__, 'escape_animation_triggers' ],
+				],
+				'animation_object_id' => [
+					'sanitize' => [ $this, 'sanitize_nullable_int' ],
+					'escape' => [ $this, 'sanitize_nullable_int' ],
+				],
+				'clip_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'loop_mode' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'repetitions' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'clamp_when_finished' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'speed' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'fade_in_ms' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'fade_out_ms' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'command' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				// actions_3d: material registry actions
+				'material_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_texture_material_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_registry_color' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_property_name' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'material_property_value' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
 				],
 			],
 			$this
@@ -2029,6 +2396,176 @@ class DB {
 		if ( is_string( $image ) && ! strpos( $image, '.' ) ) return sanitize_key( $image );
 		// Other images (assumed to be urls)
 		return esc_url_raw( $image );
+	}
+
+	/**
+	 * Sanitize value as int or null (for optional IDs / limits).
+	 *
+	 * @param mixed $data
+	 * @return int|null
+	 */
+	/**
+	 * Sanitize the hidden object names textarea (one name per line).
+	 *
+	 * @param mixed $data Raw value (string or array).
+	 * @return string Newline-separated list of sanitized names.
+	 */
+	public static function sanitize_hidden_object_names_textarea( $data ) {
+		if ( ! is_string( $data ) && ! is_array( $data ) ) {
+			return '';
+		}
+		if ( is_array( $data ) ) {
+			$data = implode( "\n", $data );
+		}
+		$lines = preg_split( '/[\r\n]+/', $data, -1, PREG_SPLIT_NO_EMPTY );
+		$lines = array_map( 'sanitize_text_field', $lines );
+		$lines = array_filter( $lines );
+		return implode( "\n", $lines );
+	}
+
+	/**
+	 * Sanitize camera_focus_object_ids (array of object id strings per angle).
+	 *
+	 * @param mixed $data Array of strings or single value.
+	 * @return array Sanitized array of strings.
+	 */
+	public static function sanitize_camera_focus_object_ids( $data ) {
+		if ( ! is_array( $data ) ) {
+			$data = $data === null || $data === '' ? [] : (array) $data;
+		}
+		$out = array_map( 'sanitize_text_field', $data );
+		return array_values( array_filter( $out ) );
+	}
+
+	/**
+	 * Escape camera_focus_object_ids for output (e.g. HTML attributes).
+	 *
+	 * @param mixed $data Array of strings.
+	 * @return array Escaped array of strings.
+	 */
+	public static function escape_camera_focus_object_ids( $data ) {
+		if ( ! is_array( $data ) ) {
+			return [];
+		}
+		return array_map( 'esc_attr', $data );
+	}
+
+	/**
+	 * Sanitize animation clip configuration array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function sanitize_animation_clips( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		$out = [];
+		foreach ( $data as $item ) {
+			if ( ! is_array( $item ) ) continue;
+			$clip_name = isset( $item['clip_name'] ) ? sanitize_text_field( $item['clip_name'] ) : '';
+			if ( '' === $clip_name ) continue;
+			$out[] = [
+				'clip_name' => $clip_name,
+				'loop_mode' => isset( $item['loop_mode'] ) ? sanitize_key( $item['loop_mode'] ) : 'once',
+				'repetitions' => isset( $item['repetitions'] ) ? floatval( $item['repetitions'] ) : 1,
+				'clamp_when_finished' => ! empty( $item['clamp_when_finished'] ),
+				'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+				'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+				'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Escape animation clip configuration array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function escape_animation_clips( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		return array_map(
+			function( $item ) {
+				if ( ! is_array( $item ) ) return [];
+				return [
+					'clip_name' => isset( $item['clip_name'] ) ? esc_attr( $item['clip_name'] ) : '',
+					'loop_mode' => isset( $item['loop_mode'] ) ? esc_attr( $item['loop_mode'] ) : 'once',
+					'repetitions' => isset( $item['repetitions'] ) ? floatval( $item['repetitions'] ) : 1,
+					'clamp_when_finished' => ! empty( $item['clamp_when_finished'] ),
+					'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+					'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+					'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+				];
+			},
+			$data
+		);
+	}
+
+	/**
+	 * Sanitize angle animation trigger array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function sanitize_animation_triggers( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		$out = [];
+		foreach ( $data as $item ) {
+			if ( ! is_array( $item ) ) continue;
+			$animation_object_id = isset( $item['animation_object_id'] ) ? intval( $item['animation_object_id'] ) : 0;
+			if ( $animation_object_id <= 0 ) continue;
+			$out[] = [
+				'animation_object_id' => $animation_object_id,
+				'command' => isset( $item['command'] ) ? sanitize_key( $item['command'] ) : 'play',
+				'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+				'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+				'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+			];
+		}
+		return $out;
+	}
+
+	/**
+	 * Escape angle animation trigger array.
+	 *
+	 * @param mixed $data
+	 * @return array
+	 */
+	public static function escape_animation_triggers( $data ) {
+		if ( ! is_array( $data ) ) return [];
+		return array_map(
+			function( $item ) {
+				if ( ! is_array( $item ) ) return [];
+				return [
+					'animation_object_id' => isset( $item['animation_object_id'] ) ? intval( $item['animation_object_id'] ) : 0,
+					'command' => isset( $item['command'] ) ? esc_attr( $item['command'] ) : 'play',
+					'speed' => isset( $item['speed'] ) ? floatval( $item['speed'] ) : 1,
+					'fade_in_ms' => isset( $item['fade_in_ms'] ) ? floatval( $item['fade_in_ms'] ) : 0,
+					'fade_out_ms' => isset( $item['fade_out_ms'] ) ? floatval( $item['fade_out_ms'] ) : 0,
+				];
+			},
+			$data
+		);
+	}
+
+	public function sanitize_nullable_int( $data ) {
+		if ( $data === null || $data === '' || $data === false ) {
+			return null;
+		}
+		return intval( $data );
+	}
+
+	/**
+	 * Sanitize value as float or null (for optional numeric limits).
+	 *
+	 * @param mixed $data
+	 * @return float|null
+	 */
+	public function sanitize_nullable_float( $data ) {
+		if ( $data === null || $data === '' || $data === false ) {
+			return null;
+		}
+		return floatval( $data );
 	}
 
 	public function esc_image( $image ) {

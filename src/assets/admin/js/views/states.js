@@ -306,6 +306,7 @@ PC.views = PC.views || {};
 		className: 'mkl-pc-admin-ui__state',
 		events: {
 			'click .pc-main-save': 'save_state', 
+			'click .custom-action': 'state_custom_action', 
 			'click .pc-main-save-all': 'save_all', 
 			'click .mkl-pc-admin-ui__menu-toggle': 'show_mobile_menu',
 		},
@@ -416,7 +417,11 @@ PC.views = PC.views || {};
 		},
 		// save_state: function() {
 		// 	this.state.$el.trigger('save-state');
-		// } 
+		// }
+
+		state_custom_action: function( e ) {
+			this.state.$el.trigger( 'custom-state-action', e.currentTarget );
+		} 
 	});
 
 	PC.views.separator = Backbone.View.extend({

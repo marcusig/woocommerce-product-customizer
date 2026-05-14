@@ -28,6 +28,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 		 * @return array
 		 */
 		public function get_settings_list() {
+			global $post;
 			$fields = array(
 				'name' => array(
 					'label' => __('Choice label', 'product-configurator-for-woocommerce' ),
@@ -164,6 +165,98 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 				),
 			);
 
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$fields['object_3d_id'] = array(
+					'label'     => __( '3D model', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 10,
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
+					'html'      => '<div class="mkl-pc-setting--container mkl-pc--object3d-select-container">'
+						. '<select class="components-select-control__input" data-setting="object_3d_id">'
+						. '<option value="">' . esc_html__( '— None / Inherit —', 'product-configurator-for-woocommerce' ) . '</option>'
+						. '</select>'
+						. '<p class="description">' . esc_html__( 'Select a 3D object from the 3D Objects tab.', 'product-configurator-for-woocommerce' ) . '</p>'
+						. '</div>',
+				);
+				$fields['target_object_id'] = array(
+					'label'     => __( 'Object ID (scene)', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 12,
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
+				$fields['actions_3d'] = array(
+					'label'    => __( 'Actions', 'product-configurator-for-woocommerce' ),
+					'type'     => 'repeater',
+					'priority' => 25,
+					'section'  => 'threed',
+					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
+					'fields'   => array(
+						'action_type' => array(
+							'label'   => __( 'Action', 'product-configurator-for-woocommerce' ),
+							'type'    => 'select',
+							'choices' => array(
+								array( 'label' => __( 'Display object', 'product-configurator-for-woocommerce' ), 'value' => 'toggle_visibility' ),
+								array( 'label' => __( 'Select material variant', 'product-configurator-for-woocommerce' ), 'value' => 'material_variant' ),
+								array( 'label' => __( 'Set material texture', 'product-configurator-for-woocommerce' ), 'value' => 'material_texture' ),
+								array( 'label' => __( 'Change material color (from registry)', 'product-configurator-for-woocommerce' ), 'value' => 'material_color_registry' ),
+								array( 'label' => __( 'Change material property', 'product-configurator-for-woocommerce' ), 'value' => 'material_property' ),
+								array( 'label' => __( 'Apply material', 'product-configurator-for-woocommerce' ), 'value' => 'apply_material' ),
+							),
+							'default' => 'toggle_visibility',
+						),
+						'material_variant_value' => array(
+							'label'     => __( 'Variant name', 'product-configurator-for-woocommerce' ),
+							'type'      => 'variant_select',
+							'default'   => '',
+							'show_when' => 'material_variant',
+						),
+						'material_texture_id' => array(
+							'label'     => __( 'Texture', 'product-configurator-for-woocommerce' ),
+							'type'      => 'attachment',
+							'default'   => '',
+							'show_when' => 'material_texture',
+						),
+						'material_texture_material_name' => array(
+							'label'     => __( 'Material', 'product-configurator-for-woocommerce' ),
+							'type'      => 'material_select',
+							'default'   => '',
+							'show_when' => 'material_texture',
+						),
+						'material_name' => array(
+							'label'     => __( 'Material', 'product-configurator-for-woocommerce' ),
+							'type'      => 'material_select',
+							'default'   => '',
+							'show_when' => 'material_color_registry|material_property|apply_material',
+						),
+						'material_registry_color' => array(
+							'label'     => __( 'Color', 'product-configurator-for-woocommerce' ),
+							'type'      => 'color',
+							'default'   => '#ffffff',
+							'show_when' => 'material_color_registry',
+						),
+						'material_property_name' => array(
+							'label'     => __( 'Property', 'product-configurator-for-woocommerce' ),
+							'type'      => 'text',
+							'default'   => '',
+							'placeholder' => 'e.g. roughness, metalness, opacity',
+							'show_when' => 'material_property',
+						),
+						'material_property_value' => array(
+							'label'     => __( 'Value', 'product-configurator-for-woocommerce' ),
+							'type'      => 'text',
+							'default'   => '',
+							'show_when' => 'material_property',
+						),
+					),
+				);
+			}
+
 			if ( ! class_exists( 'MKL_PC_Stock_Management__Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__stock_management_placeholder', true ) ) {
 				$fields['stock_management_placeholder'] = array(
 					'label' => __( 'Stock management and linked product', 'product-configurator-for-woocommerce' ),
@@ -283,6 +376,17 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					]
 				),				
 			];
+			global $post;
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$sections['_threed'] = array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
+					'fields' => [
+					],
+				);
+			}
 			$languages = mkl_pc( 'languages' )->get_languages();
 			if ( ! empty( $languages ) ) {
 				$sections[ '_translations' ] = array(

@@ -1,0 +1,248 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Configurator Material Catalog",
+  "type": "object",
+  "required": ["materials"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Catalog schema version",
+      "default": "1.0.0"
+    },
+
+    "textures": {
+      "type": "object",
+      "description": "Shared texture library",
+      "additionalProperties": {
+        "$ref": "#/definitions/texture"
+      }
+    },
+
+    "materials": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/material"
+      }
+    }
+  },
+
+  "definitions": {
+    
+    "texture": {
+      "type": "object",
+      "required": ["uri"],
+      "properties": {
+        "uri": { "type": "string" },
+
+        "uvChannel": {
+          "type": "integer",
+          "default": 0
+        },
+
+        "repeat": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [1, 1]
+        },
+
+        "offset": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [0, 0]
+        },
+
+        "rotation": {
+          "type": "number",
+          "default": 0
+        },
+
+        "wrapS": {
+          "type": "string",
+          "enum": ["Repeat", "Clamp", "Mirror"],
+          "default": "Repeat"
+        },
+
+        "wrapT": {
+          "type": "string",
+          "enum": ["Repeat", "Clamp", "Mirror"],
+          "default": "Repeat"
+        }
+      }
+    },
+
+    "material": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+
+        "type": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "physical",
+            "basic",
+            "lambert",
+            "phong"
+          ],
+          "default": "standard"
+        },
+
+        "label": { "type": "string" },
+
+        "doubleSided": {
+          "type": "boolean",
+          "default": false
+        },
+
+        "transparent": {
+          "type": "boolean",
+          "default": false
+        },
+
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+
+        "color": {
+          "type": "string",
+          "description": "Hex color",
+          "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
+          "default": "#ffffff"
+        },
+
+        "map": {
+          "$ref": "#/definitions/mapSlot"
+        },
+
+        "metalness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+
+        "roughness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+
+        "metalnessMap": {
+          "$ref": "#/definitions/mapSlot"
+        },
+
+        "roughnessMap": {
+          "$ref": "#/definitions/mapSlot"
+        },
+
+        "normalMap": {
+          "$ref": "#/definitions/mapSlot"
+        },
+
+        "normalScale": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "default": [1, 1]
+        },
+
+        "aoMap": {
+          "$ref": "#/definitions/mapSlot"
+        },
+
+        "aoIntensity": {
+          "type": "number",
+          "default": 1
+        },
+
+        "emissive": {
+          "type": "string",
+          "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
+          "default": "#000000"
+        },
+
+        "emissiveMap": {
+          "$ref": "#/definitions/mapSlot"
+        },
+
+        "emissiveIntensity": {
+          "type": "number",
+          "default": 1
+        },
+
+
+
+        "clearcoat": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+
+        "clearcoatRoughness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+
+        "transmission": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+
+        "ior": {
+          "type": "number"
+        },
+
+
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+
+        "userData": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+    "mapSlot": {
+      "type": "object",
+      "required": ["texture"],
+      "properties": {
+        "texture": {
+          "type": "string",
+          "description": "Reference to textures library OR direct URI"
+        },
+
+        "repeat": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+
+        "offset": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+
+        "rotation": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

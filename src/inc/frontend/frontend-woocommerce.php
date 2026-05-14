@@ -396,6 +396,31 @@ class Frontend_Woocommerce {
 			$configurator_deps[] = 'wc-add-to-cart';
 		}
 
+		$is_3d_configurator = $prod && '3d' === mkl_pc_get_configurator_type( $prod->get_parent_id() ? $prod->get_parent_id() : $prod->get_id() );
+		$fe_3d_viewer_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-viewer-entry.js';
+		if ( $is_3d_configurator && file_exists( $fe_3d_viewer_path ) ) {
+			$fe_3d_deps = array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' );
+			if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
+				$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
+				if ( file_exists( $draco_path ) ) {
+					wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
+					wp_enqueue_script( 'mkl_pc/fe_3d_draco_loader' );
+					$fe_3d_deps[] = 'mkl_pc/fe_3d_draco_loader';
+				}
+			}
+			if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
+				$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
+				if ( file_exists( $meshopt_path ) ) {
+					wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
+					wp_enqueue_script( 'mkl_pc/fe_3d_meshopt_loader' );
+					$fe_3d_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
+				}
+			}
+			wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', $fe_3d_deps, filemtime( $fe_3d_viewer_path ), true );
+			wp_enqueue_script( 'mkl_pc/fe_3d_viewer' );
+			$configurator_deps[] = 'mkl_pc/fe_3d_viewer';
+		}
+
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator' . $file_suffix . '.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator' . $file_suffix . '.js' ) , true );
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator' . $file_suffix . '.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator' . $file_suffix . '.js' ) , true );
 
@@ -411,6 +436,7 @@ class Frontend_Woocommerce {
 			'image_endpoint' => get_rest_url() . 'mkl_pc/v1/merge/',
 			'frontend_action_token_url' => esc_url_raw( rest_url( 'mkl_pc/v1/frontend-action-token' ) ),
 			'rest_nonce' => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
+			'assets_url' => MKL_PC_ASSETS_URL,
 			'lang' => array(
 				'money_precision' => wc_get_price_decimals(),
 				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
@@ -476,7 +502,12 @@ class Frontend_Woocommerce {
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
 					'save_current' => mkl_pc( 'settings')->get( 'use_current_angle_in_cart_image' ),
-				]
+				],
+				'fe_3d_use_draco_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
+				'fe_3d_use_meshopt_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+				'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
+				'show_image_in_cart' => ( bool ) mkl_pc( 'settings' )->get( 'show_image_in_cart' ),
+				'cart_screenshot_size' => $this->get_cart_screenshot_dimensions(),
 			) ),
 		);
 
@@ -551,6 +582,31 @@ class Frontend_Woocommerce {
 		}
 
 		return $tag;
+	}
+
+	/**
+	 * Width and height for 3D cart screenshot (from merge_size setting).
+	 * Used when show_image_in_cart is enabled and product is 3D.
+	 *
+	 * @return array{width: int, height: int}
+	 */
+	private function get_cart_screenshot_dimensions() {
+		$size = mkl_pc( 'settings' )->get( 'merge_size', 'full' );
+		if ( 'full' === $size ) {
+			return array( 'width' => 800, 'height' => 800 );
+		}
+		global $_wp_additional_image_sizes;
+		$w = $h = 800;
+		if ( in_array( $size, array( 'thumbnail', 'medium', 'medium_large', 'large' ), true ) ) {
+			$w = (int) get_option( $size . '_size_w' );
+			$h = (int) get_option( $size . '_size_h' );
+		} elseif ( ! empty( $_wp_additional_image_sizes[ $size ] ) ) {
+			$w = (int) $_wp_additional_image_sizes[ $size ]['width'];
+			$h = (int) $_wp_additional_image_sizes[ $size ]['height'];
+		}
+		if ( $w <= 0 ) { $w = 800; }
+		if ( $h <= 0 ) { $h = 800; }
+		return array( 'width' => $w, 'height' => $h );
 	}
 
 	/**

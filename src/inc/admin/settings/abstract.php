@@ -145,6 +145,8 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 							$attributes = isset($choice['attributes']) && is_array($choice['attributes']) ? ' ' . $this->field_attributes($choice['attributes']) : '';
 							// Outputs the select
 
+							$field .= '<# console.log(data, data.'.esc_attr($options['id']).') #>';
+
 							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
 								$field .= '<# if ( ' . $choice[ 'condition' ] . ' ) { #>';
 							}
@@ -159,6 +161,14 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 						}
 						$field .= '</select>';
 					}
+
+					break;
+				case 'file':
+					$field = $this->output_setting_file( $options );
+					break;
+				case 'euler':
+				case 'vector3':
+					$field = $this->output_setting_euler( $options );
 					break;
 				case 'image_select':
 					if ( is_array($options['choices'] ) ) {
@@ -295,6 +305,106 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		}
 
 		/**
+		 * Output an euler/vector3 field: one path (e.g. light_data.position), value { x, y, z }, three number inputs.
+		 *
+		 * @param array $options {
+		 *     @type string $id     Dot path for the value, e.g. 'light_data.position'.
+		 *     @type string $label  Label for the group.
+		 *     @type array  $attributes Optional min/max/step for inputs.
+		 * }
+		 * @return string
+		 */
+		private function output_setting_euler( $options ) {
+			$setting = isset( $options['id'] ) ? $options['id'] : '';
+			if ( ! $setting ) {
+				return '<div class="error">' . __( 'Euler/vector3 field requires setting (id).', 'product-configurator-for-woocommerce' ) . '</div>';
+			}
+			$data_expr = 'data.' . $setting;
+			$attrs = isset( $options['attributes'] ) && is_array( $options['attributes'] ) ? $this->field_attributes( $options['attributes'] ) : '';
+			$step = isset( $options['attributes']['step'] ) ? ' step="' . esc_attr( $options['attributes']['step'] ) . '"' : ' step="any"';
+			$min = isset( $options['attributes']['min'] ) ? ' min="' . esc_attr( $options['attributes']['min'] ) . '"' : '';
+			$max = isset( $options['attributes']['max'] ) ? ' max="' . esc_attr( $options['attributes']['max'] ) . '"' : '';
+			$out = '<div class="mkl-pc-setting--euler" data-setting="' . esc_attr( $setting ) . '" data-euler="1">';
+			foreach ( array( 'x', 'y', 'z' ) as $axis ) {
+				$val_tpl = '<# if ( ' . $data_expr . ' && ' . $data_expr . '.' . $axis . ' != null ) { #>{{' . $data_expr . '.' . $axis . '}}<# } else { #>0<# } #>';
+				$out .= '<label class="euler-axis"><span class="euler-axis-label">' . strtoupper( $axis ) . '</span>';
+				$out .= '<input type="number" class="components-select-control__input euler-input" data-component="' . esc_attr( $axis ) . '" value="' . $val_tpl . '"' . $step . $min . $max . '>';
+				$out .= '</label>';
+			}
+			$out .= '</div>';
+			return $out;
+		}
+
+		/**
+		 * Output a file upload field (select + remove buttons, optional preview).
+		 * Value at id (dot path) is a single object { attachment_id, url }. No filename stored.
+		 *
+		 * @param array $options {
+		 *     @type string $id                    Setting id / dot path (e.g. 'gltf', 'light_data.cookie'). Required.
+		 *     @type bool   $show_preview          Show image preview when value has .url. Default true.
+		 *     @type string $allowed_types         'image' or 'file'. Default 'image'.
+		 *     @type string $button_select_label   Label for the select button.
+		 *     @type string $button_select_label_has_file Optional label when file already set.
+		 *     @type string $button_remove_label   Label for remove button.
+		 *     @type string $action_select         data-action for select. Default 'pc_file_select'.
+		 *     @type string $action_remove         data-action for remove. Default 'pc_file_remove'.
+		 *     @type string $preview_img_style     Inline style for preview img.
+		 * }
+		 * @return string
+		 */
+		private function output_setting_file( $options ) {
+			$id          = isset( $options['id'] ) ? $options['id'] : '';
+			$show_preview = isset( $options['show_preview'] ) ? $options['show_preview'] : true;
+			$allowed     = isset( $options['allowed_types'] ) ? $options['allowed_types'] : 'image';
+			$label_select = isset( $options['button_select_label'] ) ? $options['button_select_label'] : ( $allowed === 'image' ? __( 'Select image', 'product-configurator-for-woocommerce' ) : __( 'Select file', 'product-configurator-for-woocommerce' ) );
+			$label_select_has = isset( $options['button_select_label_has_file'] ) ? $options['button_select_label_has_file'] : $label_select;
+			$label_remove = isset( $options['button_remove_label'] ) ? $options['button_remove_label'] : __( 'Remove', 'product-configurator-for-woocommerce' );
+			$action_select = isset( $options['action_select'] ) ? $options['action_select'] : 'pc_file_select';
+			$action_remove = isset( $options['action_remove'] ) ? $options['action_remove'] : 'pc_file_remove';
+			$preview_style = isset( $options['preview_img_style'] ) ? $options['preview_img_style'] : 'max-width:80px;max-height:60px;display:block;';
+
+			if ( ! $action_select || ! $action_remove ) {
+				return '<div class="error">' . __( 'File field requires action_select and action_remove.', 'product-configurator-for-woocommerce' ) . '</div>';
+			}
+
+			$data_expr = $id ? ( 'data.' . $id ) : '';
+			$parts = $id ? explode( '.', $id ) : array();
+			$has_value_conds = array( 'data' );
+			$cur = 'data';
+			foreach ( $parts as $p ) {
+				$cur .= '.' . $p;
+				$has_value_conds[] = $cur;
+			}
+			$has_value_cond = implode( ' && ', $has_value_conds ) . ' && ' . $data_expr . '.attachment_id';
+			$has_url_cond = $has_value_cond . ' && ' . $data_expr . '.url';
+
+			$out = '<div class="mkl-pc-setting--container mkl-pc-setting--file"'
+				. ' data-allowed-types="' . esc_attr( $allowed ) . '"'
+				. ' data-setting="' . esc_attr( $id ) . '"';
+			$out .= '>';
+			if ( $show_preview ) {
+				$out .= '<# if ( ' . $has_url_cond . ' ) { #>';
+				$out .= '<div class="mkl-pc-setting--file-preview"><img src="{{' . $data_expr . '.url}}" alt="" style="' . esc_attr( $preview_style ) . '"></div>';
+				$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_remove ) . '">' . esc_html( $label_remove ) . '</button> ';
+				$out .= '<# } #>';
+			} else {
+				$out .= '<# if ( ' . $has_url_cond . ' ) {  console.log("'. $data_expr .'"); #>';
+				$out .= '<div class="mkl-pc-setting--file-preview-filename">' . __( 'Selected file:', 'product-configurator-for-woocommerce' ) . ' <b>{{' . $data_expr . '.url.replace( /^.*\//, "" )}}</b></div>';
+				$out .= '<# } #>';
+			}
+
+			$out .= '<# if ( ' . $has_value_cond . ' ) { #>';
+			$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_remove ) . '">' . esc_html( $label_remove ) . '</button> ';
+			$out .= '<# } #>';
+
+			$out .= '<button type="button" class="button mkl-pc--action" data-action="' . esc_attr( $action_select ) . '">';
+			$out .= '<# if ( ' . $has_value_cond . ' ) { #>' . esc_html( $label_select_has ) . '<# } else { #>' . esc_html( $label_select ) . '<# } #>';
+			$out .= '</button>';
+			$out .= '</div>';
+			return $out;
+		}
+
+		/**
 		 * Print the attributes
 		 *
 		 * @param array $attr
@@ -308,6 +418,93 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 				$render .= esc_attr($key).'="'.esc_attr($val).'" ';
 			}
 			return $render;
+		}
+
+		/**
+		 * Shared 3D model source fields (Use object from / Model upload / Object ID) for layers, choices, and angles.
+		 *
+		 * @param array $config {
+		 *     @type bool   $can_upload        Whether to show Upload option and model upload field.
+		 *     @type string $setting_model     Setting key for model source (e.g. object_selection_3d, camera_target_model).
+		 *     @type string $setting_upload    Setting key for upload attachment (e.g. model_upload_3d). Omit or null if no upload.
+		 *     @type string $setting_object_id Setting key for object ID (e.g. target_object_id, camera_target_object_id).
+		 *     @type string $model_label       Label for the model source select.
+		 *     @type string $upload_label      Label for the upload field.
+		 *     @type string $object_id_label   Label for the object ID field.
+		 *     @type string $condition         Optional condition expression for the fields.
+		 *     @type string $section           Section id (e.g. threed).
+		 *     @type int    $priority          Priority for first field (default 10).
+		 * }
+		 * @return array Field key => field config for merging into get_settings_list().
+		 */
+		public static function get_3d_model_source_fields( $config ) {
+			$can_upload       = ! empty( $config['can_upload'] );
+			$setting_model    = isset( $config['setting_model'] ) ? $config['setting_model'] : 'object_selection_3d';
+			$setting_upload   = isset( $config['setting_upload'] ) ? $config['setting_upload'] : null;
+			$setting_object   = isset( $config['setting_object_id'] ) ? $config['setting_object_id'] : 'target_object_id';
+			$model_label      = isset( $config['model_label'] ) ? $config['model_label'] : __( 'Use object from', 'product-configurator-for-woocommerce' );
+			$upload_label     = isset( $config['upload_label'] ) ? $config['upload_label'] : __( 'Model upload', 'product-configurator-for-woocommerce' );
+			$object_id_label  = isset( $config['object_id_label'] ) ? $config['object_id_label'] : __( 'Object ID', 'product-configurator-for-woocommerce' );
+			$condition        = isset( $config['condition'] ) ? $config['condition'] : null;
+			$section          = isset( $config['section'] ) ? $config['section'] : 'threed';
+			$priority         = isset( $config['priority'] ) ? (int) $config['priority'] : 10;
+
+			$choices = [];
+			if ( $can_upload ) {
+				$choices[] = [
+					'label' => __( 'Upload model', 'product-configurator-for-woocommerce' ),
+					'value' => 'upload_model',
+				];
+			}
+
+			$base = [
+				'priority' => $priority,
+				'section'  => $section,
+			];
+			if ( $condition ) {
+				$base['condition'] = $condition;
+			}
+
+			$fields = [];
+			$fields[ $setting_model ] = array_merge( $base, [
+				'label'   => $model_label,
+				'type'    => 'select',
+				'choices' => $choices,
+			] );
+
+			if ( $can_upload && $setting_upload ) {
+				$upload_condition = '"upload_model" == data.' . $setting_model;
+				if ( $condition ) {
+					$upload_condition = $condition . ' && ' . $upload_condition;
+				}
+				$fields[ $setting_upload ] = array_merge( $base, [
+					'label'     => $upload_label,
+					'type'      => 'html',
+					'priority'  => $priority + 5,
+					'condition' => $upload_condition,
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="hidden" data-setting="' . esc_attr( $setting_upload ) . '" value="<# if ( data.' . esc_attr( $setting_upload ) . ' ) { #>{{data.' . esc_attr( $setting_upload ) . '}}<# } #>"> '
+						. '<button type="button" class="button mkl-pc--action" data-action="edit_model_upload" data-setting="' . esc_attr( $setting_upload ) . '">' . esc_html__( 'Select model', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '<# if ( data.' . esc_attr( $setting_upload ) . ' ) { #><button type="button" class="button mkl-pc--action" data-action="remove_model_upload" data-setting="' . esc_attr( $setting_upload ) . '">' . esc_html__( 'Remove', 'product-configurator-for-woocommerce' ) . '</button><# } #>'
+						. '<# if ( data.' . esc_attr( $setting_upload ) . '_filename ) { #><span class="pc-3d-model-upload-filename">{{data.' . esc_attr( $setting_upload ) . '_filename}}</span><# } #>'
+						. '</div>',
+				] );
+			}
+
+			$object_html = '<div class="mkl-pc-setting--container">'
+				. '<input type="text" class="components-select-control__input" data-setting="' . esc_attr( $setting_object ) . '" value="<# if ( data.' . esc_attr( $setting_object ) . ' ) { #>{{data.' . esc_attr( $setting_object ) . '}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+				. __( 'Or', 'product-configurator-for-woocommerce' )
+				. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="' . esc_attr( $setting_object ) . '">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+				. '</div>';
+
+			$fields[ $setting_object ] = array_merge( $base, [
+				'label'     => $object_id_label,
+				'type'      => 'html',
+				'priority'  => $priority + 10,
+				'html'      => $object_html,
+			] );
+
+			return $fields;
 		}
 	}
 }

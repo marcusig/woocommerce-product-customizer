@@ -176,7 +176,50 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		</div>
 		<div class="mkl-pc-admin-layout__column-track">
 		<div class="structure-content has-toolbar mkl-pc-admin-layout__column mkl-pc-admin-layout__column--list">
-			<div class="structure-toolbar">
+			<div class="structure-toolbar <# if ( data.collectionName && 'objects3d' === data.collectionName ) { #>pc-objects3d-toolbar<# } #>">
+				<# if ( data.collectionName && 'objects3d' === data.collectionName ) { #>
+				<div class="structure-toolbar__primary">
+					<button type="button" class="button button-primary pc-3d-add-toggle">
+						<span><?php esc_html_e( 'Add 3D item', 'product-configurator-for-woocommerce' ); ?></span>
+					</button>
+					<div class="pc-3d-add-menu hidden">
+						<div class="pc-3d-add-section">
+							<h4><?php esc_html_e( 'Object', 'product-configurator-for-woocommerce' ); ?></h4>
+							<div class="pc-3d-add-grid">
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="object">
+									<?php echo mkl_pc_include_svg_icon( 'admin', '3d/object_data' ); ?>
+									<span class="pc-3d-add-tile-label"><?php esc_html_e( 'Gltf/glb model', 'product-configurator-for-woocommerce' ); ?></span>
+								</button>
+							</div>
+						</div>
+						<div class="pc-3d-add-section">
+							<h4><?php esc_html_e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h4>
+							<div class="pc-3d-add-grid">
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="AmbientLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_point' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Ambient', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="DirectionalLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_sun' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Directional', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="PointLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_point' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Point', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="SpotLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_spot' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Spot', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="RectAreaLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_area' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Rect Area', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="HemisphereLight"><?php echo mkl_pc_include_svg_icon( 'admin', '3d/light_hemi' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Hemisphere', 'product-configurator-for-woocommerce' ); ?></span></button>
+							</div>
+						</div>
+						<div class="pc-3d-add-section">
+							<h4><?php esc_html_e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
+							<div class="pc-3d-add-grid">
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="environment" data-env-type="hdri">
+									<?php echo mkl_pc_include_svg_icon( 'admin', '3d/world' ); ?>
+									<span class="pc-3d-add-tile-label"><?php esc_html_e( 'HDRi', 'product-configurator-for-woocommerce' ); ?></span>
+								</button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="environment" data-env-type="cubemap">
+									<?php echo mkl_pc_include_svg_icon( 'admin', '3d/mesh_cube' ); ?>
+									<span class="pc-3d-add-tile-label"><?php esc_html_e( 'Cubemap', 'product-configurator-for-woocommerce' ); ?></span>
+								</button>
+							</div>
+						</div>
+						<?php do_action( 'mkl_pc_admin_objects3d_add_tiles' ); ?>
+					</div>
+				</div>
+				<# } else { #>
 				<div class="structure-toolbar__primary">
 					<h1>{{data.title}}</h1>
 					<div class="structure-toolbar__add">
@@ -223,15 +266,18 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<div class="structure-toolbar__filter">
 					<input type="search" class="mkl-pc-list-filter-input" placeholder="{{data.filter_placeholder}}" autocomplete="off" />
 				</div>
+				<# } #>
 			</div>
 			<div class="mkl-list layers ui-sortable sortable-list">
 			</div>
+			<# if ( ! data.collectionName || 'objects3d' !== data.collectionName ) { #>
 			<div class="floating-add">
 				<button class="mkl-floating-add-item">
 					<i class="dashicons dashicons-plus-alt2"></i>
 					<span class="screen-reader-text"><?php esc_html_e( 'Add item here', 'product-configurator-for-woocommerce' ); ?></span>
 				</button>
 			</div>
+			<# } #>
 		</div>
 		<div class="pc-sidebar visible mkl-pc-admin-layout__column mkl-pc-admin-layout__column--detail"></div>
 		</div>
@@ -348,6 +394,20 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	</div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-structure-object3d-form">
+	<div class="form-details">
+		<header>
+			<h2>
+				<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
+			</h2>
+			<?php echo mkl_pc_get_admin_actions(); ?>
+		</header>
+
+		<?php do_action('mkl_pc_object3d_fields') ?>
+		<?php do_action('mkl_pc_object3d_settings') ?>
+	</div>
+</script>
+
 <script type="text/html" id="tmpl-mkl-pc-structure-layer-form">
 	<div class="form-details">
 		<# if ( data.is_global ) { #>
@@ -395,6 +455,114 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	
 </script>
 <?php 
+/*
+
+3D Model TEMPLATES 
+
+*/
+?>
+<?php
+$mkl_pc_3d_settings_sections = apply_filters(
+	'mkl_pc_3d_settings_sections',
+	array(
+		array(
+			'id'       => 'environment-scene',
+			'title'    => __( 'Environment & Scene', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/world.svg',
+			'template' => __DIR__ . '/3d-settings-sections/environment-scene.php',
+		),
+		array(
+			'id'       => 'renderer-output',
+			'title'    => __( 'Renderer / Output', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/object_data.svg',
+			'template' => __DIR__ . '/3d-settings-sections/renderer-output.php',
+		),
+		array(
+			'id'       => 'camera-positions',
+			'title'    => __( 'Camera positions (views)', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/mesh_cube.svg',
+			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
+		),
+		array(
+			'id'       => 'postprocessing',
+			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/light.svg',
+			'template' => __DIR__ . '/3d-settings-sections/postprocessing.php',
+		),
+	)
+);
+?>
+<script type="text/html" id="tmpl-mkl-pc-3d-models">
+	<div class="media-frame-content model-3d pc-3d-settings">
+		<div class="pc-3d-settings-layout">
+			<div class="pc-3d-settings-column-settings">
+				<div class="pc-3d-sections-layout">
+					<nav class="pc-3d-section-tabs" role="tablist" aria-label="<?php esc_attr_e( '3D settings sections', 'product-configurator-for-woocommerce' ); ?>">
+						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
+							$section_id = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
+							$section_title = isset( $section['title'] ) ? (string) $section['title'] : '';
+							$section_icon = isset( $section['icon'] ) ? (string) $section['icon'] : '';
+							$section_template = isset( $section['template'] ) ? (string) $section['template'] : '';
+							if ( '' === $section_id || '' === $section_template || ! file_exists( $section_template ) ) {
+								continue;
+							}
+							$is_active = ( 0 === (int) $index );
+							?>
+							<button
+								type="button"
+								class="pc-3d-section-tab<?php echo $is_active ? ' active' : ''; ?>"
+								data-section-tab="<?php echo esc_attr( $section_id ); ?>"
+								data-label="<?php echo esc_attr( $section_title ); ?>"
+								title="<?php echo esc_attr( $section_title ); ?>"
+								role="tab"
+								aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+							>
+								<?php if ( '' !== $section_icon ) : ?>
+									<img src="<?php echo esc_url( $section_icon ); ?>" alt="" class="pc-3d-settings-section-icon" />
+								<?php endif; ?>
+								<span class="screen-reader-text"><?php echo esc_html( $section_title ); ?></span>
+							</button>
+						<?php endforeach; ?>
+					</nav>
+					<div class="pc-3d-settings-sections">
+						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
+							$section_id = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
+							$section_title = isset( $section['title'] ) ? (string) $section['title'] : '';
+							$section_icon = isset( $section['icon'] ) ? (string) $section['icon'] : '';
+							$section_template = isset( $section['template'] ) ? (string) $section['template'] : '';
+							if ( '' === $section_id || '' === $section_template || ! file_exists( $section_template ) ) {
+								continue;
+							}
+							$is_active = ( 0 === (int) $index );
+							?>
+							<div id="pc-3d-section-panel-<?php echo esc_attr( $section_id ); ?>" class="components-panel__body is-opened setting setting-section pc-3d-settings-section pc-3d-section-panel<?php echo $is_active ? ' active' : ''; ?>" data-section-id="<?php echo esc_attr( $section_id ); ?>" role="tabpanel" <?php echo $is_active ? '' : 'hidden="hidden"'; ?>>
+								<h2 class="components-panel__body-title">
+									<span class="components-button components-panel__body-toggle">
+										<?php if ( '' !== $section_icon ) : ?>
+											<img src="<?php echo esc_url( $section_icon ); ?>" alt="" class="pc-3d-settings-section-icon" />
+										<?php endif; ?>
+										<span><?php echo esc_html( $section_title ); ?></span>
+									</span>
+								</h2>
+								<?php include $section_template; ?>
+							</div>
+						<?php endforeach; ?>
+						<p class="pc-3d-reset-settings-row" style="margin-top: 1.5em;">
+							<button type="button" class="button pc-3d-reset-settings"><?php _e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>
+						</p>
+					</div>
+				</div>
+			</div>
+			<div class="pc-3d-settings-column-preview">
+				<div class="pc-3d-preview">
+					<div class="pc-3d-preview--canvas-container"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</script>
+<?php 
+
 /*
 
 CONTENT TEMPLATES 
@@ -660,6 +828,38 @@ CONTENT TEMPLATES
 	</div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-3d-object-selector">
+	<div class="mkl-pc-3d-object-selector">
+		<h3><?php esc_html_e( 'Select 3D object', 'product-configurator-for-woocommerce' ); ?></h3>
+		<p class="mkl-pc-3d-object-selector--filter">
+			<input type="text" class="mkl-pc-3d-object-selector--filter-input" placeholder="<?php esc_attr_e( 'Filter objects…', 'product-configurator-for-woocommerce' ); ?>" />
+		</p>
+		<div class="mkl-pc-3d-object-selector--tree-container">
+			<ul class="mkl-pc-3d-object-selector--tree"></ul>
+		</div>
+		<div class="mkl-pc-3d-object-selector--actions">
+			<button type="button" class="button button-primary select" disabled><?php esc_html_e( 'Choose', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-3d-object-selector-multi">
+	<div class="mkl-pc-3d-object-selector mkl-pc-3d-object-selector--multi">
+		<h3><?php esc_html_e( 'Select 3D objects for framing (multiple)', 'product-configurator-for-woocommerce' ); ?></h3>
+		<p class="mkl-pc-3d-object-selector--filter">
+			<input type="text" class="mkl-pc-3d-object-selector--filter-input" placeholder="<?php esc_attr_e( 'Filter objects…', 'product-configurator-for-woocommerce' ); ?>" />
+		</p>
+		<div class="mkl-pc-3d-object-selector--tree-container">
+			<ul class="mkl-pc-3d-object-selector--tree"></ul>
+		</div>
+		<div class="mkl-pc-3d-object-selector--actions">
+			<button type="button" class="button button-primary select"><?php esc_html_e( 'Choose', 'product-configurator-for-woocommerce' ); ?></button>
+			<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
+	</div>
+</script>
+
 <?php 
 /*
 
@@ -907,10 +1107,39 @@ IMPORT / EXPORT
 	?>
 	<# const language_data = <?php echo json_encode( $language_data ); ?>; #>
 	<# _.each( data.fields, ( field, key ) => { #>
+		<# const isSelect = field.type === 'select' && field.choices && field.choices.length; #>
+		<# const isColor = field.type === 'color'; #>
+		<# const isAttachment = field.type === 'attachment'; #>
+		<# const isVariantSelect = field.type === 'variant_select'; #>
+		<# const isMaterialSelect = field.type === 'material_select'; #>
+		<# const showWhen = field.show_when || null; #>
+		<div class="field-repeater-field <# if ( showWhen ) { #>pc-action-value<# } #>" <# if ( showWhen ) { #>data-show-when="{{showWhen}}"<# } #>>
 		<label>
 			{{field.label}}
-			<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}">
+			<# if ( isSelect ) { #>
+				<select name="{{key}}">
+					<# _.each( field.choices, ( opt ) => { #>
+						<option value="{{opt.value}}" <# if ( data[key] === opt.value ) { #> selected<# } #>>{{opt.label}}</option>
+					<# } ); #>
+				</select>
+			<# } else if ( isColor ) { #>
+				<input name="{{key}}" type="color" value="{{data[key] || '#ffffff'}}">
+			<# } else if ( isAttachment ) { #>
+				<# const urlKey = key.replace( /_id$/, '_url' ); const filenameKey = key.replace( /_id$/, '_filename' ); const hasUrl = urlKey !== key && data[urlKey]; #>
+				<input name="{{key}}" type="hidden" value="{{data[key] || ''}}">
+				<# if ( hasUrl ) { #>
+					<a href="{{data[urlKey]}}" target="_blank" rel="noopener noreferrer" class="pc-attachment-link">{{data[filenameKey] || data[urlKey]}}</a>
+				<# } #>
+				<button type="button" class="button pc-select-attachment" data-target="{{key}}"><?php echo esc_html( __( 'Select', 'product-configurator-for-woocommerce' ) ); ?></button>
+			<# } else if ( isVariantSelect ) { #>
+				<span class="pc-variant-select-placeholder" data-variant-field="{{key}}" data-variant-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading variants…', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else if ( isMaterialSelect ) { #>
+				<span class="pc-material-select-placeholder" data-material-field="{{key}}" data-material-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else { #>
+				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}" <# if ( field.type === 'checkbox' && ( data[key] === true || data[key] === 1 || data[key] === "1" || data[key] === "true" ) ) { #>checked<# } #>>
+			<# } #>
 		</label>
+		</div>
 		<# if ( field.translatable ) { #>
 				<# 
 				_.each( language_data, ( language, language_key ) => { 

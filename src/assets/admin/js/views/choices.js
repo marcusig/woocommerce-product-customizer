@@ -634,7 +634,7 @@ PC.views = PC.views || {};
 			this.layer = PC.app.admin.layers.get( this.model.get( 'layerId' ) );
 			this.state = options.state; // Reference to parent choices view
 			this.listenTo( this.model, 'destroy', this.remove );
-			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group' ), this.render );
+			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.choice_form.render.on.change.events', 'change:is_group change:object_3d_id change:target_object_id' ), this.render );
 			
 			// Listen for edit mode changes from parent state view
 			if ( this.state ) {
@@ -705,7 +705,8 @@ PC.views = PC.views || {};
 			};
 
 			this.populate_angles_list();
-			
+			this.populate_object_3d_id();
+
 			this.$( 'input.color-hex' ).wpColorPicker( {
 				change: function( event, ui ) {
 					// Update value manually (optional, just in case)
@@ -736,6 +737,22 @@ PC.views = PC.views || {};
 			}
 
 			return this;
+		},
+		populate_object_3d_id: function() {
+			var $sel = this.$( 'select[data-setting="object_3d_id"]' );
+			if ( ! $sel.length ) return;
+			var currentVal = this.model.get( 'object_3d_id' );
+			var objects3d = PC.app.get_collection( 'objects3d' );
+			$sel.find( 'option:not(:first)' ).remove();
+			if ( objects3d && objects3d.length ) {
+				objects3d.each( function( obj ) {
+					if ( obj.get( 'object_type' ) !== 'gltf' ) return;
+					var id = obj.get( '_id' ) || obj.id;
+					var label = obj.get( 'name' ) || obj.get( 'filename' ) || ( 'Object #' + id );
+					var selected = ( currentVal != null && String( currentVal ) === String( id ) ) ? ' selected' : '';
+					$sel.append( '<option value="' + ( id === undefined || id === null ? '' : id ) + '"' + selected + '>' + ( _.escape( label ) ) + '</option>' );
+				} );
+			}
 		},
 		form_change: function( event ) {
 			var input = $(event.currentTarget);

@@ -17,10 +17,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public $ID;
 		private $_product;
 		private $variable;
+		private $three_d;
 		private $should_update_cache = false;
 		public function __construct() {
 			$this->_hooks();
 			$this->variable = new Admin_Variable_Product();
+			$this->three_d = new Admin_Product_3D();
 		}
 
 		/**
@@ -126,7 +128,25 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					do_action( 'mkl_pc_admin_general_tab_before_start_button' );
 					
 					?>
-
+					<div class="show_if_variable show_if_simple show_if_redq_rental">
+						<?php
+						woocommerce_wp_select( 
+							array( 
+								'id' => MKL_PC_PREFIX.'_configurator_type',
+								'options' => [
+									'configurator' => __('2D configurator', 'product-configurator-for-woocommerce'),
+									// 'addons' => __('Product add-ons (no preview, added to the product form)', 'product-configurator-for-woocommerce'),
+									'3d' => __('3D configurator', 'product-configurator-for-woocommerce'),
+								],
+								'class' => 'configurator-type',
+								'label' => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+								'description' => __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
+								'desc_tip' => true
+							) 
+						);
+						?>
+						<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php _e( 'Configurator type changed. Please update the product to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
+					</div>
 					<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
 						<?php echo $this->start_button( $post->ID ) ?>
 					</div>
@@ -239,11 +259,13 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/models/state', 'models/state.js'),
 				array('backbone/models/choice', 'models/choice.js'),
 				array('backbone/models/layer', 'models/layer.js'),
+				array('backbone/models/object3d', 'models/object3d.js'),
 				array('backbone/models/product', 'models/product.js'),
 				array('backbone/models/admin', 'models/admin.js'),
 				//COLLECTIONS
 				array('backbone/collections/layers', 'collections/layers.js'),
 				array('backbone/collections/angles', 'collections/angles.js'),
+				array('backbone/collections/objects3d', 'collections/objects3d.js'),
 				array('backbone/collections/choices', 'collections/choices.js'),
 				array('backbone/collections/global-layers', 'collections/global-layers.js'),
 				array('backbone/collections/states', 'collections/states.js'),
@@ -261,6 +283,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
 				) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
+				array('backbone/views/objects3d', 'views/objects3d.js'),
 				array('backbone/views/states', 'views/states.js'),
 				array('backbone/views/angles', 'views/angles.js'),
 				array( 'backbone/views/content', 'views/content.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
@@ -287,7 +310,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			if ( $this->_is_configurator_admin_screen() ) {
 
-				
+				global $post;
+				if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+					$scripts[] = array('backbone/views/3d-settings', 'build/3d-settings.js');
+				}
+
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
 				// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
 				$scripts = apply_filters( 'mkl_pc_admin_scripts', $scripts );
@@ -306,12 +333,34 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					wp_enqueue_media();
 				}
 
+				// Optional 3D compression loaders for admin (same as frontend); deps for 3d-settings view.
+				$admin_3d_loader_deps = array();
+				if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
+					$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
+					if ( file_exists( $draco_path ) ) {
+						wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
+						wp_enqueue_script( 'mkl_pc/fe_3d_draco_loader' );
+						$admin_3d_loader_deps[] = 'mkl_pc/fe_3d_draco_loader';
+					}
+				}
+				if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
+					$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
+					if ( file_exists( $meshopt_path ) ) {
+						wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
+						wp_enqueue_script( 'mkl_pc/fe_3d_meshopt_loader' );
+						$admin_3d_loader_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
+					}
+				}
+
 				// LOAD BACKBONE SCRIPTS
 				foreach ( $scripts as $script ) {
 					$key   = $script[0];
 					$file  = $script[1];
 					$extra = isset( $script[2] ) && is_array( $script[2] ) ? $script[2] : array();
 					$deps  = array_values( array_unique( array_merge( array( 'jquery', 'backbone', 'wp-util' ), $extra ) ) );
+					if ( 'backbone/views/3d-settings' === $key && ! empty( $admin_3d_loader_deps ) ) {
+						$deps = array_values( array_unique( array_merge( $deps, $admin_3d_loader_deps ) ) );
+					}
 					wp_enqueue_script(
 						'mkl_pc/js/admin/' . $key,
 						MKL_PC_ASSETS_URL . 'admin/js/' . $file,
@@ -326,6 +375,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'media_select_button' => esc_html__( 'Choose', 'product-configurator-for-woocommerce' ),
 					'layers_new_placeholder' => esc_html__( 'New Layer Name', 'product-configurator-for-woocommerce' ),
 					'angles_new_placeholder' => esc_html__( 'New Angle Name', 'product-configurator-for-woocommerce' ),
+					'3d_objects_new_placeholder' => esc_html__( '3D object label…', 'product-configurator-for-woocommerce' ),
 					'choice_new_placeholder' => esc_html__( 'New Choice Name', 'product-configurator-for-woocommerce' ),
 					'list_filter_placeholder' => esc_html__( 'Filter list…', 'product-configurator-for-woocommerce' ),
 					'group_with_content_warning' => esc_html__( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
@@ -346,6 +396,16 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 						'summary' => esc_html__( 'Summary', 'product-configurator-for-woocommerce' ),
 						'text_overlay' => esc_html__( 'Text overlay', 'product-configurator-for-woocommerce' ),
 					) ),
+					'hdr_base_url'         => MKL_PC_ASSETS_URL . 'images/hdr/',
+					'admin_js_build_url'   => MKL_PC_ASSETS_URL . 'admin/js/build/',
+					'default_settings_3d'  => DB::get_default_settings_3d(),
+					'default_hidden_object_names' => DB::get_default_hidden_object_names(),
+					'reset_settings_3d_confirm' => esc_html__( 'This will restore all 3D viewer settings to their defaults. Continue?', 'product-configurator-for-woocommerce' ),
+					'fe_3d_use_draco_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
+					'fe_3d_use_meshopt_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+					'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
+					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
+
 				);
 
 				if ( current_user_can( 'edit_post', $this->ID ) ) {
@@ -481,6 +541,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function save_product_setting( $post_id ) {
 			$_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? 'yes' : 'no';
 			update_post_meta( $post_id, MKL_PC_PREFIX.'_is_configurable', $_is_configurable );
+			if ( isset( $_POST[MKL_PC_PREFIX.'_configurator_type'] ) ) {
+				update_post_meta( $post_id, MKL_PC_PREFIX.'_configurator_type', sanitize_key( $_POST[MKL_PC_PREFIX.'_configurator_type'] ) );
+			}
 		}	
 
 		/**

@@ -680,7 +680,7 @@ TODO:
 				this.global_editing = false;
 			}
 			this.listenTo( this.model, 'destroy', this.remove ); 
-			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode' ), this.render );
+			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode change:object_3d_id change:target_object_id' ), this.render );
 		},
 		events: {
 			// 'click' : 'edit',
@@ -735,6 +735,7 @@ TODO:
 			// Hide empty groups
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
 			this.populate_angles_list();
+			this.populate_object_3d_id();
 			PC.currentEditedItem = this.model;
 			if ( this.current_focus ) {
 				var focus_to = this.$( '[data-setting="'+ this.current_focus + '"]' );
@@ -1022,6 +1023,21 @@ TODO:
 				angles.each( function( model ) {
 					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
 				}, this );
+			}
+		},
+		populate_object_3d_id: function() {
+			var $sel = this.$( 'select[data-setting="object_3d_id"]' );
+			if ( ! $sel.length ) return;
+			var currentVal = this.model.get( 'object_3d_id' );
+			var objects3d = PC.app.get_collection( 'objects3d' );
+			$sel.find( 'option:not(:first)' ).remove();
+			if ( objects3d && objects3d.length ) {
+				objects3d.each( function( obj ) {
+					var id = obj.get( '_id' ) || obj.id;
+					var label = obj.get( 'name' ) || obj.get( 'filename' ) || ( 'Object #' + id );
+					var selected = ( currentVal != null && String( currentVal ) === String( id ) ) ? ' selected' : '';
+					$sel.append( '<option value="' + ( id === undefined || id === null ? '' : id ) + '"' + selected + '>' + ( _.escape( label ) ) + '</option>' );
+				} );
 			}
 		},
 		trigger_custom_action: function( event ) {
