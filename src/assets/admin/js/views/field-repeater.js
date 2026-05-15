@@ -36,7 +36,7 @@ PC.views = PC.views || {};
 			this.options = new Backbone.Collection( opts, { comparator: 'order' } );
 			this.render();
 			this.listenTo( this.options, 'add', this.add_one );
-			this.listenTo( this.options, 'add', this.save_options );
+			this.listenTo( this.options, 'add', this.persist_options_after_add );
 			this.listenTo( this.options, 'change destroy', this.save_options );
 		},
 		get_default_option: function() {
@@ -61,6 +61,13 @@ PC.views = PC.views || {};
 			var option = new PC.views.field_repeater_option( { fields: this.fields, model: model, setting: this.setting, context: this.context } );
 			this.options_els.push( option );
 			option.$el.appendTo( this.$( '.options-list' ) );
+		},
+		/**
+		 * Newly added rows often match every field schema default (e.g. empty string when PHP has no default).
+		 * Pruning those on the same `add` event removed them before the layer model could persist (e.g. text-overlay font_size_options).
+		 */
+		persist_options_after_add: function() {
+			this.model.set( this.setting, PC.toJSON( this.options.sort() ) );
 		},
 		save_options: function() {
 			var view = this;
