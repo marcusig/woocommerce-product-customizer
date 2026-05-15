@@ -34,14 +34,65 @@ PC.views = PC.views || {};
 		},
 		toggle_add_menu: function( event ) {
 			event.preventDefault();
-			this.$( '.pc-3d-add-menu' ).toggleClass( 'hidden' );
+			var $menu = this.$( '.pc-3d-add-menu' );
+			$menu.toggleClass( 'hidden' );
+			if ( $menu.hasClass( 'hidden' ) ) {
+				this._unbind_add_menu_outside_listeners();
+			} else {
+				this._bind_add_menu_outside_listeners();
+			}
+		},
+		_close_add_menu: function() {
+			this.$( '.pc-3d-add-menu' ).addClass( 'hidden' );
+			this._unbind_add_menu_outside_listeners();
+		},
+		_clear_add_menu_outside_bind_timeout: function() {
+			if ( this._add_menu_outside_bind_timeout ) {
+				clearTimeout( this._add_menu_outside_bind_timeout );
+				this._add_menu_outside_bind_timeout = null;
+			}
+		},
+		_bind_add_menu_outside_listeners: function() {
+			var self = this;
+			var ns = '.mklPc3dAddMenu' + this.cid;
+			this._clear_add_menu_outside_bind_timeout();
+			this._add_menu_outside_bind_timeout = setTimeout( function() {
+				self._add_menu_outside_bind_timeout = null;
+				if ( self.$('.pc-3d-add-menu').hasClass( 'hidden' ) ) {
+					return;
+				}
+				$( document ).on( 'mousedown' + ns, function( event ) {
+					var $toggle = self.$( '.pc-3d-add-toggle' );
+					var $menu = self.$( '.pc-3d-add-menu' );
+					if ( $toggle.length && $toggle[0].contains( event.target ) ) {
+						return;
+					}
+					if ( $menu.length && $menu[0].contains( event.target ) ) {
+						return;
+					}
+					self._close_add_menu();
+				} );
+				$( document ).on( 'keyup' + ns, function( event ) {
+					if ( event.key === 'Escape' || event.which === 27 ) {
+						self._close_add_menu();
+					}
+				} );
+			}, 0 );
+		},
+		_unbind_add_menu_outside_listeners: function() {
+			this._clear_add_menu_outside_bind_timeout();
+			$( document ).off( '.mklPc3dAddMenu' + this.cid );
+		},
+		cleanup_on_remove: function() {
+			this._unbind_add_menu_outside_listeners();
+			PC.views.layers.prototype.cleanup_on_remove.apply( this, arguments );
 		},
 		create_from_tile: function( event ) {
 			event.preventDefault();
 			event.stopPropagation();
 			var $tile = $( event.currentTarget );
 			var kind = $tile.data( 'add-kind' );
-			this.$( '.pc-3d-add-menu' ).addClass( 'hidden' );
+			this._close_add_menu();
 
 			if ( kind === 'object' ) {
 				this.create_object_from_media();
@@ -229,6 +280,10 @@ PC.views = PC.views || {};
 	PC.views.object3d_item = PC.views.layer.extend({
 		object_type: 'object3d',
 		edit_view: function() { return PC.views.object3d_form; },
+		initialize: function( options ) {
+			PC.views.layer.prototype.initialize.call( this, options );
+			this.listenTo( this.model, 'change:object_type change:env_type change:light_type', this.update_label );
+		},
 		className: function() {
 			const objectType = this.model.get('object_type');
 			// return 'layer mkl-list-item 3d-object';

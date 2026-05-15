@@ -483,7 +483,7 @@ TODO:
 			this.$el.data( 'view', this );
 			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
 			if ( ! this.label ) {
-				this.label = new PC.views.layerLabel( { model: this.model, object_type: this.object_type } );
+				this.label = new PC.views.layerLabel( { model: this.model, list_kind: this.object_type } );
 			}
 			// Re-append after every render — this.$el.html() detaches the label view from the DOM.
 			this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
@@ -647,7 +647,8 @@ TODO:
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template( { ...this.model.attributes, object_type: this.options.object_type } ) );
+			var list_kind = this.options.list_kind || this.options.object_type || 'layer';
+			this.$el.html( this.template( _.extend( {}, this.model.attributes, { _pc_list_kind: list_kind } ) ) );
 		}
 	} );
 

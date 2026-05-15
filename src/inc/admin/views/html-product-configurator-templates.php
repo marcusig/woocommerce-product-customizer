@@ -341,7 +341,14 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				{{data.name}}
 			<# } #>
 		</div>
-		<# if ( 'group' != data.type && 'angle' != data.object_type && 'object3d' != data.object_type ) { #>
+		<# if ( 'object3d' === data._pc_list_kind ) { #>
+		<div class="layer-label--extras">
+			<div class="layer-label--extras-item layer-label--extras-item--type layer-label--extras-item--object3d-type">
+				<span class="layer-label--type-icon dashicons <# print( PC.object3d_item_type_dashicon_class( data ) ); #>" aria-hidden="true"></span>
+				<span class="layer-label--type-label">{{PC.get_object3d_item_type_label( data )}}</span>
+			</div>
+		</div>
+		<# } else if ( 'group' != data.type && 'angle' !== data._pc_list_kind ) { #>
 		<div class="layer-label--extras">
 			<# if ( data.not_a_choice ) { #>
 				<div class="layer-label--extras-item layer-label--extras-item--type">
@@ -400,7 +407,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<h2>
 				<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
 			</h2>
-			<?php echo mkl_pc_get_admin_actions(); ?>
+			<div class="actions-container">
+				<?php echo mkl_pc_get_admin_actions(); ?>
+			</div>
 		</header>
 
 		<?php do_action('mkl_pc_object3d_fields') ?>

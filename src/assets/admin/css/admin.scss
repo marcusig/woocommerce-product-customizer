@@ -4008,33 +4008,6 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 	font-size: 13px;
 	color: #646970;
 }
-.object3d button::after {
-	content: '';
-	position: absolute;
-	top: 50%;
-	right: 10px;
-	width: 20px;
-	height: 20px;
-	background: url(../images/ui/3d/object_data.svg) no-repeat center center;
-	background-size: contain;
-	transform: translateY(-50%);
-	opacity: 0.5;
-}
-
-.object3d--light button::after {
-	background-image: url(../images/ui/3d/light_point.svg);
-}
-
-.object3d--environment button::after {
-	background-image: url(../images/ui/3d/world.svg);
-}
-
-.object3d.active button::after {
-	filter: invert(1);
-}
-
-.object3d--animation button::after {
-	background-image: url(../images/ui/3d/play.svg);
-}
+/* 3D object type is shown in the row label (dashicon + text), same pattern as layer types. */
 
 @import 'select2';
