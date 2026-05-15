@@ -16,6 +16,8 @@ PC.views = PC.views || {};
 		form_builder: 'dashicons-editor-table',
 		'mkl-pc__bulk': 'dashicons-tickets-alt',
 		extra_price: 'dashicons-tag',
+		objects3d: 'dashicons-format-gallery',
+		settings_3D: 'dashicons-admin-settings',
 	};
 
 	function mkl_pc_nav_icon_class( menuId ) {

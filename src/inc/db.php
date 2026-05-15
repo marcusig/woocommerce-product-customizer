@@ -1525,8 +1525,14 @@ class DB {
 	 * @return array
 	 */
 	public function get_menu( $id = null ) {
+		if ( ! $id ) {
+			global $post;
+			if ( $post && isset( $post->ID ) ) {
+				$id = (int) $post->ID;
+			}
+		}
 
-				$default_menu = array(
+		$default_menu = array(
 			array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'home',

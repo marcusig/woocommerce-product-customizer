@@ -329,7 +329,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer-list-item--label">
 	<div class="layer-item--image">
-		<# if ( data.image.url != '' ) { #>
+		<# if ( data.image && data.image.url != '' ) { #>
 			<img src="{{data.image.url}}" class="layer-img" />
 		<# } #>
 	</div>
@@ -341,7 +341,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				{{data.name}}
 			<# } #>
 		</div>
-		<# if ( 'group' != data.type && 'angle' != data.object_type ) { #>
+		<# if ( 'group' != data.type && 'angle' != data.object_type && 'object3d' != data.object_type ) { #>
 		<div class="layer-label--extras">
 			<# if ( data.not_a_choice ) { #>
 				<div class="layer-label--extras-item layer-label--extras-item--type">
@@ -493,9 +493,9 @@ $mkl_pc_3d_settings_sections = apply_filters(
 );
 ?>
 <script type="text/html" id="tmpl-mkl-pc-3d-models">
-	<div class="media-frame-content model-3d pc-3d-settings">
-		<div class="pc-3d-settings-layout">
-			<div class="pc-3d-settings-column-settings">
+	<div class="mkl-pc-admin-ui__content settings-3d mkl-pc-admin-layout mkl-pc-admin-layout--two-column pc-3d-settings">
+		<div class="mkl-pc-admin-layout__column-track">
+			<div class="mkl-pc-admin-layout__column mkl-pc-admin-layout__column--list pc-3d-settings-column-settings">
 				<div class="pc-3d-sections-layout">
 					<nav class="pc-3d-section-tabs" role="tablist" aria-label="<?php esc_attr_e( '3D settings sections', 'product-configurator-for-woocommerce' ); ?>">
 						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
@@ -553,7 +553,7 @@ $mkl_pc_3d_settings_sections = apply_filters(
 					</div>
 				</div>
 			</div>
-			<div class="pc-3d-settings-column-preview">
+			<div class="mkl-pc-admin-layout__column mkl-pc-admin-layout__column--detail pc-3d-settings-column-preview">
 				<div class="pc-3d-preview">
 					<div class="pc-3d-preview--canvas-container"></div>
 				</div>

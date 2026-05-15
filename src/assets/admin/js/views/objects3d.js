@@ -227,6 +227,7 @@ PC.views = PC.views || {};
 	} );
 
 	PC.views.object3d_item = PC.views.layer.extend({
+		object_type: 'object3d',
 		edit_view: function() { return PC.views.object3d_form; },
 		className: function() {
 			const objectType = this.model.get('object_type');

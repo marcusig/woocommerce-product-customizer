@@ -437,7 +437,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['editor_config_paste_not_allowed'] = esc_html__( 'The configuration cannot be pasted here, unlock the global layer to paste it.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_load_failed']        = esc_html__( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_close_after_load_error'] = esc_html__( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
-				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu();
+				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu( (int) $this->ID );
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );
 				

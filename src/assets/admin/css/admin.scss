@@ -620,7 +620,8 @@ html .mkl-pc-admin-ui.pc-modal {
 			}
 		}
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.structure ),
-		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.conditional ) {
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.conditional ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.settings-3d ) {
 			// background: $pc-admin-canvas-chrome;
 			box-shadow: none;
 		}
@@ -1179,6 +1180,96 @@ html .mkl-pc-admin-ui.pc-modal {
 					width: 100%;
 					max-width: none;
 					flex: none;
+				}
+			}
+		}
+
+		&.settings-3d {
+			display: flex;
+			flex-direction: row;
+			align-items: stretch;
+			gap: 16px;
+			box-sizing: border-box;
+			flex: 1 1 0%;
+			min-height: 0;
+			min-width: 0;
+			align-self: stretch;
+			overflow: hidden;
+
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-settings,
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-preview {
+				background: #fff;
+				border: 1px solid $light-border-color;
+				border-radius: 8px;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+				flex: 1 1 0%;
+				min-width: 0;
+				min-height: 0;
+				overflow-x: hidden;
+				overflow-y: auto;
+				-webkit-overflow-scrolling: touch;
+				box-sizing: border-box;
+			}
+
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-settings {
+				max-width: min(420px, 50%);
+				display: flex;
+				flex-direction: column;
+				position: relative;
+				flex: 1 1 0%;
+			}
+
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-preview {
+				position: relative;
+				width: auto;
+				flex: 1 1 0%;
+				padding: 0;
+				z-index: 1;
+				display: flex;
+				flex-direction: column;
+			}
+
+			@media ( max-width: 900px ) {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 10px;
+				margin-top: 0;
+				flex: 1 1 auto;
+				overflow: visible;
+
+				> .mkl-pc-admin-layout__column-track {
+					display: flex;
+					flex-direction: column;
+					flex: 1 1 auto;
+					min-height: 0;
+					position: relative;
+					overflow: visible;
+					width: 100%;
+					align-self: stretch;
+				}
+
+				> .mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+					position: relative;
+					left: auto;
+					top: auto;
+					right: auto;
+					bottom: auto;
+					width: 100% !important;
+					max-width: none !important;
+					flex: 1 1 auto;
+					min-height: 0;
+					transform: none !important;
+					transition: none;
+				}
+
+				> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-settings {
+					flex: 0 1 auto;
+					max-height: min(55vh, 520px);
+				}
+
+				> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-preview {
+					flex: 1 1 36vh;
+					min-height: 220px;
 				}
 			}
 		}
@@ -2081,6 +2172,13 @@ ul.layers > li.mkl-list-item--filtered-out {
 }
 
 .structure-toolbar.pc-objects3d-toolbar {
+	// Anchor the add menu below the toggle; avoid flex align-items:center + abspos top:auto
+	// static-position rules that vertically center a tall menu with the short button.
+	.structure-toolbar__primary {
+		position: relative;
+		align-items: flex-start;
+	}
+
 	.pc-3d-add-toggle {
 		position: static;
 		transform: none;
@@ -2091,13 +2189,17 @@ ul.layers > li.mkl-list-item--filtered-out {
 		z-index: 20;
 		background: #FFF;
 		padding: 15px;
-		left: auto;
-		top: auto;
 		overflow: auto;
 		@media( min-width: 900px ){
 			border-radius: 4px;
 			box-shadow: 0 4px 15px #00000009;
 			position: absolute;
+			top: 100%;
+			left: 0;
+			right: auto;
+			margin-top: 8px;
+			width: max-content;
+			max-width: min( 360px, calc( 100vw - 32px ) );
 			max-height: calc(100vh - 330Px);
 		}
 
@@ -3662,23 +3764,13 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 }
 
 .pc-3d-settings {
-	.pc-3d-settings-layout {
-		display: flex;
-		gap: 0;
-		min-height: 400px;
-		min-height: 100%;
-		max-height: 100%;
-	}
 	.pc-3d-settings-column-settings {
-		flex: 0 0 380px;
 		display: flex;
 		flex-direction: column;
 		min-width: 0;
 		min-height: 0;
 		overflow: hidden;
-		border-right: 1px solid #ddd;
 		padding: 0;
-
 	}
 	.pc-3d-sections-layout {
 		display: flex;
@@ -3754,7 +3846,6 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 		}
 	}
 	.pc-3d-settings-column-preview {
-		flex: 1;
 		min-width: 0;
 		display: flex;
 		flex-direction: column;
