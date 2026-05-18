@@ -940,7 +940,13 @@ class DB {
 
 		$needs_batch = false;
 		if ( ! $empty_both ) {
-			if ( in_array( $verify['layers_status'], array( 'legacy', 'mixed' ), true )
+			// Verified chunked storage may still report "mixed" while optional legacy blob metas exist
+			// (editors delete those from the home tab). That is not an unfinished migration — avoid
+			// forcing batch save + migration overlay on every save (see Admin\Data_Migration\Plugin notices).
+			$verified_chunked_ok = ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $verify['ok'] );
+			if ( $verified_chunked_ok ) {
+				$needs_batch = false;
+			} elseif ( in_array( $verify['layers_status'], array( 'legacy', 'mixed' ), true )
 				|| in_array( $verify['content_status'], array( 'legacy', 'mixed' ), true ) ) {
 				$needs_batch = true;
 			} elseif ( ! $verify['ok'] ) {
