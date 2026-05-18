@@ -44,6 +44,18 @@ gulp.task('clean', function(done){
 	.on('end', done)
 });
 
+gulp.task('build-svg-icon-registry', function(cb) {
+	exec('node scripts/build-svg-icon-registry.js', { cwd: __dirname }, function(err, stdout, stderr) {
+		if (stdout) {
+			console.log(stdout);
+		}
+		if (stderr) {
+			console.error(stderr);
+		}
+		cb(err);
+	});
+});
+
 gulp.task('move_src', function(done) {
 	return gulp.src(
 		[
@@ -102,7 +114,8 @@ gulp.task('js', function(done) {
 		'!src/assets/js/product-configurator/parts/**',
 		'!src/assets/js/source/*.js',
 		'!src/assets/build/**/*.js',
-		'!src/assets/js/vendor/draco/**/*.js'
+		'!src/assets/js/vendor/draco/**/*.js',
+		'!src/assets/admin/js/generated/**',
 	], { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
 		// .pipe(sourcemaps.init())
@@ -209,6 +222,7 @@ gulp.task('build',
 	gulp.series(
 		'clean',
 		'copy-draco-libs',
+		'build-svg-icon-registry',
 		'move_src',
 		'composer',
 		'pot',

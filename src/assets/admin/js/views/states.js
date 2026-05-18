@@ -287,6 +287,7 @@ PC.views = PC.views || {};
 			var menuId = this.model.get( 'menu_id' );
 			var label = this.model.get( 'label' );
 			var iconClass = mkl_pc_nav_icon_class( menuId );
+			var iconHtml = PC.get_icon( 'nav_' + menuId, { fallback_dashicon: iconClass } );
 			this.$el.attr( 'type', 'button' );
 			this.$el.attr( 'role', 'tab' );
 			this.$el.attr( 'aria-selected', this.model.get( 'active' ) === true ? 'true' : 'false' );
@@ -295,7 +296,7 @@ PC.views = PC.views || {};
 			this.$el.attr( 'aria-label', label );
 			this.$el.addClass( 'mkl-pc-admin-ui__nav-item--' + String( menuId ).replace( /[^a-z0-9_-]/gi, '' ) );
 			this.$el.html(
-				'<span class="mkl-pc-admin-ui__nav-item-icon" aria-hidden="true"><span class="dashicons ' + iconClass + '"></span></span>' +
+				'<span class="mkl-pc-admin-ui__nav-item-icon" aria-hidden="true"><span class="pc-admin-icon">' + iconHtml + '</span></span>' +
 				'<span class="mkl-pc-admin-ui__nav-item-text">' + _.escape( label ) + '</span>' +
 				'<span class="mkl-pc-admin-ui__nav-item-chevron" aria-hidden="true"></span>'
 			);

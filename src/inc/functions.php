@@ -71,8 +71,14 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 	}
 }
 
-function mkl_pc_include_svg_icon( $type, $icon ) {
-	$path = trailingslashit( MKL_PC_ASSETS_PATH ) . $type . '/images/ui/' . $icon . '.svg';
+/**
+ * Include an SVG icon
+ *
+ * @param string $icon - The icon to include. e.g. 'home', '3d/object_data'...
+ * @return string
+ */
+function mkl_pc_include_svg_icon( $icon ) {
+	$path = trailingslashit( MKL_PC_ASSETS_PATH ) . '/icons/' . $icon . '.svg';
 	if ( file_exists( $path ) ) {
 		return file_get_contents( $path );
 	}

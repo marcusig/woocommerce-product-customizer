@@ -880,6 +880,17 @@ html .mkl-pc-admin-ui.pc-modal {
 				display: flex;
 				align-items: center;
 				justify-content: center;
+				.pc-admin-icon {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+				}
+				.pc-admin-icon svg {
+					width: 18px;
+					height: 18px;
+					display: block;
+					opacity: 0.92;
+				}
 				.dashicons {
 					width: 18px;
 					height: 18px;
@@ -1915,6 +1926,20 @@ html .pc-modal-container {
 				line-height: 1;
 				flex: 0 0 auto;
 				opacity: 0.5;
+			}
+
+			.layer-label--type-icon.pc-admin-icon {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				flex: 0 0 auto;
+				opacity: 0.5;
+			}
+
+			.layer-label--type-icon.pc-admin-icon svg {
+				width: 16px;
+				height: 16px;
+				display: block;
 			}
 
 			.mkl-pc--global {

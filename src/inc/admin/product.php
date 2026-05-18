@@ -284,7 +284,17 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array('backbone/views/objects3d', 'views/objects3d.js'),
-				array('backbone/views/states', 'views/states.js'),
+				array( 'generated/svg-icon-registry', 'generated/svg-icon-registry.js' ),
+				array(
+					'icons',
+					'icons.js',
+					array( 'wp-hooks', 'mkl_pc/js/admin/generated/svg-icon-registry' ),
+				),
+				array(
+					'backbone/views/states',
+					'views/states.js',
+					array( 'mkl_pc/js/admin/icons' ),
+				),
 				array('backbone/views/angles', 'views/angles.js'),
 				array( 'backbone/views/content', 'views/content.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array('backbone/views/import', 'views/import.js'),
@@ -413,6 +423,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'fe_3d_use_meshopt_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
 					'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
 					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
+					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
 
 				);
 

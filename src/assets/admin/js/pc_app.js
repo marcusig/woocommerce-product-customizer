@@ -679,6 +679,9 @@ PC.toJSON = function( item ) {
 		},
 		init: function( options ) {
 			PC.lang = PC_lang || {};
+			if ( PC.merge_icon_registry && PC.lang && PC.lang.icon_registry ) {
+				PC.merge_icon_registry( PC.lang.icon_registry );
+			}
 			if ( options.product_id === undefined) { 
 				throw( { name: 'Error', message: 'product_id parameter is missing to start the configurator.' } );
 				return false; 
@@ -1568,53 +1571,26 @@ PC.toJSON = function( item ) {
 	};
 
 	/**
-	 * Localized label for a 3D object row (model, light, environment, animation).
-	 *
-	 * @param {object} data Object3d model attributes (must include object_type; environment uses env_type).
-	 * @returns {string}
+	 * Trusted icon HTML for a layer type row (registry or dashicon fallback).
 	 */
-	PC.get_object3d_item_type_label = function( data ) {
-		if ( ! data ) {
-			return '';
-		}
-		var ot = data.object_type || '';
-		var lang = ( PC.lang && PC.lang.object3d_item_types ) ? PC.lang.object3d_item_types : {};
-		if ( ot === 'environment' ) {
-			if ( data.env_type === 'hdri' && lang.environment_hdri ) {
-				return lang.environment_hdri;
-			}
-			if ( data.env_type === 'cubemap' && lang.environment_cubemap ) {
-				return lang.environment_cubemap;
-			}
-			if ( lang.environment ) {
-				return lang.environment;
-			}
-		}
-		if ( lang[ ot ] ) {
-			return lang[ ot ];
-		}
-		return ot;
+	PC.layer_type_icon_html = function( type ) {
+		return PC.get_icon( 'layer_type_' + type, { fallback_dashicon: PC.layer_type_dashicon_class( type ) } );
 	};
 
 	/**
-	 * Dashicon class for 3D object list rows (admin). Extend via filter mkl_pc_object3d_item_type_dashicon.
-	 *
-	 * @param {object} data Object3d model attributes.
-	 * @returns {string}
+	 * Trusted icon HTML for a 3D object list row (registry or dashicon fallback).
 	 */
-	PC.object3d_item_type_dashicon_class = function( data ) {
+	PC.object3d_item_type_icon_html = function( data ) {
 		var ot = data && data.object_type ? data.object_type : '';
-		var map = {
-			gltf: 'dashicons-download',
-			light: 'dashicons-lightbulb',
-			environment: 'dashicons-admin-site-alt3',
-			animation: 'dashicons-controls-play',
-		};
-		var icon = map[ ot ] || 'dashicons-admin-generic';
-		if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
-			return wp.hooks.applyFilters( 'mkl_pc_object3d_item_type_dashicon', icon, data );
+		var id = 'object3d_' + ot;
+		if ( ot === 'environment' ) {
+			if ( data.env_type === 'hdri' ) {
+				id = 'object3d_environment_hdri';
+			} else if ( data.env_type === 'cubemap' ) {
+				id = 'object3d_environment_cubemap';
+			}
 		}
-		return icon;
+		return PC.get_icon( id, { fallback_dashicon: PC.object3d_item_type_dashicon_class( data ) } );
 	};
 
 	PC.copy_items = function( view ) {
