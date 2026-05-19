@@ -10,7 +10,10 @@ Main plugin repo; add-ons are sibling packages under `app/src/`. When changing h
 ## Naming and code style
 
 - **Functions and variables**: use `snake_case` (PHP, JavaScript, and elsewhere unless the file already follows an unavoidable external API).
+- **Prefixes — `mkl_pc_` for globals only**: Do **not** prefix locals, closure-scoped helpers, or names that are already scoped (PHP namespace/class, ES module, IIFE, or a host object such as `PC.*`). Use **`mkl_pc_`** only for **true globals** in the global PHP namespace or on **`window`** across scripts. Stored keys (e.g. post meta) should use **`_mkl_pc_*`**, not `_wpc_*`.
 - **Readable names — no gratuitous shortening**: prefer full words over abbreviations in project-owned identifiers (e.g. `size_label` not `size_lbl`, `options` not `opt`, `index` not `idx`, `configuration` not `cfg`). Reserve very short names only for trivial scopes where convention is universal (e.g. numeric loop counters `i` / `j`). Prefer `event` over `e` when the handler is non-trivial.
-- **Formatting**: align with **WordPress coding standards** where they apply (PHP and JS), while keeping **snake_case** for project-owned identifiers.
+- **Formatting**: align with **WordPress coding standards** where they apply:
+  - PHP: [WordPress PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/) (spacing, braces, Yoda conditions when required by PHPCS rulesets, escaping/sanitization, i18n).
+  - JavaScript: [WordPress JS Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/) for layout and general style, while keeping **snake_case** for project-owned identifiers.
 
 External APIs (React, WordPress globals, third-party SDKs) keep their required names; wrap or alias in snake_case at boundaries when practical.
