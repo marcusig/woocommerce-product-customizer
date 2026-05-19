@@ -1578,6 +1578,35 @@ PC.toJSON = function( item ) {
 	};
 
 	/**
+	 * Localized label for a 3D object row (model, light, environment, animation).
+	 *
+	 * @param {object} data Object3d model attributes (must include object_type; environment uses env_type).
+	 * @returns {string}
+	 */
+	PC.get_object3d_item_type_label = function( data ) {
+		if ( ! data ) {
+			return '';
+		}
+		var ot = data.object_type || '';
+		var lang = ( PC.lang && PC.lang.object3d_item_types ) ? PC.lang.object3d_item_types : {};
+		if ( ot === 'environment' ) {
+			if ( data.env_type === 'hdri' && lang.environment_hdri ) {
+				return lang.environment_hdri;
+			}
+			if ( data.env_type === 'cubemap' && lang.environment_cubemap ) {
+				return lang.environment_cubemap;
+			}
+			if ( lang.environment ) {
+				return lang.environment;
+			}
+		}
+		if ( lang[ ot ] ) {
+			return lang[ ot ];
+		}
+		return ot;
+	};
+
+	/**
 	 * Trusted icon HTML for a 3D object list row (registry or dashicon fallback).
 	 */
 	PC.object3d_item_type_icon_html = function( data ) {
@@ -1590,7 +1619,7 @@ PC.toJSON = function( item ) {
 				id = 'object3d_environment_cubemap';
 			}
 		}
-		return PC.get_icon( id, { fallback_dashicon: PC.object3d_item_type_dashicon_class( data ) } );
+		return PC.get_icon( id );
 	};
 
 	PC.copy_items = function( view ) {

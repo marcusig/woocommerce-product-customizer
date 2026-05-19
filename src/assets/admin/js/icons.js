@@ -34,19 +34,19 @@ var PC = PC || {};
 	}
 
 	var defaults = {
-		layer_type_simple: { dashicon: 'dashicons-format-image' },
-		layer_type_multiple: { dashicon: 'dashicons-list-view' },
+		layer_type_simple: { svg: 'svg/list-item' },
+		layer_type_multiple: { svg: 'svg/format-list-bullets' },
 		layer_type_group: { dashicon: 'dashicons-category' },
 		layer_type_form: { dashicon: 'dashicons-feedback' },
 		layer_type_summary: { dashicon: 'dashicons-text-page' },
 		layer_type_text_overlay: { dashicon: 'dashicons-editor-textcolor' },
 		layer_type_not_a_choice: { dashicon: 'dashicons-dismiss' },
-		object3d_gltf: { dashicon: 'dashicons-download' },
-		object3d_light: { dashicon: 'dashicons-lightbulb' },
-		object3d_environment: { dashicon: 'dashicons-admin-site-alt3' },
-		object3d_environment_hdri: { dashicon: 'dashicons-admin-site-alt3' },
-		object3d_environment_cubemap: { dashicon: 'dashicons-admin-site-alt3' },
-		object3d_animation: { dashicon: 'dashicons-controls-play' },
+		object3d_gltf: { svg: 'svg/3d/mesh_cube' },
+		object3d_light: { svg: 'svg/3d/light' },
+		object3d_environment: { svg: 'svg/3d/world' },
+		object3d_environment_hdri: { svg: 'svg/3d/world' },
+		object3d_environment_cubemap: { svg: 'svg/3d/world' },
+		object3d_animation: { svg: 'svg/3d/play' },
 		nav_home: { svg: 'svg/home' },
 		nav_layers: { dashicon: 'dashicons-screenoptions' },
 		nav_angles: { dashicon: 'dashicons-visibility' },
@@ -54,12 +54,12 @@ var PC = PC || {};
 		nav_conditional_placeholder: { dashicon: 'dashicons-randomize' },
 		nav_import: { dashicon: 'dashicons-migrate' },
 		nav_conditional: { dashicon: 'dashicons-randomize' },
-		nav_fonts: { dashicon: 'dashicons-editor-textcolor' },
+		nav_fonts: { svg: 'svg/fontpreview' },
 		nav_form_builder: { dashicon: 'dashicons-editor-table' },
 		'nav_mkl-pc__bulk': { dashicon: 'dashicons-tickets-alt' },
 		nav_extra_price: { dashicon: 'dashicons-tag' },
 		nav_objects3d: { svg: 'svg/3d/mesh_cube' },
-		nav_settings_3D: { dashicon: 'dashicons-admin-settings' },
+		nav_settings_3D: { svg: 'svg/settings' },
 	};
 
 	PC.icon_registry = Object.assign( {}, defaults );

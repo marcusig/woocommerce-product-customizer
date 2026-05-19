@@ -647,7 +647,7 @@ TODO:
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template( { ...this.model.attributes, object_type: this.options.object_type } ) );
+			this.$el.html( this.template( _.extend( {}, this.model.attributes, { _pc_list_kind: this.options.object_type } ) ) );
 		}
 	} );
 

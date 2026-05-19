@@ -145,7 +145,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 							$attributes = isset($choice['attributes']) && is_array($choice['attributes']) ? ' ' . $this->field_attributes($choice['attributes']) : '';
 							// Outputs the select
 
-							$field .= '<# console.log(data, data.'.esc_attr($options['id']).') #>';
+							// $field .= '<# console.log(data, data.'.esc_attr($options['id']).') #>';
 
 							if ( isset( $choice[ 'condition' ] ) && $choice[ 'condition' ] ) {
 								$field .= '<# if ( ' . $choice[ 'condition' ] . ' ) { #>';

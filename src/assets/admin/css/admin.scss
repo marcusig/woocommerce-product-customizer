@@ -890,6 +890,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					height: 18px;
 					display: block;
 					opacity: 0.92;
+					fill: currentColor;
 				}
 				.dashicons {
 					width: 18px;
@@ -1917,6 +1918,15 @@ html .pc-modal-container {
 				display: flex;
 				align-items: center;
 				gap: 8px;
+
+				.layer-label--extras-item.layer-label--extras-item--type {
+					display: inline-flex;
+					gap: 6px;
+					align-items: center;
+				}
+				svg {
+					fill: currentColor;
+				}
 			}
 
 			.layer-label--type-icon.dashicons {

@@ -477,25 +477,25 @@ $mkl_pc_3d_settings_sections = apply_filters(
 		array(
 			'id'       => 'environment-scene',
 			'title'    => __( 'Environment & Scene', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/world.svg',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/world.svg',
 			'template' => __DIR__ . '/3d-settings-sections/environment-scene.php',
 		),
 		array(
 			'id'       => 'renderer-output',
 			'title'    => __( 'Renderer / Output', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/object_data.svg',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/object_data.svg',
 			'template' => __DIR__ . '/3d-settings-sections/renderer-output.php',
 		),
 		array(
 			'id'       => 'camera-positions',
 			'title'    => __( 'Camera positions (views)', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/mesh_cube.svg',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/mesh_cube.svg',
 			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
 		),
 		array(
 			'id'       => 'postprocessing',
 			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'admin/images/ui/3d/light.svg',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/light.svg',
 			'template' => __DIR__ . '/3d-settings-sections/postprocessing.php',
 		),
 	)
