@@ -125,12 +125,14 @@ $mkl_pc_3d_settings_sections = apply_filters(
 				<span class="mkl-pc-admin-ui__back-text"></span>
 			</button>
 			<div class="mkl-pc-admin-ui__sidebar-focus" hidden data-sidebar-focus-mode="">
-				<button type="button" class="mkl-pc-sidebar-focus__back button button-link">
+				<button type="button" class="mkl-pc-sidebar-focus__back button">
 					<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
-					<span class="mkl-pc-sidebar-focus__back-text"></span>
+					<span class="mkl-pc-sidebar-focus__back-text screen-reader-text"></span>
 				</button>
-				<div class="mkl-pc-sidebar-focus__title"></div>
-				<p class="mkl-pc-sidebar-focus__help description"></p>
+				<div class="mkl-pc-sidebar-focus__back-content">
+					<div class="mkl-pc-sidebar-focus__title"></div>
+					<p class="mkl-pc-sidebar-focus__help description"></p>
+				</div>
 			</div>
 		</div>
 		<p class="screen-reader-text mkl-pc-admin-ui__sidebar-heading"><?php esc_html_e( 'Configurator', 'product-configurator-for-woocommerce' ); ?></p>

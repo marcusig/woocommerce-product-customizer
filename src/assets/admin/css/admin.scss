@@ -380,8 +380,11 @@ html .mkl-pc-admin-ui.pc-modal {
 					line-height: 1;
 				}
 			}
+
 			.mkl-pc-admin-ui__sidebar-focus {
-				margin-top: 8px;
+				margin-top: 18px;
+				align-items: center;
+				gap: 10px;
 				.mkl-pc-sidebar-focus__back {
 					display: inline-flex;
 					align-items: center;
@@ -392,6 +395,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					background: transparent;
 					color: $pc-admin-sidebar-muted;
 					font-size: 14px;
+					line-height: 1;
 					cursor: pointer;
 					&:hover,
 					&:focus {
@@ -403,7 +407,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					font-weight: 600;
 					color: #fff;
 					line-height: 1.25;
-					margin: 0 0 8px;
+					margin: 0 0 18px;
 					padding-left: 2px;
 				}
 				.mkl-pc-sidebar-focus__help {
@@ -816,14 +820,11 @@ html .mkl-pc-admin-ui.pc-modal {
 
 	&.is-global-layer-focus {
 		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
-			button.mkl-pc-admin-ui__product-icon-back-button {
-				display: none !important;
-			}
 			.mkl-pc-admin-ui__back-to-product {
 				display: none !important;
 			}
 			.mkl-pc-admin-ui__sidebar-focus {
-				display: block;
+				display: flex;
 			}
 			.mkl-pc-admin-ui__nav-wrap {
 				display: none !important;
@@ -845,14 +846,14 @@ html .mkl-pc-admin-ui.pc-modal {
 
 	&.is-settings-3d-focus {
 		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
-			button.mkl-pc-admin-ui__product-icon-back-button {
-				display: none !important;
-			}
+			// button.mkl-pc-admin-ui__product-icon-back-button {
+			// 	display: none !important;
+			// }
 			.mkl-pc-admin-ui__back-to-product {
 				display: none !important;
 			}
 			.mkl-pc-admin-ui__sidebar-focus {
-				display: block;
+				display: flex;
 			}
 			.mkl-pc-admin-ui__nav-wrap {
 				display: none !important;
@@ -2003,8 +2004,8 @@ html .pc-modal-container {
 			}
 
 			.layer-label--type-icon.pc-admin-icon svg {
-				width: 16px;
-				height: 16px;
+				width: 24px;
+				height: 24px;
 				display: block;
 			}
 
