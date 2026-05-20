@@ -449,6 +449,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['editor_global_layer_focus_help'] = esc_html__( 'You are editing a global layer. Changes will affect all configurators using this data.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_global_layer_focus_back'] = esc_html__( 'Back', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_global_layer_focus_back_aria'] = esc_attr__( 'Exit global layer editing', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_settings_3d_focus_back'] = esc_html__( 'Back', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_settings_3d_focus_back_aria'] = esc_attr__( 'Exit 3D settings', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_settings_3d_unsaved_discard'] = esc_html__( 'You have unsaved 3D settings. Leave without saving?', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_global_layer_unsaved_discard'] = esc_html__( 'You have unsaved changes to this global layer. Leave without saving?', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saved']               = esc_html__( 'Saved', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_saving']              = esc_html__( 'Saving…', 'product-configurator-for-woocommerce' );

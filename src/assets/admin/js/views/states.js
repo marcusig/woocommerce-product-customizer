@@ -42,11 +42,15 @@ PC.views = PC.views || {};
 		events: {
 			'click .mkl-pc-admin-ui__sidebar-primary-save': 'on_sidebar_save',
 			'click .mkl-pc-admin-ui__back-to-product': 'on_back_to_product',
-			'click .mkl-pc-global-focus__back': 'on_global_focus_back',
+			'click .mkl-pc-sidebar-focus__back': 'on_sidebar_focus_back',
+			'click .pc-3d-section-tab': 'on_3d_section_tab',
 			'click .mkl-pc-admin-ui__sidebar-mobile-scrim': 'on_sidebar_mobile_scrim_click',
 		},
 		initialize: function( params ) {
 			this.app = params.parent;
+			if ( PC.app ) {
+				PC.app.states_view = this;
+			}
 			this.render();
 		},
 		render: function() {
@@ -68,7 +72,7 @@ PC.views = PC.views || {};
 			}
 			this.populateSidebarContext();
 			if ( this.app.states.length ) {
-				this.$menu = this.$('.mkl-pc-admin-ui__nav').html('');
+				this.$menu = this.$( '.mkl-pc-admin-ui__nav-wrap--primary > .mkl-pc-admin-ui__nav' ).html( '' );
 				this.create_menu();
 			}
 			return this;
@@ -85,17 +89,12 @@ PC.views = PC.views || {};
 				this.$( '.mkl-pc-admin-ui__product-name' ).attr( 'href', url );
 			}
 			this.$( '.mkl-pc-admin-ui__back-text' ).text( back || '' );
-			var focusHelp = ( typeof lang.editor_global_layer_focus_help === 'string' ) ? lang.editor_global_layer_focus_help : '';
-			var focusBack = ( typeof lang.editor_global_layer_focus_back === 'string' ) ? lang.editor_global_layer_focus_back : '';
-			this.$( '.mkl-pc-global-focus__help' ).text( focusHelp );
-			this.$( '.mkl-pc-global-focus__back-text' ).text( focusBack );
-			this.$( '.mkl-pc-global-focus__back' ).attr( 'aria-label', focusBack || ( lang.editor_global_layer_focus_back_aria || 'Exit global layer editing' ) );
 			this.applyGlobalConfiguratorBanner();
 			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
 			}
-			if ( PC.app && PC.app.syncGlobalLayerFocusChrome ) {
-				PC.app.syncGlobalLayerFocusChrome();
+			if ( PC.app && PC.app.syncSidebarFocusChrome ) {
+				PC.app.syncSidebarFocusChrome( this );
 			}
 		},
 		/**
@@ -172,14 +171,35 @@ PC.views = PC.views || {};
 				st.save_all();
 			}
 		},
-		on_global_focus_back: function( e ) {
+		on_sidebar_focus_back: function( e ) {
 			e.preventDefault();
+			var ctx = PC.app && PC.app.getSidebarFocusContext ? PC.app.getSidebarFocusContext() : null;
+			if ( ! ctx ) {
+				return;
+			}
+			if ( ctx.mode === 'settings_3d' ) {
+				if ( PC.app.leaveSettings3dViaSidebarBack ) {
+					PC.app.leaveSettings3dViaSidebarBack();
+				}
+				return;
+			}
 			if ( PC.app && PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
 				return;
 			}
 		},
+		on_3d_section_tab: function( e ) {
+			e.preventDefault();
+			if ( PC.app && PC.app.state && typeof PC.app.state.on_section_tab_click === 'function' ) {
+				PC.app.state.on_section_tab_click( e );
+			}
+		},
 		on_back_to_product: function( e ) {
 			e.preventDefault();
+			if ( PC.app && PC.app.isSettings3dSidebarFocusActive && PC.app.isSettings3dSidebarFocusActive() ) {
+				if ( PC.app.requestLeaveSettings3dFocus && ! PC.app.requestLeaveSettings3dFocus() ) {
+					return;
+				}
+			}
 			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
 				if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
 					return;
@@ -267,9 +287,32 @@ PC.views = PC.views || {};
 			event.preventDefault();
 			// Checks if selected item is not active.
 			if(this.model.get('active') === false) {
+				var target_menu_id = this.model.get( 'menu_id' );
+				if ( PC.app && PC.app.isSettings3dSidebarFocusActive && PC.app.isSettings3dSidebarFocusActive() && target_menu_id !== 'settings_3D' ) {
+					if ( PC.app.requestLeaveSettings3dFocus && ! PC.app.requestLeaveSettings3dFocus() ) {
+						return;
+					}
+					if ( PC.app.exitSettings3dSidebarFocus ) {
+						PC.app.exitSettings3dSidebarFocus( this.options.main_view );
+					}
+				}
 				if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
 					if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
 						return;
+					}
+				}
+
+				if ( target_menu_id === 'settings_3D' && PC.app ) {
+					var prev_active = this.collection.find( function( m ) {
+						return m.get( 'active' ) === true;
+					} );
+					if ( prev_active ) {
+						PC.app.sidebar_focus_return_menu_id = prev_active.get( 'menu_id' );
+					} else if ( ! PC.app.sidebar_focus_return_menu_id ) {
+						PC.app.sidebar_focus_return_menu_id = 'home';
+					}
+					if ( PC.app.enterSettings3dSidebarFocus ) {
+						PC.app.enterSettings3dSidebarFocus( this.options.main_view );
 					}
 				}
 

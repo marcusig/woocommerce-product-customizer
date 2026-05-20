@@ -277,6 +277,8 @@ PC.toJSON = function( item ) {
 		state: null,
 		/** True when the user changed global layer data while in focus mode (not product delta). */
 		global_layer_session_dirty: false,
+		settings_3d_sidebar_focus_active: false,
+		sidebar_focus_return_menu_id: null,
 		get_global_layers: function() {
 			if ( ! this.global_layers ) {
 				this.global_layers = new PC.global_layers();
@@ -407,28 +409,163 @@ PC.toJSON = function( item ) {
 			}
 		},
 		/**
-		 * Toggle sidebar / shell chrome for isolated global layer editing.
+		 * Active sidebar focus mode: global_layer, settings_3d, or null.
+		 *
+		 * @return {null|Object}
 		 */
-		syncGlobalLayerFocusChrome: function() {
-			var ctx = this.getGlobalLayerFocusContext();
-			var $modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
-			var $sidebar = $modal.find( '.mkl-pc-admin-ui__sidebar' ).first();
+		getSidebarFocusContext: function() {
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			var global_ctx = this.getGlobalLayerFocusContext();
+			if ( global_ctx ) {
+				return {
+					mode: 'global_layer',
+					title: this.getGlobalLayerDisplayTitle( global_ctx.layerModel ),
+					help: lang.editor_global_layer_focus_help || '',
+					back_text: lang.editor_global_layer_focus_back || '',
+					back_aria: lang.editor_global_layer_focus_back_aria || 'Exit global layer editing',
+				};
+			}
+			if ( this.settings_3d_sidebar_focus_active ) {
+				var menu_meta = this.getSettings3dMenuMeta();
+				return {
+					mode: 'settings_3d',
+					title: menu_meta.title,
+					help: menu_meta.description,
+					back_text: lang.editor_settings_3d_focus_back || lang.editor_global_layer_focus_back || 'Back',
+					back_aria: lang.editor_settings_3d_focus_back_aria || 'Exit 3D settings',
+				};
+			}
+			return null;
+		},
+		getSettings3dMenuMeta: function() {
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			var fallback_title = '3D settings';
+			var fallback_description = '';
+			if ( lang.admin_menu && lang.admin_menu.length ) {
+				for ( var i = 0; i < lang.admin_menu.length; i++ ) {
+					var item = lang.admin_menu[ i ];
+					if ( item && item.menu_id === 'settings_3D' ) {
+						return {
+							title: item.title || item.label || fallback_title,
+							description: item.description || fallback_description,
+						};
+					}
+				}
+			}
+			return { title: fallback_title, description: fallback_description };
+		},
+		getSidebarShellElements: function( main_view ) {
+			var $main = main_view && main_view.$el && main_view.$el.length ? main_view.$el : $( '.mkl-pc-admin-ui__main' ).first();
+			var $modal = $main.closest( '.pc-modal.mkl-pc-admin-ui' );
+			if ( ! $modal.length ) {
+				$modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			}
+			var $sidebar = $main.find( '.mkl-pc-admin-ui__sidebar' ).first();
 			if ( ! $sidebar.length ) {
+				$sidebar = $modal.find( '.mkl-pc-admin-ui__sidebar' ).first();
+			}
+			var $focus = $sidebar.find( '.mkl-pc-admin-ui__sidebar-focus' ).first();
+			return {
+				$modal: $modal,
+				$sidebar: $sidebar,
+				$back_row: $sidebar.find( '.mkl-pc-admin-ui__back-to-product' ),
+				$focus: $focus,
+				$title: $focus.find( '.mkl-pc-sidebar-focus__title' ),
+				$help: $focus.find( '.mkl-pc-sidebar-focus__help' ),
+				$back_btn: $focus.find( '.mkl-pc-sidebar-focus__back' ),
+				$back_text: $focus.find( '.mkl-pc-sidebar-focus__back-text' ),
+				$sections_3d: $sidebar.find( '.mkl-pc-admin-ui__sidebar-3d-sections' ),
+			};
+		},
+		/**
+		 * Toggle reusable sidebar focus chrome for global layer or 3D settings focus.
+		 */
+		syncSidebarFocusChrome: function( main_view ) {
+			var ctx = this.getSidebarFocusContext();
+			var shell = this.getSidebarShellElements( main_view );
+			if ( ! shell.$sidebar.length ) {
 				return;
 			}
-			var $backRow = $sidebar.find( '.mkl-pc-admin-ui__back-to-product' );
-			var $focus = $sidebar.find( '.mkl-pc-admin-ui__global-focus' );
-			var $title = $focus.find( '.mkl-pc-global-focus__title' );
+			shell.$modal.removeClass( 'is-global-layer-focus is-settings-3d-focus' );
 			if ( ctx ) {
-				$modal.addClass( 'is-global-layer-focus' );
-				var displayName = this.getGlobalLayerDisplayTitle( ctx.layerModel );
-				$title.text( displayName );
-				$backRow.attr( 'hidden', 'hidden' ).hide();
-				$focus.removeAttr( 'hidden' ).show();
+				shell.$modal.addClass( ctx.mode === 'global_layer' ? 'is-global-layer-focus' : 'is-settings-3d-focus' );
+				shell.$title.text( ctx.title || '' );
+				shell.$help.text( ctx.help || '' );
+				if ( ctx.help ) {
+					shell.$help.show();
+				} else {
+					shell.$help.hide();
+				}
+				shell.$back_text.text( ctx.back_text || '' );
+				shell.$back_btn.attr( 'aria-label', ctx.back_aria || ctx.back_text || '' );
+				shell.$focus.attr( 'data-sidebar-focus-mode', ctx.mode );
+				shell.$back_row.attr( 'hidden', 'hidden' ).hide();
+				shell.$focus.removeAttr( 'hidden' ).show();
+				if ( ctx.mode === 'settings_3d' ) {
+					shell.$sections_3d.removeAttr( 'hidden' ).attr( 'aria-hidden', 'false' );
+				} else {
+					shell.$sections_3d.attr( 'hidden', 'hidden' ).attr( 'aria-hidden', 'true' );
+				}
 			} else {
-				$modal.removeClass( 'is-global-layer-focus' );
-				$backRow.removeAttr( 'hidden' ).show();
-				$focus.attr( 'hidden', 'hidden' ).hide();
+				shell.$focus.attr( 'data-sidebar-focus-mode', '' );
+				shell.$back_row.removeAttr( 'hidden' ).show();
+				shell.$focus.attr( 'hidden', 'hidden' ).hide();
+				shell.$sections_3d.attr( 'hidden', 'hidden' ).attr( 'aria-hidden', 'true' );
+			}
+		},
+		syncGlobalLayerFocusChrome: function( main_view ) {
+			this.syncSidebarFocusChrome( main_view );
+		},
+		enterSettings3dSidebarFocus: function( main_view ) {
+			this.settings_3d_sidebar_focus_active = true;
+			var shell = this.getSidebarShellElements( main_view );
+			if ( shell.$modal.length ) {
+				shell.$modal.addClass( 'is-settings-3d-focus' );
+			}
+			this.syncSidebarFocusChrome( main_view );
+		},
+		exitSettings3dSidebarFocus: function( main_view ) {
+			this.settings_3d_sidebar_focus_active = false;
+			var shell = this.getSidebarShellElements( main_view );
+			if ( shell.$modal.length ) {
+				shell.$modal.removeClass( 'is-settings-3d-focus' );
+			}
+			this.syncSidebarFocusChrome( main_view );
+		},
+		isSettings3dSidebarFocusActive: function() {
+			return !! this.settings_3d_sidebar_focus_active;
+		},
+		requestLeaveSettings3dFocus: function() {
+			if ( ! this.isSettings3dSidebarFocusActive() ) {
+				return true;
+			}
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			if ( this.is_modified && this.is_modified.settings_3d ) {
+				if ( ! window.confirm( lang.editor_settings_3d_unsaved_discard || 'You have unsaved 3D settings. Leave without saving?' ) ) {
+					return false;
+				}
+			}
+			return true;
+		},
+		leaveSettings3dViaSidebarBack: function() {
+			if ( ! this.requestLeaveSettings3dFocus() ) {
+				return;
+			}
+			this.activateSidebarReturnMenuItem();
+		},
+		activateSidebarReturnMenuItem: function() {
+			var return_id = this.sidebar_focus_return_menu_id || 'home';
+			this.sidebar_focus_return_menu_id = null;
+			if ( ! return_id ) {
+				this.exitSettings3dSidebarFocus( PC.app && PC.app.states_view );
+				return;
+			}
+			var $modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			var $btn = $modal.find( '.mkl-pc-admin-ui__nav-item[data-menu-id="' + return_id + '"]' ).first();
+			if ( $btn.length ) {
+				$btn.trigger( 'click' );
+			} else {
+				this.exitSettings3dSidebarFocus( PC.app && PC.app.states_view );
 			}
 		},
 		/** @return {Backbone.View|null} PC.views.layer list item view for a layer model */

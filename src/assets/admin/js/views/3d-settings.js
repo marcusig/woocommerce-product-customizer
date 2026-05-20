@@ -198,7 +198,6 @@ PC.views = window.PC.views || {};
 		template: wp.template( 'mkl-pc-3d-models' ),
 		events: {
 			'click .pc-3d-reset-settings': 'on_reset_settings',
-			'click .pc-3d-section-tab': 'on_section_tab_click',
 			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
 			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
 			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
@@ -211,9 +210,15 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
-			'remove': 'on_remove',
+		},
+		remove: function () {
+			this.on_remove();
+			return Backbone.View.prototype.remove.call( this );
 		},
 		on_remove: function () {
+			if ( PC.app && PC.app.exitSettings3dSidebarFocus ) {
+				PC.app.exitSettings3dSidebarFocus( this.options && this.options.main_view );
+			}
 			this.maybe_cleanup();
 		},
 		collectionName: 'settings_3d',
@@ -224,6 +229,10 @@ PC.views = window.PC.views || {};
 			this.col = this.admin.settings_3d;
 
 			PC.selection.reset();
+
+			if ( PC.app && PC.app.enterSettings3dSidebarFocus ) {
+				PC.app.enterSettings3dSidebarFocus( this.options && this.options.main_view );
+			}
 
 			this._three = this._three || {};
 			// Kick off async loading of Three.js and related modules; cached across instances.
@@ -261,6 +270,9 @@ PC.views = window.PC.views || {};
 			} else {
 				this._three = this._three || {};
 			}
+			if ( PC.app && PC.app.syncSidebarFocusChrome ) {
+				PC.app.syncSidebarFocusChrome( this.options && this.options.main_view );
+			}
 		},
 		ensure_settings_defaults: function ( s ) {
 			if ( s.hidden_object_names === undefined ) s.hidden_object_names = '';
@@ -295,8 +307,12 @@ PC.views = window.PC.views || {};
 			e.preventDefault();
 			const tab = $( e.currentTarget ).data( 'section-tab' );
 			if ( !tab ) return;
-			this.$( '.pc-3d-section-tab' ).removeClass( 'active' ).attr( 'aria-selected', 'false' );
-			this.$( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
+			const main_view = this.options && this.options.main_view;
+			const $sidebar_sections = main_view && main_view.$el
+				? main_view.$el.find( '.mkl-pc-admin-ui__sidebar-3d-sections' )
+				: $( '.pc-modal.mkl-pc-admin-ui' ).find( '.mkl-pc-admin-ui__sidebar-3d-sections' );
+			$sidebar_sections.find( '.pc-3d-section-tab' ).removeClass( 'active' ).attr( 'aria-selected', 'false' );
+			$sidebar_sections.find( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
 			this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
 			this.$( '#pc-3d-section-panel-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
 		},

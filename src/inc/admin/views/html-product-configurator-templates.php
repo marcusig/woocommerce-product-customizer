@@ -31,6 +31,37 @@ GENERAL TEMPLATES
 */
 ?>
 <?php do_action('mkl_pc_admin_templates_before') ?>
+<?php
+$mkl_pc_3d_settings_sections = apply_filters(
+	'mkl_pc_3d_settings_sections',
+	array(
+		array(
+			'id'       => 'environment-scene',
+			'title'    => __( 'Environment & Scene', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/world.svg',
+			'template' => __DIR__ . '/3d-settings-sections/environment-scene.php',
+		),
+		array(
+			'id'       => 'renderer-output',
+			'title'    => __( 'Renderer / Output', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/object_data.svg',
+			'template' => __DIR__ . '/3d-settings-sections/renderer-output.php',
+		),
+		array(
+			'id'       => 'camera-positions',
+			'title'    => __( 'Camera positions (views)', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/mesh_cube.svg',
+			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
+		),
+		array(
+			'id'       => 'postprocessing',
+			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/light.svg',
+			'template' => __DIR__ . '/3d-settings-sections/postprocessing.php',
+		),
+	)
+);
+?>
 <script type="text/html" id="tmpl-mkl-modal">
 	<div class="<?php echo esc_attr( $class ); ?>">
 		<button type="button" class="mkl-pc-admin-ui__close">
@@ -93,13 +124,13 @@ GENERAL TEMPLATES
 				<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
 				<span class="mkl-pc-admin-ui__back-text"></span>
 			</button>
-			<div class="mkl-pc-admin-ui__global-focus" hidden>
-				<button type="button" class="mkl-pc-global-focus__back button button-link">
+			<div class="mkl-pc-admin-ui__sidebar-focus" hidden data-sidebar-focus-mode="">
+				<button type="button" class="mkl-pc-sidebar-focus__back button button-link">
 					<span class="mkl-pc-admin-ui__back-chevron" aria-hidden="true"></span>
-					<span class="mkl-pc-global-focus__back-text"></span>
+					<span class="mkl-pc-sidebar-focus__back-text"></span>
 				</button>
-				<div class="mkl-pc-global-focus__title"></div>
-				<p class="mkl-pc-global-focus__help description"></p>
+				<div class="mkl-pc-sidebar-focus__title"></div>
+				<p class="mkl-pc-sidebar-focus__help description"></p>
 			</div>
 		</div>
 		<p class="screen-reader-text mkl-pc-admin-ui__sidebar-heading"><?php esc_html_e( 'Configurator', 'product-configurator-for-woocommerce' ); ?></p>
@@ -119,6 +150,38 @@ GENERAL TEMPLATES
 					<input type="search" class="mkl-pc-list-filter-input mkl-pc-list-filter-input--sidebar-layers" placeholder="<?php echo esc_attr( __( 'Filter layers…', 'product-configurator-for-woocommerce' ) ); ?>" autocomplete="off" aria-label="<?php echo esc_attr( __( 'Filter layers', 'product-configurator-for-woocommerce' ) ); ?>" />
 				</div>
 				<div class="mkl-pc-admin-ui__sidebar-layers-list"></div>
+			</div>
+			<div class="mkl-pc-admin-ui__sidebar-3d-sections" hidden aria-hidden="true">
+				<nav class="mkl-pc-admin-ui__nav pc-3d-section-tabs pc-3d-section-tabs--sidebar" role="tablist" aria-label="<?php esc_attr_e( '3D settings sections', 'product-configurator-for-woocommerce' ); ?>">
+					<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
+						$section_id       = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
+						$section_title    = isset( $section['title'] ) ? (string) $section['title'] : '';
+						$section_icon_id  = isset( $section['icon_id'] ) ? sanitize_key( (string) $section['icon_id'] ) : 'settings_3d_section_' . str_replace( '-', '_', $section_id );
+						$section_template = isset( $section['template'] ) ? (string) $section['template'] : '';
+						if ( '' === $section_id || '' === $section_template || ! file_exists( $section_template ) ) {
+							continue;
+						}
+						$is_active = ( 0 === (int) $index );
+						?>
+						<button
+							type="button"
+							class="mkl-pc-admin-ui__nav-item pc-3d-section-tab<?php echo $is_active ? ' active' : ''; ?>"
+							data-section-tab="<?php echo esc_attr( $section_id ); ?>"
+							data-mkl-hint="<?php echo esc_attr( $section_title ); ?>"
+							role="tab"
+							aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+							aria-controls="pc-3d-section-panel-<?php echo esc_attr( $section_id ); ?>"
+						>
+							<span class="mkl-pc-admin-ui__nav-item-icon" aria-hidden="true">
+								<span class="pc-admin-icon">
+									<# print( PC.get_icon( '<?php echo esc_js( $section_icon_id ); ?>' ) ); #>
+								</span>
+							</span>
+							<span class="mkl-pc-admin-ui__nav-item-text"><?php echo esc_html( $section_title ); ?></span>
+							<span class="mkl-pc-admin-ui__nav-item-chevron" aria-hidden="true"></span>
+						</button>
+					<?php endforeach; ?>
+				</nav>
 			</div>
 		</div>
 		<div class="mkl-pc-admin-ui__sidebar-footer">
@@ -470,69 +533,11 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 */
 ?>
-<?php
-$mkl_pc_3d_settings_sections = apply_filters(
-	'mkl_pc_3d_settings_sections',
-	array(
-		array(
-			'id'       => 'environment-scene',
-			'title'    => __( 'Environment & Scene', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/world.svg',
-			'template' => __DIR__ . '/3d-settings-sections/environment-scene.php',
-		),
-		array(
-			'id'       => 'renderer-output',
-			'title'    => __( 'Renderer / Output', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/object_data.svg',
-			'template' => __DIR__ . '/3d-settings-sections/renderer-output.php',
-		),
-		array(
-			'id'       => 'camera-positions',
-			'title'    => __( 'Camera positions (views)', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/mesh_cube.svg',
-			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
-		),
-		array(
-			'id'       => 'postprocessing',
-			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/light.svg',
-			'template' => __DIR__ . '/3d-settings-sections/postprocessing.php',
-		),
-	)
-);
-?>
 <script type="text/html" id="tmpl-mkl-pc-3d-models">
 	<div class="mkl-pc-admin-ui__content settings-3d mkl-pc-admin-layout mkl-pc-admin-layout--two-column pc-3d-settings">
 		<div class="mkl-pc-admin-layout__column-track">
 			<div class="mkl-pc-admin-layout__column mkl-pc-admin-layout__column--list pc-3d-settings-column-settings">
 				<div class="pc-3d-sections-layout">
-					<nav class="pc-3d-section-tabs" role="tablist" aria-label="<?php esc_attr_e( '3D settings sections', 'product-configurator-for-woocommerce' ); ?>">
-						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
-							$section_id = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
-							$section_title = isset( $section['title'] ) ? (string) $section['title'] : '';
-							$section_icon = isset( $section['icon'] ) ? (string) $section['icon'] : '';
-							$section_template = isset( $section['template'] ) ? (string) $section['template'] : '';
-							if ( '' === $section_id || '' === $section_template || ! file_exists( $section_template ) ) {
-								continue;
-							}
-							$is_active = ( 0 === (int) $index );
-							?>
-							<button
-								type="button"
-								class="pc-3d-section-tab<?php echo $is_active ? ' active' : ''; ?>"
-								data-section-tab="<?php echo esc_attr( $section_id ); ?>"
-								data-label="<?php echo esc_attr( $section_title ); ?>"
-								title="<?php echo esc_attr( $section_title ); ?>"
-								role="tab"
-								aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
-							>
-								<?php if ( '' !== $section_icon ) : ?>
-									<img src="<?php echo esc_url( $section_icon ); ?>" alt="" class="pc-3d-settings-section-icon" />
-								<?php endif; ?>
-								<span class="screen-reader-text"><?php echo esc_html( $section_title ); ?></span>
-							</button>
-						<?php endforeach; ?>
-					</nav>
 					<div class="pc-3d-settings-sections">
 						<?php foreach ( $mkl_pc_3d_settings_sections as $index => $section ) :
 							$section_id = isset( $section['id'] ) ? sanitize_html_class( (string) $section['id'] ) : '';
@@ -557,7 +562,7 @@ $mkl_pc_3d_settings_sections = apply_filters(
 							</div>
 						<?php endforeach; ?>
 						<p class="pc-3d-reset-settings-row" style="margin-top: 1.5em;">
-							<button type="button" class="button pc-3d-reset-settings"><?php _e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>
+							<button type="button" class="button pc-3d-reset-settings"><?php esc_html_e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>
 						</p>
 					</div>
 				</div>

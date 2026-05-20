@@ -380,9 +380,9 @@ html .mkl-pc-admin-ui.pc-modal {
 					line-height: 1;
 				}
 			}
-			.mkl-pc-admin-ui__global-focus {
+			.mkl-pc-admin-ui__sidebar-focus {
 				margin-top: 8px;
-				.mkl-pc-global-focus__back {
+				.mkl-pc-sidebar-focus__back {
 					display: inline-flex;
 					align-items: center;
 					gap: 10px;
@@ -398,7 +398,7 @@ html .mkl-pc-admin-ui.pc-modal {
 						color: #fff;
 					}
 				}
-				.mkl-pc-global-focus__title {
+				.mkl-pc-sidebar-focus__title {
 					font-size: 18px;
 					font-weight: 600;
 					color: #fff;
@@ -406,7 +406,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					margin: 0 0 8px;
 					padding-left: 2px;
 				}
-				.mkl-pc-global-focus__help {
+				.mkl-pc-sidebar-focus__help {
 					margin: 0;
 					font-size: 12px;
 					line-height: 1.45;
@@ -414,6 +414,9 @@ html .mkl-pc-admin-ui.pc-modal {
 					padding-left: 2px;
 					max-width: 100%;
 				}
+			}
+			.mkl-pc-admin-ui__sidebar-3d-sections {
+				display: none;
 			}
 			.mkl-pc-admin-ui__sidebar-mid {
 				flex: 1 1 auto;
@@ -819,13 +822,14 @@ html .mkl-pc-admin-ui.pc-modal {
 			.mkl-pc-admin-ui__back-to-product {
 				display: none !important;
 			}
-			.mkl-pc-admin-ui__global-focus {
+			.mkl-pc-admin-ui__sidebar-focus {
 				display: block;
 			}
 			.mkl-pc-admin-ui__nav-wrap {
 				display: none !important;
 			}
-			.mkl-pc-admin-ui__sidebar-layers {
+			.mkl-pc-admin-ui__sidebar-layers,
+			.mkl-pc-admin-ui__sidebar-3d-sections {
 				display: none !important;
 			}
 		}
@@ -836,6 +840,57 @@ html .mkl-pc-admin-ui.pc-modal {
 		.mkl-pc-admin-ui__sidebar-mid {
 			overflow: hidden !important;
 			transform: translateX(-100%);
+		}
+	}
+
+	&.is-settings-3d-focus {
+		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
+			button.mkl-pc-admin-ui__product-icon-back-button {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__back-to-product {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-focus {
+				display: block;
+			}
+			.mkl-pc-admin-ui__nav-wrap {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-layers {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-mid {
+				flex-direction: column;
+				align-items: stretch;
+			}
+			.mkl-pc-admin-ui__sidebar-3d-sections {
+				display: flex !important;
+				flex: 1 1 auto;
+				flex-direction: column;
+				min-height: 0;
+				min-width: 0;
+				overflow-y: auto;
+				padding: 8px 12px 12px;
+				.mkl-pc-admin-ui__nav.pc-3d-section-tabs--sidebar {
+					padding: 4px 0 12px;
+					.mkl-pc-admin-ui__nav-item.pc-3d-section-tab {
+						.mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg {
+							width: 20px;
+							height: 20px;
+							display: block;
+							filter: invert(1);
+							opacity: 0.85;
+						}
+						&.active .mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg,
+						&:hover .mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg,
+						&:focus-visible .mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg {
+							filter: none;
+							opacity: 1;
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -3810,76 +3865,10 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 	}
 	.pc-3d-sections-layout {
 		display: flex;
+		flex-direction: column;
 		flex: 1;
 		min-height: 100%;
 		min-height: 0;
-	}
-	.pc-3d-section-tabs {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 6px;
-		padding: 8px 6px;
-		background: #1e1e1e;
-	}
-	.pc-3d-section-tab {
-		position: relative;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 30px;
-		height: 30px;
-		border: 1px solid transparent;
-		border-radius: 3px;
-		background: transparent;
-		cursor: pointer;
-		padding: 0;
-		transition: background-color 0.15s ease, border-color 0.15s ease;
-		img { 
-			max-width: 100%;
-			width: 20px;
-		}
-		&:not(.active) {
-			img {
-				opacity: 0.5;
-				filter: invert(1);
-			}
-		}
-		&:hover,
-		&:focus-visible {
-			background: #e0e0e0;
-			outline: none;
-			img {
-				opacity: 1;
-				filter: invert(0);
-			}
-		}
-		&.active {
-			background: #fff;
-		}
-		&::after {
-			content: attr(data-label);
-			position: absolute;
-			left: calc(100% + 8px);
-			top: 50%;
-			transform: translateY(-50%);
-			background: #1d2327;
-			color: #fff;
-			border-radius: 3px;
-			font-size: 12px;
-			line-height: 1;
-			padding: 6px 8px;
-			white-space: nowrap;
-			opacity: 0;
-			pointer-events: none;
-			visibility: hidden;
-			z-index: 4;
-		}
-		&:hover::after,
-		&:focus-visible::after {
-			opacity: 1;
-			visibility: visible;
-		}
 	}
 	.pc-3d-settings-column-preview {
 		min-width: 0;
