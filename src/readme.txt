@@ -76,6 +76,20 @@ The core plugin is fully functional. Extend it with these premium modules:
 
 💬 For custom development or tailored integrations, [contact me here](https://wc-product-configurator.com/contact/).
 
+=== Credits ===
+
+The product configurator plugin uses other Open Source libraries:
+* PixiJS
+* Three.js
+* tippy and popper.js
+* html2canvas.js
+* download.js by dandavis
+* Intervention/Image
+
+Open Source SVG icons: 
+* Blender.org UI icons
+* WordPress Gutenberg icons
+
 == Installation ==
 
 There are 3 different ways to install this plugin, as with any other wordpress.org plugin.
