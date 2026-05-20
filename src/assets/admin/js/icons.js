@@ -34,8 +34,8 @@ var PC = PC || {};
 	}
 
 	var defaults = {
-		layer_type_simple: { svg: 'svg/list-item' },
-		layer_type_multiple: { svg: 'svg/format-list-bullets' },
+		layer_type_simple: { svg: 'svg/simple' },
+		layer_type_multiple: { svg: 'svg/multiple' },
 		layer_type_group: { dashicon: 'dashicons-category' },
 		layer_type_form: { dashicon: 'dashicons-feedback' },
 		layer_type_summary: { dashicon: 'dashicons-text-page' },
