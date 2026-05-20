@@ -377,6 +377,7 @@ html .mkl-pc-admin-ui.pc-modal {
 				&::before {
 					font: normal 20px/1 dashicons;
 					content: "\f341";
+					line-height: 1;
 				}
 			}
 			.mkl-pc-admin-ui__global-focus {
@@ -3925,14 +3926,16 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 			font-size: 1em;
 		}
 		.pc-3d-setting-group {
-			margin-bottom: 1em;
+			margin-bottom: 2em;
+			padding-top: 2em;
+			border-top: 1px solid #CCC;
 			h5 {
 				margin: 0.5em 0 0.25em;
 				font-size: 0.95em;
 			}
 		}
 		.field-row {
-			margin: 0.5em 0;
+			margin: 0.5em 0 1em;
 			label {
 				display: block;
 				margin-bottom: 0.25em;
@@ -3943,6 +3946,11 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 			input[type="range"] {
 				vertical-align: middle;
 				max-width: 200px;
+			}
+			.description {
+				display: block;
+				font-size: .9em;
+				opacity: .7;
 			}
 		}
 		.pc-3d-value-display {
