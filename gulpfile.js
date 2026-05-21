@@ -243,6 +243,7 @@ gulp.task('watch', function() {
 	gulp.watch('src/**/*.scss', gulp.parallel('scss'));
 	gulp.watch('src/assets/js/views/parts/*.js', gulp.parallel('concat_js_views'));
 	gulp.watch('src/assets/js/product-configurator/parts/*.js', gulp.series('concat_product_configurator'));
+	gulp.watch( 'src/assets/icons/**/*.svg', gulp.series( 'build-svg-icon-registry' ) );
 	// gulp.watch(jsPaths, { interval: 500 }, ['js']);
 	gulp.watch(['src/**/*', '!src/assets/build/fe-3d-viewer-entry.asset.php'])
 		.on('change', function(path, stats) {
