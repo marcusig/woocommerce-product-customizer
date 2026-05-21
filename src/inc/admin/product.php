@@ -31,7 +31,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		private function _hooks() {
-			// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
+			add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_product_data_tab' ), 99 );
+			add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
+			add_filter( 'product_type_options', array( $this, 'add_product_type_option_is_configurable' ) );
 			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 100, 1 );
 			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 100, 1 );
 			add_action( 'wp_ajax_mkl_pc_hide_addon_setting', array( $this, 'hide_addon_setting' ) );
@@ -42,7 +44,6 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			// add the checkbox to activate configurator on the product
 			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
-			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
 			add_action( 'admin_footer', array($this, 'editor' ) );
 			add_action( 'mkl_pc_admin_documentation_content', array( $this, 'home_documentation_content' ) );
@@ -85,80 +86,74 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		}
 
 		/**
-		 * Add the settings
+		 * Register the Configurator product data tab (after Variations).
+		 *
+		 * @param array $tabs Product data tabs.
+		 * @return array
+		 */
+		public function add_product_data_tab( $tabs ) {
+			$tabs['mkl_pc_configurator'] = array(
+				'label'    => __( 'Configurator', 'product-configurator-for-woocommerce' ),
+				'target'   => 'mkl_pc_configurator_product_data',
+				'class'    => array( 'show_if_simple', 'show_if_variable', 'show_if_is_configurable' ),
+				'priority' => 65,
+			);
+
+			return $tabs;
+		}
+
+		/**
+		 * Add "Configurable" to the product type header (Virtual, Downloadable, …).
+		 *
+		 * @param array $options Product type options.
+		 * @return array
+		 */
+		public function add_product_type_option_is_configurable( $options ) {
+			$options['mkl_pc__is_configurable'] = array(
+				'id'            => MKL_PC_PREFIX . '_is_configurable',
+				'wrapper_class' => esc_attr( implode( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array( 'show_if_simple' ) ) ) ),
+				'label'         => __( 'Configurable', 'product-configurator-for-woocommerce' ),
+				'description'   => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
+				'default'       => 'no',
+			);
+
+			return $options;
+		}
+
+		/**
+		 * Configurator tab panel content.
 		 *
 		 * @return void
 		 */
 		public function add_pc_settings_tab_content() {
-			?>
-			<div id="configurable_product_options" class="panel wc-metaboxes-wrapper">
-				<?php 
-				do_action( 'woocommerce_product_configurator_options' );
-				?>
-			</div>
-
-			<?php
-		}
-
-		/**
-		 * Add the setting to WooCommerce
-		 *
-		 * @return void
-		 */
-		public function add_wc_general_product_data_fields() {
 			global $post;
 
-			echo '<div class="options_group wc-metaboxes-wrapper '. esc_attr( implode( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) ) .'">';
-
-				woocommerce_wp_checkbox( 
-					array( 
-						'id' => MKL_PC_PREFIX.'_is_configurable',
-						'wrapper_class' => esc_attr( implode( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) ) .' is_configurable', 
-						'class' => 'is_configurable',
-						'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
-						'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
-					) 
-				);
-
-				?>
-				<div class="show_if_is_configurable">
-				
+			?>
+			<div id="mkl_pc_configurator_product_data" class="panel woocommerce_options_panel hidden">
+				<?php do_action( 'mkl_pc_admin_general_tab_before_start_button' ); ?>
+				<div class="show_if_variable show_if_simple show_if_redq_rental">
 					<?php
-
-					do_action( 'mkl_pc_admin_general_tab_before_start_button' );
-					
+					woocommerce_wp_select(
+						array(
+							'id'          => MKL_PC_PREFIX . '_configurator_type',
+							'options'     => array(
+								'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
+								'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
+							),
+							'class'       => 'configurator-type',
+							'label'       => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+							'description' => __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
+							'desc_tip'    => true,
+						)
+					);
 					?>
-					<div class="show_if_variable show_if_simple show_if_redq_rental">
-						<?php
-						woocommerce_wp_select( 
-							array( 
-								'id' => MKL_PC_PREFIX.'_configurator_type',
-								'options' => [
-									'configurator' => __('2D configurator', 'product-configurator-for-woocommerce'),
-									// 'addons' => __('Product add-ons (no preview, added to the product form)', 'product-configurator-for-woocommerce'),
-									'3d' => __('3D configurator', 'product-configurator-for-woocommerce'),
-								],
-								'class' => 'configurator-type',
-								'label' => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
-								'description' => __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
-								'desc_tip' => true
-							) 
-						);
-						?>
-						<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php _e( 'Configurator type changed. Please update the product to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
-					</div>
-					<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
-						<?php echo $this->start_button( $post->ID ) ?>
-					</div>
-
-					<?php
-
-					do_action( 'mkl_pc_admin_general_tab' );
-
-					?>
+					<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php esc_html_e( 'Configurator type changed. Please update the product to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
 				</div>
+				<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
+					<?php echo $this->start_button( $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+				<?php do_action( 'mkl_pc_admin_general_tab' ); ?>
 			</div>
-
 			<?php
 		}
 

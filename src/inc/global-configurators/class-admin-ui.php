@@ -65,7 +65,7 @@ final class Admin_Ui {
 	}
 
 	/**
-	 * Add source selector + picker to the General tab inside the show_if_is_configurable wrapper.
+	 * Add source selector + picker to the Configurator product data tab.
 	 *
 	 * @return void
 	 */
@@ -88,7 +88,7 @@ final class Admin_Ui {
 		$picker_class  = 'mkl-pc-global-picker';
 		$picker_class .= ( $current_global_id > 0 ? ' mkl-pc-global-picker--has-value' : ' mkl-pc-global-picker--no-value' );
 		?>
-		<div class="options_group mkl-pc-configurator-source-group show_if_is_configurable">
+		<div class="options_group mkl-pc-configurator-source-group">
 			<p class="form-field mkl-pc-configurator-source-field">
 				<label for="mkl_pc_configurator_source"><?php esc_html_e( 'Configurator source', 'product-configurator-for-woocommerce' ); ?></label>
 				<select id="mkl_pc_configurator_source" name="<?php echo esc_attr( Schema::META_SOURCE ); ?>" class="mkl-pc-configurator-source" <?php disabled( ! $can_use_global && Schema::SOURCE_LOCAL === $current_source ); ?>>
