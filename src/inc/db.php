@@ -55,6 +55,25 @@ class DB {
 	}
 
 	/**
+	 * Decode stored JSON without corrupting valid escaped strings.
+	 *
+	 * Some legacy meta was saved with slashes, but current JSON should be decoded as-is
+	 * so values like `Wheel 8\"` keep their required JSON escape.
+	 *
+	 * @param string $data
+	 * @return mixed
+	 */
+	private function decode_stored_json( $data ) {
+		$decoded_data = json_decode( $data, true );
+
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
+			$decoded_data = json_decode( stripslashes( $data ), true );
+		}
+
+		return $decoded_data;
+	}
+
+	/**
 	 * Resolve the effective storage owner id for a selling context, honoring global links.
 	 *
 	 * @param int    $product_id
@@ -116,7 +135,7 @@ class DB {
 		}
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			$data = $this->decode_stored_json( $data );
 		}
 		return is_array( $data ) ? $data : array();
 	}
@@ -135,7 +154,7 @@ class DB {
 		}
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			$data = $this->decode_stored_json( $data );
 		}
 		return is_array( $data ) ? $data : array();
 	}
@@ -203,7 +222,7 @@ class DB {
 		$raw = $parent->get_meta( '_mkl_product_configurator_layer_' . $layer_id, true );
 		$raw = maybe_unserialize( $raw );
 		if ( is_string( $raw ) ) {
-			$raw = json_decode( stripslashes( $raw ), true );
+			$raw = $this->decode_stored_json( $raw );
 		}
 		if ( is_array( $raw ) && isset( $raw['_id'] ) ) {
 			return $raw;
@@ -306,7 +325,7 @@ class DB {
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 		$index = maybe_unserialize( $index );
 		if ( is_string( $index ) ) {
-			$index = json_decode( stripslashes( $index ), true );
+			$index = $this->decode_stored_json( $index );
 		}
 		if ( is_array( $index ) && ! empty( $index ) ) {
 			wp_cache_set( $cache_key, $index, 'mkl_pc', 3600 );
@@ -403,7 +422,7 @@ class DB {
 		$data = $product->get_meta( $meta_key );
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			$data = $this->decode_stored_json( $data );
 		}
 		return ( '' !== $data && false !== $data && is_array( $data ) ) ? $data : false;
 	}
@@ -419,7 +438,7 @@ class DB {
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 		$index = maybe_unserialize( $index );
 		if ( is_string( $index ) ) {
-			$index = json_decode( stripslashes( $index ), true );
+			$index = $this->decode_stored_json( $index );
 		}
 		if ( ! is_array( $index ) || empty( $index ) ) {
 			return false;
@@ -429,7 +448,7 @@ class DB {
 			$chunk = $product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
 			$chunk = maybe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
-				$chunk = json_decode( stripslashes( $chunk ), true );
+				$chunk = $this->decode_stored_json( $chunk );
 			}
 			if ( empty( $chunk ) || ! is_array( $chunk ) ) {
 				return false;
@@ -450,7 +469,7 @@ class DB {
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 		$index = maybe_unserialize( $index );
 		if ( is_string( $index ) ) {
-			$index = json_decode( stripslashes( $index ), true );
+			$index = $this->decode_stored_json( $index );
 		}
 		if ( ! is_array( $index ) || empty( $index ) ) {
 			return false;
@@ -460,7 +479,7 @@ class DB {
 			$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
 			$chunk = maybe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
-				$chunk = json_decode( stripslashes( $chunk ), true );
+				$chunk = $this->decode_stored_json( $chunk );
 			}
 			if ( ! is_array( $chunk ) ) {
 				$chunk = array( 'layerId' => (int) $layer_id, 'choices' => array() );
@@ -527,7 +546,7 @@ class DB {
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index', true );
 		$index = maybe_unserialize( $index );
 		if ( is_string( $index ) ) {
-			$index = json_decode( stripslashes( $index ), true );
+			$index = $this->decode_stored_json( $index );
 		}
 		if ( ! is_array( $index ) ) {
 			return array();
@@ -555,7 +574,7 @@ class DB {
 		}
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			$data = $this->decode_stored_json( $data );
 		}
 		return is_array( $data ) && count( $data ) > 0;
 	}
@@ -576,7 +595,7 @@ class DB {
 		}
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			$data = $this->decode_stored_json( $data );
 		}
 		return is_array( $data ) && count( $data ) > 0;
 	}
@@ -709,7 +728,7 @@ class DB {
 				$raw = $parent->get_meta( '_mkl_product_configurator_layer_' . $layer_id, true );
 				$raw = maybe_unserialize( $raw );
 				if ( is_string( $raw ) ) {
-					$raw = json_decode( stripslashes( $raw ), true );
+					$raw = $this->decode_stored_json( $raw );
 				}
 				$chunk_ok = is_array( $raw ) && isset( $raw['_id'] ) && (int) $raw['_id'] === (int) $layer_id;
 				if ( ! $chunk_ok && ! $this->layer_id_exists_in_legacy_layers_array( $legacy_l_array, $layer_id ) ) {
@@ -762,7 +781,7 @@ class DB {
 						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
 						$raw = maybe_unserialize( $raw );
 						if ( is_string( $raw ) ) {
-							$raw = json_decode( stripslashes( $raw ), true );
+							$raw = $this->decode_stored_json( $raw );
 						}
 						if ( is_array( $raw ) ) {
 							if ( ! isset( $raw['layerId'] ) || (int) $raw['layerId'] !== (int) $layer_id ) {
@@ -781,7 +800,7 @@ class DB {
 						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
 						$raw = maybe_unserialize( $raw );
 						if ( is_string( $raw ) ) {
-							$raw = json_decode( stripslashes( $raw ), true );
+							$raw = $this->decode_stored_json( $raw );
 						}
 						$chunk_ok = is_array( $raw ) && isset( $raw['layerId'] ) && (int) $raw['layerId'] === (int) $layer_id;
 						if ( $chunk_ok ) {
@@ -1096,7 +1115,7 @@ class DB {
 			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 			$old_index = maybe_unserialize( $old_index );
 			if ( is_string( $old_index ) ) {
-				$old_index = json_decode( stripslashes( $old_index ), true );
+				$old_index = $this->decode_stored_json( $old_index );
 			}
 			$product->update_meta_data( '_mkl_product_configurator_layers_index', array() );
 			$product->save();
@@ -1124,7 +1143,7 @@ class DB {
 		$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 		$old_index = maybe_unserialize( $old_index );
 		if ( is_string( $old_index ) ) {
-			$old_index = json_decode( stripslashes( $old_index ), true );
+			$old_index = $this->decode_stored_json( $old_index );
 		}
 		if ( ! is_array( $old_index ) ) {
 			$old_index = array();
@@ -1278,7 +1297,7 @@ class DB {
 		$current_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 		$current_index = maybe_unserialize( $current_index );
 		if ( is_string( $current_index ) ) {
-			$current_index = json_decode( stripslashes( $current_index ), true );
+			$current_index = $this->decode_stored_json( $current_index );
 		}
 		if ( ! is_array( $current_index ) ) {
 			$current_index = array();
@@ -1376,7 +1395,7 @@ class DB {
 			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 			$old_index = maybe_unserialize( $old_index );
 			if ( is_string( $old_index ) ) {
-				$old_index = json_decode( stripslashes( $old_index ), true );
+				$old_index = $this->decode_stored_json( $old_index );
 			}
 		}
 		if ( ! is_array( $old_index ) ) {
@@ -1434,7 +1453,7 @@ class DB {
 		if ( '' !== $chunk ) {
 			$chunk = maybe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
-				$chunk = json_decode( stripslashes( $chunk ), true );
+				$chunk = $this->decode_stored_json( $chunk );
 			}
 			if ( is_array( $chunk ) ) {
 				if ( ! isset( $chunk['layerId'] ) ) {
@@ -2778,7 +2797,7 @@ class DB {
 			} else {
 				$chunk = maybe_unserialize( $chunk );
 				if ( is_string( $chunk ) ) {
-					$chunk = json_decode( stripslashes( $chunk ), true );
+					$chunk = $this->decode_stored_json( $chunk );
 				}
 			}
 			if ( empty( $chunk ) || ! is_array( $chunk ) ) continue;
