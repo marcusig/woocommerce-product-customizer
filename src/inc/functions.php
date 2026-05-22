@@ -112,6 +112,10 @@ if( ! function_exists( 'mkl_get_formatted_configurator_data' ) ) {
 			return wc_get_formatted_cart_item_data( $item_data );
 		}
 
+		$output = '<ul>';
+		foreach( $layers as $layer ) {
+			
+		}
 
 	}
 }

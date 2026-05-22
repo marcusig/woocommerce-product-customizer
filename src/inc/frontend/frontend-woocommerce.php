@@ -298,7 +298,7 @@ class Frontend_Woocommerce {
 		
 		wp_register_style( 'mlk_pc/css/woocommerce', MKL_PC_ASSETS_URL . 'css/woocommerce.css' , false, MKL_PC_VERSION );
 		wp_enqueue_style( 'mlk_pc/css/woocommerce' );
-		
+
 		// Register vendor scripts
 		wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '6.0.1', true );
 		wp_register_script( 'mkl_pc/html2canvas', MKL_PC_ASSETS_URL . 'js/vendor/html2canvas.min.js', [], '1.4.1', true );

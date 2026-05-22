@@ -53,6 +53,7 @@ class Quote_Request {
      */
     public function add_email_class( $emails ) {
 		if ( ! $this->is_enabled() ) return $emails;
+		require_once MKL_PC_INCLUDE_PATH . 'emails/class-mkl-pc-base-email.php';
 		$emails['MK_PC_Quote_Request_Customer_Email'] = include MKL_PC_INCLUDE_PATH . 'emails/class-mkl-pc-customer-email.php';
 		$emails['MK_PC_Quote_Request_Admin_Email'] = include MKL_PC_INCLUDE_PATH . 'emails/class-mkl-pc-admin-email.php';
 		return $emails;
@@ -172,6 +173,17 @@ class Quote_Request {
 						$errors->add( 'mkl-quote-required', sprintf( __( 'The field "%s" is not valid', 'product-configurator-for-woocommerce' ), $field[ 'label' ] ) );
 						continue;
 					}
+				}
+
+				// Replace default items with readable slugs
+				if ( 'quote-e' === $field_id ) {
+					$form_data['email'] = $form_data[$field_id];
+					unset( $form_data[$field_id] );
+				}
+
+				if ( 'quote-n' === $field_id ) {
+					$form_data['name'] = $form_data[$field_id];
+					unset( $form_data[$field_id] );
 				}
 			}
 		}

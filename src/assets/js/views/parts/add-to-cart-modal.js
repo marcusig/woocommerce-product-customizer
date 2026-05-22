@@ -48,6 +48,8 @@ PC.fe.views.add_to_cart_modal = Backbone.View.extend({
 		this.show_message( 'added', response.messages );
 	},
 	on_quote_request_sent: function( e, response ) {
+		console.log( response );
+		
 		this.show_message( 'sent-request', response?.messages );
 	},
 	on_added_with_redirection: function() {
@@ -62,6 +64,9 @@ PC.fe.views.add_to_cart_modal = Backbone.View.extend({
 	 * @param {string} messages
 	 */
 	show_message: function( type, messages ) {
+
+		console.log( 'show_message', messages );
+		
 		this.$el.empty().append( wp.template( 'mkl-pc-atc-' + type )( { messages: messages || '' } ) );
 	}
 } )

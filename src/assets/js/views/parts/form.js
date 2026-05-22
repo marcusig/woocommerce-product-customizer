@@ -169,6 +169,7 @@ PC.fe.views.form = Backbone.View.extend({
 				};
 				
 				// Add to quote
+				console.log( $( e.currentTarget ), $( e.currentTarget ).is( '.mkl-request-quote' ) );
 				let is_quote_request = false;
 				if ( e && $( e.currentTarget ).is( '.mkl-request-quote' ) ){ 
 					data.quote_request = 1;
@@ -209,7 +210,8 @@ PC.fe.views.form = Backbone.View.extend({
 				)
 				.then( response => response.json() )
 				.then( data => {
-
+					console.log( 'then that', data );
+					
 					if ( data.error ) {
 						if ( data.product_url ) {
 							window.location = data.product_url;
