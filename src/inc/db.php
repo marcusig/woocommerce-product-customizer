@@ -79,8 +79,14 @@ class DB {
 
 		$data = maybe_unserialize( $data );
 
-		if ( is_string( $data) ) {
-			$data = json_decode( stripslashes( $data ), 1 );
+		if ( is_string( $data ) ) {
+			$decoded_data = json_decode( $data, true );
+		
+			if ( JSON_ERROR_NONE !== json_last_error() ) {
+				$decoded_data = json_decode( stripslashes( $data ), true );
+			}
+		
+			$data = $decoded_data;
 		}
 
 		if ( '' == $data || false == $data ) {
