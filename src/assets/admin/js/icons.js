@@ -52,7 +52,7 @@ var PC = PC || {};
 		settings_3d_section_camera_positions: { svg: 'svg/3d/mesh_cube' },
 		settings_3d_section_postprocessing: { svg: 'svg/3d/light' },
 		nav_home: { svg: 'svg/home' },
-		nav_layers: { dashicon: 'dashicons-screenoptions' },
+		nav_layers: { svg: 'svg/renderlayers' },
 		nav_angles: { dashicon: 'dashicons-visibility' },
 		nav_content: { dashicon: 'dashicons-list-view' },
 		nav_conditional_placeholder: { dashicon: 'dashicons-randomize' },
