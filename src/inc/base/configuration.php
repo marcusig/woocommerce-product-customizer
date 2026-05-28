@@ -676,6 +676,62 @@ class Configuration {
 	}
 
 	/**
+	 * Get the configured price for this configuration.
+	 *
+	 * Resolves layers via get_layers(), then applies the mkl_pc/configuration/get_configured_price
+	 * filter. When the Extra Price add-on is active, it computes base, extra, and total using the
+	 * same logic as cart pricing.
+	 *
+	 * @param array $args {
+	 *     Optional arguments.
+	 *
+	 *     @type int   $variation_id Variation ID. Defaults to the configuration variation_id.
+	 *     @type float $quantity     Line quantity. Default 1.
+	 * }
+	 * @return array|\WP_Error {
+	 *     @type float  $base  Product base price before configuration extras.
+	 *     @type float  $extra Sum of configuration extra prices.
+	 *     @type float  $total Base plus extras.
+	 *     @type string $currency  Optional. Current currency code when Extra Price is active.
+	 *     @type string $formatted Optional. Formatted total when Extra Price is active.
+	 * }
+	 */
+	public function get_configured_price( $args = array() ) {
+		$args = wp_parse_args(
+			$args,
+			array(
+				'variation_id' => $this->variation_id,
+				'quantity'     => 1,
+			)
+		);
+
+		$product = wc_get_product( $args['variation_id'] ? $args['variation_id'] : $this->product_id );
+		if ( ! $product ) {
+			return new WP_Error(
+				'invalid_product',
+				__( 'Invalid product.', 'product-configurator-for-woocommerce' )
+			);
+		}
+
+		$layers = $this->get_layers();
+		$base   = (float) $product->get_price();
+
+		$defaults = array(
+			'base'  => $base,
+			'extra' => 0.0,
+			'total' => $base,
+		);
+
+		return apply_filters(
+			'mkl_pc/configuration/get_configured_price',
+			$defaults,
+			$this,
+			$layers,
+			$args
+		);
+	}
+
+	/**
 	 * Get the visibility of the current configuration
 	 *
 	 * @return string
