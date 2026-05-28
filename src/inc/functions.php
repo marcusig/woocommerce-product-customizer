@@ -46,3 +46,66 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 		return false;
 	}
 }
+
+/**
+ * Allow public read access to preset configurations when using the base Configuration class.
+ *
+ * @param string              $visibility  public|private
+ * @param MKL\PC\Configuration $configuration Configuration instance.
+ * @return string
+ */
+function mkl_pc_configuration_preset_visibility( $visibility, $configuration ) {
+	if ( ! empty( $configuration->ID ) && 'preset' === get_post_status( $configuration->ID ) ) {
+		return 'public';
+	}
+	return $visibility;
+}
+add_filter( 'mkl_pc_configuration_visibility', 'mkl_pc_configuration_preset_visibility', 10, 2 );
+
+if ( ! function_exists( 'mkl_pc_get_configuration_price' ) ) {
+	/**
+	 * Get the configured price for a saved configuration (preset, save-your-own, etc.).
+	 *
+	 * @param int   $config_id Configuration post ID (mkl_pc_configuration).
+	 * @param array $args {
+	 *     Optional arguments passed to MKL\PC\Configuration::get_configured_price().
+	 *
+	 *     @type int   $variation_id Variation ID.
+	 *     @type float $quantity     Line quantity. Default 1.
+	 * }
+	 * @return array|\WP_Error {
+	 *     @type float  $base  Product base price before configuration extras.
+	 *     @type float  $extra Sum of configuration extra prices.
+	 *     @type float  $total Base plus extras.
+	 *     @type string $currency  Optional. Current currency code when Extra Price is active.
+	 *     @type string $formatted Optional. Formatted total when Extra Price is active.
+	 * }
+	 */
+	function mkl_pc_get_configuration_price( $config_id, $args = array() ) {
+		$config_id = absint( $config_id );
+		if ( ! $config_id ) {
+			return new WP_Error(
+				'invalid_configuration',
+				__( 'Invalid configuration ID.', 'product-configurator-for-woocommerce' )
+			);
+		}
+
+		$post = get_post( $config_id );
+		if ( ! $post || 'mkl_pc_configuration' !== $post->post_type ) {
+			return new WP_Error(
+				'invalid_configuration',
+				__( 'Configuration not found.', 'product-configurator-for-woocommerce' )
+			);
+		}
+
+		$config = new MKL\PC\Configuration( $config_id );
+		if ( ! $config->get_the_post() ) {
+			return new WP_Error(
+				'invalid_configuration',
+				__( 'Configuration not found.', 'product-configurator-for-woocommerce' )
+			);
+		}
+
+		return $config->get_configured_price( $args );
+	}
+}
