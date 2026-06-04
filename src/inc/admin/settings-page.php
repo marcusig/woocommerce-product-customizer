@@ -1132,7 +1132,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				return sanitize_email( $string_value );
 			}
 
-			if ( false !== strpos( $key, 'url' ) || false !== strpos( $key, 'link' ) ) {
+			// Only keys that are clearly URL fields (e.g. *_url). Do not match "link" in general:
+			// stock_link_type, hide_linked_products, link_extra_price, etc. are not URLs.
+			if ( preg_match( '/_url$/', $key ) || preg_match( '/(^|_)url($|_)/', $key ) ) {
 				return esc_url_raw( $string_value );
 			}
 
