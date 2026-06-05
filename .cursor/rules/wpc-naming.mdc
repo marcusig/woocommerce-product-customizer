@@ -14,3 +14,5 @@ Main plugin repo; add-ons are sibling packages under `app/src/`. When changing h
 - **Formatting**: align with **WordPress coding standards** where they apply (PHP and JS), while keeping **snake_case** for project-owned identifiers.
 
 External APIs (React, WordPress globals, third-party SDKs) keep their required names; wrap or alias in snake_case at boundaries when practical.
+
+## Do not add readme entries unless if specifically asked
