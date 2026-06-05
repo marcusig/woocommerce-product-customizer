@@ -147,6 +147,11 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Double check JSON decode
+* FIX: Settings sanitizing braking setting containing link
+* FIX: missing echo in screen reader text
+* DEV: added function mkl_pc_get_configuration_price
+
 = 1.7.1 - 11/May/2026 =
 
 * UPGRADE: Upgraded Pixi to current version (v8)
