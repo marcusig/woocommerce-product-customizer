@@ -100,7 +100,6 @@
 		PC.fe.goto = function( item, options ) {
 			options = options || {};
 			var applyFocus = options.should_scroll ? PC.fe.a11y.focus : PC.fe.a11y.focus_without_scroll;
-			console.log( applyFocus, options.should_scroll );
 			
 			var modal = PC.fe.modal || {};
 
