@@ -256,6 +256,29 @@ PC.fe.views.form = Backbone.View.extend({
 		if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 	},
 
+	reset_after_ajax_add_to_cart: function() {
+		if ( ! wp.hooks.applyFilters(
+			'PC.fe.reset.on.ajax_add_to_cart',
+			PC.fe.config.reset_configurator_on_ajax_add_to_cart,
+			this
+		) ) return;
+
+		if ( PC.fe.modal ) {
+			PC.fe.modal.resetConfig();
+			PC.fe.save_data.reset_errors();
+		}
+
+		$( 'input[name=pc_configurator_data]' ).val( '' );
+
+		var default_qty = PC.fe.currentProductData?.product_info?.qty_min_value || 1;
+		$( 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]' ).val( default_qty );
+		if ( PC.fe.currentProductData?.product_info ) {
+			PC.fe.currentProductData.product_info.qty = default_qty;
+		}
+		wp.hooks.doAction( 'PC.fe.qty_changed', default_qty );
+		wp.hooks.doAction( 'PC.fe.reset_after_ajax_add_to_cart', this );
+	},
+
 	/**
 	 * Add compatibility with Ajax Add to cart 
 	 * @param {*} e       Event
@@ -282,6 +305,7 @@ PC.fe.views.form = Backbone.View.extend({
 	 */
 	on_added_to_cart: function( e, fragments, cart_hash, $button ) {
 		PC.fe.modal.$el.removeClass( 'adding-to-cart' );
+		this.reset_after_ajax_add_to_cart();
 	},
 	
 	add_to_quote: async function( e ) {

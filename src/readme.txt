@@ -151,6 +151,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FIX: Settings sanitizing braking setting containing link
 * FIX: missing echo in screen reader text
 * DEV: added function mkl_pc_get_configuration_price
+* FEATURE: Setting to reset the configuration and quantity after Ajax add to cart
+* DEV: added PHP filter 'mkl_pc/reset_configurator_on_ajax_add_to_cart'
+* DEV: added JS filter 'PC.fe.reset.on.ajax_add_to_cart'
+* DEV: added JS action 'PC.fe.reset_after_ajax_add_to_cart'
 
 = 1.7.1 - 11/May/2026 =
 

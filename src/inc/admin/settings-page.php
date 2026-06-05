@@ -816,6 +816,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'reset_configurator_on_ajax_add_to_cart',
+				__( 'Reset the configuration and quantity after adding to cart (Ajax)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'reset_configurator_on_ajax_add_to_cart',
+					'description'  => __( 'Only applies when Ajax add to cart is enabled in the configurator.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'disable_caching',
 				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
