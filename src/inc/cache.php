@@ -39,6 +39,10 @@ class Cache {
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id );
 		$default_url = apply_filters( 'mkl_pc_default_config_url', admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $product_id ) );
+		$product = wc_get_product( $product_id );
+		if ( $product && 'publish' !== $product->get_status() && current_user_can( 'edit_post', $product_id ) ) {
+			$default_url = add_query_arg( 'nonce', wp_create_nonce( 'update-pc-post_' . $product_id ), $default_url );
+		}
 		if ( current_user_can( 'edit_posts' ) || mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
 			return $default_url;
 		}

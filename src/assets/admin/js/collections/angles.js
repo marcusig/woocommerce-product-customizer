@@ -3,7 +3,7 @@ var PC = PC || {};
 
 
 PC.angles = Backbone.Collection.extend({
-	url: function() { return ajaxurl + '?action='+PC.actionParameter+'&data=angles' },
+	url: function() { return ajaxurl + '?action='+PC.actionParameter+'&data=angles' + PC.get_ajax_nonce_param() },
 	model: PC.layer, // use the same basic model as the layers
 	nextOrder: function() {
 		if ( !this.length ) {

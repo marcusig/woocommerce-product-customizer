@@ -362,7 +362,11 @@
 				$element.addClass( 'loading-data' );
 			}
 			wp.hooks.doAction( 'mkl_pc.product_data.loading', product_id );
-			fetch( PC_config.ajaxurl + `?action=pc_get_data&data=init&fe=1&id=${product_id}&ver=` ).then(r => r.json()).then(data => {
+			let data_url = PC_config.ajaxurl + `?action=pc_get_data&data=init&fe=1&id=${product_id}`;
+			if ( PC_config.update_nonce ) {
+				data_url += `&nonce=${encodeURIComponent( PC_config.update_nonce )}`;
+			}
+			fetch( data_url ).then(r => r.json()).then(data => {
 				PC.productData = window.PC.productData || {};
 				PC.productData['prod_'+product_id] = data;
 				

@@ -26,7 +26,10 @@ PC.toJSON = function( item ) {
 
 ! ( function( $, _ ) {
 	PC.actionParameter = 'pc_get_data'; 
-	PC.setActionParameter = 'pc_set_data'; 
+	PC.setActionParameter = 'pc_set_data';
+	PC.get_ajax_nonce_param = function() {
+		return PC_lang && PC_lang.update_nonce ? '&nonce=' + encodeURIComponent( PC_lang.update_nonce ) : '';
+	}; 
 	// PC.base_url = 
 	PC.app = PC.app || {
 		is_modified: {

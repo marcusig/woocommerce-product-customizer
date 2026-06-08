@@ -469,6 +469,7 @@ class Frontend_Woocommerce {
 			'image_endpoint' => get_rest_url() . 'mkl_pc/v1/merge/',
 			'frontend_action_token_url' => esc_url_raw( rest_url( 'mkl_pc/v1/frontend-action-token' ) ),
 			'rest_nonce' => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
+			'update_nonce' => ( $prod && 'publish' !== $prod->get_status() && current_user_can( 'edit_post', $prod->get_id() ) ) ? wp_create_nonce( 'update-pc-post_' . $prod->get_id() ) : '',
 			'lang' => array(
 				'money_precision' => wc_get_price_decimals(),
 				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),

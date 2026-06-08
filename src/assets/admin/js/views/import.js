@@ -130,7 +130,7 @@ PC.import.views = PC.import.views || {};
 		url: function() {
 			var action = PC.actionParameter,
 				data = 'init';
-			return ajaxurl + '?action='+action+'&data='+data+'&id='+this.id
+			return ajaxurl + '?action='+action+'&data='+data+'&id='+this.id + PC.get_ajax_nonce_param()
 		},
 		initialize: function( attributes, options ) {
 			this.on('sync', function( e, f, g ) {

@@ -88,6 +88,15 @@ class Ajax {
 			wp_send_json_error( [ 'message' => __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
 
+		if ( ! $this->user_can_view_configurator_data( $id ) ) {
+			$product = $this->get_configurator_product( $id );
+			$message = __( 'You are not allowed to view this product.', 'product-configurator-for-woocommerce' );
+			if ( $product && 'publish' !== $product->get_status() && is_user_logged_in() && current_user_can( 'edit_post', $product->get_id() ) ) {
+				$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+			}
+			wp_send_json_error( [ 'message' => $message ], 403 );
+		}
+
 		$data = NULL;
 		switch ( $data_type ) {
 			case 'init' :
@@ -189,6 +198,71 @@ class Ajax {
 		} else { 
 			wp_send_json( $data );
 		}
+	}
+
+	/**
+	 * Get the parent product used for configurator access checks.
+	 *
+	 * @param int $product_id
+	 * @return \WC_Product|null
+	 */
+	private function get_configurator_product( $product_id ) {
+		$product = wc_get_product( $product_id );
+
+		if ( ! $product ) {
+			return null;
+		}
+
+		if ( $product->is_type( 'variation' ) ) {
+			$product = wc_get_product( $product->get_parent_id() );
+		}
+
+		return $product ? $product : null;
+	}
+
+	/**
+	 * Verify the nonce for non-public configurator data requests.
+	 *
+	 * @param int $product_id
+	 * @return bool
+	 */
+	private function verify_configurator_data_nonce( $product_id ) {
+		$nonce = '';
+
+		if ( isset( $_REQUEST['nonce'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) );
+		} elseif ( isset( $_REQUEST['security'] ) ) {
+			$nonce = sanitize_text_field( wp_unslash( $_REQUEST['security'] ) );
+		}
+
+		return (bool) wp_verify_nonce( $nonce, 'update-pc-post_' . $product_id );
+	}
+
+	/**
+	 * Check whether the current user can view configurator data for a product.
+	 *
+	 * Published products are available to everyone, including those hidden from the catalog.
+	 * Draft, private, or otherwise non-published products require a logged-in user with edit capability and a valid nonce.
+	 *
+	 * @param int $product_id
+	 * @return bool
+	 */
+	private function user_can_view_configurator_data( $product_id ) {
+		$product = $this->get_configurator_product( $product_id );
+
+		if ( ! $product ) {
+			return false;
+		}
+
+		if ( 'publish' === $product->get_status() ) {
+			return true;
+		}
+
+		if ( ! is_user_logged_in() || ! current_user_can( 'edit_post', $product->get_id() ) ) {
+			return false;
+		}
+
+		return $this->verify_configurator_data_nonce( $product->get_id() );
 	}
 
 	/**

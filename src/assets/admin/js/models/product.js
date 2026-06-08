@@ -6,7 +6,7 @@ var PC = PC || {};
 		url: function() { 
 			var action = PC.actionParameter,
 				data = 'content';
-			return ajaxurl + '?action='+action+'&data='+data+'&id='+this.id
+			return ajaxurl + '?action='+action+'&data='+data+'&id='+this.id + PC.get_ajax_nonce_param()
 		},
 
 		idAttribute: 'product_id',
