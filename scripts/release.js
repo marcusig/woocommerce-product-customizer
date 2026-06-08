@@ -12,7 +12,7 @@ if (!version) {
 
 // Paths
 const distDir = path.resolve(__dirname, '../dist');
-const svnTrunk = path.resolve(__dirname, '../../../repository/product-configurator-for-woocommerce/trunk');
+const svnTrunk = path.resolve(__dirname, '../../../../repository/product-configurator-for-woocommerce/trunk');
 const repoUrl = 'http://plugins.svn.wordpress.org/product-configurator-for-woocommerce';
 
 console.log( distDir );
