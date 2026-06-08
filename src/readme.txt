@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 1.7.1
+Stable tag: 1.7.2
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -147,11 +147,13 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.7.2 - 8/Jun/2026 =
+
+* FEATURE: Setting to reset the configuration and quantity after Ajax add to cart
 * TWEAK: Double check JSON decode
 * FIX: Settings sanitizing braking setting containing link
 * FIX: missing echo in screen reader text
 * DEV: added function mkl_pc_get_configuration_price
-* FEATURE: Setting to reset the configuration and quantity after Ajax add to cart
 * DEV: added PHP filter 'mkl_pc/reset_configurator_on_ajax_add_to_cart'
 * DEV: added JS filter 'PC.fe.reset.on.ajax_add_to_cart'
 * DEV: added JS action 'PC.fe.reset_after_ajax_add_to_cart'
