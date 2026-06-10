@@ -456,15 +456,19 @@
 			this.modal.$el.show();
 			this.modal.$el.addClass( 'loading' );
 
+			var request_data = {
+				action: PC.actionParameter,
+				data: 'content',
+				id: product_id,
+			};
+			if ( PC_config.update_nonce ) {
+				request_data.nonce = PC_config.update_nonce;
+			}
 			$.ajax({
 				url:     wp.ajax.settings.url, 
 				type: 'POST',
 				dataType: 'json',
-				data:{
-					action: PC.actionParameter,
-					data: 'content', 
-					id: product_id,
-				},
+				data: request_data,
 				context: this,
 			})
 			.done(function( response ) {
