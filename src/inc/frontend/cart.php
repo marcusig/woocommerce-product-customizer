@@ -264,49 +264,37 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				$choices = apply_filters( 'mkl_pc/wc_cart_get_item_data/choices', $choices, $cart_item );
 
+				$is_block = ( 'block' === $this->_get_cart_item_context( $cart_item ) );
+
 				if ( $compound_sku && count( $sku ) ) {
-					$data[] = array(
+					$sku_item = array(
 						'className' => 'configuration-sku',
 						'key' => mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
 						'value' => implode( mkl_pc( 'settings')->get_label( 'sku_glue', '' ), $sku )
 					);
+					if ( $is_block ) {
+						$sku_items = $this->_prepare_block_cart_item_data( array( $sku_item ) );
+						if ( ! empty( $sku_items ) ) {
+							$data[] = $sku_items[0];
+						}
+					} else {
+						$data[] = $sku_item;
+					}
 				}
 
-				if ( 'block' == $this->_get_cart_item_context( $cart_item ) ) {
-					$value = '&nbsp;';
+				if ( $is_block ) {
+					$data = array_merge( $data, $this->_prepare_block_cart_item_data( $this->get_choices_data( $choices ) ) );
 				} else {
 					$value = $this->get_choices_html( $choices );
 					if ( $edit_link ) {
 						$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
 					}
-				}
 
-				$data[] = array(
-					'className' => 'mkl-configuration',
-					'key' => mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
-					'value' => $value
-				);
-
-				if ( 'block' == $this->_get_cart_item_context( $cart_item ) ) {
-
-					$data = array_merge( $data, array_map( function( $item ) {
-						if ( isset( $item['choice'] ) ) unset( $item['choice'] );
-						return $item;
-					}, $this->get_choices_data( $choices ) ) );
-
-					/**
-					 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
-					 * @return boolean
-					 */
-					// Links aren't supported yet
-					// if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link ) {
-					// 	$data[] = [
-					// 		'className' => 'mkl-configuration--edit-link',
-					// 		'key' => '',
-					// 		'name' => '',
-					// 		'value' => '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>',
-					// 	];
-					// }
+					$data[] = array(
+						'className' => 'mkl-configuration',
+						'key' => mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
+						'value' => $value
+					);
 				}
 			}
 
@@ -606,30 +594,83 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		private function _get_cart_item_context( $cart_item = false ) {
-			if ( function_exists( 'WC' ) && is_callable( [ WC(), 'is_store_api_request' ] ) ) {
-				if ( WC()->is_store_api_request() ) return 'block';
+			if ( $this->_is_store_api_or_block_cart_request() ) {
+				return 'block';
 			}
-			if ( 
-				( is_cart() || is_checkout() ) 
-				|| (
-					$cart_item && isset( $cart_item['context'] ) && 'cart' == $cart_item['context']
-				)
-			) {
-				if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
-					return 'block';
+
+			if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
+				return 'block';
+			}
+
+			if ( $cart_item && isset( $cart_item['context'] ) ) {
+				return $cart_item['context'];
+			}
+
+			return 'default';
+		}
+
+		/**
+		 * Whether the current request is serving cart/checkout block item data.
+		 *
+		 * @return bool
+		 */
+		private function _is_store_api_or_block_cart_request() {
+			if ( function_exists( 'WC' ) && WC() && is_callable( [ WC(), 'is_store_api_request' ] ) && WC()->is_store_api_request() ) {
+				return true;
+			}
+
+			// Plain permalinks and other setups where is_store_api_request() does not match.
+			if ( ! empty( $_SERVER['REQUEST_URI'] ) ) {
+				$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] );
+				if ( false !== strpos( $request_uri, 'wc/store/' ) || false !== strpos( $request_uri, 'rest_route=/wc/store/' ) ) {
+					return true;
+				}
+			}
+
+			// Cart/checkout blocks resolve item data via CartItemSchema outside is_cart()/is_checkout().
+			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 );
+			foreach ( $trace as $call ) {
+				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Prepare cart item data elements for the cart/checkout blocks (Store API).
+		 *
+		 * The Store API drops any item_data element that contains a non-scalar value.
+		 *
+		 * @param array $items
+		 * @return array
+		 */
+		private function _prepare_block_cart_item_data( $items ) {
+			$prepared = array();
+
+			foreach ( $items as $item ) {
+				unset( $item['choice'], $item['layer'] );
+
+				if ( isset( $item['className'] ) && is_array( $item['className'] ) ) {
+					$item['className'] = Utils::sanitize_html_classes( $item['className'] );
 				}
 
-				$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
-				foreach( $trace as $call ) {
-					// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
-					if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
-						return 'block';
+				$clean = array();
+				foreach ( $item as $key => $value ) {
+					if ( is_scalar( $value ) ) {
+						$clean[ $key ] = $value;
 					}
 				}
-				return 'default';
+
+				if ( empty( $clean['key'] ) && empty( $clean['value'] ) ) {
+					continue;
+				}
+
+				$prepared[] = $clean;
 			}
-			if ( $cart_item && isset( $cart_item['context'] ) ) return $cart_item['context'];
-			return 'default';
+
+			return $prepared;
 		}
 
 		/**
