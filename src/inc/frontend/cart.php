@@ -598,10 +598,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				return 'block';
 			}
 
-			if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
-				return 'block';
-			}
-
 			if ( $cart_item && isset( $cart_item['context'] ) ) {
 				return $cart_item['context'];
 			}
@@ -627,12 +623,41 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				}
 			}
 
+			if ( $this->_is_block_cart_or_checkout_page() ) {
+				return true;
+			}
+
 			// Cart/checkout blocks resolve item data via CartItemSchema outside is_cart()/is_checkout().
 			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 );
 			foreach ( $trace as $call ) {
 				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
 					return true;
 				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Whether the current cart or checkout page uses the WooCommerce block.
+		 *
+		 * @return bool
+		 */
+		private function _is_block_cart_or_checkout_page() {
+			if ( is_cart() ) {
+				if ( class_exists( \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::class ) ) {
+					return \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_cart_block_default();
+				}
+				$cart_page_id = wc_get_page_id( 'cart' );
+				return $cart_page_id && has_block( 'woocommerce/cart', $cart_page_id );
+			}
+
+			if ( is_checkout() ) {
+				if ( class_exists( \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::class ) ) {
+					return \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_checkout_block_default();
+				}
+				$checkout_page_id = wc_get_page_id( 'checkout' );
+				return $checkout_page_id && has_block( 'woocommerce/checkout', $checkout_page_id );
 			}
 
 			return false;
