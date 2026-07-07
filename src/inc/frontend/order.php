@@ -84,6 +84,9 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				// For now, stores the whole _configurator_data object
 				$item->add_meta_data( '_configurator_data', $configurator_data, false );
 				$item->add_meta_data( '_configurator_data_raw', $values['configurator_data_raw'], false );
+				if ( isset( $values['pc_configurator_data_raw'] ) && is_string( $values['pc_configurator_data_raw'] ) && '' !== $values['pc_configurator_data_raw'] ) {
+					$item->add_meta_data( 'pc_configurator_data_raw', $values['pc_configurator_data_raw'], false );
+				}
 				$item->add_meta_data( 
 					apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
 					$this->get_formatted_configurator_data( $configurator_data, $item ), 

@@ -26,6 +26,7 @@ class Compat_Yith_Raq {
 		add_filter( 'mkl_pc_get_saved_configuration_content', [ $this, 'load_quote_configuration_in_configurator' ] );
 		add_action( 'ywraq_request_quote_email_view_item_after_title', [ $this, 'quote_from_cart_compat' ], 20, 3 );
 		add_action( 'ywraq_from_cart_to_order_item', [ $this, 'raq_on_create_order' ], 20, 4 );
+		add_filter( 'ywraq_order_cart_item_data', [ $this, 'order_cart_item_data' ], 20, 3 );
 	}
 
 	public function config( $config ) {
@@ -326,6 +327,20 @@ class Compat_Yith_Raq {
 		$order_item = $order->get_item( $item_id );
 		mkl_pc( 'frontend' )->order->save_data( $order_item, $cart_item_key, $values, $order );
 		$order_item->save();
+	}
+
+	/**
+	 * Restore configurator data when YITH copies quote order items back to the cart.
+	 *
+	 * Runs before woocommerce_add_to_cart_validation during quote acceptance.
+	 *
+	 * @param array                $cart_item_data Cart item data.
+	 * @param \WC_Order_Item|false $item           Order line item.
+	 * @param \WC_Order            $order          Quote order.
+	 * @return array
+	 */
+	public function order_cart_item_data( $cart_item_data, $item, $order ) {
+		return mkl_pc( 'frontend' )->cart->restore_configuration_cart_item_data_from_order_item( $cart_item_data, $item );
 	}
 
 }

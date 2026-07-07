@@ -58,16 +58,40 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
-			if ( '' === $raw_configurator_data && ! empty( $cart_item_data['configurator_data_raw'] ) ) {
-				$raw_configurator_data = $cart_item_data['configurator_data_raw'];
-			}
 
-			if ( $passed && mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
+			if ( $passed && mkl_pc_is_configurable( $product_id ) && ! $this->has_configuration_data( $raw_configurator_data, $cart_item_data ) && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
 				return false;
 			}
 
 			return $passed;
+		}
+
+		/**
+		 * Whether configuration data is present for add-to-cart validation.
+		 *
+		 * @param mixed $raw_configurator_data POST payload or cart item raw data.
+		 * @param array $cart_item_data        Existing cart item data (order again, quote accept, etc.).
+		 * @return bool
+		 */
+		public function has_configuration_data( $raw_configurator_data, $cart_item_data = array() ) {
+			if ( is_string( $raw_configurator_data ) && '' !== $raw_configurator_data ) {
+				return true;
+			}
+
+			if ( ! empty( $cart_item_data['configurator_data'] ) && is_array( $cart_item_data['configurator_data'] ) ) {
+				return true;
+			}
+
+			if ( ! empty( $cart_item_data['configurator_data_raw'] ) ) {
+				return true;
+			}
+
+			if ( ! empty( $cart_item_data['pc_configurator_data_raw'] ) ) {
+				return true;
+			}
+
+			return false;
 		}
 
 		/**
@@ -203,13 +227,115 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * Add the configuration data when Ordering again
 		*/
 		public function wc_order_again_cart_item_data( $data, $item, $order ) {
-			$conf_data = $item->get_meta( '_configurator_data' );
-			$raw_conf_data = $item->get_meta( '_configurator_data_raw' );
-			if ( $conf_data && $raw_conf_data ) {
-				$data['configurator_data'] = $conf_data;
-				$data['configurator_data_raw'] = $raw_conf_data;
+			return $this->restore_configuration_cart_item_data_from_order_item( $data, $item );
+		}
+
+		/**
+		 * Restore configurator cart item data from a WooCommerce order line item.
+		 *
+		 * Used for order again, YITH quote acceptance, and similar flows.
+		 *
+		 * @param array                $data Cart item data.
+		 * @param \WC_Order_Item|false $item Order line item.
+		 * @return array
+		 */
+		public function restore_configuration_cart_item_data_from_order_item( $data, $item ) {
+			if ( ! is_a( $item, 'WC_Order_Item_Product' ) ) {
+				return $data;
 			}
+
+			if ( $this->has_configuration_data( '', $data ) ) {
+				return $data;
+			}
+
+			$product_id   = $item->get_product_id();
+			$variation_id = $item->get_variation_id();
+
+			if ( ! mkl_pc_is_configurable( $product_id ) ) {
+				return $data;
+			}
+
+			$conf_data     = $item->get_meta( '_configurator_data' );
+			$raw_conf_data = $item->get_meta( '_configurator_data_raw' );
+
+			if ( $conf_data && $raw_conf_data ) {
+				$data['configurator_data']     = $conf_data;
+				$data['configurator_data_raw'] = $raw_conf_data;
+				return $data;
+			}
+
+			$pc_raw_json = $item->get_meta( 'pc_configurator_data_raw' );
+			if ( is_string( $pc_raw_json ) && '' !== $pc_raw_json ) {
+				$built = $this->build_configuration_cart_item_data_from_content( $product_id, $variation_id, $pc_raw_json );
+				if ( $built ) {
+					return array_merge( $data, $built );
+				}
+			}
+
+			if ( $raw_conf_data ) {
+				$built = $this->build_configuration_cart_item_data_from_content( $product_id, $variation_id, $raw_conf_data );
+				if ( $built ) {
+					return array_merge( $data, $built );
+				}
+			}
+
+			if ( $conf_data && is_array( $conf_data ) ) {
+				$data['configurator_data'] = $conf_data;
+			}
+
 			return $data;
+		}
+
+		/**
+		 * Build configurator cart item data from raw JSON or sanitized content.
+		 *
+		 * @param int   $product_id   Product ID.
+		 * @param int   $variation_id Variation ID.
+		 * @param mixed $content      JSON string or sanitized configuration content.
+		 * @return array|null
+		 */
+		private function build_configuration_cart_item_data_from_content( $product_id, $variation_id, $content ) {
+			if ( is_string( $content ) ) {
+				$data = json_decode( $content );
+				if ( ! $data ) {
+					$data = json_decode( stripcslashes( $content ) );
+				}
+			} else {
+				$data = $content;
+			}
+
+			if ( ! $data ) {
+				return null;
+			}
+
+			$data = Plugin::instance()->db->sanitize( $data );
+			$configuration = new Configuration(
+				null,
+				array(
+					'content'      => $data,
+					'product_id'   => $product_id,
+					'variation_id' => $variation_id,
+				)
+			);
+			$layers      = $configuration->get_layers();
+			$item_weight = 0;
+
+			foreach ( $layers as $layer ) {
+				if ( $weight = $layer->get_choice( 'weight' ) ) {
+					$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
+				}
+			}
+
+			$cart_item_data = array(
+				'configurator_data'     => $layers,
+				'configurator_data_raw' => $configuration->content,
+			);
+
+			if ( $item_weight ) {
+				$cart_item_data['configuration_weight'] = $item_weight;
+			}
+
+			return $cart_item_data;
 		}
 
 		public function wc_cart_get_item_data( $data, $cart_item ) { 
