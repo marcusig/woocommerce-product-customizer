@@ -264,7 +264,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				return $data;
 			}
 
-			$pc_raw_json = $item->get_meta( 'pc_configurator_data_raw' );
+			$pc_raw_json = $item->get_meta( '_pc_configurator_data_raw' );
+			if ( ! is_string( $pc_raw_json ) || '' === $pc_raw_json ) {
+				$pc_raw_json = $item->get_meta( 'pc_configurator_data_raw' );
+			}
 			if ( is_string( $pc_raw_json ) && '' !== $pc_raw_json ) {
 				$built = $this->build_configuration_cart_item_data_from_content( $product_id, $variation_id, $pc_raw_json );
 				if ( $built ) {
