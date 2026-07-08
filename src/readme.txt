@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 1.7.3
+Stable tag: 1.7.4
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -171,6 +171,18 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 1.7.4 - 8/Jul/2026 =
+
+* COMPAT: Restore configuration when accepting a YITH Request a Quote order (Premium)
+* FIX: Configuration item data in WooCommerce cart and checkout blocks
+* TWEAK: Improved cart block detection (Store API, plain permalinks)
+* TWEAK: Include nonce when loading configurator data asynchronously
+* TWEAK: Hide internal configurator meta from order item displays
+* TWEAK: Choice thumbnail alt text includes layer and choice names
+* TWEAK: Clarify disable caching setting when Stock Management add-on is active
+* DEV: Added hooks for Addon Manager (`mkl_pc_addons_tab_before`, `mkl_pc_addon_card_actions`, `mkl_pc_addons_catalog`)
+* DEV: Added `Frontend_Cart::restore_configuration_cart_item_data_from_order_item()` and `has_configuration_data()`
 
 = 1.7.3 - 8/Jun/2026 =
 
@@ -466,4 +478,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
+* 1.7.4 Recommended update for YITH Request a Quote users and stores using the WooCommerce cart or checkout blocks.
 * 1.7.0 Upgraded Pixi library to latest version (v8) - Text overlay and Save your design add-ons need to be updated to work with this latest update
