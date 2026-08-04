@@ -58,16 +58,40 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
-			if ( '' === $raw_configurator_data && ! empty( $cart_item_data['configurator_data_raw'] ) ) {
-				$raw_configurator_data = $cart_item_data['configurator_data_raw'];
-			}
 
-			if ( $passed && mkl_pc_is_configurable( $product_id ) && '' === $raw_configurator_data && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
+			if ( $passed && mkl_pc_is_configurable( $product_id ) && ! $this->has_configuration_data( $raw_configurator_data, $cart_item_data ) && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
 				return false;
 			}
 
 			return $passed;
+		}
+
+		/**
+		 * Whether configuration data is present for add-to-cart validation.
+		 *
+		 * @param mixed $raw_configurator_data POST payload or cart item raw data.
+		 * @param array $cart_item_data        Existing cart item data (order again, quote accept, etc.).
+		 * @return bool
+		 */
+		public function has_configuration_data( $raw_configurator_data, $cart_item_data = array() ) {
+			if ( is_string( $raw_configurator_data ) && '' !== $raw_configurator_data ) {
+				return true;
+			}
+
+			if ( ! empty( $cart_item_data['configurator_data'] ) && is_array( $cart_item_data['configurator_data'] ) ) {
+				return true;
+			}
+
+			if ( ! empty( $cart_item_data['configurator_data_raw'] ) ) {
+				return true;
+			}
+
+			if ( ! empty( $cart_item_data['pc_configurator_data_raw'] ) ) {
+				return true;
+			}
+
+			return false;
 		}
 
 		/**
@@ -283,17 +307,123 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * Add the configuration data when Ordering again
 		*/
 		public function wc_order_again_cart_item_data( $data, $item, $order ) {
-			$conf_data = $item->get_meta( '_configurator_data' );
-			$raw_conf_data = $item->get_meta( '_configurator_data_raw' );
-			if ( $conf_data && $raw_conf_data ) {
-				$data['configurator_data'] = $conf_data;
-				$data['configurator_data_raw'] = $raw_conf_data;
+			return $this->restore_configuration_cart_item_data_from_order_item( $data, $item );
+		}
+
+		/**
+		 * Restore configurator cart item data from a WooCommerce order line item.
+		 *
+		 * Used for order again, YITH quote acceptance, and similar flows.
+		 *
+		 * @param array                $data Cart item data.
+		 * @param \WC_Order_Item|false $item Order line item.
+		 * @return array
+		 */
+		public function restore_configuration_cart_item_data_from_order_item( $data, $item ) {
+			if ( ! is_a( $item, 'WC_Order_Item_Product' ) ) {
+				return $data;
 			}
+
 			$screenshot_path = $item->get_meta( '_configurator_3d_screenshot_path', true );
 			if ( $screenshot_path && is_string( $screenshot_path ) ) {
 				$data['configurator_3d_screenshot_path'] = $screenshot_path;
 			}
+
+			if ( $this->has_configuration_data( '', $data ) ) {
+				return $data;
+			}
+
+			$product_id   = $item->get_product_id();
+			$variation_id = $item->get_variation_id();
+
+			if ( ! mkl_pc_is_configurable( $product_id ) ) {
+				return $data;
+			}
+
+			$conf_data     = $item->get_meta( '_configurator_data' );
+			$raw_conf_data = $item->get_meta( '_configurator_data_raw' );
+
+			if ( $conf_data && $raw_conf_data ) {
+				$data['configurator_data']     = $conf_data;
+				$data['configurator_data_raw'] = $raw_conf_data;
+				return $data;
+			}
+
+			$pc_raw_json = $item->get_meta( '_pc_configurator_data_raw' );
+			if ( ! is_string( $pc_raw_json ) || '' === $pc_raw_json ) {
+				$pc_raw_json = $item->get_meta( 'pc_configurator_data_raw' );
+			}
+			if ( is_string( $pc_raw_json ) && '' !== $pc_raw_json ) {
+				$built = $this->build_configuration_cart_item_data_from_content( $product_id, $variation_id, $pc_raw_json );
+				if ( $built ) {
+					return array_merge( $data, $built );
+				}
+			}
+
+			if ( $raw_conf_data ) {
+				$built = $this->build_configuration_cart_item_data_from_content( $product_id, $variation_id, $raw_conf_data );
+				if ( $built ) {
+					return array_merge( $data, $built );
+				}
+			}
+
+			if ( $conf_data && is_array( $conf_data ) ) {
+				$data['configurator_data'] = $conf_data;
+			}
+
 			return $data;
+		}
+
+		/**
+		 * Build configurator cart item data from raw JSON or sanitized content.
+		 *
+		 * @param int   $product_id   Product ID.
+		 * @param int   $variation_id Variation ID.
+		 * @param mixed $content      JSON string or sanitized configuration content.
+		 * @return array|null
+		 */
+		private function build_configuration_cart_item_data_from_content( $product_id, $variation_id, $content ) {
+			if ( is_string( $content ) ) {
+				$data = json_decode( $content );
+				if ( ! $data ) {
+					$data = json_decode( stripcslashes( $content ) );
+				}
+			} else {
+				$data = $content;
+			}
+
+			if ( ! $data ) {
+				return null;
+			}
+
+			$data = Plugin::instance()->db->sanitize( $data );
+			$configuration = new Configuration(
+				null,
+				array(
+					'content'      => $data,
+					'product_id'   => $product_id,
+					'variation_id' => $variation_id,
+				)
+			);
+			$layers      = $configuration->get_layers();
+			$item_weight = 0;
+
+			foreach ( $layers as $layer ) {
+				if ( $weight = $layer->get_choice( 'weight' ) ) {
+					$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
+				}
+			}
+
+			$cart_item_data = array(
+				'configurator_data'     => $layers,
+				'configurator_data_raw' => $configuration->content,
+			);
+
+			if ( $item_weight ) {
+				$cart_item_data['configuration_weight'] = $item_weight;
+			}
+
+			return $cart_item_data;
 		}
 
 		public function wc_cart_get_item_data( $data, $cart_item ) { 
@@ -348,49 +478,37 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				$choices = apply_filters( 'mkl_pc/wc_cart_get_item_data/choices', $choices, $cart_item );
 
+				$is_block = ( 'block' === $this->_get_cart_item_context( $cart_item ) );
+
 				if ( $compound_sku && count( $sku ) ) {
-					$data[] = array(
+					$sku_item = array(
 						'className' => 'configuration-sku',
 						'key' => mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
 						'value' => implode( mkl_pc( 'settings')->get_label( 'sku_glue', '' ), $sku )
 					);
+					if ( $is_block ) {
+						$sku_items = $this->_prepare_block_cart_item_data( array( $sku_item ) );
+						if ( ! empty( $sku_items ) ) {
+							$data[] = $sku_items[0];
+						}
+					} else {
+						$data[] = $sku_item;
+					}
 				}
 
-				if ( 'block' == $this->_get_cart_item_context( $cart_item ) ) {
-					$value = '&nbsp;';
+				if ( $is_block ) {
+					$data = array_merge( $data, $this->_prepare_block_cart_item_data( $this->get_choices_data( $choices ) ) );
 				} else {
 					$value = $this->get_choices_html( $choices );
 					if ( $edit_link ) {
 						$value .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
 					}
-				}
 
-				$data[] = array(
-					'className' => 'mkl-configuration',
-					'key' => mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
-					'value' => $value
-				);
-
-				if ( 'block' == $this->_get_cart_item_context( $cart_item ) ) {
-
-					$data = array_merge( $data, array_map( function( $item ) {
-						if ( isset( $item['choice'] ) ) unset( $item['choice'] );
-						return $item;
-					}, $this->get_choices_data( $choices ) ) );
-
-					/**
-					 * Filter mkl_pc_user_can_edit_item_from_cart. Whether or not to display the edit link in the cart
-					 * @return boolean
-					 */
-					// Links aren't supported yet
-					// if ( ! is_admin() && apply_filters( 'mkl_pc_user_can_edit_item_from_cart', true ) && $edit_link ) {
-					// 	$data[] = [
-					// 		'className' => 'mkl-configuration--edit-link',
-					// 		'key' => '',
-					// 		'name' => '',
-					// 		'value' => '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>',
-					// 	];
-					// }
+					$data[] = array(
+						'className' => 'mkl-configuration',
+						'key' => mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', __( 'Configuration', 'product-configurator-for-woocommerce' ) ),
+						'value' => $value
+					);
 				}
 			}
 
@@ -704,30 +822,108 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		private function _get_cart_item_context( $cart_item = false ) {
-			if ( function_exists( 'WC' ) && is_callable( [ WC(), 'is_store_api_request' ] ) ) {
-				if ( WC()->is_store_api_request() ) return 'block';
+			if ( $this->_is_store_api_or_block_cart_request() ) {
+				return 'block';
 			}
-			if ( 
-				( is_cart() || is_checkout() ) 
-				|| (
-					$cart_item && isset( $cart_item['context'] ) && 'cart' == $cart_item['context']
-				)
-			) {
-				if ( ( is_cart() || is_checkout() ) && has_blocks() && ( has_block( 'woocommerce/cart' ) || has_block( 'woocommerce/checkout' ) ) ) {
-					return 'block';
+
+			if ( $cart_item && isset( $cart_item['context'] ) ) {
+				return $cart_item['context'];
+			}
+
+			return 'default';
+		}
+
+		/**
+		 * Whether the current request is serving cart/checkout block item data.
+		 *
+		 * @return bool
+		 */
+		private function _is_store_api_or_block_cart_request() {
+			if ( function_exists( 'WC' ) && WC() && is_callable( [ WC(), 'is_store_api_request' ] ) && WC()->is_store_api_request() ) {
+				return true;
+			}
+
+			// Plain permalinks and other setups where is_store_api_request() does not match.
+			if ( ! empty( $_SERVER['REQUEST_URI'] ) ) {
+				$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] );
+				if ( false !== strpos( $request_uri, 'wc/store/' ) || false !== strpos( $request_uri, 'rest_route=/wc/store/' ) ) {
+					return true;
+				}
+			}
+
+			if ( $this->_is_block_cart_or_checkout_page() ) {
+				return true;
+			}
+
+			// Cart/checkout blocks resolve item data via CartItemSchema outside is_cart()/is_checkout().
+			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 );
+			foreach ( $trace as $call ) {
+				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Whether the current cart or checkout page uses the WooCommerce block.
+		 *
+		 * @return bool
+		 */
+		private function _is_block_cart_or_checkout_page() {
+			if ( is_cart() ) {
+				if ( class_exists( \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::class ) ) {
+					return \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_cart_block_default();
+				}
+				$cart_page_id = wc_get_page_id( 'cart' );
+				return $cart_page_id && has_block( 'woocommerce/cart', $cart_page_id );
+			}
+
+			if ( is_checkout() ) {
+				if ( class_exists( \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::class ) ) {
+					return \Automattic\WooCommerce\Blocks\Utils\CartCheckoutUtils::is_checkout_block_default();
+				}
+				$checkout_page_id = wc_get_page_id( 'checkout' );
+				return $checkout_page_id && has_block( 'woocommerce/checkout', $checkout_page_id );
+			}
+
+			return false;
+		}
+
+		/**
+		 * Prepare cart item data elements for the cart/checkout blocks (Store API).
+		 *
+		 * The Store API drops any item_data element that contains a non-scalar value.
+		 *
+		 * @param array $items
+		 * @return array
+		 */
+		private function _prepare_block_cart_item_data( $items ) {
+			$prepared = array();
+
+			foreach ( $items as $item ) {
+				unset( $item['choice'], $item['layer'] );
+
+				if ( isset( $item['className'] ) && is_array( $item['className'] ) ) {
+					$item['className'] = Utils::sanitize_html_classes( $item['className'] );
 				}
 
-				$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 10 );
-				foreach( $trace as $call ) {
-					// [class] => Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema
-					if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
-						return 'block';
+				$clean = array();
+				foreach ( $item as $key => $value ) {
+					if ( is_scalar( $value ) ) {
+						$clean[ $key ] = $value;
 					}
 				}
-				return 'default';
+
+				if ( empty( $clean['key'] ) && empty( $clean['value'] ) ) {
+					continue;
+				}
+
+				$prepared[] = $clean;
 			}
-			if ( $cart_item && isset( $cart_item['context'] ) ) return $cart_item['context'];
-			return 'default';
+
+			return $prepared;
 		}
 
 		/**

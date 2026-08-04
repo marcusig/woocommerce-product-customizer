@@ -195,6 +195,7 @@ button.variations_button.disabled,
 	color: #7a1313;
 	font-size: 1rem;
 	max-height: 200px;
+	overflow: auto;
 
 	&:focus {
 		outline: 2px solid #7a1313;

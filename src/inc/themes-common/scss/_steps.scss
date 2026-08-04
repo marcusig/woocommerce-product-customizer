@@ -72,6 +72,7 @@ nav.mkl-pc--steps {
                 a {
                     font-weight: bold;
                     white-space: nowrap;
+                    text-decoration: none;
                     &::before {
                         content: counter(steps-progress) '. ';
                     }

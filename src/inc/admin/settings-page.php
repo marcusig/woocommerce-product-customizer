@@ -816,6 +816,22 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'reset_configurator_on_ajax_add_to_cart',
+				__( 'Reset the configuration and quantity after adding to cart (Ajax)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'setting_name' => 'reset_configurator_on_ajax_add_to_cart',
+					'description'  => __( 'Only applies when Ajax add to cart is enabled in the configurator.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			$disable_caching_description = __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' );
+			if ( class_exists( 'MKL_PC_Stock_Management' ) ) {
+				$disable_caching_description .= '<br>' . __( 'It is also useful when linking products for stock management', 'product-configurator-for-woocommerce' );
+			}
+			add_settings_field(
 				'disable_caching',
 				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
@@ -823,7 +839,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				'general_settings',
 				[ 
 					'setting_name' => 'disable_caching',
-					'description'  => __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' ),
+					'description'  => $disable_caching_description,
 				]
 			);
 
@@ -1166,7 +1182,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				return sanitize_email( $string_value );
 			}
 
-			if ( false !== strpos( $key, 'url' ) || false !== strpos( $key, 'link' ) ) {
+			// Only keys that are clearly URL fields (e.g. *_url). Do not match "link" in general:
+			// stock_link_type, hide_linked_products, link_extra_price, etc. are not URLs.
+			if ( preg_match( '/_url$/', $key ) || preg_match( '/(^|_)url($|_)/', $key ) ) {
 				return esc_url_raw( $string_value );
 			}
 
@@ -1322,6 +1340,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			$this->get_addons(); 
 			$installed_addons = Plugin::instance()->get_extensions();
 			if ( ! is_array( $this->addons ) ) return;
+			/**
+			 * Fires at the top of the Addons tab, before the add-on list.
+			 *
+			 * Used by the Addon Manager plugin to render the licence panel.
+			 */
+			do_action( 'mkl_pc_addons_tab_before' );
 			echo '<div class="mkl-pc-addons">';
 			foreach( $this->addons as $addon ) {
 				$this->display_addon( $addon, in_array( $addon->product_name, array_keys( $installed_addons ) ) );
@@ -1367,7 +1391,22 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				<div class="desc">
 					<?php echo esc_textarea( $addon->description ); ?>
 				</div>
-				<?php if ( ! $is_installed ) : ?>
+				<?php
+				/**
+				 * Filters the action buttons for a single add-on card.
+				 *
+				 * Returning a non-empty string overrides the default external
+				 * links. The Addon Manager plugin uses this to offer Install,
+				 * Activate and Update actions.
+				 *
+				 * @param string $actions      The action markup (empty by default).
+				 * @param object $addon        The add-on catalog entry.
+				 * @param bool   $is_installed Whether the add-on is installed.
+				 */
+				$addon_actions = apply_filters( 'mkl_pc_addon_card_actions', '', $addon, $is_installed );
+				if ( $addon_actions ) :
+					echo $addon_actions; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup built by trusted callbacks.
+				elseif ( ! $is_installed ) : ?>
 					<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php esc_html_e( 'Get the addon now', 'product-configurator-for-woocommerce' ) ?> <span class="dashicons dashicons-external"></span></a>
 				<?php elseif(isset($addon->doc_url) && $addon->doc_url):  ?>
 				<a href="<?php echo esc_url( $addon->doc_url ) ?>" class="button button-primary button-large"><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ) ?> <span class="dashicons dashicons-external"></span></a>
@@ -1377,7 +1416,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function get_addons() {
-			$this->addons = include 'addons.php';
+			/**
+			 * Filters the add-on catalog shown in the Addons tab.
+			 *
+			 * @param array $addons The decoded catalog from addons.php.
+			 */
+			$this->addons = apply_filters( 'mkl_pc_addons_catalog', include 'addons.php' );
 			$this->themes_url = get_transient( 'mkl_pc_themes_url' );
 		}
 

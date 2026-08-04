@@ -26,6 +26,7 @@ class Compat_Yith_Raq {
 		add_filter( 'mkl_pc_get_saved_configuration_content', [ $this, 'load_quote_configuration_in_configurator' ] );
 		add_action( 'ywraq_request_quote_email_view_item_after_title', [ $this, 'quote_from_cart_compat' ], 20, 3 );
 		add_action( 'ywraq_from_cart_to_order_item', [ $this, 'raq_on_create_order' ], 20, 4 );
+		add_filter( 'ywraq_order_cart_item_data', [ $this, 'order_cart_item_data' ], 20, 3 );
 	}
 
 	public function config( $config ) {
@@ -173,9 +174,12 @@ class Compat_Yith_Raq {
 				$rq->raq_content[ $item_id ][ 'configurator_data' ] = $layers;
 				$rq->raq_content[ $item_id ][ 'configurator_data_raw' ] = $data;
 				$rq->raq_content[ $item_id ][ 'pc_extra_price' ] = $ep;
-				if ( ! isset( $rq->raq_content[ $item_id ][ 'variations' ] ) ) $rq->raq_content[ $item_id ][ 'variations' ] = [];
-				foreach( $d as $variation ) {
-					$rq->raq_content[ $item_id ][ 'variations' ][$variation['key']] = $variation['value'];
+				// YITH Free HTML email only outputs item meta when `variations` is set.
+				// Simple products have no variation attributes; use an empty array as a flag only.
+				// Do not copy configurator display data into `variations` — variable products already
+				// use that array for WC attributes, and duplicating config there causes double output.
+				if ( empty( $variation_id ) && ! isset( $rq->raq_content[ $item_id ]['variations'] ) ) {
+					$rq->raq_content[ $item_id ]['variations'] = array();
 				}
 				$added = true;
 				do_action_ref_array( 'mkl_pc/yith-raq/added_product', array( &$rq->raq_content, $item_id, $layers ) );
@@ -326,6 +330,20 @@ class Compat_Yith_Raq {
 		$order_item = $order->get_item( $item_id );
 		mkl_pc( 'frontend' )->order->save_data( $order_item, $cart_item_key, $values, $order );
 		$order_item->save();
+	}
+
+	/**
+	 * Restore configurator data when YITH copies quote order items back to the cart.
+	 *
+	 * Runs before woocommerce_add_to_cart_validation during quote acceptance.
+	 *
+	 * @param array                $cart_item_data Cart item data.
+	 * @param \WC_Order_Item|false $item           Order line item.
+	 * @param \WC_Order            $order          Quote order.
+	 * @return array
+	 */
+	public function order_cart_item_data( $cart_item_data, $item, $order ) {
+		return mkl_pc( 'frontend' )->cart->restore_configuration_cart_item_data_from_order_item( $cart_item_data, $item );
 	}
 
 }

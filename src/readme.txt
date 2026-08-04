@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 5.9
 Tested up to: 7.0
-Stable tag: 1.7.1
+Stable tag: 1.7.4
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -13,11 +13,22 @@ Allow your customers to create configurable products with a live preview of the 
 
 == Description ==
 
-**Product Configurator for WooCommerce** allows you to use transparent image layers to build real-time visual previews of custom products.
+**Product Configurator for WooCommerce** lets customers visually customize products using image layers, colors, swatches, conditional logic, pricing rules, file uploads and linked WooCommerce products. Perfect for bicycles, furniture, industrial products and most made-to-order products.
 
-Give your customers an interactive experience and eliminate the need for hundreds of product variations and images. Export image layers from Photoshop, 3D renders, or other sources, and let the user assemble their product dynamically—no need for technical skills or bulky setups.
+Give your customers an interactive experience and eliminate the need for hundreds of product variations and images. Export image layers from Photoshop, 3D renders, or other sources, and let the user assemble their product dynamically: no need for technical skills or bulky setups
 
-Whether you're customizing jewelry, watches, clothing, furniture, or electronics, this plugin lets you offer flexible configuration options while keeping your store lightweight and manageable.
+**Perfect for:**
+
+* Custom jewelry, 
+* Watches, 
+* Clothing, 
+* Furniture, 
+* Electronics, computers and simulators,
+* Bikes, Bicycles an other vehicles,
+* Industrial or enterprise products,
+* Your custom products!
+
+This plugin lets you offer flexible configuration options while keeping your store simple and manageable.
 
 Easily add a product configurator to WordPress, with the plugin Product Configurator for Woo!
 
@@ -28,23 +39,37 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 
 === Features ===
 
-* **🖼️ Layered Image Rendering** – Compose product previews using transparent PNG layers—no need to create images for every combination.
-* **🔄 Multiple Views** – Show multiple angles or perspectives (e.g., front, side, back) of the product.
-* **📋 Multi-Step Configurator** – Split complex product builds into multiple steps to streamline user experience.
-* **💰 Price per Option** *(via add-on)* – Assign additional pricing to individual options (great for premium upgrades).
+==== Build visual product configurators ====
+
+* **Layered Image Rendering** – Compose product previews using transparent PNG layers—no need to create images for every combination.
+* **Multiple Views** – Show multiple angles or perspectives (e.g., front, side, back) of the product.
+* **Live preview**
+* **Live Text Overlay** *(via add-on)* – Let customers preview custom text with your fonts and colors—ideal for engraving, embroidery, and personalization.
+
+==== Create smart configuration flows ====
+
+* **Multi-Step Configurator** – Split complex product builds into multiple steps to streamline user experience.
+* **Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections—perfect for complex logic flows.
+* **Required selections**
 * **📝 Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
-* **🧮 Custom Pricing Formulas** *(via add-on)* – Calculate advanced prices dynamically based on user input and selected options.
-* **🔀 Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections—perfect for complex logic flows.
-* **📦 Inventory & Stock Management** *(via add-on)* – Track inventory per option inside the configurator, or by linking to actual WooCommerce products.
-* **🔗 Linked Products** *(via add-on)* – Link any configurator choice to a real product in your WooCommerce shop:
+
+==== Connect to WooCommerce ====
+
+* **Price per Option** *(via add-on)* – Assign additional pricing to individual options (great for premium upgrades).
+* **Custom Pricing Formulas** *(via add-on)* – Calculate advanced prices dynamically based on user input and selected options.
+* **Inventory & Stock Management** *(via add-on)* – Track inventory per option inside the configurator, or by linking to actual WooCommerce products.
+* **Linked Products** *(via add-on)* – Link any configurator choice to a real product in your WooCommerce shop:
   * Add real components to the cart
   * Track SKUs and inventory
   * Support ERP/warehouse integration
   * Build composite/bundled products
   * Use or override linked product pricing
-* **🔤 Live Text Overlay** *(via add-on)* – Let customers preview custom text with your fonts and colors—ideal for engraving, embroidery, and personalization.
-* **🧑‍💻 Developer Friendly** – Includes hooks, filters, and a clean, commented codebase. Limited docs for now, but open support is available.
-* **🐕‍🦺 Accessible** – Full keyboard use, screen-reader friendly labels and live announcements, validation errors shown in-page with links to each field—no blocking JavaScript alerts.
+
+==== Ready for your shop ====
+
+* **No development required** — works out of the box on any Woo store
+* **Developer Friendly** – Includes hooks, filters, and a clean, commented codebase to adapt it to your needs.
+* **Accessible** – Full keyboard use, screen-reader friendly labels and live announcements, validation errors shown in-page with links to each field
 
 === Shortcodes ===
 
@@ -62,12 +87,12 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 * Easily create your own theme for full control  
 * Supports WordPress Customizer (Appearance > Customize) to change visual styles
 
-=== Premium Add-ons ===
+=== Premium features ===
 
 The core plugin is fully functional. Extend it with these premium modules:
 
 * [**Extra Price**](https://wc-product-configurator.com/product/extra-price/) – Add custom pricing to options  
-* [**Save Your Design**](https://wc-product-configurator.com/product/save-your-design/) – Let users save and return to their designs  
+* [**Save Your Design**](https://wc-product-configurator.com/product/save-your-design/) – Let users save and share their designs, create configuration presets
 * [**Multiple Choice**](https://wc-product-configurator.com/product/multiple-choice/) – Enable multi-select per layer  
 * [**Linked Products & Stock Management**](https://wc-product-configurator.com/product/stock-management-and-linked-product/) – Link options to WooCommerce products, track inventory, sync with ERP  
 * [**Conditional Logic**](https://wc-product-configurator.com/product/conditional-logic/) – Dynamically show, hide, or auto-select items based on conditions  
@@ -160,6 +185,36 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+* TWEAK: Fix inconsistent styling for the summary in Float, when using steps
+* FIX: Prevent empty/broken media library entries when configuration image generation fails; reuse existing attachments when the file already exists
+
+= 1.7.4 - 8/Jul/2026 =
+
+* COMPAT: Restore configuration when accepting a YITH Request a Quote order (Premium)
+* FIX: Configuration item data in WooCommerce cart and checkout blocks
+* TWEAK: Improved cart block detection (Store API, plain permalinks)
+* TWEAK: Include nonce when loading configurator data asynchronously
+* TWEAK: Hide internal configurator meta from order item displays
+* TWEAK: Choice thumbnail alt text includes layer and choice names
+* TWEAK: Clarify disable caching setting when Stock Management add-on is active
+* DEV: Added hooks for Addon Manager (`mkl_pc_addons_tab_before`, `mkl_pc_addon_card_actions`, `mkl_pc_addons_catalog`)
+* DEV: Added `Frontend_Cart::restore_configuration_cart_item_data_from_order_item()` and `has_configuration_data()`
+
+= 1.7.3 - 8/Jun/2026 =
+
+* SECURITY: Restrict configurator data AJAX access to published products; non-published products require edit capability and a valid nonce
+
+= 1.7.2 - 8/Jun/2026 =
+
+* FEATURE: Setting to reset the configuration and quantity after Ajax add to cart
+* TWEAK: Double check JSON decode
+* FIX: Settings sanitizing braking setting containing link
+* FIX: missing echo in screen reader text
+* DEV: added function mkl_pc_get_configuration_price
+* DEV: added PHP filter 'mkl_pc/reset_configurator_on_ajax_add_to_cart'
+* DEV: added JS filter 'PC.fe.reset.on.ajax_add_to_cart'
+* DEV: added JS action 'PC.fe.reset_after_ajax_add_to_cart'
 
 = 1.7.1 - 11/May/2026 =
 
@@ -440,4 +495,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
+* 1.7.4 Recommended update for YITH Request a Quote users and stores using the WooCommerce cart or checkout blocks.
 * 1.7.0 Upgraded Pixi library to latest version (v8) - Text overlay and Save your design add-ons need to be updated to work with this latest update

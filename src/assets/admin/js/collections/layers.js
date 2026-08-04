@@ -6,7 +6,7 @@ var PC = PC || {};
 		url: function() { 
 			var url = ajaxurl + '?action='+PC.actionParameter+'&data=layers';
 			if ( this.product_id ) url += '&id='+this.product_id;
-			return url;
+			return url + PC.get_ajax_nonce_param();
 		},
 		model: PC.layer,
 		initialize: function( data, options ) {

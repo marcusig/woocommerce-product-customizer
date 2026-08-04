@@ -495,6 +495,7 @@ class Frontend_Woocommerce {
 			'frontend_action_token_url' => esc_url_raw( rest_url( 'mkl_pc/v1/frontend-action-token' ) ),
 			'rest_nonce' => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
 			'assets_url' => MKL_PC_ASSETS_URL,
+			'update_nonce' => ( $prod && 'publish' !== $prod->get_status() && current_user_can( 'edit_post', $prod->get_id() ) ) ? wp_create_nonce( 'update-pc-post_' . $prod->get_id() ) : '',
 			'lang' => array(
 				'money_precision' => wc_get_price_decimals(),
 				'money_symbol' => get_woocommerce_currency_symbol( get_woocommerce_currency() ),
@@ -554,6 +555,11 @@ class Frontend_Woocommerce {
 				'steps_use_layer_name' => ( bool ) mkl_pc( 'settings')->get( 'steps_use_layer_name', false ),
 				'steps_progress_enable_click_all' => ( bool ) mkl_pc( 'settings')->get( 'steps_progress_enable_click_all', false ),
 				'enable_configurator_ajax_add_to_cart' => ( bool ) mkl_pc( 'settings')->get( 'enable_configurator_ajax_add_to_cart', false ),
+				'reset_configurator_on_ajax_add_to_cart' => apply_filters(
+					'mkl_pc/reset_configurator_on_ajax_add_to_cart',
+					( bool ) mkl_pc( 'settings' )->get( 'reset_configurator_on_ajax_add_to_cart', false ),
+					$post ? $post->ID : 0
+				),
 				'mobile_image_breakpoint' => 660,
 				'large_image_breakpoint' => 2200,
 				'angles' => [

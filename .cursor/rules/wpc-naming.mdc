@@ -17,3 +17,5 @@ Main plugin repo; add-ons are sibling packages under `app/src/`. When changing h
   - JavaScript: [WordPress JS Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/javascript/) for layout and general style, while keeping **snake_case** for project-owned identifiers.
 
 External APIs (React, WordPress globals, third-party SDKs) keep their required names; wrap or alias in snake_case at boundaries when practical.
+
+## Do not add readme entries unless if specifically asked

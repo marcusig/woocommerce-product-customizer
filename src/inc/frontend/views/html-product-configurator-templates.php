@@ -182,7 +182,17 @@ add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_ch
 function mkl_pc_frontend_configurator_choice_thumbnail() {
 	?>
 		<# if ( data.thumbnail || data.color ) { #>
-			<i class="mkl-pc-thumbnail"><span<# if ( data.color ) { #> style="background-color: {{data.color}};"<# } #>><# if ( data.thumbnail ) { #><img src="{{data.thumbnail}}" alt="" /><# } #></span></i>
+			<#
+			var layer_name = '';
+			if ( data.layerId && PC.fe && PC.fe.layers ) {
+				var layer = PC.fe.layers.get( data.layerId );
+				if ( layer ) {
+					layer_name = layer.get( 'name' ) || '';
+				}
+			}
+			var thumbnail_alt = layer_name && data.name ? layer_name + ' - ' + data.name : ( data.name || layer_name || '' );
+			#>
+			<i class="mkl-pc-thumbnail"><span<# if ( data.color ) { #> style="background-color: {{data.color}};"<# } #>><# if ( data.thumbnail ) { #><img src="{{data.thumbnail}}" alt="{{thumbnail_alt}}" /><# } #></span></i>
 		<# } #>
 	<?php
 }

@@ -57,7 +57,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			?>
 			<tr>
 				<td scope="col" style="text-align:left;"><a href="<?php echo esc_url( $product_admin_link ); ?>"><?php echo wp_kses_post( $_product->get_title() ); ?></a>
-					<?php if ( isset( $item['variations'] ) ) : ?>
+					<?php if ( isset( $item['variations'] ) || ! empty( $item['pc_configurator_data'] ) ) : ?>
 						<small><?php echo wp_kses_post( yith_ywraq_get_product_meta( $item ) ); ?></small>
 					<?php endif ?>
 				</td>
