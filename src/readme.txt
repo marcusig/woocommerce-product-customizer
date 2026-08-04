@@ -172,6 +172,9 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+* TWEAK: Fix inconsistent styling for the summary in Float, when using steps
+* FIX: Prevent empty/broken media library entries when configuration image generation fails; reuse existing attachments when the file already exists
+
 = 1.7.4 - 8/Jul/2026 =
 
 * COMPAT: Restore configuration when accepting a YITH Request a Quote order (Premium)
