@@ -533,9 +533,9 @@ class Configuration {
 					}
 				}
 
-				if ( count( $images ) > 1 && Utils::check_image_requirements() ) {
+				if ( count( $images ) > 1 && $image_file_name && Utils::check_image_requirements() ) {
 					$image_manager = $this->_get_image_manager();
-					$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name ); 
+					$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name );
 					return $this->save_attachment( $fimage, $this->ID );
 				} elseif ( 1 == count( $images ) ) {
 					return array_keys( $images )[0];
@@ -587,13 +587,33 @@ class Configuration {
 
 	/**
 	 * Save the image as attachment
+	 *
+	 * @param string|false|\WP_Error $filename        Absolute path to the image file.
+	 * @param int                    $parent_post_id  Optional parent post ID.
+	 * @return int Attachment ID, or 0 on failure.
 	 */
 	public function save_attachment( $filename, $parent_post_id ) {
 		global $wpdb;
+
+		if ( is_wp_error( $filename ) || ! is_string( $filename ) || '' === $filename || ! is_file( $filename ) ) {
+			return 0;
+		}
+
+		$guid = $this->upload_dir_url . '/' . basename( $filename );
+
+		// Reuse an existing media library entry for this file when present.
+		$attach_id = Utils::get_image_id( $guid );
+		if ( $attach_id ) {
+			if ( $parent_post_id ) {
+				set_post_thumbnail( $parent_post_id, $attach_id );
+			}
+			return (int) $attach_id;
+		}
+
 		$filetype = wp_check_filetype( basename( $filename ), null );
 
 		$attachment = array(
-			'guid'           => $this->upload_dir_url . '/' . basename( $filename ), 
+			'guid'           => $guid,
 			'post_mime_type' => $filetype['type'],
 			'post_title'     => preg_replace( '/\.[^.]+$/', '', basename( $filename ) ),
 			'post_content'   => '',
@@ -602,7 +622,7 @@ class Configuration {
 		// Insert the attachment.
 		$attach_id = wp_insert_attachment( $attachment, $filename, $parent_post_id );
 
-		if ( ! function_exists( 'wp_generate_attachment_metadata' ) && file_exists( ABSPATH . 'wp-admin/includes/image.php') ){
+		if ( ! function_exists( 'wp_generate_attachment_metadata' ) && file_exists( ABSPATH . 'wp-admin/includes/image.php' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 		}
 		// Generate the metadata for the attachment, and update the database record.
@@ -614,7 +634,9 @@ class Configuration {
 			$wpdb->update( $wpdb->posts, array( 'post_status' => 'configuration' ), array( 'ID' => $attach_id ) );
 		}
 
-		if ( $parent_post_id ) set_post_thumbnail( $parent_post_id, $attach_id );
+		if ( $parent_post_id ) {
+			set_post_thumbnail( $parent_post_id, $attach_id );
+		}
 
 		return $attach_id;
 	}

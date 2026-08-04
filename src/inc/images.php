@@ -50,12 +50,18 @@ class Images {
 
 		} elseif ( 'file' === $output && is_dir( $where ) ) {
 
-			if( file_exists( $where . '/' .$file_name ) ) return $where . '/' .$file_name;
-			
-			if( '' == $file_name ) return new \WP_Error( 'file_name_empty', 'File name is empty' );
+			// Check empty name before file_exists(): `$where . '/'` is the directory itself.
+			if ( '' === $file_name ) {
+				return new \WP_Error( 'file_name_empty', 'File name is empty' );
+			}
 
-			$the_image->save($where . '/' .$file_name);
-			return $where . '/' .$file_name;
+			$file_path = trailingslashit( $where ) . $file_name;
+			if ( is_file( $file_path ) ) {
+				return $file_path;
+			}
+
+			$the_image->save( $file_path );
+			return $file_path;
 
 		} else {
 			return ['else', false, is_dir($where), $where];
