@@ -739,19 +739,14 @@ PC.views = PC.views || {};
 			return this;
 		},
 		populate_object_3d_id: function() {
-			var $sel = this.$( 'select[data-setting="object_3d_id"]' );
-			if ( ! $sel.length ) return;
-			var currentVal = this.model.get( 'object_3d_id' );
-			var objects3d = PC.app.get_collection( 'objects3d' );
-			$sel.find( 'option:not(:first)' ).remove();
-			if ( objects3d && objects3d.length ) {
-				objects3d.each( function( obj ) {
-					if ( obj.get( 'object_type' ) !== 'gltf' ) return;
-					var id = obj.get( '_id' ) || obj.id;
-					var label = obj.get( 'name' ) || obj.get( 'filename' ) || ( 'Object #' + id );
-					var selected = ( currentVal != null && String( currentVal ) === String( id ) ) ? ' selected' : '';
-					$sel.append( '<option value="' + ( id === undefined || id === null ? '' : id ) + '"' + selected + '>' + ( _.escape( label ) ) + '</option>' );
-				} );
+			var self = this;
+			var populate = function() {
+				PC.threeD.populateObjects3dSettingSelect( self, 'object_3d_id', { types: [ 'gltf' ] } );
+			};
+			if ( PC.threeD && typeof PC.threeD.populateObjects3dSettingSelect === 'function' ) {
+				populate();
+			} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+				PC.threeD.ensureReady().then( populate );
 			}
 		},
 		form_change: function( event ) {

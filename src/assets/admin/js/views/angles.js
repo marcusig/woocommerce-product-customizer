@@ -63,19 +63,14 @@ PC.views.angle_form = PC.views.layer_form.extend({
 		return ret;
 	},
 	populate_camera_target_model: function() {
-		var $sel = this.$( 'select[data-setting="camera_target_model"]' );
-		if ( ! $sel.length ) return;
-		var currentVal = this.model.get( 'camera_target_model' ) || '';
-		var opts = { includeUpload: false };
-		var doPopulate = function() {
-			if ( PC.threeD && typeof PC.threeD.populateModelSourceSelect === 'function' ) {
-				PC.threeD.populateModelSourceSelect( jQuery, $sel, currentVal, opts );
-			}
+		var self = this;
+		var populate = function() {
+			PC.threeD.populateObjects3dSettingSelect( self, 'camera_target_model', { types: [ 'gltf' ] } );
 		};
-		if ( typeof PC.threeD.populateModelSourceSelect === 'function' ) {
-			doPopulate();
+		if ( PC.threeD && typeof PC.threeD.populateObjects3dSettingSelect === 'function' ) {
+			populate();
 		} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
-			PC.threeD.ensureReady().then( doPopulate );
+			PC.threeD.ensureReady().then( populate );
 		}
 	},
 	set_default_view: function( model, seleted ) {

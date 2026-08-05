@@ -421,6 +421,46 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		}
 
 		/**
+		 * Default placeholder label for objects3d model selects with no saved value.
+		 *
+		 * @return string
+		 */
+		public static function objects3d_select_placeholder_label() {
+			return __( '— Select a 3D object —', 'product-configurator-for-woocommerce' );
+		}
+
+		/**
+		 * HTML for an objects3d model select (shell only; options filled by JS).
+		 *
+		 * @param array $args {
+		 *     @type string $setting     data-setting key. Default object_3d_id.
+		 *     @type string $placeholder Empty option label.
+		 *     @type string $description Optional description below the select.
+		 *     @type string $classes     Container CSS classes.
+		 * }
+		 * @return string
+		 */
+		public static function get_objects3d_select_html( $args = array() ) {
+			$setting     = isset( $args['setting'] ) ? $args['setting'] : 'object_3d_id';
+			$placeholder = isset( $args['placeholder'] ) ? $args['placeholder'] : __( '— None —', 'product-configurator-for-woocommerce' );
+			$description = array_key_exists( 'description', $args )
+				? $args['description']
+				: __( 'Select a 3D object from the 3D Objects tab.', 'product-configurator-for-woocommerce' );
+			$classes     = isset( $args['classes'] ) ? $args['classes'] : 'mkl-pc-setting--container mkl-pc--object3d-select-container';
+
+			$html = '<div class="' . esc_attr( $classes ) . '">'
+				. '<select class="components-select-control__input" data-setting="' . esc_attr( $setting ) . '">'
+				. '<option value="">' . esc_html( $placeholder ) . '</option>'
+				. '</select>';
+			if ( $description ) {
+				$html .= '<p class="description">' . esc_html( $description ) . '</p>';
+			}
+			$html .= '</div>';
+
+			return $html;
+		}
+
+		/**
 		 * Shared 3D model source fields (Use object from / Model upload / Object ID) for layers, choices, and angles.
 		 *
 		 * @param array $config {
@@ -453,7 +493,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			if ( ! $can_upload ) {
 				// Empty placeholder so the select does not appear to have a value when none is saved.
 				$choices[] = [
-					'label' => __( '— Select a 3D object —', 'product-configurator-for-woocommerce' ),
+					'label' => self::objects3d_select_placeholder_label(),
 					'value' => '',
 				];
 			}

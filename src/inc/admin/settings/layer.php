@@ -288,12 +288,10 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 10,
-					'html'      => '<div class="mkl-pc-setting--container mkl-pc--object3d-select-container">'
-						. '<select class="components-select-control__input" data-setting="object_3d_id">'
-						. '<option value="">' . esc_html__( '— None —', 'product-configurator-for-woocommerce' ) . '</option>'
-						. '</select>'
-						. '<p class="description">' . esc_html__( 'Select a 3D object from the 3D Objects tab.', 'product-configurator-for-woocommerce' ) . '</p>'
-						. '</div>',
+					'html'      => Abstract_Settings::get_objects3d_select_html( array(
+						'setting'     => 'object_3d_id',
+						'placeholder' => __( '— None —', 'product-configurator-for-woocommerce' ),
+					) ),
 				);
 				$settings['target_object_id'] = array(
 					'label'     => __( 'Object ID (scene)', 'product-configurator-for-woocommerce' ),

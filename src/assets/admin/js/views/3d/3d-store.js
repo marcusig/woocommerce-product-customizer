@@ -1,5 +1,5 @@
 /**
- * Admin 3D store: cache by URL, resolveModelUrl (object_3d_id / camera_target_model), getObjects3DModelSources, populateModelSourceSelect.
+ * Admin 3D store: cache by URL, resolveModelUrl (object_3d_id / camera_target_model), getObjects3DModelSources, populateObjects3dSelect.
  * Depends on PC.threeD.getGltfLoader (3d-loader.js). Uses shared buildObjectTreeFromScene and disposeScene.
  */
 import { buildObjectTreeFromScene, disposeScene } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
@@ -185,28 +185,81 @@ function getObjects3DModelSources( callback ) {
 	} );
 }
 
-/**
- * Populate a model source select with options from the objects3d collection. Used for angle camera_target_model. Layer/choice forms use object_3d_id select from objects3d directly.
- */
-function populateModelSourceSelect( $, $sel, currentVal, options ) {
-	if ( ! $sel || ! $sel.length ) return;
-	const objects3d = get3DObjectsCollection();
-	// Keep (or restore) an empty placeholder as the first option when no value is saved.
-	if ( ! $sel.find( 'option' ).length || $sel.find( 'option:first' ).attr( 'value' ) !== '' ) {
-		const placeholderLabel = ( window.PC_lang && PC_lang.select_3d_object )
+function normalize_object_type_filter( types ) {
+	if ( types == null || types === '' ) {
+		return [];
+	}
+	if ( Array.isArray( types ) ) {
+		return types;
+	}
+	return [ types ];
+}
+
+function object_matches_type_filter( obj, types ) {
+	if ( ! types.length ) {
+		return true;
+	}
+	const object_type = obj.get( 'object_type' );
+	return types.indexOf( object_type ) !== -1;
+}
+
+function ensure_objects3d_select_placeholder( $, $sel, placeholder ) {
+	const $first = $sel.find( 'option:first' );
+	if ( placeholder != null && placeholder !== '' ) {
+		if ( $first.length && $first.attr( 'value' ) === '' ) {
+			$first.text( placeholder );
+			return;
+		}
+		$sel.prepend( $( '<option></option>' ).attr( 'value', '' ).text( placeholder ) );
+		return;
+	}
+	if ( ! $sel.find( 'option' ).length || $first.attr( 'value' ) !== '' ) {
+		const placeholder_label = ( window.PC_lang && PC_lang.select_3d_object )
 			? PC_lang.select_3d_object
 			: '— Select a 3D object —';
-		$sel.prepend( $( '<option></option>' ).attr( 'value', '' ).text( placeholderLabel ) );
+		$sel.prepend( $( '<option></option>' ).attr( 'value', '' ).text( placeholder_label ) );
 	}
+}
+
+/**
+ * Populate a select with options from the objects3d collection.
+ *
+ * @param {jQuery} $ - jQuery instance.
+ * @param {jQuery} $sel - Select element.
+ * @param {string|number|null} currentVal - Current saved value.
+ * @param {{ types?: string|string[], placeholder?: string|null }} options
+ */
+function populateObjects3dSelect( $, $sel, currentVal, options ) {
+	if ( ! $sel || ! $sel.length ) {
+		return;
+	}
+	options = options || {};
+	const types = options.types != null
+		? normalize_object_type_filter( options.types )
+		: [ 'gltf' ];
+	const objects3d = get3DObjectsCollection();
+	ensure_objects3d_select_placeholder( $, $sel, options.placeholder );
 	$sel.find( 'option:not(:first)' ).remove();
 	if ( objects3d && objects3d.length ) {
 		objects3d.each( function( obj ) {
+			if ( ! object_matches_type_filter( obj, types ) ) {
+				return;
+			}
 			const id = obj.get( '_id' ) || obj.id;
 			const label = obj.get( 'name' ) || obj.get( 'filename' ) || ( 'Object #' + id );
 			$sel.append( $( '<option></option>' ).attr( 'value', id ).text( label ) );
 		} );
 	}
 	$sel.val( ( currentVal != null && currentVal !== '' ) ? currentVal : '' );
+}
+
+function populateObjects3dSettingSelect( view, setting_key, options ) {
+	const $sel = view.$( 'select[data-setting="' + setting_key + '"]' );
+	if ( ! $sel.length ) {
+		return;
+	}
+	const current_val = view.model.get( setting_key );
+	populateObjects3dSelect( jQuery, $sel, current_val, options );
 }
 
 window.PC = window.PC || {};
@@ -226,4 +279,5 @@ window.PC.threeD.resolveModelUrl = resolveModelUrl;
 window.PC.threeD.resolveChoiceModelUrl = resolveChoiceModelUrl;
 window.PC.threeD.resolveAngleCameraTargetModelUrl = resolveAngleCameraTargetModelUrl;
 window.PC.threeD.getObjects3DModelSources = getObjects3DModelSources;
-window.PC.threeD.populateModelSourceSelect = populateModelSourceSelect;
+window.PC.threeD.populateObjects3dSelect = populateObjects3dSelect;
+window.PC.threeD.populateObjects3dSettingSelect = populateObjects3dSettingSelect;

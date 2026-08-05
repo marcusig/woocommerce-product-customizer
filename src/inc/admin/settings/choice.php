@@ -172,12 +172,10 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'section'   => 'threed',
 					'priority'  => 10,
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
-					'html'      => '<div class="mkl-pc-setting--container mkl-pc--object3d-select-container">'
-						. '<select class="components-select-control__input" data-setting="object_3d_id">'
-						. '<option value="">' . esc_html__( '— None / Inherit —', 'product-configurator-for-woocommerce' ) . '</option>'
-						. '</select>'
-						. '<p class="description">' . esc_html__( 'Select a 3D object from the 3D Objects tab.', 'product-configurator-for-woocommerce' ) . '</p>'
-						. '</div>',
+					'html'      => Abstract_Settings::get_objects3d_select_html( array(
+						'setting'     => 'object_3d_id',
+						'placeholder' => __( '— None / Inherit —', 'product-configurator-for-woocommerce' ),
+					) ),
 				);
 				$fields['target_object_id'] = array(
 					'label'     => __( 'Object ID (scene)', 'product-configurator-for-woocommerce' ),
