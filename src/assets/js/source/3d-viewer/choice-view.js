@@ -88,6 +88,9 @@ const viewer_3d_choice = Backbone.View.extend({
 		const target_scene = this.get_target_scene() || this.target_scene;
 		if ( target_object && has_toggle_visibility ) target_object.visible = visible;
 		if ( target_scene && has_toggle_visibility ) target_scene.visible = visible;
+		if ( has_toggle_visibility ) {
+			this._invalidate_fake_shadow();
+		}
 		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
 			this.parent_view._applyAngleCamera( { reframe: true } );
 		}
@@ -95,6 +98,12 @@ const viewer_3d_choice = Backbone.View.extend({
 		// If conditional logic just made an active choice visible, ensure lazy targets can load.
 		if ( visible && this.model.get( 'active' ) ) {
 			this.apply_actions();
+		}
+	},
+
+	_invalidate_fake_shadow() {
+		if ( this.parent_view && typeof this.parent_view.invalidate_fake_shadow === 'function' ) {
+			this.parent_view.invalidate_fake_shadow();
 		}
 	},
 
@@ -125,6 +134,9 @@ const viewer_3d_choice = Backbone.View.extend({
 			actions
 		);
 
+		if ( has_toggle_visibility ) {
+			this._invalidate_fake_shadow();
+		}
 		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
 			this.parent_view._applyAngleCamera( { reframe: true } );
 		}
@@ -142,6 +154,9 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( ! visible ) {
 			if ( this.target_object && has_toggle_visibility ) this.target_object.visible = false;
 			if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = false;
+			if ( has_toggle_visibility ) {
+				this._invalidate_fake_shadow();
+			}
 			if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
 				this.parent_view._applyAngleCamera( { reframe: true } );
 			}

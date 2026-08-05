@@ -10,6 +10,7 @@ import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags, getHdrUrlFromEnv } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
+import { start_animation_loop } from './3d-animation-loop.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
@@ -290,13 +291,13 @@ export default Backbone.View.extend({
 	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, createPostprocessingLayer: * }>}
 	 */
 	async _loadModules( s ) {
-		const { createGltfLoader, getDefaultGltfConfig } = await import( './3d-loader-factory.js' );
+		const { getSharedGltfLoader } = await import( './3d-loader-factory.js' );
 		const groundEnabled = ( s.ground && s.ground.enabled !== false );
 		const ppFlags = getPostprocessingFlags( s );
 		const anyPostprocessing = ppFlags.ssao || ppFlags.ssr || ppFlags.bloom || ppFlags.emissiveBloom || ppFlags.smaa;
 
 		const promises = [
-			createGltfLoader( getDefaultGltfConfig() ),
+			getSharedGltfLoader(),
 		];
 		if ( groundEnabled ) promises.push( import( './3d-fake-shadow.js' ) );
 		if ( anyPostprocessing ) promises.push( import( './3d-postprocessing.js' ) );
@@ -618,10 +619,9 @@ export default Backbone.View.extend({
 		this._emitRuntimeEvent( 'runtime:ready', { three: t } );
 
 		const g = ( s && s.ground ) || {};
-		// Main render loop: update controls, shadow pass, postprocessing pass, then final render.
-		const animate = ( now ) => {
-			t.animation_id = requestAnimationFrame( animate );
-			if ( document.hidden ) return;
+		// Main render loop: update controls, shadow pass (when dirty), postprocessing, then final render.
+		// Fully pauses (cancelAnimationFrame) while the document is hidden.
+		start_animation_loop( t, ( now ) => {
 			if ( t._lastFrameTs == null ) t._lastFrameTs = now;
 			const deltaSeconds = Math.max( 0, ( now - t._lastFrameTs ) / 1000 );
 			t._lastFrameTs = now;
@@ -637,13 +637,12 @@ export default Backbone.View.extend({
 			if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
 				t.renderer.render( t.scene, t.camera );
 			}
-		};
-		animate();
+		} );
 	},
 
 	_getGltfLoader() {
 		if ( this._gltfLoader ) return Promise.resolve( this._gltfLoader );
-		return import( './3d-loader-factory.js' ).then( ( m ) => m.createGltfLoader( m.getDefaultGltfConfig() ) ).then( ( loader ) => {
+		return import( './3d-loader-factory.js' ).then( ( m ) => m.getSharedGltfLoader() ).then( ( loader ) => {
 			this._gltfLoader = loader;
 			return loader;
 		} );
@@ -706,6 +705,7 @@ export default Backbone.View.extend({
 					this._objectIdToScene[ idStr ] = sceneToAdd;
 					this._syncLayerSceneForObjectId( idStr, sceneToAdd );
 					this._apply_layer_cshow_visibility();
+					this.invalidate_fake_shadow();
 					this._emitRuntimeAction( 'PC.fe.viewer.object3d.loaded', [ this, idStr, sceneToAdd, sceneModel.get( 'animations' ) || [], this._runtimeApi ] );
 					this._emitRuntimeEvent( 'object3d:loaded', { object3dId: idStr, scene: sceneToAdd, animations: sceneModel.get( 'animations' ) || [] } );
 					resolve( sceneToAdd );
@@ -798,8 +798,19 @@ export default Backbone.View.extend({
 				if ( scene ) scene.visible = cshow( layer_model );
 			} );
 		}
+		this.invalidate_fake_shadow();
 		// Keep active-angle framing in sync with current visibility state.
 		this._applyAngleCamera( { reframe: true } );
+	},
+
+	/**
+	 * Mark the planar fake shadow dirty after visibility / geometry changes.
+	 */
+	invalidate_fake_shadow() {
+		const t = this._three;
+		if ( t && t.fake_shadow && typeof t.fake_shadow.invalidate === 'function' ) {
+			t.fake_shadow.invalidate();
+		}
 	},
 
 	_bind_layer_cshow() {
@@ -982,6 +993,7 @@ export default Backbone.View.extend({
 			this._choice_views = [];
 		}
 		this._layer_scenes = [];
+		// Keep shared GLTFLoader module cache; drop the instance ref only.
 		this._gltfLoader = null;
 		if ( this._scene_models ) this._scene_models.reset();
 		this._objectIdToScene = {};

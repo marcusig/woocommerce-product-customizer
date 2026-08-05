@@ -76,6 +76,9 @@ export const disposeScene = disposeSceneUtil;
  */
 export function cleanupThree( t ) {
 	if ( ! t ) return;
+	if ( typeof t.stop_animation_loop === 'function' ) {
+		t.stop_animation_loop();
+	}
 	if ( t.fake_shadow ) {
 		t.fake_shadow.dispose();
 		t.fake_shadow = null;

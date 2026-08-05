@@ -61,8 +61,17 @@ export class FakeShadow extends THREE.Object3D {
 		this._intensity = 0;
 		this._softness = 1;
 		this._enabled = true;
+		this._needs_render = true;
 
 		scene.add(this);
+	}
+
+	/**
+	 * Mark the depth/blur passes dirty so the next render() rebuilds the shadow texture.
+	 * Call when model visibility, transforms, or ground settings change — not every frame.
+	 */
+	invalidate() {
+		this._needs_render = true;
 	}
 
 	/**
@@ -96,6 +105,7 @@ export class FakeShadow extends THREE.Object3D {
 
 		this._setMapSize();
 		this._setIntensity();
+		this._needs_render = true;
 	}
 
 	_setMapSize() {
@@ -148,12 +158,18 @@ export class FakeShadow extends THREE.Object3D {
 
 	/**
 	 * Render depth pass and blur; updates the floor texture. Call before the main scene render.
+	 * Skips the expensive depth/blur passes when nothing has changed since the last render.
 	 * @param {THREE.WebGLRenderer} renderer
 	 * @param {THREE.Scene} scene - Full scene containing the model.
 	 */
 	render(renderer, scene) {
 		if (!this._enabled || !this._renderTarget || this._intensity <= 0) {
 			this._floor.visible = false;
+			return;
+		}
+
+		if (!this._needs_render) {
+			this._setIntensity();
 			return;
 		}
 
@@ -182,6 +198,7 @@ export class FakeShadow extends THREE.Object3D {
 		renderer.setClearAlpha(initialClearAlpha);
 
 		this._setIntensity();
+		this._needs_render = false;
 	}
 
 	_blurShadow(renderer) {

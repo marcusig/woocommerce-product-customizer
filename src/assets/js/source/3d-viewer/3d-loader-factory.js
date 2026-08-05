@@ -7,6 +7,7 @@ import GLTFMaterialsVariantsExtension from '../../vendor/KHR_materials_variants.
 let DRACOLoaderModule = null;
 let MeshoptModule = null;
 let cachedDracoLoader = null;
+let sharedLoaderPromise = null;
 
 /**
  * Default 3D loader config
@@ -28,7 +29,8 @@ export function getDefaultGltfConfig() {
 }
 
 /**
- * Create configured GLTFLoader (async because of dynamic imports)
+ * Create configured GLTFLoader (async because of dynamic imports).
+ * Prefer getSharedGltfLoader() for multi-model loads so one instance is reused.
  */
 export async function createGltfLoader(config = null) {
 
@@ -83,4 +85,16 @@ export async function createGltfLoader(config = null) {
 	loader.register((parser) => new GLTFMaterialsVariantsExtension(parser));
 
 	return loader;
+}
+
+/**
+ * Shared/cached GLTFLoader for the page lifetime (admin + frontend).
+ * @param {Object|null} config
+ * @returns {Promise<import('three/addons/loaders/GLTFLoader.js').GLTFLoader>}
+ */
+export function getSharedGltfLoader( config = null ) {
+	if ( ! sharedLoaderPromise ) {
+		sharedLoaderPromise = createGltfLoader( config || getDefaultGltfConfig() );
+	}
+	return sharedLoaderPromise;
 }

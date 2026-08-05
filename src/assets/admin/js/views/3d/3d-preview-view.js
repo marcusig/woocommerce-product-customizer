@@ -3,6 +3,8 @@
  * Imported by 3d-settings.js.
  */
 
+import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
+
 const $ = window.jQuery;
 
 function get_three() {
@@ -191,6 +193,9 @@ export const settings_3d_preview_mixin = {
 
 	},
 	maybe_cleanup: function () {
+		if ( this._three && typeof this._three.stop_animation_loop === 'function' ) {
+			this._three.stop_animation_loop();
+		}
 		if ( this._three?.fake_shadow ) {
 			this._three.fake_shadow.dispose();
 			this._three.fake_shadow = null;
@@ -202,7 +207,10 @@ export const settings_3d_preview_mixin = {
 			this._three.light_helpers = [];
 		}
 		if ( this._three?.renderer ) {
-			cancelAnimationFrame( this._three.animation_id ); // stop previous loop
+			if ( this._three.animation_id ) {
+				cancelAnimationFrame( this._three.animation_id );
+				this._three.animation_id = null;
+			}
 
 			if ( this._three.postprocessingLayer ) {
 				this._three.postprocessingLayer.dispose();
@@ -622,9 +630,8 @@ export const settings_3d_preview_mixin = {
 			};
 			setTimeout( runPreviewLoad, 0 );
 
-			const animate = () => {
-				this._three.animation_id = requestAnimationFrame( animate );
-				if ( document.hidden ) return;
+			// Fully pauses (cancelAnimationFrame) while the document is hidden.
+			start_animation_loop( this._three, () => {
 				controls.update();
 				if ( this._three.light_helpers && this._three.light_helpers.length ) {
 					this._three.light_helpers.forEach( function ( h ) {
@@ -641,8 +648,7 @@ export const settings_3d_preview_mixin = {
 				if ( !this._three.postprocessingLayer || this._three.bypassPostprocessing ) {
 					renderer.render( scene, camera );
 				}
-			};
-			animate();
+			} );
 		} );
 	},
 	/**
@@ -651,11 +657,18 @@ export const settings_3d_preview_mixin = {
 	 */
 	render_tree: function ( scene_roots ) {
 		const tree_el = this.$( '.pc-3d-tree' ).empty();
+		const view_ref = this;
 		if ( !scene_roots || !scene_roots.length ) {
 			const msg = ( typeof PC_lang !== 'undefined' && PC_lang.no_objects_in_scene ) ? PC_lang.no_objects_in_scene : 'No objects in scene.';
 			tree_el.append( '<p class="pc-3d-tree-message description">' + msg + '</p>' );
 			return;
 		}
+
+		const invalidate_shadow = function () {
+			if ( view_ref._three && view_ref._three.fake_shadow && typeof view_ref._three.fake_shadow.invalidate === 'function' ) {
+				view_ref._three.fake_shadow.invalidate();
+			}
+		};
 
 		const build_list = ( obj ) => {
 			const hasChildren = obj.children && obj.children.length;
@@ -679,6 +692,7 @@ export const settings_3d_preview_mixin = {
 			cb.on( 'change', function () {
 				const o = $( this ).data( 'object3d' );
 				if ( o ) o.visible = this.checked;
+				invalidate_shadow();
 			} );
 			const label = ( obj.name || '' ) + ' [' + ( obj.type || '' ) + ']';
 			li_el.append( cb ).append( ' ' ).append( $( '<span class="pc-3d-tree-label">' ).text( label ) );
@@ -713,6 +727,7 @@ export const settings_3d_preview_mixin = {
 			cb.on( 'change', function () {
 				const o = $( this ).data( 'object3d' );
 				if ( o ) o.visible = this.checked;
+				invalidate_shadow();
 			} );
 			const displayLabel = label || ( object.name || '' ) + ' [' + ( object.type || '' ) + ']';
 			li_el.append( cb ).append( ' ' ).append( $( '<span class="pc-3d-tree-label">' ).text( displayLabel ) );
