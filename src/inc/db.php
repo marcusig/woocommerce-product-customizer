@@ -1663,7 +1663,7 @@ class DB {
 			);
 			$default_menu[] = array(
 				'type' 	=> 'part',
-				'menu_id' 	=> 'settings_3D',
+				'menu_id' 	=> 'settings_3d',
 				'label' => __( '3D settings', 'product-configurator-for-woocommerce' ),
 				'title' => __( '3D settings', 'product-configurator-for-woocommerce' ),
 				'menu' => array(

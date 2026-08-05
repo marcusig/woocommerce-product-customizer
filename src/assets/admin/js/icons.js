@@ -64,7 +64,7 @@ var PC = PC || {};
 		// 'nav_mkl-pc__bulk': { dashicon: 'dashicons-tickets-alt' },
 		// nav_extra_price: { dashicon: 'dashicons-tag' },
 		nav_objects3d: { svg: 'svg/3d/mesh_cube' },
-		nav_settings_3D: { svg: 'svg/settings' },
+		nav_settings_3d: { svg: 'svg/settings' },
 	};
 
 	PC.icon_registry = Object.assign( {}, defaults );

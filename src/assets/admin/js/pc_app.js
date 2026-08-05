@@ -458,7 +458,7 @@ PC.toJSON = function( item ) {
 			if ( lang.admin_menu && lang.admin_menu.length ) {
 				for ( var i = 0; i < lang.admin_menu.length; i++ ) {
 					var item = lang.admin_menu[ i ];
-					if ( item && item.menu_id === 'settings_3D' ) {
+					if ( item && item.menu_id === 'settings_3d' ) {
 						return {
 							title: item.title || item.label || fallback_title,
 							description: item.description || fallback_description,

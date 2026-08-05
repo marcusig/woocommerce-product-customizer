@@ -17,7 +17,7 @@ PC.views = PC.views || {};
 		'mkl-pc__bulk': 'dashicons-tickets-alt',
 		extra_price: 'dashicons-tag',
 		objects3d: 'dashicons-format-gallery',
-		settings_3D: 'dashicons-admin-settings',
+		settings_3d: 'dashicons-admin-settings',
 	};
 
 	function mkl_pc_nav_icon_class( menuId ) {
@@ -288,7 +288,7 @@ PC.views = PC.views || {};
 			// Checks if selected item is not active.
 			if(this.model.get('active') === false) {
 				var target_menu_id = this.model.get( 'menu_id' );
-				if ( PC.app && PC.app.isSettings3dSidebarFocusActive && PC.app.isSettings3dSidebarFocusActive() && target_menu_id !== 'settings_3D' ) {
+				if ( PC.app && PC.app.isSettings3dSidebarFocusActive && PC.app.isSettings3dSidebarFocusActive() && target_menu_id !== 'settings_3d' ) {
 					if ( PC.app.requestLeaveSettings3dFocus && ! PC.app.requestLeaveSettings3dFocus() ) {
 						return;
 					}
@@ -302,7 +302,7 @@ PC.views = PC.views || {};
 					}
 				}
 
-				if ( target_menu_id === 'settings_3D' && PC.app ) {
+				if ( target_menu_id === 'settings_3d' && PC.app ) {
 					var prev_active = this.collection.find( function( m ) {
 						return m.get( 'active' ) === true;
 					} );

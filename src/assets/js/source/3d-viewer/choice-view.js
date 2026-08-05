@@ -4,50 +4,9 @@
  * (material variant, color, texture) for that choice only.
  * No DOM; just drives the Three.js scene for its object.
  */
-import * as THREE from 'three';
+import { apply_choice_actions } from './3d-action-handlers.js';
 
 const Backbone = window.Backbone;
-
-/**
- * Allowlisted Three.js material properties for material_property actions.
- * Keep in sync with mkl_pc_get_allowed_3d_material_properties() in PHP.
- */
-const ALLOWED_MATERIAL_PROPERTIES = {
-	metalness: true,
-	roughness: true,
-	opacity: true,
-	transparent: true,
-	emissiveIntensity: true,
-	envMapIntensity: true,
-	aoMapIntensity: true,
-	lightMapIntensity: true,
-	bumpScale: true,
-	displacementScale: true,
-	displacementBias: true,
-	clearcoat: true,
-	clearcoatRoughness: true,
-	transmission: true,
-	thickness: true,
-	ior: true,
-	sheen: true,
-	sheenRoughness: true,
-	reflectivity: true,
-	iridescence: true,
-	iridescenceIOR: true,
-	attenuationDistance: true,
-	specularIntensity: true,
-	wireframe: true,
-	flatShading: true,
-	depthTest: true,
-	depthWrite: true,
-	fog: true,
-	toneMapped: true,
-	vertexColors: true,
-};
-
-function is_allowed_material_property( property_name ) {
-	return !!( property_name && ALLOWED_MATERIAL_PROPERTIES[ property_name ] );
-}
 
 const viewer_3d_choice = Backbone.View.extend({
 	// No el appended; view exists only to hold listeners and apply 3D actions.
@@ -84,8 +43,33 @@ const viewer_3d_choice = Backbone.View.extend({
 		return obj || null;
 	},
 
+	/**
+	 * Resolve the objects3d scene root for this choice/layer, if loaded.
+	 * @returns {THREE.Object3D|null}
+	 */
 	get_target_scene() {
+		const object3d_id = this._resolve_object3d_id();
+		if ( ! object3d_id ) return null;
+		if ( this.parent_view._objectIdToScene && this.parent_view._objectIdToScene[ object3d_id ] ) {
+			return this.parent_view._objectIdToScene[ object3d_id ];
+		}
 		return null;
+	},
+
+	/**
+	 * Prefer choice object_3d_id, fall back to layer.
+	 * @returns {string}
+	 */
+	_resolve_object3d_id() {
+		const choice_id = this.model.get( 'object_3d_id' );
+		if ( choice_id != null && String( choice_id ).trim() !== '' ) {
+			return String( choice_id ).trim();
+		}
+		const layer_id = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
+		if ( layer_id != null && String( layer_id ).trim() !== '' ) {
+			return String( layer_id ).trim();
+		}
+		return '';
 	},
 
 	_effective_visible() {
@@ -100,10 +84,10 @@ const viewer_3d_choice = Backbone.View.extend({
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 
-		const targetObject = this.get_target_object();
-		const targetScene = this.get_target_scene();
-		if ( targetObject && has_toggle_visibility ) targetObject.visible = visible;
-		if ( targetScene && has_toggle_visibility ) targetScene.visible = visible;
+		const target_object = this.get_target_object();
+		const target_scene = this.get_target_scene() || this.target_scene;
+		if ( target_object && has_toggle_visibility ) target_object.visible = visible;
+		if ( target_scene && has_toggle_visibility ) target_scene.visible = visible;
 		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
 			this.parent_view._applyAngleCamera( { reframe: true } );
 		}
@@ -121,7 +105,6 @@ const viewer_3d_choice = Backbone.View.extend({
 		this.target_object = this.get_target_object();
 		this.target_scene = this.get_target_scene() || resolved_scene;
 		if ( ! this.target_object && this.target_scene ) this.target_object = this.target_scene;
-		const registry = t.material_registry;
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 		const visible = this._effective_visible();
@@ -131,132 +114,27 @@ const viewer_3d_choice = Backbone.View.extend({
 			this.target_scene.visible = visible;
 		}
 
-		actions.forEach( ( action ) => {
-			const type = action.action_type;
-			if ( type === 'toggle_visibility' ) return;
-			if ( type === 'material_variant' && this.target_object ) {
-				const variant_name = action.material_variant_value || action.variant_select;
-				if ( variant_name ) {
-					let variantRoot = this.target_scene || this.target_object;
-					let selectVariant = null;
-					let node = variantRoot;
-					while ( node ) {
-						if ( node.userData && node.userData.gltf_functions && typeof node.userData.gltf_functions.selectVariant === 'function' ) {
-							selectVariant = node.userData.gltf_functions.selectVariant;
-							variantRoot = node;
-							break;
-						}
-						node = node.parent;
-					}
-					// Fallback for main model actions.
-					if ( ! selectVariant ) {
-						selectVariant = t.gltf && t.gltf.functions && t.gltf.functions.selectVariant;
-					}
-					if ( typeof selectVariant === 'function' ) {
-						selectVariant( variantRoot, variant_name, true, null );
-					}
-				}
-			} else if ( type === 'material_texture' && registry ) {
-				const name = action.material_texture_material_name || action.material_name;
-				const texture_url = action.material_texture_url || action.material_texture_value;
-				if ( name && texture_url ) {
-					const mat = registry.get( name );
-					if ( mat ) {
-						const loader = ( this.parent_view._three && this.parent_view._three.textureLoader ) || new THREE.TextureLoader();
-						loader.load( texture_url, ( texture ) => {
-							texture.colorSpace = THREE.SRGBColorSpace;
-							if ( mat.map && mat.map.dispose ) mat.map.dispose();
-							mat.map = texture;
-							mat.needsUpdate = true;
-						} );
-					}
-				}
-			} else if ( type === 'material_color_registry' && registry ) {
-				const name = action.material_name;
-				const color_hex = action.material_registry_color;
-				if ( name && color_hex ) {
-					const mat = registry.get( name );
-					if ( mat && mat.color ) mat.color.set( color_hex );
-				}
-			} else if ( type === 'material_property' && registry ) {
-				const name = action.material_name;
-				const prop = action.material_property_name;
-				const raw = action.material_property_value;
-				if ( name && prop && raw !== undefined && raw !== '' ) {
-					if ( ! is_allowed_material_property( prop ) ) return;
-					const mat = registry.get( name );
-					if ( ! mat || mat[ prop ] === undefined ) return;
-					let value = raw;
-					if ( typeof mat[ prop ] === 'number' ) {
-						value = parseFloat( raw );
-						if ( Number.isNaN( value ) ) return;
-					} else if ( typeof mat[ prop ] === 'boolean' ) {
-						value = raw === 'true' || raw === '1';
-					} else {
-						return;
-					}
-					mat[ prop ] = value;
-				}
-			} else if ( type === 'apply_material' && registry && this.target_object ) {
-				const name = action.material_name;
-				if ( ! name ) return;
-				const registryMaterial = registry.get( name );
-				if ( ! registryMaterial ) return;
-				this._apply_material_to_object( this.target_object, registryMaterial );
-			}
-		} );
+		apply_choice_actions(
+			{
+				three: t,
+				registry: t.material_registry,
+				texture_loader: t.textureLoader || null,
+				target_object: this.target_object,
+				target_scene: this.target_scene,
+			},
+			actions
+		);
+
 		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
 			this.parent_view._applyAngleCamera( { reframe: true } );
 		}
-	},
-
-	_apply_material_to_object( obj, material ) {
-		if ( ! obj ) return;
-		if ( obj.isMesh && obj.material !== undefined ) {
-			obj.material = material;
-			return;
-		}
-		obj.traverse( ( child ) => {
-			if ( child.isMesh && child.material !== undefined ) {
-				child.material = material;
-			}
-		} );
-	},
-
-	_set_material_map( obj, texture ) {
-		if ( ! obj ) return;
-
-		obj.traverse( ( child ) => {
-			if ( ! child.material ) return;
-
-			const materials = Array.isArray( child.material )
-				? child.material
-				: [ child.material ];
-
-			materials.forEach( ( mat ) => {
-				if ( ! mat ) return;
-
-				const oldMap = mat.map;
-				const tex = texture.clone();
-
-				if ( oldMap ) {
-					tex.repeat.copy( oldMap.repeat );
-					tex.offset.copy( oldMap.offset );
-					tex.center.copy( oldMap.center );
-					tex.rotation = oldMap.rotation;
-				}
-
-				mat.map = tex;
-				mat.needsUpdate = true;
-			} );
-		} );
 	},
 
 	apply_actions() {
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
 		this.target_object = this.get_target_object();
-		this.target_scene = this.get_target_scene();
+		this.target_scene = this.get_target_scene() || this.target_scene;
 		const visible = this._effective_visible();
 		const actions = this.model.get( 'actions_3d' ) || [];
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
@@ -279,33 +157,33 @@ const viewer_3d_choice = Backbone.View.extend({
 				return;
 			}
 
-			const targetId = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
-			const needsObject = targetId && String( targetId ).indexOf( ':' ) !== -1;
-			const layerObject3dId = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
-			const layerObjectIdStr = layerObject3dId != null ? String( layerObject3dId ).trim() : '';
-			const layerSceneLoaded = layerObjectIdStr !== '' && this._is_objects3d_scene_loaded( layerObjectIdStr );
-			const needsScene = layerObjectIdStr !== '' && ! layerSceneLoaded;
+			const target_id = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
+			const needs_object = target_id && String( target_id ).indexOf( ':' ) !== -1;
+			const layer_object3d_id = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
+			const layer_object_id_str = layer_object3d_id != null ? String( layer_object3d_id ).trim() : '';
+			const layer_scene_loaded = layer_object_id_str !== '' && this._is_objects3d_scene_loaded( layer_object_id_str );
+			const needs_scene = layer_object_id_str !== '' && ! layer_scene_loaded;
 
-			if ( needsObject && typeof this.parent_view._ensureObjects3dSceneLoadedForCompositeId === 'function' ) {
-				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedForCompositeId( targetId )
+			if ( needs_object && typeof this.parent_view._ensureObjects3dSceneLoadedForCompositeId === 'function' ) {
+				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedForCompositeId( target_id )
 					.finally( () => { this._loading_targets_promise = null; } );
 				this._loading_targets_promise.then( () => this.apply_actions() );
 				return;
 			}
 
-			if ( needsScene && typeof this.parent_view._ensureObjects3dSceneLoadedById === 'function' ) {
-				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedById( layerObject3dId )
+			if ( needs_scene && typeof this.parent_view._ensureObjects3dSceneLoadedById === 'function' ) {
+				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedById( layer_object3d_id )
 					.finally( () => { this._loading_targets_promise = null; } );
 				this._loading_targets_promise.then( () => this.apply_actions() );
 				return;
 			}
 		}
 
-		const object3dId = this.model.get( 'object_3d_id' );
-		const hasChoiceModel = object3dId != null && String( object3dId ).trim() !== '';
+		const object3d_id = this.model.get( 'object_3d_id' );
+		const has_choice_model = object3d_id != null && String( object3d_id ).trim() !== '';
 
-		if ( hasChoiceModel && this.parent_view._ensureObjects3dSceneLoadedById ) {
-			this.parent_view._ensureObjects3dSceneLoadedById( object3dId ).then( ( scene ) => {
+		if ( has_choice_model && this.parent_view._ensureObjects3dSceneLoadedById ) {
+			this.parent_view._ensureObjects3dSceneLoadedById( object3d_id ).then( ( scene ) => {
 				if ( ! scene || ! t || ! t.model_root ) return;
 				this.target_scene = scene;
 				if ( ! this.target_object ) this.target_object = this.get_target_object() || scene;
@@ -341,4 +219,3 @@ const viewer_3d_choice = Backbone.View.extend({
 });
 
 export default viewer_3d_choice;
-
