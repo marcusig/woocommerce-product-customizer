@@ -181,6 +181,9 @@ if ( ! PC.actions.edit_object3d_upload ) {
 				} );
 				if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
 					window.PC.app.is_modified[ 'objects3d' ] = true;
+					if ( window.PC.app.syncSidebarSaveButtonState ) {
+						window.PC.app.syncSidebarSaveButtonState();
+					}
 				}
 				if ( context.$el && $el && $el.data ) {
 					const setting = $el.data( 'setting' ) || 'gltf';
@@ -212,7 +215,12 @@ if ( ! PC.actions.edit_object3d_upload ) {
 							} );
 							col.add( attrs );
 						} );
-						if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.objects3d = true;
+						if ( window.PC.app && window.PC.app.is_modified ) {
+							window.PC.app.is_modified.objects3d = true;
+							if ( window.PC.app.syncSidebarSaveButtonState ) {
+								window.PC.app.syncSidebarSaveButtonState();
+							}
+						}
 					} );
 				}
 			},
@@ -226,6 +234,9 @@ if ( ! PC.actions.remove_object3d_upload ) {
 		context.model.set( 'gltf', { attachment_id: null, url: '' } );
 		if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
 			window.PC.app.is_modified[ 'objects3d' ] = true;
+			if ( window.PC.app.syncSidebarSaveButtonState ) {
+				window.PC.app.syncSidebarSaveButtonState();
+			}
 		}
 		if ( context.$el && $el && $el.data ) {
 			const setting = $el.data( 'setting' ) || 'gltf';
@@ -538,16 +549,13 @@ PC.toJSON = function( item ) {
 		isSettings3dSidebarFocusActive: function() {
 			return !! this.settings_3d_sidebar_focus_active;
 		},
+		/**
+		 * Allow leaving 3D settings focus without a discard prompt.
+		 * Dirty settings remain marked so the sidebar Save stays enabled;
+		 * confirmation is only used when closing the modal or leaving unsaved global layers.
+		 * @return {boolean}
+		 */
 		requestLeaveSettings3dFocus: function() {
-			if ( ! this.isSettings3dSidebarFocusActive() ) {
-				return true;
-			}
-			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
-			if ( this.is_modified && this.is_modified.settings_3d ) {
-				if ( ! window.confirm( lang.editor_settings_3d_unsaved_discard || 'You have unsaved 3D settings. Leave without saving?' ) ) {
-					return false;
-				}
-			}
 			return true;
 		},
 		leaveSettings3dViaSidebarBack: function() {

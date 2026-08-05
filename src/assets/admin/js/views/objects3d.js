@@ -279,6 +279,7 @@ PC.views = PC.views || {};
 
 	PC.views.object3d_item = PC.views.layer.extend({
 		object_type: 'object3d',
+		collectionName: 'objects3d',
 		edit_view: function() { return PC.views.object3d_form; },
 		initialize: function( options ) {
 			PC.views.layer.prototype.initialize.call( this, options );
@@ -356,7 +357,12 @@ PC.views = PC.views || {};
 					} );
 					col.add( attrs );
 				} );
-				if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.objects3d = true;
+				if ( window.PC.app && window.PC.app.is_modified ) {
+					window.PC.app.is_modified.objects3d = true;
+					if ( window.PC.app.syncSidebarSaveButtonState ) {
+						window.PC.app.syncSidebarSaveButtonState();
+					}
+				}
 			}.bind( this ) );
 		},
 		_ensure_environment_defaults: function() {

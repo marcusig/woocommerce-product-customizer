@@ -199,6 +199,7 @@ TODO:
 				model: layer,
 				form_target: this.$form,
 				collection: this.col,
+				collectionName: this.collectionName,
 				orderAttr: this.orderAttr,
 				structure_state: this,
 			} ) );
@@ -447,6 +448,7 @@ TODO:
 			this.options = options || {};
 			this.form_target = options.form_target;
 			this.structure_state = options.structure_state || null;
+			this.collectionName = options.collectionName || this.collectionName || 'layers';
 			this.listenTo( this.model, 'change:active', this.activate );
 			this.listenTo( this.model, 'change:name change:admin_label change:image', this.update_label );
 			this.listenTo( this.model, 'change', this.mark_layer_modified );
@@ -466,9 +468,12 @@ TODO:
 				}
 				return;
 			}
-			var id = this.model.get( '_id' );
-			if ( id ) PC.app.modified_layer_ids[ id ] = true;
-			PC.app.is_modified.layers = true;
+			var collection_name = this.collectionName || 'layers';
+			if ( collection_name === 'layers' ) {
+				var id = this.model.get( '_id' );
+				if ( id ) PC.app.modified_layer_ids[ id ] = true;
+			}
+			PC.app.is_modified[ collection_name ] = true;
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
 			}

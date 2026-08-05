@@ -25,6 +25,7 @@ PC.views.angles = PC.views.layers.extend({
 
 PC.views.angle = PC.views.layer.extend({
 	object_type: 'angle',
+	collectionName: 'angles',
 	edit_view: function(){ return PC.views.angle_form; },
 });
 

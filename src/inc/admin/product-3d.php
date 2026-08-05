@@ -7,7 +7,6 @@ if (!defined('ABSPATH')) die('No direct access.');
 class Admin_Product_3D {
 
 	public function __construct() {
-        add_filter( 'script_loader_tag', [ $this, 'module_script_type' ], 10, 3 );
         add_filter( 'upload_mimes', function( $mimes ) {
             if ( current_user_can( 'manage_options' ) || current_user_can( 'manage_woocommerce' ) ) {
                 // Add GLTF (JSON-based format)
@@ -151,19 +150,6 @@ class Admin_Product_3D {
         }
 
         return trailingslashit( $upload_dir['baseurl'] ) . "configurator_assets/zips/$attachment_id/" . $entry_file;
-    }
-
-    /**
-     * Add type="module" to specific scripts.
-     */
-    function module_script_type( $tag, $handle, $src ) {
-        $module_handles = [ 'mkl_pc/js/admin/backbone/views/3d-settings', 'my-admin-3d' ];
-
-        if ( in_array( $handle, $module_handles, true ) ) {
-            return '<script type="module" src="' . esc_url( $src ) . '"></script>';
-        }
-
-        return $tag;
     }
 
 }

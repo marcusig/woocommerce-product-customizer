@@ -222,6 +222,19 @@ PC.views = window.PC.views || {};
 			this.maybe_cleanup();
 		},
 		collectionName: 'settings_3d',
+		/**
+		 * Mark a collection dirty and enable the sidebar Save button.
+		 * @param {string} [collection_name='settings_3d']
+		 */
+		mark_dirty: function ( collection_name ) {
+			const key = collection_name || this.collectionName || 'settings_3d';
+			if ( PC.app && PC.app.is_modified ) {
+				PC.app.is_modified[ key ] = true;
+			}
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+		},
 		initialize: function ( options ) {
 			this.options = options || {};
 			this.admin = PC.app.get_admin();
@@ -299,7 +312,7 @@ PC.views = window.PC.views || {};
 			const admin = PC.app.get_admin();
 			admin.settings_3d = Object.assign( {}, defaults );
 			this.col = admin.settings_3d;
-			PC.app.is_modified.settings_3d = true;
+			this.mark_dirty( 'settings_3d' );
 			this.render();
 			if ( this.apply_preview_settings ) this.apply_preview_settings();
 		},
@@ -361,7 +374,7 @@ PC.views = window.PC.views || {};
 				PC.app.admin.settings_3d.environment.object_id = val.slice( 7 );
 				PC.app.admin.settings_3d.environment.preset = 'outdoor';
 			}
-			PC.app.is_modified.settings_3d = true;
+			this.mark_dirty( 'settings_3d' );
 			this.apply_preview_settings();
 		},
 		/**
@@ -430,7 +443,7 @@ PC.views = window.PC.views || {};
 			const val = this.$( '.pc-3d-bg-mode' ).val();
 			PC.app.admin.settings_3d.background = PC.app.admin.settings_3d.background || {};
 			PC.app.admin.settings_3d.background.mode = val;
-			PC.app.is_modified.settings_3d = true;
+			this.mark_dirty( 'settings_3d' );
 			this.toggle_env_and_bg_visibility();
 			this.apply_preview_settings();
 		},
@@ -440,7 +453,7 @@ PC.views = window.PC.views || {};
 			const val = el.attr( 'type' ) === 'range' ? parseFloat( el.val() ) : el.val();
 			if ( key ) {
 				this.set_nested( PC.app.admin.settings_3d, key, val );
-				PC.app.is_modified.settings_3d = true;
+				this.mark_dirty( 'settings_3d' );
 			}
 			const val_sel = el.attr( 'type' ) === 'range' && el.next( '.pc-3d-value-display' ).length ? el.next( '.pc-3d-value-display' ) : null;
 			if ( val_sel && val_sel.length ) val_sel.text( val );
@@ -455,7 +468,7 @@ PC.views = window.PC.views || {};
 			else if ( el.attr( 'type' ) === 'range' ) val = parseFloat( val );
 			if ( key ) {
 				this.set_nested( PC.app.admin.settings_3d, key, val );
-				PC.app.is_modified.settings_3d = true;
+				this.mark_dirty( 'settings_3d' );
 			}
 			this.apply_preview_settings();
 		},
@@ -465,7 +478,7 @@ PC.views = window.PC.views || {};
 			const distance = this._three.controls.getDistance();
 			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
 			PC.app.admin.settings_3d.environment.orbit_min_distance = distance;
-			PC.app.is_modified.settings_3d = true;
+			this.mark_dirty( 'settings_3d' );
 			this._three.controls.minDistance = distance;
 			this.apply_preview_settings();
 		},
@@ -475,7 +488,7 @@ PC.views = window.PC.views || {};
 			const distance = this._three.controls.getDistance();
 			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
 			PC.app.admin.settings_3d.environment.orbit_max_distance = distance;
-			PC.app.is_modified.settings_3d = true;
+			this.mark_dirty( 'settings_3d' );
 			this._three.controls.maxDistance = distance;
 			this.apply_preview_settings();
 		},
@@ -546,7 +559,7 @@ PC.views = window.PC.views || {};
 				camera_position: { x: pos.x, y: pos.y, z: pos.z },
 				camera_target: { x: target.x, y: target.y, z: target.z }
 			} );
-			PC.app.is_modified.angles = true;
+			this.mark_dirty( 'angles' );
 		},
 		import_cameras_from_gltf: function ( e ) {
 			e.preventDefault();
@@ -581,7 +594,7 @@ PC.views = window.PC.views || {};
 				};
 				angles.add( attrs );
 			} );
-			PC.app.is_modified.angles = true;
+			this.mark_dirty( 'angles' );
 			this.populate_angle_select();
 		},
 		apply_preview_settings: function () {
@@ -854,7 +867,7 @@ PC.views = window.PC.views || {};
 				if ( shadowsEnabled ) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 				renderer.setSize( container.clientWidth, container.clientHeight );
 				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.toneMapping = r.tone_mapping ? r.tone_mapping : THREE.ACESFilmicToneMapping;
+				renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
 				renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 				renderer.outputColorSpace = THREE.SRGBColorSpace;
 				renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha ) ? 0 : 1 );
