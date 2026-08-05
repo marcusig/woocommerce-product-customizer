@@ -191,6 +191,13 @@ function getObjects3DModelSources( callback ) {
 function populateModelSourceSelect( $, $sel, currentVal, options ) {
 	if ( ! $sel || ! $sel.length ) return;
 	const objects3d = get3DObjectsCollection();
+	// Keep (or restore) an empty placeholder as the first option when no value is saved.
+	if ( ! $sel.find( 'option' ).length || $sel.find( 'option:first' ).attr( 'value' ) !== '' ) {
+		const placeholderLabel = ( window.PC_lang && PC_lang.select_3d_object )
+			? PC_lang.select_3d_object
+			: '— Select a 3D object —';
+		$sel.prepend( $( '<option></option>' ).attr( 'value', '' ).text( placeholderLabel ) );
+	}
 	$sel.find( 'option:not(:first)' ).remove();
 	if ( objects3d && objects3d.length ) {
 		objects3d.each( function( obj ) {
@@ -199,7 +206,7 @@ function populateModelSourceSelect( $, $sel, currentVal, options ) {
 			$sel.append( $( '<option></option>' ).attr( 'value', id ).text( label ) );
 		} );
 	}
-	if ( currentVal != null && currentVal !== '' ) $sel.val( currentVal );
+	$sel.val( ( currentVal != null && currentVal !== '' ) ? currentVal : '' );
 }
 
 window.PC = window.PC || {};

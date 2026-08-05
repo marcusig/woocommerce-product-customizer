@@ -450,6 +450,13 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			$priority         = isset( $config['priority'] ) ? (int) $config['priority'] : 10;
 
 			$choices = [];
+			if ( ! $can_upload ) {
+				// Empty placeholder so the select does not appear to have a value when none is saved.
+				$choices[] = [
+					'label' => __( '— Select a 3D object —', 'product-configurator-for-woocommerce' ),
+					'value' => '',
+				];
+			}
 			if ( $can_upload ) {
 				$choices[] = [
 					'label' => __( 'Upload model', 'product-configurator-for-woocommerce' ),
