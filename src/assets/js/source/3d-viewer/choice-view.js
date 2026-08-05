@@ -76,8 +76,9 @@ const viewer_3d_choice = Backbone.View.extend({
 	_apply_visibility_and_actions() {
 		const t = this.parent_view._three;
 		if ( ! t || ! t.model_root ) return;
+		const resolved_scene = this.target_scene;
 		this.target_object = this.get_target_object();
-		this.target_scene = this.get_target_scene();
+		this.target_scene = this.get_target_scene() || resolved_scene;
 		if ( ! this.target_object && this.target_scene ) this.target_object = this.target_scene;
 		const registry = t.material_registry;
 		const actions = this.model.get( 'actions_3d' ) || [];
@@ -85,7 +86,9 @@ const viewer_3d_choice = Backbone.View.extend({
 		const visible = this._effective_visible();
 
 		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
-		if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = visible;
+		if ( this.target_scene && has_toggle_visibility && this.target_scene !== this.target_object ) {
+			this.target_scene.visible = visible;
+		}
 
 		actions.forEach( ( action ) => {
 			const type = action.action_type;
@@ -223,19 +226,21 @@ const viewer_3d_choice = Backbone.View.extend({
 			return;
 		}
 
-		// If this choice needs to toggle visibility for an object/scene that isn't loaded yet,
-		// lazily load the corresponding objects3d model on demand.
-		if ( has_toggle_visibility && this.parent_view ) {
+		// Lazy-load only when the target is not in the scene yet. Retries must stop once the
+		// objects3d scene is already loaded (otherwise Promise.resolve → apply_actions loops forever
+		// and freezes the page — e.g. Display object / toggle_visibility with a layer object_3d_id).
+		if ( has_toggle_visibility && this.parent_view && ! this.target_object && ! this.target_scene ) {
 			if ( this._loading_targets_promise ) {
-				// Wait for the in-flight load, then retry.
 				this._loading_targets_promise.then( () => this.apply_actions() );
 				return;
 			}
 
 			const targetId = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
-			const needsObject = ! this.target_object && targetId && String( targetId ).indexOf( ':' ) !== -1;
+			const needsObject = targetId && String( targetId ).indexOf( ':' ) !== -1;
 			const layerObject3dId = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
-			const needsScene = layerObject3dId != null && String( layerObject3dId ).trim() !== '';
+			const layerObjectIdStr = layerObject3dId != null ? String( layerObject3dId ).trim() : '';
+			const layerSceneLoaded = layerObjectIdStr !== '' && this._is_objects3d_scene_loaded( layerObjectIdStr );
+			const needsScene = layerObjectIdStr !== '' && ! layerSceneLoaded;
 
 			if ( needsObject && typeof this.parent_view._ensureObjects3dSceneLoadedForCompositeId === 'function' ) {
 				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedForCompositeId( targetId )
@@ -259,13 +264,31 @@ const viewer_3d_choice = Backbone.View.extend({
 			this.parent_view._ensureObjects3dSceneLoadedById( object3dId ).then( ( scene ) => {
 				if ( ! scene || ! t || ! t.model_root ) return;
 				this.target_scene = scene;
-				if ( ! this.target_object ) this.target_object = scene;
+				if ( ! this.target_object ) this.target_object = this.get_target_object() || scene;
 				this._apply_visibility_and_actions();
 			} );
 			return;
 		}
 
 		this._apply_visibility_and_actions();
+	},
+
+	/**
+	 * Whether an objects3d scene id is already loaded (or failed) on the parent viewer.
+	 * Used to avoid lazy-load retry loops when the target mesh is still missing after load.
+	 * @param {string} object3d_id
+	 * @returns {boolean}
+	 */
+	_is_objects3d_scene_loaded( object3d_id ) {
+		if ( ! object3d_id || ! this.parent_view ) return false;
+		const id_str = String( object3d_id ).trim();
+		if ( this.parent_view._objectIdToScene && this.parent_view._objectIdToScene[ id_str ] ) {
+			return true;
+		}
+		const scene_model = this.parent_view._scene_models && this.parent_view._scene_models.get( id_str );
+		if ( ! scene_model ) return false;
+		const state = scene_model.get( 'state' );
+		return state === 'loaded' || state === 'error';
 	},
 
 	remove() {
