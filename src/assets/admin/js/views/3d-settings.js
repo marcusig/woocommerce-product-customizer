@@ -511,17 +511,13 @@ PC.views = window.PC.views || {};
 		_resolveAngleTarget: function ( angle, root ) {
 			if ( !angle || !root ) return null;
 			const focusIds = angle.get( 'camera_focus_object_ids' );
-			console.log( 'focusIds', focusIds );
 			if ( Array.isArray( focusIds ) && focusIds.length > 0 && typeof getBoundingBoxFromObjectIds === 'function' ) {
 				const result = getBoundingBoxFromObjectIds( root, focusIds );
-				console.log( 'result', result );
 				return result ? result.center : null;
 			}
 			const id = angle.get( 'camera_target_object_id' );
 			if ( !id || typeof id !== 'string' ) return null;
 			const obj = findObject( root, id.trim() );
-			console.log( 'obj', obj );
-			console.log( 'getObjectTargetPosition( obj )', getObjectTargetPosition( obj ) );
 			return obj ? getObjectTargetPosition( obj ) : null;
 		},
 		on_angle_select_change: function () {

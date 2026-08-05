@@ -85,7 +85,6 @@ function createStore() {
 			loader.load(
 				url,
 				( gltf ) => {
-					console.log( gltf );
 					const variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
 						? gltf.userData.variants.slice()
 						: [];

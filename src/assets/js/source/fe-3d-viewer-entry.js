@@ -15,6 +15,18 @@ const loadingText = ( typeof window.PC_lang !== 'undefined' && window.PC_lang.lo
 	? window.PC_lang.loading_viewer
 	: 'Loading…';
 
+/**
+ * Build an error paragraph with textContent (never inject untrusted HTML).
+ * @param {string} message
+ * @returns {HTMLParagraphElement}
+ */
+function create_error_element( message ) {
+	const error_element = document.createElement( 'p' );
+	error_element.className = 'mkl_pc_3d_error';
+	error_element.textContent = message == null ? '' : String( message );
+	return error_element;
+}
+
 const Viewer3DWrapper = Backbone.View.extend( {
 	tagName: 'div',
 	className: 'mkl_pc_viewer_3d_wrapper',
@@ -40,7 +52,7 @@ const Viewer3DWrapper = Backbone.View.extend( {
 
 		const s = getSettings();
 		if ( ! s ) {
-			this.$layers.append( '<p class="mkl_pc_3d_error">No 3D model configured.</p>' );
+			this.$layers.append( create_error_element( 'No 3D model configured.' ) );
 			if ( wp && wp.hooks && wp.hooks.doAction ) {
 				wp.hooks.doAction( 'PC.fe.viewer.render', this );
 			}
@@ -68,7 +80,10 @@ const Viewer3DWrapper = Backbone.View.extend( {
 			.catch( ( err ) => {
 				if ( overlay.parentNode ) overlay.parentNode.removeChild( overlay );
 				const msg = ( err && err.message ) ? err.message : 'Failed to load 3D viewer.';
-				this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<p class="mkl_pc_3d_error">' + msg + '</p>' );
+				const canvas = this.$layers.find( '.mkl_pc_3d_canvas_container' ).get( 0 );
+				if ( canvas && canvas.parentNode ) {
+					canvas.parentNode.insertBefore( create_error_element( msg ), canvas.nextSibling );
+				}
 			} );
 
 		return this.$el;

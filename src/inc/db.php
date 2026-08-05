@@ -2380,7 +2380,7 @@ class DB {
 					'escape' => 'esc_attr',
 				],
 				'material_property_name' => [
-					'sanitize' => 'sanitize_text_field',
+					'sanitize' => 'mkl_pc_sanitize_3d_material_property_name',
 					'escape' => 'esc_attr',
 				],
 				'material_property_value' => [

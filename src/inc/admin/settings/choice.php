@@ -240,9 +240,25 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 						),
 						'material_property_name' => array(
 							'label'     => __( 'Property', 'product-configurator-for-woocommerce' ),
-							'type'      => 'text',
+							'type'      => 'select',
 							'default'   => '',
-							'placeholder' => 'e.g. roughness, metalness, opacity',
+							'choices'   => array_merge(
+								array(
+									array(
+										'label' => __( '— Select a property —', 'product-configurator-for-woocommerce' ),
+										'value' => '',
+									),
+								),
+								array_map(
+									function( $property_name ) {
+										return array(
+											'label' => $property_name,
+											'value' => $property_name,
+										);
+									},
+									mkl_pc_get_allowed_3d_material_properties()
+								)
+							),
 							'show_when' => 'material_property',
 						),
 						'material_property_value' => array(

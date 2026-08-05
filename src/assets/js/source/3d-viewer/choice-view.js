@@ -8,6 +8,47 @@ import * as THREE from 'three';
 
 const Backbone = window.Backbone;
 
+/**
+ * Allowlisted Three.js material properties for material_property actions.
+ * Keep in sync with mkl_pc_get_allowed_3d_material_properties() in PHP.
+ */
+const ALLOWED_MATERIAL_PROPERTIES = {
+	metalness: true,
+	roughness: true,
+	opacity: true,
+	transparent: true,
+	emissiveIntensity: true,
+	envMapIntensity: true,
+	aoMapIntensity: true,
+	lightMapIntensity: true,
+	bumpScale: true,
+	displacementScale: true,
+	displacementBias: true,
+	clearcoat: true,
+	clearcoatRoughness: true,
+	transmission: true,
+	thickness: true,
+	ior: true,
+	sheen: true,
+	sheenRoughness: true,
+	reflectivity: true,
+	iridescence: true,
+	iridescenceIOR: true,
+	attenuationDistance: true,
+	specularIntensity: true,
+	wireframe: true,
+	flatShading: true,
+	depthTest: true,
+	depthWrite: true,
+	fog: true,
+	toneMapped: true,
+	vertexColors: true,
+};
+
+function is_allowed_material_property( property_name ) {
+	return !!( property_name && ALLOWED_MATERIAL_PROPERTIES[ property_name ] );
+}
+
 const viewer_3d_choice = Backbone.View.extend({
 	// No el appended; view exists only to hold listeners and apply 3D actions.
 	tagName: 'div',
@@ -142,6 +183,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				const prop = action.material_property_name;
 				const raw = action.material_property_value;
 				if ( name && prop && raw !== undefined && raw !== '' ) {
+					if ( ! is_allowed_material_property( prop ) ) return;
 					const mat = registry.get( name );
 					if ( ! mat || mat[ prop ] === undefined ) return;
 					let value = raw;
@@ -150,6 +192,8 @@ const viewer_3d_choice = Backbone.View.extend({
 						if ( Number.isNaN( value ) ) return;
 					} else if ( typeof mat[ prop ] === 'boolean' ) {
 						value = raw === 'true' || raw === '1';
+					} else {
+						return;
 					}
 					mat[ prop ] = value;
 				}

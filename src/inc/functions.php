@@ -38,6 +38,70 @@ function mkl_pc_get_configurator_type( $product_id = NULL ) {
 	return $type ?? 'configurator';
 }
 
+/**
+ * Allowed Three.js material property names for actions_3d material_property.
+ *
+ * Scalar/boolean props only — colors and textures use dedicated action types.
+ *
+ * @return string[]
+ */
+function mkl_pc_get_allowed_3d_material_properties() {
+	$properties = array(
+		'metalness',
+		'roughness',
+		'opacity',
+		'transparent',
+		'emissiveIntensity',
+		'envMapIntensity',
+		'aoMapIntensity',
+		'lightMapIntensity',
+		'bumpScale',
+		'displacementScale',
+		'displacementBias',
+		'clearcoat',
+		'clearcoatRoughness',
+		'transmission',
+		'thickness',
+		'ior',
+		'sheen',
+		'sheenRoughness',
+		'reflectivity',
+		'iridescence',
+		'iridescenceIOR',
+		'attenuationDistance',
+		'specularIntensity',
+		'wireframe',
+		'flatShading',
+		'depthTest',
+		'depthWrite',
+		'fog',
+		'toneMapped',
+		'vertexColors',
+	);
+
+	/**
+	 * Filter the allowlist of material property names usable in actions_3d.
+	 *
+	 * @param string[] $properties
+	 */
+	return apply_filters( 'mkl_pc_allowed_3d_material_properties', $properties );
+}
+
+/**
+ * Sanitize a material_property_name against the allowlist.
+ *
+ * @param mixed $name
+ * @return string Empty string when not allowed.
+ */
+function mkl_pc_sanitize_3d_material_property_name( $name ) {
+	$name = is_string( $name ) ? trim( $name ) : '';
+	if ( '' === $name ) {
+		return '';
+	}
+	$allowed = mkl_pc_get_allowed_3d_material_properties();
+	return in_array( $name, $allowed, true ) ? $name : '';
+}
+
 
 if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 
