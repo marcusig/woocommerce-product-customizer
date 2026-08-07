@@ -3319,6 +3319,25 @@ a.mkl-pc-link--external::before {
 	}	
 }
 
+.pc-3d-ar-discovery,
+.pc-3d-postprocessing-discovery {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+
+	&__icon {
+		display: inline-flex;
+		width: 2rem;
+		height: 2rem;
+		color: var(--wp-admin-theme-color, #007cba);
+
+		svg {
+			width: 100%;
+			height: 100%;
+		}
+	}
+}
+
 /* Floating add button */
 .floating-add {
     position: absolute;

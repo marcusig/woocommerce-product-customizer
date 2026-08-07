@@ -157,7 +157,12 @@ export const settings_3d_preview_mixin = {
 	setup_preview_postprocessing: async function () {
 		const deps = get_three_deps();
 		if ( ! deps ) return;
-		const { createPostprocessingLayer } = deps;
+		let createPostprocessingLayer = deps.createPostprocessingLayer;
+		if ( typeof createPostprocessingLayer !== 'function'
+			&& window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function' ) {
+			createPostprocessingLayer = window.wp.hooks.applyFilters( 'PC.3d.createPostprocessingLayer', null );
+		}
+		if ( typeof createPostprocessingLayer !== 'function' ) return;
 		if ( !this._three || !this._three.scene || !this._three.camera || !this._three.renderer ) return;
 		const s = PC.app.admin.settings_3d;
 		const pp = ( s && s.postprocessing ) ? s.postprocessing : {};

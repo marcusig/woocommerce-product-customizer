@@ -20,7 +20,8 @@ export function getSettings() {
 
 /**
  * Returns which postprocessing passes are enabled in settings.
- * On the front-end, load and apply only the passes that are enabled (e.g. use dynamic import per pass).
+ * Front-end loads passes only when premium registers PC.3d.createPostprocessingLayer
+ * and the corresponding flags are enabled.
  *
  * @param {Object} [settings] - settings_3d (defaults to getSettings())
  * @returns {{ ssr: boolean, ssao: boolean, bloom: boolean, smaa: boolean }}

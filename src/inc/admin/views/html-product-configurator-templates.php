@@ -53,12 +53,6 @@ $mkl_pc_3d_settings_sections = apply_filters(
 			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/mesh_cube.svg',
 			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
 		),
-		array(
-			'id'       => 'postprocessing',
-			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
-			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/light.svg',
-			'template' => __DIR__ . '/3d-settings-sections/postprocessing.php',
-		),
 	)
 );
 ?>

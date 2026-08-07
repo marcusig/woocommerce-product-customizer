@@ -6,6 +6,11 @@
  * Pipeline: 1) Get settings → 2) Async load conditional modules → 3) Load assets → 4) Setup scene.
  */
 import * as THREE from 'three';
+
+if ( typeof window !== 'undefined' ) {
+	window.THREE = THREE;
+}
+
 import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags, getHdrUrlFromEnv } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
@@ -98,6 +103,8 @@ export default Backbone.View.extend({
 				if ( ! this._runtimeBus || typeof this._runtimeBus.off !== 'function' ) return;
 				this._runtimeBus.off( eventName, callback );
 			},
+			pauseRenderLoop: () => this._pauseRenderLoop(),
+			resumeRenderLoop: () => this._resumeRenderLoop(),
 		};
 		if ( window.PC && window.PC.fe ) {
 			window.PC.fe.threeApi = window.PC.fe.threeApi || {};
@@ -286,7 +293,8 @@ export default Backbone.View.extend({
 	},
 
 	/**
-	 * Phase 2: Load conditional modules in parallel (loader, FakeShadow, postprocessing).
+	 * Phase 2: Load conditional modules in parallel (loader, FakeShadow).
+	 * Postprocessing creator comes from add-ons via PC.3d.createPostprocessingLayer.
 	 * @param {Object} s - settings_3d
 	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, createPostprocessingLayer: * }>}
 	 */
@@ -300,18 +308,24 @@ export default Backbone.View.extend({
 			getSharedGltfLoader(),
 		];
 		if ( groundEnabled ) promises.push( import( './3d-fake-shadow.js' ) );
-		if ( anyPostprocessing ) promises.push( import( './3d-postprocessing.js' ) );
 
 		const results = await Promise.all( promises );
 		let idx = 0;
 		const gltfLoader = results[ idx++ ];
 		const FakeShadowModule = groundEnabled ? results[ idx++ ] : { FakeShadow: null };
-		const postprocessingModule = anyPostprocessing ? results[ idx++ ] : { createPostprocessingLayer: null };
+
+		let createPostprocessingLayer = null;
+		if ( anyPostprocessing && window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function' ) {
+			const creator = window.wp.hooks.applyFilters( 'PC.3d.createPostprocessingLayer', null );
+			if ( typeof creator === 'function' ) {
+				createPostprocessingLayer = creator;
+			}
+		}
 
 		return {
 			gltfLoader,
 			FakeShadow: FakeShadowModule.FakeShadow || null,
-			createPostprocessingLayer: postprocessingModule.createPostprocessingLayer || null,
+			createPostprocessingLayer,
 		};
 	},
 
@@ -619,25 +633,52 @@ export default Backbone.View.extend({
 		this._emitRuntimeEvent( 'runtime:ready', { three: t } );
 
 		const g = ( s && s.ground ) || {};
-		// Main render loop: update controls, shadow pass (when dirty), postprocessing, then final render.
-		// Fully pauses (cancelAnimationFrame) while the document is hidden.
-		start_animation_loop( t, ( now ) => {
-			if ( t._lastFrameTs == null ) t._lastFrameTs = now;
-			const deltaSeconds = Math.max( 0, ( now - t._lastFrameTs ) / 1000 );
-			t._lastFrameTs = now;
-			this._emitRuntimeAction( 'PC.fe.viewer.frame', [ this, deltaSeconds, this._runtimeApi ] );
-			this._emitRuntimeEvent( 'frame', { deltaSeconds } );
-			t.controls.update();
-			if ( t.fake_shadow && g.enabled !== false ) {
-				t.fake_shadow.render( t.renderer, t.scene );
-			}
-			if ( t.postprocessingLayer ) {
-				t.postprocessingLayer.render( t.bypassPostprocessing );
-			}
-			if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
-				t.renderer.render( t.scene, t.camera );
-			}
-		} );
+		t._ground_settings = g;
+		this._startRenderLoop();
+	},
+
+	_onRenderFrame( now ) {
+		const t = this._three;
+		if ( ! t ) return;
+		const g = t._ground_settings || {};
+		if ( t._lastFrameTs == null ) t._lastFrameTs = now;
+		const deltaSeconds = Math.max( 0, ( now - t._lastFrameTs ) / 1000 );
+		t._lastFrameTs = now;
+		this._emitRuntimeAction( 'PC.fe.viewer.frame', [ this, deltaSeconds, this._runtimeApi ] );
+		this._emitRuntimeEvent( 'frame', { deltaSeconds } );
+		if ( t.controls ) t.controls.update();
+		if ( t.fake_shadow && g.enabled !== false ) {
+			t.fake_shadow.render( t.renderer, t.scene );
+		}
+		if ( t.postprocessingLayer ) {
+			t.postprocessingLayer.render( t.bypassPostprocessing );
+		}
+		if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
+			t.renderer.render( t.scene, t.camera );
+		}
+	},
+
+	_startRenderLoop() {
+		const t = this._three;
+		if ( ! t ) return;
+		start_animation_loop( t, ( now ) => this._onRenderFrame( now ) );
+	},
+
+	_pauseRenderLoop() {
+		const t = this._three;
+		if ( t && typeof t.stop_animation_loop === 'function' ) {
+			t.stop_animation_loop();
+		}
+	},
+
+	_resumeRenderLoop() {
+		const t = this._three;
+		if ( ! t ) return;
+		if ( typeof t.stop_animation_loop === 'function' ) {
+			t.stop_animation_loop();
+		}
+		t._lastFrameTs = null;
+		this._startRenderLoop();
 	},
 
 	_getGltfLoader() {

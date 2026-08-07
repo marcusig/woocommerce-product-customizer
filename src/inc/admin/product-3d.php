@@ -27,6 +27,72 @@ class Admin_Product_3D {
 		add_filter( 'upload_dir', array( $this, 'filter_upload_dir' ) );
 		add_action( 'add_attachment', array( $this, 'maybe_unzip_configurator_attachment' ) );
 		add_filter( 'wp_prepare_attachment_for_js', array( $this, 'prepare_attachment_for_js' ), 10, 3 );
+		add_filter( 'mkl_pc_3d_settings_sections', array( $this, 'register_ar_discovery_section' ), 15 );
+		add_filter( 'mkl_pc_3d_settings_sections', array( $this, 'register_postprocessing_discovery_section' ), 15 );
+	}
+
+	/**
+	 * Whether the AR add-on discovery section should appear in 3D settings.
+	 *
+	 * @return bool
+	 */
+	public static function should_show_ar_discovery_section() {
+		return ! class_exists( 'MKL_PC_3D_Premium' )
+			&& ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__ar_placeholder', true );
+	}
+
+	/**
+	 * Whether the postprocessing add-on discovery section should appear in 3D settings.
+	 *
+	 * @return bool
+	 */
+	public static function should_show_postprocessing_discovery_section() {
+		return ! class_exists( 'MKL_PC_3D_Premium' )
+			&& ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__postprocessing_placeholder', true );
+	}
+
+	/**
+	 * Register an AR settings tab that promotes the 3D Premium add-on when it is inactive.
+	 *
+	 * @param array $sections 3D settings sections.
+	 * @return array
+	 */
+	public function register_ar_discovery_section( $sections ) {
+		if ( ! self::should_show_ar_discovery_section() ) {
+			return $sections;
+		}
+
+		$sections[] = array(
+			'id'       => 'ar',
+			'title'    => __( 'AR / Quick Look', 'product-configurator-for-woocommerce' ),
+			'icon_id'  => 'settings_3d_section_ar',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/view_in_ar.svg',
+			'template' => MKL_PC_INCLUDE_PATH . 'admin/views/3d-settings-sections/ar-discovery.php',
+		);
+
+		return $sections;
+	}
+
+	/**
+	 * Register a postprocessing settings tab that promotes the 3D Premium add-on when it is inactive.
+	 *
+	 * @param array $sections 3D settings sections.
+	 * @return array
+	 */
+	public function register_postprocessing_discovery_section( $sections ) {
+		if ( ! self::should_show_postprocessing_discovery_section() ) {
+			return $sections;
+		}
+
+		$sections[] = array(
+			'id'       => 'postprocessing',
+			'title'    => __( 'Postprocessing', 'product-configurator-for-woocommerce' ),
+			'icon_id'  => 'settings_3d_section_postprocessing',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/light.svg',
+			'template' => MKL_PC_INCLUDE_PATH . 'admin/views/3d-settings-sections/postprocessing-discovery.php',
+		);
+
+		return $sections;
 	}
 
 	/**

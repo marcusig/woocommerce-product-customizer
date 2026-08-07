@@ -26,6 +26,20 @@ let RectAreaLightHelper = null;
 
 let threeDepsPromise = null;
 
+/**
+ * Resolve postprocessing creator from 3D Premium (or other add-ons) via wp.hooks.
+ * @returns {Function|null}
+ */
+function resolve_create_postprocessing_layer() {
+	if ( window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function' ) {
+		const creator = window.wp.hooks.applyFilters( 'PC.3d.createPostprocessingLayer', null );
+		if ( typeof creator === 'function' ) {
+			return creator;
+		}
+	}
+	return null;
+}
+
 function ensureThreeDepsLoaded() {
 	if ( threeDepsPromise ) return threeDepsPromise;
 
@@ -34,14 +48,12 @@ function ensureThreeDepsLoaded() {
 			threeModule,
 			controlsModule,
 			fakeShadowModule,
-			postprocessingModule,
 			sceneUtilsModule,
 			rectAreaLightHelperModule
 		] = await Promise.all( [
 			import( 'three' ),
 			import( 'three/addons/controls/OrbitControls.js' ),
 			import( '../../../js/source/3d-viewer/3d-fake-shadow.js' ),
-			import( '../../../js/source/3d-viewer/3d-postprocessing.js' ),
 			import( '../../../js/source/3d-viewer/3d-scene-utils.js' ),
 			import( 'three/addons/helpers/RectAreaLightHelper.js' ),
 		] );
@@ -55,10 +67,13 @@ function ensureThreeDepsLoaded() {
 		] );
 
 		THREE = threeModule;
+		if ( typeof window !== 'undefined' ) {
+			window.THREE = threeModule;
+		}
 		OrbitControls = controlsModule.OrbitControls;
 		loadEnvMap = sceneUtilsModule.loadEnvMap;
 		FakeShadow = fakeShadowModule.FakeShadow;
-		createPostprocessingLayer = postprocessingModule.createPostprocessingLayer;
+		createPostprocessingLayer = resolve_create_postprocessing_layer();
 		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
 
 		( {
@@ -79,7 +94,7 @@ function ensureThreeDepsLoaded() {
 				OrbitControls,
 				loadEnvMap,
 				FakeShadow,
-				createPostprocessingLayer,
+				createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
 				hideObjectsByName,
 				getHiddenObjectNamesList,
 				findObject,
@@ -97,7 +112,7 @@ function ensureThreeDepsLoaded() {
 				OrbitControls,
 				loadEnvMap,
 				FakeShadow,
-				createPostprocessingLayer,
+				createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
 			} );
 		}
 
@@ -106,7 +121,7 @@ function ensureThreeDepsLoaded() {
 			OrbitControls,
 			loadEnvMap,
 			FakeShadow,
-			createPostprocessingLayer,
+			createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
 			hideObjectsByName,
 			getHiddenObjectNamesList,
 			findObject,
@@ -221,6 +236,8 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
+			'input .pc-3d-bloom-strength, .pc-3d-bloom-radius, .pc-3d-bloom-threshold': 'on_slider_input',
+			'change .pc-3d-bloom-strength, .pc-3d-bloom-radius, .pc-3d-bloom-threshold': 'on_setting_change',
 		},
 		remove: function () {
 			this.on_remove();
@@ -604,6 +621,21 @@ PC.views = window.PC.views || {};
 	/**
 	 * Action: clear the uploaded 3D model for a layer or choice.
 	 */
+	$( document ).on( 'click', '.add-on-placeholder .hide-addon-placeholder', function( event ) {
+		event.preventDefault();
+		const $link = $( event.currentTarget );
+		const setting = $link.data( 'setting' ) || 'ar_placeholder';
+		const section = $link.data( 'section' ) || 'ar';
+		wp.ajax.post( {
+			action: 'mkl_pc_hide_addon_setting',
+			setting,
+			security: PC_lang.user_preferences_nonce,
+		} ).done( function() {
+			$( '.pc-3d-section-panel[data-section-id="' + section + '"]' ).remove();
+			$( '.pc-3d-section-tab[data-section-tab="' + section + '"]' ).remove();
+		} );
+	} );
+
 	PC.actions.remove_model_upload = function ( $el, context ) {
 		if ( !context || !context.model ) return;
 		var url = context.model.get( 'model_upload_3d_url' );

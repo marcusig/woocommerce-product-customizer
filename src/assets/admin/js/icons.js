@@ -51,6 +51,7 @@ var PC = PC || {};
 		settings_3d_section_renderer_output: { svg: 'svg/3d/object_data' },
 		settings_3d_section_camera_positions: { svg: 'svg/3d/mesh_cube' },
 		settings_3d_section_postprocessing: { svg: 'svg/3d/light' },
+		settings_3d_section_ar: { svg: 'svg/3d/view_in_ar' },
 		nav_home: { svg: 'svg/home' },
 		nav_layers: { svg: 'svg/renderlayers' },
 		nav_angles: { dashicon: 'dashicons-visibility' },
