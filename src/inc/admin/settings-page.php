@@ -89,6 +89,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<a href="https://wc-product-configurator.com"><?php esc_html_e( 'Product Configurator website', 'product-configurator-for-woocommerce' ); ?></a><!--  | <a href="http://wc-product-configurator.com"><?php esc_html_e( 'Addons', 'product-configurator-for-woocommerce' ); ?></a> | <a href="http://wc-product-configurator.com"><?php esc_html_e( 'Themes', 'product-configurator-for-woocommerce' ); ?></a> -->
 					</div>
 				</header>
+				<?php do_action( 'mkl_pc_settings_before_tabs', $active ); ?>
 				<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
 					<?php
 					foreach( $tabs as $tab_id => $tab ) { ?>
