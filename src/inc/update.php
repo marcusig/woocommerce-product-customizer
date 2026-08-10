@@ -22,6 +22,7 @@ class Update {
 			'1.2.41' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.3.00' => [ [ $this, 'set_default_setting_value_v1_3_00' ] ],
 			'1.5.10' => [ [ $this, 'set_default_setting_value_v1_5_10' ] ],
+			'2.0.0' => [ [ $this, 'set_default_setting_value_v2_0_0' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -121,6 +122,20 @@ class Update {
 		$options = get_option( 'mkl_pc__settings' );
 		$options['show_edit_configuration_link'] = true;
 		$options['show_view_configuration_link'] = true;
+		update_option( 'mkl_pc__settings', $options );
+	}
+
+	/**
+	 * Enable Draco decoder by default on upgrade to 2.0
+	 *
+	 * @return void
+	 */
+	private function set_default_setting_value_v2_0_0() {
+		$options = get_option( 'mkl_pc__settings' );
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+		$options['fe_3d_use_draco_loader'] = true;
 		update_option( 'mkl_pc__settings', $options );
 	}
 
