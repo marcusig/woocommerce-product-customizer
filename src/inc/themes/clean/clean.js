@@ -39,6 +39,32 @@
 		PC.fe.modal.$el.removeClass( 'showing-choices' );
 	} );
 
+	/**
+	 * On mobile, defer closing the choices panel after selecting an option so the
+	 * viewer image swap and the sidebar slide do not run in the same frame.
+	 */
+	wp.hooks.addFilter( 'PC.fe.close_choices_after_selection', 'MKL/PC/Themes/clean', function( close_choices, model ) {
+		if ( ! close_choices ) {
+			return close_choices;
+		}
+		if ( ! ( $( 'body' ).is( '.is-mobile' ) || PC.utils._isMobile() ) ) {
+			return close_choices;
+		}
+
+		var layer = PC.fe.layers.get( model.get( 'layerId' ) );
+		if ( ! layer ) {
+			return close_choices;
+		}
+
+		setTimeout( function() {
+			if ( layer.get( 'active' ) ) {
+				layer.set( 'active', false );
+			}
+		}, 220 );
+
+		return false;
+	} );
+
 	wp.hooks.addFilter( 'PC.fe.choices.where', 'MKL/PC/Themes/clean', function( where, original_view ) {
 		if ( original_view && original_view.model ) {
 			if ( 'dropdown' == original_view.model.get( 'display_mode' ) && ! PC.utils._isMobile() && ! original_view.model.get( 'parent' ) ) {
