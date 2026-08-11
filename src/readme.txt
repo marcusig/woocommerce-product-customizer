@@ -2,9 +2,9 @@
 Contributors: mklacroix, marcusig
 Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
-Requires at least: 5.9
-Tested up to: 7.0
-Stable tag: 1.7.4
+Requires at least: 6.0
+Tested up to: 7.1
+Stable tag: 1.7.5
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -16,6 +16,8 @@ Allow your customers to create configurable products with a live preview of the 
 **Product Configurator for WooCommerce** lets customers visually customize products using image layers, colors, swatches, conditional logic, pricing rules, file uploads and linked WooCommerce products. Perfect for bicycles, furniture, industrial products and most made-to-order products.
 
 Give your customers an interactive experience and eliminate the need for hundreds of product variations and images. Export image layers from Photoshop, 3D renders, or other sources, and let the user assemble their product dynamically: no need for technical skills or bulky setups
+
+**V2 is Coming soon, with 3D viewer**, global configurators and more. [Read more about v2 here](https://wc-product-configurator.com/2026/08/03/whats-new-in-product-configurator-v2/)
 
 **Perfect for:**
 
@@ -49,9 +51,9 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 ==== Create smart configuration flows ====
 
 * **Multi-Step Configurator** – Split complex product builds into multiple steps to streamline user experience.
-* **Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections—perfect for complex logic flows.
+* **Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections. Perfect for complex logic flows.
 * **Required selections**
-* **📝 Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
+* **Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
 
 ==== Connect to WooCommerce ====
 
@@ -186,6 +188,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.7.5 - 11/Aug/2026 =
+
+* TWEAK: Improve Mobile CSS in the theme Clean, reducing animations to improve performance
+* TWEAK: Delay automatic close of choices after selection, to reduce simultaneous layout changes
 * TWEAK: Fix inconsistent styling for the summary in Float, when using steps
 * FIX: Prevent empty/broken media library entries when configuration image generation fails; reuse existing attachments when the file already exists
 
@@ -495,5 +501,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.7.4 Recommended update for YITH Request a Quote users and stores using the WooCommerce cart or checkout blocks.
-* 1.7.0 Upgraded Pixi library to latest version (v8) - Text overlay and Save your design add-ons need to be updated to work with this latest update
+* 1.7.5 Various fixes and improvements. See changelog for details.
