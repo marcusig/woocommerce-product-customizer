@@ -114,7 +114,7 @@
 		bottom: 0;
 		left: 0;
 		right: 0; 
-		transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
+		transition: transform 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01), visibility 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01), box-shadow 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
 		background: color( container-bg );
 		transform: translateX(100%);
 		overflow: auto;
@@ -697,9 +697,8 @@
 				}
 			}
 			&.opened {
-				transform: translateX( -100% );
-				@media( max-width: $small_screen_width ) {
-					transform: translateX( 100% );
+				@media( min-width: $small_screen_width ) {
+					transform: translateX( -100% );
 				}
 			}
 		}
@@ -751,11 +750,19 @@
 
 
 	@media( max-width: $small_screen_width ) {
+		bottom: var( --mkl_pc_footer_height );
 		@at-root .mkl_pc.showing-choices {
 			--mkl_pc_toolbar_width: 250px;
+
+			// Keep the viewer still; only the menu expands/slides over it.
+			.mkl_pc_toolbar {
+				z-index: 5;
+			}
+			.mkl_pc_viewer,
+			.mkl_pc_bg {
+				left: var( --mkl_pc_toolbar_width_small );
+			}
 		}
-		// width: 100%;
-		// top: 50%;
 	}
 
 	input[type=text],
