@@ -12,11 +12,17 @@ if (!version) {
 
 // Paths
 const distDir = path.resolve(__dirname, '../dist');
-const svnTrunk = path.resolve(__dirname, '../../../../repository/product-configurator-for-woocommerce/trunk');
+const svnTrunk = path.resolve(__dirname, '../../../repository/product-configurator-for-woocommerce/trunk');
 const repoUrl = 'http://plugins.svn.wordpress.org/product-configurator-for-woocommerce';
 
 console.log( distDir );
 console.log( svnTrunk );
+
+// Bring trunk up to date before replacing contents (avoids E155011 out-of-date commits).
+// Update trunk only — not tags/ — so releases stay fast.
+console.log( `🔄 Updating SVN trunk: ${svnTrunk}` );
+execSync( `svn update "${svnTrunk}"`, { stdio: 'inherit' } );
+
 console.log(`🚚 Copying dist → trunk`);
 fs.emptyDirSync(svnTrunk);
 fs.copySync(distDir, svnTrunk);
