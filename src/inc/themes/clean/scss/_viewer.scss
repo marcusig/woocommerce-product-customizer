@@ -8,16 +8,9 @@
 	background-size: cover;
 	border-bottom-left-radius: var( --mkl_pc_border-radius );
 	background-color: color( viewer-bg );
-	transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
 	z-index: 3;
 	@media( max-width: $small_screen_width ) {
-		// left: 0;
-		// top: 0;
-		// bottom: 50%;
-		@at-root .mkl_pc.showing-choices .mkl_pc_bg {
-			--mkl_pc_toolbar_width: var( --mkl_pc_toolbar_width_small );
-			transform: translateX( calc( 250px - var( --mkl_pc_toolbar_width_small ) ) );
-		}
+		transition: left 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
 	}
 }
 
@@ -30,25 +23,18 @@
 	bottom: var( --mkl_pc_footer_height );
 	border-bottom-left-radius: var( --mkl_pc_border-radius );
 	background-color: color( viewer-bg );
-	transition: all 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
+	@media( max-width: $small_screen_width ) {
+		transition: left 0.3s cubic-bezier(0.02, 0.5, 0.14, 1.01);
+	}
 	.mkl_pc_bg + & {
 		background-color: transparent;	
-	}
-	@media( max-width: $small_screen_width ) {
-		@at-root .mkl_pc.showing-choices .mkl_pc_viewer {
-			--mkl_pc_toolbar_width: var( --mkl_pc_toolbar_width_small );
-			transform: translateX( calc( 250px - var( --mkl_pc_toolbar_width_small ) ) );
-		}
-		// left: 0;
-		// bottom: 50%;
-		// top: 40px;
 	}
 
 	&.is-loading-image {
 
 	}
 
-	@import 'scss/angles_selector';
+	@import 'angles_selector';
 
 	.mkl_pc_layers {
 		position: absolute;
@@ -60,15 +46,24 @@
 		user-select: none;
 
 		img {
-			transition: .2s all;
+			transition: opacity 0.2s ease;
 			&:not(.active), &.loading {
 				opacity: 0;
+				visibility: hidden;
+				pointer-events: none;
+			}
+			&.active:not(.loading) {
+				opacity: 1;
+				visibility: visible;
 			}
 			position: absolute;
 			left: 50%;
 			top: 50%;
 			transform: translateX(-50%) translateY(-50%);
 			max-height: 100%;
+			max-width: 100%;
+			height: auto;
+			width: auto;
 			-webkit-user-drag: none;
 		}
 
@@ -92,7 +87,7 @@
 			left: 2em;
 			bottom: 2em;
 			opacity: 0;
-			transition: all .2s;
+			transition: opacity .2s ease;
 			border-radius: 50%;
 			-webkit-animation: sk-scaleout 1.0s infinite ease-in-out;
 			animation: sk-scaleout 1.0s infinite ease-in-out;
