@@ -228,6 +228,8 @@ PC.views = window.PC.views || {};
 			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
 			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
 			'click .pc-3d-import-gltf-cameras': 'import_cameras_from_gltf',
+			'click .pc-3d-poster-select': 'on_poster_select',
+			'click .pc-3d-poster-remove': 'on_poster_remove',
 			'change .pc-3d-angle-select': 'on_angle_select_change',
 			'change .pc-3d-env-source': 'on_env_source_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
@@ -317,6 +319,9 @@ PC.views = window.PC.views || {};
 		},
 		ensure_settings_defaults: function ( s ) {
 			if ( s.hidden_object_names === undefined ) s.hidden_object_names = '';
+			if ( !s.poster ) s.poster = { attachment_id: null, url: '' };
+			if ( s.poster.attachment_id === undefined ) s.poster.attachment_id = null;
+			if ( s.poster.url === undefined ) s.poster.url = '';
 			if ( !s.environment ) s.environment = { mode: 'preset', preset: 'outdoor', object_id: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
 			if ( !s.background ) s.background = { mode: 'environment', color: '#ffffff' };
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
@@ -331,6 +336,42 @@ PC.views = window.PC.views || {};
 			if ( s.postprocessing.bloom_strength === undefined ) s.postprocessing.bloom_strength = 0.05;
 			if ( s.postprocessing.bloom_radius === undefined ) s.postprocessing.bloom_radius = 0.04;
 			if ( s.postprocessing.bloom_threshold === undefined ) s.postprocessing.bloom_threshold = 0.85;
+		},
+		on_poster_select: function ( e ) {
+			e.preventDefault();
+			if ( ! window.wp || ! window.wp.media ) return;
+			const view = this;
+			const current = ( PC.app.admin.settings_3d && PC.app.admin.settings_3d.poster ) || {};
+			const frame = window.wp.media( {
+				title: ( typeof PC_lang !== 'undefined' && PC_lang.select_poster_image ) ? PC_lang.select_poster_image : 'Select poster image',
+				button: { text: ( typeof PC_lang !== 'undefined' && PC_lang.use_this_image ) ? PC_lang.use_this_image : 'Use this image' },
+				multiple: false,
+				library: { type: 'image' },
+			} );
+			frame.on( 'open', function () {
+				if ( ! current.attachment_id ) return;
+				const selection = frame.state().get( 'selection' );
+				const attachment = window.wp.media.attachment( current.attachment_id );
+				selection.reset( attachment ? [ attachment ] : [] );
+			} );
+			frame.on( 'select', function () {
+				const attachment = frame.state().get( 'selection' ).first();
+				if ( ! attachment ) return;
+				const data = attachment.toJSON();
+				PC.app.admin.settings_3d.poster = {
+					attachment_id: data.id || null,
+					url: data.url || '',
+				};
+				view.mark_dirty( 'settings_3d' );
+				view.render();
+			} );
+			frame.open();
+		},
+		on_poster_remove: function ( e ) {
+			e.preventDefault();
+			PC.app.admin.settings_3d.poster = { attachment_id: null, url: '' };
+			this.mark_dirty( 'settings_3d' );
+			this.render();
 		},
 		on_reset_settings: function ( e ) {
 			e.preventDefault();

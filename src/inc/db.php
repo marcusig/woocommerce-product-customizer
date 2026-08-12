@@ -1728,6 +1728,10 @@ class DB {
 	public static function get_default_settings_3d() {
 		return array(
 			'hidden_object_names' => '',
+			'poster'          => array(
+				'attachment_id' => null,
+				'url'           => '',
+			),
 			'environment'     => array(
 				'mode'                   => 'preset',
 				'preset'                 => 'outdoor',

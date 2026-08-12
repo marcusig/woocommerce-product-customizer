@@ -30,8 +30,8 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__loader() {
 	?>
 	<div class="mkl-loader">
-		<div class="header"><?php esc_html_e( 'Loading Data', 'product-configurator-for-woocommerce' ); ?> </div>
-		<div class="spinner"></div>
+		<div class="mkl-loader__spinner spinner" aria-hidden="true"></div>
+		<div class="mkl-loader__header header"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></div>
 	</div>
 <?php
 }

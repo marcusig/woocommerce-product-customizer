@@ -1,4 +1,24 @@
 <div class="pc-3d-setting-group">
+	<h4><?php esc_html_e( 'Loading poster', 'product-configurator-for-woocommerce' ); ?></h4>
+	<p class="description"><?php esc_html_e( 'Optional image shown while the 3D viewer loads. It fades out once the model is ready.', 'product-configurator-for-woocommerce' ); ?></p>
+	<p class="field-row">
+		<label><?php esc_html_e( 'Poster image', 'product-configurator-for-woocommerce' ); ?></label>
+		<div class="mkl-pc-setting--container mkl-pc-setting--file pc-3d-poster-file" data-allowed-types="image" data-setting="poster">
+			<# if ( data.poster && data.poster.url ) { #>
+				<div class="mkl-pc-setting--file-preview"><img src="{{ data.poster.url }}" alt="" style="max-width:120px;max-height:80px;display:block;"></div>
+				<button type="button" class="button pc-3d-poster-remove"><?php esc_html_e( 'Remove', 'product-configurator-for-woocommerce' ); ?></button>
+			<# } #>
+			<button type="button" class="button pc-3d-poster-select">
+				<# if ( data.poster && data.poster.attachment_id ) { #>
+					<?php esc_html_e( 'Replace image', 'product-configurator-for-woocommerce' ); ?>
+				<# } else { #>
+					<?php esc_html_e( 'Select image', 'product-configurator-for-woocommerce' ); ?>
+				<# } #>
+			</button>
+		</div>
+	</p>
+</div>
+<div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
 	<p class="description"><?php esc_html_e( 'The environment map controls reflections and lighting. Choose a built-in preset or an environment from the 3D Objects list (type: Environment).', 'product-configurator-for-woocommerce' ); ?></p>
 	<p class="field-row">

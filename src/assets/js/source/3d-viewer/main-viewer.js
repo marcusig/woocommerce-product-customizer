@@ -15,6 +15,13 @@ import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingFlags, getHdrUrlFromEnv } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
+import {
+	create_loading_overlay,
+	get_loading_string,
+	get_poster_url,
+	hide_loading_overlay,
+	set_loading_step,
+} from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials } from './3d-scene-utils.js';
 
@@ -252,23 +259,23 @@ export default Backbone.View.extend({
 	},
 
 	_showLoadingOverlay( container ) {
-		const overlay = document.createElement( 'div' );
-		overlay.className = 'mkl_pc_3d_loader mkl_pc_3d_loading';
-		overlay.setAttribute( 'aria-live', 'polite' );
-		overlay.textContent = typeof PC_lang !== 'undefined' && PC_lang.loading_viewer ? PC_lang.loading_viewer : 'Loading…';
+		const settings = getSettings();
+		const overlay = create_loading_overlay( {
+			text: get_loading_string( 'loading_viewer', 'Loading…' ),
+			poster_url: get_poster_url( settings ),
+		} );
 		container.after( overlay );
 		this._loadingOverlay = overlay;
 	},
 
 	_setLoadingStep( text ) {
-		if ( this._loadingOverlay ) this._loadingOverlay.textContent = text || '';
+		set_loading_step( this._loadingOverlay, text || '' );
 	},
 
 	_hideLoadingOverlay() {
-		if ( this._loadingOverlay && this._loadingOverlay.parentNode ) {
-			this._loadingOverlay.parentNode.removeChild( this._loadingOverlay );
-		}
+		const overlay = this._loadingOverlay;
 		this._loadingOverlay = null;
+		hide_loading_overlay( overlay );
 	},
 
 	_showError( msg ) {
@@ -284,11 +291,11 @@ export default Backbone.View.extend({
 	 * @returns {Promise<void>}
 	 */
 	async _runViewerPipeline( container, s ) {
-		this._setLoadingStep( typeof PC_lang !== 'undefined' && PC_lang.loading_viewer_preparing ? PC_lang.loading_viewer_preparing : 'Preparing 3D…' );
+		this._setLoadingStep( get_loading_string( 'loading_viewer_preparing', 'Preparing 3D…' ) );
 		const modules = await this._loadModules( s );
-		this._setLoadingStep( typeof PC_lang !== 'undefined' && PC_lang.loading_model ? PC_lang.loading_model : 'Loading 3D model…' );
+		this._setLoadingStep( get_loading_string( 'loading_model', 'Loading 3D model…' ) );
 		const assets = await this._loadAssets( s, modules );
-		this._setLoadingStep( typeof PC_lang !== 'undefined' && PC_lang.loading_viewer_setup ? PC_lang.loading_viewer_setup : 'Setting up scene…' );
+		this._setLoadingStep( get_loading_string( 'loading_viewer_setup', 'Setting up scene…' ) );
 		await this._setupScene( container, s, modules, assets );
 	},
 
