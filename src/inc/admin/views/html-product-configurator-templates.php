@@ -53,6 +53,13 @@ $mkl_pc_3d_settings_sections = apply_filters(
 			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/mesh_cube.svg',
 			'template' => __DIR__ . '/3d-settings-sections/camera-positions.php',
 		),
+		array(
+			'id'       => 'reset',
+			'title'    => __( 'Reset settings', 'product-configurator-for-woocommerce' ),
+			'icon_id'  => 'settings_3d_section_reset',
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/reset.svg',
+			'template' => __DIR__ . '/3d-settings-sections/reset-settings.php',
+		),
 	)
 );
 ?>
@@ -557,9 +564,6 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								<?php include $section_template; ?>
 							</div>
 						<?php endforeach; ?>
-						<p class="pc-3d-reset-settings-row" style="margin-top: 1.5em;">
-							<button type="button" class="button pc-3d-reset-settings"><?php esc_html_e( 'Reset settings', 'product-configurator-for-woocommerce' ); ?></button>
-						</p>
 					</div>
 				</div>
 			</div>

@@ -1757,6 +1757,7 @@ class DB {
 				'shadow_blur'    => 5,
 			),
 			'enable_shadows'  => false,
+			'extend_under_toolbar' => false,
 			'renderer'        => array(
 				'tone_mapping'       => 'linear',
 				'exposure'           => 1,
@@ -1960,6 +1961,9 @@ class DB {
 
 		if ( isset( $init_data['settings_3d'] ) ) {
 			$init_data['default_hidden_object_names'] = self::get_default_hidden_object_names();
+			if ( ! mkl_pc( 'themes' )->current_theme_supports( 'extend_under_toolbar' ) ) {
+				$init_data['settings_3d']['extend_under_toolbar'] = false;
+			}
 		}
 
 		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
@@ -2270,6 +2274,10 @@ class DB {
 					'escape' => 'floatval',
 				],
 				'enable_shadows' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'extend_under_toolbar' => [
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],

@@ -6,6 +6,18 @@
 	bottom: 0;
 }
 
+/*
+ * Opt-in full-bleed under the toolbar (settings_3d.extend_under_toolbar).
+ * Adds .mkl_pc_viewer--extend-under-toolbar. Themes stretch the viewer (desktop)
+ * and set focus insets for the toolbar side so the camera keeps framing the product:
+ *   --mkl_pc_viewer_focus_inset_left
+ *   --mkl_pc_viewer_focus_inset_right
+ *   --mkl_pc_viewer_focus_inset_top
+ *   --mkl_pc_viewer_focus_inset_bottom
+ * Values: px or % of the canvas axis. Unset sides default to 0.
+ * On mobile, leave insets unset / 0 so layout stays as designed.
+ */
+
 @keyframes mkl_pc_3d_loader_spin {
 	to {
 		transform: rotate(360deg);

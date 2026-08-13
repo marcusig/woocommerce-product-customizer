@@ -7,13 +7,97 @@ import { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv } from './3d
 import { disposeScene as disposeSceneUtil } from './3d-scene-utils.js';
 
 /**
+ * Parse a CSS length (px, %, or unitless) against an axis size in pixels.
+ * @param {string} raw
+ * @param {number} axis_size
+ * @returns {number}
+ */
+function parse_css_length( raw, axis_size ) {
+	const value = String( raw || '' ).trim();
+	if ( ! value ) return 0;
+	if ( value.endsWith( '%' ) ) {
+		const percent = parseFloat( value );
+		return Number.isFinite( percent ) ? ( percent / 100 ) * axis_size : 0;
+	}
+	const number = parseFloat( value );
+	return Number.isFinite( number ) ? number : 0;
+}
+
+/**
+ * Read theme-defined focus insets from CSS custom properties on the viewer.
+ * Themes set any of: --mkl_pc_viewer_focus_inset_{left,right,top,bottom} (px or %).
+ * @param {HTMLElement} element
+ * @param {number} full_width
+ * @param {number} full_height
+ * @returns {{ left: number, right: number, top: number, bottom: number }}
+ */
+function read_focus_insets( element, full_width, full_height ) {
+	const style = window.getComputedStyle( element );
+	return {
+		left: parse_css_length( style.getPropertyValue( '--mkl_pc_viewer_focus_inset_left' ), full_width ),
+		right: parse_css_length( style.getPropertyValue( '--mkl_pc_viewer_focus_inset_right' ), full_width ),
+		top: parse_css_length( style.getPropertyValue( '--mkl_pc_viewer_focus_inset_top' ), full_height ),
+		bottom: parse_css_length( style.getPropertyValue( '--mkl_pc_viewer_focus_inset_bottom' ), full_height ),
+	};
+}
+
+/**
+ * Keep the product framed in the non-toolbar region while rendering full-bleed.
+ * Uses PerspectiveCamera.setViewOffset; inset direction comes from theme CSS vars
+ * (--mkl_pc_viewer_focus_inset_{left,right,top,bottom} = toolbar side).
+ *
+ * Shift the optical center into the clear area by half the net inset and keep the
+ * full view size so FOV / product scale match the non-offset framing.
+ *
+ * @param {THREE.PerspectiveCamera} camera
+ * @param {HTMLElement} container
+ * @param {boolean} enabled
+ */
+export function apply_camera_view_offset( camera, container, enabled ) {
+	const full_width = Math.max( 1, container.clientWidth );
+	const full_height = Math.max( 1, container.clientHeight );
+	camera.aspect = full_width / full_height;
+
+	if ( ! enabled ) {
+		camera.clearViewOffset();
+		camera.updateProjectionMatrix();
+		return;
+	}
+
+	const inset_element = ( container.closest && container.closest( '.mkl_pc_viewer' ) ) || container;
+	const insets = read_focus_insets( inset_element, full_width, full_height );
+
+	if ( insets.left === 0 && insets.right === 0 && insets.top === 0 && insets.bottom === 0 ) {
+		camera.clearViewOffset();
+		camera.updateProjectionMatrix();
+		return;
+	}
+
+	// Canvas center is at W/2; clear-area center is at (left + W - right) / 2.
+	// Delta = (right - left) / 2 — shift optical axis into the free region only.
+	const offset_x = ( insets.right - insets.left ) / 2;
+	const offset_y = ( insets.bottom - insets.top ) / 2;
+
+	camera.setViewOffset(
+		full_width,
+		full_height,
+		offset_x,
+		offset_y,
+		full_width,
+		full_height
+	);
+	camera.updateProjectionMatrix();
+}
+
+/**
  * Create renderer, scene, camera, controls, default light and the _three bag.
  * @param {HTMLElement} container
  * @param {Object} s - settings_3d (renderer, lighting, environment)
- * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, fake_shadow, model_root, gltf, current_env_url, default_light, container, initial_camera_position, initial_controls_target, material_registry, textureLoader }
+ * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, fake_shadow, model_root, gltf, current_env_url, default_light, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar }
  */
 export function initScene( container, s ) {
 	const r = s.renderer || {};
+	const extend_under_toolbar = !!( s && s.extend_under_toolbar );
 	const renderer = new THREE.WebGLRenderer( { antialias: true, alpha: !!r.alpha } );
 	renderer.shadowMap.enabled = false;
 	renderer.setSize( container.clientWidth, container.clientHeight );
@@ -41,12 +125,12 @@ export function initScene( container, s ) {
 	controls.dampingFactor = 0.1;
 
 	const onResize = () => {
-		camera.aspect = container.clientWidth / container.clientHeight;
-		camera.updateProjectionMatrix();
+		apply_camera_view_offset( camera, container, extend_under_toolbar );
 		renderer.setSize( container.clientWidth, container.clientHeight );
 		renderer.setPixelRatio( window.devicePixelRatio );
 	};
 	window.addEventListener( 'resize', onResize );
+	onResize();
 
 	return {
 		scene,
@@ -64,6 +148,7 @@ export function initScene( container, s ) {
 		initial_controls_target: null,
 		material_registry: new Map(),
 		textureLoader: new THREE.TextureLoader(),
+		extend_under_toolbar,
 	};
 }
 

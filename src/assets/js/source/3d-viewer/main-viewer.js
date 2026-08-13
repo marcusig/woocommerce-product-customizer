@@ -243,6 +243,12 @@ export default Backbone.View.extend({
 			return this.$el;
 		}
 
+		if ( s.extend_under_toolbar ) {
+			this.$el.addClass( 'mkl_pc_viewer--extend-under-toolbar' );
+		} else {
+			this.$el.removeClass( 'mkl_pc_viewer--extend-under-toolbar' );
+		}
+
 		// Phase 1 done (we have s). Run pipeline: phases 2 → 3 → 4.
 		this._showLoadingOverlay( container );
 		this._runViewerPipeline( container, s )
@@ -937,6 +943,11 @@ export default Backbone.View.extend({
 		// When using custom size, temporarily set camera aspect so the shot is not distorted.
 		const needAspectRestore = ( width !== canvas.width || height !== canvas.height ) && cameraForShot === baseCamera;
 		const savedAspect = needAspectRestore ? baseCamera.aspect : null;
+		// Clear toolbar view-offset for a centered product shot (restored via on_resize below).
+		const had_view_offset = !!( baseCamera.view && baseCamera.view.enabled );
+		if ( had_view_offset && cameraForShot === baseCamera ) {
+			baseCamera.clearViewOffset();
+		}
 		if ( needAspectRestore ) {
 			baseCamera.aspect = width / height;
 			baseCamera.updateProjectionMatrix();
@@ -954,6 +965,9 @@ export default Backbone.View.extend({
 		if ( needAspectRestore && savedAspect != null ) {
 			baseCamera.aspect = savedAspect;
 			baseCamera.updateProjectionMatrix();
+		}
+		if ( had_view_offset && typeof t.on_resize === 'function' ) {
+			t.on_resize();
 		}
 
 		// Read pixels back and convert to a PNG data URL via a temporary 2D canvas.

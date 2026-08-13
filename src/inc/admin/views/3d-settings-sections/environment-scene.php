@@ -93,6 +93,18 @@
 		<input type="color" id="pc-3d-bg-color" class="pc-3d-bg-color" data-key="background.color" value="{{ data.background && data.background.color ? data.background.color : '#ffffff' }}" />
 	</p>
 </div>
+<?php if ( mkl_pc( 'themes' )->current_theme_supports( 'extend_under_toolbar' ) ) : ?>
+<div class="pc-3d-setting-group">
+	<h4><?php esc_html_e( 'Layout', 'product-configurator-for-woocommerce' ); ?></h4>
+	<p class="description"><?php esc_html_e( 'Stretch the 3D canvas under the toolbar so environment backgrounds fill the configurator. The product stays framed beside the menu; themes choose which side is offset.', 'product-configurator-for-woocommerce' ); ?></p>
+	<p class="field-row">
+		<label for="pc-3d-extend-under-toolbar">
+			<input type="checkbox" id="pc-3d-extend-under-toolbar" class="pc-3d-extend-under-toolbar" data-key="extend_under_toolbar" <# if ( data.extend_under_toolbar ) { #>checked<# } #> />
+			<?php esc_html_e( 'Extend viewer under toolbar', 'product-configurator-for-woocommerce' ); ?>
+		</label>
+	</p>
+</div>
+<?php endif; ?>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Ground / Fake shadow', 'product-configurator-for-woocommerce' ); ?></h4>
 	<p class="field-row">

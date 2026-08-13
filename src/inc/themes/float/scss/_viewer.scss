@@ -16,6 +16,18 @@
 		bottom: 60%;
 	}
 
+	// Full-bleed canvas under the (right) toolbar on desktop; camera focus stays in the free area.
+	&.mkl_pc_viewer--extend-under-toolbar {
+		@media( min-width: #{ $small_screen_width + 1 } ) {
+			right: 0;
+			--mkl_pc_viewer_focus_inset_right: var(--toolbar_width);
+		}
+
+		@media( min-width: #{ $small_screen_width + 1 } ) and ( max-width: $medium_screen_width ) {
+			--mkl_pc_viewer_focus_inset_right: #{$toolbar_width_medium};
+		}
+	}
+
 	.angles-select {
 		position: absolute;
 		left: 85px;

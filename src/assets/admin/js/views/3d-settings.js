@@ -235,7 +235,7 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
 			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
 			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure': 'on_slider_input',
-			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows': 'on_setting_change',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows, .pc-3d-extend-under-toolbar': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
 			'input .pc-3d-bloom-strength, .pc-3d-bloom-radius, .pc-3d-bloom-threshold': 'on_slider_input',
@@ -326,6 +326,7 @@ PC.views = window.PC.views || {};
 			if ( !s.background ) s.background = { mode: 'environment', color: '#ffffff' };
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
 			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
+			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if ( !s.lighting ) s.lighting = {};
 			if ( !s.postprocessing ) s.postprocessing = {};

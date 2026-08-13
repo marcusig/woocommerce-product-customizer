@@ -29,6 +29,7 @@ class Admin_Product_3D {
 		add_filter( 'wp_prepare_attachment_for_js', array( $this, 'prepare_attachment_for_js' ), 10, 3 );
 		add_filter( 'mkl_pc_3d_settings_sections', array( $this, 'register_ar_discovery_section' ), 15 );
 		add_filter( 'mkl_pc_3d_settings_sections', array( $this, 'register_postprocessing_discovery_section' ), 15 );
+		add_filter( 'mkl_pc_3d_settings_sections', array( $this, 'ensure_reset_settings_section_last' ), 100 );
 	}
 
 	/**
@@ -93,6 +94,31 @@ class Admin_Product_3D {
 		);
 
 		return $sections;
+	}
+
+	/**
+	 * Keep the Reset settings section last so add-on tabs stay above the destructive action.
+	 *
+	 * @param array $sections 3D settings sections.
+	 * @return array
+	 */
+	public function ensure_reset_settings_section_last( $sections ) {
+		$reset_section = null;
+		$ordered       = array();
+
+		foreach ( $sections as $section ) {
+			if ( isset( $section['id'] ) && 'reset' === $section['id'] ) {
+				$reset_section = $section;
+				continue;
+			}
+			$ordered[] = $section;
+		}
+
+		if ( null !== $reset_section ) {
+			$ordered[] = $reset_section;
+		}
+
+		return $ordered;
 	}
 
 	/**

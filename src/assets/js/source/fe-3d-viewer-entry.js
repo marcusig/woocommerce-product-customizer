@@ -64,6 +64,10 @@ const Viewer3DWrapper = Backbone.View.extend( {
 			return this.$el;
 		}
 
+		if ( s.extend_under_toolbar ) {
+			this.$el.addClass( 'mkl_pc_viewer--extend-under-toolbar' );
+		}
+
 		const overlay = create_loading_overlay( {
 			text: get_loading_string( 'loading_viewer', 'Loading…' ),
 			poster_url: get_poster_url( s ),
