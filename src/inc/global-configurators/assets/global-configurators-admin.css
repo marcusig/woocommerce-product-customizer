@@ -90,3 +90,19 @@ input#mkl_pc_global_picker_search {
 	margin-top: 1em;
 	padding-top: 0.75em;
 }
+.mkl-pc-category-assignment-notice {
+	padding: 8px 12px;
+	margin: 12px;
+	background: #f0f6fc;
+	border-left: 4px solid #2271b1;
+}
+.mkl-pc-category-assignment-notice p { margin: 0.35em 0; }
+
+.mkl-pc-apply-settings { padding-top: 12px; }
+.mkl-pc-apply-settings .mkl-pc-apply-mode p { margin: 0 0 12px; }
+.mkl-pc-apply-settings .mkl-pc-apply-mode label { font-weight: 600; display: inline-block; margin-right: 8px; }
+.mkl-pc-apply-settings .mkl-pc-apply-mode .description { display: block; font-weight: 400; margin: 4px 0 0 22px; color: #646970; }
+.mkl-pc-apply-category-field { margin-top: 8px; }
+.mkl-pc-apply-category-label { display: block; font-weight: 600; margin-bottom: 6px; }
+.mkl-pc-apply-category-field .select2-container { width: 100% !important; max-width: 520px; }
+

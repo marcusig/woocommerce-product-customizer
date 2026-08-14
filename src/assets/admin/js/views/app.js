@@ -217,6 +217,9 @@ PC.views = PC.views || {};
 			var msg = ( typeof PC_lang !== 'undefined' && PC_lang.editor_load_failed )
 				? PC_lang.editor_load_failed
 				: 'Could not load the configurator.';
+			if ( xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message ) {
+				msg = xhr.responseJSON.data.message;
+			}
 			var $screen = this.$el.find( '.loading-screen' );
 			$screen.find( '.mkl-pc-editor-load--busy' ).attr( 'hidden', true ).hide();
 			var $err = $screen.find( '.mkl-pc-editor-load--error' );
@@ -290,6 +293,7 @@ PC.views = PC.views || {};
 		events: {
 			'click .mkl-pc-admin-ui__close': 'close',
 			'click .mkl-pc-editor-load__retry': 'retryLoad',
+			'click .mkl-pc-editor-load__close': 'close',
 		},
 
 		open: function() {
@@ -316,19 +320,15 @@ PC.views = PC.views || {};
 		},
 
 		close: function() {
-			if ( this.$el.hasClass( 'load-error' ) ) {
-				var closeMsg = ( typeof PC_lang !== 'undefined' && PC_lang.editor_close_after_load_error )
-					? PC_lang.editor_close_after_load_error
-					: 'The configurator did not finish loading. Close anyway?';
-				if ( ! window.confirm( closeMsg ) ) {
-					return false;
-				}
+			var closing_after_load_error = this.$el.hasClass( 'load-error' );
+			if ( closing_after_load_error ) {
+				this.clearLoadErrorUI();
 			} else if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() && PC.app.global_layer_session_dirty ) {
 				if ( ! PC.app.requestLeaveGlobalLayerFocus() ) {
 					return false;
 				}
 			}
-			if ( _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) {
+			if ( ! closing_after_load_error && _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) {
 				if( !confirm( PC.lang.confirm_closing || 'Some values have not been saved. Are you sure you want to close?' ) )
 					return false;
 			}

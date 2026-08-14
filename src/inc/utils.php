@@ -121,7 +121,13 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			if ( $fetched_product->is_type( 'variation' ) ) {
 				$all_variations_are_configurable = get_post_meta( $fetched_product->get_parent_id(), MKL_PC_PREFIX.'_all_variations_are_configurable', true );
 				$configurable = get_post_meta( $fetched_product->get_parent_id(), MKL_PC_PREFIX.'_is_configurable', true );
-				return $all_variations_are_configurable === 'yes' && $configurable === 'yes';
+				if ( $all_variations_are_configurable === 'yes' && $configurable === 'yes' ) {
+					return true;
+				}
+			}
+
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Assignment' ) ) {
+				return \MKL\PC\Global_Configurators\Assignment::get_category_assigned_global_id( (int) $product_id ) > 0;
 			}
 
 			return false;

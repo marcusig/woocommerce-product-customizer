@@ -31,12 +31,17 @@ final class Admin_Ui {
 		add_action( 'woocommerce_process_product_meta_variable', array( __CLASS__, 'save_product_settings' ) );
 
 		add_action( 'mkl_pc_admin_global_configurator_content', array( __CLASS__, 'render_home_global_notice' ), 10, 2 );
+		add_action( 'woocommerce_product_options_general_product_data', array( __CLASS__, 'render_product_assignment_notice' ) );
+
+		add_action( 'add_meta_boxes', array( __CLASS__, 'add_apply_meta_box' ) );
+		add_action( 'save_post_' . Schema::CPT_SLUG, array( __CLASS__, 'save_apply_settings' ), 10, 2 );
 
 		add_action( 'wp_ajax_mkl_pc_search_global_configurators', array( __CLASS__, 'ajax_search_global_configurators' ) );
 		add_action( 'wp_ajax_mkl_pc_create_global_from_product', array( __CLASS__, 'ajax_create_global_from_product' ) );
 		add_action( 'wp_ajax_mkl_pc_make_local_copy', array( __CLASS__, 'ajax_make_local_copy' ) );
 
 		add_action( 'mkl_pc_admin_scripts_product_page', array( __CLASS__, 'enqueue_assets' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_cpt_apply_assets' ), 20 );
 		add_filter( 'PC_lang', array( __CLASS__, 'filter_pc_lang' ), 30, 1 );
 	}
 
@@ -396,6 +401,23 @@ final class Admin_Ui {
 	}
 
 	/**
+	 * Category search + apply-mode toggle on the global configurator CPT screen.
+	 *
+	 * @return void
+	 */
+	public static function enqueue_cpt_apply_assets() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || Schema::CPT_SLUG !== $screen->post_type || 'post' !== $screen->base ) {
+			return;
+		}
+		if ( function_exists( 'WC' ) ) {
+			wp_enqueue_script( 'wc-enhanced-select' );
+			wp_enqueue_style( 'woocommerce_admin_styles' );
+		}
+		self::enqueue_assets();
+	}
+
+	/**
 	 * @param array<string, mixed> $pc_lang
 	 * @return array<string, mixed>
 	 */
@@ -414,5 +436,188 @@ final class Admin_Ui {
 		$pc_lang['mkl_pc_global_consumer_count_label'] = __( '%d using', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_editor_readonly_note'] = __( 'This product is linked to a shared configurator. Editing is redirected to the global configurator.', 'product-configurator-for-woocommerce' );
 		return $pc_lang;
+	}
+
+	/**
+	 * Meta box on the global configurator CPT: apply to selected products or to a category.
+	 *
+	 * @return void
+	 */
+	public static function add_apply_meta_box() {
+		add_meta_box(
+			'mkl_pc_global_apply',
+			__( 'Apply configurator to', 'product-configurator-for-woocommerce' ),
+			array( __CLASS__, 'render_apply_meta_box' ),
+			Schema::CPT_SLUG,
+			'normal',
+			'default'
+		);
+	}
+
+	/**
+	 * @param \WP_Post $post
+	 * @return void
+	 */
+	public static function render_apply_meta_box( $post ) {
+		if ( ! $post || ! isset( $post->ID ) ) {
+			return;
+		}
+		$global_id    = (int) $post->ID;
+		$apply_mode   = Assignment::get_apply_mode( $global_id );
+		$category_ids = Assignment::get_apply_category_ids( $global_id );
+		wp_nonce_field( 'mkl_pc_global_apply_settings_' . $global_id, 'mkl_pc_apply_settings_nonce' );
+		?>
+		<div class="mkl-pc-apply-settings">
+			<fieldset class="mkl-pc-apply-mode">
+				<legend class="screen-reader-text"><?php esc_html_e( 'Apply configurator to', 'product-configurator-for-woocommerce' ); ?></legend>
+				<p>
+					<label>
+						<input type="radio" name="<?php echo esc_attr( Schema::META_APPLY_MODE ); ?>" value="<?php echo esc_attr( Schema::APPLY_MODE_SELECTED ); ?>" <?php checked( $apply_mode, Schema::APPLY_MODE_SELECTED ); ?>>
+						<?php esc_html_e( 'Selected products', 'product-configurator-for-woocommerce' ); ?>
+					</label>
+					<span class="description">
+						<?php esc_html_e( 'Products that have Configurable enabled and this global configurator chosen on their own product edit screen.', 'product-configurator-for-woocommerce' ); ?>
+					</span>
+				</p>
+				<p>
+					<label>
+						<input type="radio" name="<?php echo esc_attr( Schema::META_APPLY_MODE ); ?>" value="<?php echo esc_attr( Schema::APPLY_MODE_CATEGORY ); ?>" <?php checked( $apply_mode, Schema::APPLY_MODE_CATEGORY ); ?>>
+						<?php esc_html_e( 'Products in category', 'product-configurator-for-woocommerce' ); ?>
+					</label>
+				</p>
+			</fieldset>
+			<div class="mkl-pc-apply-category-field" data-show-when-apply-mode="<?php echo esc_attr( Schema::APPLY_MODE_CATEGORY ); ?>"<?php echo Schema::APPLY_MODE_CATEGORY === $apply_mode ? '' : ' style="display:none"'; ?>>
+				<label for="mkl_pc_apply_category_ids" class="mkl-pc-apply-category-label"><?php esc_html_e( 'Categories', 'product-configurator-for-woocommerce' ); ?></label>
+				<select id="mkl_pc_apply_category_ids"
+					class="wc-category-search"
+					name="<?php echo esc_attr( Schema::META_APPLY_CATEGORY_IDS ); ?>[]"
+					multiple="multiple"
+					style="width: 100%;"
+					data-placeholder="<?php esc_attr_e( 'Search for a category&hellip;', 'product-configurator-for-woocommerce' ); ?>"
+					data-allow_clear="true"
+					data-return_id="true"
+					data-minimum_input_length="1">
+					<?php
+					foreach ( $category_ids as $term_id ) {
+						$term = get_term( $term_id, 'product_cat' );
+						if ( ! $term || is_wp_error( $term ) ) {
+							continue;
+						}
+						echo '<option value="' . esc_attr( (string) $term_id ) . '" selected="selected">' . esc_html( $term->name ) . '</option>';
+					}
+					?>
+				</select>
+				<p class="description">
+					<?php esc_html_e( 'Matching products become configurable automatically, including products added to these categories later. Subcategories are included. Products that already have Configurable enabled keep their own configurator. If several global configurators match the same product, the oldest one is used.', 'product-configurator-for-woocommerce' ); ?>
+				</p>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * @param int      $post_id
+	 * @param \WP_Post $post
+	 * @return void
+	 */
+	public static function save_apply_settings( $post_id, $post ) {
+		$post_id = (int) $post_id;
+		if ( $post_id <= 0 ) {
+			return;
+		}
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+		if ( ! isset( $_POST['mkl_pc_apply_settings_nonce'] ) ) {
+			return;
+		}
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mkl_pc_apply_settings_nonce'] ) ), 'mkl_pc_global_apply_settings_' . $post_id ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+		$mode = isset( $_POST[ Schema::META_APPLY_MODE ] ) ? sanitize_key( wp_unslash( $_POST[ Schema::META_APPLY_MODE ] ) ) : Schema::APPLY_MODE_SELECTED;
+		$category_ids = array();
+		if ( isset( $_POST[ Schema::META_APPLY_CATEGORY_IDS ] ) && is_array( $_POST[ Schema::META_APPLY_CATEGORY_IDS ] ) ) {
+			$category_ids = array_map( 'absint', wp_unslash( $_POST[ Schema::META_APPLY_CATEGORY_IDS ] ) );
+		}
+		Assignment::save_apply_settings( $post_id, $mode, $category_ids );
+	}
+
+	/**
+	 * Notice on the product General tab when a category assignment applies.
+	 *
+	 * @return void
+	 */
+	public static function render_product_assignment_notice() {
+		global $post;
+		if ( ! $post || ! isset( $post->ID ) ) {
+			return;
+		}
+		$product_id = (int) $post->ID;
+		$global_id  = Assignment::get_category_assigned_global_id( $product_id );
+		if ( $global_id <= 0 ) {
+			return;
+		}
+		$title    = self::decode_post_title( get_the_title( $global_id ) );
+		$edit_url = get_edit_post_link( $global_id, 'raw' );
+		$term_names = array();
+		if ( function_exists( 'wc_get_product_term_ids' ) ) {
+			$product_terms = wc_get_product_term_ids( $product_id, 'product_cat' );
+			$assigned      = Assignment::expand_category_ids( Assignment::get_apply_category_ids( $global_id ), $global_id );
+			foreach ( $product_terms as $term_id ) {
+				if ( ! in_array( (int) $term_id, $assigned, true ) ) {
+					continue;
+				}
+				$term = get_term( (int) $term_id, 'product_cat' );
+				if ( $term && ! is_wp_error( $term ) ) {
+					$term_names[] = $term->name;
+				}
+			}
+		}
+		?>
+		<div class="options_group mkl-pc-category-assignment-notice">
+			<p>
+				<?php
+				if ( $edit_url ) {
+					echo wp_kses_post(
+						sprintf(
+							/* translators: 1: opening link tag, 2: global configurator title, 3: closing link tag */
+							__( 'This product uses the global configurator %1$s%2$s%3$s because it is in an assigned category.', 'product-configurator-for-woocommerce' ),
+							'<a href="' . esc_url( $edit_url ) . '"><strong>',
+							esc_html( $title ),
+							'</strong></a>'
+						)
+					);
+				} else {
+					echo wp_kses_post(
+						sprintf(
+							/* translators: %s: global configurator title */
+							__( 'This product uses the global configurator %s because it is in an assigned category.', 'product-configurator-for-woocommerce' ),
+							'<strong>' . esc_html( $title ) . '</strong>'
+						)
+					);
+				}
+				if ( ! empty( $term_names ) ) {
+					echo ' ';
+					echo esc_html(
+						sprintf(
+							/* translators: %s: comma-separated category names */
+							_n( 'Matching category: %s.', 'Matching categories: %s.', count( $term_names ), 'product-configurator-for-woocommerce' ),
+							implode( ', ', $term_names )
+						)
+					);
+				}
+				?>
+			</p>
+			<p class="description">
+				<?php esc_html_e( 'Enable Configurable on this product if you need a different configurator. Otherwise edit the global configurator, or change the product categories.', 'product-configurator-for-woocommerce' ); ?>
+			</p>
+		</div>
+		<?php
 	}
 }

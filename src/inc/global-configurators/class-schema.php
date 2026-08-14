@@ -35,6 +35,21 @@ final class Schema {
 	const SOURCE_LOCAL  = 'local';
 	const SOURCE_GLOBAL = 'global';
 
+	/**
+	 * CPT meta: how this global configurator is applied to products.
+	 * `selected` = products opt in from their own Configurator tab (default).
+	 * `category` = products in the selected product categories use it automatically.
+	 */
+	const META_APPLY_MODE = '_mkl_pc_apply_mode';
+
+	/**
+	 * CPT meta: product_cat term ids when META_APPLY_MODE === APPLY_MODE_CATEGORY.
+	 */
+	const META_APPLY_CATEGORY_IDS = '_mkl_pc_apply_category_ids';
+
+	const APPLY_MODE_SELECTED  = 'selected';
+	const APPLY_MODE_CATEGORY  = 'category';
+
 	const OWNER_TYPE_PRODUCT   = 'product';
 	const OWNER_TYPE_VARIATION = 'product_variation';
 	const OWNER_TYPE_GLOBAL    = 'mkl_pc_global_config';
@@ -51,6 +66,11 @@ final class Schema {
 	 * "linked product" means a WooCommerce product bound to a configurator choice for inventory/pricing).
 	 */
 	const CACHE_CONSUMERS_PREFIX = 'mkl_pc_gconf_consumers_';
+
+	/**
+	 * Object-cache key for the category-id → global-configurator-id index.
+	 */
+	const CACHE_CATEGORY_INDEX = 'mkl_pc_gconf_category_index';
 
 	/**
 	 * Whether the provided post id points at a global configurator CPT row.

@@ -98,10 +98,17 @@ class Ajax {
 		}
 
 		if ( ! $this->user_can_view_configurator_data( $id ) ) {
-			$product = $this->get_configurator_product( $id );
 			$message = __( 'You are not allowed to view this product.', 'product-configurator-for-woocommerce' );
-			if ( $product && 'publish' !== $product->get_status() && is_user_logged_in() && current_user_can( 'edit_post', $product->get_id() ) ) {
-				$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+			if ( class_exists( Schema::class ) && Schema::is_global_configurator_id( $id ) ) {
+				$message = __( 'You are not allowed to edit this global configurator.', 'product-configurator-for-woocommerce' );
+				if ( is_user_logged_in() && current_user_can( 'edit_post', $id ) ) {
+					$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+				}
+			} else {
+				$product = $this->get_configurator_product( $id );
+				if ( $product && 'publish' !== $product->get_status() && is_user_logged_in() && current_user_can( 'edit_post', $product->get_id() ) ) {
+					$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+				}
 			}
 			wp_send_json_error( [ 'message' => $message ], 403 );
 		}
@@ -254,15 +261,28 @@ class Ajax {
 	}
 
 	/**
-	 * Check whether the current user can view configurator data for a product.
+	 * Check whether the current user can view configurator data for a product or global CPT.
 	 *
 	 * Published products are available to everyone, including those hidden from the catalog.
 	 * Draft, private, or otherwise non-published products require a logged-in user with edit capability and a valid nonce.
+	 * Global configurator CPTs are admin-only and always require edit capability and a valid nonce.
 	 *
 	 * @param int $product_id
 	 * @return bool
 	 */
 	private function user_can_view_configurator_data( $product_id ) {
+		$product_id = (int) $product_id;
+		if ( $product_id <= 0 ) {
+			return false;
+		}
+
+		if ( class_exists( Schema::class ) && Schema::is_global_configurator_id( $product_id ) ) {
+			if ( ! is_user_logged_in() || ! current_user_can( 'edit_post', $product_id ) ) {
+				return false;
+			}
+			return $this->verify_configurator_data_nonce( $product_id );
+		}
+
 		$product = $this->get_configurator_product( $product_id );
 
 		if ( ! $product ) {
@@ -560,15 +580,38 @@ class Ajax {
 		 );
 		 
 		$products = wc_get_products( $args );
+		$data = [];
 		if ( $products ) {
-			$data = [];
 			foreach( $products as $product ) {
-				$data[] = [
+				$data[ $product->get_id() ] = [
 					'id' => $product->get_id(),
 					'name' => $product->get_name(),
 				];
 			}
 		}
+
+		if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Assignment' ) && class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+			$index = \MKL\PC\Global_Configurators\Assignment::get_category_index();
+			if ( ! empty( $index['global_ids'] ) && is_array( $index['global_ids'] ) ) {
+				foreach ( $index['global_ids'] as $global_id ) {
+					foreach ( \MKL\PC\Global_Configurators\Owner_Resolver::get_consumer_product_ids( (int) $global_id ) as $product_id ) {
+						if ( isset( $data[ $product_id ] ) ) {
+							continue;
+						}
+						$product = wc_get_product( $product_id );
+						if ( ! $product ) {
+							continue;
+						}
+						$data[ $product_id ] = [
+							'id' => $product_id,
+							'name' => $product->get_name(),
+						];
+					}
+				}
+			}
+		}
+
+		$data = array_values( $data );
 
 		// Cache the data for 5 min
 		set_transient( 'mkl_get_configurable_products', $data, 300 );

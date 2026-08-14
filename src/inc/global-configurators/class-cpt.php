@@ -90,8 +90,12 @@ final class Cpt {
 		foreach ( $columns as $key => $label ) {
 			$new[ $key ] = $label;
 			if ( 'title' === $key ) {
+				$new['mkl_pc_apply_mode']       = __( 'Applies to', 'product-configurator-for-woocommerce' );
 				$new['mkl_pc_consumer_count'] = __( 'Products using this', 'product-configurator-for-woocommerce' );
 			}
+		}
+		if ( ! isset( $new['mkl_pc_apply_mode'] ) ) {
+			$new['mkl_pc_apply_mode'] = __( 'Applies to', 'product-configurator-for-woocommerce' );
 		}
 		if ( ! isset( $new['mkl_pc_consumer_count'] ) ) {
 			$new['mkl_pc_consumer_count'] = __( 'Products using this', 'product-configurator-for-woocommerce' );
@@ -107,6 +111,26 @@ final class Cpt {
 	 * @return void
 	 */
 	public static function render_column( $column_key, $post_id ) {
+		if ( 'mkl_pc_apply_mode' === $column_key ) {
+			$mode = Assignment::get_apply_mode( (int) $post_id );
+			if ( Schema::APPLY_MODE_CATEGORY === $mode ) {
+				$names = array();
+				foreach ( Assignment::get_apply_category_ids( (int) $post_id ) as $term_id ) {
+					$term = get_term( $term_id, 'product_cat' );
+					if ( $term && ! is_wp_error( $term ) ) {
+						$names[] = $term->name;
+					}
+				}
+				if ( empty( $names ) ) {
+					esc_html_e( 'Categories (none selected)', 'product-configurator-for-woocommerce' );
+					return;
+				}
+				echo esc_html( implode( ', ', $names ) );
+				return;
+			}
+			esc_html_e( 'Selected products', 'product-configurator-for-woocommerce' );
+			return;
+		}
 		if ( 'mkl_pc_consumer_count' !== $column_key ) {
 			return;
 		}

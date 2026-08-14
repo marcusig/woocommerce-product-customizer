@@ -30,12 +30,31 @@ function mkl_pc_get_configurator_type( $product_id = NULL ) {
 		if ( NULL == $product_id || false == $product_id ) return false;
 	} 
 
+	if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Schema' ) && \MKL\PC\Global_Configurators\Schema::is_global_configurator_id( $product_id ) ) {
+		$type = get_post_meta( $product_id, MKL_PC_PREFIX . '_configurator_type', true );
+		return $type ? $type : 'configurator';
+	}
+
 	// if $product_id doesn't match a product, exit
 	if ( ! MKL\PC\Utils::is_product( $product_id )  ) return false;
 
 	$fetched_product = wc_get_product( $product_id );
 	$type = $fetched_product->get_meta( MKL_PC_PREFIX.'_configurator_type' );
-	return $type ?? 'configurator';
+	if ( $type ) {
+		return $type;
+	}
+
+	if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+		$global_id = \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( (int) $product_id );
+		if ( $global_id > 0 ) {
+			$type = get_post_meta( $global_id, MKL_PC_PREFIX . '_configurator_type', true );
+			if ( $type ) {
+				return $type;
+			}
+		}
+	}
+
+	return 'configurator';
 }
 
 /**

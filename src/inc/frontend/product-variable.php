@@ -17,6 +17,9 @@ class Frontend_Product_Variable {
 		$is_variation_configurable = get_post_meta( $id, MKL_PC_PREFIX.'_is_configurable' , true );
 		$all_variations_are_configurable = get_post_meta( $product->get_id(), MKL_PC_PREFIX.'_all_variations_are_configurable', true );
 		$attributes['is_configurable'] = $is_variation_configurable === 'yes' || $all_variations_are_configurable === 'yes';
+		if ( ! $attributes['is_configurable'] && class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+			$attributes['is_configurable'] = \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( $product->get_id() ) > 0;
+		}
 		return $attributes;
 	}
 
@@ -53,10 +56,16 @@ class Frontend_Product_Variable {
 		if ( 'variation' == $product->get_type() ) {
 			$parent = wc_get_product( $product->get_parent_id() );
 			$mode = $parent->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) && \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( $parent->get_id() ) > 0 ) {
+				$mode = 'share_all_config';
+			}
 		// Variable product
 		} elseif ( 'variable' == $product->get_type() ) {
 			$parent = $product;
 			$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) && \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( $product->get_id() ) > 0 ) {
+				$mode = 'share_all_config';
+			}
 			if ( 'share_all_config' !== $mode ) return $init_data;
 		} else {
 			return $init_data;

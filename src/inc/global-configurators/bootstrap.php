@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 require_once __DIR__ . '/class-schema.php';
 require_once __DIR__ . '/class-storage-owner.php';
+require_once __DIR__ . '/class-assignment.php';
 require_once __DIR__ . '/class-owner-resolver.php';
 require_once __DIR__ . '/class-data-copier.php';
 require_once __DIR__ . '/class-cpt.php';
@@ -20,6 +21,7 @@ require_once __DIR__ . '/class-cache-invalidator.php';
 require_once __DIR__ . '/class-wpml.php';
 
 Cpt::init();
+Assignment::init();
 Cache_Invalidator::init();
 Wpml::init();
 

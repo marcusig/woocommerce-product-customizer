@@ -117,6 +117,12 @@ final class Data_Copier {
 
 		self::copy_all_configurator_meta( $source, $target );
 
+		$configurator_type = $source->get_meta( MKL_PC_PREFIX . '_configurator_type', true );
+		if ( $configurator_type ) {
+			$target->update_meta( MKL_PC_PREFIX . '_configurator_type', $configurator_type );
+			$target->save();
+		}
+
 		do_action( 'mkl_pc/global_configurators/created_from_product', $new_id, $source_product_id );
 		return $new_id;
 	}
@@ -191,6 +197,7 @@ final class Data_Copier {
 
 		delete_post_meta( $product_id, Schema::META_GLOBAL_ID );
 		update_post_meta( $product_id, Schema::META_SOURCE, Schema::SOURCE_LOCAL );
+		update_post_meta( $product_id, MKL_PC_PREFIX . '_is_configurable', 'yes' );
 
 		if ( $global_id > 0 ) {
 			Owner_Resolver::invalidate_consumers_cache( $global_id );

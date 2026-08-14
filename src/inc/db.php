@@ -1823,6 +1823,9 @@ class DB {
 
 		if ( 'variable' === $product->get_type()) {
 			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+			if ( Owner_Resolver::get_global_id( $parent_id ) > 0 ) {
+				$init_data['product_info']['mode'] = 'share_all_config';
+			}
 			$init_data['product_info']['variations'] = array(); 
 			$variations = $product->get_available_variations();
 			foreach( $variations as $variation ) {

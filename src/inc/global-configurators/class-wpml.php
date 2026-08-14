@@ -33,6 +33,8 @@ final class Wpml {
 		add_action( 'mkl_pc/global_configurators/unlinked', array( __CLASS__, 'sync_link_meta' ), 10, 3 );
 		add_action( 'mkl_pc/global_configurators/source_changed', array( __CLASS__, 'sync_link_meta' ), 10, 3 );
 
+		add_filter( 'mkl_pc/global_configurators/apply_category_ids', array( __CLASS__, 'expand_category_ids_for_languages' ), 10, 2 );
+
 		add_action( 'wpml_after_copy_custom_field', array( __CLASS__, 'after_copy_custom_field' ), 20, 3 );
 		add_filter( 'wpml_elements_type_post_types_register_translatable', array( __CLASS__, 'filter_translatable_post_types' ), 10, 1 );
 	}
@@ -92,5 +94,41 @@ final class Wpml {
 			unset( $config[ Schema::CPT_SLUG ] );
 		}
 		return $config;
+	}
+
+	/**
+	 * Include translated product_cat term ids so category assignment matches every language.
+	 *
+	 * @param int[] $category_ids
+	 * @param int   $global_id
+	 * @return int[]
+	 */
+	public static function expand_category_ids_for_languages( $category_ids, $global_id ) {
+		unset( $global_id );
+		if ( ! is_array( $category_ids ) || empty( $category_ids ) ) {
+			return $category_ids;
+		}
+		if ( ! has_filter( 'wpml_object_id' ) ) {
+			return $category_ids;
+		}
+		$languages = apply_filters( 'wpml_active_languages', null, array( 'skip_missing' => 0 ) );
+		if ( ! is_array( $languages ) || empty( $languages ) ) {
+			return $category_ids;
+		}
+		$expanded = $category_ids;
+		foreach ( $category_ids as $term_id ) {
+			$term_id = (int) $term_id;
+			if ( $term_id <= 0 ) {
+				continue;
+			}
+			foreach ( array_keys( $languages ) as $language_code ) {
+				$translated = apply_filters( 'wpml_object_id', $term_id, 'product_cat', false, $language_code );
+				$translated = (int) $translated;
+				if ( $translated > 0 ) {
+					$expanded[] = $translated;
+				}
+			}
+		}
+		return array_values( array_unique( array_map( 'intval', $expanded ) ) );
 	}
 }

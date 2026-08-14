@@ -80,7 +80,10 @@ $mkl_pc_3d_settings_sections = apply_filters(
 			</div>
 			<div class="mkl-pc-editor-load mkl-pc-editor-load--error" hidden>
 				<p class="mkl-pc-editor-load__message" role="alert"></p>
-				<button type="button" class="button button-primary mkl-pc-editor-load__retry"><?php esc_html_e( 'Retry', 'product-configurator-for-woocommerce' ); ?></button>
+				<div class="mkl-pc-editor-load__actions">
+					<button type="button" class="button button-primary mkl-pc-editor-load__retry"><?php esc_html_e( 'Retry', 'product-configurator-for-woocommerce' ); ?></button>
+					<button type="button" class="button mkl-pc-editor-load__close"><?php esc_html_e( 'Close', 'product-configurator-for-woocommerce' ); ?></button>
+				</div>
 			</div>
 		</div>
 		<div class="notice-container"></div>

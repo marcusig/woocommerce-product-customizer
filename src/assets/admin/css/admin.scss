@@ -1627,8 +1627,24 @@ html .pc-modal-container {
 			font-size: 15px;
 			line-height: 1.5;
 		}
-		.mkl-pc-editor-load__retry {
+		.mkl-pc-editor-load__actions {
+			display: flex;
+			gap: 8px;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+		.mkl-pc-editor-load__retry,
+		.mkl-pc-editor-load__close {
 			margin-top: 4px;
+		}
+		.mkl-pc-admin-ui__close {
+			z-index: 210;
+			color: #f0f0f1;
+			&:hover,
+			&:focus {
+				color: #fff;
+				background: rgba(255, 255, 255, 0.08);
+			}
 		}
 	}
 	.success {

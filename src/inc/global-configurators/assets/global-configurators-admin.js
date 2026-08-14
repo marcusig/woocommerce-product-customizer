@@ -222,6 +222,23 @@
 		updatePickerLayout();
 	}
 
+	function bindApplySettings() {
+		var $apply = $('.mkl-pc-apply-settings');
+		if (!$apply.length) {
+			return;
+		}
+		function syncApplyMode() {
+			var mode = $apply.find('input[name="_mkl_pc_apply_mode"]:checked').val();
+			$apply.find('[data-show-when-apply-mode]').each(function () {
+				var want = $(this).attr('data-show-when-apply-mode');
+				$(this).toggle(want === mode);
+			});
+		}
+		$apply.on('change', 'input[name="_mkl_pc_apply_mode"]', syncApplyMode);
+		syncApplyMode();
+		$(document.body).trigger('wc-enhanced-select-init');
+	}
+
 	function bindActions($scope) {
 		$scope.on('click', '.mkl-pc-turn-into-global', function (e) {
 			e.preventDefault();
@@ -276,6 +293,7 @@
 
 	$(function () {
 		bindActions($('body'));
+		bindApplySettings();
 		var $scope = $('.mkl-pc-configurator-source-group');
 		if (!$scope.length) {
 			return;

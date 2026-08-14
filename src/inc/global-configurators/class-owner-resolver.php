@@ -35,10 +35,13 @@ final class Owner_Resolver {
 			return Schema::SOURCE_LOCAL;
 		}
 		$source = get_post_meta( $parent_id, Schema::META_SOURCE, true );
-		if ( Schema::SOURCE_GLOBAL !== $source ) {
-			return Schema::SOURCE_LOCAL;
+		if ( Schema::SOURCE_GLOBAL === $source ) {
+			return Schema::SOURCE_GLOBAL;
 		}
-		return Schema::SOURCE_GLOBAL;
+		if ( Assignment::get_category_assigned_global_id( $parent_id ) > 0 ) {
+			return Schema::SOURCE_GLOBAL;
+		}
+		return Schema::SOURCE_LOCAL;
 	}
 
 	/**
@@ -59,17 +62,14 @@ final class Owner_Resolver {
 		if ( $parent_id <= 0 ) {
 			return 0;
 		}
-		if ( Schema::SOURCE_GLOBAL !== get_post_meta( $parent_id, Schema::META_SOURCE, true ) ) {
+		if ( Schema::SOURCE_GLOBAL === get_post_meta( $parent_id, Schema::META_SOURCE, true ) ) {
+			$global_id = (int) get_post_meta( $parent_id, Schema::META_GLOBAL_ID, true );
+			if ( $global_id > 0 && Schema::is_global_configurator_id( $global_id ) ) {
+				return $global_id;
+			}
 			return 0;
 		}
-		$global_id = (int) get_post_meta( $parent_id, Schema::META_GLOBAL_ID, true );
-		if ( $global_id <= 0 ) {
-			return 0;
-		}
-		if ( ! Schema::is_global_configurator_id( $global_id ) ) {
-			return 0;
-		}
-		return $global_id;
+		return Assignment::get_category_assigned_global_id( $parent_id );
 	}
 
 	/**
@@ -158,8 +158,11 @@ final class Owner_Resolver {
 		}
 
 		$global_id = self::get_global_id( $product_id );
-		if ( $global_id > 0 && self::can_use_global( $product_id ) ) {
-			return $global_id;
+		if ( $global_id > 0 ) {
+			$explicit_source = get_post_meta( self::get_parent_id_for_source( $product_id ), Schema::META_SOURCE, true );
+			if ( Schema::SOURCE_GLOBAL !== $explicit_source || self::can_use_global( $product_id ) ) {
+				return $global_id;
+			}
 		}
 
 		// Local storage: keep existing variable-mode rules for content vs. layers/angles.
@@ -224,6 +227,20 @@ final class Owner_Resolver {
 			}
 		}
 		$ids = array_values( array_unique( $ids ) );
+
+		if ( Schema::APPLY_MODE_CATEGORY === Assignment::get_apply_mode( $global_id ) ) {
+			foreach ( Assignment::get_products_in_assigned_categories( $global_id ) as $category_product_id ) {
+				if ( in_array( $category_product_id, $ids, true ) ) {
+					continue;
+				}
+				if ( Assignment::has_explicit_configurator( $category_product_id ) ) {
+					continue;
+				}
+				$ids[] = $category_product_id;
+			}
+			$ids = array_values( array_unique( $ids ) );
+		}
+
 		wp_cache_set( $cache_key, $ids, Schema::CACHE_GROUP, 3600 );
 		return $ids;
 	}
