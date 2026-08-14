@@ -65,3 +65,7 @@ function formatLayerLabel( raw_label ) {
 ```
 
 External APIs (React, WordPress globals, third-party SDKs) keep their required names; wrap or alias in snake_case at boundaries when practical.
+
+## Build
+
+Build process are handled in a separate terminal window, agent does not need to compile. 
