@@ -12,6 +12,7 @@ if ( typeof PC_lang !== 'undefined' && PC_lang.admin_js_build_url ) {
 let THREE;
 let OrbitControls;
 let loadEnvMap;
+let setSceneEnvironment;
 let FakeShadow;
 let createPostprocessingLayer;
 let hideObjectsByName;
@@ -72,6 +73,7 @@ function ensureThreeDepsLoaded() {
 		}
 		OrbitControls = controlsModule.OrbitControls;
 		loadEnvMap = sceneUtilsModule.loadEnvMap;
+		setSceneEnvironment = sceneUtilsModule.setSceneEnvironment;
 		FakeShadow = fakeShadowModule.FakeShadow;
 		createPostprocessingLayer = resolve_create_postprocessing_layer();
 		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
@@ -93,6 +95,7 @@ function ensureThreeDepsLoaded() {
 				THREE,
 				OrbitControls,
 				loadEnvMap,
+				setSceneEnvironment,
 				FakeShadow,
 				createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
 				hideObjectsByName,
@@ -111,6 +114,7 @@ function ensureThreeDepsLoaded() {
 				THREE,
 				OrbitControls,
 				loadEnvMap,
+				setSceneEnvironment,
 				FakeShadow,
 				createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
 			} );
@@ -120,6 +124,7 @@ function ensureThreeDepsLoaded() {
 			THREE,
 			OrbitControls,
 			loadEnvMap,
+			setSceneEnvironment,
 			FakeShadow,
 			createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
 			hideObjectsByName,
@@ -401,10 +406,12 @@ PC.views = window.PC.views || {};
 		},
 		toggle_env_and_bg_visibility: function () {
 			const bg_mode = ( PC.app.admin.settings_3d.background && PC.app.admin.settings_3d.background.mode ) || 'environment';
+			const env_mode = ( PC.app.admin.settings_3d.environment && PC.app.admin.settings_3d.environment.mode ) || 'preset';
 			this.$( '.pc-3d-bg-color-row' ).toggle( bg_mode === 'solid' );
+			this.$( '.pc-3d-env-map-controls' ).toggle( env_mode !== 'none' );
 		},
 		/**
-		 * Populate .pc-3d-env-source: built-in presets first, then environment objects from objects3d.
+		 * Populate .pc-3d-env-source: None, built-in presets, then environment objects from objects3d.
 		 * Set select value from env.mode + env.preset or env.object_id.
 		 */
 		_populateEnvSource: function () {
@@ -412,6 +419,7 @@ PC.views = window.PC.views || {};
 			if ( !$sel.length ) return;
 			const env = ( PC.app.admin.settings_3d && PC.app.admin.settings_3d.environment ) || {};
 			const opts = [];
+			opts.push( { value: 'none', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_none ) ? PC_lang.env_none : 'None' } );
 			opts.push( { value: 'preset_outdoor', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_preset_outdoor ) ? PC_lang.env_preset_outdoor : 'Preset: Outdoor' } );
 			opts.push( { value: 'preset_studio', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_preset_studio ) ? PC_lang.env_preset_studio : 'Preset: Studio' } );
 			const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
@@ -429,13 +437,23 @@ PC.views = window.PC.views || {};
 			const mode = env.mode || 'preset';
 			const preset = env.preset || 'outdoor';
 			const objectId = env.object_id || '';
-			const selected = mode === 'object' && objectId ? ( 'object_' + objectId ) : ( 'preset_' + preset );
+			let selected = 'preset_outdoor';
+			if ( mode === 'none' ) {
+				selected = 'none';
+			} else if ( mode === 'object' && objectId ) {
+				selected = 'object_' + objectId;
+			} else {
+				selected = 'preset_' + preset;
+			}
 			$sel.val( opts.some( function ( o ) { return o.value === selected; } ) ? selected : 'preset_outdoor' );
 		},
 		on_env_source_change: function () {
 			const val = this.$( '.pc-3d-env-source' ).val() || 'preset_outdoor';
 			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
-			if ( val.indexOf( 'preset_' ) === 0 ) {
+			if ( val === 'none' ) {
+				PC.app.admin.settings_3d.environment.mode = 'none';
+				PC.app.admin.settings_3d.environment.object_id = '';
+			} else if ( val.indexOf( 'preset_' ) === 0 ) {
 				PC.app.admin.settings_3d.environment.mode = 'preset';
 				PC.app.admin.settings_3d.environment.preset = val === 'preset_studio' ? 'studio' : 'outdoor';
 				PC.app.admin.settings_3d.environment.object_id = '';
@@ -444,6 +462,7 @@ PC.views = window.PC.views || {};
 				PC.app.admin.settings_3d.environment.object_id = val.slice( 7 );
 				PC.app.admin.settings_3d.environment.preset = 'outdoor';
 			}
+			this.toggle_env_and_bg_visibility();
 			this.mark_dirty( 'settings_3d' );
 			this.apply_preview_settings();
 		},

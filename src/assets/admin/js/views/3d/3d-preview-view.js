@@ -26,7 +26,7 @@ export const settings_3d_preview_mixin = {
 	 * @returns {string|null} URL to load with HDR/EXR loader, or null to skip load
 	 */
 	get_env_url_for_preview: function ( env ) {
-		if ( !env ) return null;
+		if ( !env || env.mode === 'none' ) return null;
 		const hdr_base = ( typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url ) ? PC_lang.hdr_base_url : '';
 		const preset_file = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
 		if ( env.mode === 'preset' ) return hdr_base + preset_file;
@@ -61,7 +61,7 @@ export const settings_3d_preview_mixin = {
 		const THREE = get_three();
 		const deps = get_three_deps();
 		if ( ! THREE || ! deps ) return;
-		const { loadEnvMap } = deps;
+		const { loadEnvMap, setSceneEnvironment } = deps;
 		if ( !this._three || !this._three.scene || !this._three.renderer ) return;
 		const s = PC.app.admin.settings_3d;
 		const scene = this._three.scene;
@@ -70,52 +70,56 @@ export const settings_3d_preview_mixin = {
 		// Renderer: tone mapping, exposure, alpha (color space always sRGB)
 		const r = s.renderer || {};
 		const bg = s.background || {};
+		const env = s.environment || {};
+		const env_is_none = env.mode === 'none';
 		renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
 		renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 		renderer.outputColorSpace = THREE.SRGBColorSpace;
-		// Transparent background or explicit alpha: clear with alpha 0 so canvas is see-through
-		renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha ) ? 0 : 1 );
 
-		// Background
-		if ( bg.mode === 'transparent' ) {
-			scene.background = null;
-		} else if ( bg.mode === 'solid' && bg.color ) {
-			scene.background = new THREE.Color( bg.color );
-		} else if ( bg.mode === 'environment' && scene.environment ) {
-			scene.background = scene.environment;
-		}
-		// environment mode background is applied via scene.environment (below)
-
-		// Environment: reload map when preset or object URL changes, then set intensity/rotation
-		const env = s.environment || {};
-		const desired_url = this.get_env_url_for_preview( env );
-		const desired_key = Array.isArray( desired_url ) ? desired_url.join( '|' ) : desired_url || null;
-		if ( desired_key && this._three.current_env_key !== desired_key ) {
-			this._three.current_env_key = desired_key;
-			loadEnvMap( desired_url, ( texture ) => {
-				scene.environment = texture;
-				// apply intensity/rotation once texture is loaded
-				if ( typeof scene.environmentIntensity !== 'undefined' ) {
-					scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
-				}
-				if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
-					scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-					if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
-						scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-					}
-				}
-			}, undefined, () => { this._three.current_env_key = null; } );
-		} else {
-			// No reload, but still keep intensity/rotation in sync
+		const apply_background_and_env_props = function () {
+			renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha || ( bg.mode === 'environment' && env_is_none ) ) ? 0 : 1 );
+			if ( bg.mode === 'transparent' || ( bg.mode === 'environment' && env_is_none ) ) {
+				scene.background = null;
+			} else if ( bg.mode === 'solid' && bg.color ) {
+				scene.background = new THREE.Color( bg.color );
+			} else if ( bg.mode === 'environment' && scene.environment ) {
+				scene.background = scene.environment;
+			}
 			if ( typeof scene.environmentIntensity !== 'undefined' ) {
 				scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
 			}
 			if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
 				scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-				if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
+				if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' && ! env_is_none ) {
 					scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
 				}
 			}
+		};
+
+		const desired_url = this.get_env_url_for_preview( env );
+		const desired_key = Array.isArray( desired_url ) ? desired_url.join( '|' ) : desired_url || null;
+		if ( ! desired_key ) {
+			if ( typeof setSceneEnvironment === 'function' ) {
+				setSceneEnvironment( scene, null );
+			} else {
+				scene.environment = null;
+			}
+			this._three.current_env_key = null;
+			this._three.current_env_url = null;
+			apply_background_and_env_props();
+		} else if ( this._three.current_env_key !== desired_key ) {
+			this._three.current_env_key = desired_key;
+			loadEnvMap( desired_url, ( texture ) => {
+				if ( typeof setSceneEnvironment === 'function' ) {
+					setSceneEnvironment( scene, texture );
+				} else {
+					scene.environment = texture;
+				}
+				this._three.current_env_url = desired_url;
+				apply_background_and_env_props();
+			}, undefined, () => { this._three.current_env_key = null; } );
+		} else {
+			apply_background_and_env_props();
 		}
 
 		// OrbitControls polar, azimuth, and zoom (distance) limits
@@ -380,8 +384,10 @@ export const settings_3d_preview_mixin = {
 			const initial_env_url = this.get_env_url_for_preview( env );
 
 			const modelEntries = this.get_model_entries();
-			const hdrLabel = ( typeof PC_lang !== 'undefined' && PC_lang.loading_hdr ) ? PC_lang.loading_hdr : 'HDR environment';
-			this._setPreviewLoadingStep( 'hdr', hdrLabel );
+			if ( initial_env_url ) {
+				const hdrLabel = ( typeof PC_lang !== 'undefined' && PC_lang.loading_hdr ) ? PC_lang.loading_hdr : 'HDR environment';
+				this._setPreviewLoadingStep( 'hdr', hdrLabel );
+			}
 
 			modelEntries.forEach( ( me, i ) => {
 				const label = this._get_model_entry_label( me );
@@ -389,12 +395,12 @@ export const settings_3d_preview_mixin = {
 			} );
 
 			if ( !initial_env_url ) {
-				this._removePreviewLoadingStep( 'hdr' );
 				this.apply_preview_settings();
 			} else {
 				loadEnvMap( initial_env_url, ( texture ) => {
 					scene.environment = texture;
 					this._three.current_env_url = initial_env_url;
+					this._three.current_env_key = Array.isArray( initial_env_url ) ? initial_env_url.join( '|' ) : initial_env_url;
 					this._removePreviewLoadingStep( 'hdr' );
 					this.apply_preview_settings();
 				}, undefined, () => {

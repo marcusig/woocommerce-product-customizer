@@ -105,15 +105,17 @@ export function getOrbitLimitsFromEnv( env, opts = {} ) {
  * Resolve environment source into a texture URL (HDR/EXR) or cubemap URLs array.
  *
  * Supported:
+ * - env.mode === 'none' → no environment map (unlit / baked lighting)
  * - env.mode === 'object' with env.object_id → looks up objects3d environment entry (hdri/cubemap)
  * - env.mode === 'custom' with env.custom_hdr_url → uses that URL
  * - presets (outdoor/studio) → uses built-in HDR filename
  *
  * @param {Object} env - environment settings (preset, mode, custom_hdr_url, object_id)
  * @param {string} hdrBaseUrl - base URL for preset files
- * @returns {string|string[]} HDR/EXR URL or cubemap URL array [px,nx,py,ny,pz,nz]
+ * @returns {string|string[]|null} HDR/EXR URL, cubemap URL array [px,nx,py,ny,pz,nz], or null when none
  */
 export function getHdrUrlFromEnv( env, hdrBaseUrl ) {
+	if ( env && env.mode === 'none' ) return null;
 	if ( ! env ) return ( hdrBaseUrl || '' ) + getDefaultHdrPresetFilename( 'outdoor' );
 
 	// Environment from objects3d (frontend: currentProductData.objects3d)
@@ -147,6 +149,25 @@ export function getHdrUrlFromEnv( env, hdrBaseUrl ) {
 	const p = env.preset != null ? String( env.preset ).toLowerCase() : '';
 	const preset = ( p === 'studio' ) ? 'studio' : 'outdoor';
 	return ( hdrBaseUrl || '' ) + getDefaultHdrPresetFilename( preset );
+}
+
+/**
+ * Assign or clear the scene environment map, disposing the previous texture.
+ *
+ * @param {THREE.Scene} scene
+ * @param {THREE.Texture|null} texture
+ */
+export function setSceneEnvironment( scene, texture ) {
+	if ( ! scene ) return;
+	const previous = scene.environment;
+	if ( previous === texture ) return;
+	if ( previous && scene.background === previous ) {
+		scene.background = texture || null;
+	}
+	if ( previous && typeof previous.dispose === 'function' ) {
+		previous.dispose();
+	}
+	scene.environment = texture || null;
 }
 
 /**

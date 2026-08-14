@@ -463,9 +463,12 @@ export default Backbone.View.extend({
 		const hdrBase = getHdrBaseUrl();
 		const hdrUrl = getHdrUrlFromEnv( env, hdrBase );
 
-		const hdrTexture = await new Promise( ( resolve ) => {
-			loadEnvMap( hdrUrl, ( texture ) => resolve( texture ), undefined, () => resolve( null ) );
-		} );
+		let hdrTexture = null;
+		if ( hdrUrl ) {
+			hdrTexture = await new Promise( ( resolve ) => {
+				loadEnvMap( hdrUrl, ( texture ) => resolve( texture ), undefined, () => resolve( null ) );
+			} );
+		}
 
 		return { mainGltf: null, eagerObjectIds, hdrTexture, hdrUrl };
 	},

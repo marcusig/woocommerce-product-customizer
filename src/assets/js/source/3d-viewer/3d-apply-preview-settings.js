@@ -9,6 +9,7 @@ import {
 	getOrbitLimitsFromEnv,
 	getHdrUrlFromEnv,
 	loadEnvMap,
+	setSceneEnvironment,
 } from './3d-scene-utils.js';
 
 /**
@@ -32,30 +33,27 @@ import {
 export function applySettingsToScene( scene, renderer, controls, s, options = {} ) {
 	const r = s.renderer || {};
 	const bg = s.background || {};
+	const env = s.environment || {};
+	const env_is_none = env.mode === 'none';
 	renderer.toneMapping = getToneMapping( r );
 	renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 	renderer.outputColorSpace = getOutputColorSpace( r );
-	renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha ) ? 0 : 1 );
 
-	if ( bg.mode === 'transparent' ) {
-		scene.background = null;
-	} else if ( bg.mode === 'solid' && bg.color ) {
-		scene.background = new THREE.Color( bg.color );
-	} else if ( bg.mode === 'environment' && scene.environment ) {
-		scene.background = scene.environment;
-	}
-
-	const env = s.environment || {};
 	const hdrBase = ( typeof options.getHdrBaseUrl === 'function' ? options.getHdrBaseUrl() : '' );
 	const desiredUrl = getHdrUrlFromEnv( env, hdrBase );
 	const urlRef = options.currentEnvUrlRef || { current: null };
-	const desiredKey = Array.isArray( desiredUrl ) ? desiredUrl.join( '|' ) : desiredUrl;
-	if ( urlRef.current !== desiredKey ) {
+	const desiredKey = Array.isArray( desiredUrl ) ? desiredUrl.join( '|' ) : ( desiredUrl || null );
+	if ( ! desiredKey ) {
+		if ( urlRef.current !== null || scene.environment ) {
+			setSceneEnvironment( scene, null );
+			urlRef.current = null;
+		}
+	} else if ( urlRef.current !== desiredKey ) {
 		urlRef.current = desiredKey;
 		loadEnvMap(
 			desiredUrl,
 			( texture ) => {
-				scene.environment = texture;
+				setSceneEnvironment( scene, texture );
 				urlRef.current = desiredKey;
 				if ( typeof options.onEnvLoaded === 'function' ) options.onEnvLoaded();
 			},
@@ -65,6 +63,16 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 				if ( typeof options.onEnvError === 'function' ) options.onEnvError();
 			}
 		);
+	}
+
+	renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha || ( bg.mode === 'environment' && env_is_none ) ) ? 0 : 1 );
+
+	if ( bg.mode === 'transparent' || ( bg.mode === 'environment' && env_is_none ) ) {
+		scene.background = null;
+	} else if ( bg.mode === 'solid' && bg.color ) {
+		scene.background = new THREE.Color( bg.color );
+	} else if ( bg.mode === 'environment' && scene.environment ) {
+		scene.background = scene.environment;
 	}
 	if ( typeof scene.environmentIntensity !== 'undefined' ) {
 		scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
