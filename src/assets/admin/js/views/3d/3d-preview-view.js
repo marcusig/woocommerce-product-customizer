@@ -155,10 +155,16 @@ export const settings_3d_preview_mixin = {
 			obj.intensity = base * gi;
 		} );
 
-		// Postprocessing: build or clear composer from settings (order: SSAO → SSR → Bloom → SMAA); loads passes async
+		// Postprocessing: build or update the composer from settings (order: SSR → AO → Bloom → SMAA); loads passes async
 		this.setup_preview_postprocessing();
 	},
 	setup_preview_postprocessing: async function () {
+		// A rebuild loads pass modules asynchronously. Coalesce anything that
+		// arrives meanwhile into a single reconcile once the build settles.
+		if ( this._pp_building ) {
+			this._pp_dirty = true;
+			return;
+		}
 		const deps = get_three_deps();
 		if ( ! deps ) return;
 		let createPostprocessingLayer = deps.createPostprocessingLayer;
@@ -178,24 +184,48 @@ export const settings_3d_preview_mixin = {
 		const w = container.clientWidth || 1;
 		const h = container.clientHeight || 1;
 
-		if ( this._three.postprocessingLayer ) {
-			this._three.postprocessingLayer.dispose();
+		const options = {
+			width: w,
+			height: h,
+			// The add-on resolves presets and per-effect values from the raw settings.
+			settings: pp,
+			isMobile: false,
+			boundsObject: () => this._three && this._three.model_root,
+		};
+
+		// Tuning a slider fires on every input event: update the existing passes in
+		// place instead of tearing down and reallocating the composer each time.
+		const existing = this._three.postprocessingLayer;
+		if ( existing && typeof existing.updateOptions === 'function' && existing.updateOptions( options ) ) {
+			return;
+		}
+
+		if ( existing ) {
+			existing.dispose();
 			this._three.postprocessingLayer = null;
 			this._three.composer = null;
 		}
 
-		const flags = { ssao: !!pp.ssao, ssr: !!pp.ssr, bloom: !!pp.bloom, smaa: !!pp.smaa };
-		const layer = await createPostprocessingLayer( renderer, scene, camera, {
-			width: w,
-			height: h,
-			flags,
-			bloomStrength: pp.bloom_strength,
-			bloomRadius: pp.bloom_radius,
-			bloomThreshold: pp.bloom_threshold,
-		} );
-		if ( layer ) {
-			this._three.postprocessingLayer = layer;
-			this._three.composer = layer.composer;
+		this._pp_building = true;
+		let layer = null;
+		try {
+			layer = await createPostprocessingLayer( renderer, scene, camera, options );
+		} finally {
+			this._pp_building = false;
+		}
+
+		// The preview can be torn down while the passes are loading.
+		if ( ! this._three ) {
+			if ( layer ) layer.dispose();
+			return;
+		}
+
+		this._three.postprocessingLayer = layer;
+		this._three.composer = layer ? layer.composer : null;
+
+		if ( this._pp_dirty ) {
+			this._pp_dirty = false;
+			return this.setup_preview_postprocessing();
 		}
 	},
 	on_window_resize: function () {

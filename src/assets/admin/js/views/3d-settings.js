@@ -243,8 +243,10 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows, .pc-3d-extend-under-toolbar': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
-			'input .pc-3d-bloom-strength, .pc-3d-bloom-radius, .pc-3d-bloom-threshold': 'on_slider_input',
-			'change .pc-3d-bloom-strength, .pc-3d-bloom-radius, .pc-3d-bloom-threshold': 'on_setting_change',
+			// Postprocessing effects are contributed by add-ons, so bind their sliders
+			// generically rather than enumerating fields the host does not own.
+			'input .pc-3d-pp-slider': 'on_slider_input',
+			'change .pc-3d-pp-slider': 'on_setting_change',
 		},
 		remove: function () {
 			this.on_remove();
@@ -334,14 +336,9 @@ PC.views = window.PC.views || {};
 			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if ( !s.lighting ) s.lighting = {};
+			// Postprocessing defaults belong to whichever add-on provides the effects;
+			// the host only guarantees the container exists.
 			if ( !s.postprocessing ) s.postprocessing = {};
-			if ( s.postprocessing.ssr === undefined ) s.postprocessing.ssr = false;
-			if ( s.postprocessing.ssao === undefined ) s.postprocessing.ssao = false;
-			if ( s.postprocessing.bloom === undefined ) s.postprocessing.bloom = false;
-			if ( s.postprocessing.smaa === undefined ) s.postprocessing.smaa = false;
-			if ( s.postprocessing.bloom_strength === undefined ) s.postprocessing.bloom_strength = 0.05;
-			if ( s.postprocessing.bloom_radius === undefined ) s.postprocessing.bloom_radius = 0.04;
-			if ( s.postprocessing.bloom_threshold === undefined ) s.postprocessing.bloom_threshold = 0.85;
 		},
 		on_poster_select: function ( e ) {
 			e.preventDefault();
@@ -477,9 +474,13 @@ PC.views = window.PC.views || {};
 			sync( '.pc-3d-shadow-opacity', '.pc-3d-shadow-opacity-value' );
 			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
-			sync( '.pc-3d-bloom-strength', '.pc-3d-bloom-strength-value' );
-			sync( '.pc-3d-bloom-radius', '.pc-3d-bloom-radius-value' );
-			sync( '.pc-3d-bloom-threshold', '.pc-3d-bloom-threshold-value' );
+			// Add-on postprocessing sliders pair each input with the value display
+			// that immediately follows it, matching on_slider_input.
+			this.$( '.pc-3d-pp-slider' ).each( function () {
+				const input_el = $( this );
+				const value_el = input_el.next( '.pc-3d-value-display' );
+				if ( value_el.length ) value_el.text( input_el.val() );
+			} );
 		},
 		set_nested: function ( obj, path, value ) {
 			const parts = path.split( '.' );

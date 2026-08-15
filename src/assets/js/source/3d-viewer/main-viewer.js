@@ -12,7 +12,7 @@ if ( typeof window !== 'undefined' ) {
 }
 
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl, getPostprocessingFlags, getHdrUrlFromEnv } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, isMobileViewport, getHdrUrlFromEnv } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
 import {
@@ -314,8 +314,7 @@ export default Backbone.View.extend({
 	async _loadModules( s ) {
 		const { getSharedGltfLoader } = await import( './3d-loader-factory.js' );
 		const groundEnabled = ( s.ground && s.ground.enabled !== false );
-		const ppFlags = getPostprocessingFlags( s );
-		const anyPostprocessing = ppFlags.ssao || ppFlags.ssr || ppFlags.bloom || ppFlags.emissiveBloom || ppFlags.smaa;
+		const anyPostprocessing = isPostprocessingEnabled( s );
 
 		const promises = [
 			getSharedGltfLoader(),
@@ -600,15 +599,13 @@ export default Backbone.View.extend({
 
 		// Create postprocessing pipeline and keep it in sync with container resize events.
 		if ( modules.createPostprocessingLayer ) {
-			const flags = getPostprocessingFlags( s );
-			const pp = ( s && s.postprocessing ) ? s.postprocessing : {};
 			const layer = await modules.createPostprocessingLayer( t.renderer, t.scene, t.camera, {
 				width: t.container.clientWidth,
 				height: t.container.clientHeight,
-				flags,
-				bloomStrength: pp.bloom_strength,
-				bloomRadius: pp.bloom_radius,
-				bloomThreshold: pp.bloom_threshold,
+				settings: getPostprocessingSettings( s ),
+				isMobile: isMobileViewport(),
+				// Ambient occlusion is scaled from the model bounds, not the whole scene.
+				boundsObject: () => t.model_root,
 			} );
 			if ( layer && t.container && t.on_resize ) {
 				t.postprocessingLayer = layer;
@@ -943,40 +940,69 @@ export default Backbone.View.extend({
 		let height = options.height != null ? Math.max( 1, Math.floor( options.height ) ) : canvas.height;
 		if ( ! width || ! height ) return null;
 
-		// When using custom size, temporarily set camera aspect so the shot is not distorted.
-		const needAspectRestore = ( width !== canvas.width || height !== canvas.height ) && cameraForShot === baseCamera;
-		const savedAspect = needAspectRestore ? baseCamera.aspect : null;
+		// Capture through the effect chain when one is active, so the image saved to
+		// the cart or order matches what the customer was looking at. The composer is
+		// bound to the live camera, so other view modes pose that camera and restore
+		// it rather than rendering a clone.
+		const layer = t.postprocessingLayer;
+		const usePostprocessing = !!( layer && typeof layer.capturePixels === 'function' );
+
+		const savedAspect = baseCamera.aspect;
+		const savedPosition = usePostprocessing ? baseCamera.position.clone() : null;
+		const savedQuaternion = usePostprocessing ? baseCamera.quaternion.clone() : null;
+		const savedFov = ( usePostprocessing && baseCamera.isPerspectiveCamera ) ? baseCamera.fov : null;
+
 		// Clear toolbar view-offset for a centered product shot (restored via on_resize below).
 		const had_view_offset = !!( baseCamera.view && baseCamera.view.enabled );
-		if ( had_view_offset && cameraForShot === baseCamera ) {
+		if ( had_view_offset && ( usePostprocessing || cameraForShot === baseCamera ) ) {
 			baseCamera.clearViewOffset();
 		}
+
+		if ( usePostprocessing && cameraForShot !== baseCamera ) {
+			cameraForShot.updateMatrixWorld();
+			baseCamera.position.setFromMatrixPosition( cameraForShot.matrixWorld );
+			baseCamera.quaternion.setFromRotationMatrix( cameraForShot.matrixWorld );
+			if ( cameraForShot.isPerspectiveCamera && baseCamera.isPerspectiveCamera ) {
+				baseCamera.fov = cameraForShot.fov;
+			}
+		}
+
+		const needAspectRestore = usePostprocessing
+			|| ( ( width !== canvas.width || height !== canvas.height ) && cameraForShot === baseCamera );
 		if ( needAspectRestore ) {
 			baseCamera.aspect = width / height;
 			baseCamera.updateProjectionMatrix();
 		}
 
-		// Render into an off-screen target so the visible canvas doesn't change.
-		const renderTarget = new THREE.WebGLRenderTarget( width, height );
-		renderTarget.texture.colorSpace = renderer.outputColorSpace;
-		const prevTarget = renderer.getRenderTarget();
+		let pixels = usePostprocessing ? layer.capturePixels( width, height ) : null;
 
-		renderer.setRenderTarget( renderTarget );
-		renderer.render( scene, cameraForShot );
-		renderer.setRenderTarget( prevTarget );
+		if ( ! pixels ) {
+			// Render into an off-screen target so the visible canvas doesn't change.
+			const renderTarget = new THREE.WebGLRenderTarget( width, height );
+			renderTarget.texture.colorSpace = renderer.outputColorSpace;
+			const prevTarget = renderer.getRenderTarget();
 
-		if ( needAspectRestore && savedAspect != null ) {
+			renderer.setRenderTarget( renderTarget );
+			renderer.render( scene, usePostprocessing ? baseCamera : cameraForShot );
+			renderer.setRenderTarget( prevTarget );
+
+			pixels = new Uint8Array( width * height * 4 );
+			renderer.readRenderTargetPixels( renderTarget, 0, 0, width, height, pixels );
+			renderTarget.dispose();
+		}
+
+		if ( savedPosition ) {
+			baseCamera.position.copy( savedPosition );
+			baseCamera.quaternion.copy( savedQuaternion );
+			if ( savedFov != null ) baseCamera.fov = savedFov;
+		}
+		if ( needAspectRestore ) {
 			baseCamera.aspect = savedAspect;
 			baseCamera.updateProjectionMatrix();
 		}
 		if ( had_view_offset && typeof t.on_resize === 'function' ) {
 			t.on_resize();
 		}
-
-		// Read pixels back and convert to a PNG data URL via a temporary 2D canvas.
-		const pixels = new Uint8Array( width * height * 4 );
-		renderer.readRenderTargetPixels( renderTarget, 0, 0, width, height, pixels );
-		renderTarget.dispose();
 
 		const outputCanvas = document.createElement( 'canvas' );
 		outputCanvas.width = width;

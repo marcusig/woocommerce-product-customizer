@@ -1765,15 +1765,8 @@ class DB {
 				'alpha'              => false,
 			),
 			'lighting'        => array(),
-			'postprocessing'  => array(
-				'ssr'             => false,
-				'ssao'            => false,
-				'bloom'           => false,
-				'smaa'            => false,
-				'bloom_strength'  => 0.05,
-				'bloom_radius'    => 0.04,
-				'bloom_threshold' => 0.85,
-			),
+			// Effects are contributed by add-ons, which merge their own defaults in.
+			'postprocessing'  => array(),
 		);
 	}
 

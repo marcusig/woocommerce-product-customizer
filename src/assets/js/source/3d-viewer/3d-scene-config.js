@@ -19,22 +19,44 @@ export function getSettings() {
 }
 
 /**
- * Returns which postprocessing passes are enabled in settings.
- * Front-end loads passes only when premium registers PC.3d.createPostprocessingLayer
- * and the corresponding flags are enabled.
+ * Raw postprocessing settings. The host stores and forwards these without
+ * interpreting them — which effects exist is entirely the add-on's business.
  *
  * @param {Object} [settings] - settings_3d (defaults to getSettings())
- * @returns {{ ssr: boolean, ssao: boolean, bloom: boolean, smaa: boolean }}
+ * @returns {Object}
  */
-export function getPostprocessingFlags( settings = null ) {
+export function getPostprocessingSettings( settings = null ) {
 	const s = settings || getSettings();
-	const pp = ( s && s.postprocessing ) ? s.postprocessing : {};
-	return {
-		ssr: !! pp.ssr,
-		ssao: !! pp.ssao,
-		bloom: !! pp.bloom,
-		smaa: !! pp.smaa,
-	};
+	return ( s && s.postprocessing ) ? s.postprocessing : {};
+}
+
+/**
+ * Whether the viewport should be treated as mobile for postprocessing cost.
+ *
+ * @returns {boolean}
+ */
+export function isMobileViewport() {
+	if ( typeof window === 'undefined' || typeof window.matchMedia !== 'function' ) return false;
+	return window.matchMedia( '(max-width: 767px)' ).matches;
+}
+
+/**
+ * Whether any postprocessing effect would run. Answered by the add-on, so the
+ * host never loads the heavy modules for a configuration that needs none.
+ *
+ * @param {Object} [settings] - settings_3d (defaults to getSettings())
+ * @returns {boolean}
+ */
+export function isPostprocessingEnabled( settings = null ) {
+	if ( ! window.wp || ! window.wp.hooks || typeof window.wp.hooks.applyFilters !== 'function' ) {
+		return false;
+	}
+	return !! window.wp.hooks.applyFilters(
+		'PC.3d.postprocessingEnabled',
+		false,
+		getPostprocessingSettings( settings ),
+		{ isMobile: isMobileViewport() }
+	);
 }
 
 export function getHdrBaseUrl() {

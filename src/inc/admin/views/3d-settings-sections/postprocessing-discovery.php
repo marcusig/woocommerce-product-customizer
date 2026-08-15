@@ -21,6 +21,6 @@ $addon_url  = apply_filters( 'mkl_pc_3d_premium_addon_url', 'https://wc-product-
 		);
 		?>
 	</p>
-	<p><?php esc_html_e( 'Add screen-space reflections, ambient occlusion, bloom, and anti-aliasing to the 3D viewer. Effects load on the front-end only when enabled.', 'product-configurator-for-woocommerce' ); ?></p>
+	<p><?php esc_html_e( 'Give the 3D viewer a finished look — contact shadows, studio grading, reflections and glow — by picking a preset. The same look is applied to the images saved with the order. Effects load on the front-end only when a preset needs them.', 'product-configurator-for-woocommerce' ); ?></p>
 	<p><a href="#" class="hide-addon-placeholder" data-setting="postprocessing_placeholder" data-section="postprocessing"><?php esc_html_e( 'Hide this notice', 'product-configurator-for-woocommerce' ); ?></a></p>
 </div>
