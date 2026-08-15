@@ -4,7 +4,7 @@
  * (material variant, color, texture) for that choice only.
  * No DOM; just drives the Three.js scene for its object.
  */
-import { apply_choice_actions } from './3d-action-handlers.js';
+import { apply_choice_actions, restore_choice_actions } from './3d-action-handlers.js';
 
 const Backbone = window.Backbone;
 
@@ -85,14 +85,18 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( target_scene && has_toggle_visibility ) target_scene.visible = visible;
 		if ( has_toggle_visibility ) {
 			this._invalidate_fake_shadow();
-		}
-		if ( has_toggle_visibility ) {
 			this._request_angle_reframe();
 		}
 
 		// If conditional logic just made an active choice visible, ensure lazy targets can load.
 		if ( visible && this.model.get( 'active' ) ) {
 			this.apply_actions();
+		} else if ( ! visible ) {
+			// Conditional logic hid a choice that had already written material
+			// state; without this it keeps applying while invisible.
+			this.target_object = target_object;
+			this.target_scene = target_scene;
+			this._restore_actions( actions );
 		}
 	},
 
@@ -107,6 +111,25 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( this.parent_view && typeof this.parent_view._requestAngleReframe === 'function' ) {
 			this.parent_view._requestAngleReframe();
 		}
+	},
+
+	/**
+	 * Put back the material state this choice's actions overwrote.
+	 * @param {Object[]} actions
+	 */
+	_restore_actions( actions ) {
+		const t = this.parent_view._three;
+		if ( ! t || ! Array.isArray( actions ) || ! actions.length ) return;
+		restore_choice_actions(
+			{
+				three: t,
+				registry: t.material_registry,
+				target_object: this.target_object,
+				target_scene: this.target_scene,
+			},
+			actions
+		);
+		this._request_render();
 	},
 
 	/** Ask the viewer for a frame; rendering is on-demand. */
@@ -167,10 +190,13 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( ! visible ) {
 			if ( this.target_object && has_toggle_visibility ) this.target_object.visible = false;
 			if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = false;
+			// Undo any material state this choice wrote. In a single-select layer
+			// the incoming choice overwrites the same properties immediately after,
+			// so this is only observable for a deselected choice in a "multiple"
+			// layer, a "none" option, or a choice hidden by conditional logic.
+			this._restore_actions( actions );
 			if ( has_toggle_visibility ) {
 				this._invalidate_fake_shadow();
-			}
-			if ( has_toggle_visibility ) {
 				this._request_angle_reframe();
 			}
 			return;
