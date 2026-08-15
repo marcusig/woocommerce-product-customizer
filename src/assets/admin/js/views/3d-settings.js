@@ -1,6 +1,7 @@
 /* global PC_lang, __webpack_public_path__ */
 
 import { settings_3d_preview_mixin } from './3d/3d-preview-view.js';
+import { initFieldGroups, syncFieldGroups } from './3d/3d-field-groups.js';
 
 // Ensure dynamic imports (async chunks) are loaded from the plugin's admin build URL,
 // not from wp-includes or TinyMCE paths inferred at runtime.
@@ -310,6 +311,9 @@ PC.views = window.PC.views || {};
 			}
 			this.toggle_env_and_bg_visibility();
 			this.bind_value_displays();
+			// Open/close every disclosure group, including ones contributed by add-ons.
+			initFieldGroups();
+			syncFieldGroups( this.$el );
 			this._populateEnvSource();
 			this.update_zoom_buttons_state();
 			this.populate_angle_select();

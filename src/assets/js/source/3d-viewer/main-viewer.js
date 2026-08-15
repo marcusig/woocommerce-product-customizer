@@ -23,7 +23,7 @@ import {
 	set_loading_step,
 } from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -397,36 +397,53 @@ export default Backbone.View.extend({
 	},
 
 	_supportsLightShadows( light ) {
-		return !!( light && ( light.isDirectionalLight || light.isSpotLight || light.isPointLight ) );
+		return supportsLightShadows( light );
 	},
 
 	_applyShadowFlagsToObject( root, enabled ) {
-		if ( !root || !root.traverse ) return;
-		root.traverse( ( obj ) => {
-			if ( obj.isMesh ) {
-				obj.castShadow = !!enabled;
-				obj.receiveShadow = !!enabled;
-			}
-		} );
+		applyShadowFlagsToObject( root, enabled );
+	},
+
+	/** Shadow map resolution: high on desktop, halved on phones where fill rate is scarce. */
+	_getShadowMapSize() {
+		return isMobileViewport() ? 1024 : 2048;
+	},
+
+	/** Model bounds used to fit shadow cameras. Null until the model is mounted. */
+	_getShadowBounds() {
+		const t = this._three;
+		if ( ! t || ! t.model_root ) return null;
+		const bounds = new THREE.Box3().setFromObject( t.model_root );
+		return bounds.isEmpty() ? null : bounds;
 	},
 
 	_applyShadowSettingsToLight( light, item ) {
 		if ( !light ) return;
-		if ( !this._shadowsEnabled || !this._supportsLightShadows( light ) ) {
-			light.castShadow = false;
-			return;
-		}
-		const cast = item && item.cast_shadows === true;
-		light.castShadow = cast;
-		if ( !cast || !light.shadow ) return;
-		light.shadow.mapSize.width = 1024;
-		light.shadow.mapSize.height = 1024;
-		if ( light.isDirectionalLight || light.isSpotLight ) {
-			light.shadow.bias = -0.0001;
-			light.shadow.normalBias = 0.02;
-		} else if ( light.isPointLight ) {
-			light.shadow.bias = -0.0005;
-		}
+		// The light keeps its own choice so shadows can be re-applied later
+		// without walking back to the objects3d model.
+		light.userData.cast_shadows = !!( item && item.cast_shadows === true );
+		applyShadowSettingsToLight( light, {
+			enabled: this._shadowsEnabled,
+			castShadows: light.userData.cast_shadows,
+			bounds: this._getShadowBounds(),
+			mapSize: this._getShadowMapSize(),
+		} );
+	},
+
+	/**
+	 * Re-apply shadow state to the live scene. Called after the model is framed so
+	 * the shadow cameras can be fitted to real bounds, and whenever settings change.
+	 */
+	_refreshShadows() {
+		const t = this._three;
+		if ( ! t || ! t.renderer || ! t.scene ) return;
+		refreshSceneShadows( {
+			renderer: t.renderer,
+			scene: t.scene,
+			modelRoot: t.model_root,
+			enabled: this._shadowsEnabled,
+			mapSize: this._getShadowMapSize(),
+		} );
 	},
 
 	/**
@@ -490,10 +507,7 @@ export default Backbone.View.extend({
 		const layers = window.PC.fe && window.PC.fe.layers;
 		// Enable or disable shadows globally, then mirror the setting to the renderer.
 		this._shadowsEnabled = !!( s && s.enable_shadows );
-		if ( t.renderer && t.renderer.shadowMap ) {
-			t.renderer.shadowMap.enabled = this._shadowsEnabled;
-			if ( this._shadowsEnabled ) t.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-		}
+		applyRendererShadowSettings( t.renderer, this._shadowsEnabled );
 
 		// Mount the initial model root. If there is no eager main glTF, use an empty root as anchor.
 		if ( mainGltf ) {
@@ -633,6 +647,10 @@ export default Backbone.View.extend({
 		}
 		if ( t.on_resize ) t.on_resize();
 
+		// Now that the model is mounted, fit each shadow camera to its real bounds.
+		// Lights are built before this point, when the bounds are not yet known.
+		this._refreshShadows();
+
 		// Apply project-specific preview/camera settings, then create choice-related view bindings.
 		this.apply_preview_settings();
 		this._applyAngleCamera( { immediate: true } );
@@ -755,6 +773,8 @@ export default Backbone.View.extend({
 					} );
 					this._applyShadowFlagsToObject( sceneToAdd, this._shadowsEnabled );
 					if ( ! sceneToAdd.parent ) t.model_root.add( sceneToAdd );
+					// Bounds just grew, so the shadow cameras need refitting.
+					if ( this._shadowsEnabled ) this._refreshShadows();
 					registerSceneMaterials( t, sceneToAdd );
 					this._objectIdToScene[ idStr ] = sceneToAdd;
 					this._syncLayerSceneForObjectId( idStr, sceneToAdd );

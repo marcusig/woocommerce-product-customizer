@@ -1,7 +1,14 @@
 /**
  * Admin 3D lights: getLightsFromSceneForImport (for GLTF upload → objects3d). createLightFromSettings from shared utils.
  */
-import { createLightFromSettings, applyLightCookie } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
+import {
+	createLightFromSettings,
+	applyLightCookie,
+	applyShadowSettingsToLight,
+	applyShadowFlagsToObject,
+	applyRendererShadowSettings,
+	refreshSceneShadows,
+} from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 /**
  * Collect light descriptors from a Three.js scene for importing as objects3d of type 'light'.
@@ -39,3 +46,7 @@ window.PC.threeD = window.PC.threeD || {};
 window.PC.threeD.createLightFromSettings = createLightFromSettings;
 window.PC.threeD.applyLightCookie = applyLightCookie;
 window.PC.threeD.getLightsFromSceneForImport = getLightsFromSceneForImport;
+window.PC.threeD.applyShadowSettingsToLight = applyShadowSettingsToLight;
+window.PC.threeD.applyShadowFlagsToObject = applyShadowFlagsToObject;
+window.PC.threeD.applyRendererShadowSettings = applyRendererShadowSettings;
+window.PC.threeD.refreshSceneShadows = refreshSceneShadows;

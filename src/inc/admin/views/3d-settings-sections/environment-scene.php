@@ -107,26 +107,31 @@
 <?php endif; ?>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Ground / Fake shadow', 'product-configurator-for-woocommerce' ); ?></h4>
-	<p class="field-row">
-		<label for="pc-3d-ground-enabled">
-			<input type="checkbox" id="pc-3d-ground-enabled" class="pc-3d-ground-enabled" data-key="ground.enabled" <# if ( data.ground && data.ground.enabled !== false ) { #>checked<# } #> />
-			<?php esc_html_e( 'Enable fake shadow', 'product-configurator-for-woocommerce' ); ?>
-		</label>
-	</p>
-	<p class="field-row">
-		<label for="pc-3d-ground-size"><?php esc_html_e( 'Ground size', 'product-configurator-for-woocommerce' ); ?></label>
-		<input type="number" id="pc-3d-ground-size" class="pc-3d-ground-size" data-key="ground.size" min="1" max="100" step="1" value="{{ data.ground && data.ground.size != null ? data.ground.size : 10 }}" />
-	</p>
-	<p class="field-row">
-		<label for="pc-3d-shadow-opacity"><?php esc_html_e( 'Shadow opacity', 'product-configurator-for-woocommerce' ); ?></label>
-		<input type="range" id="pc-3d-shadow-opacity" class="pc-3d-shadow-opacity" data-key="ground.shadow_opacity" min="0" max="1" step="0.05" value="{{ data.ground && data.ground.shadow_opacity != null ? data.ground.shadow_opacity : 0.5 }}" />
-		<span class="pc-3d-value-display pc-3d-shadow-opacity-value">0.5</span>
-	</p>
-	<p class="field-row">
-		<label for="pc-3d-shadow-blur"><?php esc_html_e( 'Shadow blur / softness', 'product-configurator-for-woocommerce' ); ?></label>
-		<input type="range" id="pc-3d-shadow-blur" class="pc-3d-shadow-blur" data-key="ground.shadow_blur" min="0" max="10" step="0.5" value="{{ data.ground && data.ground.shadow_blur != null ? data.ground.shadow_blur : 0 }}" />
-		<span class="pc-3d-value-display pc-3d-shadow-blur-value">0</span>
-	</p>
+	<div class="pc-3d-field-group">
+		<p class="field-row">
+			<label for="pc-3d-ground-enabled">
+				<input type="checkbox" id="pc-3d-ground-enabled" class="pc-3d-ground-enabled pc-3d-field-group__control" data-key="ground.enabled" <# if ( data.ground && data.ground.enabled !== false ) { #>checked<# } #> />
+				<?php esc_html_e( 'Enable fake shadow', 'product-configurator-for-woocommerce' ); ?>
+			</label>
+		</p>
+		<p class="description pc-3d-field-group__hint"><?php esc_html_e( 'A soft shadow blob under the product. Cheap, and works without real-time shadows.', 'product-configurator-for-woocommerce' ); ?></p>
+		<div class="pc-3d-field-group__body">
+			<p class="field-row">
+				<label for="pc-3d-ground-size"><?php esc_html_e( 'Ground size', 'product-configurator-for-woocommerce' ); ?></label>
+				<input type="number" id="pc-3d-ground-size" class="pc-3d-ground-size" data-key="ground.size" min="1" max="100" step="1" value="{{ data.ground && data.ground.size != null ? data.ground.size : 10 }}" />
+			</p>
+			<p class="field-row">
+				<label for="pc-3d-shadow-opacity"><?php esc_html_e( 'Shadow opacity', 'product-configurator-for-woocommerce' ); ?></label>
+				<input type="range" id="pc-3d-shadow-opacity" class="pc-3d-shadow-opacity" data-key="ground.shadow_opacity" min="0" max="1" step="0.05" value="{{ data.ground && data.ground.shadow_opacity != null ? data.ground.shadow_opacity : 0.5 }}" />
+				<span class="pc-3d-value-display pc-3d-shadow-opacity-value">0.5</span>
+			</p>
+			<p class="field-row">
+				<label for="pc-3d-shadow-blur"><?php esc_html_e( 'Shadow blur / softness', 'product-configurator-for-woocommerce' ); ?></label>
+				<input type="range" id="pc-3d-shadow-blur" class="pc-3d-shadow-blur" data-key="ground.shadow_blur" min="0" max="10" step="0.5" value="{{ data.ground && data.ground.shadow_blur != null ? data.ground.shadow_blur : 0 }}" />
+				<span class="pc-3d-value-display pc-3d-shadow-blur-value">0</span>
+			</p>
+		</div>
+	</div>
 	<p class="field-row">
 		<label for="pc-3d-enable-shadows">
 			<input type="checkbox" id="pc-3d-enable-shadows" class="pc-3d-enable-shadows" data-key="enable_shadows" <# if ( data.enable_shadows ) { #>checked<# } #> />

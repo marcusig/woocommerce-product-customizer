@@ -3959,6 +3959,47 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 				font-size: 0.95em;
 			}
 		}
+		// Disclosure groups: a feature toggle plus the settings it owns.
+		// Behaviour lives in assets/admin/js/views/3d/3d-field-groups.js.
+		.pc-3d-field-group {
+			margin: 0 0 1.25em;
+
+			> .field-row {
+				margin-bottom: 0.25em;
+
+				> label {
+					font-weight: 600;
+				}
+			}
+		}
+		.pc-3d-field-group__hint,
+		.pc-3d-option-help {
+			display: block;
+			margin: 0 0 0.5em 1.5em;
+			font-size: .9em;
+			opacity: .7;
+		}
+		.pc-3d-option-help {
+			margin-left: 0;
+			font-style: italic;
+
+			&:empty {
+				display: none;
+			}
+		}
+		.pc-3d-field-group__body {
+			display: none;
+			margin-left: 0.5em;
+			padding-left: 1em;
+			border-left: 2px solid #DCDCDE;
+
+			> .field-row:last-child {
+				margin-bottom: 0.5em;
+			}
+		}
+		.pc-3d-field-group.is-open > .pc-3d-field-group__body {
+			display: block;
+		}
 		.field-row {
 			margin: 0.5em 0 1em;
 			label {

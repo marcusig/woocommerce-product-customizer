@@ -297,6 +297,179 @@ export function applyLightCookie( light, cookie ) {
 // Scene light stripping & dispose (3.8)
 // -------------------------------------------------------------------------
 
+// -------------------------------------------------------------------------
+// Real-time shadows
+// -------------------------------------------------------------------------
+
+/** Default shadow map resolution per light. */
+export const DEFAULT_SHADOW_MAP_SIZE = 2048;
+
+/** Light types that can cast a real-time shadow. */
+export function supportsLightShadows( light ) {
+	return !! ( light && ( light.isDirectionalLight || light.isSpotLight || light.isPointLight ) );
+}
+
+/**
+ * Enable or disable shadow casting/receiving on every mesh in a subtree.
+ * @param {THREE.Object3D} root
+ * @param {boolean} enabled
+ */
+export function applyShadowFlagsToObject( root, enabled ) {
+	if ( ! root || ! root.traverse ) return;
+	root.traverse( ( obj ) => {
+		if ( obj.isMesh ) {
+			obj.castShadow = !! enabled;
+			obj.receiveShadow = !! enabled;
+		}
+	} );
+}
+
+/**
+ * Fit a light's shadow camera to the model.
+ *
+ * Three's defaults assume a scene tens of units across (spot/point near 0.5 far 500,
+ * directional a fixed 10x10x500 box). On a product modelled in metres that spends
+ * almost all of the depth range — and, for directional lights, almost all of the
+ * shadow map's area — on empty space, which is what makes shadows look coarse and
+ * forces large biases. Sizing the camera to the actual bounds is the single biggest
+ * quality win available here.
+ *
+ * @param {THREE.Light} light
+ * @param {THREE.Box3} bounds - World-space bounds of the model
+ */
+export function fitShadowCameraToBounds( light, bounds ) {
+	if ( ! light || ! light.shadow || ! light.shadow.camera ) return;
+	if ( ! bounds || bounds.isEmpty() ) return;
+
+	const sphere = bounds.getBoundingSphere( new THREE.Sphere() );
+	const radius = Math.max( sphere.radius, 1e-4 );
+	const camera = light.shadow.camera;
+
+	const light_position = light.getWorldPosition( new THREE.Vector3() );
+	const distance = light_position.distanceTo( sphere.center );
+
+	// Keep the whole model inside the frustum with a margin for orbiting.
+	const margin = radius * 1.5;
+
+	if ( light.isDirectionalLight ) {
+		const extent = radius * 1.15;
+		camera.left = - extent;
+		camera.right = extent;
+		camera.top = extent;
+		camera.bottom = - extent;
+	}
+
+	if ( light.isPointLight ) {
+		// Omnidirectional: the camera sits at the light, so near must simply be small.
+		camera.near = Math.max( radius * 0.01, 1e-4 );
+		camera.far = Math.max( distance + margin, camera.near + radius );
+	} else {
+		camera.near = Math.max( distance - margin, radius * 0.01, 1e-4 );
+		camera.far = Math.max( distance + margin, camera.near + radius );
+	}
+
+	camera.updateProjectionMatrix();
+}
+
+/**
+ * Apply the full shadow configuration to a light.
+ *
+ * @param {THREE.Light} light
+ * @param {Object} options
+ * @param {boolean} options.enabled - Global "real-time shadows" setting
+ * @param {boolean} options.castShadows - This light's own cast_shadows setting
+ * @param {THREE.Box3} [options.bounds] - World-space model bounds
+ * @param {number} [options.mapSize=DEFAULT_SHADOW_MAP_SIZE]
+ */
+export function applyShadowSettingsToLight( light, options = {} ) {
+	if ( ! light ) return;
+
+	const cast = !! ( options.enabled && options.castShadows && supportsLightShadows( light ) );
+	light.castShadow = cast;
+	if ( ! cast || ! light.shadow ) return;
+
+	const map_size = options.mapSize || DEFAULT_SHADOW_MAP_SIZE;
+	if ( light.shadow.mapSize.width !== map_size || light.shadow.mapSize.height !== map_size ) {
+		light.shadow.mapSize.width = map_size;
+		light.shadow.mapSize.height = map_size;
+		// mapSize is baked into the render target, so an existing one must go.
+		if ( light.shadow.map ) {
+			light.shadow.map.dispose();
+			light.shadow.map = null;
+		}
+	}
+
+	fitShadowCameraToBounds( light, options.bounds );
+
+	// normalBias is in world units, so derive it from roughly two shadow texels.
+	// A fixed value (the old 0.02) is 2cm — enormous on a small product, which is
+	// what detaches shadows from the surfaces casting them.
+	let normal_bias = 0.02;
+	if ( options.bounds && ! options.bounds.isEmpty() ) {
+		const sphere = options.bounds.getBoundingSphere( new THREE.Sphere() );
+		const radius = Math.max( sphere.radius, 1e-4 );
+		const texel_world_size = ( radius * 2 ) / map_size;
+		normal_bias = Math.min( Math.max( texel_world_size * 2, 1e-5 ), radius * 0.05 );
+	}
+
+	if ( light.isPointLight ) {
+		light.shadow.bias = -0.0005;
+	} else {
+		light.shadow.bias = -0.0001;
+		light.shadow.normalBias = normal_bias;
+	}
+}
+
+/**
+ * Mirror the global shadow setting onto the renderer.
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {boolean} enabled
+ */
+export function applyRendererShadowSettings( renderer, enabled ) {
+	if ( ! renderer || ! renderer.shadowMap ) return;
+	renderer.shadowMap.enabled = !! enabled;
+	if ( enabled ) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+}
+
+/**
+ * Re-apply every part of the shadow configuration to a live scene: renderer flag,
+ * mesh flags and each light. Safe to call whenever settings change.
+ *
+ * Lights carry their own `cast_shadows` choice in userData, set when they are built.
+ *
+ * @param {Object} params
+ * @param {THREE.WebGLRenderer} params.renderer
+ * @param {THREE.Scene} params.scene
+ * @param {THREE.Object3D} [params.modelRoot]
+ * @param {boolean} params.enabled
+ * @param {number} [params.mapSize]
+ */
+export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapSize } ) {
+	applyRendererShadowSettings( renderer, enabled );
+	if ( ! scene ) return;
+
+	applyShadowFlagsToObject( modelRoot || scene, enabled );
+
+	// Strictly the model: the ground/fake-shadow plane is sized from the ground
+	// setting (10 units by default) and would blow the shadow camera back up to
+	// the oversized frustum this is meant to fix.
+	let bounds = null;
+	if ( modelRoot ) {
+		const measured = new THREE.Box3().setFromObject( modelRoot );
+		if ( ! measured.isEmpty() ) bounds = measured;
+	}
+
+	scene.traverse( ( obj ) => {
+		if ( ! obj.isLight ) return;
+		applyShadowSettingsToLight( obj, {
+			enabled,
+			castShadows: !! ( obj.userData && obj.userData.cast_shadows ),
+			bounds,
+			mapSize,
+		} );
+	} );
+}
+
 /**
  * Remove all lights (and their targets) from a scene or subtree.
  * Used to ensure only configured lights (from objects3d) are present, not GLTF-embedded lights.

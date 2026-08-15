@@ -155,8 +155,28 @@ export const settings_3d_preview_mixin = {
 			obj.intensity = base * gi;
 		} );
 
+		// Real-time shadows: re-applied on every settings change so the toggle takes
+		// effect immediately, rather than only when the preview is next rebuilt.
+		this.apply_shadow_settings();
+
 		// Postprocessing: build or update the composer from settings (order: SSR → AO → Bloom → SMAA); loads passes async
 		this.setup_preview_postprocessing();
+	},
+	/**
+	 * Mirror settings_3d.enable_shadows onto the live preview: renderer flag, mesh
+	 * flags and every light, with each shadow camera refitted to the model bounds.
+	 */
+	apply_shadow_settings: function () {
+		const t = this._three;
+		if ( ! t || ! t.renderer || ! t.scene ) return;
+		if ( ! PC.threeD || typeof PC.threeD.refreshSceneShadows !== 'function' ) return;
+		const s = PC.app.admin.settings_3d;
+		PC.threeD.refreshSceneShadows( {
+			renderer: t.renderer,
+			scene: t.scene,
+			modelRoot: t.model_root,
+			enabled: !!( s && s.enable_shadows ),
+		} );
 	},
 	setup_preview_postprocessing: async function () {
 		// A rebuild loads pass modules asynchronously. Coalesce anything that
@@ -391,8 +411,7 @@ export const settings_3d_preview_mixin = {
 			const useAlpha = !!( r.alpha || bg.mode === 'transparent' );
 			const renderer = new THREE.WebGLRenderer( { antialias: true, alpha: useAlpha } );
 			const shadowsEnabled = !!( s && s.enable_shadows );
-			renderer.shadowMap.enabled = shadowsEnabled;
-			if ( shadowsEnabled ) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+			PC.threeD.applyRendererShadowSettings( renderer, shadowsEnabled );
 			renderer.setSize( container.clientWidth, container.clientHeight );
 			renderer.setPixelRatio( window.devicePixelRatio );
 			renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
@@ -541,18 +560,14 @@ export const settings_3d_preview_mixin = {
 						settings.groundColor = obj.get( 'light_ground_color' );
 						var light = PC.threeD.createLightFromSettings( settings, gi );
 						light.name = obj.get( 'name' ) || 'Light';
-						var supportsShadows = !!( light.isDirectionalLight || light.isSpotLight || light.isPointLight );
-						light.castShadow = !!( shadowsEnabled && supportsShadows && obj.get( 'cast_shadows' ) === true );
-						if ( light.castShadow && light.shadow ) {
-							light.shadow.mapSize.width = 1024;
-							light.shadow.mapSize.height = 1024;
-							if ( light.isDirectionalLight || light.isSpotLight ) {
-								light.shadow.bias = -0.0001;
-								light.shadow.normalBias = 0.02;
-							} else if ( light.isPointLight ) {
-								light.shadow.bias = -0.0005;
-							}
-						}
+						// Remembered on the light so shadows can be re-applied when the
+						// setting is toggled, without walking back to the objects3d model.
+						light.userData.cast_shadows = obj.get( 'cast_shadows' ) === true;
+						PC.threeD.applyShadowSettingsToLight( light, {
+							enabled: shadowsEnabled,
+							castShadows: light.userData.cast_shadows,
+							bounds: rootGroup ? new THREE.Box3().setFromObject( rootGroup ) : null,
+						} );
 						var targetId = obj.get( 'light_target_object_id' );
 						if ( light.target && targetId && rootGroup && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
 							var targetObj = findObjectByCompositeId( viewRef._three.scene, targetId );
