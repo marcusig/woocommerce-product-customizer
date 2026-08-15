@@ -93,7 +93,7 @@ export function apply_camera_view_offset( camera, container, enabled ) {
  * Create renderer, scene, camera, controls, default light and the _three bag.
  * @param {HTMLElement} container
  * @param {Object} s - settings_3d (renderer, lighting, environment)
- * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, fake_shadow, model_root, gltf, current_env_url, default_light, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar }
+ * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, on_window_resize, resize_listeners, fake_shadow, model_root, current_env_url, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar }
  */
 export function initScene( container, s ) {
 	const r = s.renderer || {};
@@ -224,4 +224,6 @@ export function cleanupThree( t ) {
 		disposeSceneUtil( t.scene );
 	}
 	if ( t.material_registry ) t.material_registry.clear();
+	if ( t.material_registry_owners ) t.material_registry_owners.clear();
+	if ( t.material_registry_warned ) t.material_registry_warned.clear();
 }

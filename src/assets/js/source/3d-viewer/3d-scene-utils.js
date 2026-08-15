@@ -746,6 +746,15 @@ function setDefaultAo( mat, intensity ) {
  *
  * Also normalizes unlit alpha handling and AO defaults.
  *
+ * NOTE ON SHARING: the key is the material's *name*, across every loaded model.
+ * That is what lets a material_color_registry or material_property action target
+ * a material by name and reach all of it. The flip side is that two independently
+ * authored glTF files that both contain, say, "Material" or "Metal" are silently
+ * merged into one instance: the second model's appearance changes when it loads,
+ * and an action aimed at one model visibly changes the other. Collisions between
+ * different models are reported once each via console.warn so the cause is
+ * findable; naming materials distinctly per model is the fix on the asset side.
+ *
  * @param {{ material_registry?: Map<string,THREE.Material> }} threeCtx
  * @param {THREE.Object3D} sceneRoot
  * @param {{ defaultAoIntensity?: number }} [opts]
@@ -754,6 +763,11 @@ export function registerSceneMaterials( threeCtx, sceneRoot, opts = {} ) {
 	if ( ! threeCtx || ! threeCtx.material_registry || ! sceneRoot ) return;
 	const registry = threeCtx.material_registry;
 	const aoIntensity = ( typeof opts.defaultAoIntensity === 'number' ) ? opts.defaultAoIntensity : 0.5;
+	// Which model each name was first claimed by, so a cross-model collision can
+	// be named in the warning rather than just detected.
+	const owners = threeCtx.material_registry_owners || ( threeCtx.material_registry_owners = new Map() );
+	const warned = threeCtx.material_registry_warned || ( threeCtx.material_registry_warned = new Set() );
+	const sourceId = ( sceneRoot.userData && ( sceneRoot.userData.object_id || sceneRoot.userData.name ) ) || sceneRoot.name || 'model';
 
 	sceneRoot.traverse( ( obj ) => {
 		if ( ! obj.material ) return;
@@ -769,9 +783,21 @@ export function registerSceneMaterials( threeCtx, sceneRoot, opts = {} ) {
 			const name = ( mat.name && String( mat.name ).trim() ) || mat.uuid;
 			const existing = registry.get( name );
 			if ( existing !== undefined && existing !== mat ) {
+				const owner = owners.get( name );
+				if ( owner !== undefined && String( owner ) !== String( sourceId ) && ! warned.has( name ) ) {
+					warned.add( name );
+					// eslint-disable-next-line no-console
+					console.warn(
+						'3D viewer: material "' + name + '" exists in more than one model (' + owner + ' and ' +
+						sourceId + '). They now share one instance, so both models change together and a ' +
+						'material action aimed at one affects the other. Rename the material in one of the files ' +
+						'if they are meant to be independent.'
+					);
+				}
 				resolved.push( existing );
 			} else {
 				registry.set( name, mat );
+				if ( ! owners.has( name ) ) owners.set( name, sourceId );
 				resolved.push( mat );
 			}
 		}
