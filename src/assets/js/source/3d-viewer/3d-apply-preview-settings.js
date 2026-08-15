@@ -28,6 +28,9 @@ import {
  * @param {{ current: string|null }} [options.currentEnvUrlRef] - ref to store current HDR URL
  * @param {function()} [options.onEnvLoaded] - called after HDR texture is loaded (view may re-call apply)
  * @param {function()} [options.onEnvError]
+ * @param {Array|null} [options.objects3d] - objects3d entries for `environment.mode: 'object'`.
+ *        The frontend leaves this unset and the lookup falls back to the product data;
+ *        the admin passes its live collection.
  */
 export function applySettingsToScene( scene, renderer, controls, s, options = {} ) {
 	const r = s.renderer || {};
@@ -39,7 +42,7 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	renderer.outputColorSpace = getOutputColorSpace( r );
 
 	const hdrBase = ( typeof options.getHdrBaseUrl === 'function' ? options.getHdrBaseUrl() : '' );
-	const desiredUrl = getHdrUrlFromEnv( env, hdrBase );
+	const desiredUrl = getHdrUrlFromEnv( env, hdrBase, options.objects3d || null );
 	const urlRef = options.currentEnvUrlRef || { current: null };
 	const desiredKey = Array.isArray( desiredUrl ) ? desiredUrl.join( '|' ) : ( desiredUrl || null );
 	if ( ! desiredKey ) {

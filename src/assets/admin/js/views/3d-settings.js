@@ -30,6 +30,7 @@ let getToneMapping;
 let getPixelRatio;
 let ORBIT_PIXEL_RATIO_SCALE;
 let disposeScene;
+let applySettingsToScene;
 let RectAreaLightHelper = null;
 
 let threeDepsPromise = null;
@@ -57,12 +58,14 @@ function ensureThreeDepsLoaded() {
 			controlsModule,
 			fakeShadowModule,
 			sceneUtilsModule,
+			applySettingsModule,
 			rectAreaLightHelperModule
 		] = await Promise.all( [
 			import( 'three' ),
 			import( 'three/addons/controls/OrbitControls.js' ),
 			import( '../../../js/source/3d-viewer/3d-fake-shadow.js' ),
 			import( '../../../js/source/3d-viewer/3d-scene-utils.js' ),
+			import( '../../../js/source/3d-viewer/3d-apply-preview-settings.js' ),
 			import( 'three/addons/helpers/RectAreaLightHelper.js' ),
 		] );
 
@@ -82,6 +85,7 @@ function ensureThreeDepsLoaded() {
 		loadEnvMap = sceneUtilsModule.loadEnvMap;
 		setSceneEnvironment = sceneUtilsModule.setSceneEnvironment;
 		FakeShadow = fakeShadowModule.FakeShadow;
+		applySettingsToScene = applySettingsModule.applySettingsToScene;
 		createPostprocessingLayer = resolve_create_postprocessing_layer();
 		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
 
@@ -125,6 +129,7 @@ function ensureThreeDepsLoaded() {
 				getPixelRatio,
 				ORBIT_PIXEL_RATIO_SCALE,
 				disposeScene,
+				applySettingsToScene,
 				RectAreaLightHelper,
 			};
 		};

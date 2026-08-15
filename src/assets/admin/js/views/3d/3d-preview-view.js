@@ -41,91 +41,49 @@ export const settings_3d_preview_mixin = {
 		const objects3d = col && typeof col.toJSON === 'function' ? col.toJSON() : null;
 		return deps.getHdrUrlFromEnv( env, hdr_base, objects3d );
 	},
+	/**
+	 * Push the current settings_3d onto the live preview scene.
+	 *
+	 * Renderer, background, environment, orbit limits, ground and light intensity
+	 * are all applied by applySettingsToScene — the same function the frontend
+	 * viewer uses. The preview had its own copy of this logic and the two had
+	 * already drifted (cubemap validation, environment fallbacks), which is what
+	 * makes a preview stop matching what customers actually see.
+	 *
+	 * Only the genuinely admin-only parts stay here: the zoom buttons, the shadow
+	 * toggle and the postprocessing rebuild.
+	 */
 	apply_preview_settings: function () {
-		const THREE = get_three();
 		const deps = get_three_deps();
-		if ( ! THREE || ! deps ) return;
-		const { loadEnvMap, setSceneEnvironment } = deps;
+		if ( ! deps || typeof deps.applySettingsToScene !== 'function' ) return;
 		if ( !this._three || !this._three.scene || !this._three.renderer ) return;
+
 		const s = PC.app.admin.settings_3d;
-		const scene = this._three.scene;
-		const renderer = this._three.renderer;
+		const t = this._three;
+		const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
 
-		// Renderer: tone mapping, exposure, alpha (color space always sRGB)
-		const r = s.renderer || {};
-		const bg = s.background || {};
-		const env = s.environment || {};
-		const env_is_none = env.mode === 'none';
-		renderer.toneMapping = deps.getToneMapping( r );
-		renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
-		renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-		const apply_background_and_env_props = function () {
-			renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha || ( bg.mode === 'environment' && env_is_none ) ) ? 0 : 1 );
-			if ( bg.mode === 'transparent' || ( bg.mode === 'environment' && env_is_none ) ) {
-				scene.background = null;
-			} else if ( bg.mode === 'solid' && bg.color ) {
-				scene.background = new THREE.Color( bg.color );
-			} else if ( bg.mode === 'environment' && scene.environment ) {
-				scene.background = scene.environment;
-			}
-			if ( typeof scene.environmentIntensity !== 'undefined' ) {
-				scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
-			}
-			if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
-				scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-				if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' && ! env_is_none ) {
-					scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-				}
-			}
+		// The shared function tracks the loaded environment through this ref.
+		const env_url_ref = {
+			get current() { return t.current_env_url; },
+			set current( v ) { t.current_env_url = v; },
 		};
 
-		const desired_url = this.get_env_url_for_preview( env );
-		const desired_key = Array.isArray( desired_url ) ? desired_url.join( '|' ) : desired_url || null;
-		if ( ! desired_key ) {
-			if ( typeof setSceneEnvironment === 'function' ) {
-				setSceneEnvironment( scene, null );
-			} else {
-				scene.environment = null;
-			}
-			this._three.current_env_key = null;
-			this._three.current_env_url = null;
-			apply_background_and_env_props();
-		} else if ( this._three.current_env_key !== desired_key ) {
-			this._three.current_env_key = desired_key;
-			loadEnvMap( desired_url, ( texture ) => {
-				if ( typeof setSceneEnvironment === 'function' ) {
-					setSceneEnvironment( scene, texture );
-				} else {
-					scene.environment = texture;
-				}
-				this._three.current_env_url = desired_url;
-				apply_background_and_env_props();
-			}, undefined, () => { this._three.current_env_key = null; } );
-		} else {
-			apply_background_and_env_props();
-		}
-
-		// OrbitControls polar, azimuth and zoom limits — resolved by the same helper
-		// the frontend uses, so the preview cannot drift from what customers get.
-		if ( this._three.controls && typeof deps.getOrbitLimitsFromEnv === 'function' ) {
-			Object.assign( this._three.controls, deps.getOrbitLimitsFromEnv( env ) );
-		}
-		this.update_zoom_buttons_state();
-
-		// Fake shadow (planar) – updated in fake_shadow.update() when model_root exists
-		const g = s.ground || {};
-		if ( this._three.fake_shadow && this._three.model_root ) {
-			this._three.fake_shadow.update( this._three.model_root, g );
-		}
-
-		// Global light intensity (used by objects3d lights when applied in scene)
-		const gi = 1;
-		scene.traverse( ( obj ) => {
-			if ( ! obj.isLight ) return;
-			const base = obj.userData?.baseIntensity ?? obj.intensity;
-			obj.intensity = base * gi;
+		deps.applySettingsToScene( t.scene, t.renderer, t.controls, s, {
+			fakeShadow: t.fake_shadow,
+			modelRoot: t.model_root,
+			getHdrBaseUrl: () => ( ( typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url ) ? PC_lang.hdr_base_url : '' ),
+			currentEnvUrlRef: env_url_ref,
+			// The admin resolves environment objects against the live collection
+			// being edited, not the saved product data.
+			objects3d: col && typeof col.toJSON === 'function' ? col.toJSON() : null,
+			onEnvLoaded: () => {
+				this._removePreviewLoadingStep( 'hdr' );
+				this.apply_preview_settings();
+			},
+			onEnvError: () => this._removePreviewLoadingStep( 'hdr' ),
 		} );
+
+		this.update_zoom_buttons_state();
 
 		// Real-time shadows: re-applied on every settings change so the toggle takes
 		// effect immediately, rather than only when the preview is next rebuilt.
@@ -368,7 +326,6 @@ export const settings_3d_preview_mixin = {
 			const {
 				OrbitControls,
 				FakeShadow,
-				loadEnvMap,
 				hideObjectsByName,
 				getHiddenObjectNamesList,
 				findObjectByCompositeId,
@@ -421,23 +378,9 @@ export const settings_3d_preview_mixin = {
 				this._setPreviewLoadingStep( 'model-' + i, ( typeof PC_lang !== 'undefined' && PC_lang.loading_model ) ? PC_lang.loading_model.replace( '%s', label ) : ( 'Model: ' + label ) );
 			} );
 
-			if ( !initial_env_url ) {
-				this.apply_preview_settings();
-			} else {
-				loadEnvMap( initial_env_url, ( texture ) => {
-					scene.environment = texture;
-					this._three.current_env_url = initial_env_url;
-					this._three.current_env_key = Array.isArray( initial_env_url ) ? initial_env_url.join( '|' ) : initial_env_url;
-					this._removePreviewLoadingStep( 'hdr' );
-					this.apply_preview_settings();
-				}, undefined, () => {
-					this._removePreviewLoadingStep( 'hdr' );
-				} );
-			}
-
-			if ( bg.mode === 'transparent' ) scene.background = null;
-			else if ( bg.mode === 'solid' && bg.color ) scene.background = new THREE.Color( bg.color );
-
+			// Environment loading, background and orbit limits are all driven by
+			// apply_preview_settings below; it only needs current_env_url to start
+			// out null, which the _three bag above guarantees.
 			const controls = new OrbitControls( camera, renderer.domElement );
 			controls.enableDamping = true;
 			controls.dampingFactor = 0.1;
@@ -479,6 +422,10 @@ export const settings_3d_preview_mixin = {
 
 			this._three.on_resize = on_resize;
 			window.addEventListener( 'resize', on_resize );
+
+			// Start the environment load now so it runs alongside the models rather
+			// than after them. apply_preview_settings runs again from onAllLoaded.
+			this.apply_preview_settings();
 
 			const rootGroup = new THREE.Group();
 			rootGroup.name = 'ConfiguratorRoot';
