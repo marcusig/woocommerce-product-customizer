@@ -21,6 +21,41 @@ class Admin_Product_3D {
 	/** @var int Default max total extracted size in bytes (200 MB). */
 	const DEFAULT_MAX_EXTRACTED_BYTES = 209715200;
 
+	/**
+	 * @var array File extensions kept when a configurator ZIP is extracted.
+	 *
+	 * Everything a glTF scene can legitimately reference. Anything else is
+	 * removed after extraction rather than left in a web-served directory.
+	 * Filterable via mkl_pc_3d_allowed_zip_extensions.
+	 */
+	const DEFAULT_ALLOWED_ZIP_EXTENSIONS = array(
+		// glTF itself.
+		'glb', 'gltf', 'bin', 'json',
+		// Textures.
+		'png', 'jpg', 'jpeg', 'webp', 'avif', 'ktx2', 'basis', 'dds',
+		// Environments.
+		'hdr', 'exr',
+	);
+
+	/**
+	 * @var array Extensions that can be executed by a web server.
+	 *
+	 * A 3D asset archive has no reason to contain any of these, so their
+	 * presence means the ZIP is not what it claims to be and the whole archive
+	 * is rejected before anything is written to disk.
+	 */
+	const EXECUTABLE_ZIP_EXTENSIONS = array(
+		'php', 'php1', 'php2', 'php3', 'php4', 'php5', 'php6', 'php7', 'php8',
+		'phps', 'phtml', 'phar', 'pht', 'shtml', 'cgi', 'pl', 'py', 'rb', 'sh',
+		'bash', 'asp', 'aspx', 'jsp', 'jspx', 'exe', 'dll', 'so', 'htaccess',
+		'htpasswd', 'ini',
+	);
+
+	/** @var array Filenames that are dangerous regardless of extension. */
+	const EXECUTABLE_ZIP_BASENAMES = array(
+		'.htaccess', '.htpasswd', '.user.ini', 'php.ini', 'web.config',
+	);
+
 	public function __construct() {
 		add_filter( 'upload_mimes', array( $this, 'filter_upload_mimes' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'filter_check_filetype_and_ext' ), 10, 4 );
@@ -183,6 +218,11 @@ class Admin_Product_3D {
 			$dirs['subdir'] = $subdir;
 			$dirs['path']   = $dirs['basedir'] . $subdir;
 			$dirs['url']    = $dirs['baseurl'] . $subdir;
+			// Covers direct 3D uploads too, not just extracted ZIPs. wp_mkdir_p
+			// runs after this filter, so create the parent ourselves first.
+			$assets_dir = $dirs['basedir'] . '/configurator_assets/';
+			wp_mkdir_p( $assets_dir );
+			$this->protect_assets_directory( $assets_dir );
 		}
 		return $dirs;
 	}
@@ -233,6 +273,7 @@ class Admin_Product_3D {
 
 		$this->delete_directory( $target_dir );
 		wp_mkdir_p( $target_dir );
+		$this->protect_assets_directory( trailingslashit( $upload_dir['basedir'] ) . 'configurator_assets/' );
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 
@@ -393,6 +434,17 @@ class Admin_Product_3D {
 				continue;
 			}
 
+			// A 3D asset archive has no reason to carry anything executable, so
+			// its presence means this is not the kind of ZIP it claims to be.
+			// Rejected here, before unzip_file writes a single byte.
+			if ( $this->zip_entry_is_executable( $name ) ) {
+				$zip->close();
+				return new \WP_Error(
+					'mkl_pc_zip_executable_entry',
+					sprintf( 'ZIP contains an executable file (%s).', $name )
+				);
+			}
+
 			$file_count++;
 			$total_bytes += isset( $stat['size'] ) ? (int) $stat['size'] : 0;
 
@@ -439,6 +491,10 @@ class Admin_Product_3D {
 			return new \WP_Error( 'mkl_pc_zip_iterate', $e->getMessage() );
 		}
 
+		// Collected rather than unlinked mid-iteration, which is not safe while
+		// the recursive iterator still holds the directory open.
+		$to_remove = array();
+
 		foreach ( $iterator as $item ) {
 			$path = $item->getPathname();
 			if ( ! $this->is_path_inside_directory( $path, $target_dir ) ) {
@@ -447,6 +503,26 @@ class Admin_Product_3D {
 			if ( ! $item->isFile() ) {
 				continue;
 			}
+
+			// Anything executable that reached disk means the pre-scan did not
+			// run (no ZipArchive) or did not catch it. Fail the whole extraction
+			// rather than trying to clean up around it.
+			if ( $this->zip_entry_is_executable( $path ) ) {
+				return new \WP_Error(
+					'mkl_pc_zip_executable_entry',
+					sprintf( 'Extracted ZIP contains an executable file (%s).', $item->getFilename() )
+				);
+			}
+
+			// Everything else that is not a usable 3D asset is simply dropped.
+			// This is mostly archiver noise — __MACOSX resource forks, .DS_Store,
+			// readme files — which should not fail an otherwise valid upload, but
+			// equally has no business sitting in a web-served directory.
+			if ( ! $this->zip_entry_is_allowed_asset( $path ) ) {
+				$to_remove[] = $path;
+				continue;
+			}
+
 			$file_count++;
 			$total_bytes += (int) $item->getSize();
 
@@ -455,6 +531,12 @@ class Admin_Product_3D {
 			}
 			if ( $max_extracted_bytes > 0 && $total_bytes > $max_extracted_bytes ) {
 				return new \WP_Error( 'mkl_pc_zip_too_large', 'Extracted ZIP exceeds the size limit.' );
+			}
+		}
+
+		foreach ( $to_remove as $path ) {
+			if ( $this->is_path_inside_directory( $path, $target_dir ) ) {
+				@unlink( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 			}
 		}
 
@@ -551,6 +633,112 @@ class Admin_Product_3D {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Drop an .htaccess and an index.php into uploads/configurator_assets/.
+	 *
+	 * Second line of defence behind the extension allowlist. The assets in here
+	 * are served to the browser, so this cannot be WooCommerce's "deny from all"
+	 * — it blocks handlers and directory listing while leaving static files
+	 * readable.
+	 *
+	 * Apache only. nginx ignores .htaccess entirely, which is exactly why the
+	 * allowlist is the primary control and this is the backstop, not the reverse.
+	 *
+	 * Existing files are never overwritten, so a host-specific version a
+	 * merchant or their host has put here is left alone.
+	 *
+	 * @param string $assets_dir Absolute path to uploads/configurator_assets/.
+	 */
+	private function protect_assets_directory( $assets_dir ) {
+		$assets_dir = trailingslashit( wp_normalize_path( $assets_dir ) );
+		if ( ! is_dir( $assets_dir ) ) {
+			return;
+		}
+
+		$htaccess = $assets_dir . '.htaccess';
+		if ( ! file_exists( $htaccess ) ) {
+			$rules = "# Managed by Product Configurator for WooCommerce.\n"
+				. "# 3D assets are served from here, so static files stay readable;\n"
+				. "# only script execution and directory listing are blocked.\n"
+				. "Options -Indexes\n"
+				. "<IfModule mod_php.c>\n\tphp_flag engine off\n</IfModule>\n"
+				. "<IfModule mod_php7.c>\n\tphp_flag engine off\n</IfModule>\n"
+				. "<IfModule mod_php8.c>\n\tphp_flag engine off\n</IfModule>\n"
+				. "<FilesMatch \"(?i)\\.(php|php[0-9]|phps|phtml|phar|pht|shtml|cgi|pl|py|rb|sh|asp|aspx|jsp)$\">\n"
+				. "\tSetHandler none\n"
+				. "\t<IfModule mod_authz_core.c>\n\t\tRequire all denied\n\t</IfModule>\n"
+				. "\t<IfModule !mod_authz_core.c>\n\t\tOrder allow,deny\n\t\tDeny from all\n\t</IfModule>\n"
+				. "</FilesMatch>\n";
+			@file_put_contents( $htaccess, $rules ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		}
+
+		$index = $assets_dir . 'index.php';
+		if ( ! file_exists( $index ) ) {
+			@file_put_contents( $index, "<?php\n// Silence is golden.\n" ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		}
+	}
+
+	/**
+	 * Extensions a configurator ZIP may contribute, lowercased.
+	 *
+	 * @return array
+	 */
+	private function get_allowed_zip_extensions() {
+		$allowed = apply_filters( 'mkl_pc_3d_allowed_zip_extensions', self::DEFAULT_ALLOWED_ZIP_EXTENSIONS );
+		if ( ! is_array( $allowed ) ) {
+			$allowed = self::DEFAULT_ALLOWED_ZIP_EXTENSIONS;
+		}
+		return array_map( 'strtolower', $allowed );
+	}
+
+	/**
+	 * Whether a ZIP entry could be executed by a web server.
+	 *
+	 * Checked against the whole basename as well as the extension, because the
+	 * files that matter most (.htaccess, .user.ini) are named, not suffixed.
+	 *
+	 * @param string $name Entry name or path.
+	 * @return bool
+	 */
+	private function zip_entry_is_executable( $name ) {
+		$basename = strtolower( basename( str_replace( '\\', '/', (string) $name ) ) );
+		if ( in_array( $basename, self::EXECUTABLE_ZIP_BASENAMES, true ) ) {
+			return true;
+		}
+		$ext = strtolower( pathinfo( $basename, PATHINFO_EXTENSION ) );
+		if ( '' !== $ext && in_array( $ext, self::EXECUTABLE_ZIP_EXTENSIONS, true ) ) {
+			return true;
+		}
+		// "shell.php.jpg" style double extensions: some server configs hand any
+		// file containing .php to the PHP handler, so treat inner ones as real.
+		foreach ( explode( '.', $basename ) as $segment ) {
+			if ( in_array( $segment, self::EXECUTABLE_ZIP_EXTENSIONS, true ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Whether a ZIP entry is a file type a 3D scene can legitimately use.
+	 *
+	 * @param string $name Entry name or path.
+	 * @return bool
+	 */
+	private function zip_entry_is_allowed_asset( $name ) {
+		// Independently of the caller's ordering: something like "shell.php.jpg"
+		// ends in an allowed extension but is still executable on a server that
+		// dispatches on any .php segment. Never let it through this check either.
+		if ( $this->zip_entry_is_executable( $name ) ) {
+			return false;
+		}
+		$ext = strtolower( pathinfo( basename( str_replace( '\\', '/', (string) $name ) ), PATHINFO_EXTENSION ) );
+		if ( '' === $ext ) {
+			return false;
+		}
+		return in_array( $ext, $this->get_allowed_zip_extensions(), true );
 	}
 
 	/**
