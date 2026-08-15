@@ -236,7 +236,7 @@ export default Backbone.View.extend({
 		if ( ! useFocusIds || ! tgt ) {
 			const targetObjectId = active.get( 'camera_target_object_id' );
 			if ( targetObjectId && t.model_root ) {
-				const obj = this._findObject( t.model_root, String( targetObjectId ).trim() );
+				const obj = findObject( t.model_root, String( targetObjectId ).trim() );
 				if ( obj ) {
 					const targetPos = getObjectTargetPosition( obj, new THREE.Vector3() );
 					tgt = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
@@ -959,10 +959,6 @@ export default Backbone.View.extend({
 		this._requestRender();
 	},
 
-	_findObject( root, object_id ) {
-		return findObject( root, object_id );
-	},
-
 	/**
 	 * Resolve target_object_id (plain name/uuid or composite "sourceId:objectName") to a scene object.
 	 * Uses findObjectByCompositeId so multiple loaded models are disambiguated by attachment_id/object_id.
@@ -973,7 +969,7 @@ export default Backbone.View.extend({
 		const s = String( id ).trim();
 		const byComposite = findObjectByCompositeId( t.model_root, s );
 		if ( byComposite ) return byComposite;
-		return this._findObject( t.model_root, s );
+		return findObject( t.model_root, s );
 	},
 
 	_getSceneByLayerId( layerId ) {

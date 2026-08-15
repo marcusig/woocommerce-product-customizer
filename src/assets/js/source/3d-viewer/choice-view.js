@@ -35,12 +35,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			this.model.get( 'target_object_id' ) ||
 			this.layer_model.get( 'target_object_id' );
 		if ( ! target_id ) return null;
-		if ( typeof this.parent_view._findObjectById === 'function' ) {
-			return this.parent_view._findObjectById( target_id ) || null;
-		}
-		const root = t.model_root;
-		const obj = this.parent_view._findObject( root, String( target_id ).trim() );
-		return obj || null;
+		return this.parent_view._findObjectById( target_id ) || null;
 	},
 
 	/**
@@ -267,9 +262,6 @@ const viewer_3d_choice = Backbone.View.extend({
 		return state === 'loaded' || state === 'error';
 	},
 
-	remove() {
-		return Backbone.View.prototype.remove.apply( this, arguments );
-	},
 });
 
 export default viewer_3d_choice;
