@@ -59,11 +59,13 @@ function apply_material_to_object( obj, material ) {
 }
 
 function apply_material_variant( context, action ) {
-	const { target_object, target_scene, three } = context;
+	const { target_object, target_scene } = context;
 	if ( ! target_object ) return;
 	const variant_name = action.material_variant_value || action.variant_select;
 	if ( ! variant_name ) return;
 
+	// selectVariant is stored on the scene root of the model that declared the
+	// KHR_materials_variants extension, so walk up until one is found.
 	let variant_root = target_scene || target_object;
 	let select_variant = null;
 	let node = variant_root;
@@ -74,9 +76,6 @@ function apply_material_variant( context, action ) {
 			break;
 		}
 		node = node.parent;
-	}
-	if ( ! select_variant ) {
-		select_variant = three.gltf && three.gltf.functions && three.gltf.functions.selectVariant;
 	}
 	if ( typeof select_variant === 'function' ) {
 		select_variant( variant_root, variant_name, true, null );

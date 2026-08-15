@@ -508,7 +508,7 @@ export default Backbone.View.extend({
 	 * Phase 3: Load assets (eager GLTFs from objects3d, HDR).
 	 * @param {Object} s - settings_3d
 	 * @param {Object} modules - from _loadModules
-	 * @returns {Promise<{ mainGltf: *, modelResults: *, hdrTexture: *, hdrUrl: string }>}
+	 * @returns {Promise<{ eagerObjectIds: string[], hdrTexture: *, hdrUrl: string|string[]|null }>}
 	 */
 	async _loadAssets( s, modules ) {
 		const productData = window.PC.fe && window.PC.fe.currentProductData;
@@ -544,7 +544,7 @@ export default Backbone.View.extend({
 			} );
 		}
 
-		return { mainGltf: null, eagerObjectIds, hdrTexture, hdrUrl };
+		return { eagerObjectIds, hdrTexture, hdrUrl };
 	},
 
 	/**
@@ -555,7 +555,7 @@ export default Backbone.View.extend({
 	 * @param {Object} assets - from _loadAssets
 	 */
 	async _setupScene( container, s, modules, assets ) {
-		const { mainGltf, eagerObjectIds, hdrTexture, hdrUrl } = assets;
+		const { eagerObjectIds, hdrTexture, hdrUrl } = assets;
 		// Start from a clean viewer state before creating a fresh scene graph.
 		this.maybe_cleanup();
 		this._gltfLoader = modules.gltfLoader;
@@ -567,19 +567,11 @@ export default Backbone.View.extend({
 		this._shadowsEnabled = !!( s && s.enable_shadows );
 		applyRendererShadowSettings( t.renderer, this._shadowsEnabled );
 
-		// Mount the initial model root. If there is no eager main glTF, use an empty root as anchor.
-		if ( mainGltf ) {
-			t.scene.add( mainGltf.scene );
-			t.model_root = mainGltf.scene;
-			t.gltf = mainGltf;
-			this._applyShadowFlagsToObject( mainGltf.scene, this._shadowsEnabled );
-			registerSceneMaterials( t, mainGltf.scene );
-		} else {
-			const emptyRoot = new THREE.Group();
-			t.scene.add( emptyRoot );
-			t.model_root = emptyRoot;
-			t.gltf = null;
-		}
+		// Every model — eager or lazy — is mounted under this root by
+		// _ensureObjects3dSceneLoadedById. There is no separate "main" glTF.
+		const modelRoot = new THREE.Group();
+		t.scene.add( modelRoot );
+		t.model_root = modelRoot;
 
 		const productData = window.PC.fe && window.PC.fe.currentProductData;
 		const objects3d = productData && productData['objects3d'];
@@ -1076,24 +1068,12 @@ export default Backbone.View.extend({
 			cam.lookAt( t.initial_controls_target );
 			cameraForShot = cam;
 		} else if ( mode === 'gltf' ) {
+			// Any camera authored into one of the loaded models. They are mounted
+			// under model_root, so the scene graph is the only place to look.
 			let otherCam = null;
-
-			// Prefer explicit glTF cameras if present
-			if ( t.gltf && Array.isArray( t.gltf.cameras ) && t.gltf.cameras.length ) {
-				otherCam = t.gltf.cameras[ 0 ];
-			}
-
-			// Fallback: search the scene graph for any other camera
-			if ( ! otherCam ) {
-				const found = [];
-				scene.traverse( ( obj ) => {
-					if ( obj.isCamera && obj !== baseCamera ) found.push( obj );
-				} );
-				if ( found.length ) {
-					otherCam = found[ 0 ];
-				}
-			}
-
+			scene.traverse( ( obj ) => {
+				if ( ! otherCam && obj.isCamera && obj !== baseCamera ) otherCam = obj;
+			} );
 			if ( otherCam ) {
 				cameraForShot = otherCam;
 			}

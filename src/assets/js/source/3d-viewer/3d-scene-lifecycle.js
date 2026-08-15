@@ -170,7 +170,6 @@ export function initScene( container, s ) {
 		resize_listeners,
 		fake_shadow: null,
 		model_root: null,
-		gltf: null,
 		current_env_url: null,
 		container,
 		initial_camera_position: null,
