@@ -18,7 +18,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		public $themes_url;
 
 		function __construct() {
-			add_action( 'admin_menu', array( $this, 'register' ) );
+			add_action( 'admin_menu', array( $this, 'register' ), 1000 );
 			add_action( 'admin_init', array( $this, 'init' ), 20 );
 			add_action( 'admin_footer', array( $this, 'add_backbone_templates' ), 20 );
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts') );
@@ -45,25 +45,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 * @return array
 		 */
 		public function plugin_settings_link( $links ) {
-			$settings_link = '<a href="' . admin_url( 'options-general.php?page=mkl_pc_settings' ) . '">' . __( 'Settings', 'product-configurator-for-woocommerce' ) . '</a>';
+			$settings_link = '<a href="' . esc_url( mkl_pc_get_settings_page_url() ) . '">' . __( 'Settings', 'product-configurator-for-woocommerce' ) . '</a>';
 			array_unshift($links, $settings_link);
 			return $links;
 		}
 
 		public function register() {
-			$page_title = __( 'Configurator settings', 'product-configurator-for-woocommerce' );
-			$menu_title = 'Product Configurator';
-			$capability = 'manage_options';
-			$menu_slug = 'mkl_pc_settings';
-			$fn = array( $this, 'display' );
-
-			add_options_page(
-				$page_title,
-				$menu_title,
-				$capability,
-				$menu_slug,
-				$fn
-			);		
+			add_submenu_page(
+				mkl_pc_get_admin_menu_slug(),
+				__( 'Configurator settings', 'product-configurator-for-woocommerce' ),
+				__( 'Settings', 'product-configurator-for-woocommerce' ),
+				'manage_options',
+				'mkl_pc_settings',
+				array( $this, 'display' )
+			);
 		}
 
 		private function get_setting( $setting = '', $default = false ) {
@@ -1427,9 +1422,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function add_backbone_templates() {
-			global $pagenow;
-			$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-			if ( 'options-general.php' !== $pagenow || 'mkl_pc_settings' !== $page ) return;
+			if ( ! mkl_pc_is_settings_page() ) {
+				return;
+			}
 			
 			$themes = mkl_pc( 'themes' )->get_themes();
 			$data = [];
@@ -1490,8 +1485,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		<?php }
 
 		public function scripts() {
-			$screen = get_current_screen();
-			if ( 'settings_page_mkl_pc_settings' == $screen->id ) {
+			if ( mkl_pc_is_settings_page() ) {
 				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
 				wp_enqueue_style( 'mlk_pc/settings', MKL_PC_ASSETS_URL.'admin/css/settings.css' , [ 'woocommerce_admin_styles' ], MKL_PC_VERSION );
 				wp_enqueue_script( 'mk_pc/settings', MKL_PC_ASSETS_URL.'admin/js/settings.js', array( 'jquery', 'backbone', 'wp-util', 'select2', 'selectWoo', 'wc-enhanced-select' ), MKL_PC_VERSION, true );

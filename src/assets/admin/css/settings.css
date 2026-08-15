@@ -1,4 +1,4 @@
-.settings_page_mkl_pc_settings h1 {
+body.mkl-pc-settings h1 {
 	position: relative;
 	background: #FFF;
 	margin-left: -20px;
@@ -7,23 +7,23 @@
 	padding: 20px;
 	display: block !important;
 }
-.settings_page_mkl_pc_settings .wrap > header {
+body.mkl-pc-settings .wrap > header {
 	margin-bottom: 20px;
 }
 
-.settings_page_mkl_pc_settings .wrap > header .links {
+body.mkl-pc-settings .wrap > header .links {
 	margin-top: 10px;
 	text-align: right;
 }
 
-.settings_page_mkl_pc_settings h1 span.by {
+body.mkl-pc-settings h1 span.by {
 	position: absolute;
 	right: 20px;
 	top: 10px;
 	font-size: 1rem;
 }
 
-.settings_page_mkl_pc_settings h1 span.version {
+body.mkl-pc-settings h1 span.version {
 	display: inline-block;
 	margin: 0;
 	padding: 0;
@@ -509,10 +509,10 @@ button.mkl-settings-toggle-images-in-library[data-mode="show"] .hide-configurati
 	box-shadow: 0 -20px 25px -25px #0000003d;
 }
 
-.settings_page_mkl_pc_settings tr.heading {
+body.mkl-pc-settings tr.heading {
     border-bottom: 1px solid #CCC;
 }
-.settings_page_mkl_pc_settings tr.heading th {
+body.mkl-pc-settings tr.heading th {
     text-transform: uppercase;
 }
 

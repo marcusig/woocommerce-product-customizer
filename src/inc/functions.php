@@ -155,6 +155,67 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 }
 
 /**
+ * Parent slug for Product Configurator admin pages.
+ *
+ * Add-ons should attach custom post types (`show_in_menu`) and submenu pages to this slug.
+ *
+ * @return string
+ */
+function mkl_pc_get_admin_menu_slug() {
+	/**
+	 * Filter the parent admin menu slug.
+	 *
+	 * @param string $slug
+	 */
+	return apply_filters( 'mkl_pc_admin_menu_slug', 'mkl_pc' );
+}
+
+/**
+ * Capability required to see the Product Configurator parent menu.
+ *
+ * @return string
+ */
+function mkl_pc_get_admin_menu_capability() {
+	$capability = function_exists( 'WC' ) ? 'manage_woocommerce' : 'manage_options';
+
+	/**
+	 * Filter the parent admin menu capability.
+	 *
+	 * @param string $capability
+	 */
+	return apply_filters( 'mkl_pc_admin_menu_capability', $capability );
+}
+
+/**
+ * Admin URL for the configurator settings page.
+ *
+ * @param array $query_args Extra query args (e.g. tab).
+ * @return string
+ */
+function mkl_pc_get_settings_page_url( $query_args = array() ) {
+	$query_args = array_merge(
+		array(
+			'page' => 'mkl_pc_settings',
+		),
+		$query_args
+	);
+	return add_query_arg( $query_args, admin_url( 'admin.php' ) );
+}
+
+/**
+ * Whether the current admin request is the configurator settings page.
+ *
+ * @return bool
+ */
+function mkl_pc_is_settings_page() {
+	if ( ! is_admin() ) {
+		return false;
+	}
+	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+	return 'mkl_pc_settings' === $page;
+}
+
+/**
  * Include an SVG icon
  *
  * @param string $icon - The icon to include. e.g. 'home', '3d/object_data'...

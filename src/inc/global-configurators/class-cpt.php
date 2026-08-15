@@ -63,7 +63,7 @@ final class Cpt {
 				'labels'              => $labels,
 				'public'              => false,
 				'show_ui'             => true,
-				'show_in_menu'        => 'edit.php?post_type=product',
+				'show_in_menu'        => mkl_pc_get_admin_menu_slug(),
 				'show_in_admin_bar'   => false,
 				'show_in_nav_menus'   => false,
 				'hierarchical'        => false,

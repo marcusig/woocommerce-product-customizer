@@ -22,6 +22,7 @@ class Admin_Woocommerce {
 	public $order;
 	public $product;
 	public $settings;
+	public $menu;
 		public $choice_settings;
 		public $layer_settings;
 		public $angle_settings;
@@ -31,6 +32,7 @@ class Admin_Woocommerce {
 			$this->customizer = new Customizer();
 			$this->order = new Admin_Order();
 			$this->product = new Admin_Product();
+			$this->menu = new Admin_Menu();
 			$this->settings = new Admin_Settings();
 			$this->choice_settings = new Choice_Settings();
 			$this->layer_settings = new Layer_Settings();
@@ -48,6 +50,7 @@ class Admin_Woocommerce {
 	 */
 	private function _includes() {
 		include( MKL_PC_INCLUDE_PATH . 'admin/customizer.php' );
+		include( MKL_PC_INCLUDE_PATH . 'admin/admin-menu.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings-page.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/choice.php' );
 		include( MKL_PC_INCLUDE_PATH . 'admin/settings/layer.php' );

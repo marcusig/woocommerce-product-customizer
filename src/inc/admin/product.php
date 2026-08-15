@@ -197,7 +197,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			</div>
 			<div class="more">
 				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php esc_html_e( 'Do you need more functionality?', 'product-configurator-for-woocommerce') ; ?></h2>
-				<p><a href="<?php echo esc_url( admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ) ); ?>"><?php esc_html_e( 'Check out the available addons and themes.', 'product-configurator-for-woocommerce' ); ?></a></p>
+				<p><a href="<?php echo esc_url( mkl_pc_get_settings_page_url( array( 'tab' => 'addons' ) ) ); ?>"><?php esc_html_e( 'Check out the available addons and themes.', 'product-configurator-for-woocommerce' ); ?></a></p>
 				<h2><span class="dashicons dashicons-star-filled"></span> <?php esc_html_e( 'Do you like the plugin?', 'product-configurator-for-woocommerce') ; ?></h2>
 				<p>
 					<?php
