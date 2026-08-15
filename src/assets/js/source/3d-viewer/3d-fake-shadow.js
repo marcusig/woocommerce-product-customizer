@@ -8,6 +8,13 @@ import * as THREE from 'three';
 import { HorizontalBlurShader } from 'three/addons/shaders/HorizontalBlurShader.js';
 import { VerticalBlurShader } from 'three/addons/shaders/VerticalBlurShader.js';
 
+/**
+ * The line in three's MeshDepthMaterial fragment shader that the shadow pass
+ * rewrites, so depth becomes alpha on a black plane rather than a grey value.
+ * Verified against three r182.
+ */
+const DEPTH_FRAGMENT_TARGET = 'gl_FragColor = vec4( vec3( 1.0 - fragCoordZ ), opacity );';
+
 const LOG_MAX_RESOLUTION = 9;
 const LOG_MIN_RESOLUTION = 6;
 const TAP_WIDTH = 10;
@@ -27,10 +34,22 @@ export class FakeShadow extends THREE.Object3D {
 		this._depthMaterial.depthWrite = true;
 		this._depthMaterial.side = THREE.DoubleSide;
 		this._depthMaterial.onBeforeCompile = (shader) => {
-			shader.fragmentShader = shader.fragmentShader.replace(
-				'gl_FragColor = vec4( vec3( 1.0 - fragCoordZ ), opacity );',
+			const patched = shader.fragmentShader.replace(
+				DEPTH_FRAGMENT_TARGET,
 				'gl_FragColor = vec4( vec3( 0.0 ), ( 1.0 - fragCoordZ ) * opacity );'
 			);
+			// This patches three's own depth shader by string match. If three
+			// changes that line the replace silently does nothing and the ground
+			// plane renders as an opaque inverted-depth slab instead of a shadow,
+			// which is easy to misread as a lighting problem. Fail loudly instead.
+			if (patched === shader.fragmentShader) {
+				console.error(
+					'FakeShadow: could not patch the depth shader — three.js has changed MeshDepthMaterial. ' +
+					'The ground shadow will not render correctly until the replacement target is updated.'
+				);
+				return;
+			}
+			shader.fragmentShader = patched;
 		};
 
 		this._renderTarget = null;
@@ -40,9 +59,11 @@ export class FakeShadow extends THREE.Object3D {
 		this._horizontalBlurMaterial.depthTest = false;
 		this._verticalBlurMaterial.depthTest = false;
 
-		const planeGeometry = new THREE.PlaneGeometry(1, 1);
+		// One geometry shared by the floor and the blur quad; disposed once, via
+		// this reference, rather than through both meshes.
+		this._planeGeometry = new THREE.PlaneGeometry(1, 1);
 		this._floor = new THREE.Mesh(
-			planeGeometry,
+			this._planeGeometry,
 			new THREE.MeshBasicMaterial({
 				transparent: true,
 				opacity: 1,
@@ -52,7 +73,7 @@ export class FakeShadow extends THREE.Object3D {
 		this._floor.userData.noHit = true;
 		this._camera.add(this._floor);
 
-		this._blurPlane = new THREE.Mesh(planeGeometry);
+		this._blurPlane = new THREE.Mesh(this._planeGeometry);
 		this._blurPlane.visible = false;
 		this._camera.add(this._blurPlane);
 
@@ -231,8 +252,7 @@ export class FakeShadow extends THREE.Object3D {
 		this._horizontalBlurMaterial.dispose();
 		this._verticalBlurMaterial.dispose();
 		this._floor.material.dispose();
-		this._floor.geometry.dispose();
-		this._blurPlane.geometry.dispose();
+		this._planeGeometry.dispose();
 		this.removeFromParent();
 	}
 }
