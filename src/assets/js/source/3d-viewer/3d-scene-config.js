@@ -9,9 +9,12 @@ import {
 	createLightFromSettings,
 	getHdrUrlFromEnv,
 	getDefaultHdrPresetFilename,
+	getPixelRatio,
+	MAX_PIXEL_RATIO,
+	ORBIT_PIXEL_RATIO_SCALE,
 } from './3d-scene-utils.js';
 
-export { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv, createLightFromSettings, getHdrUrlFromEnv, getDefaultHdrPresetFilename };
+export { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv, createLightFromSettings, getHdrUrlFromEnv, getDefaultHdrPresetFilename, getPixelRatio, MAX_PIXEL_RATIO, ORBIT_PIXEL_RATIO_SCALE };
 
 export function getSettings() {
 	const data = window.PC && window.PC.fe && window.PC.fe.currentProductData;

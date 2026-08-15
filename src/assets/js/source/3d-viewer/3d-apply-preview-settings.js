@@ -28,7 +28,6 @@ import {
  * @param {{ current: string|null }} [options.currentEnvUrlRef] - ref to store current HDR URL
  * @param {function()} [options.onEnvLoaded] - called after HDR texture is loaded (view may re-call apply)
  * @param {function()} [options.onEnvError]
- * @param {{ useZoomLimitsToggle?: boolean }} [options.orbitOpts] - passed to getOrbitLimitsFromEnv (e.g. for admin zoom toggle)
  */
 export function applySettingsToScene( scene, renderer, controls, s, options = {} ) {
 	const r = s.renderer || {};
@@ -85,7 +84,7 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	}
 
 	if ( controls ) {
-		const limits = getOrbitLimitsFromEnv( env, options.orbitOpts || {} );
+		const limits = getOrbitLimitsFromEnv( env );
 		controls.minPolarAngle = limits.minPolarAngle;
 		controls.maxPolarAngle = limits.maxPolarAngle;
 		controls.minAzimuthAngle = limits.minAzimuthAngle;

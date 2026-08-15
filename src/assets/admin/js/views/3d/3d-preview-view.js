@@ -21,41 +21,25 @@ function get_three_deps() {
 
 export const settings_3d_preview_mixin = {
 	/**
-	 * Resolve environment map URL for preview: preset → hdr_base + file; object → env object's HDRi URL if any.
+	 * Resolve the environment map URL for the preview.
+	 *
+	 * Delegates to the same getHdrUrlFromEnv the frontend viewer uses, passing the
+	 * admin's objects3d collection as the lookup source. The preview previously had
+	 * its own copy of this logic, which had drifted: it treated a cubemap with a
+	 * missing face as valid (the emptiness check compared against null, but a
+	 * missing face reads as undefined) and returned no environment in cases where
+	 * the frontend falls back to the preset.
+	 *
 	 * @param {Object} env - settings_3d.environment
-	 * @returns {string|null} URL to load with HDR/EXR loader, or null to skip load
+	 * @returns {string|string[]|null} URL, cubemap URL array, or null to skip load
 	 */
 	get_env_url_for_preview: function ( env ) {
-		if ( !env || env.mode === 'none' ) return null;
+		const deps = get_three_deps();
+		if ( ! deps || typeof deps.getHdrUrlFromEnv !== 'function' ) return null;
 		const hdr_base = ( typeof PC_lang !== 'undefined' && PC_lang.hdr_base_url ) ? PC_lang.hdr_base_url : '';
-		const preset_file = ( env.preset === 'studio' ) ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
-		if ( env.mode === 'preset' ) return hdr_base + preset_file;
-		if ( env.mode === 'object' && env.object_id ) {
-			const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
-			if ( col ) {
-				const m = col.get( env.object_id ) || col.find( function ( mod ) { return mod.get( '_id' ) === env.object_id; } );
-				if ( m ) {
-					const type = m.get( 'env_type' );
-					if ( type === 'hdri' ) {
-						const file_data = m.get( 'env_hdri_file' );
-						return file_data && file_data.url ? file_data.url : null;
-					}
-					if ( type === 'cubemap' ) {
-						const file_data = [
-							m.get( 'env_cubemap_px' ) && m.get( 'env_cubemap_px' ).url,
-							m.get( 'env_cubemap_nx' ) && m.get( 'env_cubemap_nx' ).url,
-							m.get( 'env_cubemap_py' ) && m.get( 'env_cubemap_py' ).url,
-							m.get( 'env_cubemap_ny' ) && m.get( 'env_cubemap_ny' ).url,
-							m.get( 'env_cubemap_pz' ) && m.get( 'env_cubemap_pz' ).url,
-							m.get( 'env_cubemap_nz' ) && m.get( 'env_cubemap_nz' ).url,
-						];
-						return file_data.filter( ( url ) => url !== null );
-					}
-					return null;
-				}
-			}
-		}
-		return hdr_base + preset_file;
+		const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
+		const objects3d = col && typeof col.toJSON === 'function' ? col.toJSON() : null;
+		return deps.getHdrUrlFromEnv( env, hdr_base, objects3d );
 	},
 	apply_preview_settings: function () {
 		const THREE = get_three();
@@ -72,7 +56,7 @@ export const settings_3d_preview_mixin = {
 		const bg = s.background || {};
 		const env = s.environment || {};
 		const env_is_none = env.mode === 'none';
-		renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
+		renderer.toneMapping = deps.getToneMapping( r );
 		renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 		renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -122,22 +106,10 @@ export const settings_3d_preview_mixin = {
 			apply_background_and_env_props();
 		}
 
-		// OrbitControls polar, azimuth, and zoom (distance) limits
-		if ( this._three.controls ) {
-			const min_polar = ( env.orbit_min_polar_angle != null ) ? env.orbit_min_polar_angle : 0;
-			const max_polar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
-			this._three.controls.minPolarAngle = ( min_polar * Math.PI ) / 180;
-			this._three.controls.maxPolarAngle = ( max_polar * Math.PI ) / 180;
-			const min_azimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
-			const max_azimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
-			this._three.controls.minAzimuthAngle = ( min_azimuth * Math.PI ) / 180;
-			this._three.controls.maxAzimuthAngle = ( max_azimuth * Math.PI ) / 180;
-			// Apply zoom limits in preview only when toggle is on; otherwise no limits so user can move freely
-			const zoomLimitsEnabled = env.orbit_zoom_limits_enabled !== false;
-			const minDist = zoomLimitsEnabled && ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
-			const maxDist = zoomLimitsEnabled && ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
-			this._three.controls.minDistance = minDist;
-			this._three.controls.maxDistance = maxDist;
+		// OrbitControls polar, azimuth and zoom limits — resolved by the same helper
+		// the frontend uses, so the preview cannot drift from what customers get.
+		if ( this._three.controls && typeof deps.getOrbitLimitsFromEnv === 'function' ) {
+			Object.assign( this._three.controls, deps.getOrbitLimitsFromEnv( env ) );
 		}
 		this.update_zoom_buttons_state();
 
@@ -251,60 +223,62 @@ export const settings_3d_preview_mixin = {
 	on_window_resize: function () {
 
 	},
+	/**
+	 * Tear the preview scene down.
+	 *
+	 * Ends by dropping the _three reference. Several async callbacks — the model
+	 * store, the postprocessing build, onAllLoaded — guard on `!this._three` to
+	 * detect exactly this, and while the reference survived teardown none of them
+	 * could ever fire: composers were attached to disposed renderers and models
+	 * finished loading into a scene that was already gone.
+	 */
 	maybe_cleanup: function () {
-		if ( this._three && typeof this._three.stop_animation_loop === 'function' ) {
-			this._three.stop_animation_loop();
+		const t = this._three;
+		if ( ! t ) return;
+		this._three = null;
+
+		if ( typeof t.stop_animation_loop === 'function' ) {
+			t.stop_animation_loop();
 		}
-		if ( this._three?.fake_shadow ) {
-			this._three.fake_shadow.dispose();
-			this._three.fake_shadow = null;
+		if ( t.animation_id ) {
+			cancelAnimationFrame( t.animation_id );
+			t.animation_id = null;
 		}
-		if ( this._three?.light_helpers && this._three.light_helpers.length ) {
-			this._three.light_helpers.forEach( function ( h ) {
+		if ( t.fake_shadow ) {
+			t.fake_shadow.dispose();
+			t.fake_shadow = null;
+		}
+		if ( t.light_helpers && t.light_helpers.length ) {
+			t.light_helpers.forEach( function ( h ) {
+				if ( h.parent ) h.parent.remove( h );
 				if ( h.dispose ) h.dispose();
 			} );
-			this._three.light_helpers = [];
+			t.light_helpers = [];
 		}
-		if ( this._three?.renderer ) {
-			if ( this._three.animation_id ) {
-				cancelAnimationFrame( this._three.animation_id );
-				this._three.animation_id = null;
+		if ( t.postprocessingLayer ) {
+			t.postprocessingLayer.dispose();
+			t.postprocessingLayer = null;
+			t.composer = null;
+		}
+		if ( t.on_resize ) {
+			window.removeEventListener( 'resize', t.on_resize );
+			t.on_resize = null;
+		}
+		if ( t.controls ) t.controls.dispose();
+		if ( t.renderer ) {
+			t.renderer.dispose();
+			if ( t.renderer.domElement?.parentNode ) {
+				t.renderer.domElement.parentNode.removeChild( t.renderer.domElement );
 			}
-
-			if ( this._three.postprocessingLayer ) {
-				this._three.postprocessingLayer.dispose();
-				this._three.postprocessingLayer = null;
-				this._three.composer = null;
-			}
-			// Dispose renderer
-			this._three.renderer.dispose();
-			if ( this._three.renderer.domElement?.parentNode ) {
-				this._three.renderer.domElement.parentNode.removeChild( this._three.renderer.domElement );
-			}
-
-			if ( this._three.on_resize ) {
-				window.removeEventListener( 'resize', this._three.on_resize );
-			}
-
-			// Dispose controls
-			if ( this._three.controls ) this._three.controls.dispose();
-
-			// Optionally, traverse the scene and dispose geometries/materials
-			if ( this._three.scene ) {
-				this._three.scene.traverse( ( obj ) => {
-					if ( obj.geometry ) obj.geometry.dispose();
-					if ( obj.material ) {
-						if ( Array.isArray( obj.material ) ) {
-							obj.material.forEach( m => m.dispose() );
-						} else {
-							obj.material.dispose();
-						}
-					}
-				} );
-			}
-			if ( this._three.material_registry && this._three.material_registry.clear ) {
-				this._three.material_registry.clear();
-			}
+		}
+		// Scene disposal is not conditional on the renderer: a bag without one still
+		// holds geometries, materials, textures and the environment map.
+		const deps = get_three_deps();
+		if ( t.scene && deps && typeof deps.disposeScene === 'function' ) {
+			deps.disposeScene( t.scene );
+		}
+		if ( t.material_registry && t.material_registry.clear ) {
+			t.material_registry.clear();
 		}
 	},
 	/**
@@ -409,12 +383,16 @@ export const settings_3d_preview_mixin = {
 			const bg = s.background || {};
 			// Enable alpha channel when transparent background or renderer alpha option is on (needed for see-through)
 			const useAlpha = !!( r.alpha || bg.mode === 'transparent' );
-			const renderer = new THREE.WebGLRenderer( { antialias: true, alpha: useAlpha } );
+			const renderer = new THREE.WebGLRenderer( {
+				antialias: true,
+				alpha: useAlpha,
+				powerPreference: 'high-performance',
+			} );
 			const shadowsEnabled = !!( s && s.enable_shadows );
 			PC.threeD.applyRendererShadowSettings( renderer, shadowsEnabled );
 			renderer.setSize( container.clientWidth, container.clientHeight );
-			renderer.setPixelRatio( window.devicePixelRatio );
-			renderer.toneMapping = r.tone_mapping === 'aces' ? THREE.ACESFilmicToneMapping : r.tone_mapping === 'linear' ? THREE.LinearToneMapping : THREE.NoToneMapping;
+			renderer.setPixelRatio( deps.getPixelRatio() );
+			renderer.toneMapping = deps.getToneMapping( r );
 			renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 			renderer.outputColorSpace = THREE.SRGBColorSpace;
 			renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha ) ? 0 : 1 );
@@ -465,37 +443,37 @@ export const settings_3d_preview_mixin = {
 			controls.dampingFactor = 0.1;
 			controls.screenSpacePanning = false;
 
-			const env_for_orbit = s.environment || {};
-			const min_polar = ( env_for_orbit.orbit_min_polar_angle != null ) ? env_for_orbit.orbit_min_polar_angle : 0;
-			const max_polar = ( env_for_orbit.orbit_max_polar_angle != null ) ? env_for_orbit.orbit_max_polar_angle : 90;
-			const min_azimuth = ( env_for_orbit.orbit_min_azimuth_angle != null ) ? env_for_orbit.orbit_min_azimuth_angle : -180;
-			const max_azimuth = ( env_for_orbit.orbit_max_azimuth_angle != null ) ? env_for_orbit.orbit_max_azimuth_angle : 180;
-			controls.minPolarAngle = ( min_polar * Math.PI ) / 180;
-			controls.maxPolarAngle = ( max_polar * Math.PI ) / 180;
-			controls.minAzimuthAngle = ( min_azimuth * Math.PI ) / 180;
-			controls.maxAzimuthAngle = ( max_azimuth * Math.PI ) / 180;
-			// Apply zoom limits in preview only when toggle is on
-			const zoomLimitsEnabled = env_for_orbit.orbit_zoom_limits_enabled !== false;
-			const minDist = zoomLimitsEnabled && ( typeof env_for_orbit.orbit_min_distance === 'number' && env_for_orbit.orbit_min_distance > 0 ) ? env_for_orbit.orbit_min_distance : 0;
-			const maxDist = zoomLimitsEnabled && ( typeof env_for_orbit.orbit_max_distance === 'number' && env_for_orbit.orbit_max_distance > 0 ) ? env_for_orbit.orbit_max_distance : Infinity;
-			controls.minDistance = minDist;
-			controls.maxDistance = maxDist;
+			Object.assign( controls, deps.getOrbitLimitsFromEnv( s.environment || {} ) );
 			this._three.controls = controls;
-			this._three.bypassPostprocessing = false;
-			controls.addEventListener( 'start', () => { this._three.bypassPostprocessing = true; } );
-			controls.addEventListener( 'end', () => { this._three.bypassPostprocessing = false; } );
+			this._three.orbiting = false;
+			// Drop composer resolution while dragging rather than bypassing the pass
+			// chain, so the merchant is always looking at the look they configured.
+			const set_orbiting = ( orbiting ) => {
+				if ( ! this._three || this._three.orbiting === orbiting ) return;
+				this._three.orbiting = orbiting;
+				if ( ! this._three.postprocessingLayer ) return;
+				const ratio = deps.getPixelRatio();
+				this._three.postprocessingLayer.setPixelRatio(
+					orbiting ? ratio * deps.ORBIT_PIXEL_RATIO_SCALE : ratio
+				);
+			};
+			controls.addEventListener( 'start', () => set_orbiting( true ) );
+			controls.addEventListener( 'end', () => set_orbiting( false ) );
 
 			const on_resize = () => {
+				if ( ! this._three ) return;
 				const w = container.clientWidth;
 				const h = container.clientHeight;
-				const pr = window.devicePixelRatio;
+				const pr = deps.getPixelRatio();
 				camera.aspect = w / h;
 				camera.updateProjectionMatrix();
 				renderer.setSize( w, h );
 				renderer.setPixelRatio( pr );
 				if ( this._three.postprocessingLayer ) {
 					this._three.postprocessingLayer.setSize( w, h );
-					this._three.postprocessingLayer.setPixelRatio( pr );
+					this._three.postprocessingLayer.setPixelRatio(
+						this._three.orbiting ? pr * deps.ORBIT_PIXEL_RATIO_SCALE : pr
+					);
 				}
 			};
 
@@ -538,6 +516,9 @@ export const settings_3d_preview_mixin = {
 				var gi = 1;
 				var objects3dCol = PC.app.get_collection( 'objects3d' );
 				viewRef._three.light_helpers = viewRef._three.light_helpers || [];
+				// Measured once: the model does not change while the light loop runs,
+				// and setFromObject walks the whole tree.
+				var lightBounds = rootGroup ? new THREE.Box3().setFromObject( rootGroup ) : null;
 				if ( objects3dCol && typeof PC.threeD.createLightFromSettings === 'function' ) {
 					objects3dCol.each( function ( obj ) {
 						if ( obj.get( 'object_type' ) !== 'light' ) return;
@@ -566,7 +547,7 @@ export const settings_3d_preview_mixin = {
 						PC.threeD.applyShadowSettingsToLight( light, {
 							enabled: shadowsEnabled,
 							castShadows: light.userData.cast_shadows,
-							bounds: rootGroup ? new THREE.Box3().setFromObject( rootGroup ) : null,
+							bounds: lightBounds,
 						} );
 						var targetId = obj.get( 'light_target_object_id' );
 						if ( light.target && targetId && rootGroup && typeof findObjectByCompositeId === 'function' && typeof getObjectTargetPosition === 'function' ) {
@@ -688,6 +669,9 @@ export const settings_3d_preview_mixin = {
 
 			// Fully pauses (cancelAnimationFrame) while the document is hidden.
 			start_animation_loop( this._three, () => {
+				// The bag is dropped by maybe_cleanup; the loop is stopped there too,
+				// but guard rather than rely on the ordering.
+				if ( ! this._three ) return;
 				controls.update();
 				if ( this._three.light_helpers && this._three.light_helpers.length ) {
 					this._three.light_helpers.forEach( function ( h ) {
@@ -699,9 +683,8 @@ export const settings_3d_preview_mixin = {
 					this._three.fake_shadow.render( renderer, scene );
 				}
 				if ( this._three.postprocessingLayer ) {
-					this._three.postprocessingLayer.render( this._three.bypassPostprocessing );
-				}
-				if ( !this._three.postprocessingLayer || this._three.bypassPostprocessing ) {
+					this._three.postprocessingLayer.render();
+				} else {
 					renderer.render( scene, camera );
 				}
 			} );
@@ -709,6 +692,13 @@ export const settings_3d_preview_mixin = {
 	},
 	/**
 	 * Build tree UI from scene roots (layer models). Each item has a visibility toggle.
+	 *
+	 * Children are built the first time a node is expanded rather than up front.
+	 * A CAD-derived model runs to thousands of nodes, and eagerly creating a row,
+	 * a toggle, a checkbox and two event bindings for every one of them locked the
+	 * admin tab for seconds and pinned the whole scene graph in jQuery's data cache.
+	 * Events are delegated from the tree root for the same reason.
+	 *
 	 * @param {Array<{ object: THREE.Object3D, label: string }>} scene_roots
 	 */
 	render_tree: function ( scene_roots ) {
@@ -726,74 +716,87 @@ export const settings_3d_preview_mixin = {
 			}
 		};
 
-		const build_list = ( obj ) => {
-			const hasChildren = obj.children && obj.children.length;
-			const li_el = $( '<li class="pc-3d-tree-item' + ( hasChildren ? ' pc-3d-tree-item--has-children' : '' ) + '">' );
-
-			let toggle = null;
-			if ( hasChildren ) {
-				toggle = $( '<button type="button" class="pc-3d-tree-toggle" aria-label="Toggle children" aria-expanded="true"></button>' );
-				toggle.on( 'click', function () {
-					const $li = $( this ).closest( '.pc-3d-tree-item--has-children' );
-					const isCollapsed = $li.toggleClass( 'is-collapsed' ).hasClass( 'is-collapsed' );
-					$li.children( 'ul' ).toggle( !isCollapsed );
-					$( this ).attr( 'aria-expanded', !isCollapsed );
-				} );
-				li_el.append( toggle );
-			}
-
-			const cb = $( '<input type="checkbox" class="pc-3d-tree-visible" title="Show/hide in preview">' )
-				.prop( 'checked', obj.visible !== false )
+		/**
+		 * One row. Children are not built here — see expand_item.
+		 *
+		 * @param {THREE.Object3D} obj
+		 * @param {string} [label] - overrides the derived "name [type]" label
+		 * @param {boolean} [is_root]
+		 * @returns {jQuery}
+		 */
+		const build_item = ( obj, label, is_root ) => {
+			const has_children = !! ( obj.children && obj.children.length );
+			const li_el = $( '<li class="pc-3d-tree-item">' )
+				.toggleClass( 'pc-3d-tree-item--root', !! is_root )
+				.toggleClass( 'pc-3d-tree-item--has-children', has_children )
+				// Collapsed by default: expanding is what builds the children.
+				.toggleClass( 'is-collapsed', has_children )
 				.data( 'object3d', obj );
-			cb.on( 'change', function () {
-				const o = $( this ).data( 'object3d' );
-				if ( o ) o.visible = this.checked;
-				invalidate_shadow();
-			} );
-			const label = ( obj.name || '' ) + ' [' + ( obj.type || '' ) + ']';
-			li_el.append( cb ).append( ' ' ).append( $( '<span class="pc-3d-tree-label">' ).text( label ) );
-			if ( hasChildren ) {
-				const ul_el = $( '<ul>' );
-				obj.children.forEach( ( child ) => ul_el.append( build_list( child ) ) );
-				li_el.append( ul_el );
+
+			if ( has_children ) {
+				li_el.append(
+					$( '<button type="button" class="pc-3d-tree-toggle" aria-label="Toggle children" aria-expanded="false"></button>' )
+				);
 			}
+
+			li_el.append(
+				$( '<input type="checkbox" class="pc-3d-tree-visible" title="Show/hide in preview">' )
+					.prop( 'checked', obj.visible !== false )
+			);
+			li_el.append( ' ' );
+			li_el.append(
+				$( '<span class="pc-3d-tree-label">' ).text( label || ( ( obj.name || '' ) + ' [' + ( obj.type || '' ) + ']' ) )
+			);
 			return li_el;
 		};
 
+		/** Build one level of children under an item, once. */
+		const expand_item = ( $li ) => {
+			if ( $li.data( 'children-built' ) ) return;
+			$li.data( 'children-built', true );
+			const obj = $li.data( 'object3d' );
+			if ( ! obj || ! obj.children ) return;
+			const child_ul = $( '<ul>' );
+			obj.children.forEach( ( child ) => child_ul.append( build_item( child ) ) );
+			$li.append( child_ul );
+		};
+
+		/** Expand an item and mark its toggle accordingly. */
+		const open_item = ( $li ) => {
+			expand_item( $li );
+			$li.removeClass( 'is-collapsed' );
+			$li.children( 'ul' ).show();
+			$li.children( '.pc-3d-tree-toggle' ).attr( 'aria-expanded', 'true' );
+		};
+
 		const ul_el = $( '<ul class="pc-3d-tree-list">' );
-		scene_roots.forEach( ( { object, label } ) => {
-			const hasChildren = object.children && object.children.length;
-			const li_el = $( '<li class="pc-3d-tree-item pc-3d-tree-item--root' + ( hasChildren ? ' pc-3d-tree-item--has-children' : '' ) + '">' );
+		const root_items = scene_roots.map( ( { object, label } ) => {
+			const $li = build_item( object, label, true );
+			ul_el.append( $li );
+			return $li;
+		} );
 
-			let toggle = null;
-			if ( hasChildren ) {
-				toggle = $( '<button type="button" class="pc-3d-tree-toggle" aria-label="Toggle children" aria-expanded="true"></button>' );
-				toggle.on( 'click', function () {
-					const $li = $( this ).closest( '.pc-3d-tree-item--has-children' );
-					const isCollapsed = $li.toggleClass( 'is-collapsed' ).hasClass( 'is-collapsed' );
-					$li.children( 'ul' ).toggle( !isCollapsed );
-					$( this ).attr( 'aria-expanded', !isCollapsed );
-				} );
-				li_el.append( toggle );
-			}
-
-			const cb = $( '<input type="checkbox" class="pc-3d-tree-visible" title="Show/hide in preview">' )
-				.prop( 'checked', object.visible !== false )
-				.data( 'object3d', object );
-			cb.on( 'change', function () {
-				const o = $( this ).data( 'object3d' );
-				if ( o ) o.visible = this.checked;
+		// Delegated: one pair of handlers for the whole tree, however deep it goes.
+		// Namespaced and cleared first, because render_tree runs again on every reload.
+		tree_el
+			.off( '.pc3dtree' )
+			.on( 'click.pc3dtree', '.pc-3d-tree-toggle', function () {
+				const $li = $( this ).closest( '.pc-3d-tree-item' );
+				const is_collapsed = $li.toggleClass( 'is-collapsed' ).hasClass( 'is-collapsed' );
+				if ( ! is_collapsed ) expand_item( $li );
+				$li.children( 'ul' ).toggle( ! is_collapsed );
+				$( this ).attr( 'aria-expanded', String( ! is_collapsed ) );
+			} )
+			.on( 'change.pc3dtree', '.pc-3d-tree-visible', function () {
+				const obj = $( this ).closest( '.pc-3d-tree-item' ).data( 'object3d' );
+				if ( obj ) obj.visible = this.checked;
 				invalidate_shadow();
 			} );
-			const displayLabel = label || ( object.name || '' ) + ' [' + ( object.type || '' ) + ']';
-			li_el.append( cb ).append( ' ' ).append( $( '<span class="pc-3d-tree-label">' ).text( displayLabel ) );
-			if ( hasChildren ) {
-				const child_ul = $( '<ul>' );
-				object.children.forEach( ( child ) => child_ul.append( build_list( child ) ) );
-				li_el.append( child_ul );
-			}
-			ul_el.append( li_el );
-		} );
+
 		tree_el.append( ul_el );
+
+		// The model's top-level parts are what the merchant is looking for, so open
+		// the roots straight away. Everything below stays lazy.
+		root_items.forEach( open_item );
 	},
 };

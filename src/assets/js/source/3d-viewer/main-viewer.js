@@ -12,18 +12,20 @@ if ( typeof window !== 'undefined' ) {
 }
 
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, isMobileViewport, getHdrUrlFromEnv } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
 import {
+	create_error_element,
 	create_loading_overlay,
 	get_loading_string,
 	get_poster_url,
 	hide_loading_overlay,
+	set_loading_progress,
 	set_loading_step,
 } from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -41,6 +43,9 @@ export default Backbone.View.extend({
 	_runtimeApi: null,
 	_runtimeBus: null,
 	_lastActiveAngleId: null,
+	_hiddenObjectNames: null,
+	_angleReframeFrame: null,
+	_sceneReady: false,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
@@ -52,10 +57,49 @@ export default Backbone.View.extend({
 		this._runtimeApi = null;
 		this._runtimeBus = Object.assign( {}, Backbone.Events );
 		this._lastActiveAngleId = null;
+		this._hiddenObjectNames = [];
+		this._angleReframeFrame = null;
+		this._sceneReady = false;
 		if ( window.PC.fe && window.PC.fe.angles ) {
-			this.listenTo( window.PC.fe.angles, 'change:active', this._applyAngleCamera );
+			// Wrapped: Backbone calls change handlers with (model, value, options),
+			// which would otherwise arrive as _applyAngleCamera's options argument.
+			this.listenTo( window.PC.fe.angles, 'change:active', () => this._applyAngleCamera() );
 		}
 		return this;
+	},
+
+	/**
+	 * Mark the scene as needing a frame.
+	 *
+	 * The render loop is on-demand: it only draws when something has actually
+	 * changed. Two frames are queued rather than one, because a change that
+	 * uploads a texture or recompiles a material often lands a frame after the
+	 * call that caused it.
+	 */
+	_requestRender() {
+		const t = this._three;
+		if ( t ) t._render_frames = 2;
+	},
+
+	/**
+	 * Reframe the active angle once per frame at most.
+	 *
+	 * Every choice switch fires twice (active:false on the outgoing choice, then
+	 * active:true on the incoming one) and each lazy model load fires again, while
+	 * a reframe costs a bounding-box pass over the focus objects plus a camera
+	 * tween. Coalescing keeps that to one per interaction.
+	 */
+	_requestAngleReframe() {
+		// Nothing to coalesce onto during setup, and _setupScene finishes by
+		// applying the active angle itself. Scheduling here would land a reframe
+		// tween immediately after that initial framing and visibly move the camera.
+		if ( ! this._sceneReady ) return;
+		if ( this._angleReframeFrame != null ) return;
+		this._angleReframeFrame = requestAnimationFrame( () => {
+			this._angleReframeFrame = null;
+			if ( ! this._three ) return;
+			this._applyAngleCamera( { reframe: true } );
+		} );
 	},
 
 	_emitRuntimeAction( hookName, args = [] ) {
@@ -112,6 +156,10 @@ export default Backbone.View.extend({
 			},
 			pauseRenderLoop: () => this._pauseRenderLoop(),
 			resumeRenderLoop: () => this._resumeRenderLoop(),
+			// Rendering is on-demand. Add-ons that mutate the scene outside of the
+			// host's own change handlers — animation mixers, canvas textures — must
+			// call this or their work will not reach the screen.
+			requestRender: () => this._requestRender(),
 		};
 		if ( window.PC && window.PC.fe ) {
 			window.PC.fe.threeApi = window.PC.fe.threeApi || {};
@@ -137,6 +185,7 @@ export default Backbone.View.extend({
 			if ( position ) camera.position.copy( position );
 			if ( target ) controls.target.copy( target );
 			controls.update();
+			this._requestRender();
 			return;
 		}
 
@@ -154,6 +203,7 @@ export default Backbone.View.extend({
 			camera.position.lerpVectors( startPos, endPos, k );
 			controls.target.lerpVectors( startTarget, endTarget, k );
 			controls.update();
+			this._requestRender();
 			if ( ratio < 1 ) {
 				t._cameraAnimId = requestAnimationFrame( step );
 			} else {
@@ -286,8 +336,15 @@ export default Backbone.View.extend({
 
 	_showError( msg ) {
 		const container = this.$layers.find( '.mkl_pc_3d_canvas_container' )[ 0 ];
-		if ( container && container.nextElementSibling && container.nextElementSibling.classList.contains( 'mkl_pc_3d_error' ) ) return;
-		this.$layers.find( '.mkl_pc_3d_canvas_container' ).after( '<p class="mkl_pc_3d_error">' + ( msg || 'Failed to load 3D model.' ) + '</p>' );
+		if ( ! container ) return;
+		if ( container.nextElementSibling && container.nextElementSibling.classList.contains( 'mkl_pc_3d_error' ) ) return;
+		const element = create_error_element( msg || 'Failed to load 3D model.' );
+		container.parentNode.insertBefore( element, container.nextSibling );
+	},
+
+	/** Forward GLTFLoader byte progress to the loading overlay. */
+	_onGltfProgress( event ) {
+		set_loading_progress( this._loadingOverlay, event );
 	},
 
 	/**
@@ -444,6 +501,7 @@ export default Backbone.View.extend({
 			enabled: this._shadowsEnabled,
 			mapSize: this._getShadowMapSize(),
 		} );
+		this._requestRender();
 	},
 
 	/**
@@ -528,6 +586,10 @@ export default Backbone.View.extend({
 		// Build runtime stores used by both eager and lazy-loaded 3D assets.
 		this._initSceneModelsStore( objects3d );
 		this._layer_scenes = [];
+		// Resolve the hidden-object list before any model is mounted, so eager and
+		// lazy loads are both hidden through the same path in the load callback.
+		const defaultHidden = ( productData && productData.default_hidden_object_names ) || null;
+		this._hiddenObjectNames = getHiddenObjectNamesList( defaultHidden, ( s && s.hidden_object_names ) || '' );
 		// Initial pass: load all eager objects through the same store path as lazy loads.
 		if ( Array.isArray( eagerObjectIds ) && eagerObjectIds.length ) {
 			await Promise.all( eagerObjectIds.map( ( oid ) => this._ensureObjects3dSceneLoadedById( oid ) ) );
@@ -546,10 +608,9 @@ export default Backbone.View.extend({
 		this._apply_layer_cshow_visibility();
 		this._bind_layer_cshow();
 
-		// Hide configured objects immediately so first rendered frame matches product settings.
-		const defaultHidden = ( window.PC.fe && window.PC.fe.currentProductData && window.PC.fe.currentProductData.default_hidden_object_names ) || null;
-		const customHidden = ( s && s.hidden_object_names ) || '';
-		hideObjectsByName( t.model_root, getHiddenObjectNamesList( defaultHidden, customHidden ) );
+		// Catch-all for anything mounted outside the store path; models loaded
+		// through _ensureObjects3dSceneLoadedById are already hidden by then.
+		hideObjectsByName( t.model_root, this._hiddenObjectNames );
 
 		const gi = 1;
 		// Recreate all configured lights from product settings (including targets/cookies/shadows).
@@ -591,13 +652,14 @@ export default Backbone.View.extend({
 				t.scene.add( light );
 				if ( light.target ) t.scene.add( light.target );
 				const cookie = item.light_cookie;
-				if ( cookie && cookie.url ) applyLightCookie( light, cookie );
+				if ( cookie && cookie.url ) applyLightCookie( light, cookie, () => this._requestRender() );
 			} );
 		}
 
-		// Assign environment lighting/reflections (HDR) when available.
+		// Assign environment lighting/reflections (HDR) when available. Routed
+		// through setSceneEnvironment so the previous texture is always released.
 		if ( hdrTexture ) {
-			t.scene.environment = hdrTexture;
+			setSceneEnvironment( t.scene, hdrTexture );
 			t.current_env_url = Array.isArray( hdrUrl ) ? hdrUrl.join( '|' ) : hdrUrl;
 		}
 
@@ -606,10 +668,15 @@ export default Backbone.View.extend({
 			t.fake_shadow = new modules.FakeShadow( t.scene );
 		}
 
-		// While orbiting, temporarily bypass heavier postprocessing for responsiveness.
-		t.bypassPostprocessing = false;
-		t.controls.addEventListener( 'start', () => { t.bypassPostprocessing = true; } );
-		t.controls.addEventListener( 'end', () => { t.bypassPostprocessing = false; } );
+		// Orbiting drops the composer's resolution rather than bypassing the effect
+		// chain. Bypassing made ambient occlusion, bloom and the colour grade all
+		// switch off the moment the customer touched the model and back on when they
+		// let go, which reads as a rendering glitch; a softer image for the duration
+		// of a drag does not.
+		t.controls.addEventListener( 'start', () => this._setOrbiting( true ) );
+		t.controls.addEventListener( 'end', () => this._setOrbiting( false ) );
+		// Every control change moves the camera, so the scene needs a frame.
+		t.controls.addEventListener( 'change', () => this._requestRender() );
 
 		// Create postprocessing pipeline and keep it in sync with container resize events.
 		if ( modules.createPostprocessingLayer ) {
@@ -618,21 +685,17 @@ export default Backbone.View.extend({
 				height: t.container.clientHeight,
 				settings: getPostprocessingSettings( s ),
 				isMobile: isMobileViewport(),
+				pixelRatio: getPixelRatio(),
 				// Ambient occlusion is scaled from the model bounds, not the whole scene.
 				boundsObject: () => t.model_root,
 			} );
-			if ( layer && t.container && t.on_resize ) {
+			if ( layer && t.container && t.resize_listeners ) {
 				t.postprocessingLayer = layer;
-				const origResize = t.on_resize;
-				window.removeEventListener( 'resize', origResize );
-				t.on_resize = () => {
-					origResize();
-					if ( t.postprocessingLayer ) {
-						t.postprocessingLayer.setSize( t.container.clientWidth, t.container.clientHeight );
-						t.postprocessingLayer.setPixelRatio( window.devicePixelRatio );
-					}
-				};
-				window.addEventListener( 'resize', t.on_resize );
+				t.resize_listeners.push( ( width, height, ratio ) => {
+					layer.setSize( width, height );
+					layer.setPixelRatio( t._orbiting ? ratio * ORBIT_PIXEL_RATIO_SCALE : ratio );
+					this._requestRender();
+				} );
 			}
 		}
 
@@ -665,9 +728,36 @@ export default Backbone.View.extend({
 
 		const g = ( s && s.ground ) || {};
 		t._ground_settings = g;
+		t._orbiting = false;
+		// From here on, visibility changes are user-driven and may reframe.
+		this._sceneReady = true;
 		this._startRenderLoop();
 	},
 
+	/**
+	 * Enter or leave the "customer is dragging" state.
+	 * @param {boolean} orbiting
+	 */
+	_setOrbiting( orbiting ) {
+		const t = this._three;
+		if ( ! t || t._orbiting === orbiting ) return;
+		t._orbiting = orbiting;
+		if ( ! t.postprocessingLayer ) return;
+		const ratio = getPixelRatio();
+		t.postprocessingLayer.setPixelRatio( orbiting ? ratio * ORBIT_PIXEL_RATIO_SCALE : ratio );
+		this._requestRender();
+	},
+
+	/**
+	 * One tick of the render loop.
+	 *
+	 * The loop itself runs continuously so add-ons keep receiving `frame` events
+	 * (animation mixers depend on the delta), but the GPU work — which is nearly
+	 * all of the cost — only happens when something has changed. Anything that
+	 * mutates the scene calls _requestRender; add-ons use api.requestRender().
+	 *
+	 * @param {number} now - DOMHighResTimeStamp
+	 */
 	_onRenderFrame( now ) {
 		const t = this._three;
 		if ( ! t ) return;
@@ -675,16 +765,35 @@ export default Backbone.View.extend({
 		if ( t._lastFrameTs == null ) t._lastFrameTs = now;
 		const deltaSeconds = Math.max( 0, ( now - t._lastFrameTs ) / 1000 );
 		t._lastFrameTs = now;
+
+		// A large gap means the loop was parked while the document was hidden. The
+		// browser may have discarded the drawing buffer, so redraw unconditionally.
+		if ( deltaSeconds > 1 ) this._requestRender();
+
 		this._emitRuntimeAction( 'PC.fe.viewer.frame', [ this, deltaSeconds, this._runtimeApi ] );
 		this._emitRuntimeEvent( 'frame', { deltaSeconds } );
-		if ( t.controls ) t.controls.update();
+
+		// Damping keeps returning true until the camera settles, so this covers the
+		// tail of every drag and flick without any explicit bookkeeping.
+		if ( t.controls && t.controls.update() ) this._requestRender();
+
+		// Some effects (animated film grain) change the image every frame on their
+		// own, with no scene change to key off.
+		if ( t.postprocessingLayer
+			&& typeof t.postprocessingLayer.isAnimated === 'function'
+			&& t.postprocessingLayer.isAnimated() ) {
+			this._requestRender();
+		}
+
+		if ( ! t._render_frames ) return;
+		t._render_frames--;
+
 		if ( t.fake_shadow && g.enabled !== false ) {
 			t.fake_shadow.render( t.renderer, t.scene );
 		}
 		if ( t.postprocessingLayer ) {
-			t.postprocessingLayer.render( t.bypassPostprocessing );
-		}
-		if ( ! t.postprocessingLayer || t.bypassPostprocessing ) {
+			t.postprocessingLayer.render();
+		} else {
 			t.renderer.render( t.scene, t.camera );
 		}
 	},
@@ -692,6 +801,7 @@ export default Backbone.View.extend({
 	_startRenderLoop() {
 		const t = this._three;
 		if ( ! t ) return;
+		this._requestRender();
 		start_animation_loop( t, ( now ) => this._onRenderFrame( now ) );
 	},
 
@@ -723,7 +833,7 @@ export default Backbone.View.extend({
 	_loadGltf( url, onSuccess, onError ) {
 		if ( ! url ) return;
 		this._getGltfLoader().then( ( loader ) => {
-			loader.load( url, onSuccess, undefined, onError || ( () => {} ) );
+			loader.load( url, onSuccess, ( event ) => this._onGltfProgress( event ), onError || ( () => {} ) );
 		} ).catch( ( err ) => {
 			if ( typeof onError === 'function' ) onError( err );
 		} );
@@ -771,6 +881,11 @@ export default Backbone.View.extend({
 						animations: Array.isArray( gltf.animations ) ? gltf.animations : [],
 						loadPromise: null,
 					} );
+					// Objects named in the product's hidden list must be hidden here,
+					// not only in _setupScene: a lazily loaded model is mounted long
+					// after that ran, and its bounding-box helper would otherwise show
+					// up and inflate the shadow and ground plane fitted to it.
+					hideObjectsByName( sceneToAdd, this._hiddenObjectNames );
 					this._applyShadowFlagsToObject( sceneToAdd, this._shadowsEnabled );
 					if ( ! sceneToAdd.parent ) t.model_root.add( sceneToAdd );
 					// Bounds just grew, so the shadow cameras need refitting.
@@ -780,6 +895,9 @@ export default Backbone.View.extend({
 					this._syncLayerSceneForObjectId( idStr, sceneToAdd );
 					this._apply_layer_cshow_visibility();
 					this.invalidate_fake_shadow();
+					// AO radius and the SSR reflective-mesh list were sized against
+					// whatever was in the scene before this model existed.
+					this._refreshPostprocessingSceneScale();
 					this._emitRuntimeAction( 'PC.fe.viewer.object3d.loaded', [ this, idStr, sceneToAdd, sceneModel.get( 'animations' ) || [], this._runtimeApi ] );
 					this._emitRuntimeEvent( 'object3d:loaded', { object3dId: idStr, scene: sceneToAdd, animations: sceneModel.get( 'animations' ) || [] } );
 					resolve( sceneToAdd );
@@ -803,20 +921,34 @@ export default Backbone.View.extend({
 	 * @returns {Promise<THREE.Object3D|null>} scene root that was loaded/ensured
 	 */
 	_ensureObjects3dSceneLoadedForCompositeId( compositeId ) {
-		if ( ! compositeId ) return Promise.resolve( null );
+		const oid = this._resolveObject3dIdForCompositeId( compositeId );
+		if ( ! oid ) return Promise.resolve( null );
+		return this._ensureObjects3dSceneLoadedById( oid );
+	},
+
+	/**
+	 * Resolve the objects3d entry a composite id "sourceId:objectName" points at.
+	 * sourceId can match objects3d _id/id or gltf.attachment_id.
+	 *
+	 * Callers use this to ask whether the model behind a target has already been
+	 * loaded, so they can stop retrying a target name that will never resolve.
+	 *
+	 * @param {string} compositeId
+	 * @returns {string} objects3d id, or '' when the composite names no known source
+	 */
+	_resolveObject3dIdForCompositeId( compositeId ) {
+		if ( ! compositeId ) return '';
 		const id = String( compositeId ).trim();
 		const sepIdx = id.indexOf( ':' );
-		if ( sepIdx === -1 ) return Promise.resolve( null );
+		if ( sepIdx === -1 ) return '';
 		const sourceId = id.slice( 0, sepIdx );
-		if ( ! sourceId ) return Promise.resolve( null );
+		if ( ! sourceId ) return '';
 
 		const byId = this._objects3dById ? this._objects3dById.get( sourceId ) : null;
 		const byAtt = this._objects3dByAttachmentId ? this._objects3dByAttachmentId.get( sourceId ) : null;
 		const obj = byId || byAtt;
-		if ( ! obj ) return Promise.resolve( null );
-		const oid = String( obj._id != null ? obj._id : obj.id || '' );
-		if ( ! oid ) return Promise.resolve( null );
-		return this._ensureObjects3dSceneLoadedById( oid );
+		if ( ! obj ) return '';
+		return String( obj._id != null ? obj._id : obj.id || '' );
 	},
 
 	apply_preview_settings() {
@@ -832,18 +964,11 @@ export default Backbone.View.extend({
 			currentEnvUrlRef: urlRef,
 			onEnvLoaded: () => this.apply_preview_settings(),
 		} );
+		this._requestRender();
 	},
 
 	_findObject( root, object_id ) {
-		if ( ! root ) return null;
-		let found = null;
-		root.traverse( ( obj ) => {
-			if ( found ) return;
-			if ( obj.name === object_id || ( obj.uuid && obj.uuid === object_id ) ) {
-				found = obj;
-			}
-		} );
-		return found;
+		return findObject( root, object_id );
 	},
 
 	/**
@@ -874,7 +999,8 @@ export default Backbone.View.extend({
 		}
 		this.invalidate_fake_shadow();
 		// Keep active-angle framing in sync with current visibility state.
-		this._applyAngleCamera( { reframe: true } );
+		this._requestAngleReframe();
+		this._refreshPostprocessingSceneScale();
 	},
 
 	/**
@@ -885,6 +1011,25 @@ export default Backbone.View.extend({
 		if ( t && t.fake_shadow && typeof t.fake_shadow.invalidate === 'function' ) {
 			t.fake_shadow.invalidate();
 		}
+		this._requestRender();
+	},
+
+	/**
+	 * Re-measure the scene for the postprocessing passes whose parameters are in
+	 * world units — the ambient occlusion radius and SSR's ray march distance and
+	 * reflective-mesh list. Coalesced onto a frame because it walks the model, and
+	 * the events that invalidate it (lazy loads, visibility changes) arrive in bursts.
+	 */
+	_refreshPostprocessingSceneScale() {
+		const t = this._three;
+		if ( ! t || ! t.postprocessingLayer || typeof t.postprocessingLayer.refreshSceneScale !== 'function' ) return;
+		if ( t._sceneScaleFrame != null ) return;
+		t._sceneScaleFrame = requestAnimationFrame( () => {
+			t._sceneScaleFrame = null;
+			if ( ! this._three || ! t.postprocessingLayer ) return;
+			t.postprocessingLayer.refreshSceneScale();
+			this._requestRender();
+		} );
 	},
 
 	_bind_layer_cshow() {
@@ -998,7 +1143,15 @@ export default Backbone.View.extend({
 
 		if ( ! pixels ) {
 			// Render into an off-screen target so the visible canvas doesn't change.
-			const renderTarget = new THREE.WebGLRenderTarget( width, height );
+			// The visible canvas is created with antialias:true; without matching
+			// samples here the image saved to the cart is visibly more jagged than
+			// what the customer was looking at.
+			const maxSamples = ( renderer.capabilities && renderer.capabilities.maxSamples != null )
+				? renderer.capabilities.maxSamples
+				: 0;
+			const renderTarget = new THREE.WebGLRenderTarget( width, height, {
+				samples: Math.min( 4, maxSamples ),
+			} );
 			renderTarget.texture.colorSpace = renderer.outputColorSpace;
 			const prevTarget = renderer.getRenderTarget();
 
@@ -1103,12 +1256,26 @@ export default Backbone.View.extend({
 			this._choice_views.forEach( ( view ) => view.remove() );
 			this._choice_views = [];
 		}
+		if ( this.angles_selector ) {
+			this.angles_selector.remove();
+			this.angles_selector = null;
+		}
 		this._layer_scenes = [];
 		// Keep shared GLTFLoader module cache; drop the instance ref only.
 		this._gltfLoader = null;
 		if ( this._scene_models ) this._scene_models.reset();
 		this._objectIdToScene = {};
 		this._shadowsEnabled = false;
+		this._hiddenObjectNames = [];
+		this._sceneReady = false;
+		if ( this._angleReframeFrame != null ) {
+			cancelAnimationFrame( this._angleReframeFrame );
+			this._angleReframeFrame = null;
+		}
+		if ( this._three && this._three._sceneScaleFrame != null ) {
+			cancelAnimationFrame( this._three._sceneScaleFrame );
+			this._three._sceneScaleFrame = null;
+		}
 		if ( this._three && this._three._cameraAnimId ) {
 			cancelAnimationFrame( this._three._cameraAnimId );
 			this._three._cameraAnimId = null;

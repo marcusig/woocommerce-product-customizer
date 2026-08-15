@@ -137,6 +137,27 @@
 	}
 }
 
+// Download progress for the model itself. --mkl_pc_3d_loader_progress is written
+// by set_loading_progress from GLTFLoader's onProgress; it stays at 0 (and so
+// invisible) when the server sends no Content-Length.
+.mkl_pc_3d_loader__progress {
+	width: 100%;
+	max-width: 12em;
+	height: 2px;
+	margin-top: 0.75em;
+	border-radius: 2px;
+	overflow: hidden;
+	// Alpha rather than opacity: opacity would fade the filled bar with it.
+	background: rgba(127, 127, 127, 0.25);
+}
+
+.mkl_pc_3d_loader__progress-bar {
+	width: calc(var(--mkl_pc_3d_loader_progress, 0) * 100%);
+	height: 100%;
+	background: currentColor;
+	transition: width 0.2s linear;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.mkl_pc_3d_loader {
 		transition: none;

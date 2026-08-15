@@ -24,6 +24,12 @@ let getObjectTargetPosition;
 let getBoundingBoxFromObjectIds;
 let removeLightsFromScene;
 let registerSceneMaterials;
+let getHdrUrlFromEnv;
+let getOrbitLimitsFromEnv;
+let getToneMapping;
+let getPixelRatio;
+let ORBIT_PIXEL_RATIO_SCALE;
+let disposeScene;
 let RectAreaLightHelper = null;
 
 let threeDepsPromise = null;
@@ -88,6 +94,12 @@ function ensureThreeDepsLoaded() {
 			getBoundingBoxFromObjectIds,
 			removeLightsFromScene,
 			registerSceneMaterials,
+			getHdrUrlFromEnv,
+			getOrbitLimitsFromEnv,
+			getToneMapping,
+			getPixelRatio,
+			ORBIT_PIXEL_RATIO_SCALE,
+			disposeScene,
 		} = sceneUtilsModule );
 		PC.threeD = PC.threeD || {};
 		PC.threeD.getTHREE = function () { return THREE; };
@@ -107,6 +119,12 @@ function ensureThreeDepsLoaded() {
 				getBoundingBoxFromObjectIds,
 				removeLightsFromScene,
 				registerSceneMaterials,
+				getHdrUrlFromEnv,
+				getOrbitLimitsFromEnv,
+				getToneMapping,
+				getPixelRatio,
+				ORBIT_PIXEL_RATIO_SCALE,
+				disposeScene,
 				RectAreaLightHelper,
 			};
 		};
@@ -338,7 +356,7 @@ PC.views = window.PC.views || {};
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
 			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
 			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
-			if ( !s.renderer ) s.renderer = { tone_mapping: 'linear', exposure: 1, output_color_space: 'srgb', alpha: false };
+			if ( !s.renderer ) s.renderer = { tone_mapping: 'aces', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if ( !s.lighting ) s.lighting = {};
 			// Postprocessing defaults belong to whichever add-on provides the effects;
 			// the host only guarantees the container exists.
@@ -616,12 +634,13 @@ PC.views = window.PC.views || {};
 		},
 		import_cameras_from_gltf: function ( e ) {
 			e.preventDefault();
-			const gltf = this._three && this._three.mainGltf;
-			let cameras = [];
-			if ( gltf && gltf.cameras && gltf.cameras.length ) {
-				cameras = gltf.cameras;
-			} else if ( gltf && gltf.scene ) {
-				gltf.scene.traverse( ( obj ) => { if ( obj.isCamera ) cameras.push( obj ); } );
+			// Collect cameras from the loaded models. There is no single "main" glTF
+			// any more — the preview mounts every objects3d entry under model_root —
+			// so this walks what is actually in the scene.
+			const cameras = [];
+			const root = this._three && this._three.model_root;
+			if ( root ) {
+				root.traverse( ( obj ) => { if ( obj.isCamera ) cameras.push( obj ); } );
 			}
 			if ( !cameras.length ) {
 				alert( ( typeof PC_lang !== 'undefined' && PC_lang.no_cameras_in_gltf ) ? PC_lang.no_cameras_in_gltf : 'No cameras found in the main GLTF file.' );

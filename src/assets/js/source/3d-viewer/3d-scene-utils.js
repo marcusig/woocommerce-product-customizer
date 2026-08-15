@@ -3,7 +3,6 @@
  * Used by both frontend 3D viewer and admin 3D settings.
  */
 import * as THREE from 'three';
-import { array } from 'three/tsl';
 
 // -------------------------------------------------------------------------
 // Constants (3.7)
@@ -12,6 +11,35 @@ import { array } from 'three/tsl';
 /** HDR preset filename by preset key. */
 export function getDefaultHdrPresetFilename( preset ) {
 	return preset === 'studio' ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
+}
+
+/**
+ * Upper bound for the renderer's pixel ratio.
+ *
+ * A modern phone reports devicePixelRatio 3, which is 9x the fragment work of a
+ * 1x buffer. The postprocessing add-on already caps its own composer buffers for
+ * this reason; without the same cap on the renderer the canvas backing store is
+ * still allocated at the raw ratio, so the composer result is upscaled onto it
+ * and most of the saving is given back on the final blit.
+ */
+export const MAX_PIXEL_RATIO = 2;
+
+/**
+ * Ratio multiplier applied while the user is dragging the model. Dropping
+ * resolution keeps the effect chain running — so the look stays consistent —
+ * where bypassing postprocessing makes the image visibly jump on every touch.
+ */
+export const ORBIT_PIXEL_RATIO_SCALE = 0.75;
+
+/**
+ * Device pixel ratio, capped.
+ *
+ * @param {number} [max=MAX_PIXEL_RATIO]
+ * @returns {number}
+ */
+export function getPixelRatio( max = MAX_PIXEL_RATIO ) {
+	const raw = ( typeof window !== 'undefined' && window.devicePixelRatio ) ? window.devicePixelRatio : 1;
+	return Math.max( 1, Math.min( raw, max ) );
 }
 
 /** Object types to skip when building a scene tree (3.6). */
@@ -65,11 +93,13 @@ export function getOutputColorSpace() {
 // -------------------------------------------------------------------------
 
 /**
- * @param {Object} env - environment settings (orbit_* in degrees / distance; optional orbit_zoom_limits_enabled for admin)
- * @param {{ useZoomLimitsToggle?: boolean }} [opts] - if useZoomLimitsToggle true, respect env.orbit_zoom_limits_enabled for min/max distance
+ * Zoom limits apply unless `env.orbit_zoom_limits_enabled` is explicitly false;
+ * angle limits always apply.
+ *
+ * @param {Object} env - environment settings (orbit_* in degrees / distance; orbit_zoom_limits_enabled)
  * @returns {{ minPolarAngle: number, maxPolarAngle: number, minAzimuthAngle: number, maxAzimuthAngle: number, minDistance: number, maxDistance: number }}
  */
-export function getOrbitLimitsFromEnv( env, opts = {} ) {
+export function getOrbitLimitsFromEnv( env ) {
 	if ( ! env ) {
 		return {
 			minPolarAngle: 0,
@@ -84,7 +114,7 @@ export function getOrbitLimitsFromEnv( env, opts = {} ) {
 	const maxPolar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
 	const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
 	const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
-	const zoomLimitsEnabled = opts.useZoomLimitsToggle === false ? true : ( env.orbit_zoom_limits_enabled !== false );
+	const zoomLimitsEnabled = env.orbit_zoom_limits_enabled !== false;
 	const minDist = zoomLimitsEnabled && ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
 	const maxDist = zoomLimitsEnabled && ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
 	return {
@@ -112,16 +142,19 @@ export function getOrbitLimitsFromEnv( env, opts = {} ) {
  *
  * @param {Object} env - environment settings (preset, mode, custom_hdr_url, object_id)
  * @param {string} hdrBaseUrl - base URL for preset files
+ * @param {Array|null} [objects3d] - objects3d entries to resolve `mode: 'object'` against.
+ *        Defaults to the frontend product data; the admin passes its own collection so both
+ *        contexts resolve the environment through this one function.
  * @returns {string|string[]|null} HDR/EXR URL, cubemap URL array [px,nx,py,ny,pz,nz], or null when none
  */
-export function getHdrUrlFromEnv( env, hdrBaseUrl ) {
+export function getHdrUrlFromEnv( env, hdrBaseUrl, objects3d = null ) {
 	if ( env && env.mode === 'none' ) return null;
 	if ( ! env ) return ( hdrBaseUrl || '' ) + getDefaultHdrPresetFilename( 'outdoor' );
 
 	// Environment from objects3d (frontend: currentProductData.objects3d)
 	if ( env.mode === 'object' && env.object_id != null && String( env.object_id ).trim() !== '' ) {
 		const productData = ( typeof window !== 'undefined' && window.PC && window.PC.fe && window.PC.fe.currentProductData ) ? window.PC.fe.currentProductData : null;
-		const list = productData && productData.objects3d;
+		const list = Array.isArray( objects3d ) ? objects3d : ( productData && productData.objects3d );
 		const idStr = String( env.object_id ).trim();
 		if ( Array.isArray( list ) ) {
 			const o = list.find( ( item ) => String( item._id != null ? item._id : item.id ) === idStr );
@@ -280,16 +313,20 @@ export function createLightFromSettings( settings, gi ) {
  * Loads the texture from cookie.url and sets light.map. Async.
  * @param {THREE.SpotLight|THREE.DirectionalLight} light - light with .map property
  * @param {{ url: string }|string} cookie - cookie object with url, or url string
+ * @param {function()} [onLoaded] - called once the texture is applied, so an
+ *        on-demand renderer knows the scene changed after the async load
  */
-export function applyLightCookie( light, cookie ) {
+export function applyLightCookie( light, cookie, onLoaded ) {
 	if ( ! light || ! cookie ) return;
 	const url = typeof cookie === 'string' ? cookie : ( cookie.url || '' );
 	if ( ! url ) return;
 	if ( light.map && light.map.dispose ) light.map.dispose();
 	const loader = new THREE.TextureLoader();
 	loader.load( url, ( texture ) => {
+		texture.colorSpace = THREE.SRGBColorSpace;
 		if ( light.map && light.map !== texture && light.map.dispose ) light.map.dispose();
 		light.map = texture;
+		if ( typeof onLoaded === 'function' ) onLoaded();
 	} );
 }
 
@@ -492,22 +529,72 @@ export function removeLightsFromScene( root ) {
 }
 
 /**
- * Traverse scene and dispose geometries and materials (and material maps).
+ * Dispose a texture once, tracking what has already been released.
+ * Materials are shared across meshes (and, through the material registry, across
+ * models), so the same texture is reached many times in one traversal.
+ *
+ * @param {THREE.Texture|null} texture
+ * @param {Set<THREE.Texture>} seen
+ */
+function disposeTextureOnce( texture, seen ) {
+	if ( ! texture || ! texture.isTexture || typeof texture.dispose !== 'function' ) return;
+	if ( seen.has( texture ) ) return;
+	seen.add( texture );
+	texture.dispose();
+}
+
+/**
+ * Dispose every texture a material references.
+ *
+ * A PBR material carries a dozen map slots — normal, roughness, metalness, ao,
+ * emissive, alpha, clearcoat, transmission and so on — and on a product model
+ * those are several times the memory of the base colour map. Releasing only
+ * `map` leaves nearly all of it allocated.
+ *
+ * @param {THREE.Material} material
+ * @param {Set<THREE.Texture>} seen
+ */
+function disposeMaterialTextures( material, seen ) {
+	if ( ! material ) return;
+	for ( const key in material ) {
+		disposeTextureOnce( material[ key ], seen );
+	}
+}
+
+/**
+ * Traverse a scene and release everything it holds on the GPU: geometries,
+ * materials, every texture those materials reference, and — for a Scene — the
+ * environment and background maps, which are properties rather than children and
+ * so are never reached by the traversal.
+ *
  * @param {THREE.Object3D} scene
  */
 export function disposeScene( scene ) {
 	if ( ! scene ) return;
+	const seenTextures = new Set();
+	const seenMaterials = new Set();
+
 	scene.traverse( ( obj ) => {
 		if ( obj.geometry ) obj.geometry.dispose();
 		if ( obj.material ) {
 			const mats = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
 			mats.forEach( ( m ) => {
-				if ( m && m.dispose ) m.dispose();
-				if ( m && m.map && m.map.dispose ) m.map.dispose();
+				if ( ! m || seenMaterials.has( m ) ) return;
+				seenMaterials.add( m );
+				disposeMaterialTextures( m, seenTextures );
+				if ( m.dispose ) m.dispose();
 			} );
 		}
-		if ( obj.isLight && obj.map && obj.map.dispose ) obj.map.dispose();
+		// Light cookies (SpotLight/DirectionalLight projection maps).
+		if ( obj.isLight ) disposeTextureOnce( obj.map, seenTextures );
 	} );
+
+	if ( scene.isScene ) {
+		disposeTextureOnce( scene.background, seenTextures );
+		disposeTextureOnce( scene.environment, seenTextures );
+		scene.background = null;
+		scene.environment = null;
+	}
 }
 
 // -------------------------------------------------------------------------
@@ -516,20 +603,27 @@ export function disposeScene( scene ) {
 
 /**
  * Find an object in the scene by name or uuid.
+ *
+ * Uses an explicit stack rather than Object3D.traverse, which cannot break early
+ * and so walks the whole tree even after a match. This is on the hot path for
+ * hotspots and camera framing, where it runs many times per interaction.
+ *
  * @param {THREE.Object3D} root
  * @param {string} objectId - object name or uuid
  * @returns {THREE.Object3D|null}
  */
 export function findObject( root, objectId ) {
 	if ( ! root || ! objectId ) return null;
-	let found = null;
-	root.traverse( ( obj ) => {
-		if ( found ) return;
-		if ( obj.name === objectId || ( obj.uuid && obj.uuid === objectId ) ) {
-			found = obj;
+	const stack = [ root ];
+	while ( stack.length ) {
+		const obj = stack.pop();
+		if ( obj.name === objectId || ( obj.uuid && obj.uuid === objectId ) ) return obj;
+		const children = obj.children;
+		if ( children ) {
+			for ( let i = children.length - 1; i >= 0; i-- ) stack.push( children[ i ] );
 		}
-	} );
-	return found;
+	}
+	return null;
 }
 
 const COMPOSITE_ID_SEP = ':';

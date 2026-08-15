@@ -1759,7 +1759,7 @@ class DB {
 			'enable_shadows'  => false,
 			'extend_under_toolbar' => false,
 			'renderer'        => array(
-				'tone_mapping'       => 'linear',
+				'tone_mapping'       => 'aces',
 				'exposure'           => 1,
 				'output_color_space' => 'srgb',
 				'alpha'              => false,

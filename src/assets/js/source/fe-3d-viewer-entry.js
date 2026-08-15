@@ -4,6 +4,7 @@
  * The full viewer (Three.js + main-viewer) is loaded asynchronously when the 3D viewer is first rendered.
  */
 import {
+	create_error_element,
 	create_loading_overlay,
 	get_loading_string,
 	get_poster_url,
@@ -16,18 +17,6 @@ const wp = window.wp;
 function getSettings() {
 	const data = window.PC && window.PC.fe && window.PC.fe.currentProductData;
 	return ( data && data.settings_3d ) ? data.settings_3d : null;
-}
-
-/**
- * Build an error paragraph with textContent (never inject untrusted HTML).
- * @param {string} message
- * @returns {HTMLParagraphElement}
- */
-function create_error_element( message ) {
-	const error_element = document.createElement( 'p' );
-	error_element.className = 'mkl_pc_3d_error';
-	error_element.textContent = message == null ? '' : String( message );
-	return error_element;
 }
 
 const Viewer3DWrapper = Backbone.View.extend( {

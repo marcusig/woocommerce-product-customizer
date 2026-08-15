@@ -3,8 +3,8 @@
  */
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv } from './3d-scene-config.js';
-import { disposeScene as disposeSceneUtil } from './3d-scene-utils.js';
+import { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv, getPixelRatio } from './3d-scene-config.js';
+import { disposeScene as disposeSceneUtil, setSceneEnvironment } from './3d-scene-utils.js';
 
 /**
  * Parse a CSS length (px, %, or unitless) against an axis size in pixels.
@@ -98,10 +98,14 @@ export function apply_camera_view_offset( camera, container, enabled ) {
 export function initScene( container, s ) {
 	const r = s.renderer || {};
 	const extend_under_toolbar = !!( s && s.extend_under_toolbar );
-	const renderer = new THREE.WebGLRenderer( { antialias: true, alpha: !!r.alpha } );
+	const renderer = new THREE.WebGLRenderer( {
+		antialias: true,
+		alpha: !!r.alpha,
+		powerPreference: 'high-performance',
+	} );
 	renderer.shadowMap.enabled = false;
 	renderer.setSize( container.clientWidth, container.clientHeight );
-	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setPixelRatio( getPixelRatio() );
 	renderer.toneMapping = getToneMapping( r );
 	renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 	renderer.outputColorSpace = getOutputColorSpace( r );
@@ -124,12 +128,35 @@ export function initScene( container, s ) {
 	controls.enableDamping = true;
 	controls.dampingFactor = 0.1;
 
+	// Anything that has to be resized alongside the renderer (the postprocessing
+	// composer, for one) registers here rather than replacing the window listener.
+	const resize_listeners = [];
+
 	const onResize = () => {
 		apply_camera_view_offset( camera, container, extend_under_toolbar );
-		renderer.setSize( container.clientWidth, container.clientHeight );
-		renderer.setPixelRatio( window.devicePixelRatio );
+		const width = container.clientWidth;
+		const height = container.clientHeight;
+		const ratio = getPixelRatio();
+		renderer.setSize( width, height );
+		renderer.setPixelRatio( ratio );
+		for ( let i = 0; i < resize_listeners.length; i++ ) {
+			resize_listeners[ i ]( width, height, ratio );
+		}
 	};
-	window.addEventListener( 'resize', onResize );
+
+	// Resizing reallocates the renderer's buffers and every composer target, so
+	// coalesce the burst of events a window drag produces into one per frame.
+	// onResize itself stays synchronous — screenshot capture relies on being able
+	// to restore the camera view offset immediately.
+	let resize_frame = null;
+	const onWindowResize = () => {
+		if ( resize_frame != null ) return;
+		resize_frame = requestAnimationFrame( () => {
+			resize_frame = null;
+			onResize();
+		} );
+	};
+	window.addEventListener( 'resize', onWindowResize );
 	onResize();
 
 	return {
@@ -139,6 +166,8 @@ export function initScene( container, s ) {
 		controls,
 		animation_id: null,
 		on_resize: onResize,
+		on_window_resize: onWindowResize,
+		resize_listeners,
 		fake_shadow: null,
 		model_root: null,
 		gltf: null,
@@ -172,10 +201,12 @@ export function cleanupThree( t ) {
 		cancelAnimationFrame( t.animation_id );
 		t.animation_id = null;
 	}
-	if ( t.on_resize ) {
-		window.removeEventListener( 'resize', t.on_resize );
-		t.on_resize = null;
+	if ( t.on_window_resize ) {
+		window.removeEventListener( 'resize', t.on_window_resize );
+		t.on_window_resize = null;
 	}
+	t.on_resize = null;
+	if ( t.resize_listeners ) t.resize_listeners.length = 0;
 	if ( t.postprocessingLayer && t.postprocessingLayer.dispose ) {
 		t.postprocessingLayer.dispose();
 		t.postprocessingLayer = null;
@@ -187,5 +218,11 @@ export function cleanupThree( t ) {
 		}
 	}
 	if ( t.controls ) t.controls.dispose();
-	if ( t.scene ) disposeSceneUtil( t.scene );
+	if ( t.scene ) {
+		// Release the environment map explicitly first: it is a property rather
+		// than a child, so it survived every teardown before this.
+		setSceneEnvironment( t.scene, null );
+		disposeSceneUtil( t.scene );
+	}
+	if ( t.material_registry ) t.material_registry.clear();
 }

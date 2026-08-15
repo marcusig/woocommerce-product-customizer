@@ -91,8 +91,8 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( has_toggle_visibility ) {
 			this._invalidate_fake_shadow();
 		}
-		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
-			this.parent_view._applyAngleCamera( { reframe: true } );
+		if ( has_toggle_visibility ) {
+			this._request_angle_reframe();
 		}
 
 		// If conditional logic just made an active choice visible, ensure lazy targets can load.
@@ -104,6 +104,20 @@ const viewer_3d_choice = Backbone.View.extend({
 	_invalidate_fake_shadow() {
 		if ( this.parent_view && typeof this.parent_view.invalidate_fake_shadow === 'function' ) {
 			this.parent_view.invalidate_fake_shadow();
+		}
+	},
+
+	/** Ask the viewer to reframe the active angle; coalesced to one per frame there. */
+	_request_angle_reframe() {
+		if ( this.parent_view && typeof this.parent_view._requestAngleReframe === 'function' ) {
+			this.parent_view._requestAngleReframe();
+		}
+	},
+
+	/** Ask the viewer for a frame; rendering is on-demand. */
+	_request_render() {
+		if ( this.parent_view && typeof this.parent_view._requestRender === 'function' ) {
+			this.parent_view._requestRender();
 		}
 	},
 
@@ -130,15 +144,19 @@ const viewer_3d_choice = Backbone.View.extend({
 				texture_loader: t.textureLoader || null,
 				target_object: this.target_object,
 				target_scene: this.target_scene,
+				// Material actions change the image without changing visibility, and
+				// texture actions finish asynchronously.
+				request_render: () => this._request_render(),
 			},
 			actions
 		);
+		this._request_render();
 
 		if ( has_toggle_visibility ) {
 			this._invalidate_fake_shadow();
 		}
-		if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
-			this.parent_view._applyAngleCamera( { reframe: true } );
+		if ( has_toggle_visibility ) {
+			this._request_angle_reframe();
 		}
 	},
 
@@ -157,15 +175,20 @@ const viewer_3d_choice = Backbone.View.extend({
 			if ( has_toggle_visibility ) {
 				this._invalidate_fake_shadow();
 			}
-			if ( has_toggle_visibility && typeof this.parent_view._applyAngleCamera === 'function' ) {
-				this.parent_view._applyAngleCamera( { reframe: true } );
+			if ( has_toggle_visibility ) {
+				this._request_angle_reframe();
 			}
 			return;
 		}
 
-		// Lazy-load only when the target is not in the scene yet. Retries must stop once the
-		// objects3d scene is already loaded (otherwise Promise.resolve → apply_actions loops forever
-		// and freezes the page — e.g. Display object / toggle_visibility with a layer object_3d_id).
+		// Lazy-load only when the target is not in the scene yet.
+		//
+		// Every retry here must be gated on the source model not being loaded yet.
+		// Once it has loaded (or failed), a target that still does not resolve never
+		// will — the object name is not in that model — and re-entering apply_actions
+		// through an already-resolved promise spins the microtask queue and freezes
+		// the page. That is reachable in production whenever a model is re-uploaded
+		// with renamed meshes or an objects3d entry is deleted.
 		if ( has_toggle_visibility && this.parent_view && ! this.target_object && ! this.target_scene ) {
 			if ( this._loading_targets_promise ) {
 				this._loading_targets_promise.then( () => this.apply_actions() );
@@ -173,11 +196,16 @@ const viewer_3d_choice = Backbone.View.extend({
 			}
 
 			const target_id = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
-			const needs_object = target_id && String( target_id ).indexOf( ':' ) !== -1;
+			const is_composite = !! target_id && String( target_id ).indexOf( ':' ) !== -1;
+			// The objects3d entry the composite id's source half points at.
+			const target_source_id = ( is_composite && typeof this.parent_view._resolveObject3dIdForCompositeId === 'function' )
+				? this.parent_view._resolveObject3dIdForCompositeId( target_id )
+				: '';
+			const needs_object = target_source_id !== '' && ! this._is_objects3d_scene_loaded( target_source_id );
+
 			const layer_object3d_id = this.layer_model && this.layer_model.get ? this.layer_model.get( 'object_3d_id' ) : null;
 			const layer_object_id_str = layer_object3d_id != null ? String( layer_object3d_id ).trim() : '';
-			const layer_scene_loaded = layer_object_id_str !== '' && this._is_objects3d_scene_loaded( layer_object_id_str );
-			const needs_scene = layer_object_id_str !== '' && ! layer_scene_loaded;
+			const needs_scene = layer_object_id_str !== '' && ! this._is_objects3d_scene_loaded( layer_object_id_str );
 
 			if ( needs_object && typeof this.parent_view._ensureObjects3dSceneLoadedForCompositeId === 'function' ) {
 				this._loading_targets_promise = this.parent_view._ensureObjects3dSceneLoadedForCompositeId( target_id )
@@ -191,6 +219,17 @@ const viewer_3d_choice = Backbone.View.extend({
 					.finally( () => { this._loading_targets_promise = null; } );
 				this._loading_targets_promise.then( () => this.apply_actions() );
 				return;
+			}
+
+			// Nothing left to load and still no target: the id does not match anything
+			// in the scene. Warn once and carry on with the target hidden.
+			if ( is_composite && ! this._warned_missing_target ) {
+				this._warned_missing_target = true;
+				// eslint-disable-next-line no-console
+				console.warn(
+					'3D viewer: choice target "' + target_id + '" was not found in the loaded model. ' +
+					'The object may have been renamed or removed since the choice was configured.'
+				);
 			}
 		}
 

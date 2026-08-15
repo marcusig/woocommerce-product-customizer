@@ -84,7 +84,7 @@ function apply_material_variant( context, action ) {
 }
 
 function apply_material_texture( context, action ) {
-	const { registry, texture_loader } = context;
+	const { registry, texture_loader, request_render } = context;
 	if ( ! registry ) return;
 	const name = action.material_texture_material_name || action.material_name;
 	const texture_url = action.material_texture_url || action.material_texture_value;
@@ -97,6 +97,8 @@ function apply_material_texture( context, action ) {
 		if ( mat.map && mat.map.dispose ) mat.map.dispose();
 		mat.map = texture;
 		mat.needsUpdate = true;
+		// Landed after the render that ran when the choice changed.
+		if ( typeof request_render === 'function' ) request_render();
 	} );
 }
 
@@ -157,6 +159,11 @@ export const ACTION_HANDLERS = {
  * Run all non-visibility actions_3d entries against the current choice context.
  *
  * @param {Object} context
+ * @param {Map} context.registry - material registry
+ * @param {THREE.TextureLoader} [context.texture_loader]
+ * @param {THREE.Object3D} [context.target_object]
+ * @param {THREE.Object3D} [context.target_scene]
+ * @param {function()} [context.request_render] - called when an async action lands
  * @param {Object[]} actions
  */
 export function apply_choice_actions( context, actions ) {

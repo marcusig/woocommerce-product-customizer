@@ -32,6 +32,40 @@ export function get_poster_url( settings ) {
 }
 
 /**
+ * Build an error paragraph with textContent (never inject untrusted HTML).
+ * Shared so the lightweight entry chunk and the full viewer report errors the
+ * same way — messages can come from PC_lang or a thrown Error.
+ *
+ * @param {string} message
+ * @returns {HTMLParagraphElement}
+ */
+export function create_error_element( message ) {
+	const error_element = document.createElement( 'p' );
+	error_element.className = 'mkl_pc_3d_error';
+	error_element.textContent = message == null ? '' : String( message );
+	return error_element;
+}
+
+/**
+ * Update the loading overlay with download progress for the current step.
+ * Called from GLTFLoader's onProgress, which reports bytes for the model itself.
+ *
+ * @param {HTMLElement|null} overlay
+ * @param {ProgressEvent} event
+ */
+export function set_loading_progress( overlay, event ) {
+	if ( ! overlay || ! event || ! event.lengthComputable || ! event.total ) {
+		return;
+	}
+	const ratio = Math.max( 0, Math.min( 1, event.loaded / event.total ) );
+	overlay.style.setProperty( '--mkl_pc_3d_loader_progress', String( ratio ) );
+	const bar = overlay.querySelector( '.mkl_pc_3d_loader__progress' );
+	if ( bar ) {
+		bar.setAttribute( 'aria-valuenow', String( Math.round( ratio * 100 ) ) );
+	}
+}
+
+/**
  * Create the loading overlay DOM.
  * @param {Object} [options]
  * @param {string} [options.text]
@@ -79,6 +113,19 @@ export function create_loading_overlay( options ) {
 
 	text_wrap.appendChild( track );
 	content.appendChild( text_wrap );
+
+	// Filled by set_loading_progress from GLTFLoader's onProgress. Stays at zero
+	// width (and so invisible) for servers that do not send Content-Length.
+	const progress = document.createElement( 'div' );
+	progress.className = 'mkl_pc_3d_loader__progress';
+	progress.setAttribute( 'role', 'progressbar' );
+	progress.setAttribute( 'aria-valuemin', '0' );
+	progress.setAttribute( 'aria-valuemax', '100' );
+	const progress_bar = document.createElement( 'div' );
+	progress_bar.className = 'mkl_pc_3d_loader__progress-bar';
+	progress.appendChild( progress_bar );
+	content.appendChild( progress );
+
 	overlay.appendChild( content );
 
 	return overlay;
