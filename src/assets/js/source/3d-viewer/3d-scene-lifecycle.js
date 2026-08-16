@@ -91,6 +91,53 @@ export function apply_camera_view_offset( camera, container, enabled ) {
 }
 
 /**
+ * Error thrown when the browser cannot give us a WebGL context at all.
+ * Carries a flag so the viewer can show the product poster rather than a
+ * generic "failed to load" message — a blank error converts worse than a
+ * still image of the thing being sold.
+ */
+export class WebGLUnavailableError extends Error {
+	constructor( message, cause ) {
+		super( message );
+		this.name = 'WebGLUnavailableError';
+		this.isWebGLUnavailable = true;
+		this.cause = cause;
+	}
+}
+
+/**
+ * Build the renderer, preferring a real GPU but accepting a software one.
+ *
+ * failIfMajorPerformanceCaveat rejects contexts backed by a software
+ * rasteriser, where a product model runs at single-digit frames. We ask for
+ * that first, and on failure retry without it: a slow viewer still beats no
+ * viewer. Only when both attempts fail is WebGL genuinely unavailable.
+ *
+ * @param {Object} r - settings_3d.renderer
+ * @returns {THREE.WebGLRenderer}
+ * @throws {WebGLUnavailableError}
+ */
+function create_renderer( r ) {
+	const base = {
+		antialias: true,
+		alpha: !!r.alpha,
+		powerPreference: 'high-performance',
+	};
+	try {
+		return new THREE.WebGLRenderer( Object.assign( {}, base, { failIfMajorPerformanceCaveat: true } ) );
+	} catch ( performance_error ) {
+		try {
+			return new THREE.WebGLRenderer( base );
+		} catch ( fatal_error ) {
+			throw new WebGLUnavailableError(
+				'WebGL is not available in this browser.',
+				fatal_error
+			);
+		}
+	}
+}
+
+/**
  * Create renderer, scene, camera, controls, default light and the _three bag.
  * @param {HTMLElement} container
  * @param {Object} s - settings_3d (renderer, lighting, environment)
@@ -99,11 +146,7 @@ export function apply_camera_view_offset( camera, container, enabled ) {
 export function initScene( container, s ) {
 	const r = s.renderer || {};
 	const extend_under_toolbar = !!( s && s.extend_under_toolbar );
-	const renderer = new THREE.WebGLRenderer( {
-		antialias: true,
-		alpha: !!r.alpha,
-		powerPreference: 'high-performance',
-	} );
+	const renderer = create_renderer( r );
 	renderer.shadowMap.enabled = false;
 	renderer.setSize( container.clientWidth, container.clientHeight );
 	renderer.setPixelRatio( getPixelRatio() );

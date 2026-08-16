@@ -317,10 +317,55 @@ export default Backbone.View.extend({
 			} )
 			.catch( ( err ) => {
 				this._hideLoadingOverlay();
-				this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
+				this._handlePipelineError( err );
 			} );
 
 		return this.$el;
+	},
+
+	/**
+	 * Decide what the customer sees when the viewer cannot start.
+	 *
+	 * A browser with no WebGL is not an error the shopper can act on, so show
+	 * the product poster instead — a still image of the product sells better
+	 * than a failure message. Everything else keeps the explicit error.
+	 *
+	 * @param {Error} err
+	 */
+	_handlePipelineError( err ) {
+		if ( err && err.isWebGLUnavailable ) {
+			this._showPosterFallback();
+			this._emitRuntimeAction( 'PC.fe.viewer.webgl.unavailable', [ this, err ] );
+			return;
+		}
+		this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
+	},
+
+	/**
+	 * Replace the viewer with the configured poster image, or an explanatory
+	 * line when the product has no poster set.
+	 */
+	_showPosterFallback() {
+		const container = this._container;
+		if ( ! container ) return;
+		const poster_url = get_poster_url( getSettings() );
+		if ( ! poster_url ) {
+			this._showError( get_loading_string(
+				'webgl_unavailable',
+				'3D view is not supported by this browser.'
+			) );
+			return;
+		}
+		const poster = document.createElement( 'div' );
+		poster.className = 'mkl_pc_3d_poster_fallback';
+		poster.style.backgroundImage = 'url(' + JSON.stringify( poster_url ) + ')';
+		poster.setAttribute( 'role', 'img' );
+		poster.setAttribute( 'aria-label', get_loading_string(
+			'webgl_unavailable',
+			'3D view is not supported by this browser.'
+		) );
+		container.after( poster );
+		this.$el.addClass( 'mkl_pc_viewer--poster-fallback' );
 	},
 
 	/**
@@ -406,7 +451,7 @@ export default Backbone.View.extend({
 			.catch( ( err ) => {
 				this._rebuilding = false;
 				this._hideLoadingOverlay();
-				this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
+				this._handlePipelineError( err );
 			} );
 	},
 

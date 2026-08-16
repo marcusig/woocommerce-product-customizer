@@ -151,6 +151,16 @@
 	background: rgba(127, 127, 127, 0.25);
 }
 
+// Stands in for the viewer when the browser has no WebGL at all. Uses the same
+// poster the loading overlay shows, so the shopper still sees the product.
+.mkl_pc_3d_poster_fallback {
+	position: absolute;
+	inset: 0;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: contain;
+}
+
 // Shown over the dead canvas when the browser drops the WebGL context. Some
 // browsers never fire webglcontextrestored, so the customer needs a way out.
 .mkl_pc_3d_loader--context-lost {
