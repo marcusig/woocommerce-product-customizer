@@ -46,6 +46,11 @@ export default Backbone.View.extend({
 	_hiddenObjectNames: null,
 	_angleReframeFrame: null,
 	_sceneReady: false,
+	_container: null,
+	_contextLost: false,
+	_rebuilding: false,
+	_onContextLost: null,
+	_onContextRestored: null,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
@@ -60,6 +65,9 @@ export default Backbone.View.extend({
 		this._hiddenObjectNames = [];
 		this._angleReframeFrame = null;
 		this._sceneReady = false;
+		this._container = null;
+		this._contextLost = false;
+		this._rebuilding = false;
 		if ( window.PC.fe && window.PC.fe.angles ) {
 			// Wrapped: Backbone calls change handlers with (model, value, options),
 			// which would otherwise arrive as _applyAngleCamera's options argument.
@@ -300,6 +308,7 @@ export default Backbone.View.extend({
 		}
 
 		// Phase 1 done (we have s). Run pipeline: phases 2 → 3 → 4.
+		this._container = container;
 		this._showLoadingOverlay( container );
 		this._runViewerPipeline( container, s )
 			.then( () => {
@@ -312,6 +321,93 @@ export default Backbone.View.extend({
 			} );
 
 		return this.$el;
+	},
+
+	/**
+	 * Watch for the browser taking the WebGL context away.
+	 *
+	 * Routine on mobile — background the tab for long enough, open a few more,
+	 * or hit a driver reset, and the context is dropped. Without this the canvas
+	 * goes black permanently with no error and no recovery, and the customer is
+	 * looking at a blank product.
+	 *
+	 * @param {HTMLCanvasElement} canvas
+	 */
+	_bindContextLossHandlers( canvas ) {
+		if ( ! canvas ) return;
+
+		this._onContextLost = ( event ) => {
+			// Required, or the browser will not fire webglcontextrestored.
+			event.preventDefault();
+			this._contextLost = true;
+			this._pauseRenderLoop();
+			this._emitRuntimeAction( 'PC.fe.viewer.context.lost', [ this, this._runtimeApi ] );
+			this._emitRuntimeEvent( 'context:lost', {} );
+			this._showContextLostOverlay();
+		};
+
+		this._onContextRestored = () => {
+			this._contextLost = false;
+			this._emitRuntimeAction( 'PC.fe.viewer.context.restored', [ this, this._runtimeApi ] );
+			this._emitRuntimeEvent( 'context:restored', {} );
+			this._rebuildAfterContextLoss();
+		};
+
+		canvas.addEventListener( 'webglcontextlost', this._onContextLost, false );
+		canvas.addEventListener( 'webglcontextrestored', this._onContextRestored, false );
+	},
+
+	/**
+	 * Show the poster (or a message) over the dead canvas, with a manual retry —
+	 * some browsers never fire webglcontextrestored at all.
+	 */
+	_showContextLostOverlay() {
+		if ( this._loadingOverlay ) return;
+		const container = this._container;
+		if ( ! container ) return;
+		const overlay = create_loading_overlay( {
+			text: get_loading_string( 'context_lost', '3D view interrupted' ),
+			poster_url: get_poster_url( getSettings() ),
+		} );
+		overlay.classList.add( 'mkl_pc_3d_loader--context-lost' );
+
+		const retry = document.createElement( 'button' );
+		retry.type = 'button';
+		retry.className = 'mkl_pc_3d_loader__retry';
+		retry.textContent = get_loading_string( 'context_lost_retry', 'Reload 3D view' );
+		retry.addEventListener( 'click', () => this._rebuildAfterContextLoss() );
+		const content = overlay.querySelector( '.mkl_pc_3d_loader__content' ) || overlay;
+		content.appendChild( retry );
+
+		container.after( overlay );
+		this._loadingOverlay = overlay;
+	},
+
+	/**
+	 * Build the scene again on a fresh context.
+	 *
+	 * _setupScene already starts with maybe_cleanup, so re-running the pipeline
+	 * is the whole recovery — no special-case teardown needed here.
+	 */
+	_rebuildAfterContextLoss() {
+		if ( this._rebuilding ) return;
+		const container = this._container;
+		const s = getSettings();
+		if ( ! container || ! s ) return;
+		this._rebuilding = true;
+		this._hideLoadingOverlay();
+		this._showLoadingOverlay( container );
+		this._runViewerPipeline( container, s )
+			.then( () => {
+				this._rebuilding = false;
+				this._hideLoadingOverlay();
+				wp.hooks.doAction( 'PC.fe.viewer.render', this );
+			} )
+			.catch( ( err ) => {
+				this._rebuilding = false;
+				this._hideLoadingOverlay();
+				this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
+			} );
 	},
 
 	_showLoadingOverlay( container ) {
@@ -562,6 +658,8 @@ export default Backbone.View.extend({
 		// Create core Three.js objects (scene, camera, renderer, controls, etc.).
 		this._three = initScene( container, s );
 		const t = this._three;
+		this._container = container;
+		this._bindContextLossHandlers( t.renderer.domElement );
 		const layers = window.PC.fe && window.PC.fe.layers;
 		// Enable or disable shadows globally, then mirror the setting to the renderer.
 		this._shadowsEnabled = !!( s && s.enable_shadows );
@@ -1244,6 +1342,13 @@ export default Backbone.View.extend({
 		this._shadowsEnabled = false;
 		this._hiddenObjectNames = [];
 		this._sceneReady = false;
+		if ( this._three && this._three.renderer && this._onContextLost ) {
+			const canvas = this._three.renderer.domElement;
+			canvas.removeEventListener( 'webglcontextlost', this._onContextLost );
+			canvas.removeEventListener( 'webglcontextrestored', this._onContextRestored );
+			this._onContextLost = null;
+			this._onContextRestored = null;
+		}
 		if ( this._angleReframeFrame != null ) {
 			cancelAnimationFrame( this._angleReframeFrame );
 			this._angleReframeFrame = null;
