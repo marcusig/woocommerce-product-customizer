@@ -419,7 +419,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'reset_settings_3d_confirm' => esc_html__( 'This will restore all 3D viewer settings to their defaults. Continue?', 'product-configurator-for-woocommerce' ),
 					'fe_3d_use_draco_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
 					'fe_3d_use_meshopt_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+					'fe_3d_use_ktx2_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_ktx2_loader' ),
 					'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
+					'fe_3d_ktx2_transcoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/basis/',
 					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
 					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
 

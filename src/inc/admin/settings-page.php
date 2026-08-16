@@ -1087,6 +1087,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			add_settings_field(
+				'fe_3d_use_ktx2_loader',
+				__( 'Enable KTX2 texture support', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'fe_3d_settings',
+				[
+					'setting_name' => 'fe_3d_use_ktx2_loader',
+					'description' => __( 'Load the Basis Universal transcoder so that models using KHR_texture_basisu (.ktx2 textures) can be displayed. Supercompressed textures stay compressed on the GPU, so they cut both download size and video memory — usually a bigger saving on a textured product than mesh compression.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
 			// Translatepress options
 			if ( function_exists( 'trp_translate' ) ) {
 				add_settings_section(

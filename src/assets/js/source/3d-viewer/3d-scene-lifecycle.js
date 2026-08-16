@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv, getPixelRatio } from './3d-scene-config.js';
 import { disposeScene as disposeSceneUtil, setSceneEnvironment } from './3d-scene-utils.js';
+import { setKtx2Renderer } from './3d-loader-factory.js';
 
 /**
  * Parse a CSS length (px, %, or unitless) against an axis size in pixels.
@@ -111,6 +112,11 @@ export function initScene( container, s ) {
 	renderer.outputColorSpace = getOutputColorSpace( r );
 	renderer.setClearAlpha( r.alpha ? 0 : 1 );
 	container.appendChild( renderer.domElement );
+
+	// KTX2 transcoding needs to know the GPU's supported formats. The loader is
+	// built before this point, so hand it the renderer now — before any model
+	// is loaded, which is what matters.
+	setKtx2Renderer( renderer );
 
 	const scene = new THREE.Scene();
 	const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );

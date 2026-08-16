@@ -4,6 +4,7 @@
  */
 
 import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
+import { setKtx2Renderer } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
 
 const $ = window.jQuery;
 
@@ -354,6 +355,10 @@ export const settings_3d_preview_mixin = {
 			renderer.outputColorSpace = THREE.SRGBColorSpace;
 			renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha ) ? 0 : 1 );
 			container.appendChild( renderer.domElement );
+
+			// The preview shares the frontend's GLTFLoader, so KTX2 needs this
+			// renderer probed before the first model is pulled from the store.
+			setKtx2Renderer( renderer );
 
 			const scene = new THREE.Scene();
 			const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
