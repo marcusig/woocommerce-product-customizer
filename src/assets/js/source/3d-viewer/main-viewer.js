@@ -12,7 +12,7 @@ if ( typeof window !== 'undefined' ) {
 }
 
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, prefersReducedMotion, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
 import {
@@ -179,7 +179,9 @@ export default Backbone.View.extend({
 	_moveCameraTo( position, target, opts = {} ) {
 		const t = this._three;
 		if ( ! t || ! t.camera || ! t.controls ) return;
-		const immediate = opts.immediate === true;
+		// A swooping camera on every choice click is exactly what
+		// prefers-reduced-motion is for; jump straight to the new framing.
+		const immediate = opts.immediate === true || prefersReducedMotion();
 		const duration = typeof opts.duration === 'number' ? Math.max( 0, opts.duration ) : 850;
 		const camera = t.camera;
 		const controls = t.controls;

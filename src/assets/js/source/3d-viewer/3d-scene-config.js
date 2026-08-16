@@ -62,6 +62,20 @@ export function isPostprocessingEnabled( settings = null ) {
 	);
 }
 
+/**
+ * Whether the visitor has asked their OS to reduce motion.
+ *
+ * The loading overlay already honours this for its transitions; camera moves
+ * are the larger offender, since a swooping tween on every choice click is
+ * exactly the kind of motion the setting exists to suppress.
+ *
+ * @returns {boolean}
+ */
+export function prefersReducedMotion() {
+	if ( typeof window === 'undefined' || typeof window.matchMedia !== 'function' ) return false;
+	return window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+}
+
 export function getHdrBaseUrl() {
 	if ( typeof window.PC_lang !== 'undefined' && window.PC_lang.hdr_base_url ) {
 		return window.PC_lang.hdr_base_url;
