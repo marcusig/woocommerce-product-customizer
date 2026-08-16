@@ -151,6 +151,13 @@
 	background: rgba(127, 127, 127, 0.25);
 }
 
+// The canvas is focusable so it can be orbited from the keyboard; without a
+// visible ring a keyboard user cannot tell when the arrow keys will reach it.
+.mkl_pc_3d_canvas_container canvas:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: -2px;
+}
+
 // Stands in for the viewer when the browser has no WebGL at all. Uses the same
 // poster the loading overlay shows, so the shopper still sees the product.
 .mkl_pc_3d_poster_fallback {

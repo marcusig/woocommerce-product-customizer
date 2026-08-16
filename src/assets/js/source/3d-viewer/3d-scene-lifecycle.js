@@ -91,6 +91,76 @@ export function apply_camera_view_offset( camera, container, enabled ) {
 }
 
 /**
+ * Accessible name for the canvas, translatable through PC_config.lang.
+ * @returns {string}
+ */
+function getViewerLabel() {
+	const lang = ( typeof window !== 'undefined' && window.PC_config && window.PC_config.lang ) || {};
+	return lang.viewer_3d_label
+		|| ( typeof window !== 'undefined' && window.PC_lang && window.PC_lang.viewer_3d_label )
+		|| 'Interactive 3D view of the product. Use the arrow keys to rotate.';
+}
+
+/** Radians rotated per arrow-key press (about 4 degrees). */
+const KEY_ROTATE_STEP = Math.PI / 45;
+
+/**
+ * Orbit the camera from the keyboard.
+ *
+ * OrbitControls' own listenToKeyEvents is no use here: in three r182 a bare
+ * arrow key pans and only Ctrl/Meta/Shift + arrow rotates, and this viewer
+ * disables panning — so the arrow keys would do nothing at all. Rotating the
+ * camera around the controls' target through Spherical uses only public API
+ * and honours the configured polar and azimuth limits.
+ *
+ * Moving the camera and calling update() makes OrbitControls emit its own
+ * 'change' event, which is what asks the on-demand renderer for a frame.
+ *
+ * @param {HTMLCanvasElement} canvas
+ * @param {THREE.PerspectiveCamera} camera
+ * @param {OrbitControls} controls
+ * @returns {function(): void} unbind
+ */
+function bind_keyboard_orbit( canvas, camera, controls ) {
+	const offset = new THREE.Vector3();
+	const spherical = new THREE.Spherical();
+
+	const on_key_down = ( event ) => {
+		if ( event.altKey || event.ctrlKey || event.metaKey ) return;
+		let d_theta = 0;
+		let d_phi = 0;
+		switch ( event.key ) {
+			case 'ArrowLeft': d_theta = -KEY_ROTATE_STEP; break;
+			case 'ArrowRight': d_theta = KEY_ROTATE_STEP; break;
+			case 'ArrowUp': d_phi = -KEY_ROTATE_STEP; break;
+			case 'ArrowDown': d_phi = KEY_ROTATE_STEP; break;
+			default: return;
+		}
+		// Only claim the key once we know we are acting on it, so Tab and the
+		// rest of the page's keyboard behaviour are untouched.
+		event.preventDefault();
+
+		offset.copy( camera.position ).sub( controls.target );
+		spherical.setFromVector3( offset );
+		spherical.theta = Math.min(
+			controls.maxAzimuthAngle,
+			Math.max( controls.minAzimuthAngle, spherical.theta + d_theta )
+		);
+		spherical.phi = Math.min(
+			controls.maxPolarAngle,
+			Math.max( controls.minPolarAngle, spherical.phi + d_phi )
+		);
+		// Degenerate at the poles, where the camera direction is undefined.
+		spherical.makeSafe();
+		camera.position.copy( controls.target ).add( offset.setFromSpherical( spherical ) );
+		controls.update();
+	};
+
+	canvas.addEventListener( 'keydown', on_key_down );
+	return () => canvas.removeEventListener( 'keydown', on_key_down );
+}
+
+/**
  * Error thrown when the browser cannot give us a WebGL context at all.
  * Carries a flag so the viewer can show the product poster rather than a
  * generic "failed to load" message — a blank error converts worse than a
@@ -165,6 +235,15 @@ export function initScene( container, s ) {
 	const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
 	camera.position.set( 0, 1, 3 );
 
+	// Keyboard and screen-reader access to the model. Without this the canvas is
+	// not focusable and orbiting is pointer-only, so the 3D view — and with it
+	// the angle presets, which are what most customers actually want — is
+	// unreachable without a mouse.
+	const canvas = renderer.domElement;
+	canvas.setAttribute( 'tabindex', '0' );
+	canvas.setAttribute( 'role', 'application' );
+	canvas.setAttribute( 'aria-label', getViewerLabel() );
+
 	const controls = new OrbitControls( camera, renderer.domElement );
 	const limits = getOrbitLimitsFromEnv( s.environment || {} );
 	controls.minPolarAngle = limits.minPolarAngle;
@@ -176,6 +255,8 @@ export function initScene( container, s ) {
 	controls.enablePan = false;
 	controls.enableDamping = true;
 	controls.dampingFactor = 0.1;
+
+	const unbind_keyboard_orbit = bind_keyboard_orbit( canvas, camera, controls );
 
 	// Anything that has to be resized alongside the renderer (the postprocessing
 	// composer, for one) registers here rather than replacing the window listener.
@@ -216,6 +297,7 @@ export function initScene( container, s ) {
 		animation_id: null,
 		on_resize: onResize,
 		on_window_resize: onWindowResize,
+		unbind_keyboard_orbit,
 		resize_listeners,
 		fake_shadow: null,
 		model_root: null,
@@ -255,6 +337,10 @@ export function cleanupThree( t ) {
 	}
 	t.on_resize = null;
 	if ( t.resize_listeners ) t.resize_listeners.length = 0;
+	if ( typeof t.unbind_keyboard_orbit === 'function' ) {
+		t.unbind_keyboard_orbit();
+		t.unbind_keyboard_orbit = null;
+	}
 	if ( t.postprocessingLayer && t.postprocessingLayer.dispose ) {
 		t.postprocessingLayer.dispose();
 		t.postprocessingLayer = null;
