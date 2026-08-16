@@ -23,6 +23,10 @@ class Frontend_Woocommerce {
 	public $product_variable = NULL;
 	public $cart = NULL;
 	public $order = NULL;
+
+	/** @var int Product whose eager 3D models should be preloaded, set in load_scripts(). */
+	public $preload_product_id = 0;
+
 	public function __construct() {
 		// Plugin::instance()->db;	
 		$this->_hooks();
@@ -350,6 +354,66 @@ class Frontend_Woocommerce {
 		return $maybe_load_it;
 	}
 
+	/**
+	 * Start the eager 3D model downloads from <head>.
+	 *
+	 * The poster and loading overlay appear immediately, but the glTF request
+	 * cannot start until the viewer chunk has parsed and its pipeline reaches
+	 * phase 3. Preloading overlaps the model download — the largest asset on
+	 * the page, often several MB — with that JS, which is otherwise dead time.
+	 *
+	 * Only eager models are listed: lazy ones are deliberately deferred until a
+	 * choice needs them, and preloading those would undo the setting.
+	 */
+	public function print_3d_preload_links() {
+		$product_id = (int) $this->preload_product_id;
+		if ( ! $product_id ) {
+			return;
+		}
+
+		$objects = mkl_pc( 'db' )->get( 'objects3d', $product_id );
+		if ( ! is_array( $objects ) ) {
+			return;
+		}
+
+		$urls = array();
+		foreach ( $objects as $object ) {
+			if ( ! is_array( $object ) || ! isset( $object['object_type'] ) || 'gltf' !== $object['object_type'] ) {
+				continue;
+			}
+			// Absent loading_strategy means eager, matching the viewer's default.
+			$strategy = isset( $object['loading_strategy'] ) && '' !== $object['loading_strategy']
+				? $object['loading_strategy']
+				: 'eager';
+			if ( 'eager' !== $strategy ) {
+				continue;
+			}
+			$url = '';
+			if ( isset( $object['gltf']['url'] ) ) {
+				$url = $object['gltf']['url'];
+			} elseif ( isset( $object['url'] ) ) {
+				$url = $object['url'];
+			}
+			if ( $url ) {
+				$urls[ $url ] = true;
+			}
+		}
+
+		$urls = apply_filters( 'mkl_pc_3d_preload_urls', array_keys( $urls ), $product_id );
+		foreach ( $urls as $url ) {
+			$extension = strtolower( pathinfo( wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+			$mime      = 'gltf' === $extension ? 'model/gltf+json' : 'model/gltf-binary';
+			// as="fetch" with crossorigin="anonymous" matches the request three's
+			// FileLoader makes (fetch, credentials: 'same-origin'). A mismatch
+			// here would not fail — it would quietly download the file twice.
+			printf(
+				'<link rel="preload" href="%s" as="fetch" type="%s" crossorigin="anonymous">' . "\n",
+				esc_url( $url ),
+				esc_attr( $mime )
+			);
+		}
+	}
+
 	public function load_scripts() {
 		global $post, $wp_version, $product;
 		if ( $product ) {
@@ -455,6 +519,13 @@ class Frontend_Woocommerce {
 		}
 
 		$is_3d_configurator = $prod && '3d' === mkl_pc_get_configurator_type( $prod->get_parent_id() ? $prod->get_parent_id() : $prod->get_id() );
+		if ( $is_3d_configurator ) {
+			$this->preload_product_id = $prod->get_parent_id() ? $prod->get_parent_id() : $prod->get_id();
+			// Priority 2, not 1: wp_enqueue_scripts is itself fired from wp_head
+			// at priority 1, so anything registered here at 1 has already been
+			// passed over. 2 still lands ahead of styles (8) and scripts (9).
+			add_action( 'wp_head', array( $this, 'print_3d_preload_links' ), 2 );
+		}
 		$fe_3d_viewer_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-viewer-entry.js';
 		if ( $is_3d_configurator && file_exists( $fe_3d_viewer_path ) ) {
 			$fe_3d_deps = array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' );
