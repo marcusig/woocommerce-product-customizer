@@ -330,40 +330,78 @@ PC.views = PC.views || {};
 			if ( objType !== 'gltf' ) return;
 			var gltf = this.model.get( 'gltf' );
 			var url = ( gltf && gltf.url ) ? gltf.url : '';
-			if ( ! url || ! window.PC || ! window.PC.threeD || ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' || ! window.PC.threeD.getLightsFromSceneForImport ) {
-				return;
-			}
-			window.PC.threeD.store.get( url, function ( err, data ) {
-				if ( err || ! data || ! data.gltf || ! data.gltf.scene ) return;
-				var lights = window.PC.threeD.getLightsFromSceneForImport( data.gltf.scene );
-				if ( ! lights.length ) return;
-				var n = lights.length;
-				var msg = ( typeof PC_lang !== 'undefined' && PC_lang.import_lights_from_gltf )
-					? PC_lang.import_lights_from_gltf.replace( '%d', String( n ) )
-					: 'This model contains ' + n + ' light(s). Import them as 3D Objects?';
-				if ( ! window.confirm( msg ) ) return;
-				var col = this.model && this.model.collection;
-				if ( ! col || ! col.create_object ) return;
-				lights.forEach( function ( light ) {
-					var attrs = col.create_object( {
-						object_type: 'light',
-						name: light.name,
-						light_position: light.position,
-						light_type: light.type,
-						light_color: light.color,
-						light_intensity: light.intensity,
-						cast_shadows: light.cast_shadows === true,
-						light_target: light.target,
-					} );
-					col.add( attrs );
-				} );
-				if ( window.PC.app && window.PC.app.is_modified ) {
-					window.PC.app.is_modified.objects3d = true;
-					if ( window.PC.app.syncSidebarSaveButtonState ) {
-						window.PC.app.syncSidebarSaveButtonState();
-					}
+			this._clear_gltf_load_error();
+			if ( ! url ) return;
+
+			var run = function() {
+				if ( ! window.PC || ! window.PC.threeD || ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' ) {
+					return;
 				}
-			}.bind( this ) );
+				window.PC.threeD.store.get( url, function ( err, data ) {
+					if ( err || ! data || ! data.gltf || ! data.gltf.scene ) {
+						this._show_gltf_load_error( err );
+						return;
+					}
+					if ( ! window.PC.threeD.getLightsFromSceneForImport ) {
+						return;
+					}
+					var lights = window.PC.threeD.getLightsFromSceneForImport( data.gltf.scene );
+					if ( ! lights.length ) return;
+					var n = lights.length;
+					var msg = ( typeof PC_lang !== 'undefined' && PC_lang.import_lights_from_gltf )
+						? PC_lang.import_lights_from_gltf.replace( '%d', String( n ) )
+						: 'This model contains ' + n + ' light(s). Import them as 3D Objects?';
+					if ( ! window.confirm( msg ) ) return;
+					var col = this.model && this.model.collection;
+					if ( ! col || ! col.create_object ) return;
+					lights.forEach( function ( light ) {
+						var attrs = col.create_object( {
+							object_type: 'light',
+							name: light.name,
+							light_position: light.position,
+							light_type: light.type,
+							light_color: light.color,
+							light_intensity: light.intensity,
+							cast_shadows: light.cast_shadows === true,
+							light_target: light.target,
+						} );
+						col.add( attrs );
+					} );
+					if ( window.PC.app && window.PC.app.is_modified ) {
+						window.PC.app.is_modified.objects3d = true;
+						if ( window.PC.app.syncSidebarSaveButtonState ) {
+							window.PC.app.syncSidebarSaveButtonState();
+						}
+					}
+				}.bind( this ) );
+			}.bind( this );
+
+			if ( window.PC.threeD && window.PC.threeD.store ) {
+				run();
+			} else if ( window.PC.threeD && typeof window.PC.threeD.ensureReady === 'function' ) {
+				window.PC.threeD.ensureReady().then( run );
+			}
+		},
+		_clear_gltf_load_error: function() {
+			this.$( '.pc-gltf-load-error' ).remove();
+		},
+		_show_gltf_load_error: function( err ) {
+			this._clear_gltf_load_error();
+			var label = this.model.get( 'name' ) || this.model.get( 'filename' ) || '';
+			var message = ( window.PC.threeD && typeof window.PC.threeD.format_gltf_load_notice === 'function' )
+				? window.PC.threeD.format_gltf_load_notice( label, err )
+				: ( ( err && err.message ) ? err.message : 'Failed to load the 3D model.' );
+			var $notice = $( '<div class="mkl-pc-setting--warning pc-gltf-load-error" role="alert"></div>' );
+			$notice.text( message );
+			var $file = this.$( '.mkl-pc-setting--file[data-setting="gltf"]' );
+			if ( $file.length ) {
+				$file.after( $notice );
+			} else {
+				this.$( '.form-details' ).prepend( $notice );
+			}
+			if ( window.PC && typeof window.PC.show_notice === 'function' ) {
+				window.PC.show_notice( message, 'error' );
+			}
 		},
 		_ensure_environment_defaults: function() {
 			if ( this.model.get( 'object_type' ) === 'environment' && this.model.get( 'env_type' ) == null ) {

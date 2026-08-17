@@ -424,6 +424,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'fe_3d_ktx2_transcoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/basis/',
 					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
 					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
+					'gltf_load_failed' => esc_html__( 'Failed to load the 3D model.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_for' => esc_html__( 'Could not load “%s”: %s', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_invalid' => esc_html__( 'This file is not a valid glTF / GLB model.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_glb_header' => esc_html__( 'This file is not a valid GLB (binary glTF) file.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_legacy' => esc_html__( 'This is a legacy binary glTF file. Re-export as glTF 2.0.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_version' => esc_html__( 'This model uses an unsupported glTF version. Export as glTF 2.0.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_draco' => esc_html__( 'This model uses Draco compression, but the Draco loader is not enabled.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_ktx2' => esc_html__( 'This model uses KTX2 textures, but the KTX2 loader is not enabled.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_meshopt' => esc_html__( 'This model uses Meshopt compression, but the Meshopt decoder is not enabled.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_network' => esc_html__( 'The model could not be downloaded (network or CORS error).', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_http' => esc_html__( 'The model file could not be downloaded (HTTP %s).', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_no_scene' => esc_html__( 'The model loaded but did not contain a scene.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_missing_url' => esc_html__( 'No 3D file is assigned to this object.', 'product-configurator-for-woocommerce' ),
 
 				);
 

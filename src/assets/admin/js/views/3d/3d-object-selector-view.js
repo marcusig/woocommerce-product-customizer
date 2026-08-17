@@ -85,12 +85,16 @@ const ObjectSelector3DView = Backbone.View.extend( {
 			}
 			const results = new Array( sources.length );
 			let pending = sources.length;
+			let first_load_error = null;
 			sources.forEach( ( src, idx ) => {
 				window.PC.threeD.store.get( src.url, ( loadErr, data ) => {
 					if ( ! loadErr && data && data.objectTree && data.objectTree.length ) {
 						results[ idx ] = { sourceLabel: src.sourceLabel, sourceId: src.sourceId, objectTree: data.objectTree };
 					} else {
 						results[ idx ] = null;
+						if ( ! first_load_error && loadErr && loadErr.message ) {
+							first_load_error = loadErr.message;
+						}
 					}
 					pending--;
 					if ( pending <= 0 ) {
@@ -110,6 +114,10 @@ const ObjectSelector3DView = Backbone.View.extend( {
 								} );
 							} );
 						} );
+						if ( ! combined.length && first_load_error ) {
+							view.showError( first_load_error );
+							return;
+						}
 						view.treeNodes = combined;
 						view.renderTree( combined );
 					}
@@ -118,13 +126,18 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		} );
 	},
 	showError( message ) {
-		this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' ).html( '<p class="description">' + ( message || 'No objects to list.' ) + '</p>' );
+		const $container = this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' );
+		$container.empty();
+		const $p = $( '<p class="description"></p>' );
+		$p.text( message || 'No objects to list.' );
+		$container.append( $p );
 	},
 	loadModel( url ) {
 		const view = this;
 		window.PC.threeD.store.get( url, ( err, data ) => {
 			if ( err || ! data ) {
-				view.showError( 'Failed to load the 3D model.' );
+				const reason = ( err && err.message ) ? err.message : 'Failed to load the 3D model.';
+				view.showError( reason );
 				return;
 			}
 			view.treeNodes = data.objectTree || [];
@@ -240,12 +253,16 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 			}
 			const results = new Array( sources.length );
 			let pending = sources.length;
+			let first_load_error = null;
 			sources.forEach( ( src, idx ) => {
 				window.PC.threeD.store.get( src.url, ( loadErr, data ) => {
 					if ( ! loadErr && data && data.objectTree && data.objectTree.length ) {
 						results[ idx ] = { sourceLabel: src.sourceLabel, objectTree: data.objectTree };
 					} else {
 						results[ idx ] = null;
+						if ( ! first_load_error && loadErr && loadErr.message ) {
+							first_load_error = loadErr.message;
+						}
 					}
 					pending--;
 					if ( pending <= 0 ) {
@@ -267,6 +284,10 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 								} );
 							} );
 						} );
+						if ( ! combined.length && first_load_error ) {
+							view.showError( first_load_error );
+							return;
+						}
 						view.treeNodes = combined;
 						view.renderTree( combined );
 					}
@@ -275,7 +296,11 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		} );
 	},
 	showError( message ) {
-		this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' ).html( '<p class="description">' + ( message || 'No objects to list.' ) + '</p>' );
+		const $container = this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' );
+		$container.empty();
+		const $p = $( '<p class="description"></p>' );
+		$p.text( message || 'No objects to list.' );
+		$container.append( $p );
 	},
 	loadModel( url ) {
 		const view = this;
@@ -285,7 +310,8 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		}
 		window.PC.threeD.store.get( url, ( err, data ) => {
 			if ( err || ! data ) {
-				view.showError( 'Failed to load the 3D model.' );
+				const reason = ( err && err.message ) ? err.message : 'Failed to load the 3D model.';
+				view.showError( reason );
 				return;
 			}
 			// Full object tree from the model (same as single-select; hierarchy with depth)

@@ -5,6 +5,7 @@
 
 import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
 import { setKtx2Renderer } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
+import { format_gltf_load_notice, normalize_gltf_load_error } from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
 
 const $ = window.jQuery;
 
@@ -288,6 +289,48 @@ export const settings_3d_preview_mixin = {
 		const overlay = container.querySelector( '.pc-3d-preview-loading' );
 		if ( overlay ) overlay.classList.add( 'is-hidden' );
 	},
+	_notify_model_load_errors: function ( load_errors ) {
+		if ( ! load_errors || ! load_errors.length ) {
+			return;
+		}
+		if ( window.PC && typeof window.PC.show_notice === 'function' ) {
+			load_errors.forEach( ( item ) => {
+				if ( item.err && item.err.code === 'missing_url' ) {
+					return;
+				}
+				window.PC.show_notice( item.text, 'error' );
+			} );
+		}
+		this._show_preview_load_errors( load_errors );
+	},
+	_show_preview_load_errors: function ( load_errors ) {
+		const container = this.$( '.pc-3d-preview--canvas-container' )[ 0 ];
+		if ( ! container || ! load_errors || ! load_errors.length ) {
+			return;
+		}
+		let banner = container.querySelector( '.pc-3d-preview-error' );
+		if ( ! banner ) {
+			banner = document.createElement( 'div' );
+			banner.className = 'pc-3d-preview-error';
+			banner.setAttribute( 'role', 'alert' );
+			container.appendChild( banner );
+		}
+		banner.textContent = '';
+		const heading = document.createElement( 'p' );
+		heading.className = 'pc-3d-preview-error__heading';
+		heading.textContent = ( typeof PC_lang !== 'undefined' && PC_lang.gltf_load_failed )
+			? PC_lang.gltf_load_failed
+			: 'Failed to load the 3D model.';
+		banner.appendChild( heading );
+		const list = document.createElement( 'ul' );
+		list.className = 'pc-3d-preview-error__list';
+		load_errors.forEach( ( item ) => {
+			const li = document.createElement( 'li' );
+			li.textContent = item.text;
+			list.appendChild( li );
+		} );
+		banner.appendChild( list );
+	},
 	render_tree_loading: function () {
 		const tree_el = this.$( '.pc-3d-tree' );
 		if ( !tree_el.length ) return;
@@ -438,10 +481,12 @@ export const settings_3d_preview_mixin = {
 			// Always run model load in next tick so the animation loop is started first (fixes preview not loading when store returns cached data synchronously)
 			var viewRef = this;
 			var scene_roots = [];
+			var load_errors = [];
 
 			var onAllLoaded = function () {
 				if ( !viewRef._three || !viewRef._three.scene ) return;
 				viewRef._hidePreviewLoading();
+				viewRef._notify_model_load_errors( load_errors );
 				if ( viewRef._three.fake_shadow ) {
 					viewRef._three.fake_shadow.dispose();
 					viewRef._three.fake_shadow = null;
@@ -581,7 +626,10 @@ export const settings_3d_preview_mixin = {
 				var pending = modelEntries.length;
 				modelEntries.forEach( function ( me, i ) {
 					const gltf = me.get( 'gltf' );
+					const label = viewRef._get_model_entry_label( me );
 					if ( ! gltf || ! gltf.url ) {
+						const missing = normalize_gltf_load_error( new Error( 'No 3D file is assigned to this object.' ), '' );
+						load_errors.push( { label, err: missing, text: format_gltf_load_notice( label, missing ) } );
 						pending--;
 						if ( pending === 0 ) onAllLoaded();
 						return;
@@ -591,6 +639,10 @@ export const settings_3d_preview_mixin = {
 						if ( ! viewRef._three ) return;
 						viewRef._removePreviewLoadingStep( 'model-' + i );
 						if ( errModel || ! dataModel ) {
+							const normalized = errModel && errModel.message
+								? errModel
+								: normalize_gltf_load_error( errModel || new Error( 'Failed to load the 3D model.' ), url );
+							load_errors.push( { label, err: normalized, text: format_gltf_load_notice( label, normalized ) } );
 							pending--;
 							if ( pending === 0 ) onAllLoaded();
 							return;
@@ -603,7 +655,6 @@ export const settings_3d_preview_mixin = {
 						if ( typeof registerSceneMaterials === 'function' ) {
 							registerSceneMaterials( viewRef._three, modelScene );
 						}
-						var label = viewRef._get_model_entry_label( me );
 						modelScene.name = label || modelScene.name;
 						rootGroup.add( modelScene );
 						modelScene.userData.object_id = me.id;

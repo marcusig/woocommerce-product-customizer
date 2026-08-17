@@ -3,6 +3,11 @@
  * Depends on PC.threeD.getGltfLoader (3d-loader.js). Uses shared buildObjectTreeFromScene and disposeScene.
  */
 import { buildObjectTreeFromScene, disposeScene } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
+import {
+	format_gltf_load_notice,
+	normalize_gltf_load_error,
+	warn_gltf_load_error,
+} from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
 
 function get3DObjectsCollection() {
 	return ( window.PC && window.PC.app && typeof window.PC.app.get_collection === 'function' && window.PC.app.get_collection( 'objects3d' ) )
@@ -79,18 +84,25 @@ function createStore() {
 		}
 		const getLoader = window.PC.threeD.getGltfLoader;
 		if ( typeof getLoader !== 'function' ) {
-			return callback( new Error( 'getGltfLoader not available' ), null );
+			return callback( warn_gltf_load_error( new Error( 'getGltfLoader not available' ), url ), null );
 		}
+		const fail = ( err ) => {
+			callback( warn_gltf_load_error( err, url ), null );
+		};
 		Promise.resolve( getLoader() ).then( ( loader ) => {
 			loader.load(
 				url,
 				( gltf ) => {
-					const variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
-						? gltf.userData.variants.slice()
-						: [];
-					const materialNames = [];
-					const seen = {};
-					if ( gltf.scene && gltf.scene.traverse ) {
+					try {
+						if ( ! gltf || ! gltf.scene ) {
+							fail( new Error( 'The model loaded but did not contain a scene.' ) );
+							return;
+						}
+						const variants = ( gltf.userData && gltf.userData.variants && gltf.userData.variants.length )
+							? gltf.userData.variants.slice()
+							: [];
+						const materialNames = [];
+						const seen = {};
 						gltf.scene.traverse( ( obj ) => {
 							if ( ! obj.material ) return;
 							const materials = Array.isArray( obj.material ) ? obj.material : [ obj.material ];
@@ -103,16 +115,18 @@ function createStore() {
 								}
 							} );
 						} );
+						const objectTree = buildObjectTreeFromScene( gltf.scene );
+						const data = { gltf, variants, materialNames, objectTree };
+						_cache[ url ] = data;
+						callback( null, data );
+					} catch ( process_err ) {
+						fail( process_err );
 					}
-					const objectTree = buildObjectTreeFromScene( gltf.scene );
-					const data = { gltf, variants, materialNames, objectTree };
-					_cache[ url ] = data;
-					callback( null, data );
 				},
 				undefined,
-				( err ) => callback( err || new Error( 'Failed to load model' ), null )
+				fail
 			);
-		} ).catch( ( err ) => callback( err || new Error( 'Failed to get loader' ), null ) );
+		} ).catch( fail );
 	}
 
 	function remove( url ) {
@@ -264,6 +278,9 @@ function populateObjects3dSettingSelect( view, setting_key, options ) {
 window.PC = window.PC || {};
 window.PC.threeD = window.PC.threeD || {};
 window.PC.threeD.store = createStore();
+window.PC.threeD.format_gltf_load_notice = format_gltf_load_notice;
+window.PC.threeD.normalize_gltf_load_error = normalize_gltf_load_error;
+window.PC.threeD.warn_gltf_load_error = warn_gltf_load_error;
 window.PC.threeD.getMaterialVariantsFromUrl = function( url, callback ) {
 	if ( ! url || typeof callback !== 'function' ) return;
 	window.PC.threeD.store.get( url, ( err, data ) => callback( err, data ? data.variants : [] ) );

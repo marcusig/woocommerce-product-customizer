@@ -1825,6 +1825,10 @@ PC.toJSON = function( item ) {
 			icon.className = 'dashicons dashicons-no';
 			el.prepend( icon );
 		}
+		if ( 'warning' == type ) {
+			icon.className = 'dashicons dashicons-warning';
+			el.prepend( icon );
+		}
 		if ( 'saved' == type ) {
 			icon.className = 'dashicons dashicons-saved';
 			el.prepend( icon );
@@ -1838,7 +1842,8 @@ PC.toJSON = function( item ) {
 			}
 		}
 		target.appendChild(el);
-		setTimeout(() => el.remove(), 5000);
+		const notice_duration = ( 'error' === type || 'warning' === type ) ? 8000 : 5000;
+		setTimeout(() => el.remove(), notice_duration);
 	}
 
 	/**

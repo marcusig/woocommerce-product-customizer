@@ -213,6 +213,15 @@ html .mkl-pc-admin-ui.pc-modal {
 	.pc-notice.notice-success .dashicons {
 		color: #00a32a;
 	}
+	.pc-notice.notice-error {
+		max-width: 420px;
+		.dashicons {
+			color: #d63638;
+		}
+	}
+	.pc-notice.notice-warning .dashicons {
+		color: #dba617;
+	}
 
 	@media ( max-width: 900px ) {
 		@media ( prefers-reduced-motion: no-preference ) {
@@ -1713,6 +1722,9 @@ html .pc-modal-container {
 		button + button {
 			margin-left: 6px;
 		}
+	}
+	.pc-gltf-load-error {
+		margin-top: 8px;
 	}
 
 	.setting span.name.required_info {
@@ -4094,6 +4106,30 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 				margin: 0;
 				display: inline-block;
 			}
+		}
+	}
+	.pc-3d-preview-error {
+		position: absolute;
+		left: 12px;
+		right: 12px;
+		top: 12px;
+		z-index: 11;
+		padding: 10px 12px;
+		background: #fcf9e8;
+		border: 1px solid #dba617;
+		border-radius: 4px;
+		color: #1d2327;
+		font-size: 13px;
+		line-height: 1.4;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+		pointer-events: none;
+		.pc-3d-preview-error__heading {
+			margin: 0 0 6px;
+			font-weight: 600;
+		}
+		.pc-3d-preview-error__list {
+			margin: 0;
+			padding-left: 1.2em;
 		}
 	}
 }

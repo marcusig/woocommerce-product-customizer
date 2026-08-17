@@ -26,6 +26,7 @@ import {
 } from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
+import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -970,8 +971,17 @@ export default Backbone.View.extend({
 	_loadGltf( url, onSuccess, onError ) {
 		if ( ! url ) return;
 		this._getGltfLoader().then( ( loader ) => {
-			loader.load( url, onSuccess, ( event ) => this._onGltfProgress( event ), onError || ( () => {} ) );
+			loader.load(
+				url,
+				onSuccess,
+				( event ) => this._onGltfProgress( event ),
+				( err ) => {
+					warn_gltf_load_error( err, url );
+					if ( typeof onError === 'function' ) onError( err );
+				}
+			);
 		} ).catch( ( err ) => {
+			warn_gltf_load_error( err, url );
 			if ( typeof onError === 'function' ) onError( err );
 		} );
 	},
