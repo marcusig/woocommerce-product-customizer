@@ -20,13 +20,16 @@ PC.fe.steps = {
 
 		this.get_steps();
 
-		PC.fe.modal.$el.addClass( 'has-steps' );
+		if ( PC.fe.modal && PC.fe.modal.$el ) {
+			PC.fe.modal.$el.addClass( 'has-steps' );
+		}
 
 		// add buttons
 		if ( this.initialized ) return;
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator/steps', function( modal ) {
 			if  ( ! PC.fe.use_steps || ! this.steps ) return;
+			if ( ! modal || ! modal.footer || ! modal.toolbar ) return;
 			this.current_step = this.get_steps()[0];
 			this.current_step.set( 'active', true );
 			this.previous_button = new this.view_prev();
@@ -57,7 +60,7 @@ PC.fe.steps = {
 		this.initialized = true;
 	},
 	update_live_region: function() {
-		if ( ! this.current_step ) return;
+		if ( ! this.current_step || ! this.$live ) return;
 		const current_step = this.get_index( this.current_step );
 		const total_steps = PC.fe.steps.steps.length;
 		const step_number = current_step + 1;
@@ -67,9 +70,11 @@ PC.fe.steps = {
 	},
 	clean_existing_steps: function() {
 		if ( this.steps ) this.steps = null;
-		PC.fe.modal.$el.removeClass( 'has-steps' );
-		PC.fe.modal.$el.removeClass( 'last-step' );
-		PC.fe.modal.$el.removeClass( 'first-step' );
+		if ( PC.fe.modal && PC.fe.modal.$el ) {
+			PC.fe.modal.$el.removeClass( 'has-steps' );
+			PC.fe.modal.$el.removeClass( 'last-step' );
+			PC.fe.modal.$el.removeClass( 'first-step' );
+		}
 		if ( this.previous_button ) {
 			this.$nav.remove();
 			this.$nav = null;
@@ -143,15 +148,16 @@ PC.fe.steps = {
 			current_index = ind;
 		}
 
-		PC.fe.modal.$el.toggleClass( 'last-step', !! ( current_index == steps.length - 1 ) );
+		if ( PC.fe.modal && PC.fe.modal.$el ) {
+			PC.fe.modal.$el.toggleClass( 'last-step', !! ( current_index == steps.length - 1 ) );
+			PC.fe.modal.$el.toggleClass( 'first-step', 0 == current_index );
 
-		PC.fe.modal.$el.toggleClass( 'first-step', 0 == current_index );
-		
-		if ( PC_config.config.open_first_layer && PC.fe.modal.$el.is( '.float, .wsb' ) ) {
-			setTimeout( function() {
-				var $first = PC.fe.modal.$( '.type-step.active button.layer-item:visible' ).first();
-				if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
-			}, 50 );
+			if ( PC_config.config.open_first_layer && PC.fe.modal.$el.is( '.float, .wsb' ) ) {
+				setTimeout( function() {
+					var $first = PC.fe.modal.$( '.type-step.active button.layer-item:visible' ).first();
+					if ( ! $first.parent().is( '.display-mode-dropdown' ) ) $first.trigger( 'click' );
+				}, 50 );
+			}
 		}
 
 		this.update_live_region();

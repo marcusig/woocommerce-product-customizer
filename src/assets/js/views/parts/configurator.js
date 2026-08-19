@@ -105,13 +105,22 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 
 	start: function( e, arg ) {
+		// Engine mode never auto-mounts. `PC.fe.start` already fired from init().
+		if ( wp.hooks.applyFilters( 'PC.fe.headless', !! PC.fe.headless ) ) {
+			return;
+		}
+
 		if ( this.toolbar ) this.toolbar.remove();
 		if ( this.viewer ) this.viewer.remove();
 		if ( this.footer ) this.footer.remove();
-		const Viewer_View = wp.hooks.applyFilters( 'PC.fe.viewer.main_view', PC.fe.views.viewer );
-		this.viewer = new Viewer_View( { parent: this } );
-		this.$main_window.append( this.viewer.render() );
-		
+		this.toolbar = null;
+		this.viewer = null;
+		this.footer = null;
+
+		if ( wp.hooks.applyFilters( 'PC.fe.render_viewer', true ) ) {
+			PC.fe.mountViewer( this.$main_window );
+		}
+
 		if ( ! PC.fe.angles.length || ! PC.fe.layers.length || ! PC.fe.contents.content.length ) {
 			var message = $( '<div class="error configurator-error" />' ).text( 'The product configuration seems incomplete. Please make sure Layers, angles and content are set.' );
 			if ( ! PC.fe.config.inline ) {
@@ -125,63 +134,27 @@ PC.fe.views.configurator = Backbone.View.extend({
 		}
 
 		if ( arg == 'no-content' ) {
-			this.toolbar = new PC.fe.views.empty_viewer();
-			this.viewer.$el.append( this.toolbar.render() );
+			if ( this.viewer ) {
+				this.toolbar = new PC.fe.views.empty_viewer();
+				this.viewer.$el.append( this.toolbar.render() );
+			}
 		} else {
-			this.toolbar = new PC.fe.views.toolbar( { parent: this } );
-			this.footer = new PC.fe.views.footer( { parent: this } );
-
-			this.$main_window.append( this.toolbar.render() ); 
-			this.$main_window.append( this.footer.render() );
+			if ( wp.hooks.applyFilters( 'PC.fe.render_toolbar', true ) ) {
+				PC.fe.mountToolbar( this.$main_window );
+			}
+			if ( wp.hooks.applyFilters( 'PC.fe.render_footer', true ) ) {
+				PC.fe.mountFooter( this.$main_window );
+			}
 		}
 
 		this.refresh_main_window_accessibility();
 
-		// this.summary = new PC.fe.views.summary();
-		// this.$main_window.append( this.summary.$el );
-
-		var images = this.viewer.$el.find( 'img' ),
-			imagesLoaded = 0,
-			that = this;
-		
-		/*
-		$(PC.fe).trigger( 'start.loadingimages', that ); 
-		wp.hooks.doAction( 'PC.fe.start.loadingimages', that ); 
-		console.log('start loading images.'); 
-		this.viewer.$el.addClass('is-loading-image'); 
-		images.each(function(index, el) {
-			$(el).on('load', function( e ){
-				imagesLoaded++; 
-				if( imagesLoaded == images.length ) {
-					console.log('remove loading class images');	
-					that.viewer.$el.removeClass('is-loading-image');
-				}					
-			});
-		});
-		*/
 		$( PC.fe ).trigger( 'start', this );
 		wp.hooks.doAction( 'PC.fe.start', this ); 
 		this.open();
 	},
 	resetConfig: function() {
-		// Reset the configuration
-		PC.fe.contents.content.resetConfig();
-
-		// Maybe load the initial preset
-		if ( PC.fe.initial_preset ) {
-			PC.fe.setConfig( PC.fe.initial_preset );
-		}
-		
-		// Maybe reset the view
-		if ( 1 < PC.fe.angles.length ) {
-			PC.fe.angles.each( function( model ) {
-				model.set('active' , false); 
-			} );
-			PC.fe.angles.first().set( 'active', true ); 
-		}
-
-		// Trigger an action after reseting
-		wp.hooks.doAction( 'PC.fe.reset_configurator' );
+		PC.fe.reset_configuration();
 	},
 	refresh_main_window_accessibility: function() {
 		if ( ! this.$main_window || ! this.$main_window.length ) return;
@@ -378,3 +351,109 @@ PC.fe.views.empty_viewer = Backbone.View.extend({
 		return this.$el; 
 	},
 });
+
+/**
+ * Detached session/controller for engine mode. Not inserted into `body`.
+ * `PC.fe.ui` aliases `PC.fe.modal` — this is the session, not a fake window.
+ */
+PC.fe.views.stub_configurator = Backbone.View.extend({
+	tagName: 'div',
+	className: 'mkl_pc mkl_pc--headless',
+	initialize: function( options ) {
+		this.options = options || {};
+		this.product_id = options.product_id;
+		this.parent_id = options.parent_id;
+		this.viewer = null;
+		this.toolbar = null;
+		this.footer = null;
+		this.$main_window = $( '<div class="mkl_pc_container" />' );
+		this.$el.append( this.$main_window );
+
+		var data_key = 'prod_' + ( ( this.parent_id && 'async' !== PC.fe.config.data_mode ) ? this.parent_id : this.product_id );
+		if ( PC.productData && PC.productData[ data_key ] && PC.productData[ data_key ].product_info ) {
+			this.options = PC.productData[ data_key ].product_info;
+		}
+		return this;
+	},
+	open: function() {},
+	close: function() {},
+	remove: function() {
+		this.$el.remove();
+		this.stopListening();
+		return this;
+	},
+	resetConfig: function() {
+		PC.fe.reset_configuration();
+	}
+});
+
+/**
+ * Construct the viewer and optionally append it to `el`.
+ * Uses filter `PC.fe.viewer.main_view` so 3D (and other) viewers still swap in.
+ *
+ * @param {Element|jQuery} [el]
+ * @return {Backbone.View|null}
+ */
+PC.fe.mountViewer = function( el ) {
+	var modal = PC.fe.modal;
+	if ( ! modal ) {
+		return null;
+	}
+	if ( modal.viewer ) {
+		modal.viewer.remove();
+		modal.viewer = null;
+	}
+	var Viewer_View = wp.hooks.applyFilters( 'PC.fe.viewer.main_view', PC.fe.views.viewer );
+	modal.viewer = new Viewer_View( { parent: modal } );
+	var $rendered = modal.viewer.render();
+	if ( el ) {
+		$( el ).append( $rendered );
+	}
+	return modal.viewer;
+};
+
+/**
+ * Construct the toolbar and optionally append it to `el`.
+ *
+ * @param {Element|jQuery} [el]
+ * @return {Backbone.View|null}
+ */
+PC.fe.mountToolbar = function( el ) {
+	var modal = PC.fe.modal;
+	if ( ! modal ) {
+		return null;
+	}
+	if ( modal.toolbar ) {
+		modal.toolbar.remove();
+		modal.toolbar = null;
+	}
+	modal.toolbar = new PC.fe.views.toolbar( { parent: modal } );
+	var $rendered = modal.toolbar.render();
+	if ( el ) {
+		$( el ).append( $rendered );
+	}
+	return modal.toolbar;
+};
+
+/**
+ * Construct the footer and optionally append it to `el`.
+ *
+ * @param {Element|jQuery} [el]
+ * @return {Backbone.View|null}
+ */
+PC.fe.mountFooter = function( el ) {
+	var modal = PC.fe.modal;
+	if ( ! modal ) {
+		return null;
+	}
+	if ( modal.footer ) {
+		modal.footer.remove();
+		modal.footer = null;
+	}
+	modal.footer = new PC.fe.views.footer( { parent: modal } );
+	var $rendered = modal.footer.render();
+	if ( el ) {
+		$( el ).append( $rendered );
+	}
+	return modal.footer;
+};

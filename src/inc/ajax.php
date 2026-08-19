@@ -154,6 +154,15 @@ class Ajax {
 
 		$data = apply_filters( 'mkl_pc_get_configurator_data', $data, $id );
 
+		/**
+		 * Engine-only consumers can request a payload without image URLs.
+		 * Applied after cache read so the full UI transient stays intact.
+		 * Wired from `PC.fe.initEngine( id, { omitImages: true } )`.
+		 */
+		if ( ! empty( $_REQUEST['omit_images'] ) ) {
+			$data = $this->omit_configurator_image_urls( $data );
+		}
+
 
 		$view = isset( $_REQUEST['view'] ) ? sanitize_key( wp_unslash( $_REQUEST['view'] ) ) : '';
 		if ( 'dump' === $view && defined('WP_DEBUG') && WP_DEBUG === true ) {
@@ -198,6 +207,35 @@ class Ajax {
 		} else { 
 			wp_send_json( $data );
 		}
+	}
+
+	/**
+	 * Strip image URL fields from configurator payload, keeping attachment IDs.
+	 *
+	 * Applied after cache read so the full UI transient stays intact.
+	 *
+	 * @param mixed $data
+	 * @return mixed
+	 */
+	private function omit_configurator_image_urls( $data ) {
+		if ( ! is_array( $data ) ) {
+			return $data;
+		}
+
+		$url_keys = array( 'url', 'url_mobile', 'url_large', 'src' );
+
+		foreach ( $data as $key => $value ) {
+			if ( is_array( $value ) ) {
+				$data[ $key ] = $this->omit_configurator_image_urls( $value );
+				continue;
+			}
+
+			if ( in_array( $key, $url_keys, true ) && is_string( $value ) ) {
+				$data[ $key ] = '';
+			}
+		}
+
+		return $data;
 	}
 
 	/**

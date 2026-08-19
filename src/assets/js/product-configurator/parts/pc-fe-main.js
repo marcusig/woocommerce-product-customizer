@@ -140,40 +140,42 @@
 			if ( $.nmThemeInstance && $.nmThemeInstance.quantityInputsBindButtons ) $.nmThemeInstance.quantityInputsBindButtons( $('.mkl_pc') );
 
 			if ( 'function' === typeof avadaAddQuantityBoxes ) avadaAddQuantityBoxes();
-			// Reset config
+			// Reset config (model-level: keep in engine mode)
 			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
 
-			// Swipe
-			if ( PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
-				var swipeOptions = {
-					triggerOnTouchEnd: true,
-					swipeStatus: function( event, phase, direction, distance ) {
-						var current_angle = PC.fe.angles.findWhere( { active: true } );
-						var current_index = PC.fe.angles.indexOf( current_angle );
-						var new_angle = false;
-						var previous_angle = 0 <= ( current_index - 1 ) ? PC.fe.angles.at( current_index - 1) : false;
-						var next_angle = PC.fe.angles.at( current_index + 1);
-						
-						if ( 'end' == phase ) {
-							if ( 'right' == direction && previous_angle ) {
-								new_angle = previous_angle;
-							}
+			// Swipe (DOM: skip when headless or when the layers element is missing)
+			if ( ! PC.fe.is_headless() && PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
+				var $layers = $( '.mkl_pc_layers' );
+				if ( $layers.length && $.fn.swipe ) {
+					var swipeOptions = {
+						triggerOnTouchEnd: true,
+						swipeStatus: function( event, phase, direction, distance ) {
+							var current_angle = PC.fe.angles.findWhere( { active: true } );
+							var current_index = PC.fe.angles.indexOf( current_angle );
+							var new_angle = false;
+							var previous_angle = 0 <= ( current_index - 1 ) ? PC.fe.angles.at( current_index - 1) : false;
+							var next_angle = PC.fe.angles.at( current_index + 1);
+							
+							if ( 'end' == phase ) {
+								if ( 'right' == direction && previous_angle ) {
+									new_angle = previous_angle;
+								}
 
-							if ( 'left' == direction && next_angle ) {
-								new_angle = next_angle;
-							}
+								if ( 'left' == direction && next_angle ) {
+									new_angle = next_angle;
+								}
 
-							if ( current_angle && new_angle ) {
-								current_angle.set( 'active', false );
-								new_angle.set( 'active', true );
+								if ( current_angle && new_angle ) {
+									current_angle.set( 'active', false );
+									new_angle.set( 'active', true );
+								}
 							}
-						}
-					},
-					allowPageScroll: "vertical",
-					threshold: 75
-				};
-				$( '.mkl_pc_layers' ).swipe( swipeOptions );
-				
+						},
+						allowPageScroll: "vertical",
+						threshold: 75
+					};
+					$layers.swipe( swipeOptions );
+				}
 			}
 
 		}, 20 );
@@ -233,6 +235,7 @@
 
 		if ( PC_config.config.open_first_layer ) {
 			wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
+				if ( PC.fe.is_headless() ) return;
 				var $first = configurator.$( '.layer-item:visible' ).first();
 				if ( $first.parent().is( '.display-mode-dropdown' ) ) return;
 				$first.trigger( 'click' );
@@ -275,6 +278,260 @@
 
 	} );
 
+	/**
+	 * Whether engine mode is on (do not auto-mount viewer / toolbar / footer).
+	 * Filter `PC.fe.headless` — default is `!! PC.fe.headless`.
+	 *
+	 * @return {boolean}
+	 */
+	PC.fe.is_headless = function() {
+		return !! wp.hooks.applyFilters( 'PC.fe.headless', !! PC.fe.headless );
+	};
+
+	/**
+	 * Assign the session/controller. `PC.fe.ui` is an alias of `PC.fe.modal`.
+	 *
+	 * @param {Object} modal
+	 * @return {Object}
+	 */
+	PC.fe.set_modal = function( modal ) {
+		PC.fe.modal = modal;
+		PC.fe.ui = modal;
+		return modal;
+	};
+
+	/**
+	 * Load configurator JSON for a product if it is not already in PC.productData.
+	 *
+	 * @param {number} product_id
+	 * @param {Object}  [options]
+	 * @param {boolean} [options.omitImages] Pass omit_images=1 on the fetch (PHP strips URLs after cache).
+	 * @param {jQuery}  [options.$element]   Button to toggle the loading-data class.
+	 * @return {Promise<Object>}
+	 */
+	PC.fe.ensureProductData = function( product_id, options ) {
+		options = options || {};
+		var key = 'prod_' + product_id;
+		PC.productData = window.PC.productData || PC.productData || {};
+
+		if ( PC.productData[ key ] && ! options.omitImages ) {
+			return Promise.resolve( PC.productData[ key ] );
+		}
+
+		if ( options.$element ) {
+			options.$element.addClass( 'loading-data' );
+		}
+
+		wp.hooks.doAction( 'mkl_pc.product_data.loading', product_id );
+
+		var data_url = PC_config.ajaxurl + '?action=pc_get_data&data=init&fe=1&id=' + product_id;
+		if ( PC_config.update_nonce ) {
+			data_url += '&nonce=' + encodeURIComponent( PC_config.update_nonce );
+		}
+		if ( options.omitImages ) {
+			data_url += '&omit_images=1';
+		}
+
+		return fetch( data_url ).then( function( response ) {
+			return response.json();
+		} ).then( function( data ) {
+			PC.productData = window.PC.productData || {};
+			PC.productData[ key ] = data;
+
+			if ( options.$element ) {
+				options.$element.removeClass( 'loading-data' );
+			}
+
+			wp.hooks.doAction( 'mkl_pc.product_data.loaded', product_id );
+			return data;
+		} ).catch( function( error ) {
+			if ( options.$element ) {
+				options.$element.removeClass( 'loading-data' );
+			}
+			console.error( 'Product configurator: could not load data', error );
+			throw error;
+		} );
+	};
+
+	/**
+	 * Detached session/controller used in engine mode. Not inserted into `body`.
+	 *
+	 * @param {number} product_id
+	 * @param {number} parent_id
+	 * @return {Backbone.View}
+	 */
+	PC.fe.create_stub_modal = function( product_id, parent_id ) {
+		parent_id = parent_id || product_id;
+		if ( PC.fe.views && PC.fe.views.stub_configurator ) {
+			return new PC.fe.views.stub_configurator( {
+				product_id: product_id,
+				parent_id: parent_id
+			} );
+		}
+
+		// Fallback if views have not loaded: jQuery-only stub with the same surface.
+		var $el = $( '<div class="mkl_pc mkl_pc--headless" />' );
+		var $main_window = $( '<div class="mkl_pc_container" />' );
+		$el.append( $main_window );
+		var data_key = 'prod_' + ( ( 'async' !== PC.fe.config.data_mode && parent_id ) ? parent_id : product_id );
+		var product_info = ( PC.productData && PC.productData[ data_key ] && PC.productData[ data_key ].product_info ) || {};
+		return {
+			$el: $el,
+			$main_window: $main_window,
+			product_id: product_id,
+			parent_id: parent_id,
+			options: product_info,
+			viewer: null,
+			toolbar: null,
+			footer: null,
+			$: function( selector ) {
+				return $el.find( selector );
+			},
+			trigger: function() {
+				$el.trigger.apply( $el, arguments );
+				return this;
+			},
+			on: function() {
+				$el.on.apply( $el, arguments );
+				return this;
+			},
+			off: function() {
+				$el.off.apply( $el, arguments );
+				return this;
+			},
+			open: function() {},
+			close: function() {},
+			remove: function() {
+				$el.remove();
+			},
+			resetConfig: PC.fe.reset_configuration
+		};
+	};
+
+	/**
+	 * Reset choices / optional preset / active angle. Shared by the real modal and the stub.
+	 */
+	PC.fe.reset_configuration = function() {
+		if ( PC.fe.contents && PC.fe.contents.content ) {
+			PC.fe.contents.content.resetConfig();
+		}
+
+		if ( PC.fe.initial_preset ) {
+			PC.fe.setConfig( PC.fe.initial_preset );
+		}
+
+		if ( PC.fe.angles && 1 < PC.fe.angles.length ) {
+			PC.fe.angles.each( function( model ) {
+				model.set( 'active', false );
+			} );
+			PC.fe.angles.first().set( 'active', true );
+		}
+
+		wp.hooks.doAction( 'PC.fe.reset_configurator' );
+	};
+
+	/**
+	 * Boot layers, choices, and addons without building the configurator UI.
+	 *
+	 * Resolves after collections exist and `PC.fe.start` has fired. Does not insert
+	 * `.mkl_pc` into the document, does not add `configurator_is_opened` on body,
+	 * and does not call `modal.open()`.
+	 *
+	 * `headless` / `initEngine` means do not auto-mount viewer/toolbar/footer.
+	 * After this promise, `PC.fe.mountViewer( el )` (or `PC.fe.open()`) can still
+	 * construct the UI.
+	 *
+	 * Headless consumers that change form fields without views must
+	 * `choice.set( 'field_value', value )` and
+	 * `wp.hooks.doAction( 'PC.fe.form.item.change', choice, fakeEvent )`
+	 * so Extra Price radio/select extra prices update.
+	 *
+	 * @param {number}        product_id
+	 * @param {number|Object} [parent_id] Parent product id, or options if the parent is omitted.
+	 * @param {Object}        [options]
+	 * @param {jQuery}        [options.$element]  Trigger used for data-price / data-price_tiers.
+	 * @param {boolean}       [options.omitImages] Fetch pc_get_data with omit_images=1.
+	 * @return {Promise}
+	 */
+	PC.fe.initEngine = function( product_id, parent_id, options ) {
+		if ( parent_id && parent_id.jquery ) {
+			options = $.extend( { $element: parent_id }, options || {} );
+			parent_id = product_id;
+		} else if ( parent_id && 'object' === typeof parent_id ) {
+			options = parent_id;
+			parent_id = product_id;
+		}
+		options = options || {};
+		parent_id = parent_id || product_id;
+
+		PC.fe.headless = true;
+
+		return PC.fe.ensureProductData( product_id, {
+			omitImages: !! options.omitImages,
+			$element: options.$element
+		} ).then( function() {
+			if ( product_id != PC.fe.active_product && PC.fe.modal ) {
+				PC.fe.modal.remove();
+				PC.fe.set_modal( null );
+				wp.hooks.doAction( 'PC.fe.reset_product' );
+			}
+
+			PC.fe.active_product = product_id;
+			PC.fe.parent_product = parent_id;
+
+			if ( ! PC.fe.modal ) {
+				PC.fe.set_modal( PC.fe.create_stub_modal( product_id, parent_id ) );
+			} else {
+				PC.fe.ui = PC.fe.modal;
+			}
+
+			PC.fe.init( product_id, parent_id, options.$element );
+			return PC.fe;
+		} );
+	};
+
+	/**
+	 * Replace a headless stub with the real configurator view (same product).
+	 *
+	 * @param {number} product_id
+	 * @param {number} parent_id
+	 * @param {jQuery} $element
+	 * @param {boolean} reset
+	 */
+	PC.fe.upgrade_headless_to_ui = function( product_id, parent_id, $element, reset ) {
+		PC.fe.headless = false;
+		PC.fe.opened = true;
+		wp.hooks.doAction( 'PC.fe.before_open' );
+		$( 'body' ).addClass( 'configurator_is_opened' );
+		if ( PC.fe.inline ) $( 'body' ).addClass( 'configurator_is_inline' );
+
+		if ( PC.fe.modal ) {
+			PC.fe.modal.remove();
+			PC.fe.set_modal( null );
+		}
+
+		PC.fe.set_modal( new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ) );
+		PC.fe.trigger_el = $element;
+
+		if ( $element && PC.fe.currentProductData && PC.fe.currentProductData.product_info ) {
+			PC.fe.currentProductData.product_info.price = $element.data( 'price' ) || 0;
+			PC.fe.currentProductData.product_info.price_tiers = $element.data( 'price_tiers' );
+			PC.fe.currentProductData.product_info.regular_price = $element.data( 'regular_price' );
+			PC.fe.currentProductData.product_info.is_on_sale = ( 1 == $element.data( 'is_on_sale' ) );
+		}
+
+		if ( reset ) {
+			PC.fe.reset_configuration();
+		}
+
+		// Collections already exist. Skip reset-on-start so lite/engine state is kept.
+		wp.hooks.addFilter( 'PC.fe.reset.on.start', 'mkl/product_configurator/upgrade', function() {
+			return false;
+		} );
+		PC.fe.modal.$el.trigger( 'content-is-loaded' );
+		wp.hooks.removeFilter( 'PC.fe.reset.on.start', 'mkl/product_configurator/upgrade' );
+	};
+
 	PC.fe.init = function( product_id, parent_id, $element ) {
 		if ( PC.fe.is_using_shortcode ) {
 			this.options = {};
@@ -282,15 +539,16 @@
 
 		PC.fe.trigger_el = $element;
 
-		if ( parent_id && 'async' !== PC.fe.config.data_mode ) {
-			this.currentProductData = PC.productData['prod_' + parent_id];
-			this.layers = new PC.layers( PC.productData['prod_' + parent_id].layers );
-			this.angles = new PC.angles( PC.productData['prod_' + parent_id].angles, { parse: true } );
-		} else {
-			this.currentProductData = PC.productData['prod_' + product_id];
-			this.layers = new PC.layers( PC.productData['prod_' + product_id].layers ); 
-			this.angles = new PC.angles( PC.productData['prod_' + product_id].angles, { parse: true } ); 
+		var data_key = ( parent_id && 'async' !== PC.fe.config.data_mode ) ? 'prod_' + parent_id : 'prod_' + product_id;
+		var product_data = PC.productData && PC.productData[ data_key ];
+		if ( ! product_data || ! product_data.product_info ) {
+			console.error( 'Product configurator: missing product data for', product_id );
+			return;
 		}
+
+		this.currentProductData = product_data;
+		this.layers = new PC.layers( product_data.layers );
+		this.angles = new PC.angles( product_data.angles, { parse: true } );
 
 		if ( $( $element ).data( 'force_form' ) ) PC.fe.currentProductData.product_info.force_form = true;
 
@@ -308,8 +566,14 @@
 		this.currentProductData.product_info.qty = this?.modal?.form?.$( 'input.qty' ).val() || 1;
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
-			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] ); 
-			this.modal.$el.trigger( 'content-is-loaded' ); 
+			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] );
+			if ( PC.fe.is_headless() ) {
+				// Engine mode: collections are ready. Fire start on the stub; do not build UI.
+				$( PC.fe ).trigger( 'start', this.modal );
+				wp.hooks.doAction( 'PC.fe.start', this.modal );
+			} else if ( this.modal && this.modal.$el ) {
+				this.modal.$el.trigger( 'content-is-loaded' );
+			}
 		} 
 
 		$( document.body ).trigger( 'mkl-pc-init', product_id, parent_id );
@@ -318,6 +582,13 @@
 	};
 
 	PC.fe.open = function( product_id, parent_id, $element, reset ) {
+
+		parent_id = parent_id ? parent_id : product_id;
+
+		if ( product_id == PC.fe.active_product && PC.fe.headless ) {
+			PC.fe.upgrade_headless_to_ui( product_id, parent_id, $element, reset );
+			return;
+		}
 
 		PC.fe.opened = true;
 		wp.hooks.doAction( 'PC.fe.before_open' );
@@ -335,61 +606,34 @@
 
 		if ( product_id != PC.fe.active_product && this.modal ) {
 			this.modal.remove();
-			this.modal = null;
+			PC.fe.set_modal( null );
 			wp.hooks.doAction( 'PC.fe.reset_product' );
 		}
 
 		PC.fe.active_product = product_id; 
-		PC.fe.parent_product = parent_id ? parent_id : product_id;
-		
-		if ( PC.productData && PC.productData['prod_'+parent_id] ) {
-			this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
+		PC.fe.parent_product = parent_id;
+
+		var boot_ui = function() {
+			PC.fe.headless = false;
+			PC.fe.set_modal( PC.fe.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ) );
 			PC.fe.init( product_id, parent_id, $element );
-		} else {
-			// No data found - force Async mode
-			PC.fe.config.data_mode = 'async';
-			wp.hooks.addAction( 'mkl_pc.product_data.loaded', 'mkl_pc', function( id ) {
-				if ( id == product_id ) {
-					this.modal = this.modal || new PC.fe.views.configurator( { product_id: product_id, parent_id: parent_id } ); 
-					PC.fe.init( product_id, parent_id, $element );
-				}
-			}.bind( this ) );
-			// const now = 
-		} 
-		
-		if ( 'async' === PC.fe.config.data_mode ) {
-			if ( $element ) {
-				$element.addClass( 'loading-data' );
-			}
-			wp.hooks.doAction( 'mkl_pc.product_data.loading', product_id );
-			let data_url = PC_config.ajaxurl + `?action=pc_get_data&data=init&fe=1&id=${product_id}`;
-			if ( PC_config.update_nonce ) {
-				data_url += `&nonce=${encodeURIComponent( PC_config.update_nonce )}`;
-			}
-			fetch( data_url ).then(r => r.json()).then(data => {
-				PC.productData = window.PC.productData || {};
-				PC.productData['prod_'+product_id] = data;
-				
-				if ( !data?.layers?.length || !data?.content?.length ) {
-					console.log( data );
+		};
+
+		if ( PC.productData && PC.productData['prod_'+parent_id] ) {
+			boot_ui();
+			return;
+		}
+
+		PC.fe.config.data_mode = 'async';
+		PC.fe.ensureProductData( product_id, { $element: $element } ).then( function( data ) {
+			if ( ! data || ! data.layers || ! data.layers.length || ! data.content || ! data.content.length ) {
+				console.log( data );
+				if ( $element ) {
 					$element.after( $( '<div>Error - the configurator data is incomplete. See browser console for data details</div>' ) );
 				}
-
-				$element.removeClass( 'loading-data' );
-				wp.hooks.doAction( 'mkl_pc.product_data.loaded', product_id );
-			});
-		} 
-		// if( !this.layers && !variation ) {
-		// 	return;
-		// }
-		// if( ( variation && !PC.fe.variations_content ) || ( variation && !PC.fe.variations_content[product_id] ) ) {
-		// 	PC.fe.init( product_id, variation );
-		// 	return;
-		// }
-		
-		/*
-		check if product_id is different from before
-		*/
+			}
+			boot_ui();
+		} );
 
 	};
 
