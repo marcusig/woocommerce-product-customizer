@@ -640,6 +640,47 @@ class DB {
 	}
 
 	/**
+	 * Delete per-layer or per-content chunk metas whose numeric suffix is not in $keep_ids.
+	 *
+	 * Scans actual post meta (not only the previous layers index) so leftover chunks from
+	 * layers deleted in an earlier session are removed. Those orphans otherwise fail mixed-storage
+	 * integrity and block storage_format_version from being stamped.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
+	 * @param int[] $keep_ids
+	 * @param string $prefix e.g. _mkl_product_configurator_layer_
+	 * @return string[] Deleted meta keys.
+	 */
+	private function delete_orphan_chunk_metas( $product, $keep_ids, $prefix ) {
+		if ( ! $product ) {
+			return array();
+		}
+		$orphans = $this->find_orphan_chunk_meta_keys( $product->get_id(), $keep_ids, $prefix );
+		if ( empty( $orphans ) ) {
+			return array();
+		}
+		foreach ( $orphans as $meta_key ) {
+			$product->delete_meta_data( $meta_key );
+		}
+		$product->save();
+		return $orphans;
+	}
+
+	/**
+	 * Remove layer/content chunk metas that are not in the current layers index.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $layers_product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $content_product
+	 * @param int[] $keep_ids
+	 * @return void
+	 */
+	private function purge_orphan_chunks_for_index( $layers_product, $content_product, $keep_ids ) {
+		$this->delete_orphan_chunk_metas( $layers_product, $keep_ids, '_mkl_product_configurator_layer_' );
+		$content_owner = $content_product ? $content_product : $layers_product;
+		$this->delete_orphan_chunk_metas( $content_owner, $keep_ids, '_mkl_product_configurator_content_' );
+	}
+
+	/**
 	 * Full integrity check for chunked layers + content storage (parent + content product).
 	 *
 	 * Uses {@see self::META_INTEGRITY_CACHE}: when 1 and $force_refresh is false, returns a cached OK result with fresh status labels.
@@ -871,6 +912,15 @@ class DB {
 
 		$current_version  = (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true );
 		$integrity_cached = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
+
+		$content_product_id = $this->get_product_id_for_content( $parent_id, $variation_id );
+		$content_owner_id   = $this->resolve_storage_owner_id( $content_product_id, $variation_id, 'content' );
+		$content_product    = ( $content_owner_id && $content_owner_id !== $owner_parent_id )
+			? $this->get_owner( $content_owner_id )
+			: $parent;
+		$parent_index = $this->read_layers_index_array( $parent );
+		$this->purge_orphan_chunks_for_index( $parent, $content_product, $parent_index );
+
 		if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version && $integrity_cached >= 1 ) {
 			$verify = array(
 				'ok'             => true,
@@ -897,9 +947,6 @@ class DB {
 			$verify['snapshot']               = $this->get_pc_storage_state_for_editor( $parent_id, $variation_id, false );
 			return $verify;
 		}
-
-		$content_product_id = $this->get_product_id_for_content( $parent_id, $variation_id );
-		$content_owner_id   = $this->resolve_storage_owner_id( $content_product_id, $variation_id, 'content' );
 
 		$parent->update_meta_data( self::META_STORAGE_FORMAT_VERSION, self::STORAGE_FORMAT_CHUNKED_VERIFIED );
 		$parent->save();
@@ -1221,9 +1268,11 @@ class DB {
 			$layer_id = (int) $layer_id;
 			if ( $layer_id ) {
 				$product->delete_meta_data( '_mkl_product_configurator_layer_' . $layer_id );
+				$product->delete_meta_data( '_mkl_product_configurator_content_' . $layer_id );
 			}
 		}
 		$product->save();
+		$this->purge_orphan_chunks_for_index( $product, $product, $layer_ids );
 
 		$data = $this->get( 'layers', $id );
 		$this->invalidate_layers_cache( $owner_id );
@@ -1236,20 +1285,15 @@ class DB {
 	}
 
 	/**
-	 * Delete layer chunk metas for IDs that were in the old index but not in the new list.
+	 * Delete layer chunk metas whose IDs are not in the keep list.
 	 *
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @param array       $keep_ids  New layer IDs to keep.
-	 * @param array       $old_index Previous layer index (IDs that might have chunk metas).
+	 * @param array       $old_index Unused; kept for call-site compatibility.
 	 */
 	private function delete_layer_chunk_metas( $product, $keep_ids, $old_index = array() ) {
-		$keep = array_flip( $keep_ids );
-		foreach ( $old_index as $layer_id ) {
-			$layer_id = (int) $layer_id;
-			if ( $layer_id && ! isset( $keep[ $layer_id ] ) ) {
-				$product->delete_meta_data( '_mkl_product_configurator_layer_' . $layer_id );
-			}
-		}
+		unset( $old_index );
+		$this->delete_orphan_chunk_metas( $product, $keep_ids, '_mkl_product_configurator_layer_' );
 	}
 
 	/**
@@ -1366,6 +1410,10 @@ class DB {
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
 		}
+		$layers_index = $this->read_layers_index_array( $product );
+		if ( ! empty( $layers_index ) ) {
+			$this->delete_orphan_chunk_metas( $product, $layers_index, '_mkl_product_configurator_content_' );
+		}
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
 		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
@@ -1384,30 +1432,15 @@ class DB {
 	}
 
 	/**
-	 * Delete content chunk metas for layer IDs that are in old_index but not in keep_ids.
+	 * Delete content chunk metas whose layer IDs are not in the keep list.
 	 *
-	 * @param \WC_Product $product
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
 	 * @param array       $keep_ids  Layer IDs to keep (current content layer IDs).
-	 * @param array       $old_index Optional. Previous layers index; if not provided, read from product.
+	 * @param array       $old_index Unused; kept for call-site compatibility.
 	 */
 	private function delete_content_chunk_metas( $product, $keep_ids, $old_index = null ) {
-		if ( null === $old_index ) {
-			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-			$old_index = maybe_unserialize( $old_index );
-			if ( is_string( $old_index ) ) {
-				$old_index = $this->decode_stored_json( $old_index );
-			}
-		}
-		if ( ! is_array( $old_index ) ) {
-			return;
-		}
-		$keep = array_flip( $keep_ids );
-		foreach ( $old_index as $layer_id ) {
-			$layer_id = (int) $layer_id;
-			if ( $layer_id && ! isset( $keep[ $layer_id ] ) ) {
-				$product->delete_meta_data( '_mkl_product_configurator_content_' . $layer_id );
-			}
-		}
+		unset( $old_index );
+		$this->delete_orphan_chunk_metas( $product, $keep_ids, '_mkl_product_configurator_content_' );
 	}
 
 	private function invalidate_layers_cache( $product_id ) {
