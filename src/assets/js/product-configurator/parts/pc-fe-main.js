@@ -450,6 +450,7 @@
 	 * @param {number|Object} [parent_id] Parent product id, or options if the parent is omitted.
 	 * @param {Object}        [options]
 	 * @param {jQuery}        [options.$element]  Trigger used for data-price / data-price_tiers.
+	 *                                            Without it, `product_info.price` from `pc_get_data` is kept.
 	 * @param {boolean}       [options.omitImages] Fetch pc_get_data with omit_images=1.
 	 * @return {Promise}
 	 */
@@ -558,7 +559,8 @@
 			this.currentProductData.product_info.price_tiers = $element.data( 'price_tiers' );
 			this.currentProductData.product_info.regular_price = $element.data( 'regular_price' );
 			this.currentProductData.product_info.is_on_sale = ( 1 == $element.data( 'is_on_sale' ) );
-		} else {
+		} else if ( 'undefined' === typeof this.currentProductData.product_info.price ) {
+			// Headless / initEngine: keep Woo price from pc_get_data. Do not zero it.
 			this.currentProductData.product_info.price = 0;
 		}
 
