@@ -291,3 +291,32 @@ if ( ! function_exists( 'mkl_pc_get_configuration_price' ) ) {
 		return $config->get_configured_price( $args );
 	}
 }
+
+/**
+ * Get the mode used to store the configuration on cart items and order line items.
+ *
+ * - `single`     : one meta holding every choice (default, the historical behaviour)
+ * - `individual` : one meta per layer
+ * - `both`       : the single meta for display, plus one meta per layer
+ *
+ * @param \WC_Product|false $product Optional product, to allow filtering the mode per product.
+ * @return string
+ */
+function mkl_pc_get_configuration_meta_mode( $product = false ) {
+	$mode = mkl_pc( 'settings' )->get( 'configuration_meta_mode', 'single' );
+
+	if ( ! in_array( $mode, [ 'single', 'individual', 'both' ], true ) ) {
+		$mode = 'single';
+	}
+
+	/**
+	 * Filter mkl_pc/configuration_meta_mode - the configuration meta mode
+	 *
+	 * @param string            $mode    One of `single`, `individual` or `both`
+	 * @param \WC_Product|false $product The product, when available
+	 * @return string
+	 */
+	$mode = apply_filters( 'mkl_pc/configuration_meta_mode', $mode, $product );
+
+	return in_array( $mode, [ 'single', 'individual', 'both' ], true ) ? $mode : 'single';
+}

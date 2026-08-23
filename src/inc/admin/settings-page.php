@@ -562,6 +562,24 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'configuration_meta_mode',
+				__( 'Configuration meta data', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => [
+						'single' => __( 'A single meta containing all the choices', 'product-configurator-for-woocommerce' ),
+						'individual' => __( 'One meta per layer (easier to extract, no thumbnails)', 'product-configurator-for-woocommerce' ),
+						'both' => __( 'Both: a single meta for display, plus one meta per layer', 'product-configurator-for-woocommerce' ),
+					],
+					'default' => 'single',
+					'setting_name' => 'configuration_meta_mode',
+					'description' => __( 'How the configuration is stored on the order line item. One meta per layer is easier for exports, invoices and ERP integrations to read, but it cannot display the choice thumbnails. Only affects new orders. The "One meta per layer" option also splits the choices in the classic cart and checkout, to match the cart blocks.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'display_options_angles',
 				__( 'Angle display options', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_html' ],

@@ -480,14 +480,22 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				$is_block = ( 'block' === $this->_get_cart_item_context( $cart_item ) );
 
+				/**
+				 * The cart blocks always list one row per layer: the Store API cannot carry the
+				 * combined HTML. The classic cart follows the configuration meta mode, so that
+				 * both carts match the way the choices are stored on the order.
+				 */
+				$meta_mode     = mkl_pc_get_configuration_meta_mode( $cart_item['data'] );
+				$split_choices = $is_block || 'individual' === $meta_mode;
+
 				if ( $compound_sku && count( $sku ) ) {
 					$sku_item = array(
 						'className' => 'configuration-sku',
 						'key' => mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
 						'value' => implode( mkl_pc( 'settings')->get_label( 'sku_glue', '' ), $sku )
 					);
-					if ( $is_block ) {
-						$sku_items = $this->_prepare_block_cart_item_data( array( $sku_item ) );
+					if ( $split_choices ) {
+						$sku_items = $this->_prepare_split_cart_item_data( array( $sku_item ) );
 						if ( ! empty( $sku_items ) ) {
 							$data[] = $sku_items[0];
 						}
@@ -496,8 +504,27 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					}
 				}
 
-				if ( $is_block ) {
-					$data = array_merge( $data, $this->_prepare_block_cart_item_data( $this->get_choices_data( $choices ) ) );
+				if ( $split_choices ) {
+					$choice_rows = $this->get_choices_data( $choices );
+
+					// Only tidy the rows when the choices are meant to stand on their own.
+					// In the other modes the blocks keep listing exactly what they always have.
+					if ( 'individual' === $meta_mode ) {
+						$choice_rows = $this->_normalize_split_choice_rows( $choice_rows );
+					}
+
+					$choice_rows = $this->_prepare_split_cart_item_data( $choice_rows );
+
+					// There is no combined value to append the edit link to, so it goes after
+					// the last choice. The blocks handle their own edit link.
+					if ( $edit_link && ! $is_block && ! empty( $choice_rows ) ) {
+						$last_row = count( $choice_rows ) - 1;
+						if ( isset( $choice_rows[ $last_row ]['value'] ) ) {
+							$choice_rows[ $last_row ]['value'] .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
+						}
+					}
+
+					$data = array_merge( $data, $choice_rows );
 				} else {
 					$value = $this->get_choices_html( $choices );
 					if ( $edit_link ) {
@@ -892,14 +919,47 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		/**
-		 * Prepare cart item data elements for the cart/checkout blocks (Store API).
+		 * Tidy the per-layer rows so that each one can stand on its own.
 		 *
-		 * The Store API drops any item_data element that contains a non-scalar value.
+		 * Inside the combined value a layer with a label but no value reads as a heading, and
+		 * a repeated layer only needs its label once. Listed one per row, the first becomes an
+		 * empty row and the second loses its label, so drop the one and restore the other.
+		 *
+		 * @param array $rows Output of {@see get_choices_data()}
+		 * @return array
+		 */
+		private function _normalize_split_choice_rows( $rows ) {
+			$normalized = array();
+
+			foreach ( $rows as $row ) {
+				// Headings and group layers: a label, but nothing selected to show.
+				if ( ! isset( $row['value'] ) || '' === trim( wp_strip_all_tags( (string) $row['value'] ) ) ) {
+					continue;
+				}
+
+				$layer = isset( $row['choice']['layer'] ) ? $row['choice']['layer'] : null;
+
+				if ( empty( $row['key'] ) && $layer && is_callable( [ $layer, 'get_layer' ] ) ) {
+					$row['key']  = $layer->get_layer( 'name' );
+					$row['name'] = $row['key'];
+				}
+
+				$normalized[] = $row;
+			}
+
+			return $normalized;
+		}
+
+		/**
+		 * Prepare cart item data elements for the one-row-per-layer display.
+		 *
+		 * Used by the cart/checkout blocks, which drop any item_data element holding a
+		 * non-scalar value, and by the classic cart when the choices are listed individually.
 		 *
 		 * @param array $items
 		 * @return array
 		 */
-		private function _prepare_block_cart_item_data( $items ) {
+		private function _prepare_split_cart_item_data( $items ) {
 			$prepared = array();
 
 			foreach ( $items as $item ) {

@@ -100,11 +100,28 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				if ( isset( $values['pc_configurator_data_raw'] ) && is_string( $values['pc_configurator_data_raw'] ) && '' !== $values['pc_configurator_data_raw'] ) {
 					$item->add_meta_data( '_pc_configurator_data_raw', $values['pc_configurator_data_raw'], false );
 				}
-				$item->add_meta_data( 
-					apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
-					$this->get_formatted_configurator_data( $configurator_data, $item ), 
-					false
-				);
+				$meta_mode = mkl_pc_get_configuration_meta_mode( $item->get_product() );
+
+				/**
+				 * Build the per-layer choices once, and derive both outputs from them.
+				 * `get_configuration_choices_for_display()` must not run twice for the same
+				 * item: add-ons use the item counter to detect a new item, and treat a second
+				 * pass over the same one as a repeated layer (the Form builder blanks the
+				 * label in that case).
+				 */
+				$configuration_choices = $this->prepare_configuration_choices( $configurator_data, $item );
+
+				if ( 'individual' !== $meta_mode ) {
+					$item->add_meta_data( 
+						apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
+						! empty( $configuration_choices ) ? $this->get_choices_html( $configuration_choices ) : '', 
+						false
+					);
+				}
+
+				if ( 'single' !== $meta_mode ) {
+					$this->add_individual_layer_meta( $item, $configuration_choices );
+				}
 				if ( $sku = $this->get_sku( $configurator_data ) ) {
 					$item->add_meta_data(
 						esc_html( mkl_pc( 'settings')->get_label( 'sku_label', esc_html_x( 'SKU', 'Label for the SKU meta data', 'product-configurator-for-woocommerce' ) ) ),
@@ -196,27 +213,128 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		 * @return array
 		 */
 		public function get_formatted_configurator_data( $configurator_data, $order_item ) {
-			
+			$order_meta_for_configuration = $this->prepare_configuration_choices( $configurator_data, $order_item );
+
+			if ( ! empty( $order_meta_for_configuration ) ) {
+				return $this->get_choices_html( $order_meta_for_configuration );
+			}
+
+			return '';
+		}
+
+		/**
+		 * Move the item counter forward and collect the per-layer choices.
+		 *
+		 * Add-ons use the `$mkl_pc_get_current_item` counter to tell one order item from the
+		 * next, so this must run exactly once per item: a second pass over the same item is
+		 * seen as a repeated layer and loses the labels.
+		 *
+		 * @param array          $configurator_data
+		 * @param \WC_Order_Item $order_item
+		 * @return array
+		 */
+		protected function prepare_configuration_choices( $configurator_data, $order_item ) {
 			global $mkl_pc_get_current_item;
 			if ( ! $mkl_pc_get_current_item ) {
 				$mkl_pc_get_current_item = 1;
 			} else {
 				$mkl_pc_get_current_item++;
 			}
-			static $items_count;
-			if ( ! $items_count ) {
-				$items_count = 1;
-			} else {
-				$items_count += 1;
-			}
 
-			if ( is_array( $configurator_data ) ) {
-				$order_meta_for_configuration = $this->get_configuration_choices_for_display( $configurator_data, $order_item );
-				if ( ! empty( $order_meta_for_configuration ) ) {
-					return $this->get_choices_html( $order_meta_for_configuration );
+			if ( ! is_array( $configurator_data ) ) return [];
+
+			return $this->get_configuration_choices_for_display( $configurator_data, $order_item );
+		}
+
+		/**
+		 * Store one meta per layer on the order item, rather than a single combined meta.
+		 *
+		 * The values are stored as plain text, so that exports, invoices and ERP
+		 * integrations can read them without having to parse markup.
+		 *
+		 * @param \WC_Order_Item $item
+		 * @param array          $choices Output of {@see prepare_configuration_choices()}
+		 * @return void
+		 */
+		protected function add_individual_layer_meta( $item, $choices ) {
+			if ( empty( $choices ) || ! is_array( $choices ) ) return;
+
+			foreach ( $choices as $choice ) {
+				if ( empty( $choice ) || ! is_array( $choice ) ) continue;
+
+				$layer = isset( $choice['layer'] ) ? $choice['layer'] : null;
+				$key   = isset( $choice['label'] ) ? $choice['label'] : '';
+				$value = isset( $choice['value'] ) ? $choice['value'] : '';
+
+				/**
+				 * Filter mkl_pc/order_created/individual_meta/keep_html - whether to keep the
+				 * markup in the individual layer metas. Off by default: the point of the
+				 * individual metas is to be machine readable.
+				 *
+				 * @param bool           $keep_html
+				 * @param \MKL\PC\Choice $layer
+				 * @param \WC_Order_Item $item
+				 * @return bool
+				 */
+				if ( ! apply_filters( 'mkl_pc/order_created/individual_meta/keep_html', false, $layer, $item ) ) {
+					$key   = $this->meta_to_plain_text( $key );
+					$value = $this->meta_to_plain_text( $value );
 				}
+
+				// Add-ons blank the label when a layer is repeated, because the combined meta
+				// only shows it once. Each individual meta stands on its own, so put it back.
+				if ( '' === $key && $layer && is_callable( [ $layer, 'get_layer' ] ) ) {
+					$key = $this->meta_to_plain_text( $layer->get_layer( 'name' ) );
+				}
+
+				/**
+				 * Filter mkl_pc/order_created/individual_meta/key - the meta key of an individual layer meta
+				 *
+				 * @param string         $key
+				 * @param \MKL\PC\Choice $layer
+				 * @param \WC_Order_Item $item
+				 * @return string
+				 */
+				$key = apply_filters( 'mkl_pc/order_created/individual_meta/key', $key, $layer, $item );
+
+				/**
+				 * Filter mkl_pc/order_created/individual_meta/value - the meta value of an individual layer meta
+				 *
+				 * @param string         $value
+				 * @param \MKL\PC\Choice $layer
+				 * @param \WC_Order_Item $item
+				 * @return string
+				 */
+				$value = apply_filters( 'mkl_pc/order_created/individual_meta/value', $value, $layer, $item );
+
+				// WooCommerce skips empty values when displaying the meta, so there is
+				// nothing to gain from storing them.
+				if ( ! is_scalar( $value ) || '' === (string) $value ) continue;
+
+				$item->add_meta_data( (string) $key, (string) $value, false );
 			}
-			return '';
+		}
+
+		/**
+		 * Turn a meta label or value into plain text.
+		 *
+		 * @param mixed $html
+		 * @return string
+		 */
+		protected function meta_to_plain_text( $html ) {
+			if ( ! is_scalar( $html ) ) return '';
+
+			$text = (string) $html;
+
+			// Keep words apart where the markup was doing the separating.
+			$text = preg_replace( '#<(br|/div|/p|/li|/span)[^>]*>#i', ' ', $text );
+			$text = wp_strip_all_tags( $text );
+			$text = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
+			// Decoding can bring markup back (eg. an escaped tag stored as an entity).
+			$text = wp_strip_all_tags( $text );
+			$text = preg_replace( '/\s+/u', ' ', $text );
+
+			return trim( (string) $text );
 		}
 
 		/**

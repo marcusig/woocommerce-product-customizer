@@ -188,6 +188,13 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
+= 1.7.6 - unreleased =
+
+* FEATURE: Added a "Configuration meta data" setting, to store the configuration as one meta per layer instead of a single meta holding every choice. Individual metas are plain text, so exports, invoices and ERP integrations can read them without parsing markup
+* TWEAK: The classic cart and checkout list one row per layer when the configuration is stored individually, to match the cart and checkout blocks
+* DEV: Added `mkl_pc_get_configuration_meta_mode()` and the filter `mkl_pc/configuration_meta_mode`, to set the mode per product
+* DEV: Added the filters `mkl_pc/order_created/individual_meta/key`, `mkl_pc/order_created/individual_meta/value` and `mkl_pc/order_created/individual_meta/keep_html`
+
 = 1.7.5 - 11/Aug/2026 =
 
 * TWEAK: Improve Mobile CSS in the theme Clean, reducing animations to improve performance
