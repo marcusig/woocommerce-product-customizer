@@ -12,7 +12,7 @@ if ( typeof window !== 'undefined' ) {
 }
 
 import viewer_3d_choice from './choice-view.js';
-import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, prefersReducedMotion, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';
+import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, getCustomPassFactories, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, prefersReducedMotion, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';
 import { initScene, cleanupThree } from './3d-scene-lifecycle.js';
 import { applySettingsToScene } from './3d-apply-preview-settings.js';
 import {
@@ -30,6 +30,26 @@ import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
+
+/**
+ * Shape version of the object handed to add-ons on PC.fe.viewer.runtime.ready.
+ * Bumped when something an add-on can observe changes; add-ons that need a
+ * newer member should feature-detect it rather than compare numbers.
+ */
+const RUNTIME_API_VERSION = 1;
+
+/**
+ * Release passes that never made it into a composer. A pass holds render
+ * targets and materials from the moment it is constructed, so one that is built
+ * and then dropped leaks GPU memory for the life of the page.
+ *
+ * @param {Object[]} passes
+ */
+function disposeUnusedPasses( passes ) {
+	passes.forEach( ( pass ) => {
+		if ( pass && typeof pass.dispose === 'function' ) pass.dispose();
+	} );
+}
 
 export default Backbone.View.extend({
 	tagName: 'div',
@@ -123,9 +143,46 @@ export default Backbone.View.extend({
 		this._emitRuntimeAction( 'PC.fe.viewer.runtime.event', [ this, eventName, payload, this._runtimeApi ] );
 	},
 
+	/**
+	 * Announce that a choice action overwrote material state.
+	 *
+	 * Choice actions write straight onto the materials in the registry, and
+	 * apply_material reassigns mesh.material outright. An add-on that installed
+	 * its own material — a ShaderMaterial, or a stock material patched through
+	 * onBeforeCompile — loses it the moment the customer clicks a choice that
+	 * targets the same material or mesh. This is the signal to put it back, and
+	 * it names exactly what moved so the add-on does not have to re-walk the
+	 * scene to find out.
+	 *
+	 * Payload keys are camelCase because this crosses into the public runtime
+	 * API; the handlers themselves use the snake_case of their own module.
+	 *
+	 * @param {Object} payload - From 3d-action-handlers, via choice-view
+	 */
+	_emitMaterialEvent( payload ) {
+		const p = payload || {};
+		const event = {
+			phase: p.phase === 'restore' ? 'restore' : 'apply',
+			actionType: p.action_type || '',
+			action: p.action || null,
+			material: p.material || null,
+			materialName: p.material_name || '',
+			meshes: Array.isArray( p.meshes ) ? p.meshes : [],
+			variantRoot: p.variant_root || null,
+			targetObject: p.target_object || null,
+			targetScene: p.target_scene || null,
+			choice: p.choice || null,
+			layer: p.layer || null,
+		};
+		this._emitRuntimeAction( 'PC.fe.viewer.material.applied', [ this, event, this._runtimeApi ] );
+		this._emitRuntimeEvent( 'material:applied', event );
+	},
+
 	_createRuntimeApi() {
 		if ( this._runtimeApi ) return this._runtimeApi;
 		this._runtimeApi = {
+			// Bumped when the shape below changes in a way add-ons can observe.
+			apiVersion: RUNTIME_API_VERSION,
 			THREE,
 			getTHREE: () => THREE,
 			getScene: () => ( this._three ? this._three.scene : null ),
@@ -133,6 +190,20 @@ export default Backbone.View.extend({
 			getControls: () => ( this._three ? this._three.controls : null ),
 			getRenderer: () => ( this._three ? this._three.renderer : null ),
 			getModelRoot: () => ( this._three ? this._three.model_root : null ),
+			// The live registry the choice actions write to: material name →
+			// THREE.Material, built from every loaded model. An add-on that wants
+			// to patch or replace what the configurator drives needs this rather
+			// than its own traversal, or the two disagree about which material a
+			// name refers to.
+			getMaterialRegistry: () => ( this._three ? this._three.material_registry : null ),
+			getMaterial: ( name ) => {
+				const t = this._three;
+				if ( ! t || ! t.material_registry || name == null ) return null;
+				return t.material_registry.get( String( name ) ) || null;
+			},
+			// Shared so add-on textures land in the same cache and colour space
+			// handling as the host's.
+			getTextureLoader: () => ( this._three ? this._three.textureLoader : null ),
 			getSceneForObject3dId: ( object3dId ) => {
 				if ( object3dId == null ) return null;
 				return this._objectIdToScene[ String( object3dId ).trim() ] || null;
@@ -510,12 +581,15 @@ export default Backbone.View.extend({
 	 * Phase 2: Load conditional modules in parallel (loader, FakeShadow).
 	 * Postprocessing creator comes from add-ons via PC.3d.createPostprocessingLayer.
 	 * @param {Object} s - settings_3d
-	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, createPostprocessingLayer: * }>}
+	 * @returns {Promise<{ gltfLoader: *, FakeShadow: *, createPostprocessingLayer: *, passFactories: function[] }>}
 	 */
 	async _loadModules( s ) {
 		const { getSharedGltfLoader } = await import( './3d-loader-factory.js' );
 		const groundEnabled = ( s.ground && s.ground.enabled !== false );
-		const anyPostprocessing = isPostprocessingEnabled( s );
+		// A registered custom pass is reason enough to build a composer, even
+		// when none of the add-on's own effects are switched on for this product.
+		const passFactories = getCustomPassFactories( s );
+		const anyPostprocessing = isPostprocessingEnabled( s ) || passFactories.length > 0;
 
 		const promises = [
 			getSharedGltfLoader(),
@@ -539,7 +613,63 @@ export default Backbone.View.extend({
 			gltfLoader,
 			FakeShadow: FakeShadowModule.FakeShadow || null,
 			createPostprocessingLayer,
+			passFactories,
 		};
+	},
+
+	/**
+	 * Instantiate the passes add-ons registered through PC.3d.postprocessingPasses.
+	 *
+	 * Factories may be async, and are given three's pass classes in the context
+	 * so a plain enqueued script can build a pass without bundling anything.
+	 *
+	 * @param {function[]} factories
+	 * @param {Object} t - the _three bag
+	 * @param {Object} s - settings_3d
+	 * @returns {Promise<Object[]>} Pass instances
+	 */
+	async _buildCustomPasses( factories, t, s ) {
+		if ( ! Array.isArray( factories ) || ! factories.length ) return [];
+
+		let toolkit = null;
+		try {
+			const module = await import(
+				/* webpackChunkName: "fe-3d-pass-toolkit" */ './3d-pass-toolkit.js'
+			);
+			toolkit = await module.load_pass_toolkit();
+		} catch ( err ) {
+			// eslint-disable-next-line no-console
+			console.warn( '3D viewer: failed to load the postprocessing pass classes, skipping custom passes', err );
+			return [];
+		}
+
+		const context = {
+			THREE,
+			passes: toolkit,
+			renderer: t.renderer,
+			scene: t.scene,
+			camera: t.camera,
+			width: t.container.clientWidth,
+			height: t.container.clientHeight,
+			pixelRatio: getPixelRatio(),
+			isMobile: isMobileViewport(),
+			settings: getPostprocessingSettings( s ),
+			api: this._createRuntimeApi(),
+		};
+
+		const built = await Promise.all( factories.map( async ( factory ) => {
+			try {
+				return await factory( context );
+			} catch ( err ) {
+				// One add-on's broken factory must not cost the product view.
+				// eslint-disable-next-line no-console
+				console.warn( '3D viewer: a custom postprocessing pass factory threw and was skipped', err );
+				return null;
+			}
+		} ) );
+
+		// Returning null is the documented way to opt out per product or device.
+		return built.filter( Boolean );
 	},
 
 	_getUrlForObject3dId( object3dId ) {
@@ -817,16 +947,49 @@ export default Backbone.View.extend({
 		t.controls.addEventListener( 'change', () => this._requestRender() );
 
 		// Create postprocessing pipeline and keep it in sync with container resize events.
-		if ( modules.createPostprocessingLayer ) {
-			const layer = await modules.createPostprocessingLayer( t.renderer, t.scene, t.camera, {
-				width: t.container.clientWidth,
-				height: t.container.clientHeight,
-				settings: getPostprocessingSettings( s ),
-				isMobile: isMobileViewport(),
-				pixelRatio: getPixelRatio(),
-				// Ambient occlusion is scaled from the model bounds, not the whole scene.
-				boundsObject: () => t.model_root,
-			} );
+		const passFactories = modules.passFactories || [];
+		if ( modules.createPostprocessingLayer || passFactories.length ) {
+			const extraPasses = await this._buildCustomPasses( passFactories, t, s );
+			let layer = null;
+			if ( modules.createPostprocessingLayer ) {
+				layer = await modules.createPostprocessingLayer( t.renderer, t.scene, t.camera, {
+					width: t.container.clientWidth,
+					height: t.container.clientHeight,
+					settings: getPostprocessingSettings( s ),
+					isMobile: isMobileViewport(),
+					pixelRatio: getPixelRatio(),
+					// Ambient occlusion is scaled from the model bounds, not the whole scene.
+					boundsObject: () => t.model_root,
+					extraPasses,
+				} );
+			}
+			if ( ! layer && extraPasses.length ) {
+				// No add-on chain claimed the passes — either no add-on is present,
+				// or it declined because none of its own effects are enabled here.
+				// Run them in a composer of our own rather than dropping them.
+				const { create_custom_passes_layer } = await import(
+					/* webpackChunkName: "fe-3d-custom-passes" */ './3d-custom-passes-layer.js'
+				);
+				layer = await create_custom_passes_layer( t.renderer, t.scene, t.camera, {
+					passes: extraPasses,
+					width: t.container.clientWidth,
+					height: t.container.clientHeight,
+					pixelRatio: getPixelRatio(),
+				} );
+			} else if ( layer && extraPasses.length && layer.extraPassesApplied !== true ) {
+				// An add-on chain is running but is too old to know about custom
+				// passes. A second composer on the same renderer would fight it, so
+				// say plainly that the passes were dropped instead of failing silently.
+				// eslint-disable-next-line no-console
+				console.warn(
+					'3D viewer: ' + extraPasses.length + ' custom postprocessing pass(es) were dropped. ' +
+					'The active postprocessing add-on does not support PC.3d.postprocessingPasses — update it.'
+				);
+				disposeUnusedPasses( extraPasses );
+			}
+			// The composer could not be built at all — a failed chunk, or a layer
+			// that declined. Either way the passes are going nowhere.
+			if ( ! layer && extraPasses.length ) disposeUnusedPasses( extraPasses );
 			if ( layer && t.container && t.resize_listeners ) {
 				t.postprocessingLayer = layer;
 				t.resize_listeners.push( ( width, height, ratio ) => {

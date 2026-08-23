@@ -44,6 +44,29 @@ export function isMobileViewport() {
 }
 
 /**
+ * Pass factories registered by add-ons through PC.3d.postprocessingPasses.
+ *
+ * Factories, not pass instances: a pass needs the renderer, camera and buffer
+ * size to construct, and none of those exist yet when this is first consulted —
+ * the host has to decide whether to load a composer at all before it builds the
+ * scene. The viewer calls each factory later with a full context.
+ *
+ * @param {Object} [settings] - settings_3d (defaults to getSettings())
+ * @returns {function[]}
+ */
+export function getCustomPassFactories( settings = null ) {
+	if ( ! window.wp || ! window.wp.hooks || typeof window.wp.hooks.applyFilters !== 'function' ) {
+		return [];
+	}
+	const list = window.wp.hooks.applyFilters(
+		'PC.3d.postprocessingPasses',
+		[],
+		{ settings: getPostprocessingSettings( settings ), isMobile: isMobileViewport() }
+	);
+	return Array.isArray( list ) ? list.filter( ( f ) => typeof f === 'function' ) : [];
+}
+
+/**
  * Whether any postprocessing effect would run. Answered by the add-on, so the
  * host never loads the heavy modules for a configuration that needs none.
  *

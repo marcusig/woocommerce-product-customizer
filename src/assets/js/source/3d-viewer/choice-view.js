@@ -126,10 +126,27 @@ const viewer_3d_choice = Backbone.View.extend({
 				registry: t.material_registry,
 				target_object: this.target_object,
 				target_scene: this.target_scene,
+				notify: ( payload ) => this._notify_material( payload ),
 			},
 			actions
 		);
 		this._request_render();
+	},
+
+	/**
+	 * Forward one material mutation to the viewer, tagged with the choice and
+	 * layer that caused it.
+	 *
+	 * @param {Object} payload - From 3d-action-handlers
+	 */
+	_notify_material( payload ) {
+		if ( ! this.parent_view || typeof this.parent_view._emitMaterialEvent !== 'function' ) return;
+		this.parent_view._emitMaterialEvent( Object.assign( {}, payload, {
+			choice: this.model,
+			layer: this.layer_model,
+			target_object: this.target_object || null,
+			target_scene: this.target_scene || null,
+		} ) );
 	},
 
 	/** Ask the viewer for a frame; rendering is on-demand. */
@@ -165,6 +182,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				// Material actions change the image without changing visibility, and
 				// texture actions finish asynchronously.
 				request_render: () => this._request_render(),
+				notify: ( payload ) => this._notify_material( payload ),
 			},
 			actions
 		);

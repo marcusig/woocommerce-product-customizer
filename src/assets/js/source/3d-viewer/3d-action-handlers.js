@@ -85,36 +85,74 @@ function recalled_default( holder, key ) {
 	return { value: store[ key ] };
 }
 
+/**
+ * @param {THREE.Object3D} obj
+ * @param {THREE.Material} material
+ * @returns {THREE.Mesh[]} Meshes whose material reference was reassigned
+ */
 function apply_material_to_object( obj, material ) {
-	if ( ! obj ) return;
+	const touched = [];
+	if ( ! obj ) return touched;
 	const assign = ( mesh ) => {
 		remember_default( mesh, 'material', mesh.material );
 		mesh.material = material;
+		touched.push( mesh );
 	};
 	if ( obj.isMesh && obj.material !== undefined ) {
 		assign( obj );
-		return;
+		return touched;
 	}
 	obj.traverse( ( child ) => {
 		if ( child.isMesh && child.material !== undefined ) {
 			assign( child );
 		}
 	} );
+	return touched;
 }
 
+/**
+ * @param {THREE.Object3D} obj
+ * @returns {THREE.Mesh[]} Meshes whose material reference was put back
+ */
 function restore_material_on_object( obj ) {
-	if ( ! obj ) return;
+	const touched = [];
+	if ( ! obj ) return touched;
 	const put_back = ( mesh ) => {
 		const original = recalled_default( mesh, 'material' );
-		if ( original ) mesh.material = original.value;
+		if ( original ) {
+			mesh.material = original.value;
+			touched.push( mesh );
+		}
 	};
 	if ( obj.isMesh && obj.material !== undefined ) {
 		put_back( obj );
-		return;
+		return touched;
 	}
 	obj.traverse( ( child ) => {
 		if ( child.isMesh && child.material !== undefined ) put_back( child );
 	} );
+	return touched;
+}
+
+/**
+ * Announce a material mutation to whoever owns the context.
+ *
+ * Add-ons that install their own materials — a custom ShaderMaterial, a patched
+ * material via onBeforeCompile — need to know when a choice has overwritten
+ * their work, and on which meshes, so they can put it back. Without this the
+ * only signal is the choice change itself, which says nothing about what in the
+ * scene actually moved.
+ *
+ * @param {Object} context - apply_choice_actions context
+ * @param {Object} payload - See the material:applied event in the runtime API
+ */
+function notify( context, payload ) {
+	if ( ! context || typeof context.notify !== 'function' ) return;
+	context.notify( Object.assign( {
+		material: null,
+		material_name: '',
+		meshes: [],
+	}, payload ) );
 }
 
 function apply_material_variant( context, action ) {
@@ -138,6 +176,14 @@ function apply_material_variant( context, action ) {
 	}
 	if ( typeof select_variant === 'function' ) {
 		select_variant( variant_root, variant_name, true, null );
+		// selectVariant swaps materials deep inside the glTF's own scene graph,
+		// so there is no mesh list to report — only the root it ran against.
+		notify( context, {
+			phase: 'apply',
+			action_type: 'material_variant',
+			action,
+			variant_root,
+		} );
 	}
 }
 
@@ -156,6 +202,15 @@ function apply_material_texture( context, action ) {
 		dispose_if_ours( mat );
 		mat.map = texture;
 		mat.needsUpdate = true;
+		// Fires from the load callback, not the call that started it, so
+		// listeners see the material in its finished state.
+		notify( context, {
+			phase: 'apply',
+			action_type: 'material_texture',
+			action,
+			material: mat,
+			material_name: name,
+		} );
 		// Landed after the render that ran when the choice changed.
 		if ( typeof request_render === 'function' ) request_render();
 	} );
@@ -185,6 +240,13 @@ function restore_material_texture( context, action ) {
 	dispose_if_ours( mat );
 	mat.map = original.value;
 	mat.needsUpdate = true;
+	notify( context, {
+		phase: 'restore',
+		action_type: 'material_texture',
+		action,
+		material: mat,
+		material_name: name,
+	} );
 }
 
 function apply_material_color_registry( context, action ) {
@@ -197,6 +259,13 @@ function apply_material_color_registry( context, action ) {
 	if ( ! mat || ! mat.color ) return;
 	remember_default( mat, 'color', mat.color.getHex() );
 	mat.color.set( color_hex );
+	notify( context, {
+		phase: 'apply',
+		action_type: 'material_color_registry',
+		action,
+		material: mat,
+		material_name: name,
+	} );
 }
 
 function restore_material_color_registry( context, action ) {
@@ -204,7 +273,15 @@ function restore_material_color_registry( context, action ) {
 	if ( ! registry || ! action.material_name ) return;
 	const mat = registry.get( action.material_name );
 	const original = mat && mat.color && recalled_default( mat, 'color' );
-	if ( original ) mat.color.setHex( original.value );
+	if ( ! original ) return;
+	mat.color.setHex( original.value );
+	notify( context, {
+		phase: 'restore',
+		action_type: 'material_color_registry',
+		action,
+		material: mat,
+		material_name: action.material_name,
+	} );
 }
 
 function apply_material_property( context, action ) {
@@ -228,6 +305,13 @@ function apply_material_property( context, action ) {
 	}
 	remember_default( mat, 'prop:' + prop, mat[ prop ] );
 	mat[ prop ] = value;
+	notify( context, {
+		phase: 'apply',
+		action_type: 'material_property',
+		action,
+		material: mat,
+		material_name: name,
+	} );
 }
 
 function restore_material_property( context, action ) {
@@ -244,10 +328,25 @@ function restore_material_property( context, action ) {
 	if ( prop === 'transparent' || prop === 'flatShading' || prop === 'wireframe' || prop === 'vertexColors' ) {
 		mat.needsUpdate = true;
 	}
+	notify( context, {
+		phase: 'restore',
+		action_type: 'material_property',
+		action,
+		material: mat,
+		material_name: name,
+	} );
 }
 
-function restore_material( context ) {
-	restore_material_on_object( context.target_object );
+function restore_material( context, action ) {
+	const meshes = restore_material_on_object( context.target_object );
+	if ( ! meshes.length ) return;
+	notify( context, {
+		phase: 'restore',
+		action_type: 'apply_material',
+		action,
+		material_name: action ? action.material_name || '' : '',
+		meshes,
+	} );
 }
 
 function apply_material( context, action ) {
@@ -257,7 +356,16 @@ function apply_material( context, action ) {
 	if ( ! name ) return;
 	const registry_material = registry.get( name );
 	if ( ! registry_material ) return;
-	apply_material_to_object( target_object, registry_material );
+	const meshes = apply_material_to_object( target_object, registry_material );
+	if ( ! meshes.length ) return;
+	notify( context, {
+		phase: 'apply',
+		action_type: 'apply_material',
+		action,
+		material: registry_material,
+		material_name: name,
+		meshes,
+	} );
 }
 
 /**
@@ -292,6 +400,7 @@ export const RESTORE_HANDLERS = {
  * @param {THREE.Object3D} [context.target_object]
  * @param {THREE.Object3D} [context.target_scene]
  * @param {function()} [context.request_render] - called when an async action lands
+ * @param {function(Object)} [context.notify] - called after each material mutation
  * @param {Object[]} actions
  */
 export function apply_choice_actions( context, actions ) {
