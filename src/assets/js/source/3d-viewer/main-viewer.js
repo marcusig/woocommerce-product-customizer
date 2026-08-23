@@ -838,6 +838,13 @@ export default Backbone.View.extend({
 		const t = this._three;
 		this._container = container;
 		this._bindContextLossHandlers( t.renderer.domElement );
+
+		// Resizing the renderer reallocates — and so clears — the drawing buffer.
+		// Rendering is on demand, so without this the canvas stays empty until
+		// something else happens to request a frame (a choice change, an orbit).
+		// Registered here rather than alongside the postprocessing layer, which is
+		// the only other resize listener and is not always present.
+		t.resize_listeners.push( () => this._requestRender() );
 		const layers = window.PC.fe && window.PC.fe.layers;
 		// Enable or disable shadows globally, then mirror the setting to the renderer.
 		this._shadowsEnabled = !!( s && s.enable_shadows );
@@ -995,7 +1002,6 @@ export default Backbone.View.extend({
 				t.resize_listeners.push( ( width, height, ratio ) => {
 					layer.setSize( width, height );
 					layer.setPixelRatio( t._orbiting ? ratio * ORBIT_PIXEL_RATIO_SCALE : ratio );
-					this._requestRender();
 				} );
 			}
 		}
