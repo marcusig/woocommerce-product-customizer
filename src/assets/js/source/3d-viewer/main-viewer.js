@@ -948,8 +948,18 @@ export default Backbone.View.extend({
 		// switch off the moment the customer touched the model and back on when they
 		// let go, which reads as a rendering glitch; a softer image for the duration
 		// of a drag does not.
-		t.controls.addEventListener( 'start', () => this._setOrbiting( true ) );
-		t.controls.addEventListener( 'end', () => this._setOrbiting( false ) );
+		t.controls.addEventListener( 'start', () => {
+			t._pointer_down = true;
+			this._setOrbiting( true );
+		} );
+		// Releasing the pointer is not the end of the movement: damping is on, so
+		// the camera keeps gliding for a while afterwards. Clearing the drag state
+		// here would restore full resolution mid-glide — a visible jump partway
+		// through a motion the customer is still watching. The frame loop clears it
+		// instead, once the controls report they have actually come to rest.
+		t.controls.addEventListener( 'end', () => {
+			t._pointer_down = false;
+		} );
 		// Every control change moves the camera, so the scene needs a frame.
 		t.controls.addEventListener( 'change', () => this._requestRender() );
 
@@ -999,9 +1009,9 @@ export default Backbone.View.extend({
 			if ( ! layer && extraPasses.length ) disposeUnusedPasses( extraPasses );
 			if ( layer && t.container && t.resize_listeners ) {
 				t.postprocessingLayer = layer;
-				t.resize_listeners.push( ( width, height, ratio ) => {
+				t.resize_listeners.push( ( width, height ) => {
 					layer.setSize( width, height );
-					layer.setPixelRatio( t._orbiting ? ratio * ORBIT_PIXEL_RATIO_SCALE : ratio );
+					this._applyOrbitQuality();
 				} );
 			}
 		}
@@ -1050,9 +1060,32 @@ export default Backbone.View.extend({
 		if ( ! t || t._orbiting === orbiting ) return;
 		t._orbiting = orbiting;
 		if ( ! t.postprocessingLayer ) return;
-		const ratio = getPixelRatio();
-		t.postprocessingLayer.setPixelRatio( orbiting ? ratio * ORBIT_PIXEL_RATIO_SCALE : ratio );
+		this._applyOrbitQuality();
 		this._requestRender();
+	},
+
+	/**
+	 * Push the device pixel ratio and the orbit quality scale into the composer.
+	 *
+	 * The scale goes over as its own value wherever the add-on accepts one. The
+	 * layer caps the ratio internally — tighter still when AO or SSR are on — so
+	 * scaling it here first only produced a number the cap clamped straight back:
+	 * on a 2x screen with those effects on, dragging never dropped resolution at
+	 * all, which is precisely where it was needed most.
+	 */
+	_applyOrbitQuality() {
+		const t = this._three;
+		const layer = t && t.postprocessingLayer;
+		if ( ! layer ) return;
+		const ratio = getPixelRatio();
+		const scale = t._orbiting ? ORBIT_PIXEL_RATIO_SCALE : 1;
+		if ( typeof layer.setQualityScale === 'function' ) {
+			layer.setPixelRatio( ratio );
+			layer.setQualityScale( scale );
+			return;
+		}
+		// Add-on build without a quality scale: a pre-scaled ratio is all it takes.
+		layer.setPixelRatio( ratio * scale );
 	},
 
 	/**
@@ -1082,7 +1115,15 @@ export default Backbone.View.extend({
 
 		// Damping keeps returning true until the camera settles, so this covers the
 		// tail of every drag and flick without any explicit bookkeeping.
-		if ( t.controls && t.controls.update() ) this._requestRender();
+		const controls_moving = !! ( t.controls && t.controls.update() );
+		if ( controls_moving ) this._requestRender();
+
+		// The drag ends when the motion does, not when the pointer lifts. Holding a
+		// still pointer counts as dragging too, hence the separate pointer flag:
+		// update() reports no movement then, but the customer has not let go.
+		if ( t._orbiting && ! t._pointer_down && ! controls_moving ) {
+			this._setOrbiting( false );
+		}
 
 		// Some effects (animated film grain) change the image every frame on their
 		// own, with no scene change to key off.
