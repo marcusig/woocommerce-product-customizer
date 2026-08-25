@@ -83,8 +83,7 @@
 	<p class="field-row">
 		<label for="pc-3d-bg-mode"><?php esc_html_e( 'Background mode', 'product-configurator-for-woocommerce' ); ?></label>
 		<select id="pc-3d-bg-mode" class="pc-3d-bg-mode" data-key="background.mode">
-			<option value="transparent" <# if ( data.background && data.background.mode === 'transparent' ) { #>selected<# } #>><?php esc_html_e( 'Transparent', 'product-configurator-for-woocommerce' ); ?></option>
-			<option value="environment" <# if ( data.background && data.background.mode === 'environment' ) { #>selected<# } #>><?php esc_html_e( 'Environment', 'product-configurator-for-woocommerce' ); ?></option>
+			<option value="transparent" <# if ( ! data.background || data.background.mode !== 'solid' ) { #>selected<# } #>><?php esc_html_e( 'Transparent', 'product-configurator-for-woocommerce' ); ?></option>
 			<option value="solid" <# if ( data.background && data.background.mode === 'solid' ) { #>selected<# } #>><?php esc_html_e( 'Solid color', 'product-configurator-for-woocommerce' ); ?></option>
 		</select>
 	</p>

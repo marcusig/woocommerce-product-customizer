@@ -429,7 +429,9 @@ PC.views = window.PC.views || {};
 			this.$( '#pc-3d-section-panel-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
 		},
 		toggle_env_and_bg_visibility: function () {
-			const bg_mode = ( PC.app.admin.settings_3d.background && PC.app.admin.settings_3d.background.mode ) || 'environment';
+			// Falls back to transparent, matching the stored default now that drawing
+			// the environment as the backdrop is no longer an option.
+			const bg_mode = ( PC.app.admin.settings_3d.background && PC.app.admin.settings_3d.background.mode ) || 'transparent';
 			const env_mode = ( PC.app.admin.settings_3d.environment && PC.app.admin.settings_3d.environment.mode ) || 'preset';
 			this.$( '.pc-3d-bg-color-row' ).toggle( bg_mode === 'solid' );
 			this.$( '.pc-3d-env-map-controls' ).toggle( env_mode !== 'none' );

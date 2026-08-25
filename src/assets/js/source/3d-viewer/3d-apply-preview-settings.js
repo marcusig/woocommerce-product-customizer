@@ -36,7 +36,6 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	const r = s.renderer || {};
 	const bg = s.background || {};
 	const env = s.environment || {};
-	const env_is_none = env.mode === 'none';
 	renderer.toneMapping = getToneMapping( r );
 	renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
 	renderer.outputColorSpace = getOutputColorSpace( r );
@@ -67,23 +66,22 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 		);
 	}
 
-	renderer.setClearAlpha( ( bg.mode === 'transparent' || r.alpha || ( bg.mode === 'environment' && env_is_none ) ) ? 0 : 1 );
-
-	if ( bg.mode === 'transparent' || ( bg.mode === 'environment' && env_is_none ) ) {
-		scene.background = null;
-	} else if ( bg.mode === 'solid' && bg.color ) {
-		scene.background = new THREE.Color( bg.color );
-	} else if ( bg.mode === 'environment' && scene.environment ) {
-		scene.background = scene.environment;
-	}
+	// There used to be an 'environment' mode that drew the HDR itself as the
+	// backdrop. It is gone: a photographic room behind a product almost never
+	// matches the page the configurator sits on, and the environment still does the
+	// job that matters — lighting and reflections — without being seen directly.
+	// Anything that is not a solid colour renders transparent, which also lands any
+	// legacy stored 'environment' on the sensible answer without a migration.
+	const solid_color = ( bg.mode === 'solid' && bg.color ) ? bg.color : null;
+	renderer.setClearAlpha( ( solid_color && ! r.alpha ) ? 1 : 0 );
+	scene.background = solid_color ? new THREE.Color( solid_color ) : null;
 	if ( typeof scene.environmentIntensity !== 'undefined' ) {
 		scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
 	}
 	if ( typeof scene.environmentRotation !== 'undefined' && env.rotation != null ) {
+		// Only the environment rotates now. backgroundRotation went with the mode
+		// that drew the environment as the backdrop.
 		scene.environmentRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-		if ( typeof scene.backgroundRotation !== 'undefined' && bg.mode === 'environment' ) {
-			scene.backgroundRotation = new THREE.Euler( 0, env.rotation * Math.PI / 180, 0 );
-		}
 	}
 
 	if ( controls ) {

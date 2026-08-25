@@ -1780,7 +1780,7 @@ class DB {
 				'orbit_zoom_limits_enabled' => true,
 			),
 			'background'      => array(
-				'mode'         => 'environment',
+				'mode'         => 'transparent',
 				'color'        => '#ffffff',
 			),
 			'ground'          => array(
