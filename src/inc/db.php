@@ -2339,10 +2339,6 @@ class DB {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
-				'smaa' => [
-					'sanitize' => 'boolean',
-					'escape' => 'boolean',
-				],
 				'type' => [
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',

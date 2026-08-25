@@ -50,34 +50,37 @@ function read_focus_insets( element, full_width, full_height ) {
  * Shift the optical center into the clear area by half the net inset and keep the
  * full view size so FOV / product scale match the non-offset framing.
  *
+ * Accumulation jitter rides on the same offset rather than getting its own call:
+ * setViewOffset is not additive, so a second one would silently drop the toolbar
+ * framing. Both shifts are in the same units, so they simply sum.
+ *
  * @param {THREE.PerspectiveCamera} camera
  * @param {HTMLElement} container
  * @param {boolean} enabled
+ * @param {{x: number, y: number}} [jitter] - Sub-pixel offset, in CSS pixels
  */
-export function apply_camera_view_offset( camera, container, enabled ) {
+export function apply_camera_view_offset( camera, container, enabled, jitter ) {
 	const full_width = Math.max( 1, container.clientWidth );
 	const full_height = Math.max( 1, container.clientHeight );
 	camera.aspect = full_width / full_height;
 
-	if ( ! enabled ) {
+	let offset_x = jitter ? jitter.x : 0;
+	let offset_y = jitter ? jitter.y : 0;
+
+	if ( enabled ) {
+		const inset_element = ( container.closest && container.closest( '.mkl_pc_viewer' ) ) || container;
+		const insets = read_focus_insets( inset_element, full_width, full_height );
+		// Canvas center is at W/2; clear-area center is at (left + W - right) / 2.
+		// Delta = (right - left) / 2 — shift optical axis into the free region only.
+		offset_x += ( insets.right - insets.left ) / 2;
+		offset_y += ( insets.bottom - insets.top ) / 2;
+	}
+
+	if ( offset_x === 0 && offset_y === 0 ) {
 		camera.clearViewOffset();
 		camera.updateProjectionMatrix();
 		return;
 	}
-
-	const inset_element = ( container.closest && container.closest( '.mkl_pc_viewer' ) ) || container;
-	const insets = read_focus_insets( inset_element, full_width, full_height );
-
-	if ( insets.left === 0 && insets.right === 0 && insets.top === 0 && insets.bottom === 0 ) {
-		camera.clearViewOffset();
-		camera.updateProjectionMatrix();
-		return;
-	}
-
-	// Canvas center is at W/2; clear-area center is at (left + W - right) / 2.
-	// Delta = (right - left) / 2 — shift optical axis into the free region only.
-	const offset_x = ( insets.right - insets.left ) / 2;
-	const offset_y = ( insets.bottom - insets.top ) / 2;
 
 	camera.setViewOffset(
 		full_width,

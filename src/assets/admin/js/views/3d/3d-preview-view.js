@@ -4,6 +4,7 @@
  */
 
 import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
+import { create_render_quality } from '../../../../js/source/3d-viewer/3d-render-quality.js';
 import { setKtx2Renderer } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
 import { format_gltf_load_notice, normalize_gltf_load_error } from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
 
@@ -55,6 +56,19 @@ export const settings_3d_preview_mixin = {
 	 * Only the genuinely admin-only parts stay here: the zoom buttons, the shadow
 	 * toggle and the postprocessing rebuild.
 	 */
+	/**
+	 * Ask the preview for a frame.
+	 *
+	 * The preview renders on demand now, so anything that changes the scene has to
+	 * say so. The settings panel is a wide surface — colours, sliders, model
+	 * visibility, light gizmos — so as well as the explicit calls at the points
+	 * below, render_preview binds a catch-all to the panel: two frames per
+	 * interaction costs nothing and means a control nobody remembered to wire up
+	 * still updates the view.
+	 */
+	request_preview_render: function () {
+		if ( this._three && this._three.quality ) this._three.quality.request();
+	},
 	apply_preview_settings: function () {
 		const deps = get_three_deps();
 		if ( ! deps || typeof deps.applySettingsToScene !== 'function' ) return;
@@ -93,6 +107,7 @@ export const settings_3d_preview_mixin = {
 
 		// Postprocessing: build or update the composer from settings (order: SSR → AO → Bloom → SMAA); loads passes async
 		this.setup_preview_postprocessing();
+		this.request_preview_render();
 	},
 	/**
 	 * Mirror settings_3d.enable_shadows onto the live preview: renderer flag, mesh
@@ -109,6 +124,7 @@ export const settings_3d_preview_mixin = {
 			modelRoot: t.model_root,
 			enabled: !!( s && s.enable_shadows ),
 		} );
+		this.request_preview_render();
 	},
 	setup_preview_postprocessing: async function () {
 		// A rebuild loads pass modules asynchronously. Coalesce anything that
@@ -174,6 +190,9 @@ export const settings_3d_preview_mixin = {
 
 		this._three.postprocessingLayer = layer;
 		this._three.composer = layer ? layer.composer : null;
+		// A rebuilt chain renders nothing until asked, and its buffers are new.
+		this._three.quality.applyQuality();
+		this._three.quality.invalidate();
 
 		if ( this._pp_dirty ) {
 			this._pp_dirty = false;
@@ -196,6 +215,7 @@ export const settings_3d_preview_mixin = {
 		const t = this._three;
 		if ( ! t ) return;
 		this._three = null;
+		if ( this.$el ) this.$el.off( '.pc3drender' );
 
 		if ( typeof t.stop_animation_loop === 'function' ) {
 			t.stop_animation_loop();
@@ -436,20 +456,38 @@ export const settings_3d_preview_mixin = {
 
 			Object.assign( controls, deps.getOrbitLimitsFromEnv( s.environment || {} ) );
 			this._three.controls = controls;
-			this._three.orbiting = false;
-			// Drop composer resolution while dragging rather than bypassing the pass
-			// chain, so the merchant is always looking at the look they configured.
-			const set_orbiting = ( orbiting ) => {
-				if ( ! this._three || this._three.orbiting === orbiting ) return;
-				this._three.orbiting = orbiting;
-				if ( ! this._three.postprocessingLayer ) return;
-				const ratio = deps.getPixelRatio();
-				this._three.postprocessingLayer.setPixelRatio(
-					orbiting ? ratio * deps.ORBIT_PIXEL_RATIO_SCALE : ratio
-				);
-			};
-			controls.addEventListener( 'start', () => set_orbiting( true ) );
-			controls.addEventListener( 'end', () => set_orbiting( false ) );
+			// Same interaction-quality behaviour as the frontend viewer, from the same
+			// component: cheap while dragging, refined once it settles. The preview
+			// used to carry its own partial copy of this, and every part of it had a
+			// bug the frontend had already fixed.
+			this._three.quality = create_render_quality( {
+				getLayer: () => this._three && this._three.postprocessingLayer,
+				getControls: () => this._three && this._three.controls,
+				getPixelRatio: deps.getPixelRatio,
+				orbitScale: deps.ORBIT_PIXEL_RATIO_SCALE,
+				// No toolbar framing here, so the view offset carries nothing but jitter.
+				applyJitter: ( offset ) => {
+					if ( ! this._three || ! this._three.camera ) return;
+					const cam = this._three.camera;
+					const w = Math.max( 1, container.clientWidth );
+					const h = Math.max( 1, container.clientHeight );
+					if ( ! offset || ( offset.x === 0 && offset.y === 0 ) ) {
+						cam.clearViewOffset();
+					} else {
+						cam.setViewOffset( w, h, offset.x, offset.y, w, h );
+					}
+					cam.updateProjectionMatrix();
+				},
+			} );
+			this._three.quality.attach( controls );
+
+			// Catch-all for anything in the panel that mutates the scene without
+			// routing through one of the apply points above. Namespaced so cleanup
+			// can drop it.
+			this.$el.off( '.pc3drender' ).on(
+				'change.pc3drender input.pc3drender click.pc3drender',
+				() => this.request_preview_render()
+			);
 
 			const on_resize = () => {
 				if ( ! this._three ) return;
@@ -462,10 +500,10 @@ export const settings_3d_preview_mixin = {
 				renderer.setPixelRatio( pr );
 				if ( this._three.postprocessingLayer ) {
 					this._three.postprocessingLayer.setSize( w, h );
-					this._three.postprocessingLayer.setPixelRatio(
-						this._three.orbiting ? pr * deps.ORBIT_PIXEL_RATIO_SCALE : pr
-					);
+					this._three.quality.applyQuality();
 				}
+				// New buffers hold nothing of the old average.
+				this._three.quality.invalidate();
 			};
 
 			this._three.on_resize = on_resize;
@@ -485,6 +523,7 @@ export const settings_3d_preview_mixin = {
 
 			var onAllLoaded = function () {
 				if ( !viewRef._three || !viewRef._three.scene ) return;
+				viewRef.request_preview_render();
 				viewRef._hidePreviewLoading();
 				viewRef._notify_model_load_errors( load_errors );
 				if ( viewRef._three.fake_shadow ) {
@@ -675,21 +714,22 @@ export const settings_3d_preview_mixin = {
 				// The bag is dropped by maybe_cleanup; the loop is stopped there too,
 				// but guard rather than rely on the ordering.
 				if ( ! this._three ) return;
-				controls.update();
-				if ( this._three.light_helpers && this._three.light_helpers.length ) {
-					this._three.light_helpers.forEach( function ( h ) {
-						if ( h.update ) h.update();
-					} );
-				}
-				const g = PC.app.admin.settings_3d.ground || {};
-				if ( this._three.fake_shadow && g.enabled !== false ) {
-					this._three.fake_shadow.render( renderer, scene );
-				}
-				if ( this._three.postprocessingLayer ) {
-					this._three.postprocessingLayer.render();
-				} else {
-					renderer.render( scene, camera );
-				}
+				this._three.quality.frame( () => {
+					if ( this._three.light_helpers && this._three.light_helpers.length ) {
+						this._three.light_helpers.forEach( function ( h ) {
+							if ( h.update ) h.update();
+						} );
+					}
+					const g = PC.app.admin.settings_3d.ground || {};
+					if ( this._three.fake_shadow && g.enabled !== false ) {
+						this._three.fake_shadow.render( renderer, scene );
+					}
+					if ( this._three.postprocessingLayer ) {
+						this._three.postprocessingLayer.render();
+					} else {
+						renderer.render( scene, camera );
+					}
+				} );
 			} );
 		} );
 	},
@@ -717,6 +757,7 @@ export const settings_3d_preview_mixin = {
 			if ( view_ref._three && view_ref._three.fake_shadow && typeof view_ref._three.fake_shadow.invalidate === 'function' ) {
 				view_ref._three.fake_shadow.invalidate();
 			}
+			view_ref.request_preview_render();
 		};
 
 		/**
