@@ -1771,6 +1771,7 @@ class DB {
 				'object_id'              => '',
 				'intensity'              => 1,
 				'rotation'               => 0,
+				'blur'                   => 0,
 				'orbit_min_polar_angle'  => 0,
 				'orbit_max_polar_angle'  => 90,
 				'orbit_min_azimuth_angle' => -180,
@@ -2250,6 +2251,10 @@ class DB {
 					'escape' => [ $this, 'esc_url' ],
 				],
 				'intensity' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'blur' => [
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',
 				],

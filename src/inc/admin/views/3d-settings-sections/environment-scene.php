@@ -37,6 +37,12 @@
 		<input type="range" id="pc-3d-env-rotation" class="pc-3d-env-rotation" data-key="environment.rotation" min="0" max="360" step="1" value="{{ data.environment && data.environment.rotation != null ? data.environment.rotation : 0 }}" />
 		<span class="pc-3d-value-display pc-3d-env-rotation-value">0</span>
 	</p>
+	<p class="field-row pc-3d-env-map-controls"<# if ( data.environment && data.environment.mode === 'none' ) { #> style="display:none"<# } #>>
+		<label for="pc-3d-env-blur"><?php esc_html_e( 'Environment blur', 'product-configurator-for-woocommerce' ); ?></label>
+		<input type="range" id="pc-3d-env-blur" class="pc-3d-env-blur" data-key="environment.blur" min="0" max="1" step="0.01" value="{{ data.environment && data.environment.blur != null ? data.environment.blur : 0 }}" />
+		<span class="pc-3d-value-display pc-3d-env-blur-value">0</span>
+	</p>
+	<p class="description"><?php esc_html_e( 'Softens the lighting and the reflections together. Useful when a detailed environment casts distracting shapes across glossy surfaces. Rotation has less and less effect as this goes up, since it is the sharp reflections that show it.', 'product-configurator-for-woocommerce' ); ?></p>
 </div>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Orbit controls', 'product-configurator-for-woocommerce' ); ?></h4>

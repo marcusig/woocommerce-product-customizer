@@ -8,6 +8,133 @@ import * as THREE from 'three';
 // Constants (3.7)
 // -------------------------------------------------------------------------
 
+/**
+ * Cube-face sizes a blurred environment is captured at, sharpest first.
+ *
+ * Size is half the blur: fewer pixels hold less detail. It also sets the ceiling
+ * on how far the convolution can go, which is why both move together — see
+ * getEnvironmentBlurParams.
+ */
+const ENV_BLUR_SIZES = [ 256, 128, 64, 32, 16 ];
+
+/**
+ * Cache key for a loaded environment.
+ *
+ * Blur belongs in the key because it is baked into the PMREM when the map is
+ * generated, not applied to it afterwards — two blur levels are two different
+ * textures. Both the eager load in the viewer and the settings pass build the key
+ * from here, because when they disagreed the viewer fetched the HDR twice.
+ *
+ * @param {string|string[]|null} url - Environment URL, or cubemap face list
+ * @param {number} blur - 0..1
+ * @returns {string|null} Key, or null when there is no environment
+ */
+export function getEnvironmentKey( url, blur ) {
+	const base = Array.isArray( url ) ? url.join( '|' ) : ( url || null );
+	if ( ! base ) return null;
+	const numeric = typeof blur === 'number' ? blur : parseFloat( blur );
+	return base + '#blur:' + ( Number.isFinite( numeric ) ? numeric : 0 );
+}
+
+/**
+ * Widest blur, in radians, at the top of the slider.
+ *
+ * Not the widest three can produce — that is about 0.62, and the first attempt
+ * used it. It made the control useless: everything past roughly 0.15 was already
+ * a shapeless wash, so the entire usable range was crammed into the bottom
+ * seventh of the travel. This is that usable range spread across the whole
+ * slider, which costs nothing real, since a blur wide enough to erase the
+ * environment is not a setting anyone reaches for.
+ */
+const MAX_ENV_BLUR_SIGMA = 0.1;
+
+/**
+ * Capture size and blur radius for a 0..1 environment blur strength.
+ *
+ * three blurs in radians but caps the filter at 20 taps and warns past that:
+ *
+ *     pixels  = size - 1
+ *     taps    = 1 + floor( 3 * sigma / ( PI / ( 2 * pixels ) ) )
+ *
+ * So a given sigma is only affordable at a small enough capture — about 0.039 rad
+ * is all the default 256 can serve, which is barely a blur.
+ *
+ * Sigma therefore leads and size follows: the requested blur is taken at face
+ * value, and the capture drops to the largest size whose tap budget can pay for
+ * it. Deriving it the other way round — stepping size and sweeping sigma within
+ * each step — made the control non-monotonic, because sigma fell back to zero
+ * every time the size halved and the image could come out sharper as the slider
+ * went up.
+ *
+ * @param {number} blur - 0..1, where 0 means no blur at all
+ * @returns {{size: number, sigma: number}|null} Null when there is nothing to do
+ */
+export function getEnvironmentBlurParams( blur ) {
+	const numeric = typeof blur === 'number' ? blur : parseFloat( blur );
+	const strength = Number.isFinite( numeric ) ? Math.min( 1, Math.max( 0, numeric ) ) : 0;
+	if ( strength <= 0 ) return null;
+
+	const sigma = MAX_ENV_BLUR_SIGMA * strength;
+	// Solving taps <= 19 for the pixel count, one under the cap so the filter
+	// never clips: pixels <= 19 * PI / ( 6 * sigma ).
+	const max_pixels = ( 19 * Math.PI ) / ( 6 * sigma );
+
+	let size = ENV_BLUR_SIZES[ ENV_BLUR_SIZES.length - 1 ];
+	for ( let i = 0; i < ENV_BLUR_SIZES.length; i++ ) {
+		if ( ENV_BLUR_SIZES[ i ] - 1 <= max_pixels ) {
+			size = ENV_BLUR_SIZES[ i ];
+			break;
+		}
+	}
+
+	return { size, sigma };
+}
+
+/**
+ * Build a blurred copy of an environment map.
+ *
+ * Blurs what the materials actually sample, so lighting and reflections soften
+ * together — scene.backgroundBlurriness cannot do this, it only touches the
+ * backdrop. The route is PMREMGenerator.fromScene, whose sigma argument is the
+ * only blur three exposes on the generating side; fromEquirectangular has none.
+ * The source texture is handed over as a throwaway scene's background because
+ * that is what fromScene captures.
+ *
+ * Tone mapping is not a worry here: fromScene forces NoToneMapping while it
+ * captures and restores it afterwards, so the result carries the same radiance
+ * as the unblurred map.
+ *
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.Texture} texture - Loaded environment map
+ * @param {number} blur - 0..1
+ * @returns {THREE.Texture|null} Blurred texture, or null when no blur applies
+ */
+export function blurEnvironmentTexture( renderer, texture, blur ) {
+	const params = getEnvironmentBlurParams( blur );
+	if ( ! params || ! renderer || ! texture ) return null;
+
+	const generator = new THREE.PMREMGenerator( renderer );
+	const source = new THREE.Scene();
+	source.background = texture;
+
+	let target = null;
+	try {
+		target = generator.fromScene( source, params.sigma, 0.1, 100, { size: params.size } );
+	} catch ( err ) {
+		console.warn( '3D viewer: could not blur the environment map', err );
+		return null;
+	} finally {
+		generator.dispose();
+		// Leave the caller's texture where it found it; the scene is scrap.
+		source.background = null;
+	}
+
+	// The render target owns the framebuffer behind this texture, and disposing
+	// the texture alone would leak it. setSceneEnvironment looks for this.
+	target.texture.userData.pcPmremTarget = target;
+	return target.texture;
+}
+
 /** HDR preset filename by preset key. */
 export function getDefaultHdrPresetFilename( preset ) {
 	return preset === 'studio' ? 'studio_small_08_1k.hdr' : 'royal_esplanade_1k.hdr';
@@ -198,7 +325,14 @@ export function setSceneEnvironment( scene, texture ) {
 		scene.background = texture || null;
 	}
 	if ( previous && typeof previous.dispose === 'function' ) {
-		previous.dispose();
+		// A blurred environment is the texture of a render target, and that target
+		// owns the framebuffer. Disposing the texture on its own would leave it.
+		const pmrem_target = previous.userData && previous.userData.pcPmremTarget;
+		if ( pmrem_target && typeof pmrem_target.dispose === 'function' ) {
+			pmrem_target.dispose();
+		} else {
+			previous.dispose();
+		}
 	}
 	scene.environment = texture || null;
 }

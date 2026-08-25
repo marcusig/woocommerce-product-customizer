@@ -262,8 +262,8 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-angle-select': 'on_angle_select_change',
 			'change .pc-3d-env-source': 'on_env_source_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
-			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
-			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure': 'on_slider_input',
+			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
+			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure': 'on_slider_input',
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows, .pc-3d-extend-under-toolbar': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
@@ -500,6 +500,7 @@ PC.views = window.PC.views || {};
 			};
 			sync( '.pc-3d-env-intensity', '.pc-3d-env-intensity-value' );
 			sync( '.pc-3d-env-rotation', '.pc-3d-env-rotation-value' );
+			sync( '.pc-3d-env-blur', '.pc-3d-env-blur-value' );
 			sync( '.pc-3d-shadow-opacity', '.pc-3d-shadow-opacity-value' );
 			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );

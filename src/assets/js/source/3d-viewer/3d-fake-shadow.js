@@ -18,6 +18,13 @@ const DEPTH_FRAGMENT_TARGET = 'gl_FragColor = vec4( vec3( 1.0 - fragCoordZ ), op
 const LOG_MAX_RESOLUTION = 9;
 const LOG_MIN_RESOLUTION = 6;
 const TAP_WIDTH = 10;
+
+/**
+ * How much wider than the model the captured area is, so the blur has somewhere
+ * to spread before it runs into the edge of the texture — past which the floor
+ * plane simply stops and the falloff would be cut off in a straight line.
+ */
+const PLANE_MARGIN = 1.25;
 const DEFAULT_HARD_INTENSITY = 0.3;
 
 export class FakeShadow extends THREE.Object3D {
@@ -109,11 +116,25 @@ export class FakeShadow extends THREE.Object3D {
 
 		this.position.set(center.x, this._boundingBox.min.y, center.z);
 
-		const gSize = (ground && typeof ground.size === 'number') ? ground.size : 10;
-		const maxDim = Math.max(this._size.x, this._size.y, this._size.z, 1);
-		this._planeSize = Math.max(maxDim * 1.2, gSize * 0.5);
+		// Capture the model's footprint rather than a square of its largest
+		// dimension. A car is more than twice as long as it is wide, so a square
+		// spent most of the texture on empty floor beside it — and the old
+		// `gSize * 0.5` floor made that worse by tying the captured area to the
+		// ground size, which has nothing to do with where the shadow falls. The
+		// margin is room for the blur to spread into before it reaches the edge.
+		this._planeWidth = Math.max(this._size.x, 0.01) * PLANE_MARGIN;
+		this._planeDepth = Math.max(this._size.z, 0.01) * PLANE_MARGIN;
+
 		this._camera.near = 0;
-		this._camera.far = maxDim * 2;
+		// Depth becomes the shadow's darkness — alpha is ( 1 - fragCoordZ ) * opacity
+		// — so the far plane decides how fast the shadow fades with height. It used
+		// to be twice the largest dimension, which for anything wider than it is
+		// tall crushed the whole model into the first sliver of the range: on a car
+		// the roof came out at 0.86 of full darkness against the tyres' 1.0, so
+		// nothing separated contact from the bodywork above it and the result read
+		// as one flat blob. Fitting it to the model's height spends the full range
+		// where it matters.
+		this._camera.far = Math.max(this._size.y, 0.01) * 1.05;
 		this._camera.updateProjectionMatrix();
 
 		this._enabled = ground && ground.enabled !== false;
@@ -134,8 +155,15 @@ export class FakeShadow extends THREE.Object3D {
 			2,
 			LOG_MAX_RESOLUTION - this._softness * (LOG_MAX_RESOLUTION - LOG_MIN_RESOLUTION)
 		);
-		const baseWidth = Math.floor(this._size.x > this._size.z ? resolution : resolution * Math.max(0.01, this._size.x) / Math.max(0.01, this._size.z));
-		const baseHeight = Math.floor(this._size.x > this._size.z ? resolution * Math.max(0.01, this._size.z) / Math.max(0.01, this._size.x) : resolution);
+		// Texture aspect follows the captured area, not the raw model size. The two
+		// used to disagree — a square capture written into a footprint-shaped
+		// texture — which stretched texels along one axis and quietly halved the
+		// resolution across the other.
+		const planeWidth = this._planeWidth != null ? this._planeWidth : 1;
+		const planeDepth = this._planeDepth != null ? this._planeDepth : 1;
+		const aspect = planeWidth / Math.max(0.01, planeDepth);
+		const baseWidth = Math.floor(aspect >= 1 ? resolution : resolution * aspect);
+		const baseHeight = Math.floor(aspect >= 1 ? resolution / aspect : resolution);
 		const width = TAP_WIDTH + Math.max(1, baseWidth);
 		const height = TAP_WIDTH + Math.max(1, baseHeight);
 
@@ -163,9 +191,8 @@ export class FakeShadow extends THREE.Object3D {
 			this._floor.material.map = this._renderTarget.texture;
 		}
 
-		const planeSize = this._planeSize != null ? this._planeSize : 1;
-		const scaleX = planeSize * (1 + TAP_WIDTH / Math.max(1, baseWidth));
-		const scaleZ = planeSize * (1 + TAP_WIDTH / Math.max(1, baseHeight));
+		const scaleX = planeWidth * (1 + TAP_WIDTH / Math.max(1, baseWidth));
+		const scaleZ = planeDepth * (1 + TAP_WIDTH / Math.max(1, baseHeight));
 		this._camera.scale.set(scaleX, scaleZ, 1);
 	}
 

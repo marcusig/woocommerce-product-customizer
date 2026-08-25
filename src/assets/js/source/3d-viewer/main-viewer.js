@@ -34,7 +34,7 @@ import {
 	set_loading_step,
 } from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 
 const Backbone = window.Backbone;
@@ -943,8 +943,14 @@ export default Backbone.View.extend({
 		// Assign environment lighting/reflections (HDR) when available. Routed
 		// through setSceneEnvironment so the previous texture is always released.
 		if ( hdrTexture ) {
-			setSceneEnvironment( t.scene, hdrTexture );
-			t.current_env_url = Array.isArray( hdrUrl ) ? hdrUrl.join( '|' ) : hdrUrl;
+			// Blur here rather than leaving it to apply_preview_settings below: that
+			// compares against current_env_url, and a key without the blur in it
+			// never matches, so the HDR would be fetched a second time on every view.
+			const envBlur = ( s && s.environment && s.environment.blur != null ) ? s.environment.blur : 0;
+			const blurred = blurEnvironmentTexture( t.renderer, hdrTexture, envBlur );
+			if ( blurred && typeof hdrTexture.dispose === 'function' ) hdrTexture.dispose();
+			setSceneEnvironment( t.scene, blurred || hdrTexture );
+			t.current_env_url = getEnvironmentKey( hdrUrl, envBlur );
 		}
 
 		// Optional fake shadow pass for products without fully baked real-time shadows.

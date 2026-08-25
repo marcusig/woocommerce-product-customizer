@@ -10,6 +10,8 @@ import {
 	getHdrUrlFromEnv,
 	loadEnvMap,
 	setSceneEnvironment,
+	blurEnvironmentTexture,
+	getEnvironmentKey,
 } from './3d-scene-utils.js';
 
 /**
@@ -43,7 +45,8 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	const hdrBase = ( typeof options.getHdrBaseUrl === 'function' ? options.getHdrBaseUrl() : '' );
 	const desiredUrl = getHdrUrlFromEnv( env, hdrBase, options.objects3d || null );
 	const urlRef = options.currentEnvUrlRef || { current: null };
-	const desiredKey = Array.isArray( desiredUrl ) ? desiredUrl.join( '|' ) : ( desiredUrl || null );
+	const env_blur = ( env.blur != null ) ? env.blur : 0;
+	const desiredKey = getEnvironmentKey( desiredUrl, env_blur );
 	if ( ! desiredKey ) {
 		if ( urlRef.current !== null || scene.environment ) {
 			setSceneEnvironment( scene, null );
@@ -54,7 +57,14 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 		loadEnvMap(
 			desiredUrl,
 			( texture ) => {
-				setSceneEnvironment( scene, texture );
+				const blurred = blurEnvironmentTexture( renderer, texture, env_blur );
+				if ( blurred ) {
+					// The sharp original was only ever the source for the convolution.
+					if ( typeof texture.dispose === 'function' ) texture.dispose();
+					setSceneEnvironment( scene, blurred );
+				} else {
+					setSceneEnvironment( scene, texture );
+				}
 				urlRef.current = desiredKey;
 				if ( typeof options.onEnvLoaded === 'function' ) options.onEnvLoaded();
 			},
