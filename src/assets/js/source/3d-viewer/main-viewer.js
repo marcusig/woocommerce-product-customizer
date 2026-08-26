@@ -34,7 +34,7 @@ import {
 	set_loading_step,
 } from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 
 const Backbone = window.Backbone;
@@ -783,7 +783,36 @@ export default Backbone.View.extend({
 			modelRoot: t.model_root,
 			enabled: this._shadowsEnabled,
 			mapSize: this._getShadowMapSize(),
+			// Same slider the fake shadow uses, so softness means one thing whichever
+			// kind of shadow a product is set up with.
+			softness: Math.min( 1, Math.max( 0, ( Number( ( ( t._ground_settings ) || {} ).shadow_blur ) || 0 ) / 10 ) ),
 		} );
+
+		const ground = ( t._ground_settings ) || {};
+		if ( t.shadow_light ) {
+			// Aimed before refreshSceneShadows fits its camera, so the fit is done
+			// against the direction the light will actually cast from.
+			t.shadow_light.visible = !! this._shadowsEnabled;
+			if ( this._shadowsEnabled && t.model_root ) {
+				const bounds = new THREE.Box3().setFromObject( t.model_root );
+				if ( ! bounds.isEmpty() ) {
+					aimShadowLight( t.shadow_light, bounds, {
+						elevation: ground.shadow_elevation,
+						azimuth: ground.shadow_azimuth,
+					} );
+				}
+			}
+		}
+
+		if ( t.shadow_catcher ) {
+			const placed = this._shadowsEnabled && t.shadow_catcher.update( t.model_root, {
+				opacity: ground.shadow_opacity != null ? ground.shadow_opacity : 0.5,
+			} );
+			t.shadow_catcher.visible = !! placed;
+		}
+
+		// The map is baked, so a settings or geometry change has to ask for a new one.
+		invalidateBakedShadows( t.renderer );
 		this._requestRender();
 	},
 
@@ -954,6 +983,15 @@ export default Backbone.View.extend({
 		}
 
 		// Optional fake shadow pass for products without fully baked real-time shadows.
+		// Somewhere for real-time shadows to land, and a light to cast them. Both
+		// added to the scene rather than to model_root, so they stay out of the
+		// bounds the shadow camera is fitted to.
+		t.shadow_catcher = new ShadowCatcher();
+		t.scene.add( t.shadow_catcher );
+		t.shadow_light = createShadowLight();
+		t.scene.add( t.shadow_light );
+		t.scene.add( t.shadow_light.target );
+
 		if ( modules.FakeShadow ) {
 			t.fake_shadow = new modules.FakeShadow( t.scene );
 		}
@@ -1327,6 +1365,9 @@ export default Backbone.View.extend({
 		if ( t && t.fake_shadow && typeof t.fake_shadow.invalidate === 'function' ) {
 			t.fake_shadow.invalidate();
 		}
+		// Anything that moves or hides geometry changes the real shadow too, and a
+		// baked map will not notice on its own.
+		if ( t ) invalidateBakedShadows( t.renderer );
 		this._requestRender();
 	},
 

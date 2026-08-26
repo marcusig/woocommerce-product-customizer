@@ -572,6 +572,16 @@ export function applyShadowSettingsToLight( light, options = {} ) {
 
 	fitShadowCameraToBounds( light, options.bounds );
 
+	// Softness. radius is measured in shadow-map texels, not world units, so it
+	// only means anything alongside a fitted camera and a known map size — both of
+	// which are set just above. blurSamples widens the pre-blur VSM applies to the
+	// map itself, which is where its smoothness comes from.
+	if ( options.softness != null ) {
+		const softness = Math.min( 1, Math.max( 0, Number( options.softness ) || 0 ) );
+		light.shadow.radius = 1 + softness * 15;
+		light.shadow.blurSamples = Math.round( 4 + softness * 12 );
+	}
+
 	// normalBias is in world units, so derive it from roughly two shadow texels.
 	// A fixed value (the old 0.02) is 2cm — enormous on a small product, which is
 	// what detaches shadows from the surfaces casting them.
@@ -596,10 +606,168 @@ export function applyShadowSettingsToLight( light, options = {} ) {
  * @param {THREE.WebGLRenderer} renderer
  * @param {boolean} enabled
  */
+/** Marks the viewer's own shadow light, so scene code can tell it from a real one. */
+export const SHADOW_LIGHT_NAME = 'PC_ShadowLight';
+
+/**
+ * A light that casts a shadow and gives no light.
+ *
+ * Intensity zero is not a trick: ShadowMaterial takes its alpha from
+ * 1 - getShadowMask(), and getShadowMask is built only from shadow parameters —
+ * bias, radius, shadow.intensity. The light's brightness never enters it. So this
+ * puts a shadow on the catcher while contributing nothing to how the product is
+ * lit, and nothing to self-shadowing either.
+ *
+ * Owning the light is what makes the mode work at all. Depending on the product's
+ * own lighting meant depending on something most products do not have: of the
+ * eight configured here, five have no lights whatsoever and none of the other
+ * three has a light flagged to cast. The shadow now arrives with its own.
+ *
+ * @returns {THREE.DirectionalLight}
+ */
+export function createShadowLight() {
+	const light = new THREE.DirectionalLight( 0xffffff, 0 );
+	light.name = SHADOW_LIGHT_NAME;
+	light.castShadow = true;
+	// refreshSceneShadows reads this to decide which lights get fitted.
+	light.userData.cast_shadows = true;
+	light.userData.pc_shadow_light = true;
+	return light;
+}
+
+/**
+ * Point the shadow light at the model from a given elevation and azimuth.
+ *
+ * Direction is a property of the shadow rather than of the lighting now, which is
+ * the point of owning the light: the product can be lit by an environment from
+ * anywhere while its shadow falls where the merchant wants it.
+ *
+ * @param {THREE.DirectionalLight} light
+ * @param {THREE.Box3} bounds - Model bounds
+ * @param {Object} [options]
+ * @param {number} [options.elevation=55] - Degrees above the horizon
+ * @param {number} [options.azimuth=135] - Degrees around, 0 looking down -Z
+ */
+export function aimShadowLight( light, bounds, options = {} ) {
+	if ( ! light || ! bounds || bounds.isEmpty() ) return;
+	const centre = bounds.getCenter( new THREE.Vector3() );
+	const size = bounds.getSize( new THREE.Vector3() );
+	// Far enough out that the whole model sits inside the shadow camera, which is
+	// orthographic, so the distance costs nothing in projection terms.
+	const distance = Math.max( size.x, size.y, size.z, 1 ) * 2;
+
+	const elevation = ( options.elevation != null ? options.elevation : 55 ) * Math.PI / 180;
+	const azimuth = ( options.azimuth != null ? options.azimuth : 135 ) * Math.PI / 180;
+	light.position.set(
+		centre.x + distance * Math.cos( elevation ) * Math.sin( azimuth ),
+		centre.y + distance * Math.sin( elevation ),
+		centre.z + distance * Math.cos( elevation ) * Math.cos( azimuth )
+	);
+	light.target.position.copy( centre );
+	light.target.updateMatrixWorld();
+	light.updateMatrixWorld();
+}
+
+/**
+ * How much wider than the model the shadow catcher is, so a low sun's shadow has
+ * somewhere to land instead of stopping at the plane's edge.
+ */
+const SHADOW_CATCHER_MARGIN = 2.5;
+
+/**
+ * A plane that shows real-time shadows and nothing else.
+ *
+ * Real-time shadows only appear on geometry that receives them, and a product
+ * modelled without a floor gives them nowhere to land — the mode looked broken
+ * for exactly the models it works best on. ShadowMaterial renders the shadow term
+ * alone and stays transparent everywhere else, so the plane is invisible except
+ * where the product actually shades it.
+ *
+ * Deliberately not a child of model_root: the shadow camera is fitted to that
+ * root's bounds, and a plane several times the model's size would blow the
+ * frustum straight back up and throw away the resolution the fit is for.
+ */
+export class ShadowCatcher extends THREE.Mesh {
+	constructor() {
+		super(
+			new THREE.PlaneGeometry( 1, 1 ),
+			new THREE.ShadowMaterial( { transparent: true, opacity: 0.5 } )
+		);
+		this.rotation.x = -Math.PI / 2;
+		this.receiveShadow = true;
+		// Casting would let the catcher shadow itself, which reads as a flat wash
+		// over the whole plane.
+		this.castShadow = false;
+		this.userData.noHit = true;
+		this.name = 'ShadowCatcher';
+	}
+
+	/**
+	 * Sit the catcher under the model and size it to the footprint.
+	 *
+	 * @param {THREE.Object3D} modelRoot
+	 * @param {Object} [options]
+	 * @param {number} [options.opacity=0.5] - Shadow darkness
+	 * @returns {boolean} Whether the catcher could be placed
+	 */
+	update( modelRoot, options = {} ) {
+		if ( ! modelRoot ) return false;
+		const box = new THREE.Box3().setFromObject( modelRoot );
+		if ( box.isEmpty() ) return false;
+
+		const size = box.getSize( new THREE.Vector3() );
+		const center = box.getCenter( new THREE.Vector3() );
+		const extent = Math.max( size.x, size.z, 0.01 ) * SHADOW_CATCHER_MARGIN;
+		this.scale.set( extent, extent, 1 );
+		// A hair below the lowest geometry, so a model whose wheels sit exactly on
+		// zero does not z-fight with the plane it is standing on.
+		this.position.set( center.x, box.min.y - Math.max( size.y, 1 ) * 0.001, center.z );
+
+		this.material.opacity = options.opacity != null ? Number( options.opacity ) : 0.5;
+		this.visible = this.material.opacity > 0;
+		return true;
+	}
+
+	dispose() {
+		this.geometry.dispose();
+		this.material.dispose();
+		this.removeFromParent();
+	}
+}
+
+/**
+ * Re-render the shadow maps on the next frame.
+ *
+ * Shadow maps are baked rather than refreshed every frame — see
+ * applyRendererShadowSettings — so anything that changes the scene has to say so.
+ * A camera move is not one of those things: a directional light's shadow does not
+ * depend on where it is viewed from.
+ *
+ * @param {THREE.WebGLRenderer} renderer
+ */
+export function invalidateBakedShadows( renderer ) {
+	if ( renderer && renderer.shadowMap ) renderer.shadowMap.needsUpdate = true;
+}
+
 export function applyRendererShadowSettings( renderer, enabled ) {
 	if ( ! renderer || ! renderer.shadowMap ) return;
 	renderer.shadowMap.enabled = !! enabled;
-	if ( enabled ) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+	if ( ! enabled ) return;
+	// VSM, not PCFSoftShadowMap: that constant is deprecated in three r182 and is
+	// silently downgraded to PCFShadowMap with a console warning on every viewer.
+	// VSM is normally avoided because blurring the shadow map costs per frame — but
+	// the map is baked here, so that cost is paid once, and in exchange the
+	// penumbra is genuinely smooth instead of five dithered taps.
+	renderer.shadowMap.type = THREE.VSMShadowMap;
+	// Bake rather than refresh every frame. A configurator scene is static between
+	// changes, and the viewer only renders on demand anyway, so re-rendering the
+	// shadow map each frame is work nobody sees. It also means the map can be a
+	// size that would be indefensible live: 2048 puts a texel at about 3mm across
+	// a car, where the 512 default puts it at 12mm.
+	//
+	// The cost of this is that every scene change must call invalidateBakedShadows.
+	renderer.shadowMap.autoUpdate = false;
+	renderer.shadowMap.needsUpdate = true;
 }
 
 /**
@@ -615,7 +783,7 @@ export function applyRendererShadowSettings( renderer, enabled ) {
  * @param {boolean} params.enabled
  * @param {number} [params.mapSize]
  */
-export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapSize } ) {
+export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapSize, softness } ) {
 	applyRendererShadowSettings( renderer, enabled );
 	if ( ! scene ) return;
 
@@ -637,6 +805,7 @@ export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapS
 			castShadows: !! ( obj.userData && obj.userData.cast_shadows ),
 			bounds,
 			mapSize,
+			softness,
 		} );
 	} );
 }

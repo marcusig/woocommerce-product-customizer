@@ -330,6 +330,16 @@ export function cleanupThree( t ) {
 		t.fake_shadow.dispose();
 		t.fake_shadow = null;
 	}
+	if ( t.shadow_catcher ) {
+		t.shadow_catcher.dispose();
+		t.shadow_catcher = null;
+	}
+	if ( t.shadow_light ) {
+		if ( t.shadow_light.target ) t.shadow_light.target.removeFromParent();
+		if ( t.shadow_light.shadow && t.shadow_light.shadow.map ) t.shadow_light.shadow.map.dispose();
+		t.shadow_light.removeFromParent();
+		t.shadow_light = null;
+	}
 	if ( t.animation_id ) {
 		cancelAnimationFrame( t.animation_id );
 		t.animation_id = null;
