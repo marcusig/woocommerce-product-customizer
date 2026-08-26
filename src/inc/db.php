@@ -1789,6 +1789,9 @@ class DB {
 				'size'           => 10,
 				'shadow_opacity' => 0.5,
 				'shadow_blur'    => 5,
+				'shadow_general' => 1,
+				'shadow_contact' => 1,
+				'shadow_offset'  => 0,
 			),
 			'enable_shadows'  => false,
 			'extend_under_toolbar' => false,
@@ -2304,6 +2307,18 @@ class DB {
 					'escape' => 'floatval',
 				],
 				'shadow_blur' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_general' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_contact' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_offset' => [
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',
 				],

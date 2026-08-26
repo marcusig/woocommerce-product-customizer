@@ -262,8 +262,8 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-angle-select': 'on_angle_select_change',
 			'change .pc-3d-env-source': 'on_env_source_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
-			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur': 'on_setting_change',
-			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-exposure': 'on_slider_input',
+			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-offset': 'on_setting_change',
+			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-exposure': 'on_slider_input',
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows, .pc-3d-extend-under-toolbar': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
@@ -359,6 +359,12 @@ PC.views = window.PC.views || {};
 			if ( !s.environment ) s.environment = { mode: 'preset', preset: 'outdoor', object_id: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
 			if ( !s.background ) s.background = { mode: 'environment', color: '#ffffff' };
 			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
+			// Added after the two-layer shadow split; products saved before it have
+			// a ground object without these, and would otherwise save them back out
+			// as missing rather than as the defaults the viewer is falling back to.
+			if ( s.ground.shadow_general === undefined ) s.ground.shadow_general = 1;
+			if ( s.ground.shadow_contact === undefined ) s.ground.shadow_contact = 1;
+			if ( s.ground.shadow_offset === undefined ) s.ground.shadow_offset = 0;
 			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
 			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'aces', exposure: 1, output_color_space: 'srgb', alpha: false };
@@ -503,6 +509,8 @@ PC.views = window.PC.views || {};
 			sync( '.pc-3d-env-blur', '.pc-3d-env-blur-value' );
 			sync( '.pc-3d-shadow-opacity', '.pc-3d-shadow-opacity-value' );
 			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
+			sync( '.pc-3d-shadow-general', '.pc-3d-shadow-general-value' );
+			sync( '.pc-3d-shadow-contact', '.pc-3d-shadow-contact-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
 			// Add-on postprocessing sliders pair each input with the value display
 			// that immediately follows it, matching on_slider_input.

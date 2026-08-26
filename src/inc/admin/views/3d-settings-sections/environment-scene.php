@@ -131,10 +131,27 @@
 				<span class="pc-3d-value-display pc-3d-shadow-opacity-value">0.5</span>
 			</p>
 			<p class="field-row">
+				<label for="pc-3d-shadow-general"><?php esc_html_e( 'Soft shadow', 'product-configurator-for-woocommerce' ); ?></label>
+				<input type="range" id="pc-3d-shadow-general" class="pc-3d-shadow-general" data-key="ground.shadow_general" min="0" max="1" step="0.05" value="{{ data.ground && data.ground.shadow_general != null ? data.ground.shadow_general : 1 }}" />
+				<span class="pc-3d-value-display pc-3d-shadow-general-value">1</span>
+			</p>
+			<p class="description"><?php esc_html_e( 'The broad shadow cast by the product as a whole. This carries most of the weight.', 'product-configurator-for-woocommerce' ); ?></p>
+			<p class="field-row">
+				<label for="pc-3d-shadow-contact"><?php esc_html_e( 'Contact shadow', 'product-configurator-for-woocommerce' ); ?></label>
+				<input type="range" id="pc-3d-shadow-contact" class="pc-3d-shadow-contact" data-key="ground.shadow_contact" min="0" max="1" step="0.05" value="{{ data.ground && data.ground.shadow_contact != null ? data.ground.shadow_contact : 1 }}" />
+				<span class="pc-3d-value-display pc-3d-shadow-contact-value">1</span>
+			</p>
+			<p class="description"><?php esc_html_e( 'The tight darkening where the product meets the ground. Set to 0 for a product that should read as floating.', 'product-configurator-for-woocommerce' ); ?></p>
+			<p class="field-row">
 				<label for="pc-3d-shadow-blur"><?php esc_html_e( 'Shadow blur / softness', 'product-configurator-for-woocommerce' ); ?></label>
 				<input type="range" id="pc-3d-shadow-blur" class="pc-3d-shadow-blur" data-key="ground.shadow_blur" min="0" max="10" step="0.5" value="{{ data.ground && data.ground.shadow_blur != null ? data.ground.shadow_blur : 0 }}" />
 				<span class="pc-3d-value-display pc-3d-shadow-blur-value">0</span>
 			</p>
+			<p class="field-row">
+				<label for="pc-3d-shadow-offset"><?php esc_html_e( 'Vertical offset', 'product-configurator-for-woocommerce' ); ?></label>
+				<input type="number" id="pc-3d-shadow-offset" class="pc-3d-shadow-offset" data-key="ground.shadow_offset" step="0.01" value="{{ data.ground && data.ground.shadow_offset != null ? data.ground.shadow_offset : 0 }}" />
+			</p>
+			<p class="description"><?php esc_html_e( 'The shadow sits at the lowest point of the product. Use a negative value to drop it to the floor below a product that hovers.', 'product-configurator-for-woocommerce' ); ?></p>
 		</div>
 	</div>
 	<p class="field-row">
