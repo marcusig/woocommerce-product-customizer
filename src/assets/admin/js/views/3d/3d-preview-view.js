@@ -5,6 +5,7 @@
 
 import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
 import { create_render_quality } from '../../../../js/source/3d-viewer/3d-render-quality.js';
+import { create_base_composer } from '../../../../js/source/3d-viewer/3d-base-composer.js';
 import { setKtx2Renderer } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
 import { format_gltf_load_notice, normalize_gltf_load_error } from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
 
@@ -240,6 +241,10 @@ export const settings_3d_preview_mixin = {
 			t.postprocessingLayer = null;
 			t.composer = null;
 		}
+		if ( t.base_composer ) {
+			t.base_composer.dispose();
+			t.base_composer = null;
+		}
 		if ( t.on_resize ) {
 			window.removeEventListener( 'resize', t.on_resize );
 			t.on_resize = null;
@@ -456,6 +461,20 @@ export const settings_3d_preview_mixin = {
 
 			Object.assign( controls, deps.getOrbitLimitsFromEnv( s.environment || {} ) );
 			this._three.controls = controls;
+			// The no-effects chain, so the preview matches the frontend and so that
+			// switching an effect on does not change the look. Same component, same
+			// reasoning — see 3d-base-composer.js.
+			// Captured, not `this`: an object-literal getter has its own `this`. The
+			// _three object is stable while the preview lives, and its camera is
+			// reassigned in place, so reading through it stays live.
+			const three = this._three;
+			this._three.base_composer = create_base_composer( {
+				renderer: three.renderer,
+				scene: three.scene,
+				get camera() {
+					return three.camera;
+				},
+			} );
 			// Same interaction-quality behaviour as the frontend viewer, from the same
 			// component: cheap while dragging, refined once it settles. The preview
 			// used to carry its own partial copy of this, and every part of it had a
@@ -726,6 +745,8 @@ export const settings_3d_preview_mixin = {
 					}
 					if ( this._three.postprocessingLayer ) {
 						this._three.postprocessingLayer.render();
+					} else if ( this._three.base_composer ) {
+						this._three.base_composer.render();
 					} else {
 						renderer.render( scene, camera );
 					}

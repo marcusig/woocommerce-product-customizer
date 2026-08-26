@@ -15,6 +15,7 @@ import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, getCustomPassFactories, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, prefersReducedMotion, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';
 import { initScene, cleanupThree, apply_camera_view_offset } from './3d-scene-lifecycle.js';
 import { create_render_quality } from './3d-render-quality.js';
+import { create_base_composer } from './3d-base-composer.js';
 
 /**
  * Ceiling on the pixels a captured image may sample, across all of them.
@@ -996,6 +997,21 @@ export default Backbone.View.extend({
 			t.fake_shadow = new modules.FakeShadow( t.scene );
 		}
 
+		// The chain used when there is no postprocessing add-on. It exists so that
+		// switching an effect on does not change how the product looks: a direct
+		// render tone maps and clips every layer before it blends, a composer tone
+		// maps once at the end, and on anything with glass over it those are
+		// visibly different pictures. Built unconditionally — it costs a buffer and
+		// two blits, and it is what makes the two paths agree.
+		t.base_composer = create_base_composer( {
+			renderer: t.renderer,
+			scene: t.scene,
+			get camera() {
+				return t.camera;
+			},
+		} );
+		t.base_composer.ready.then( () => this._requestRender() );
+
 		// Orbiting drops the composer's resolution rather than bypassing the effect
 		// chain. Bypassing made ambient occlusion, bloom and the colour grade all
 		// switch off the moment the customer touched the model and back on when they
@@ -1139,6 +1155,8 @@ export default Backbone.View.extend({
 			}
 			if ( t.postprocessingLayer ) {
 				t.postprocessingLayer.render();
+			} else if ( t.base_composer ) {
+				t.base_composer.render();
 			} else {
 				t.renderer.render( t.scene, t.camera );
 			}
@@ -1520,6 +1538,18 @@ export default Backbone.View.extend({
 		// has to come off whether or not there was framing to restore afterwards.
 		if ( usePostprocessing ) baseCamera.clearViewOffset();
 
+		// The base chain renders the same way the canvas does, tone mapping included.
+		// The plain render below does not: three switches tone mapping off whenever
+		// the destination is a render target, so that path was quietly saving an
+		// untone-mapped image.
+		if ( ! pixels && t.base_composer && t.base_composer.available ) {
+			pixels = t.base_composer.capture(
+				width,
+				height,
+				usePostprocessing ? baseCamera : cameraForShot
+			);
+		}
+
 		if ( ! pixels ) {
 			// Render into an off-screen target so the visible canvas doesn't change.
 			// The visible canvas is created with antialias:true; without matching
@@ -1671,6 +1701,10 @@ export default Backbone.View.extend({
 		if ( this._runtimeBus ) this._runtimeBus.off();
 		this._runtimeApi = null;
 		this._lastActiveAngleId = null;
+		if ( this._three && this._three.base_composer ) {
+			this._three.base_composer.dispose();
+			this._three.base_composer = null;
+		}
 		cleanupThree( this._three );
 		this._three = null;
 	},

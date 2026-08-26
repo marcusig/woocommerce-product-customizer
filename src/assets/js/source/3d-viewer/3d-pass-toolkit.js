@@ -10,12 +10,13 @@
  * Loaded lazily, and only when at least one factory is registered.
  */
 export async function load_pass_toolkit() {
-	const [ shader_pass, pass, render_pass, output_pass, copy_shader ] = await Promise.all( [
+	const [ shader_pass, pass, render_pass, output_pass, copy_shader, effect_composer ] = await Promise.all( [
 		import( 'three/addons/postprocessing/ShaderPass.js' ),
 		import( 'three/addons/postprocessing/Pass.js' ),
 		import( 'three/addons/postprocessing/RenderPass.js' ),
 		import( 'three/addons/postprocessing/OutputPass.js' ),
 		import( 'three/addons/shaders/CopyShader.js' ),
+		import( 'three/addons/postprocessing/EffectComposer.js' ),
 	] );
 
 	return {
@@ -25,5 +26,6 @@ export async function load_pass_toolkit() {
 		RenderPass: render_pass.RenderPass,
 		OutputPass: output_pass.OutputPass,
 		CopyShader: copy_shader.CopyShader,
+		EffectComposer: effect_composer.EffectComposer,
 	};
 }
