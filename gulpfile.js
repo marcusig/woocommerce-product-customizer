@@ -9,11 +9,99 @@ const colorize = require('chalk');
 const clean = require('gulp-clean');
 const gutil = require('gulp-util');
 const concat = require('gulp-concat-util');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
+const path = require('path');
 
 // const replace = require('gulp-replace');
 var plumber = require('gulp-plumber');
 var wpPot = require('gulp-wp-pot');
+
+/**
+ * The webpack entries and where each one's bundle goes.
+ *
+ * One list for both the one-shot build and the watcher, so the two cannot drift.
+ * They already had: a pair of watch tasks sat commented out here pointing at
+ * `dist/build` while the build tasks wrote to `dist/assets/admin/js/build`, and
+ * that kind of mismatch only ever surfaces at runtime as a chunk that fails to
+ * load.
+ *
+ * The output paths are deliberately separate per entry. wp-scripts empties its
+ * `--output-path` on every run, so two entries sharing one directory would delete
+ * each other's chunks on every rebuild.
+ */
+const WEBPACK_TARGETS = [
+	{
+		entry: 'src/assets/js/source/fe-3d-viewer-entry.js',
+		output: 'dist/assets/build',
+	},
+	{
+		entry: 'src/assets/admin/js/views/3d-settings.js',
+		output: 'dist/assets/admin/js/build',
+	},
+];
+
+/** Long-running children, so they go down with gulp. */
+const spawned = [];
+
+/**
+ * Run wp-scripts against every entry, one child each.
+ *
+ * @param {string} command - 'build' (one shot) or 'start' (watch)
+ * @returns {ChildProcess[]}
+ */
+function spawn_wp_scripts(command) {
+	const bin = path.join(
+		__dirname,
+		'node_modules',
+		'.bin',
+		process.platform === 'win32' ? 'wp-scripts.cmd' : 'wp-scripts'
+	);
+	return WEBPACK_TARGETS.map(function (target) {
+		const child = spawn(
+			bin,
+			[command, target.entry, '--output-path=' + target.output],
+			{ cwd: __dirname, stdio: 'inherit' }
+		);
+		spawned.push(child);
+		return child;
+	});
+}
+
+/** Send every long-running child on its way. Synchronous, so it is safe on exit. */
+function kill_spawned() {
+	spawned.forEach(function (child) {
+		if (!child.killed) child.kill();
+	});
+}
+
+// Ctrl+C already reaches the children on its own: they are spawned without
+// `detached`, so they sit in this process group and get the SIGINT directly.
+// What needs handling is gulp itself.
+//
+// Node terminates on SIGINT by default, but that default is *replaced* the moment
+// any listener is attached — the listener runs and the process simply carries on.
+// With gulp's file watchers holding the event loop open, that leaves a webpack
+// watcher orphaned to init, still emitting into the output directory. Two of those
+// accumulated over a couple of days once, and between them they deleted each
+// other's content-hashed chunks on every rebuild.
+//
+// `once`, so a second Ctrl+C during a slow shutdown falls through to Node's
+// default and kills things outright rather than re-running this.
+[
+	{ signal: 'SIGINT', code: 130 },
+	{ signal: 'SIGTERM', code: 143 },
+].forEach(function (entry) {
+	process.once(entry.signal, function () {
+		kill_spawned();
+		// 128 + signal number, the shell convention, so `npx gulp && ...` chains and
+		// CI see an interrupted run rather than a clean one.
+		process.exit(entry.code);
+	});
+});
+
+// Covers every other way out — a task throwing, or an explicit exit elsewhere —
+// so a stray watcher is never left behind holding the output directory.
+process.on('exit', kill_spawned);
 
 const cleanPaths = [
 	'dist/*',
@@ -137,20 +225,25 @@ gulp.task('concat_product_configurator', function(done) {
 		.on('end', done);
 });
 
-gulp.task('build-admin-js', (cb) => {
-	exec('npx wp-scripts build src/assets/admin/js/views/3d-settings.js --output-path=dist/assets/admin/js/build', (err, stdout, stderr) => {
-	  console.log(stdout);
-	  console.error(stderr);
-	  cb(err);
+gulp.task('build-webpack', (cb) => {
+	const children = spawn_wp_scripts('build');
+	let remaining = children.length;
+	let failed = null;
+	children.forEach((child) => {
+		child.on('close', (code) => {
+			if (code !== 0 && !failed) {
+				failed = new Error('wp-scripts build failed with exit code ' + code);
+			}
+			if (--remaining === 0) cb(failed);
+		});
 	});
 });
 
-gulp.task('build-fe-3d-viewer', (cb) => {
-	exec('npx wp-scripts build src/assets/js/source/fe-3d-viewer-entry.js --output-path=dist/assets/build', (err, stdout, stderr) => {
-		console.log(stdout);
-		console.error(stderr);
-		cb(err);
-	});
+// Long-running: the children keep the event loop alive, and the signal handling
+// above is what takes them down again.
+gulp.task('watch-webpack', (done) => {
+	spawn_wp_scripts('start');
+	done();
 });
 
 gulp.task('copy-draco-libs', (done) => {
@@ -158,22 +251,6 @@ gulp.task('copy-draco-libs', (done) => {
 		.pipe(gulp.dest('src/assets/js/vendor/draco/gltf'))
 		.on('end', done);
 });
-
-// gulp.task('`watch-blocks`', (cb) => {
-// 	exec('npx wp-scripts start src/assets/admin/js/views/3d-settings.js --output-path=dist/build', (err, stdout, stderr) => {
-// 		console.log(stdout);
-// 		console.error(stderr);
-// 		cb(err);
-// 	});
-// });
-
-// gulp.task('watch-fe-3d-viewer', (cb) => {
-// 	exec('npx wp-scripts start src/assets/js/source/fe-3d-viewer-entry.js --output-path=dist/assets/build', (err, stdout, stderr) => {
-// 		console.log(stdout);
-// 		console.error(stderr);
-// 		cb(err);
-// 	});
-// });
 
 // gulp.task('js_min', function() {
 // 	return gulp.src('src/assets/**/*.js', { base: 'src', allowEmpty: true })
@@ -231,8 +308,7 @@ gulp.task('build',
 		'js',
 		'concat_product_configurator',
 		'concat_js_views',
-		'build-fe-3d-viewer',
-		'build-admin-js',
+		'build-webpack',
 		// 'build-fe-3d-draco-loader',
 		// 'build-fe-3d-meshopt-loader',
 		// 'merge-fe-3d-builds'
@@ -263,11 +339,12 @@ gulp.task('watch', function() {
 });
 
 // ran with gulp build
+// `npx gulp` is the whole dev environment: a full build, then the file watchers
+// and both webpack watchers together. Nothing else needs starting by hand.
 gulp.task('default', 
 	gulp.series(
 		'build', 
-		gulp.parallel( 'watch' )
-		// or also: gulp.parallel( 'watch', 'watch-blocks', 'watch-fe-3d-viewer' )
+		gulp.parallel( 'watch', 'watch-webpack' )
 	)
 );
 
