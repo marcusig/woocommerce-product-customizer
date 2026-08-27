@@ -539,6 +539,30 @@ export function applyShadowFlagsToObject( root, enabled ) {
  */
 const MAX_SHADOW_FIT_SCALE = 6;
 
+/**
+ * How much of the penumbra's natural stretch along a grazing shadow to keep.
+ *
+ * A penumbra is a fixed angular width at the light, so landing on the ground at a
+ * grazing angle it is stretched by 1/sin(elevation) along the shadow and not at
+ * all across it. The shadow map gets that for free — a foreshortened axis stretches
+ * whatever is drawn on it — but fitting the frustum tightly in light space shrinks
+ * the texels by exactly the factor the projection was about to stretch them by,
+ * and the two cancel. That is how a round penumbra ended up on a shadow that
+ * should have had a long one.
+ *
+ * 0 keeps none of it (a tight fit, isotropic, what this used to do), 1 keeps all
+ * of it (a square light-space box, the physically correct 1/sin). In between
+ * trades it against resolution: the along axis is stretched by
+ * 1/sin(elevation)^BIAS, and its texels get coarser by the same factor. Half is a
+ * reasonable place to sit, because the axis losing resolution is the one whose
+ * penumbra is widest — the detail being given up there is detail the blur was
+ * going to destroy anyway.
+ */
+const SHADOW_ALONG_BIAS = 4;
+
+/** Cap on that stretch, since 1/sin runs away as the light approaches the horizon. */
+const MAX_SHADOW_ALONG_BIAS = 4;
+
 /** Scratch for the directional fit; it runs on change, but not rarely enough to allocate. */
 const _fit_matrix = new THREE.Matrix4();
 const _fit_point = new THREE.Vector3();
@@ -656,6 +680,18 @@ function fitDirectionalShadowCamera( light, bounds, sphere, radius, ground_exten
 	camera.right = Math.min( max_x + margin, max_extent );
 	camera.bottom = Math.max( min_y - margin, - max_extent );
 	camera.top = Math.min( max_y + margin, max_extent );
+
+	// Give the along axis back some of the stretch the tight fit cancelled. Applied
+	// after the box is fitted, so it only ever adds coverage — it cannot crop.
+	if ( SHADOW_ALONG_BIAS > 0 ) {
+		const sin_elevation = Math.min( 1, Math.max( 0.02, - direction.y ) );
+		const bias = Math.min(
+			MAX_SHADOW_ALONG_BIAS,
+			1 / Math.pow( sin_elevation, SHADOW_ALONG_BIAS )
+		);
+		camera.top *= bias;
+		camera.bottom *= bias;
+	}
 	// Light space looks down -Z, so the nearest point has the largest z.
 	camera.near = Math.max( - max_z - margin, 1e-4 );
 	camera.far = Math.max( - min_z + margin, camera.near + radius );
@@ -774,11 +810,12 @@ export function applyShadowSettingsToLight( light, options = {} ) {
 	}
 	const shadow_camera = light.shadow.camera;
 	if ( light.isDirectionalLight && shadow_camera && shadow_camera.isOrthographicCamera ) {
-		texel_world_size = Math.max(
-			( shadow_camera.right - shadow_camera.left ) / map_size,
-			( shadow_camera.top - shadow_camera.bottom ) / map_size,
-			1e-6
-		);
+		// The across axis, not the larger of the two. Texels are deliberately
+		// anisotropic now, and this is the axis the softness setting refers to: the
+		// penumbra's width measured across the shadow, which is the one the light's
+		// angle does not stretch. The along axis then comes out wider by the bias,
+		// which is the entire point of applying it.
+		texel_world_size = Math.max( ( shadow_camera.right - shadow_camera.left ) / map_size, 1e-6 );
 	} else if ( bounds_radius != null ) {
 		// Perspective shadows have no single texel size — it grows with distance —
 		// so the model's own scale is the best available stand-in.
@@ -937,6 +974,7 @@ const FADE_COMPLETE_AT = 0.85;
  * artifact at the edge.
  */
 const SHADOW_TOE = 0.03;
+
 
 /**
  * How wide the ground the shadow lands on is, in scene units.

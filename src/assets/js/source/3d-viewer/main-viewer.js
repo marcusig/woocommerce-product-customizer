@@ -846,6 +846,10 @@ export default Backbone.View.extend({
 			)
 			: 0;
 
+		// Same slider the fake shadow uses, so softness means one thing whichever
+		// kind of shadow a product is set up with.
+		const softness = Math.min( 1, Math.max( 0, ( Number( ground.shadow_blur ) || 0 ) / 10 ) );
+
 		refreshSceneShadows( {
 			renderer: t.renderer,
 			scene: t.scene,
@@ -853,9 +857,7 @@ export default Backbone.View.extend({
 			enabled: this._shadowsEnabled,
 			groundExtent: groundExtent,
 			mapSize: this._getShadowMapSize(),
-			// Same slider the fake shadow uses, so softness means one thing whichever
-			// kind of shadow a product is set up with.
-			softness: Math.min( 1, Math.max( 0, ( Number( ground.shadow_blur ) || 0 ) / 10 ) ),
+			softness: softness,
 		} );
 
 		if ( t.shadow_catcher ) {
