@@ -269,7 +269,7 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-env-source': 'on_env_source_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
 			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-offset, .pc-3d-shadow-catcher, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth': 'on_setting_change',
-			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth, .pc-3d-exposure': 'on_slider_input',
+			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth, .pc-3d-exposure, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth': 'on_slider_input',
 			'change .pc-3d-shadow-mode': 'on_shadow_mode_change',
 			'change .pc-3d-shadow-light': 'on_shadow_light_change',
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-extend-under-toolbar': 'on_setting_change',
@@ -561,6 +561,10 @@ PC.views = window.PC.views || {};
 			sync( '.pc-3d-shadow-elevation', '.pc-3d-shadow-elevation-value' );
 			sync( '.pc-3d-shadow-azimuth', '.pc-3d-shadow-azimuth-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
+			sync( '.pc-3d-orbit-min-polar', '.pc-3d-orbit-min-polar-value' );
+			sync( '.pc-3d-orbit-max-polar', '.pc-3d-orbit-max-polar-value' );
+			sync( '.pc-3d-orbit-min-azimuth', '.pc-3d-orbit-min-azimuth-value' );
+			sync( '.pc-3d-orbit-max-azimuth', '.pc-3d-orbit-max-azimuth-value' );
 			// Add-on postprocessing sliders pair each input with the value display
 			// that immediately follows it, matching on_slider_input.
 			this.$( '.pc-3d-pp-slider' ).each( function () {
@@ -662,6 +666,7 @@ PC.views = window.PC.views || {};
 			PC.app.admin.settings_3d.environment.orbit_min_distance = distance;
 			this.mark_dirty( 'settings_3d' );
 			this._three.controls.minDistance = distance;
+			this.$( '.pc-3d-orbit-min-distance-value' ).text( distance.toFixed( 2 ) );
 			this.apply_preview_settings();
 		},
 		set_max_zoom_from_view: function ( e ) {
@@ -672,6 +677,7 @@ PC.views = window.PC.views || {};
 			PC.app.admin.settings_3d.environment.orbit_max_distance = distance;
 			this.mark_dirty( 'settings_3d' );
 			this._three.controls.maxDistance = distance;
+			this.$( '.pc-3d-orbit-max-distance-value' ).text( distance.toFixed( 2 ) );
 			this.apply_preview_settings();
 		},
 		update_zoom_buttons_state: function () {

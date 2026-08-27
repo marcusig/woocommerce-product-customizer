@@ -36,10 +36,28 @@ $mkl_pc_3d_settings_sections = apply_filters(
 	'mkl_pc_3d_settings_sections',
 	array(
 		array(
-			'id'       => 'environment-scene',
-			'title'    => __( 'Environment & Scene', 'product-configurator-for-woocommerce' ),
+			'id'       => 'environment',
+			'title'    => __( 'Environment', 'product-configurator-for-woocommerce' ),
 			'icon'     => MKL_PC_ASSETS_URL . 'icons/3d/world.svg',
-			'template' => __DIR__ . '/3d-settings-sections/environment-scene.php',
+			'template' => __DIR__ . '/3d-settings-sections/environment.php',
+		),
+		array(
+			'id'       => 'background',
+			'title'    => __( 'Background', 'product-configurator-for-woocommerce' ),
+			'icon'     => MKL_PC_ASSETS_URL . 'icons/image.svg',
+			'template' => __DIR__ . '/3d-settings-sections/background.php',
+		),
+		array(
+			'id'       => 'shadows',
+			'title'    => __( 'Shadows', 'product-configurator-for-woocommerce' ),
+			'icon_id'  => 'settings_3d_section_shadows',
+			'template' => __DIR__ . '/3d-settings-sections/shadows.php',
+		),
+		array(
+			'id'       => 'display',
+			'title'    => __( 'Display', 'product-configurator-for-woocommerce' ),
+			'icon_id'  => 'settings_3d_section_display',
+			'template' => __DIR__ . '/3d-settings-sections/display.php',
 		),
 		array(
 			'id'       => 'renderer-output',

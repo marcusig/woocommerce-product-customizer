@@ -67,7 +67,18 @@ const BackdropShader = {
 		void main() {
 			vec4 texel = texture2D( tDiffuse, vUv );
 			if ( backdropEnabled < 0.5 ) {
-				gl_FragColor = texel;
+				// A transparent canvas is composited premultiplied, so rgb must never
+				// exceed alpha — that is what "premultiplied" means, and a pixel breaking
+				// it has no defined colour. Bloom is additive light carrying no coverage
+				// of its own, so past the silhouette it lands as colour over alpha 0, and
+				// the compositor was drawing those as opaque bands.
+				//
+				// Raising alpha to meet the light is the right reading of it: a glow
+				// spilling into empty space should tint whatever the page has behind the
+				// canvas, in proportion to how bright it is. Only needed with no backdrop
+				// — with one, alpha is already 1 and the light has something to sit on.
+				float lit = max( texel.r, max( texel.g, texel.b ) );
+				gl_FragColor = vec4( texel.rgb, clamp( max( texel.a, lit ), 0.0, 1.0 ) );
 				return;
 			}
 			float alpha = clamp( texel.a, 0.0, 1.0 );
