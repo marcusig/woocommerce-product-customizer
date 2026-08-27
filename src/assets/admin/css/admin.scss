@@ -319,7 +319,7 @@ html .mkl-pc-admin-ui.pc-modal {
 			
 			.mkl-pc-admin-ui__product-name--container {
 				display: flex;
-				align-items: flex-start;
+				align-items: center;
 				gap: 12px;
 				min-width: 0;
 			}
@@ -399,7 +399,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					align-items: center;
 					gap: 10px;
 					padding: 0;
-					margin: 0 0 10px;
+					margin: 0;
 					border: 0;
 					background: transparent;
 					color: $pc-admin-sidebar-muted;
@@ -416,7 +416,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					font-weight: 600;
 					color: #fff;
 					line-height: 1.25;
-					margin: 0 0 18px;
+					margin: 0 0 3px;
 					padding-left: 2px;
 				}
 				.mkl-pc-sidebar-focus__help {
