@@ -8,6 +8,11 @@ import {
 	applyShadowFlagsToObject,
 	applyRendererShadowSettings,
 	refreshSceneShadows,
+	shadowGroundExtent,
+	ShadowCatcher,
+	createShadowLight,
+	aimShadowLight,
+	invalidateBakedShadows,
 } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 /**
@@ -50,3 +55,8 @@ window.PC.threeD.applyShadowSettingsToLight = applyShadowSettingsToLight;
 window.PC.threeD.applyShadowFlagsToObject = applyShadowFlagsToObject;
 window.PC.threeD.applyRendererShadowSettings = applyRendererShadowSettings;
 window.PC.threeD.refreshSceneShadows = refreshSceneShadows;
+window.PC.threeD.shadowGroundExtent = shadowGroundExtent;
+window.PC.threeD.ShadowCatcher = ShadowCatcher;
+window.PC.threeD.createShadowLight = createShadowLight;
+window.PC.threeD.aimShadowLight = aimShadowLight;
+window.PC.threeD.invalidateBakedShadows = invalidateBakedShadows;

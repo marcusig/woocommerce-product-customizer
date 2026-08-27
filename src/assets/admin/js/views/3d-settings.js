@@ -31,6 +31,8 @@ let getPixelRatio;
 let ORBIT_PIXEL_RATIO_SCALE;
 let disposeScene;
 let applySettingsToScene;
+let resolveShadowMode;
+let SHADOW_MODES;
 let RectAreaLightHelper = null;
 
 let threeDepsPromise = null;
@@ -104,6 +106,8 @@ function ensureThreeDepsLoaded() {
 			getPixelRatio,
 			ORBIT_PIXEL_RATIO_SCALE,
 			disposeScene,
+			resolveShadowMode,
+			SHADOW_MODES,
 		} = sceneUtilsModule );
 		PC.threeD = PC.threeD || {};
 		PC.threeD.getTHREE = function () { return THREE; };
@@ -131,6 +135,8 @@ function ensureThreeDepsLoaded() {
 				disposeScene,
 				applySettingsToScene,
 				RectAreaLightHelper,
+				resolveShadowMode,
+				SHADOW_MODES,
 			};
 		};
 		if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
@@ -262,9 +268,11 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-angle-select': 'on_angle_select_change',
 			'change .pc-3d-env-source': 'on_env_source_change',
 			'change .pc-3d-bg-mode': 'on_bg_mode_change',
-			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-ground-enabled, .pc-3d-ground-size, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-offset': 'on_setting_change',
-			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-exposure': 'on_slider_input',
-			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-enable-shadows, .pc-3d-extend-under-toolbar': 'on_setting_change',
+			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-offset, .pc-3d-shadow-catcher, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth': 'on_setting_change',
+			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth, .pc-3d-exposure': 'on_slider_input',
+			'change .pc-3d-shadow-mode': 'on_shadow_mode_change',
+			'change .pc-3d-shadow-light': 'on_shadow_light_change',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-extend-under-toolbar': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
 			// Postprocessing effects are contributed by add-ons, so bind their sliders
@@ -333,6 +341,7 @@ PC.views = window.PC.views || {};
 				window.wp.hooks.doAction( 'PC.admin.3d_settings.render', this );
 			}
 			this.toggle_env_and_bg_visibility();
+			this.toggle_shadow_visibility();
 			this.bind_value_displays();
 			// Open/close every disclosure group, including ones contributed by add-ons.
 			initFieldGroups();
@@ -365,6 +374,17 @@ PC.views = window.PC.views || {};
 			if ( s.ground.shadow_general === undefined ) s.ground.shadow_general = 1;
 			if ( s.ground.shadow_contact === undefined ) s.ground.shadow_contact = 1;
 			if ( s.ground.shadow_offset === undefined ) s.ground.shadow_offset = 0;
+			if ( s.ground.shadow_catcher === undefined ) s.ground.shadow_catcher = false;
+			if ( s.ground.shadow_light === undefined ) s.ground.shadow_light = true;
+			if ( s.ground.shadow_elevation === undefined ) s.ground.shadow_elevation = 55;
+			if ( s.ground.shadow_azimuth === undefined ) s.ground.shadow_azimuth = 135;
+			// The dropdown replaced two checkboxes; derive it once for anything saved
+			// before, so the control opens on what the product is actually doing.
+			if ( s.ground.shadow_mode === undefined ) {
+				s.ground.shadow_mode = s.enable_shadows
+					? 'realtime'
+					: ( s.ground.enabled === false ? 'none' : 'fake' );
+			}
 			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
 			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'aces', exposure: 1, output_color_space: 'srgb', alpha: false };
@@ -433,6 +453,33 @@ PC.views = window.PC.views || {};
 			$sidebar_sections.find( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
 			this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
 			this.$( '#pc-3d-section-panel-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
+		},
+		/**
+		 * Show only the settings that belong to the selected shadow type.
+		 *
+		 * Each block declares the modes it belongs to in data-shadow-modes, so a mode
+		 * gaining a control is a template change and nothing else.
+		 */
+		toggle_shadow_visibility: function () {
+			const ground = PC.app.admin.settings_3d.ground || {};
+			let mode = ground.shadow_mode;
+			if ( mode !== 'none' && mode !== 'fake' && mode !== 'realtime' ) {
+				mode = PC.app.admin.settings_3d.enable_shadows
+					? 'realtime'
+					: ( ground.enabled === false ? 'none' : 'fake' );
+			}
+			this.$( '.pc-3d-shadow-settings' ).each( function () {
+				const modes = String( jQuery( this ).data( 'shadow-modes' ) || '' ).split( /\s+/ );
+				jQuery( this ).toggle( modes.indexOf( mode ) !== -1 );
+			} );
+
+			const useShadowLight = ground.shadow_light !== false;
+			this.$( '.pc-3d-shadow-light-settings' ).toggle( useShadowLight );
+			// Nothing left to cast: the dedicated light is off and no light in the
+			// product is set to cast either, so real-time shadows would draw nothing.
+			this.$( '.pc-3d-shadow-light-warning' ).toggle(
+				mode === 'realtime' && ! useShadowLight && ! this.has_shadow_casting_light()
+			);
 		},
 		toggle_env_and_bg_visibility: function () {
 			// Falls back to transparent, matching the stored default now that drawing
@@ -511,6 +558,8 @@ PC.views = window.PC.views || {};
 			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
 			sync( '.pc-3d-shadow-general', '.pc-3d-shadow-general-value' );
 			sync( '.pc-3d-shadow-contact', '.pc-3d-shadow-contact-value' );
+			sync( '.pc-3d-shadow-elevation', '.pc-3d-shadow-elevation-value' );
+			sync( '.pc-3d-shadow-azimuth', '.pc-3d-shadow-azimuth-value' );
 			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
 			// Add-on postprocessing sliders pair each input with the value display
 			// that immediately follows it, matching on_slider_input.
@@ -529,6 +578,48 @@ PC.views = window.PC.views || {};
 				o = o[k];
 			}
 			o[parts[parts.length - 1]] = value;
+		},
+		on_shadow_mode_change: function () {
+			const mode = this.$( '.pc-3d-shadow-mode' ).val();
+			PC.app.admin.settings_3d.ground = PC.app.admin.settings_3d.ground || {};
+			PC.app.admin.settings_3d.ground.shadow_mode = mode;
+			// The two booleans this dropdown replaced are still what older saved
+			// products carry, and resolveShadowMode falls back to them. Keeping them in
+			// step means a product saved now reads the same either way round.
+			PC.app.admin.settings_3d.ground.enabled = mode !== 'none';
+			PC.app.admin.settings_3d.enable_shadows = mode === 'realtime';
+			this.mark_dirty( 'settings_3d' );
+			this.toggle_shadow_visibility();
+			this.apply_preview_settings();
+		},
+		on_shadow_light_change: function () {
+			const on = this.$( '.pc-3d-shadow-light' ).is( ':checked' );
+			PC.app.admin.settings_3d.ground = PC.app.admin.settings_3d.ground || {};
+			PC.app.admin.settings_3d.ground.shadow_light = on;
+			this.mark_dirty( 'settings_3d' );
+			this.toggle_shadow_visibility();
+			this.apply_preview_settings();
+		},
+
+		/**
+		 * Whether anything in the product is set up to cast a shadow.
+		 *
+		 * Having a light is not enough — a light only casts when "Cast shadows" is
+		 * ticked on it, so that is what decides whether turning the dedicated light
+		 * off leaves the product with no caster at all.
+		 *
+		 * @returns {boolean}
+		 */
+		has_shadow_casting_light: function () {
+			const objects3d = PC.app.get_collection && PC.app.get_collection( 'objects3d' );
+			if ( ! objects3d || typeof objects3d.each !== 'function' ) return false;
+			let found = false;
+			objects3d.each( function ( obj ) {
+				if ( found ) return;
+				if ( obj.get( 'object_type' ) !== 'light' ) return;
+				if ( obj.get( 'cast_shadows' ) === true ) found = true;
+			} );
+			return found;
 		},
 		on_bg_mode_change: function () {
 			const val = this.$( '.pc-3d-bg-mode' ).val();

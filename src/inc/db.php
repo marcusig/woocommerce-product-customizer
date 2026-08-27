@@ -1792,6 +1792,17 @@ class DB {
 				'shadow_general' => 1,
 				'shadow_contact' => 1,
 				'shadow_offset'  => 0,
+				// none | fake | realtime. Replaces the old pair of independent
+				// checkboxes, which could both be on and stack two shadows.
+				'shadow_mode'    => 'fake',
+				// Whether real-time shadows get a plane to land on. Off by default:
+				// a product that needs one is the exception, and an unexpected
+				// surface under the model is more surprising than a missing one.
+				'shadow_catcher' => false,
+				// A dedicated caster at intensity zero, and where it casts from.
+				'shadow_light'     => true,
+				'shadow_elevation' => 55,
+				'shadow_azimuth'   => 135,
 			),
 			'enable_shadows'  => false,
 			'extend_under_toolbar' => false,
@@ -2319,6 +2330,26 @@ class DB {
 					'escape' => 'floatval',
 				],
 				'shadow_offset' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_mode' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'shadow_catcher' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'shadow_light' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'shadow_elevation' => [
+					'sanitize' => 'floatval',
+					'escape' => 'floatval',
+				],
+				'shadow_azimuth' => [
 					'sanitize' => 'floatval',
 					'escape' => 'floatval',
 				],

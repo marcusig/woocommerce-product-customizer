@@ -376,8 +376,11 @@ export class FakeShadow extends THREE.Object3D {
 	 *   `enabled`, `shadow_opacity` (0–1, master), `shadow_blur` (0–10 softness),
 	 *   `shadow_contact` (0–1), `shadow_general` (0–1),
 	 *   `shadow_offset` (scene units; negative drops the plane below the product).
+	 * @param {boolean} [enabled] - Whether the fake shadow is the active shadow
+	 *   mode. Passed explicitly because the mode lives above `ground` in the
+	 *   settings, and only the caller can see it.
 	 */
-	update(modelRoot, ground) {
+	update(modelRoot, ground, enabled) {
 		if (!modelRoot) return;
 
 		this._boundingBox.setFromObject(modelRoot);
@@ -436,7 +439,9 @@ export class FakeShadow extends THREE.Object3D {
 		this._camera.far = Math.max(this._size.y - offset, 0.01) * 5;
 		this._camera.updateProjectionMatrix();
 
-		this._enabled = ground && ground.enabled !== false;
+		this._enabled = enabled != null
+			? !! enabled
+			: !! ( ground && ground.enabled !== false );
 		this.visible = this._enabled;
 
 		this._intensity = opacity;

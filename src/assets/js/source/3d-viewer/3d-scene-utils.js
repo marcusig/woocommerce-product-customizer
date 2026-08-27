@@ -475,6 +475,38 @@ export function applyLightCookie( light, cookie, onLoaded ) {
 /** Default shadow map resolution per light. */
 export const DEFAULT_SHADOW_MAP_SIZE = 2048;
 
+/**
+ * Penumbra half-width at softness 0 and 1, as a fraction of the model radius.
+ *
+ * These are what the old texel-based radius (1..16) worked out to on a 2048 map
+ * at the frustum the fit used to produce, so a product tuned before this reads
+ * the same after it.
+ */
+const MIN_PENUMBRA_RATIO = 0.001123;
+const MAX_PENUMBRA_RATIO = 0.045;
+
+/**
+ * Never blur by less than this, whatever the world-space penumbra works out to.
+ *
+ * The floor is in texels rather than world units because what it exists to hide
+ * is a texel-space artifact: below about two texels the blur is narrower than the
+ * shadow map's own staircase, so the softness setting stops doing anything visible
+ * and the edge is raw stair-stepping. At the bottom of the range that came out at
+ * 0.4 texels, which is why 0 read as unusable rather than as "sharp".
+ */
+const MIN_BLUR_TEXELS = 2;
+
+/**
+ * Widest gap allowed between blur taps, in texels.
+ *
+ * three spreads blurSamples evenly across the whole kernel, so samples and radius
+ * have to move together: a fixed count stretched over a growing radius is what
+ * leaves gaps, and gaps are what banding is. Comfortably under one texel here,
+ * because the tap count is cheap next to being unable to trust the top of the
+ * range.
+ */
+const MAX_BLUR_TAP_SPACING = 0.9;
+
 /** Light types that can cast a real-time shadow. */
 export function supportsLightShadows( light ) {
 	return !! ( light && ( light.isDirectionalLight || light.isSpotLight || light.isPointLight ) );
@@ -496,6 +528,162 @@ export function applyShadowFlagsToObject( root, enabled ) {
 }
 
 /**
+ * How far past the model the frustum may stretch to follow a shadow, as a
+ * multiple of the model radius.
+ *
+ * A shadow's reach across the ground is height / tan( elevation ), which goes to
+ * infinity as the light approaches the horizon. Uncapped, a near-horizontal light
+ * would take the texel density down with it — the shadow map covers the frustum,
+ * so a frustum ten times too big is a shadow ten times too coarse. Past this the
+ * far end of a very long shadow is clipped, which is the lesser of the two.
+ */
+const MAX_SHADOW_FIT_SCALE = 6;
+
+/** Scratch for the directional fit; it runs on change, but not rarely enough to allocate. */
+const _fit_matrix = new THREE.Matrix4();
+const _fit_point = new THREE.Vector3();
+const _fit_projected = new THREE.Vector3();
+const _fit_light_space = new THREE.Vector3();
+const _fit_ground_a = new THREE.Vector3();
+const _fit_ground_b = new THREE.Vector3();
+
+/**
+ * Fit a directional light's orthographic shadow camera to the model *and to the
+ * ground its shadow falls on*.
+ *
+ * Fitting to the model alone is right for the caster and wrong for the receiver.
+ * The shadow map covers the frustum and nothing outside it is shadowed at all, so
+ * a low elevation — where the shadow stretches far past the model's own footprint
+ * — had the shadow stop dead along a straight line in mid-air. Enlarging the
+ * ground plane could not help: the crop was the shadow camera, not the plane.
+ *
+ * So the box is fitted to the eight model corners plus where each of them throws
+ * its shadow, in the light's own space. Asymmetric on purpose: the shadow only
+ * goes one way, and a symmetric box would spend half its resolution on the empty
+ * side. At the default elevation this adds about a metre to a car's frustum; it
+ * only grows to matter when the merchant actually asks for a long shadow.
+ *
+ * @param {THREE.DirectionalLight} light
+ * @param {THREE.Box3} bounds
+ * @param {THREE.Sphere} sphere - Bounding sphere of the same bounds
+ * @param {number} radius - Bounding sphere radius, already floored
+ */
+function fitDirectionalShadowCamera( light, bounds, sphere, radius, ground_extent ) {
+	const camera = light.shadow.camera;
+	const eye = light.getWorldPosition( new THREE.Vector3() );
+	const target = light.target
+		? light.target.getWorldPosition( new THREE.Vector3() )
+		: sphere.center.clone();
+
+	// The same basis three gives the shadow camera at render time — it positions
+	// the camera at the light and lookAt()s the target with the camera's own up —
+	// so the box fitted here is the box that actually gets used.
+	_fit_matrix.lookAt( eye, target, camera.up );
+	_fit_matrix.setPosition( eye );
+	_fit_matrix.invert();
+
+	const direction = target.clone().sub( eye ).normalize();
+	const ground_y = bounds.min.y;
+	const max_extent = radius * MAX_SHADOW_FIT_SCALE;
+
+	let min_x = Infinity, max_x = - Infinity;
+	let min_y = Infinity, max_y = - Infinity;
+	let min_z = Infinity, max_z = - Infinity;
+
+	// Depth and area are fitted to different things on purpose. A shadow lands on
+	// the same shadow-map texel as the thing casting it, so the area only ever has
+	// to cover the caster — widening it to the ground would spend most of the map
+	// on empty floor. Depth is the opposite: the receiver is further from the light
+	// than the caster, and anything past the far plane fails three's
+	// `shadowCoord.z <= 1.0` test and comes out lit. Because the far plane is
+	// perpendicular to the light, where it crossed the ground it drew a straight
+	// line across the shadow, perpendicular to its direction.
+	const include = ( point, depth_only ) => {
+		_fit_light_space.copy( point ).applyMatrix4( _fit_matrix );
+		min_z = Math.min( min_z, _fit_light_space.z );
+		max_z = Math.max( max_z, _fit_light_space.z );
+		if ( depth_only ) return;
+		min_x = Math.min( min_x, _fit_light_space.x );
+		max_x = Math.max( max_x, _fit_light_space.x );
+		min_y = Math.min( min_y, _fit_light_space.y );
+		max_y = Math.max( max_y, _fit_light_space.y );
+	};
+
+	for ( let i = 0; i < 8; i ++ ) {
+		_fit_point.set(
+			( i & 1 ) ? bounds.max.x : bounds.min.x,
+			( i & 2 ) ? bounds.max.y : bounds.min.y,
+			( i & 4 ) ? bounds.max.z : bounds.min.z
+		);
+		include( _fit_point );
+
+		// Where this corner's shadow lands on the ground.
+		if ( direction.y < - 1e-4 ) {
+			const reach = ( ground_y - _fit_point.y ) / direction.y;
+			if ( reach > 0 ) {
+				_fit_projected.copy( _fit_point ).addScaledVector( direction, Math.min( reach, max_extent ) );
+				include( _fit_projected );
+			}
+		}
+	}
+
+	// The whole receiving plane, in every axis — not depth only.
+	//
+	// The plane is the independent variable here and the frustum follows it. The
+	// other way round does not work: clamping the plane to a tightly fitted
+	// frustum throttles it to the *narrowest* axis, and a square plane cannot be
+	// wide across the shadow and long along it. That crops the shadow at a low
+	// angle, which is exactly where the length matters.
+	//
+	// It costs texel density — the map is spread over the plane rather than the
+	// product — and that cost is what MAX_SHADOW_REACH_SCALE exists to bound.
+	const half = Math.max( Number( ground_extent ) || 0, 0 ) / 2;
+	const centre_x = ( bounds.min.x + bounds.max.x ) / 2;
+	const centre_z = ( bounds.min.z + bounds.max.z ) / 2;
+	if ( half > 0 ) {
+		for ( let i = 0; i < 4; i ++ ) {
+			_fit_point.set(
+				centre_x + ( ( i & 1 ) ? half : - half ),
+				ground_y,
+				centre_z + ( ( i & 2 ) ? half : - half )
+			);
+			include( _fit_point );
+		}
+	}
+
+	const margin = radius * 0.15;
+	camera.left = Math.max( min_x - margin, - max_extent );
+	camera.right = Math.min( max_x + margin, max_extent );
+	camera.bottom = Math.max( min_y - margin, - max_extent );
+	camera.top = Math.min( max_y + margin, max_extent );
+	// Light space looks down -Z, so the nearest point has the largest z.
+	camera.near = Math.max( - max_z - margin, 1e-4 );
+	camera.far = Math.max( - min_z + margin, camera.near + radius );
+	camera.updateProjectionMatrix();
+
+	// How far across the ground this frustum actually reaches, so the catcher can
+	// be kept inside it.
+	//
+	// Nothing outside the frustum is shadowed at all, and the boundary is a hard
+	// edge — the top and bottom planes cut the ground in a line perpendicular to
+	// the shadow. A plane that extends past it shows that line. Measured rather
+	// than derived: step a metre along the ground each way, see how far that moves
+	// in light space, and divide the frustum's half-extents by it.
+	_fit_ground_a.set( centre_x, ground_y, centre_z ).applyMatrix4( _fit_matrix );
+	const along = new THREE.Vector3( direction.x, 0, direction.z );
+	if ( along.lengthSq() < 1e-8 ) along.set( 0, 0, 1 );
+	along.normalize();
+	_fit_ground_b.set( centre_x + along.x, ground_y, centre_z + along.z ).applyMatrix4( _fit_matrix );
+	const per_metre_y = Math.abs( _fit_ground_b.y - _fit_ground_a.y );
+	_fit_ground_b.set( centre_x - along.z, ground_y, centre_z + along.x ).applyMatrix4( _fit_matrix );
+	const per_metre_x = Math.abs( _fit_ground_b.x - _fit_ground_a.x );
+
+	const half_along = per_metre_y > 1e-4 ? Math.min( - camera.bottom, camera.top ) / per_metre_y : Infinity;
+	const half_across = per_metre_x > 1e-4 ? Math.min( - camera.left, camera.right ) / per_metre_x : Infinity;
+	light.userData.pc_shadow_ground_half = Math.min( half_along, half_across );
+}
+
+/**
  * Fit a light's shadow camera to the model.
  *
  * Three's defaults assume a scene tens of units across (spot/point near 0.5 far 500,
@@ -508,7 +696,7 @@ export function applyShadowFlagsToObject( root, enabled ) {
  * @param {THREE.Light} light
  * @param {THREE.Box3} bounds - World-space bounds of the model
  */
-export function fitShadowCameraToBounds( light, bounds ) {
+export function fitShadowCameraToBounds( light, bounds, options = {} ) {
 	if ( ! light || ! light.shadow || ! light.shadow.camera ) return;
 	if ( ! bounds || bounds.isEmpty() ) return;
 
@@ -523,11 +711,8 @@ export function fitShadowCameraToBounds( light, bounds ) {
 	const margin = radius * 1.5;
 
 	if ( light.isDirectionalLight ) {
-		const extent = radius * 1.15;
-		camera.left = - extent;
-		camera.right = extent;
-		camera.top = extent;
-		camera.bottom = - extent;
+		fitDirectionalShadowCamera( light, bounds, sphere, radius, options.groundExtent );
+		return;
 	}
 
 	if ( light.isPointLight ) {
@@ -570,27 +755,65 @@ export function applyShadowSettingsToLight( light, options = {} ) {
 		}
 	}
 
-	fitShadowCameraToBounds( light, options.bounds );
+	fitShadowCameraToBounds( light, options.bounds, { groundExtent: options.groundExtent } );
 
-	// Softness. radius is measured in shadow-map texels, not world units, so it
-	// only means anything alongside a fitted camera and a known map size — both of
-	// which are set just above. blurSamples widens the pre-blur VSM applies to the
-	// map itself, which is where its smoothness comes from.
+	// Everything below is specified in world units and converted through the size
+	// of one shadow-map texel, read back from the camera the fit just sized.
+	//
+	// That indirection is the whole point. shadow.radius and normalBias are both
+	// in texels, and a texel is only as big as the frustum divided by the map — so
+	// a fixed texel value meant one thing on a 2048 desktop map and twice as much
+	// on a 1024 phone, and now would also drift every time a low shadow angle
+	// widened the frustum to cover its own reach. Working in world units and
+	// converting here makes each setting mean one thing everywhere.
+	let texel_world_size = null;
+	let bounds_radius = null;
+	if ( options.bounds && ! options.bounds.isEmpty() ) {
+		const sphere = options.bounds.getBoundingSphere( new THREE.Sphere() );
+		bounds_radius = Math.max( sphere.radius, 1e-4 );
+	}
+	const shadow_camera = light.shadow.camera;
+	if ( light.isDirectionalLight && shadow_camera && shadow_camera.isOrthographicCamera ) {
+		texel_world_size = Math.max(
+			( shadow_camera.right - shadow_camera.left ) / map_size,
+			( shadow_camera.top - shadow_camera.bottom ) / map_size,
+			1e-6
+		);
+	} else if ( bounds_radius != null ) {
+		// Perspective shadows have no single texel size — it grows with distance —
+		// so the model's own scale is the best available stand-in.
+		texel_world_size = ( bounds_radius * 2 ) / map_size;
+	}
+
+	// Softness, as a penumbra width proportional to the product. The ratios are
+	// the range the texel-based version happened to produce on a 2048 map at the
+	// original frustum, so nothing already tuned moves.
 	if ( options.softness != null ) {
 		const softness = Math.min( 1, Math.max( 0, Number( options.softness ) || 0 ) );
-		light.shadow.radius = 1 + softness * 15;
-		light.shadow.blurSamples = Math.round( 4 + softness * 12 );
+		if ( texel_world_size != null && bounds_radius != null ) {
+			const penumbra = bounds_radius * (
+				MIN_PENUMBRA_RATIO + softness * ( MAX_PENUMBRA_RATIO - MIN_PENUMBRA_RATIO )
+			);
+			light.shadow.radius = Math.min(
+				48,
+				Math.max( MIN_BLUR_TEXELS, penumbra / texel_world_size )
+			);
+		} else {
+			light.shadow.radius = 1 + softness * 15;
+		}
+		// Enough taps to keep the kernel continuous at whatever radius that came to.
+		light.shadow.blurSamples = Math.min( 48, Math.max(
+			4,
+			Math.round( ( 2 * light.shadow.radius ) / MAX_BLUR_TAP_SPACING ) + 1
+		) );
 	}
 
 	// normalBias is in world units, so derive it from roughly two shadow texels.
 	// A fixed value (the old 0.02) is 2cm — enormous on a small product, which is
 	// what detaches shadows from the surfaces casting them.
 	let normal_bias = 0.02;
-	if ( options.bounds && ! options.bounds.isEmpty() ) {
-		const sphere = options.bounds.getBoundingSphere( new THREE.Sphere() );
-		const radius = Math.max( sphere.radius, 1e-4 );
-		const texel_world_size = ( radius * 2 ) / map_size;
-		normal_bias = Math.min( Math.max( texel_world_size * 2, 1e-5 ), radius * 0.05 );
+	if ( texel_world_size != null && bounds_radius != null ) {
+		normal_bias = Math.min( Math.max( texel_world_size * 2, 1e-5 ), bounds_radius * 0.05 );
 	}
 
 	if ( light.isPointLight ) {
@@ -669,10 +892,112 @@ export function aimShadowLight( light, bounds, options = {} ) {
 }
 
 /**
- * How much wider than the model the shadow catcher is, so a low sun's shadow has
- * somewhere to land instead of stopping at the plane's edge.
+ * How much wider than the model the shadow catcher is when the shadow is short.
+ *
+ * Only a floor. A low angle's long shadow is covered by the reach term in
+ * shadowGroundExtent, which is explicit about it; this is just enough room around
+ * the product for a short shadow and the fade band.
+ *
+ * It used to be 2.5, from before the reach was calculated, and that is expensive
+ * now that the shadow camera is fitted to the plane: on a car it held the plane at
+ * 14.85m whatever the angle, spreading the shadow map over more than twice the
+ * ground it needed and taking the texel size from 4.5mm to 10mm with it.
  */
-const SHADOW_CATCHER_MARGIN = 2.5;
+const SHADOW_CATCHER_MARGIN = 1.4;
+
+/** Cap on how far past the footprint the catcher grows to follow a low shadow. */
+const MAX_SHADOW_REACH_SCALE = 6;
+
+/**
+ * Where the shadow fade reaches zero, as a fraction of the plane's radius.
+ *
+ * Deliberately short of the geometry. Ending the fade exactly at the edge leaves
+ * the plane's boundary sitting where alpha is still changing, and the edge of a
+ * large transparent quad is a straight line that finds a way to show — through
+ * antialiasing, blending precision, or the shadow map's own border. Stopping the
+ * fade early means the outer band is exactly zero everywhere, so there is no
+ * boundary left to draw. The plane is grown to compensate, so nothing is lost.
+ */
+const FADE_COMPLETE_AT = 0.85;
+
+/**
+ * Shadow below this counts as none at all, on the catcher.
+ *
+ * Variance shadow mapping never returns exactly "fully lit": in an unshadowed
+ * spot the Chebyshev bound lands a fraction under 1, so the catcher carries a
+ * half-percent wash of shadow across the whole frustum. Outside the frustum
+ * three's own bounds test returns exactly 1 instead, and the step between the two
+ * drew a faint line — perpendicular to the light, because the frustum's top and
+ * bottom planes cut the ground that way, and rotating with it. Well under a level
+ * out of 255, but a straight coherent edge is exactly what an eye is good at.
+ *
+ * Clipping the toe removes the wash, so there is nothing left to step down from.
+ * Real shadow starts far above this, and the alternative — growing the frustum
+ * until its boundary leaves the plane — costs texel density everywhere to hide an
+ * artifact at the edge.
+ */
+const SHADOW_TOE = 0.03;
+
+/**
+ * How wide the ground the shadow lands on is, in scene units.
+ *
+ * Shared by the catcher, which is sized by it, and by the shadow camera fit,
+ * which has to push its depth range past it — see fitDirectionalShadowCamera.
+ * They cannot be allowed to disagree: the whole bug this exists to prevent is a
+ * frustum that ends partway across the surface it is shadowing.
+ *
+ * @param {THREE.Vector3} size - Model bounding box size
+ * @param {number} [elevationDeg] - Shadow light elevation
+ * @param {number} [explicit] - Explicit size, treated as a floor
+ * @returns {number}
+ */
+export function shadowGroundExtent( size, elevationDeg, explicit ) {
+	const footprint = Math.max( size.x, size.z, 0.01 );
+	let reach = 0;
+	if ( elevationDeg > 0 && elevationDeg < 90 ) {
+		reach = Math.max( size.y, 0 ) / Math.tan( elevationDeg * Math.PI / 180 );
+		reach = Math.min( reach, footprint * MAX_SHADOW_REACH_SCALE );
+	}
+	return Math.max(
+		Number( explicit ) > 0 ? Number( explicit ) : 0,
+		footprint * SHADOW_CATCHER_MARGIN,
+		footprint + reach * 2
+	) / FADE_COMPLETE_AT;
+}
+
+/**
+ * The three ways a product can be grounded, and how to read it off the settings.
+ *
+ * One dropdown replaced two independent checkboxes ("enable fake shadow" and
+ * "enable real-time shadows"), which could both be on at once and produced two
+ * shadows stacked on each other. A single mode makes that unrepresentable.
+ *
+ * The fallback is for products saved before the dropdown existed: real-time wins
+ * if it was on, because a product set up that way was relying on it.
+ */
+export const SHADOW_MODES = {
+	NONE: 'none',
+	FAKE: 'fake',
+	REALTIME: 'realtime',
+};
+
+/**
+ * @param {Object} settings - settings_3d
+ * @returns {string} One of SHADOW_MODES
+ */
+export function resolveShadowMode( settings ) {
+	const ground = ( settings && settings.ground ) || {};
+	const mode = ground.shadow_mode;
+	if (
+		mode === SHADOW_MODES.NONE ||
+		mode === SHADOW_MODES.FAKE ||
+		mode === SHADOW_MODES.REALTIME
+	) {
+		return mode;
+	}
+	if ( settings && settings.enable_shadows ) return SHADOW_MODES.REALTIME;
+	return ground.enabled === false ? SHADOW_MODES.NONE : SHADOW_MODES.FAKE;
+}
 
 /**
  * A plane that shows real-time shadows and nothing else.
@@ -700,6 +1025,53 @@ export class ShadowCatcher extends THREE.Mesh {
 		this.castShadow = false;
 		this.userData.noHit = true;
 		this.name = 'ShadowCatcher';
+
+		// Fade the shadow out towards the edge of the plane.
+		//
+		// A directional shadow is uniform: it is exactly as dark and exactly as
+		// hard a metre from the product as it is ten metres away. That reads as
+		// wrong on a long shadow, because a real one softens and lightens with
+		// distance as the penumbra widens — and the shadow map cannot do that, the
+		// blur it gets is one width everywhere. Fading with distance approximates
+		// the half of it that matters, and costs one smoothstep.
+		//
+		// Driven off the plane's own uv rather than a world position, because the
+		// plane is already sized to the shadow's reach: the model sits in the
+		// middle and the tip of the shadow is out near the edge, so uv distance
+		// from the centre is the measure we want with nothing else to compute.
+		// Uniforms rather than baked constants: these are the two knobs worth
+		// scrubbing against a live product, and recompiling a shader to try a value
+		// is a poor way to find one.
+		this._fade = {
+			fadeInner: { value: 0.5 },
+			fadeOuter: { value: FADE_COMPLETE_AT },
+			shadowToe: { value: SHADOW_TOE },
+		};
+		this.material.onBeforeCompile = ( shader ) => {
+			shader.uniforms.fadeInner = this._fade.fadeInner;
+			shader.uniforms.fadeOuter = this._fade.fadeOuter;
+			shader.uniforms.shadowToe = this._fade.shadowToe;
+			shader.vertexShader = 'varying vec2 vCatcherUv;\n' + shader.vertexShader.replace(
+				'#include <begin_vertex>',
+				'#include <begin_vertex>\n\tvCatcherUv = uv;'
+			);
+			const target = 'gl_FragColor = vec4( color, opacity * ( 1.0 - getShadowMask() ) );';
+			const patched = shader.fragmentShader.replace(
+				target,
+				'float catcherFade = 1.0 - smoothstep( fadeInner, fadeOuter, length( vCatcherUv - 0.5 ) * 2.0 );\n' +
+				'\tfloat catcherShadow = 1.0 - getShadowMask();\n' +
+				'\tcatcherShadow = clamp( ( catcherShadow - shadowToe ) / max( 1.0 - shadowToe, 1e-4 ), 0.0, 1.0 );\n' +
+				'\tgl_FragColor = vec4( color, opacity * catcherShadow * catcherFade );'
+			);
+			if ( patched === shader.fragmentShader ) {
+				// three has changed ShadowMaterial. Losing the fade is cosmetic, so
+				// say so and carry on rather than breaking the shadow.
+				console.warn( 'ShadowCatcher: could not patch ShadowMaterial, shadow will not fade with distance.' );
+				return;
+			}
+			shader.fragmentShader =
+				'uniform float fadeInner;\nuniform float fadeOuter;\nuniform float shadowToe;\nvarying vec2 vCatcherUv;\n' + patched;
+		};
 	}
 
 	/**
@@ -708,6 +1080,9 @@ export class ShadowCatcher extends THREE.Mesh {
 	 * @param {THREE.Object3D} modelRoot
 	 * @param {Object} [options]
 	 * @param {number} [options.opacity=0.5] - Shadow darkness
+	 * @param {number} [options.size] - Plane size in scene units, as a floor.
+	 * @param {number} [options.elevation] - Shadow light elevation in degrees, so
+	 *        the plane can be grown to cover the shadow's reach.
 	 * @returns {boolean} Whether the catcher could be placed
 	 */
 	update( modelRoot, options = {} ) {
@@ -717,8 +1092,33 @@ export class ShadowCatcher extends THREE.Mesh {
 
 		const size = box.getSize( new THREE.Vector3() );
 		const center = box.getCenter( new THREE.Vector3() );
-		const extent = Math.max( size.x, size.z, 0.01 ) * SHADOW_CATCHER_MARGIN;
+		const footprint = Math.max( size.x, size.z, 0.01 );
+		const extent = shadowGroundExtent( size, Number( options.elevation ), options.size );
+		// Clamped to the frustum. The two used to be worked out separately and
+		// disagreed: the plane ran to 14.85m while the frustum reached 6.4m, so the
+		// boundary landed in open plane, a long way outside the shadow, and drew a
+		// faint line there. The fade cannot help at that distance — it is scaled to
+		// the plane, and the plane was the thing that was too big.
 		this.scale.set( extent, extent, 1 );
+
+		// Hold the shadow at full strength while it is still under the product, then
+		// fade across whatever is left of the plane. On a short shadow that band is
+		// most of the plane and the fade is invisible; on a long one it is the taper
+		// that stops it ending in a flat wall of grey.
+		if ( this._fade ) {
+			const covered = footprint / Math.max( extent, 1e-4 );
+			if ( covered >= FADE_COMPLETE_AT ) {
+				// No room between the product and the edge to fade across. Pushing the
+				// band inwards anyway is what cropped the shadow, so it is switched
+				// off instead — values past any uv put smoothstep at 0 and the fade
+				// term at 1.
+				this._fade.fadeInner.value = 1e3;
+				this._fade.fadeOuter.value = 1e4;
+			} else {
+				this._fade.fadeInner.value = covered;
+				this._fade.fadeOuter.value = FADE_COMPLETE_AT;
+			}
+		}
 		// A hair below the lowest geometry, so a model whose wheels sit exactly on
 		// zero does not z-fight with the plane it is standing on.
 		this.position.set( center.x, box.min.y - Math.max( size.y, 1 ) * 0.001, center.z );
@@ -783,7 +1183,7 @@ export function applyRendererShadowSettings( renderer, enabled ) {
  * @param {boolean} params.enabled
  * @param {number} [params.mapSize]
  */
-export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapSize, softness } ) {
+export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapSize, softness, groundExtent } ) {
 	applyRendererShadowSettings( renderer, enabled );
 	if ( ! scene ) return;
 
@@ -806,6 +1206,7 @@ export function refreshSceneShadows( { renderer, scene, modelRoot, enabled, mapS
 			bounds,
 			mapSize,
 			softness,
+			groundExtent,
 		} );
 	} );
 }

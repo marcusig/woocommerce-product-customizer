@@ -118,13 +118,84 @@ export const settings_3d_preview_mixin = {
 		const t = this._three;
 		if ( ! t || ! t.renderer || ! t.scene ) return;
 		if ( ! PC.threeD || typeof PC.threeD.refreshSceneShadows !== 'function' ) return;
+		const deps = get_three_deps();
+		if ( ! deps || typeof deps.resolveShadowMode !== 'function' ) return;
 		const s = PC.app.admin.settings_3d;
+		const ground = s.ground || {};
+		const realtime = deps.resolveShadowMode( s ) === deps.SHADOW_MODES.REALTIME;
+		const softness = Math.min( 1, Math.max( 0, ( Number( ground.shadow_blur ) || 0 ) / 10 ) );
+
+		if ( realtime && ground.shadow_light !== false && ! t.shadow_light && typeof PC.threeD.createShadowLight === 'function' ) {
+			// Built on first use rather than at scene setup: a preview that never
+			// switches to real-time shadows should not carry a shadow camera around.
+			t.shadow_light = PC.threeD.createShadowLight();
+			t.scene.add( t.shadow_light );
+			t.scene.add( t.shadow_light.target );
+		}
+		if ( realtime && ground.shadow_catcher === true && ! t.shadow_catcher && typeof PC.threeD.ShadowCatcher === 'function' ) {
+			t.shadow_catcher = new PC.threeD.ShadowCatcher();
+			t.scene.add( t.shadow_catcher );
+		}
+
+		if ( t.shadow_light ) {
+			// See main-viewer: optional caster, and cast_shadows has to move with
+			// visibility because refreshSceneShadows keys the camera fit off it.
+			const useShadowLight = realtime && ground.shadow_light !== false;
+			t.shadow_light.visible = useShadowLight;
+			t.shadow_light.userData.cast_shadows = useShadowLight;
+			const THREE_ = get_three();
+			if ( useShadowLight && t.model_root && THREE_ && typeof PC.threeD.aimShadowLight === 'function' ) {
+				const bounds = new THREE_.Box3().setFromObject( t.model_root );
+				if ( ! bounds.isEmpty() ) {
+					PC.threeD.aimShadowLight( t.shadow_light, bounds, {
+						elevation: ground.shadow_elevation,
+						azimuth: ground.shadow_azimuth,
+					} );
+				}
+			}
+		}
+
+		// Fitted against the light's final direction, and before the catcher, which
+		// is sized from the frustum this produces.
+		// One number for both the frustum fit and the catcher — see main-viewer.
+		var THREE_g = get_three();
+		var groundExtent = ( t.model_root && THREE_g && typeof PC.threeD.shadowGroundExtent === 'function' )
+			? PC.threeD.shadowGroundExtent(
+				new THREE_g.Box3().setFromObject( t.model_root ).getSize( new THREE_g.Vector3() ),
+				ground.shadow_elevation != null ? ground.shadow_elevation : 55,
+				ground.size
+			)
+			: 0;
+
 		PC.threeD.refreshSceneShadows( {
 			renderer: t.renderer,
 			scene: t.scene,
 			modelRoot: t.model_root,
-			enabled: !!( s && s.enable_shadows ),
+			enabled: realtime,
+			groundExtent: groundExtent,
+			// The same slider the fake shadow uses, so softness means one thing
+			// whichever kind of shadow a product is set up with.
+			softness: softness,
 		} );
+
+		if ( t.shadow_catcher ) {
+			// After the fit — see main-viewer: the plane is clamped to the frustum's
+			// own reach, because outside it there is no shadow and the boundary
+			// shows as a hard line.
+			const wantsCatcher = realtime && ground.shadow_catcher === true;
+			const placed = wantsCatcher && t.shadow_catcher.update( t.model_root, {
+				opacity: ground.shadow_opacity != null ? ground.shadow_opacity : 0.5,
+				size: ground.size,
+				elevation: ground.shadow_elevation != null ? ground.shadow_elevation : 55,
+			} );
+			t.shadow_catcher.visible = !! placed;
+		}
+
+
+		// The map is baked, so a settings or geometry change has to ask for a new one.
+		if ( typeof PC.threeD.invalidateBakedShadows === 'function' ) {
+			PC.threeD.invalidateBakedShadows( t.renderer );
+		}
 		this.request_preview_render();
 	},
 	setup_preview_postprocessing: async function () {
@@ -244,6 +315,18 @@ export const settings_3d_preview_mixin = {
 		if ( t.base_composer ) {
 			t.base_composer.dispose();
 			t.base_composer = null;
+		}
+		if ( t.shadow_catcher ) {
+			if ( t.shadow_catcher.parent ) t.shadow_catcher.parent.remove( t.shadow_catcher );
+			if ( t.shadow_catcher.dispose ) t.shadow_catcher.dispose();
+			t.shadow_catcher = null;
+		}
+		if ( t.shadow_light ) {
+			if ( t.shadow_light.target && t.shadow_light.target.parent ) {
+				t.shadow_light.target.parent.remove( t.shadow_light.target );
+			}
+			if ( t.shadow_light.parent ) t.shadow_light.parent.remove( t.shadow_light );
+			t.shadow_light = null;
 		}
 		if ( t.on_resize ) {
 			window.removeEventListener( 'resize', t.on_resize );
@@ -414,7 +497,7 @@ export const settings_3d_preview_mixin = {
 				alpha: useAlpha,
 				powerPreference: 'high-performance',
 			} );
-			const shadowsEnabled = !!( s && s.enable_shadows );
+			const shadowsEnabled = deps.resolveShadowMode( s ) === deps.SHADOW_MODES.REALTIME;
 			PC.threeD.applyRendererShadowSettings( renderer, shadowsEnabled );
 			renderer.setSize( container.clientWidth, container.clientHeight );
 			renderer.setPixelRatio( deps.getPixelRatio() );
@@ -432,7 +515,7 @@ export const settings_3d_preview_mixin = {
 			const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
 			camera.position.set( 0, 1, 3 );
 
-			this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null, material_registry: new Map() };
+			this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, shadow_catcher: null, shadow_light: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null, material_registry: new Map() };
 			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
 				window.wp.hooks.doAction( 'PC.admin.3d_settings.viewer_ready', this, this._three, THREE );
 			}
@@ -740,7 +823,9 @@ export const settings_3d_preview_mixin = {
 						} );
 					}
 					const g = PC.app.admin.settings_3d.ground || {};
-					if ( this._three.fake_shadow && g.enabled !== false ) {
+					// No mode check: update() has already told the instance whether it
+					// is the active shadow, and render() is a no-op when it is not.
+					if ( this._three.fake_shadow ) {
 						this._three.fake_shadow.render( renderer, scene );
 					}
 					if ( this._three.postprocessingLayer ) {

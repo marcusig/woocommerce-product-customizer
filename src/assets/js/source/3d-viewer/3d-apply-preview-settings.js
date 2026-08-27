@@ -12,6 +12,8 @@ import {
 	setSceneEnvironment,
 	blurEnvironmentTexture,
 	getEnvironmentKey,
+	resolveShadowMode,
+	SHADOW_MODES,
 } from './3d-scene-utils.js';
 
 /**
@@ -106,7 +108,7 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 
 	const g = s.ground || {};
 	if ( options.fakeShadow && options.modelRoot ) {
-		options.fakeShadow.update( options.modelRoot, g );
+		options.fakeShadow.update( options.modelRoot, g, resolveShadowMode( s ) === SHADOW_MODES.FAKE );
 	}
 
 	const gi = 1;

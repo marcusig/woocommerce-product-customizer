@@ -35,7 +35,7 @@ import {
 	set_loading_step,
 } from './loading-overlay.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 
 const Backbone = window.Backbone;
@@ -250,6 +250,34 @@ export default Backbone.View.extend({
 			// host's own change handlers — animation mixers, canvas textures — must
 			// call this or their work will not reach the screen.
 			requestRender: () => this._requestRender(),
+
+			/**
+			 * Merge into the live ground/shadow settings and re-apply them.
+			 *
+			 * The settings themselves are staged on the _three bag, which nothing
+			 * outside the viewer should be reaching into. This is the supported way
+			 * to drive them — from an add-on, or from the console while tuning a
+			 * shadow against a real product.
+			 *
+			 * @param {Object} partial - Any subset of the `ground` settings
+			 * @returns {Object} The merged settings
+			 */
+			setGroundSettings: ( partial ) => {
+				const t = this._three;
+				if ( ! t ) return null;
+				t._ground_settings = Object.assign( {}, t._ground_settings || {}, partial || {} );
+				this._shadowMode = resolveShadowMode( { ground: t._ground_settings } );
+				this._shadowsEnabled = this._shadowMode === SHADOW_MODES.REALTIME;
+				if ( t.fake_shadow ) {
+					t.fake_shadow.update(
+						t.model_root,
+						t._ground_settings,
+						this._shadowMode === SHADOW_MODES.FAKE
+					);
+				}
+				this._refreshShadows();
+				return t._ground_settings;
+			},
 		};
 		if ( window.PC && window.PC.fe ) {
 			window.PC.fe.threeApi = window.PC.fe.threeApi || {};
@@ -595,7 +623,7 @@ export default Backbone.View.extend({
 	 */
 	async _loadModules( s ) {
 		const { getSharedGltfLoader } = await import( './3d-loader-factory.js' );
-		const groundEnabled = ( s.ground && s.ground.enabled !== false );
+		const groundEnabled = resolveShadowMode( s ) === SHADOW_MODES.FAKE;
 		// A registered custom pass is reason enough to build a composer, even
 		// when none of the add-on's own effects are switched on for this product.
 		const passFactories = getCustomPassFactories( s );
@@ -778,23 +806,25 @@ export default Backbone.View.extend({
 	_refreshShadows() {
 		const t = this._three;
 		if ( ! t || ! t.renderer || ! t.scene ) return;
-		refreshSceneShadows( {
-			renderer: t.renderer,
-			scene: t.scene,
-			modelRoot: t.model_root,
-			enabled: this._shadowsEnabled,
-			mapSize: this._getShadowMapSize(),
-			// Same slider the fake shadow uses, so softness means one thing whichever
-			// kind of shadow a product is set up with.
-			softness: Math.min( 1, Math.max( 0, ( Number( ( ( t._ground_settings ) || {} ).shadow_blur ) || 0 ) / 10 ) ),
-		} );
-
 		const ground = ( t._ground_settings ) || {};
+
+		// Three steps in a fixed order: aim the light, fit the shadow cameras to it,
+		// then size the catcher to the frustum that came out. Each depends on the
+		// one before, and getting it wrong has produced two separate bugs — a
+		// product that showed no shadow until something forced a second pass, and a
+		// plane that reached further than the frustum and drew a line where it
+		// stopped.
 		if ( t.shadow_light ) {
-			// Aimed before refreshSceneShadows fits its camera, so the fit is done
-			// against the direction the light will actually cast from.
-			t.shadow_light.visible = !! this._shadowsEnabled;
-			if ( this._shadowsEnabled && t.model_root ) {
+			// A dedicated light at intensity zero, so it casts without lighting
+			// anything. Optional, because a product set up with its own lights has
+			// its own idea of where the shadow should fall, and a second caster on
+			// top of that is one shadow too many. Turning it off has to clear
+			// cast_shadows as well as visibility: refreshSceneShadows reads that
+			// flag to decide which lights get a shadow camera fitted.
+			const useShadowLight = this._shadowsEnabled && ground.shadow_light !== false;
+			t.shadow_light.visible = useShadowLight;
+			t.shadow_light.userData.cast_shadows = useShadowLight;
+			if ( useShadowLight && t.model_root ) {
 				const bounds = new THREE.Box3().setFromObject( t.model_root );
 				if ( ! bounds.isEmpty() ) {
 					aimShadowLight( t.shadow_light, bounds, {
@@ -805,12 +835,48 @@ export default Backbone.View.extend({
 			}
 		}
 
+		// One number, handed to both: the frustum is fitted to cover this, and the
+		// catcher is this size. Two formulas that could disagree is what produced
+		// both the line at the frustum edge and the circular crop.
+		const groundExtent = t.model_root
+			? shadowGroundExtent(
+				new THREE.Box3().setFromObject( t.model_root ).getSize( new THREE.Vector3() ),
+				ground.shadow_elevation != null ? ground.shadow_elevation : 55,
+				ground.size
+			)
+			: 0;
+
+		refreshSceneShadows( {
+			renderer: t.renderer,
+			scene: t.scene,
+			modelRoot: t.model_root,
+			enabled: this._shadowsEnabled,
+			groundExtent: groundExtent,
+			mapSize: this._getShadowMapSize(),
+			// Same slider the fake shadow uses, so softness means one thing whichever
+			// kind of shadow a product is set up with.
+			softness: Math.min( 1, Math.max( 0, ( Number( ground.shadow_blur ) || 0 ) / 10 ) ),
+		} );
+
 		if ( t.shadow_catcher ) {
-			const placed = this._shadowsEnabled && t.shadow_catcher.update( t.model_root, {
+			// Placed after the fit, not before it: the plane is clamped to how far
+			// the fitted frustum actually reaches across the ground, and outside
+			// that there is no shadow at all. The light still has to be aimed before
+			// the fit, which is why the three steps run in this order.
+			//
+			// It is optional as well as sized, because a product modelled with its
+			// own base — a plinth, a box, a tray — already has somewhere for the
+			// shadow to fall, and a second surface under it just puts a second
+			// shadow on the page.
+			const wantsCatcher = this._shadowsEnabled && ground.shadow_catcher === true;
+			const placed = wantsCatcher && t.shadow_catcher.update( t.model_root, {
 				opacity: ground.shadow_opacity != null ? ground.shadow_opacity : 0.5,
+				size: ground.size,
+				elevation: ground.shadow_elevation != null ? ground.shadow_elevation : 55,
 			} );
 			t.shadow_catcher.visible = !! placed;
 		}
+
 
 		// The map is baked, so a settings or geometry change has to ask for a new one.
 		invalidateBakedShadows( t.renderer );
@@ -886,7 +952,8 @@ export default Backbone.View.extend({
 		t.resize_listeners.push( () => this._requestRender() );
 		const layers = window.PC.fe && window.PC.fe.layers;
 		// Enable or disable shadows globally, then mirror the setting to the renderer.
-		this._shadowsEnabled = !!( s && s.enable_shadows );
+		this._shadowMode = resolveShadowMode( s );
+		this._shadowsEnabled = this._shadowMode === SHADOW_MODES.REALTIME;
 		applyRendererShadowSettings( t.renderer, this._shadowsEnabled );
 
 		// Every model — eager or lazy — is mounted under this root by
@@ -1099,6 +1166,15 @@ export default Backbone.View.extend({
 		}
 		if ( t.on_resize ) t.on_resize();
 
+		// The ground settings have to be in place before the first _refreshShadows,
+		// not after it: that call reads the shadow catcher, elevation and softness
+		// off this object, and assigning it later meant the very first pass ran
+		// against an empty one. The catcher was never placed and never became
+		// visible, and nothing on the frontend called _refreshShadows a second time
+		// — so real-time shadows worked in the admin preview, which reads the
+		// settings directly, and showed nothing at all on the product page.
+		t._ground_settings = ( s && s.ground ) || {};
+
 		// Now that the model is mounted, fit each shadow camera to its real bounds.
 		// Lights are built before this point, when the bounds are not yet known.
 		this._refreshShadows();
@@ -1115,8 +1191,6 @@ export default Backbone.View.extend({
 		this._emitRuntimeAction( 'PC.fe.viewer.runtime.ready', [ this, t, this._runtimeApi ] );
 		this._emitRuntimeEvent( 'runtime:ready', { three: t } );
 
-		const g = ( s && s.ground ) || {};
-		t._ground_settings = g;
 		// From here on, visibility changes are user-driven and may reframe.
 		this._sceneReady = true;
 		this._startRenderLoop();
@@ -1150,7 +1224,9 @@ export default Backbone.View.extend({
 		this._emitRuntimeEvent( 'frame', { deltaSeconds } );
 
 		this._quality.frame( () => {
-			if ( t.fake_shadow && g.enabled !== false ) {
+			// No mode check here: update() has already told the instance whether it is
+			// the active shadow, and render() is a no-op when it is not.
+			if ( t.fake_shadow ) {
 				t.fake_shadow.render( t.renderer, t.scene );
 			}
 			if ( t.postprocessingLayer ) {
