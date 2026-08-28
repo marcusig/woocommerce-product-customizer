@@ -75,7 +75,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 		public function get_settings_list() {
 			$settings = array(
 				'name' => array(
-					'label'   => \__( 'Label', 'product-configurator-for-woocommerce' ),
+					'label'   => \__( 'Object name', 'product-configurator-for-woocommerce' ),
 					'type'    => 'text',
 					'priority' => 10,
 					'section' => 'object3d',
