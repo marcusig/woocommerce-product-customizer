@@ -1411,12 +1411,20 @@ export default Backbone.View.extend({
 		if ( ! t || ! t.scene || ! t.renderer || ! s ) return;
 
 		const urlRef = { get current() { return t.current_env_url; }, set current( v ) { t.current_env_url = v; } };
+		const bgImageRef = {
+			get current() { return t.current_bg_image_url; },
+			set current( v ) { t.current_bg_image_url = v; },
+			get texture() { return t.bg_image_texture; },
+			set texture( v ) { t.bg_image_texture = v; },
+		};
 		applySettingsToScene( t.scene, t.renderer, t.controls, s, {
 			fakeShadow: t.fake_shadow,
 			modelRoot: t.model_root,
 			getHdrBaseUrl,
 			currentEnvUrlRef: urlRef,
 			onEnvLoaded: () => this.apply_preview_settings(),
+			currentBgImageRef: bgImageRef,
+			onBgImageLoaded: () => this.apply_preview_settings(),
 		} );
 		this._requestRender();
 	},

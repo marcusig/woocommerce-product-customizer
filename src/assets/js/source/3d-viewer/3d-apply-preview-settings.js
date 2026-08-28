@@ -35,6 +35,10 @@ import {
  * @param {Array|null} [options.objects3d] - objects3d entries for `environment.mode: 'object'`.
  *        The frontend leaves this unset and the lookup falls back to the product data;
  *        the admin passes its live collection.
+ * @param {{ current: string|null, texture: THREE.Texture|null }} [options.currentBgImageRef] - ref to
+ *        the loaded `background.mode: 'image'` texture, so it is only (re)loaded when the URL changes.
+ * @param {function()} [options.onBgImageLoaded] - called after a background image texture is loaded.
+ * @param {function()} [options.onBgImageError]
  */
 export function applySettingsToScene( scene, renderer, controls, s, options = {} ) {
 	const r = s.renderer || {};
@@ -82,11 +86,41 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 	// backdrop. It is gone: a photographic room behind a product almost never
 	// matches the page the configurator sits on, and the environment still does the
 	// job that matters — lighting and reflections — without being seen directly.
-	// Anything that is not a solid colour renders transparent, which also lands any
-	// legacy stored 'environment' on the sensible answer without a migration.
+	// Anything that is not a solid colour or an image renders transparent, which also
+	// lands any legacy stored 'environment' on the sensible answer without a migration.
 	const solid_color = ( bg.mode === 'solid' && bg.color ) ? bg.color : null;
-	renderer.setClearAlpha( ( solid_color && ! r.alpha ) ? 1 : 0 );
-	scene.background = solid_color ? new THREE.Color( solid_color ) : null;
+	const bg_image_url = ( bg.mode === 'image' && bg.image && bg.image.url ) ? bg.image.url : null;
+	const bg_image_ref = options.currentBgImageRef || { current: null, texture: null };
+	if ( ! bg_image_url ) {
+		if ( bg_image_ref.current !== null ) {
+			if ( bg_image_ref.texture && typeof bg_image_ref.texture.dispose === 'function' ) {
+				bg_image_ref.texture.dispose();
+			}
+			bg_image_ref.current = null;
+			bg_image_ref.texture = null;
+		}
+	} else if ( bg_image_ref.current !== bg_image_url ) {
+		bg_image_ref.current = bg_image_url;
+		new THREE.TextureLoader().load(
+			bg_image_url,
+			( texture ) => {
+				texture.colorSpace = THREE.SRGBColorSpace;
+				if ( bg_image_ref.texture && typeof bg_image_ref.texture.dispose === 'function' ) {
+					bg_image_ref.texture.dispose();
+				}
+				bg_image_ref.texture = texture;
+				if ( typeof options.onBgImageLoaded === 'function' ) options.onBgImageLoaded();
+			},
+			undefined,
+			() => {
+				bg_image_ref.current = null;
+				if ( typeof options.onBgImageError === 'function' ) options.onBgImageError();
+			}
+		);
+	}
+	const image_texture = ( bg.mode === 'image' ) ? bg_image_ref.texture : null;
+	renderer.setClearAlpha( ( ( solid_color || image_texture ) && ! r.alpha ) ? 1 : 0 );
+	scene.background = image_texture || ( solid_color ? new THREE.Color( solid_color ) : null );
 	if ( typeof scene.environmentIntensity !== 'undefined' ) {
 		scene.environmentIntensity = ( env.intensity != null ) ? env.intensity : 1;
 	}

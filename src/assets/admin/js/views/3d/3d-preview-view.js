@@ -84,6 +84,13 @@ export const settings_3d_preview_mixin = {
 			get current() { return t.current_env_url; },
 			set current( v ) { t.current_env_url = v; },
 		};
+		// Same idea for a `background.mode: 'image'` texture.
+		const bg_image_ref = {
+			get current() { return t.current_bg_image_url; },
+			set current( v ) { t.current_bg_image_url = v; },
+			get texture() { return t.bg_image_texture; },
+			set texture( v ) { t.bg_image_texture = v; },
+		};
 
 		deps.applySettingsToScene( t.scene, t.renderer, t.controls, s, {
 			fakeShadow: t.fake_shadow,
@@ -98,6 +105,8 @@ export const settings_3d_preview_mixin = {
 				this.apply_preview_settings();
 			},
 			onEnvError: () => this._removePreviewLoadingStep( 'hdr' ),
+			currentBgImageRef: bg_image_ref,
+			onBgImageLoaded: () => this.apply_preview_settings(),
 		} );
 
 		this.update_zoom_buttons_state();

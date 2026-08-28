@@ -335,8 +335,16 @@ PC.views = window.PC.views || {};
 		render: function () {
 			const s = PC.app.admin.settings_3d;
 			this.ensure_settings_defaults( s );
+			// Every section panel is rebuilt from the static template, which always
+			// marks the first one active — preserve whichever section the user had
+			// open (e.g. re-rendering after a media-library selection on a later tab).
+			const active_section_id = this.$( '.pc-3d-section-panel.active' ).data( 'section-id' );
 			this.$el.empty();
 			this.$el.append( this.template( s ) );
+			if ( active_section_id ) {
+				this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
+				this.$( '#pc-3d-section-panel-' + active_section_id ).addClass( 'active' ).removeAttr( 'hidden' );
+			}
 			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
 				window.wp.hooks.doAction( 'PC.admin.3d_settings.render', this );
 			}
