@@ -155,36 +155,103 @@ function notify( context, payload ) {
 	}, payload ) );
 }
 
+/**
+ * Find the selectVariant function that governs target_object, by walking up
+ * to the scene root of the model that declared the KHR_materials_variants
+ * extension. The function itself is only ever called against target_object —
+ * walking up is purely to locate it, never to widen what gets traversed —
+ * so a variant choice scoped to one part of a model cannot reset materials
+ * on unrelated parts (e.g. another layer's target) that happen to share the
+ * same model but do not define that variant name.
+ *
+ * @param {THREE.Object3D} target_object
+ * @param {THREE.Object3D} [target_scene]
+ * @returns {function|null}
+ */
+function find_select_variant( target_object, target_scene ) {
+	let node = target_scene || target_object;
+	while ( node ) {
+		if ( node.userData && node.userData.gltf_functions && typeof node.userData.gltf_functions.selectVariant === 'function' ) {
+			return node.userData.gltf_functions.selectVariant;
+		}
+		node = node.parent;
+	}
+	return null;
+}
+
+/**
+ * Meshes under `root` (root included) whose glTF KHR_materials_variants
+ * table defines `variant_name`.
+ *
+ * A model with no authored parent grouping its variant-carrying parts (e.g.
+ * a car body plus a left and right door, each with their own variants table)
+ * still needs one choice to recolor all three: this is what lets the action
+ * target the whole model and pick up every mesh that offers that name,
+ * without collecting meshes whose table exists but does not include it —
+ * those belong to some other variant set and must be left exactly as they
+ * are, not reset to their default material.
+ *
+ * @param {THREE.Object3D} root
+ * @param {string} variant_name
+ * @returns {THREE.Object3D[]}
+ */
+function collect_variant_meshes( root, variant_name ) {
+	const meshes = [];
+	if ( ! root || typeof root.traverse !== 'function' ) return meshes;
+	root.traverse( ( node ) => {
+		if ( node.userData && node.userData.variantMaterials && Object.prototype.hasOwnProperty.call( node.userData.variantMaterials, variant_name ) ) {
+			meshes.push( node );
+		}
+	} );
+	return meshes;
+}
+
 function apply_material_variant( context, action ) {
 	const { target_object, target_scene } = context;
 	if ( ! target_object ) return;
 	const variant_name = action.material_variant_value || action.variant_select;
 	if ( ! variant_name ) return;
 
-	// selectVariant is stored on the scene root of the model that declared the
-	// KHR_materials_variants extension, so walk up until one is found.
-	let variant_root = target_scene || target_object;
-	let select_variant = null;
-	let node = variant_root;
-	while ( node ) {
-		if ( node.userData && node.userData.gltf_functions && typeof node.userData.gltf_functions.selectVariant === 'function' ) {
-			select_variant = node.userData.gltf_functions.selectVariant;
-			variant_root = node;
-			break;
-		}
-		node = node.parent;
-	}
-	if ( typeof select_variant === 'function' ) {
-		select_variant( variant_root, variant_name, true, null );
-		// selectVariant swaps materials deep inside the glTF's own scene graph,
-		// so there is no mesh list to report — only the root it ran against.
-		notify( context, {
-			phase: 'apply',
-			action_type: 'material_variant',
-			action,
-			variant_root,
-		} );
-	}
+	const select_variant = find_select_variant( target_object, target_scene );
+	if ( typeof select_variant !== 'function' ) return;
+
+	const meshes = collect_variant_meshes( target_object, variant_name );
+	if ( ! meshes.length ) return;
+	// doTraverse=false per mesh: each one is already confirmed to carry this
+	// variant, so there is nothing left to discover by traversing under it.
+	meshes.forEach( ( mesh ) => select_variant( mesh, variant_name, false, null ) );
+	notify( context, {
+		phase: 'apply',
+		action_type: 'material_variant',
+		action,
+		variant_root: target_object,
+		meshes,
+	} );
+}
+
+function restore_material_variant( context, action ) {
+	const { target_object, target_scene } = context;
+	if ( ! target_object ) return;
+	const variant_name = action.material_variant_value || action.variant_select;
+	if ( ! variant_name ) return;
+
+	const select_variant = find_select_variant( target_object, target_scene );
+	if ( typeof select_variant !== 'function' ) return;
+
+	// Restore exactly the meshes apply would have touched — the ones that
+	// declare this variant name — so nothing else gets revisited.
+	const meshes = collect_variant_meshes( target_object, variant_name );
+	if ( ! meshes.length ) return;
+	// null puts each mesh back on its own originalMaterial, the state
+	// selectVariant recorded the first time a variant was ever applied to it.
+	meshes.forEach( ( mesh ) => select_variant( mesh, null, false, null ) );
+	notify( context, {
+		phase: 'restore',
+		action_type: 'material_variant',
+		action,
+		variant_root: target_object,
+		meshes,
+	} );
 }
 
 function apply_material_texture( context, action ) {
@@ -380,11 +447,10 @@ export const ACTION_HANDLERS = {
 };
 
 /**
- * action_type → undo function. Missing entries are simply not reversible:
- * material_variant is one, because glTF variant state has no "no variant"
- * value to return to once selectVariant has run.
+ * action_type → undo function. Every action type is reversible.
  */
 export const RESTORE_HANDLERS = {
+	material_variant: restore_material_variant,
 	material_texture: restore_material_texture,
 	material_color_registry: restore_material_color_registry,
 	material_property: restore_material_property,
