@@ -27,6 +27,9 @@ class Frontend_Woocommerce {
 	/** @var int Product whose eager 3D models should be preloaded, set in load_scripts(). */
 	public $preload_product_id = 0;
 
+	/** @var string URL of the product's cached async-mode JSON config file to preload, set in load_scripts(). */
+	public $async_config_preload_url = '';
+
 	public function __construct() {
 		// Plugin::instance()->db;	
 		$this->_hooks();
@@ -151,7 +154,7 @@ class Frontend_Woocommerce {
 
 		$date_modified = $product->get_date_modified();
 		
-		if ( !mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		if ( ! mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 
@@ -188,7 +191,7 @@ class Frontend_Woocommerce {
 	 * @return array
 	 */
 	public function get_configurator_element_attributes( $product ) {
-		$data_attributes = array( 
+		$data_attributes = array(
 			'product_id' => $product->get_id(),
 			'price' => $this->product->get_product_price( $product->get_id() ),
 			'regular_price' => $this->product->get_product_price( $product->get_id(), 'regular_price' ),
@@ -197,6 +200,18 @@ class Frontend_Woocommerce {
 				'convert_base_price' => apply_filters( 'configurator_convert_base_price', false, $product ),
 			]
 		);
+
+		// Cached JSON config URL for the async data-loading path (see PC.fe.open in
+		// pc-fe-main.js). Carried on the trigger element itself - shared with every
+		// [mkl_configurator_button]/[mkl_configurator] shortcode on the page via this
+		// same method - rather than a page-wide JS global, so it can't be dropped by
+		// a JS optimization plugin (defer/async/combine) rewriting <script> tags.
+		if ( mkl_pc( 'settings' )->get( 'async_data' ) ) {
+			$config_data_url = mkl_pc( 'cache' )->get_config_file( $product->get_id(), true, 'json' );
+			if ( $config_data_url ) {
+				$data_attributes['config_data_url'] = $config_data_url;
+			}
+		}
 		/**
 		 * Filters the list of attributes added to the configurator trigger element.
 		 *
@@ -256,7 +271,7 @@ class Frontend_Woocommerce {
 
 		$date_modified = $product->get_date_modified();
 		
-		if ( !mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+		if ( ! mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
@@ -412,6 +427,34 @@ class Frontend_Woocommerce {
 				esc_attr( $mime )
 			);
 		}
+	}
+
+	/**
+	 * Preload the product's cached async-mode JSON config file from <head> (see
+	 * load_scripts(), which resolves and stores the URL, and only when it's the real
+	 * static file - not the uncached admin-ajax.php fallback).
+	 *
+	 * Otherwise the download only starts when the shopper clicks "Configure"
+	 * (PC.fe.open() in pc-fe-main.js reads the same URL off the button's
+	 * data-config_data_url attribute); preloading lets it overlap with the rest of
+	 * page load instead.
+	 *
+	 * fetchpriority="low": this file can be multi-MB for a large configurator, and
+	 * most visitors haven't clicked "Configure" yet - it shouldn't compete with
+	 * images/CSS/fonts for bandwidth on the visible page. It still gets a head start
+	 * over waiting for the click.
+	 */
+	public function print_async_config_preload_link() {
+		if ( ! $this->async_config_preload_url ) {
+			return;
+		}
+		// as="fetch" with crossorigin="anonymous" matches the plain `fetch(url)` call
+		// in pc-fe-main.js (default credentials: 'same-origin'). A mismatch here would
+		// not fail — it would quietly download the file twice.
+		printf(
+			'<link rel="preload" href="%s" as="fetch" type="application/json" crossorigin="anonymous" fetchpriority="low">' . "\n",
+			esc_url( $this->async_config_preload_url )
+		);
 	}
 
 	public function load_scripts() {
@@ -681,6 +724,16 @@ class Frontend_Woocommerce {
 			// 	wp_enqueue_script( 'mkl_pc/js/fe_data_weglot_'.$post->ID, admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=json&fe=1&id=' . $post->ID ), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 			// }
 
+		} elseif ( $prod && mkl_pc( 'settings' )->get( 'async_data' ) ) {
+			// Only preload when this resolves to the actual cached static file, not the
+			// admin-ajax.php fallback (edit_posts users / disable_caching) - that endpoint
+			// isn't cacheable, so preloading it would force a full postmeta rebuild on
+			// every single page view instead of only when the shopper opens the configurator.
+			$preload_url = mkl_pc( 'cache' )->get_config_file( $prod->get_id(), true, 'json' );
+			if ( $preload_url && false === strpos( $preload_url, 'admin-ajax.php' ) ) {
+				$this->async_config_preload_url = $preload_url;
+				add_action( 'wp_head', array( $this, 'print_async_config_preload_link' ), 2 );
+			}
 		}
 
 		$theme_id = mkl_pc( 'settings' )->get_theme();
@@ -697,7 +750,7 @@ class Frontend_Woocommerce {
 	}
 
 	/**
-	 * Prevent Understore conflict. 
+	 * Prevent Understore conflict.
 	 * Based on what The Events Calendar does
 	 * 
 	 * @param string $tag

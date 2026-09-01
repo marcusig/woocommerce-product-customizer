@@ -357,14 +357,32 @@
 			// const now = 
 		} 
 		
-		if ( 'async' === PC.fe.config.data_mode ) {
+		// Skip the fetch entirely once this product's data has already been loaded once
+		// this page session (e.g. re-opening it after having opened a different
+		// product's configurator in between) - PC.productData['prod_'+product_id] is
+		// exactly what the .then() below populates, so its presence means there's
+		// nothing left to fetch.
+		var already_have_data = !! ( PC.productData && PC.productData[ 'prod_' + product_id ] );
+
+		if ( 'async' === PC.fe.config.data_mode && ! already_have_data ) {
 			if ( $element ) {
 				$element.addClass( 'loading-data' );
 			}
 			wp.hooks.doAction( 'mkl_pc.product_data.loading', product_id );
-			let data_url = PC_config.ajaxurl + `?action=pc_get_data&data=init&fe=1&id=${product_id}`;
-			if ( PC_config.update_nonce ) {
-				data_url += `&nonce=${encodeURIComponent( PC_config.update_nonce )}`;
+
+			// Prefer the cached JSON file, carried as a data attribute on the clicked
+			// trigger element (see get_configurator_element_attributes in
+			// frontend-woocommerce.php - same mechanism as data-price/data-regular_price)
+			// - avoids rebuilding the payload from postmeta chunks on every "Configure"
+			// click. Reading it off $element rather than a page-wide JS global means it
+			// works the same whether there's one trigger or several (e.g. multiple
+			// [mkl_configurator_button] shortcodes for different products on one page).
+			let data_url = $element ? $element.data( 'config_data_url' ) : null;
+			if ( ! data_url ) {
+				data_url = PC_config.ajaxurl + `?action=pc_get_data&data=init&fe=1&id=${product_id}`;
+				if ( PC_config.update_nonce ) {
+					data_url += `&nonce=${encodeURIComponent( PC_config.update_nonce )}`;
+				}
 			}
 			fetch( data_url ).then(r => r.json()).then(data => {
 				PC.productData = window.PC.productData || {};

@@ -31,14 +31,26 @@ class Cache {
 		
 	}
 
-	public function get_config_file_name( $product_id ) {
-		return apply_filters('mkl_pc_config_file_name', 'product_configuration_' . $product_id . '.js');
+	public function get_config_file_name( $product_id, $format = 'js' ) {
+		$format = in_array( $format, array( 'js', 'json' ), true ) ? $format : 'js';
+		return apply_filters( 'mkl_pc_config_file_name', 'product_configuration_' . $product_id . '.' . $format, $product_id, $format );
 	}
 
-	public function get_config_file( $product_id, $generate_file = true ) {
+	/**
+	 * Get the URL of a product's cached configuration file.
+	 *
+	 * @param int    $product_id
+	 * @param bool   $generate_file
+	 * @param string $format 'js' (executable `PC.productData.prod_X = ...` assignment, used by the
+	 *                        default enqueued-script data mode) or 'json' (bare JSON body, used by
+	 *                        the async_data frontend fetch path).
+	 * @return string
+	 */
+	public function get_config_file( $product_id, $generate_file = true, $format = 'js' ) {
+		$format = in_array( $format, array( 'js', 'json' ), true ) ? $format : 'js';
 		$location = $this->get_cache_location();
-		$file_name = $this->get_config_file_name( $product_id );
-		$default_url = apply_filters( 'mkl_pc_default_config_url', admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=js&fe=1&id=' . $product_id ) );
+		$file_name = $this->get_config_file_name( $product_id, $format );
+		$default_url = apply_filters( 'mkl_pc_default_config_url', admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=' . $format . '&fe=1&id=' . $product_id ), $product_id, $format );
 		$product = wc_get_product( $product_id );
 		if ( $product && 'publish' !== $product->get_status() && current_user_can( 'edit_post', $product_id ) ) {
 			$default_url = add_query_arg( 'nonce', wp_create_nonce( 'update-pc-post_' . $product_id ), $default_url );
@@ -97,19 +109,23 @@ class Cache {
 		apply_filters( 'mkl_pc_get_configurator_data_js_output', $data, $product_id, $config_data );
 
 		$location = $this->get_cache_location();
-		$file_name = $this->get_config_file_name($product_id);
 		$dir = untrailingslashit( $location['path'] );
 		if ( ! Utils::fs_mkdir( $dir ) ) {
 			// Fallback to core helper for hosts where FS is not ready.
 			wp_mkdir_p( $dir );
 		}
 
-		$file_path = trailingslashit( $location['path'] ) . $file_name;
+		$file_path = trailingslashit( $location['path'] ) . $this->get_config_file_name( $product_id, 'js' );
 		if ( ! Utils::fs_put_contents( $file_path, $data ) ) {
 			return '';
 		}
+
+		// Bare-JSON sibling for the async_data frontend fetch path, which expects a
+		// plain JSON body rather than the executable `PC.productData.prod_X = ...` assignment.
+		$json_file_path = trailingslashit( $location['path'] ) . $this->get_config_file_name( $product_id, 'json' );
+		Utils::fs_put_contents( $json_file_path, $json_data );
+
 		return $file_path;
-		return '';
 	}
 
 	/**
@@ -119,15 +135,17 @@ class Cache {
 	 */
 	public function delete_config_file( $product_id ) {
 		$location = $this->get_cache_location();
-		$file_name = $this->get_config_file_name( $product_id );
-		Utils::fs_delete( trailingslashit( $location['path'] ) . $file_name, false, 'f' );
+		foreach ( array( 'js', 'json' ) as $format ) {
+			$file_name = $this->get_config_file_name( $product_id, $format );
+			Utils::fs_delete( trailingslashit( $location['path'] ) . $file_name, false, 'f' );
+		}
 	}
 
 	public function purge() {
 		$location = $this->get_cache_location();
 		$src = $location[ 'path' ];
 		
-		$allowed_file_extensions = [ 'js', 'css', 'map' ];
+		$allowed_file_extensions = [ 'js', 'css', 'map', 'json' ];
 		$listing = Utils::fs_dirlist( $src, false );
 		if ( ! is_array( $listing ) ) return;
 
@@ -149,32 +167,35 @@ class Cache {
 		if ( is_404() ) {
 			
 			$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-	
-			// Check if the requested file is a missing JS file
-			if ( strpos( $request_uri, 'wp-content/uploads/mkl_product_configurations/product_configuration_') !== false && strpos($request_uri, '.js') !== false ) {
-				preg_match('/product_configuration_(\d+)\.js/', $request_uri, $matches);
+
+			// Check if the requested file is a missing JS or JSON config file
+			if ( strpos( $request_uri, 'wp-content/uploads/mkl_product_configurations/product_configuration_') !== false && ( strpos( $request_uri, '.js' ) !== false || strpos( $request_uri, '.json' ) !== false ) ) {
+				preg_match('/product_configuration_(\\d+)\\.(js|json)/', $request_uri, $matches);
 				if ( $matches ) {
 					$product_id = absint( $matches[1] );
-					// $file_path = WP_CONTENT_DIR . "/uploads/mkl_product_configurations/product_configuration_{$product_id}.js";
-	
-					// Regenerate the JavaScript content
-					$file_path = $this->save_config_file( $product_id );
+					$format = $matches[2];
 
-					if ( ! $file_path || ! file_exists( $file_path ) ) return;
-					
+					// Regenerate the cache files (save_config_file always writes the JS + JSON pair)
+					$this->save_config_file( $product_id );
+
+					$location = $this->get_cache_location();
+					$file_path = trailingslashit( $location['path'] ) . $this->get_config_file_name( $product_id, $format );
+
+					if ( ! file_exists( $file_path ) ) return;
+
 					$content = \MKL\PC\Utils::fs_get_contents( $file_path );
 					if ( false === $content ) {
 						return;
 					}
-	
+
 					// Change the response code to 200 (OK) instead of 404
 					status_header(200);
-	
-					// Set the correct Content-Type header for JavaScript
-					header('Content-Type: application/javascript');
-	
+
+					// Set the correct Content-Type header
+					header( 'json' === $format ? 'Content-Type: application/json' : 'Content-Type: application/javascript' );
+
 					// Output the regenerated content
-					echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JS response body
+					echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JS/JSON response body
 					exit;
 				}
 			}
