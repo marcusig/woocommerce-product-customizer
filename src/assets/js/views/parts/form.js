@@ -181,12 +181,20 @@ PC.fe.views.form = Backbone.View.extend({
 					}
 				});
 
-				// 3D cart image: capture viewer screenshot when show_image_in_cart is on
-				if ( PC.fe.config.show_image_in_cart && PC.fe.currentProductData && PC.fe.currentProductData.product_info && PC.fe.currentProductData.product_info.configurator_type === '3d' && PC.fe.modal && PC.fe.modal.viewer && typeof PC.fe.modal.viewer.captureScreenshot === 'function' ) {
+				// Cart image: ask the viewer for a picture of the configuration.
+				// Goes through PC.fe.capture_viewer_image so any viewer that
+				// implements the capture contract works here, not just the 3D one.
+				if ( PC.fe.config.show_image_in_cart && PC.fe.currentProductData && PC.fe.currentProductData.product_info && PC.fe.currentProductData.product_info.configurator_type === '3d' ) {
 					var size = PC.fe.config.cart_screenshot_size || { width: 800, height: 800 };
-					var dataUrl = PC.fe.modal.viewer.captureScreenshot( { view: 'current', width: size.width, height: size.height } );
-					if ( dataUrl ) {
-						request_body.append( 'pc_3d_screenshot', dataUrl );
+					var blob = await PC.fe.capture_viewer_image( { view: 'current', width: size.width, height: size.height } );
+					if ( blob ) {
+						var dataUrl = await new Promise( function( resolve ) {
+							var reader = new FileReader();
+							reader.onloadend = function() { resolve( reader.result ); };
+							reader.onerror = function() { resolve( null ); };
+							reader.readAsDataURL( blob );
+						} );
+						if ( dataUrl ) request_body.append( 'pc_3d_screenshot', dataUrl );
 					}
 				}
 

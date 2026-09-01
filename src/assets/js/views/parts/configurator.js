@@ -388,6 +388,99 @@ PC.fe.views.stub_configurator = Backbone.View.extend({
 });
 
 /**
+ * THE VIEWER CONTRACT
+ * ===================
+ *
+ * A viewer is whatever `PC.fe.viewer.main_view` resolves to: the default <img>
+ * stack (PC.fe.views.viewer), the 3D viewer, or any future implementation
+ * (canvas/WebGL, one-image-per-layer, ...). Everything outside the viewer must
+ * go through this contract rather than reaching into the markup a particular
+ * viewer happens to produce - DOM structure is an implementation detail, and
+ * scraping it is what ties features to a single viewer.
+ *
+ * Required
+ * --------
+ * render() -> jQuery
+ *     Build and return the viewer's root element.
+ *
+ * Optional, but needed for the feature in brackets
+ * ------------------------------------------------
+ * capture( options ) -> Promise<Blob|null>   [PDF, cart image, Save your design]
+ *     Render the CURRENT configuration to a PNG blob, without disturbing what
+ *     the user sees. Resolve null when capture is not possible, so callers can
+ *     fall back rather than silently shipping a blank image. Options:
+ *       { width, height, maxDimension }
+ *     Implementations must decide what to draw from the MODELS (choice
+ *     `active`, and `cshow` via PC.conditionalLogic.item_is_hidden), never from
+ *     CSS classes such as `.active` / `.cshow-hidden` - those exist only in the
+ *     default viewer's markup.
+ *
+ * captureScreenshot( options ) -> dataURL|null
+ *     Legacy synchronous form, implemented by the 3D viewer. Supported by
+ *     PC.fe.capture_viewer_image() for back-compat; new viewers should
+ *     implement capture() instead.
+ *
+ * Notes
+ * -----
+ * - Multiple-choice layers can have several choices active at once, so a
+ *   capture must iterate every active choice, not one per layer.
+ * - Conditional logic sets `cshow` on the models; a viewer is responsible for
+ *   reflecting that itself, rather than relying on an external toggle of its
+ *   elements.
+ */
+
+/**
+ * Capture the current configuration as a PNG blob, through the active viewer.
+ *
+ * This is the single entry point for anything that needs a picture of the
+ * configuration (cart image, PDF, saved-design preview). It resolves null when
+ * the viewer cannot produce one, leaving the decision to fall back - or to
+ * surface an error - with the caller.
+ *
+ * @param {Object} [options] Passed through to the viewer: { width, height, maxDimension }.
+ * @return {Promise<Blob|null>}
+ */
+PC.fe.capture_viewer_image = function( options ) {
+	options = options || {};
+	var viewer = PC.fe.modal && PC.fe.modal.viewer ? PC.fe.modal.viewer : null;
+
+	/**
+	 * Filter the viewer used for the capture, e.g. to capture something other
+	 * than the currently mounted viewer.
+	 *
+	 * @param {Backbone.View|null} viewer
+	 * @param {Object} options
+	 */
+	viewer = wp.hooks.applyFilters( 'PC.fe.capture.viewer', viewer, options );
+
+	if ( ! viewer ) return Promise.resolve( null );
+
+	// Preferred: the viewer knows how to draw itself.
+	if ( 'function' === typeof viewer.capture ) {
+		try {
+			return Promise.resolve( viewer.capture( options ) );
+		} catch ( err ) {
+			console.log( 'Product configurator: viewer capture() failed.', err );
+			return Promise.resolve( null );
+		}
+	}
+
+	// Back-compat: the 3D viewer returns a data URL synchronously.
+	if ( 'function' === typeof viewer.captureScreenshot ) {
+		try {
+			var data_url = viewer.captureScreenshot( options );
+			if ( ! data_url ) return Promise.resolve( null );
+			return fetch( data_url ).then( function( res ) { return res.blob(); } );
+		} catch ( err ) {
+			console.log( 'Product configurator: viewer captureScreenshot() failed.', err );
+			return Promise.resolve( null );
+		}
+	}
+
+	return Promise.resolve( null );
+};
+
+/**
  * Construct the viewer and optionally append it to `el`.
  * Uses filter `PC.fe.viewer.main_view` so 3D (and other) viewers still swap in.
  *
