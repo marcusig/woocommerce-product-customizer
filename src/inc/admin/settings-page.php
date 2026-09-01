@@ -841,45 +841,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
-			$disable_caching_description = __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' );
-			if ( class_exists( 'MKL_PC_Stock_Management' ) ) {
-				$disable_caching_description .= '<br>' . __( 'It is also useful when linking products for stock management', 'product-configurator-for-woocommerce' );
-			}
-			add_settings_field(
-				'disable_caching',
-				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'disable_caching',
-					'description'  => $disable_caching_description,
-				]
-			);
-
-			add_settings_field(
-				'async_data',
-				__( 'Load configurator data asynchronously', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'async_data',
-					'description'  => __( 'Will load the data after page load', 'product-configurator-for-woocommerce' ),
-				]
-			);
-
-			add_settings_field(
-				'disable_configuration_gzip',
-				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'disable_configuration_gzip',
-				]
-			);
-
 			add_settings_field(
 				'admin_save_timeout', 
 				__( 'Timeout when saving the configuration in the admin', 'product-configurator-for-woocommerce' ),
@@ -927,6 +888,59 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					]
 				);
 			// }
+
+			/*
+				PERFORMANCE
+			*/
+
+			add_settings_section(
+				'performance',
+				__( 'Performance', 'product-configurator-for-woocommerce' ),
+				function() {
+					echo '<p class="description">' . esc_html__( 'How the configurator data is cached and delivered to the browser. The defaults suit most stores; these options mainly matter for large configurations (many layers and choices), or when a CDN or page cache sits in front of the site.', 'product-configurator-for-woocommerce' ) . '</p>';
+				},
+				'mlk_pc_settings'
+			);
+
+			$disable_caching_description = __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' );
+			if ( class_exists( 'MKL_PC_Stock_Management' ) ) {
+				$disable_caching_description .= '<br>' . __( 'It is also useful when linking products for stock management', 'product-configurator-for-woocommerce' );
+			}
+			$disable_caching_description .= '<br>' . __( 'When disabled, the configuration is rebuilt from the database on every request instead of being served as a static file. This is noticeably slower on large configurations.', 'product-configurator-for-woocommerce' );
+			add_settings_field(
+				'disable_caching',
+				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'disable_caching',
+					'description'  => $disable_caching_description,
+				]
+			);
+
+			add_settings_field(
+				'async_data',
+				__( 'Load configurator data asynchronously', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'async_data',
+					'description'  => __( 'The configuration is fetched when the visitor opens the configurator, instead of being loaded with the page. This keeps the product page lighter, which is useful for large configurations. The data is still served from the cached configuration file (unless caching is disabled above).', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'disable_configuration_gzip',
+				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'disable_configuration_gzip',
+				]
+			);
 
 			/*
 				LABELS
