@@ -766,6 +766,46 @@
 		console.log('fetched content'); 
 	}
 
+	/**
+	 * Select a choice and say who did it.
+	 *
+	 * The entry point for any input surface that is not the sidebar list - a 3D
+	 * hotspot, a canvas viewer, the headless engine, third-party code. It makes
+	 * the selection and then announces it on `PC.fe.choice.set_choice`, which is
+	 * what conditional logic listens to, so a pick behaves the same wherever it
+	 * came from.
+	 *
+	 * `origin` is the important part. Use 'user' when a person chose (that is
+	 * what makes a `clicked` rule match, and what lets the open / sync
+	 * conditional actions run); use 'restore', 'api' or 'conditional' when the
+	 * selection is programmatic, so those actions do not move the interface
+	 * under the customer.
+	 *
+	 * @param {number} layer_id
+	 * @param {number} choice_id
+	 * @param {boolean} [activate=true]
+	 * @param {Object} [options] { origin: 'user'|'restore'|'conditional'|'api', view }
+	 * @return {Backbone.Model|false} The choice, or false when it was not found.
+	 */
+	PC.fe.select_choice = function( layer_id, choice_id, activate, options ) {
+		options = options || {};
+		var content = PC.fe.getLayerContent( layer_id );
+		if ( ! content || ! content.get ) return false;
+		var choice = content.get( choice_id );
+		if ( ! choice ) return false;
+
+		content.selectChoice( choice_id, 'undefined' === typeof activate ? true : activate );
+
+		wp.hooks.doAction(
+			'PC.fe.choice.set_choice',
+			choice,
+			options.view || null,
+			{ origin: options.origin || 'user' }
+		);
+
+		return choice;
+	};
+
 	PC.fe.setConfig = function( config_items ) {
 		
 		PC.fe.is_setting_config = true;
