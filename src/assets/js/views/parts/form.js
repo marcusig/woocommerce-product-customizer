@@ -10,8 +10,7 @@ PC.fe.views.form = Backbone.View.extend({
 	},
 	events: {
 		'click .configurator-add-to-cart': 'add_to_cart',
-		'click .add-to-quote': 'add_to_quote',
-		'change input.qty': 'qty_change'
+		'click .add-to-quote': 'add_to_quote'
 	},
 	render: function() {
 		if ( ! PC.fe.config.cart_item_key ) {
@@ -59,10 +58,10 @@ PC.fe.views.form = Backbone.View.extend({
 		}
 
 		if ( this.$( 'input.qty' ).length ) {
-			// Get qty with the Cart's input
-			if ( this.$( 'input.qty' ) != this.$cart.find( '.qty' ) ) {
-				this.$( 'input.qty' ).val( this.$cart.find( '.qty' ).val() );
-			}
+			// A view of PC.fe.get_qty(): it reports edits and redraws itself when
+			// the quantity changes anywhere else, so it no longer has to be kept
+			// in step with the product form's input by copying values across.
+			PC.fe.bind_qty_input( this.$( 'input.qty' ) );
 			// Set min value
 			if ( 'undefined' != typeof PC.fe.currentProductData.product_info.qty_min_value ) {
 				this.$( 'input.qty' ).prop( 'min', PC.fe.currentProductData.product_info.qty_min_value );
@@ -288,11 +287,7 @@ PC.fe.views.form = Backbone.View.extend({
 		$( 'input[name=pc_configurator_data]' ).val( '' );
 
 		var default_qty = PC.fe.currentProductData?.product_info?.qty_min_value || 1;
-		$( 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]' ).val( default_qty );
-		if ( PC.fe.currentProductData?.product_info ) {
-			PC.fe.currentProductData.product_info.qty = default_qty;
-		}
-		wp.hooks.doAction( 'PC.fe.qty_changed', default_qty );
+		PC.fe.set_qty( default_qty );
 		wp.hooks.doAction( 'PC.fe.reset_after_ajax_add_to_cart', this );
 	},
 
@@ -356,17 +351,12 @@ PC.fe.views.form = Backbone.View.extend({
 			}
 		}
 	},
+	/**
+	 * Kept for third-party code that calls it directly. The input itself is
+	 * bound through PC.fe.bind_qty_input, and refreshing the displayed price now
+	 * happens on PC.fe.qty_changed, so it runs whichever input was edited.
+	 */
 	qty_change: function( e ) {
-		
-		PC.fe.currentProductData.product_info.qty = $( e.target ).val();
-		// If Extra price is not installed, check if price needs an update
-		if ( 'undefined' === typeof pc_get_extra_price && PC.fe.currentProductData.product_info?.price_tiers ) {
-			$( '.pc-total-price' ).html( PC.utils.formatMoney( PC.fe.get_product_price() ) );
-			// Display regular price
-			if ( PC.fe.currentProductData.product_info.regular_price && PC.fe.currentProductData.product_info.is_on_sale && $( '.pc-total--regular-price' ).length ) {
-				$( '.pc-total--regular-price' ).html( PC.utils.formatMoney( ( parseFloat( PC.fe.currentProductData.product_info.regular_price ) ) ) );
-			}
-		}
-		wp.hooks.doAction( 'PC.fe.qty_changed', PC.fe.currentProductData.product_info.qty );
+		PC.fe.set_qty( $( e.target ).val(), { source: e.target } );
 	}
 } );

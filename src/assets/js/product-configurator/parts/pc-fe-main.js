@@ -126,12 +126,12 @@
 
 			$( 'form.cart button[name="add-to-cart"]' ).prop( 'disabled', false );
 
-			$( document ).on( 'change', 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]', function(e) {
-				var q = $(this).val();
-				$( 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]' ).each( function( index, el ) {
-					$( el ).val( q );
-				});
-			} );
+			// Register every quantity input as a view of PC.fe.get_qty(). This
+			// replaces a document-delegated mirror that copied one input's value
+			// into the others: it was re-bound on every start and never removed,
+			// and because .val() fires no change event, a change on the product
+			// form never reached product_info.qty. bind_qty_input is idempotent.
+			PC.fe.bind_qty_input( $( 'form.cart input[name=quantity], .mkl_pc input[name=quantity]' ) );
 
 			// Blocksy buttons compat
 			if ( 'object' === typeof ctFrontend && ctFrontend.hasOwnProperty( 'handleEntryPoints' ) && ctFrontend.hasOwnProperty( 'allFrontendEntryPoints' ) ) ctFrontend.handleEntryPoints( ctFrontend.allFrontendEntryPoints );
@@ -579,8 +579,13 @@
 			this.currentProductData.product_info.price = 0;
 		}
 
-		// Set quantity variable
-		this.currentProductData.product_info.qty = this?.modal?.form?.$( 'input.qty' ).val() || 1;
+		// Seed the quantity from the product form, so opening the configurator
+		// keeps whatever the customer already typed there. Silent: nothing is
+		// listening yet, and this is the starting value rather than a change.
+		// (This used to read the configurator's own input, which does not exist
+		// yet at this point, so it always fell back to 1.)
+		var $page_qty = $( 'form.cart input[name=quantity]' ).first();
+		PC.fe.set_qty( $page_qty.length ? $page_qty.val() : this.currentProductData.product_info.qty, { silent: true } );
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
 			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] );
@@ -765,6 +770,141 @@
 	PC.fe.fetchedContent = function( model, response, options ){
 		console.log('fetched content'); 
 	}
+
+	/*
+	 * QUANTITY
+	 * ========
+	 *
+	 * There can be several quantity inputs on a page: WooCommerce's own on the
+	 * product form, the one in the configurator, and whatever a theme adds. They
+	 * used to be kept in step by copying the value from one input into the
+	 * others, which meant the inputs agreed with each other but not necessarily
+	 * with product_info.qty - a change made on the product form updated both
+	 * boxes without updating the value the price tiers and the extra price
+	 * add-on read.
+	 *
+	 * So the inputs no longer talk to each other. Each one is a view of a single
+	 * value: it writes through set_qty() when the customer edits it, and redraws
+	 * itself when the value changes, wherever the change came from. Anything
+	 * without an input at all - the headless engine, another viewer - just calls
+	 * set_qty().
+	 */
+
+	/** @type {Array} Inputs registered with PC.fe.bind_qty_input. */
+	PC.fe.qty_inputs = [];
+
+	/**
+	 * The current quantity, as a number.
+	 *
+	 * @return {number}
+	 */
+	PC.fe.get_qty = function() {
+		var info = PC.fe.currentProductData && PC.fe.currentProductData.product_info;
+		var qty = info ? parseFloat( info.qty ) : NaN;
+		return isNaN( qty ) ? 1 : qty;
+	};
+
+	/**
+	 * Set the quantity, clamped to what the product allows.
+	 *
+	 * @param {number|string} value
+	 * @param {Object} [options] source: the input being edited, which is left
+	 *                           alone while it redraws the others; silent: do not
+	 *                           fire PC.fe.qty_changed.
+	 * @return {number} The value actually stored.
+	 */
+	PC.fe.set_qty = function( value, options ) {
+		options = options || {};
+		var info = PC.fe.currentProductData && PC.fe.currentProductData.product_info;
+		if ( ! info ) return 1;
+
+		var previous = PC.fe.get_qty();
+		var qty = parseFloat( value );
+		if ( isNaN( qty ) ) qty = previous;
+
+		// Clamped once here, rather than trusting each input's own min/max: the
+		// product form's input is rendered by WooCommerce and the configurator
+		// never set bounds on it.
+		if ( false === info.show_qty ) {
+			qty = 1; // Sold individually.
+		} else {
+			var min = parseFloat( info.qty_min_value );
+			var max = parseFloat( info.qty_max_value );
+			if ( ! isNaN( min ) && qty < min ) qty = min;
+			if ( ! isNaN( max ) && max && qty > max ) qty = max;
+			if ( qty < 1 ) qty = 1;
+		}
+
+		/**
+		 * Filter the quantity before it is stored.
+		 *
+		 * @param {number} qty
+		 * @param {number|string} value The requested value.
+		 * @param {Object} options
+		 */
+		qty = wp.hooks.applyFilters( 'PC.fe.set_qty', qty, value, options );
+
+		info.qty = qty;
+		PC.fe.render_qty_inputs();
+
+		if ( ! options.silent && qty !== previous ) {
+			wp.hooks.doAction( 'PC.fe.qty_changed', qty, options );
+		}
+
+		return qty;
+	};
+
+	/**
+	 * Write the current quantity into every registered input.
+	 *
+	 * The input that was just edited is written to as well, so that a value the
+	 * product would not accept is corrected in front of the customer instead of
+	 * leaving the box showing something the configurator is not using. This is
+	 * safe because inputs report on `change`, once editing is finished, not on
+	 * every keystroke.
+	 */
+	PC.fe.render_qty_inputs = function() {
+		var qty = PC.fe.get_qty();
+		// Drop inputs that went away with a closed configurator.
+		PC.fe.qty_inputs = _.filter( PC.fe.qty_inputs, function( el ) {
+			return $.contains( document.documentElement, el );
+		} );
+		_.each( PC.fe.qty_inputs, function( el ) {
+			if ( el.value != qty ) el.value = qty;
+		} );
+	};
+
+	/**
+	 * Make an input a view of the quantity: it reports edits, and redraws when
+	 * the value changes elsewhere. Idempotent - an input is only bound once.
+	 *
+	 * @param {Element|jQuery} el
+	 */
+	PC.fe.bind_qty_input = function( el ) {
+		$( el ).each( function() {
+			if ( -1 !== _.indexOf( PC.fe.qty_inputs, this ) ) return;
+			PC.fe.qty_inputs.push( this );
+			$( this ).on( 'change.mkl-pc-qty', function( event ) {
+				PC.fe.set_qty( event.target.value, { source: event.target } );
+			} );
+		} );
+		PC.fe.render_qty_inputs();
+	};
+
+	// Keep the displayed price in step with the quantity when the Extra price
+	// add-on is not installed. This used to live in the form's own change
+	// handler, so it only ran for the configurator's input.
+	wp.hooks.addAction( 'PC.fe.qty_changed', 'mkl/product_configurator', function() {
+		if ( 'undefined' !== typeof pc_get_extra_price ) return;
+		var info = PC.fe.currentProductData && PC.fe.currentProductData.product_info;
+		if ( ! info || ! info.price_tiers ) return;
+
+		$( '.pc-total-price' ).html( PC.utils.formatMoney( PC.fe.get_product_price() ) );
+
+		if ( info.regular_price && info.is_on_sale && $( '.pc-total--regular-price' ).length ) {
+			$( '.pc-total--regular-price' ).html( PC.utils.formatMoney( parseFloat( info.regular_price ) ) );
+		}
+	} );
 
 	/**
 	 * Select a choice and say who did it.
