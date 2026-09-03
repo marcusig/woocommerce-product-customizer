@@ -40,9 +40,11 @@ PC.fe.views.viewer = Backbone.View.extend({
 			// choice id) silently overwrites views across layers. Keep a correctly
 			// keyed index for anything that needs to find a view reliably.
 			this.layer_views = {};
+			this.pools = {};
+			this.order_index = {};
 
-			this.add_layers();
 			this.add_loader();
+			this.add_layers();
 	
 
 		} else {
@@ -56,7 +58,41 @@ PC.fe.views.viewer = Backbone.View.extend({
 	},
 
 	add_loader: function() {
-		this.$layers.append( $( '<div class="images-loading" />' ) );
+		this.$loader = $( '<div class="images-loading" />' );
+		this.$layers.append( this.$loader );
+	},
+
+	/**
+	 * Whether the viewer should render only the images it shows.
+	 *
+	 * Off unless the store turns it on: it removes the <img> of every unselected
+	 * choice, and a stylesheet or customisation may count on those being in the
+	 * page (`img:not(.active)`, sibling combinators, counting children). On for
+	 * new stores, off for existing ones.
+	 *
+	 * Force it either way with:
+	 *   wp.hooks.addFilter( 'PC.fe.viewer.active_images_only', 'my-theme', function() { return true; } );
+	 *
+	 * @return {Boolean}
+	 */
+	active_images_only: function() {
+		return !! wp.hooks.applyFilters( 'PC.fe.viewer.active_images_only', !! PC.fe.config.viewer_active_images_only, this );
+	},
+
+	/**
+	 * Whether this layer's images are managed as a pool.
+	 *
+	 * Only layer types that show what is selected. Anything else draws itself and
+	 * decides its own visibility - a text overlay renders a canvas per choice -
+	 * so those keep an element per choice, as before.
+	 *
+	 * @param {Backbone.Model} layer
+	 * @return {Boolean}
+	 */
+	layer_is_pooled: function( layer ) {
+		var type = layer.get( 'type' ) || 'simple';
+		var pooled = -1 !== [ 'simple', 'multiple' ].indexOf( type );
+		return !! wp.hooks.applyFilters( 'PC.fe.viewer.layer_is_pooled', pooled, layer, this );
 	},
 
 	add_layers: function() {
@@ -65,8 +101,77 @@ PC.fe.views.viewer = Backbone.View.extend({
 			PC.fe.layers.orderBy = 'image_order';
 			PC.fe.layers.sort();
 		}
+
+		// Remember where each layer's images belong in the stack. An image can be
+		// created long after this first pass - when its choice is selected, or when
+		// conditional logic reveals its layer - and by then the collection may have
+		// been re-sorted by another view (the layers list orders it by `order`), so
+		// position is recorded here rather than looked up later.
+		this.order_index = {};
+		PC.fe.layers.each( function( layer, index ) {
+			this.order_index[ layer.id ] = index;
+		}, this );
+
 		PC.fe.layers.each( this.add_choices, this );
 	}, 
+
+	/**
+	 * Where an element belongs among the viewer's layers: the layer's position in
+	 * image order, then the choice's position within the layer, then 0 for the
+	 * image itself and 1 for the custom HTML that follows it.
+	 *
+	 * @param {Backbone.Model} choice
+	 * @param {Number} [tail]
+	 * @return {Array}
+	 */
+	sort_key: function( choice, tail ) {
+		var layer_id = choice.get( 'layerId' );
+		var content = PC.fe.getLayerContent( layer_id );
+		var layer_position = ( this.order_index && 'undefined' !== typeof this.order_index[ layer_id ] ) ? this.order_index[ layer_id ] : PC.fe.layers.length;
+		return [ layer_position, content ? content.indexOf( choice ) : 0, tail || 0 ];
+	},
+
+	compare_sort: function( a, b ) {
+		for ( var i = 0; i < Math.max( a.length, b.length ); i++ ) {
+			var x = a[ i ] || 0;
+			var y = b[ i ] || 0;
+			if ( x !== y ) return x < y ? -1 : 1;
+		}
+		return 0;
+	},
+
+	/**
+	 * Put an element where it belongs in the stack, rather than at the end.
+	 *
+	 * The first pass runs in image order, so appending would do - but an image can
+	 * be created much later, when its choice is selected or when conditional logic
+	 * reveals its layer, and it still has to sit at the right depth.
+	 *
+	 * @param {jQuery} $el
+	 * @param {Array} sort From sort_key().
+	 */
+	insert_image: function( $el, sort ) {
+		$el.data( 'mkl_sort', sort ).attr( 'data-mkl-sorted', '1' );
+
+		var $before = null;
+		var that = this;
+		this.$layers.children( '[data-mkl-sorted]' ).each( function() {
+			var other = $( this ).data( 'mkl_sort' );
+			if ( ! other ) return;
+			if ( 0 < that.compare_sort( other, sort ) ) {
+				$before = $( this );
+				return false;
+			}
+		} );
+
+		if ( $before ) {
+			$before.before( $el );
+		} else if ( this.$loader && this.$loader.length ) {
+			this.$loader.before( $el );
+		} else {
+			this.$layers.append( $el );
+		}
+	},
 
 	add_choices: function( model ) {
 		var choices = PC.fe.getLayerContent( model.id );
@@ -80,8 +185,10 @@ PC.fe.views.viewer = Backbone.View.extend({
 			if ( choice ) {
 				this.layers[ choice.id ] = layer;
 				this.layer_views[ this.view_key( choice ) ] = layer;
+				this.insert_image( layer.$el, this.sort_key( choice ) );
+			} else {
+				this.$layers.append( layer.$el );
 			}
-			this.$layers.append( layer.$el );
 			if ( choice.get( 'custom_html' ) ) {
 				var content;
 				try {
@@ -90,8 +197,10 @@ PC.fe.views.viewer = Backbone.View.extend({
 					content = $( '<div class="mkl-custom-html--container" />' );
 					content.html( choice.get( 'custom_html' ) )
 				}
-				this.$layers.append( content );
+				this.insert_image( content, this.sort_key( choice, 1 ) );
 			}
+		} else if ( this.active_images_only() && this.layer_is_pooled( model ) ) {
+			this.pools[ model.id ] = new PC.fe.views.viewer_layer_pool( { model: model, parent: this } );
 		} else {
 			choices.each( this.add_single_choice, this );
 		}
@@ -101,7 +210,7 @@ PC.fe.views.viewer = Backbone.View.extend({
 		if ( model.has_image() || wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, model ) ) {
 			var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, model, this );
 			var layer = new View( { model: model, parent: this } );
-			this.$layers.append( layer.$el );
+			this.insert_image( layer.$el, this.sort_key( model ) );
 		} else {
 			layer = false;
 		}
@@ -109,7 +218,7 @@ PC.fe.views.viewer = Backbone.View.extend({
 		wp.hooks.doAction( 'PC.fe.viewer.item.added', layer, this );
 		if ( model.get( 'custom_html' ) ) {
 			var html_layer = new PC.fe.views.viewer_layer_html( { model: model, layer: layer, parent: this } );
-			this.$layers.append( html_layer.$el );
+			this.insert_image( html_layer.$el, this.sort_key( model, 1 ) );
 			wp.hooks.doAction( 'PC.fe.viewer.html_item.added', html_layer, this );
 		}
 		this.layers[ model.id ] = layer;

@@ -657,6 +657,8 @@ class Frontend_Woocommerce {
 				'close_choices_when_selecting_choice_desktop' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice_desktop' ),
 				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
+				// Render an image per selection instead of one per choice.
+				'viewer_active_images_only' => (bool) mkl_pc( 'settings' )->get( 'viewer_active_images_only' ),
 				'show_choice_description' => (bool) mkl_pc( 'settings')->get( 'show_choice_description' ),
 				'show_layer_description' => (bool) mkl_pc( 'settings')->get( 'show_layer_description' ),
 				'show_active_choice_in_layer' => (bool) mkl_pc( 'settings')->get( 'show_active_choice_in_layer' ),

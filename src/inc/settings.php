@@ -41,6 +41,7 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 					'show_price_in_configurator' => 'on',
 					'show_active_choice_in_layer' => 'on',
 					'show_angle_name' => 'on',
+					'viewer_active_images_only' => 'on',
 				)
 			) );
 		}

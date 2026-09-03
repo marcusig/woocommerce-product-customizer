@@ -201,7 +201,9 @@ PC.fe.views.choice = Backbone.View.extend({
 	},
 	preload_image: function() {
 		// console.log('preload image');
-		this.model.trigger( 'preload-image' );
+		// Pass the model: a listener bound to the collection (the viewer's image
+		// pool) gets the arguments as given, with no model of its own to work from.
+		this.model.trigger( 'preload-image', this.model );
 		// var src = this.model.get_image();
 		// if ( ! src ) return;
 		// var img = new Image();

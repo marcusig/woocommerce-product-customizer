@@ -114,6 +114,8 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 		if ( is_active ) {
 			if ( ! this.is_loaded ) {
 				this.parent.imagesLoading ++;
+				// Only a counted image may decrement the counter again - see img_loaded().
+				this.counted = true;
 				this.parent.$el.addClass('is-loading-image');
 				this.$el.addClass( 'loading' );
 				this.el.src = img
@@ -168,12 +170,36 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 
 		if ( 'load' == e.type ) wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
 
+		// Only images that were counted when their src was set may count down
+		// again. An inactive image also gets a src, but was never added to
+		// imagesLoading: decrementing for it drove the counter below zero, so it
+		// never came back to 0 and the viewer kept its `is-loading-image` class.
+		if ( ! this.counted ) return;
+		this.counted = false;
+
 		this.parent.imagesLoading --;
 		if( this.parent.imagesLoading == 0 ) {
 			this.parent.$el.removeClass('is-loading-image');
 			wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
 		}
 
+	},
+	/**
+	 * Release a load that will never complete.
+	 *
+	 * Images are created and destroyed as the selection changes when the viewer
+	 * only renders what it shows, so one can be removed while still loading.
+	 */
+	remove: function() {
+		if ( this.counted && this.parent ) {
+			this.counted = false;
+			this.parent.imagesLoading --;
+			if ( 0 >= this.parent.imagesLoading ) {
+				this.parent.imagesLoading = 0;
+				this.parent.$el.removeClass( 'is-loading-image' );
+			}
+		}
+		return Backbone.View.prototype.remove.apply( this, arguments );
 	},
 	toggle_current_layer_class: function( layer, new_val ) {
 		if ( layer.id !== this.model.get( 'layerId' ) ) return;
@@ -251,5 +277,145 @@ PC.fe.views.viewer_layer_html = Backbone.View.extend({
 		var model_cshow = false !== this.model.get( 'cshow' );
 		var layer_cshow = false !== this.layer.get( 'cshow' );
 		this.$el.toggle( this.model.get( 'active' ) && model_cshow && layer_cshow );
+	}
+});
+
+/**
+	PC.fe.views.viewer_layer_pool
+	-> The images of ONE layer in the viewer.
+
+	The viewer's default is an <img> per choice, shown and hidden with a class. On
+	a large configuration that means thousands of images in the page to show a
+	couple of hundred, and every one of them re-renders when the angle changes.
+
+	This keeps only the images the layer actually shows - one for a simple layer,
+	one per selection for a multiple choice layer, none while the layer is hidden
+	or has nothing selected - and creates them as the selection changes.
+
+	It owns no element of its own: the images stay direct children of
+	.mkl_pc_layers, exactly where they are today, so stylesheets written against
+	them keep working. Its own `el` is never inserted anywhere.
+*/
+PC.fe.views.viewer_layer_pool = Backbone.View.extend({
+	initialize: function( options ) {
+		this.options = options || {};
+		this.parent = options.parent;
+		this.layer = options.model;
+		this.choices = PC.fe.getLayerContent( this.layer.id );
+		this.views = {};
+		this.html_views = {};
+		this.preloaded = {};
+
+		if ( ! this.choices ) return this;
+
+		this.listenTo( this.choices, 'change:active', this.sync );
+		this.listenTo( this.choices, 'change:cshow', this.sync );
+		this.listenTo( this.choices, 'preload-image', this.preload );
+		// Any layer's visibility can hide this one through a group ancestor, so
+		// this listens to the collection rather than to this layer alone.
+		this.listenTo( PC.fe.layers, 'change:cshow', this.sync );
+
+		this.sync();
+
+		return this;
+	},
+
+	/**
+	 * The choices that need an image in the viewer right now.
+	 *
+	 * @return {Array} choice models
+	 */
+	get_visible_choices: function() {
+		if ( this.parent.is_hidden_by_conditions_layer( this.layer ) ) return [];
+
+		var that = this;
+		return this.choices.filter( function( choice ) {
+			if ( ! choice.get( 'active' ) ) return false;
+			if ( choice.get( 'is_group' ) ) return false;
+			if ( that.parent.is_hidden_by_conditions( choice ) ) return false;
+			return choice.has_image() || wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, choice );
+		} );
+	},
+
+	/**
+	 * Bring the images in line with what the layer currently shows.
+	 */
+	sync: function() {
+		var wanted = {};
+		_.each( this.get_visible_choices(), function( choice ) {
+			wanted[ choice.id ] = choice;
+		} );
+
+		_.each( _.keys( this.views ), function( id ) {
+			if ( wanted[ id ] ) return;
+			this.remove_view( id );
+		}, this );
+
+		_.each( wanted, function( choice, id ) {
+			if ( this.views[ id ] ) return;
+			this.add_view( choice );
+		}, this );
+	},
+
+	add_view: function( choice ) {
+		var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, choice, this.parent );
+		var view = new View( { model: choice, parent: this.parent } );
+
+		this.views[ choice.id ] = view;
+		// Keep the viewer's indexes up to date so capture() can find the drawable.
+		this.parent.layers[ choice.id ] = view;
+		this.parent.layer_views[ this.parent.view_key( choice ) ] = view;
+
+		this.parent.insert_image( view.$el, this.parent.sort_key( choice ) );
+		wp.hooks.doAction( 'PC.fe.viewer.item.added', view, this.parent );
+
+		if ( choice.get( 'custom_html' ) ) {
+			var html_view = new PC.fe.views.viewer_layer_html( { model: choice, layer: view, parent: this.parent } );
+			this.html_views[ choice.id ] = html_view;
+			this.parent.insert_image( html_view.$el, this.parent.sort_key( choice, 1 ) );
+			wp.hooks.doAction( 'PC.fe.viewer.html_item.added', html_view, this.parent );
+		}
+
+		return view;
+	},
+
+	remove_view: function( id ) {
+		if ( this.views[ id ] ) {
+			var key = this.parent.view_key( this.views[ id ].model );
+			this.views[ id ].remove();
+			delete this.views[ id ];
+			if ( this.parent.layer_views ) delete this.parent.layer_views[ key ];
+		}
+		if ( this.html_views[ id ] ) {
+			this.html_views[ id ].remove();
+			delete this.html_views[ id ];
+		}
+	},
+
+	/**
+	 * Warm the browser cache for a choice the customer is hovering.
+	 *
+	 * There is no waiting <img> to point at an unselected choice any more, so the
+	 * request is made off-DOM: same effect on the cache, nothing added to the page.
+	 *
+	 * @param {Backbone.Model} choice
+	 */
+	preload: function( choice ) {
+		if ( ! choice || ! choice.get_image ) return;
+		if ( this.views[ choice.id ] ) return;
+
+		var url = choice.get_image();
+		if ( ! url || this.preloaded[ url ] ) return;
+
+		this.preloaded[ url ] = true;
+		var img = new Image();
+		img.src = url;
+	},
+
+	remove: function() {
+		_.each( _.keys( this.views ), function( id ) {
+			this.remove_view( id );
+		}, this );
+		return Backbone.View.prototype.remove.apply( this, arguments );
 	}
 });

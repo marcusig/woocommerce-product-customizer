@@ -932,6 +932,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'viewer_active_images_only',
+				__( 'Only render the images the configurator is showing', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'viewer_active_images_only',
+					'description'  => __( 'The viewer normally holds an image for every choice and shows one of them. With this on it holds one image per layer instead - one per selection on multiple choice layers - and swaps it as the customer chooses. On large configurations this is most of the markup, and most of the work done when changing angle. Leave this off if a stylesheet targets the images of unselected choices.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'disable_configuration_gzip',
 				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],
