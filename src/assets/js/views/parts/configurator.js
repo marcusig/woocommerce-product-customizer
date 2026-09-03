@@ -117,6 +117,13 @@ PC.fe.views.configurator = Backbone.View.extend({
 		this.viewer = null;
 		this.footer = null;
 
+		// Settle the models before a single view exists: default selections, the
+		// configuration being edited, then conditional logic. Views are built from
+		// a state that is already final, which is what lets the layers list skip
+		// the layers conditional logic hides instead of rendering them and hiding
+		// them a moment later.
+		PC.fe.prepare_initial_state( this );
+
 		if ( wp.hooks.applyFilters( 'PC.fe.render_viewer', true ) ) {
 			PC.fe.mountViewer( this.$main_window );
 		}

@@ -140,8 +140,9 @@
 			if ( $.nmThemeInstance && $.nmThemeInstance.quantityInputsBindButtons ) $.nmThemeInstance.quantityInputsBindButtons( $('.mkl_pc') );
 
 			if ( 'function' === typeof avadaAddQuantityBoxes ) avadaAddQuantityBoxes();
-			// Reset config (model-level: keep in engine mode)
-			if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
+			// The configuration is reset before the views are built now - see
+			// PC.fe.prepare_initial_state(). Resetting again here would undo the
+			// configuration just loaded from the cart or from a saved design.
 
 			// Swipe (DOM: skip when headless or when the layers element is missing)
 			if ( ! PC.fe.is_headless() && PC_config.config.swipe_to_change_view && 1 < PC.fe.angles.length ) {
@@ -181,14 +182,13 @@
 		}, 20 );
 
 
+		// The saved configuration used to be applied here, 300ms after everything
+		// had rendered. It is applied before the views are built now - see the
+		// 'PC.fe.prepare_config' handler further down. What is left is the opening
+		// angle, which is a view concern.
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 			setTimeout( function() {
 				var view_identifier = PC.fe.initial_view || false;
-				if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
-					PC.fe.setConfig( PC_config.config.load_config_content );
-				} else if ( PC.fe.initial_preset ) {
-					PC.fe.setConfig( PC.fe.initial_preset );
-				}
 				if ( window.location.hash ) {
 					var hash_match = window.location.hash.match(/view=([^,]+)/)
 					if ( hash_match && hash_match.length > 1 ) {
@@ -424,6 +424,48 @@
 	};
 
 	/**
+	 * Bring the models to their opening state, before any view is built.
+	 *
+	 * The order is the point: default selections first, then the configuration
+	 * being edited (a cart line item, a saved design or a preset), then
+	 * conditional logic - which add-ons hook onto 'PC.fe.prepare_config'. By the
+	 * time the toolbar and the viewer are mounted every `cshow` is final, so they
+	 * can build only what is actually visible.
+	 *
+	 * This used to run the other way round: everything rendered, then
+	 * 'PC.fe.start' reset the configuration (priority 20) and ran conditions (30),
+	 * and the saved configuration landed 300ms later (50). Layers were therefore
+	 * rendered in full and hidden again immediately afterwards.
+	 *
+	 * @param {Backbone.View} configurator The modal, or the stub in engine mode.
+	 */
+	PC.fe.prepare_initial_state = function( configurator ) {
+		if ( ! PC.fe.contents || ! PC.fe.contents.content ) return;
+
+		wp.hooks.doAction( 'PC.fe.prepare_config.before', configurator );
+
+		if ( wp.hooks.applyFilters( 'PC.fe.reset.on.start', true ) ) PC.fe.contents.content.resetConfig();
+
+		/**
+		 * Set the configuration up before it is rendered. Anything that changes what
+		 * is selected belongs here rather than on 'PC.fe.start'.
+		 *
+		 * @param {Backbone.View} configurator
+		 */
+		wp.hooks.doAction( 'PC.fe.prepare_config', configurator );
+	};
+
+	// Apply the configuration being edited, so conditional logic sees the real
+	// selections rather than the defaults.
+	wp.hooks.addAction( 'PC.fe.prepare_config', 'mkl/product_configurator', function() {
+		if ( PC_config.config.load_config_content && Array.isArray( PC_config.config.load_config_content ) ) {
+			PC.fe.setConfig( PC_config.config.load_config_content );
+		} else if ( PC.fe.initial_preset ) {
+			PC.fe.setConfig( PC.fe.initial_preset );
+		}
+	}, 20 );
+
+	/**
 	 * Reset choices / optional preset / active angle. Shared by the real modal and the stub.
 	 */
 	PC.fe.reset_configuration = function() {
@@ -591,6 +633,7 @@
 			this.contents = PC.fe.setContent.parse( PC.productData['prod_' + product_id] );
 			if ( PC.fe.is_headless() ) {
 				// Engine mode: collections are ready. Fire start on the stub; do not build UI.
+				PC.fe.prepare_initial_state( this.modal );
 				$( PC.fe ).trigger( 'start', this.modal );
 				wp.hooks.doAction( 'PC.fe.start', this.modal );
 			} else if ( this.modal && this.modal.$el ) {

@@ -26,14 +26,23 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 		}
 
 		public function get_initial_settings() {
-			return array_merge(
+			/**
+			 * Settings written when the configurator is installed for the first time.
+			 *
+			 * This is the place for a default that should apply to new stores only:
+			 * existing stores keep whatever they already have, since this never runs
+			 * again after the first install. Add-ons loaded before `init` can hook in.
+			 *
+			 * @param array $settings
+			 */
+			return apply_filters( 'mkl_pc__initial_settings', array_merge(
 				$this->get_defaults(),
 				array(
 					'show_price_in_configurator' => 'on',
 					'show_active_choice_in_layer' => 'on',
 					'show_angle_name' => 'on',
 				)
-			);
+			) );
 		}
 
 		public function get( $setting = '', $default = false, $return_default_if_empty = false ) {
