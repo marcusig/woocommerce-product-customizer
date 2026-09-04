@@ -500,6 +500,35 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
+		 * Move or rename a file using WP_Filesystem.
+		 *
+		 * @param string $source      Absolute source path.
+		 * @param string $destination Absolute destination path.
+		 * @param bool   $overwrite   Whether to overwrite an existing destination.
+		 * @return bool
+		 */
+		public static function fs_move( $source, $destination, $overwrite = false ) {
+			if ( ! is_string( $source ) || '' === $source || ! is_string( $destination ) || '' === $destination ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return (bool) $wp_filesystem->move( $source, $destination, $overwrite );
+		}
+
+		/**
 		 * List a directory using WP_Filesystem.
 		 *
 		 * @param string $dir_path Absolute directory path.
