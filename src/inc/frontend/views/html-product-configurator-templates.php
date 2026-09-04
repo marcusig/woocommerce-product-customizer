@@ -262,7 +262,12 @@ foreach( $parts as $part ) {
 	if ( file_exists( $part['path'].$part['file'] ) ) {
 		include $part['path'].$part['file'];
 	} else {
-		var_dump('file does not exist:', $part['path'].$part['file']);
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'wc_get_logger' ) ) {
+			wc_get_logger()->warning(
+				'MKL Product Configurator: template file does not exist: ' . $part['path'] . $part['file'],
+				array( 'source' => 'mkl-pc' )
+			);
+		}
 	}
 }
 
