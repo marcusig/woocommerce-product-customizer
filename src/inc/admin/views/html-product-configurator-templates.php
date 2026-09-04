@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 global $is_IE;
 $class = 'mkl-pc-admin-ui wp-core-ui pc-modal';
-$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
+$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 if ( $is_IE && strpos( $user_agent, 'MSIE 7' ) !== false )
 	$class .= ' ie7';
 
@@ -224,7 +224,7 @@ $mkl_pc_3d_settings_sections = apply_filters(
 	<div class="mkl-pc-admin-ui__header">
 		<h1>{{data.title}}</h1>
 		<button type="button" class="button mkl-pc-admin-ui__menu-toggle" aria-expanded="false">
-			<?php esc_html_e( 'Menu' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
+			<?php esc_html_e( 'Menu', 'product-configurator-for-woocommerce' ); ?> <span class="dashicons dashicons-arrow-down" aria-hidden="true" aria-expanded="true"></span>
 		</button>
 		<span class="description">{{data.description}}</span>
 	</div>
@@ -492,7 +492,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<div class="form-details">
 		<header>
 			<h2>
-				<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
+				<?php esc_html_e('Details', 'product-configurator-for-woocommerce' ); ?>
 			</h2>
 			<div class="actions-container">
 				<?php echo mkl_pc_get_admin_actions(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup is built with esc_html__() in mkl_pc_get_admin_actions(). ?>

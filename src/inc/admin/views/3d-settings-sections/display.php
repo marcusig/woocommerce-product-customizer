@@ -1,3 +1,8 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+?>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Loading poster', 'product-configurator-for-woocommerce' ); ?></h4>
 	<p class="description"><?php esc_html_e( 'Optional image shown while the 3D viewer loads. It fades out once the model is ready.', 'product-configurator-for-woocommerce' ); ?></p>

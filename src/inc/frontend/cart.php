@@ -283,7 +283,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					continue;
 				}
 				if ( ( $now - filemtime( $file ) ) > $max_age_seconds ) {
-					@unlink( $file );
+					wp_delete_file( $file );
 				}
 			}
 		}
@@ -872,7 +872,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 			// Plain permalinks and other setups where is_store_api_request() does not match.
 			if ( ! empty( $_SERVER['REQUEST_URI'] ) ) {
-				$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] );
+				$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 				if ( false !== strpos( $request_uri, 'wc/store/' ) || false !== strpos( $request_uri, 'rest_route=/wc/store/' ) ) {
 					return true;
 				}

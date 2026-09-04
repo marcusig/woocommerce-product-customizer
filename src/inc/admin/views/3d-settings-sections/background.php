@@ -1,3 +1,8 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+?>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Background', 'product-configurator-for-woocommerce' ); ?></h4>
 	<p class="field-row">

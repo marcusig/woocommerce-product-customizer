@@ -1,3 +1,8 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+?>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
 	<p class="description"><?php esc_html_e( 'The environment map controls reflections and image-based lighting. Choose None for unlit or baked-lighting models, a built-in preset, or an environment from the 3D Objects list (type: Environment).', 'product-configurator-for-woocommerce' ); ?></p>

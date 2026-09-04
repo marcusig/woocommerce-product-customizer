@@ -252,7 +252,7 @@ class Frontend_Woocommerce {
 				if ( is_string( $product ) && $post ) {
 					$product = wc_get_product( $post );
 				}				
-				if ( ! is_a( $product, 'WC_Product' ) ) return __( 'The global product variable is not a WC_Product instance', 'product-configurator-for-woocommerce' ) . ' - ' . print_r( $product, true );
+				if ( ! is_a( $product, 'WC_Product' ) ) return __( 'The global product variable is not a WC_Product instance', 'product-configurator-for-woocommerce' );
 			}
 			$product_id = $product->get_id();
 		} else {
@@ -704,7 +704,7 @@ class Frontend_Woocommerce {
 		if ( $saved_configuration_content = $this->get_saved_configuration_content() ) {
 			$args['config']['load_config_content'] = $saved_configuration_content;
 
-			if ( isset( $_REQUEST['edit_config_from_cart'] ) ) {
+			if ( isset( $_REQUEST['edit_config_from_cart'] ) && isset( $_REQUEST['load_config_from_cart'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flags to attach the cart item key when editing from cart.
 				$args['config']['cart_item_key'] = esc_attr( esc_html( sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) ) ) );
 			}
 		} 
