@@ -33,7 +33,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 * @return void
 		 */
 		public function updated_settings() {
-			$option_page = isset( $_REQUEST['option_page'] ) ? sanitize_key( wp_unslash( $_REQUEST['option_page'] ) ) : '';
+			$option_page = isset( $_REQUEST['option_page'] ) ? sanitize_key( wp_unslash( $_REQUEST['option_page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress Settings API already verified the options nonce before update_option fires.
 			if ( 'mlk_pc_settings' !== $option_page ) return;
 			mkl_pc( 'cache' )->purge();
 		}
@@ -66,7 +66,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function display() {
-			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( wp_unslash( $_REQUEST['tab'] ) ) : 'settings';
+			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( wp_unslash( $_REQUEST['tab'] ) ) : 'settings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only settings tab selection.
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
 				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),

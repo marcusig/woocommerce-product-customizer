@@ -248,7 +248,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			if ( $options['condition'] ) $condition = $options['condition'];
 			$output = '<# if ( wp.hooks.applyFilters( "PC.admin.' . $this->type . '.display_option",' . $condition .', data, "' . $options['id'] . '" ) ) { #>' . $output . '<# } #>';
 			if ($echo) {
-				echo $output;
+				echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Admin Underscore template HTML; inner field values are escaped when the markup is built.
 			} else {
 				return $output;
 			}

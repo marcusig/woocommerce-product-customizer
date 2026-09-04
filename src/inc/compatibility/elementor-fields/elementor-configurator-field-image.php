@@ -197,7 +197,7 @@ class Elementor_Configuration_Field_Image extends \ElementorPro\Modules\Forms\Fi
 	}
 
 	public function process_field( $field, $record, $ajax_handler ) {
-		if ( isset( $_REQUEST['configurator_data_raw'] ) && isset( $_REQUEST['configured_product_id'] ) ) {
+		if ( isset( $_REQUEST['configurator_data_raw'] ) && isset( $_REQUEST['configured_product_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Elementor form submission nonce is verified by Elementor before process_field.
 			$id = $field['id'];
 			$config = new Config( null, [ 'product_id' => absint( wp_unslash( $_REQUEST['configured_product_id'] ) ) ] );
 			$config->set_content( sanitize_text_field( wp_unslash( $_REQUEST['configurator_data_raw'] ) ) );

@@ -709,7 +709,7 @@ class Frontend_Woocommerce {
 			}
 		} 
 
-		if ( isset( $_REQUEST['open_configurator'] ) ) {
+		if ( isset( $_REQUEST['open_configurator'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flag to auto-open the configurator.
 			$args['config']['open_configurator'] = true;
 		}
 
@@ -812,7 +812,7 @@ class Frontend_Woocommerce {
 	 */
 	private function get_saved_configuration_content() {
 		$configuration_to_load = [];
-		if ( isset( $_REQUEST['load_config_from_cart'] ) ) {
+		if ( isset( $_REQUEST['load_config_from_cart'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flag to preload a cart item configuration.
 
 			$item_id = sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) );
 			$wc_cart = WC()->cart;
@@ -833,7 +833,7 @@ class Frontend_Woocommerce {
 
 		}
 
-		if ( isset( $_REQUEST['load_config_from_order'] ) ) {
+		if ( isset( $_REQUEST['load_config_from_order'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Order item ID is authorized via manage_woocommerce or order customer match below.
 			$current_user_can_view_config = current_user_can( 'manage_woocommerce' );
 			if ( ! $current_user_can_view_config ) {
 				$order_id = wc_get_order_id_by_order_item_id( sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_order'] ) ) );
@@ -855,7 +855,7 @@ class Frontend_Woocommerce {
 			}
 		}
 
-		if ( isset( $_REQUEST['load-preset'] ) ) {
+		if ( isset( $_REQUEST['load-preset'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public preset IDs only; unpublished presets are rejected below.
 			$p = get_post( (int) sanitize_text_field( wp_unslash( $_REQUEST['load-preset'] ) ) );
 			if ( $p && 'mkl_pc_configuration' === $p->post_type && 'preset' === $p->post_status ) {
 				$configuration_to_load = json_decode( $p->post_content );

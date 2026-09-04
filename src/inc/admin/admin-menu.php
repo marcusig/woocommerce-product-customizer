@@ -89,13 +89,13 @@ class Admin_Menu {
 			return;
 		}
 
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only routing of a legacy settings URL.
 		if ( 'mkl_pc_settings' !== $page ) {
 			return;
 		}
 
 		$query_args = array();
-		if ( isset( $_GET['tab'] ) ) {
+		if ( isset( $_GET['tab'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Tab is copied onto the redirected settings URL.
 			$query_args['tab'] = sanitize_key( wp_unslash( $_GET['tab'] ) );
 		}
 

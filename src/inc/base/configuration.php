@@ -631,7 +631,7 @@ class Configuration {
 
 		if ( ! mkl_pc( 'settings' )->get( 'show_config_images_in_the_library', true ) ) {
 			// Changing the post status prevents the image being listed in the library
-			$wpdb->update( $wpdb->posts, array( 'post_status' => 'configuration' ), array( 'ID' => $attach_id ) );
+			$wpdb->update( $wpdb->posts, array( 'post_status' => 'configuration' ), array( 'ID' => $attach_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom post_status is not supported by wp_update_post() without side effects.
 		}
 
 		if ( $parent_post_id ) {

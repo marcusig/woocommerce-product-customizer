@@ -57,7 +57,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				$product_id = $variation_id;
 			}
 
-			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
+			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce add-to-cart nonce; JSON is decoded then sanitized via db->sanitize().
 
 			if ( $passed && mkl_pc_is_configurable( $product_id ) && ! $this->has_configuration_data( $raw_configurator_data, $cart_item_data ) && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
@@ -174,13 +174,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
 
-				$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
+				$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce add-to-cart nonce; JSON is decoded then sanitized via db->sanitize().
 				if ( is_string( $raw_configurator_data ) && '' !== $raw_configurator_data ) { 
 
 					/**
 					 * Editing the cart: Delete and replace the item from the cart
 					 */
-					if ( isset( $_POST['pc_cart_item_key'] ) ) {
+					if ( isset( $_POST['pc_cart_item_key'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce add-to-cart nonce.
 						$cart_item_key = sanitize_text_field( wp_unslash( $_POST['pc_cart_item_key'] ) );
 						$cart = WC()->cart;
 						if ( $cart_item_key && $cart->get_cart_item( $cart_item_key ) ) {
@@ -221,7 +221,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				}
 
 				// Save 3D viewer screenshot to temp folder when show_image_in_cart is on (not saved as attachment).
-				if ( mkl_pc_is_configurable( $product_id ) && mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) ) {
+				if ( mkl_pc_is_configurable( $product_id ) && mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce add-to-cart nonce; screenshot is sanitized below.
 					$saved = $this->save_3d_screenshot_to_temp( sanitize_text_field( wp_unslash( $_POST['pc_3d_screenshot'] ) ) );
 					if ( $saved ) {
 						$cart_item_data['configurator_3d_screenshot_path'] = $saved;
@@ -883,6 +883,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			// Cart/checkout blocks resolve item data via CartItemSchema outside is_cart()/is_checkout().
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Used only to detect WooCommerce CartItemSchema in the call stack, not for debug output.
 			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 );
 			foreach ( $trace as $call ) {
 				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {

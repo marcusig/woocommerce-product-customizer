@@ -99,8 +99,8 @@ class Compat_Yith_Raq {
 	 * @return void
 	 */
 	public function yith_raq_updated() {
-		$action       = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
-		$ywraq_action = isset( $_POST['ywraq_action'] ) ? sanitize_key( wp_unslash( $_POST['ywraq_action'] ) ) : '';
+		$action       = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- YITH verifies its own add-to-quote nonce before this hook.
+		$ywraq_action = isset( $_POST['ywraq_action'] ) ? sanitize_key( wp_unslash( $_POST['ywraq_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same YITH quote nonce as above.
 		$is_adding_configured_item = ( 'yith_ywraq_action' === $action ) && ( 'add_item' === $ywraq_action ) && isset( $_POST['pc_configurator_data'] );
 		if ( ! $is_adding_configured_item ) return;
 		static $added = false;
@@ -108,8 +108,8 @@ class Compat_Yith_Raq {
 		$rq = YITH_Request_Quote();
 		$item_id = false;
 	
-		$product_id   = isset( $_REQUEST['product_id'] ) ? absint( wp_unslash( $_REQUEST['product_id'] ) ) : 0;
-		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( wp_unslash( $_REQUEST['variation_id'] ) ) : 0;
+		$product_id   = isset( $_REQUEST['product_id'] ) ? absint( wp_unslash( $_REQUEST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same YITH quote nonce as yith_raq_updated().
+		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( wp_unslash( $_REQUEST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same YITH quote nonce as yith_raq_updated().
 
 		if ( $variation_id ) {
 			// single product.
@@ -120,7 +120,7 @@ class Compat_Yith_Raq {
 
 		if ( isset( $rq->raq_content[ $item_id ] ) ) {
 			$raq = $rq->raq_content[ $item_id ];
-			$raw_configurator_data = wp_unslash( $_POST['pc_configurator_data'] );
+			$raw_configurator_data = wp_unslash( $_POST['pc_configurator_data'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- YITH quote nonce; JSON is decoded then sanitized via db->sanitize().
 			if ( ! is_string( $raw_configurator_data ) ) {
 				return;
 			}
@@ -272,8 +272,8 @@ class Compat_Yith_Raq {
 	 * @return array
 	 */
 	public function load_quote_configuration_in_configurator( $config_data ) {
-		$context = isset( $_REQUEST['context'] ) ? sanitize_key( wp_unslash( $_REQUEST['context'] ) ) : '';
-		if ( $config_data || ! isset( $_REQUEST['load_config_from_cart'], $_REQUEST['context'] ) || 'configuration_to_yithraq' !== $context ) return $config_data;
+		$context = isset( $_REQUEST['context'] ) ? sanitize_key( wp_unslash( $_REQUEST['context'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flags to preload a quote configuration in the configurator.
+		if ( $config_data || ! isset( $_REQUEST['load_config_from_cart'], $_REQUEST['context'] ) || 'configuration_to_yithraq' !== $context ) return $config_data; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same as above.
 		$rq = YITH_Request_Quote();
 		$item_id = sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) );
 		if ( isset( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] ) ) {

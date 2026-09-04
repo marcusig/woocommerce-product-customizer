@@ -274,7 +274,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							<h4><?php esc_html_e( 'Object', 'product-configurator-for-woocommerce' ); ?></h4>
 							<div class="pc-3d-add-grid">
 								<button type="button" class="button pc-3d-add-tile" data-add-kind="object">
-									<?php echo mkl_pc_include_svg_icon( '3d/object_data' ); ?>
+									<?php echo mkl_pc_include_svg_icon( '3d/object_data' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?>
 									<span class="pc-3d-add-tile-label"><?php esc_html_e( 'Gltf/glb model', 'product-configurator-for-woocommerce' ); ?></span>
 								</button>
 							</div>
@@ -282,23 +282,23 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 						<div class="pc-3d-add-section">
 							<h4><?php esc_html_e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h4>
 							<div class="pc-3d-add-grid">
-								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="AmbientLight"><?php echo mkl_pc_include_svg_icon( '3d/light_point' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Ambient', 'product-configurator-for-woocommerce' ); ?></span></button>
-								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="DirectionalLight"><?php echo mkl_pc_include_svg_icon( '3d/light_sun' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Directional', 'product-configurator-for-woocommerce' ); ?></span></button>
-								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="PointLight"><?php echo mkl_pc_include_svg_icon( '3d/light_point' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Point', 'product-configurator-for-woocommerce' ); ?></span></button>
-								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="SpotLight"><?php echo mkl_pc_include_svg_icon( '3d/light_spot' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Spot', 'product-configurator-for-woocommerce' ); ?></span></button>
-								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="RectAreaLight"><?php echo mkl_pc_include_svg_icon( '3d/light_area' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Rect Area', 'product-configurator-for-woocommerce' ); ?></span></button>
-								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="HemisphereLight"><?php echo mkl_pc_include_svg_icon( '3d/light_hemi' ); ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Hemisphere', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="AmbientLight"><?php echo mkl_pc_include_svg_icon( '3d/light_point' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Ambient', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="DirectionalLight"><?php echo mkl_pc_include_svg_icon( '3d/light_sun' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Directional', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="PointLight"><?php echo mkl_pc_include_svg_icon( '3d/light_point' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Point', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="SpotLight"><?php echo mkl_pc_include_svg_icon( '3d/light_spot' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Spot', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="RectAreaLight"><?php echo mkl_pc_include_svg_icon( '3d/light_area' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Rect Area', 'product-configurator-for-woocommerce' ); ?></span></button>
+								<button type="button" class="button pc-3d-add-tile" data-add-kind="light" data-light-type="HemisphereLight"><?php echo mkl_pc_include_svg_icon( '3d/light_hemi' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?><span class="pc-3d-add-tile-label"><?php esc_html_e( 'Hemisphere', 'product-configurator-for-woocommerce' ); ?></span></button>
 							</div>
 						</div>
 						<div class="pc-3d-add-section">
 							<h4><?php esc_html_e( 'Environment', 'product-configurator-for-woocommerce' ); ?></h4>
 							<div class="pc-3d-add-grid">
 								<button type="button" class="button pc-3d-add-tile" data-add-kind="environment" data-env-type="hdri">
-									<?php echo mkl_pc_include_svg_icon( '3d/world' ); ?>
+									<?php echo mkl_pc_include_svg_icon( '3d/world' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?>
 									<span class="pc-3d-add-tile-label"><?php esc_html_e( 'HDRi', 'product-configurator-for-woocommerce' ); ?></span>
 								</button>
 								<button type="button" class="button pc-3d-add-tile" data-add-kind="environment" data-env-type="cubemap">
-									<?php echo mkl_pc_include_svg_icon( '3d/mesh_cube' ); ?>
+									<?php echo mkl_pc_include_svg_icon( '3d/mesh_cube' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?>
 									<span class="pc-3d-add-tile-label"><?php esc_html_e( 'Cubemap', 'product-configurator-for-woocommerce' ); ?></span>
 								</button>
 							</div>
@@ -466,7 +466,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<?php esc_html_e('Details', 'product-configurator-for-woocommerce' ); ?>
 			</h2>
 			<div class="actions-container">
-				<?php echo mkl_pc_get_admin_actions(); ?>
+				<?php echo mkl_pc_get_admin_actions(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup is built with esc_html__() in mkl_pc_get_admin_actions(). ?>
 			</div>
 		</header>
 
@@ -495,7 +495,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<?php _e('Details', 'product-configurator-for-woocommerce' ); ?>
 			</h2>
 			<div class="actions-container">
-				<?php echo mkl_pc_get_admin_actions(); ?>
+				<?php echo mkl_pc_get_admin_actions(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup is built with esc_html__() in mkl_pc_get_admin_actions(). ?>
 			</div>
 		</header>
 
@@ -522,7 +522,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<header>
 			<h2><?php esc_html_e('Details', 'product-configurator-for-woocommerce' ) ?> - [ID: {{data._id}}]</h2>
 			<div class="actions-container">
-				<?php echo mkl_pc_get_admin_actions(); ?>
+				<?php echo mkl_pc_get_admin_actions(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup is built with esc_html__() in mkl_pc_get_admin_actions(). ?>
 				<# if ( !data.is_global ) { #>
 					<button type="button" class="button-link make-global"><?php esc_html_e( 'Make Global', 'product-configurator-for-woocommerce' ); ?></button>
 				<# } #>
@@ -723,7 +723,7 @@ CONTENT TEMPLATES
 		<header>
 			<h2><?php esc_html_e('Choice informations', 'product-configurator-for-woocommerce' ) ?> [ID: {{data._id}}]</h2>
 			<div class="actions-container">
-				<?php echo mkl_pc_get_admin_actions(); ?>
+				<?php echo mkl_pc_get_admin_actions(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Markup is built with esc_html__() in mkl_pc_get_admin_actions(). ?>
 			</div>
 		</header>
 

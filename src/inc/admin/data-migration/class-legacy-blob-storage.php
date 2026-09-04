@@ -166,7 +166,7 @@ final class Legacy_Blob_Storage {
 				$post_id,
 				$regexp
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off migration cleanup of legacy chunk meta keys.
 		if ( ! is_array( $keys ) ) {
 			return;
 		}
