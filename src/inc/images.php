@@ -35,7 +35,7 @@ class Images {
 		if ( ! $the_image ) return false;
 
 		if ( 'print' == $output || '' == $output ) {
-			if ( isset( $_REQUEST[ 'width' ] ) && isset( $_REQUEST[ 'height' ] ) ) {
+			if ( isset( $_REQUEST[ 'width' ] ) && isset( $_REQUEST[ 'height' ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional resize dimensions for a generated image response.
 				$width  = absint( wp_unslash( $_REQUEST['width'] ) );
 				$height = absint( wp_unslash( $_REQUEST['height'] ) );
 

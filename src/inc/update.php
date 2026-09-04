@@ -55,7 +55,7 @@ class Update {
 	private function update_wrong_layer_ids() {
 		// Get all the products
 		global $wpdb;
-		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s ", '_mkl_product_configurator_content') );
+		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s ", '_mkl_product_configurator_content') ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time plugin update migration.
 		foreach( $metas as $index => $meta ) {
 			$data = unserialize( $meta->meta_value );
 			// Add a backup of the post data
@@ -76,7 +76,7 @@ class Update {
 					'meta_value' => serialize( $data )    // integer (number) 
 				), 
 				array( 'meta_id' => $meta->meta_id )
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time plugin update migration.
 		}
 	}
 

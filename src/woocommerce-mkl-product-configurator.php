@@ -86,7 +86,7 @@ function mkl_pc_fail_woocommerce_version() {
 
 function mkl_pc_load_plugin_textdomain() {
 	load_textdomain( 'product-configurator-for-woocommerce', WP_LANG_DIR . '/product-configurator-for-woocommerce/product-configurator-for-woocommerce' . '-' . get_locale() . '.mo' );
-	load_plugin_textdomain( 'product-configurator-for-woocommerce', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+	load_plugin_textdomain( 'product-configurator-for-woocommerce', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Bundled translations in /languages still need this for non-WordPress.org installs.
 }
 
 function mkl_pc( $what = false ) {

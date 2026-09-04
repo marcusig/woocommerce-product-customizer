@@ -207,7 +207,7 @@ final class Owner_Resolver {
 				Schema::META_GLOBAL_ID,
 				(string) $global_id
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Reverse lookup of products linked to a global configurator; result is cached in Schema::CACHE_GROUP immediately below.
 		$ids = array();
 		if ( is_array( $rows ) ) {
 			foreach ( $rows as $row_id ) {

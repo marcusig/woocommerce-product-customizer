@@ -194,7 +194,7 @@ final class Storage_Owner {
 				$this->post_id,
 				$like
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prefix scan of post meta; WooCommerce product cache does not index keys by prefix.
 		return is_array( $rows ) ? array_values( $rows ) : array();
 	}
 }

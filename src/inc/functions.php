@@ -129,7 +129,7 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 		// Try to figure out if frontend AJAX request... If we are DOING_AJAX; let's look closer
 		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$ref = '';
-			if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) {
+			if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Referer is only used to distinguish admin vs frontend AJAX.
 				$ref = esc_url_raw( wp_unslash( $_REQUEST['_wp_http_referer'] ) );
 			} elseif ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
 				$ref = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
@@ -138,7 +138,7 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 			// Include specific POST variables which indicate the request being from the admin, in case the next check fails
 			$check_variables = [ '_mkl_pc__is_configurable', 'variation_menu_order' ];
 			foreach( $check_variables as $check ) {
-				if ( in_array( $check, array_keys( $_POST ) ) ) {
+				if ( in_array( $check, array_keys( $_POST ), true ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Presence of admin POST keys only, values are not used.
 					return false;
 				}
 			}
@@ -211,7 +211,7 @@ function mkl_pc_is_settings_page() {
 	if ( ! is_admin() ) {
 		return false;
 	}
-	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin screen detection.
 	return 'mkl_pc_settings' === $page;
 }
 

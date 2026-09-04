@@ -177,6 +177,7 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		 */
 		public static function get_image_id ( $image_url ) {
 			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off GUID lookup; WP has no API for this.
 			$attachment = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE guid = %s", $image_url ) );
 			return $attachment ? $attachment[0] : false;
 		}

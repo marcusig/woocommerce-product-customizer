@@ -155,8 +155,8 @@ final class Admin_Ui {
 			return;
 		}
 
-		$posted_source = isset( $_POST[ Schema::META_SOURCE ] ) ? sanitize_key( wp_unslash( $_POST[ Schema::META_SOURCE ] ) ) : '';
-		$posted_id     = isset( $_POST[ Schema::META_GLOBAL_ID ] ) ? absint( wp_unslash( $_POST[ Schema::META_GLOBAL_ID ] ) ) : 0;
+		$posted_source = isset( $_POST[ Schema::META_SOURCE ] ) ? sanitize_key( wp_unslash( $_POST[ Schema::META_SOURCE ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the product save nonce before woocommerce_process_product_meta_*.
+		$posted_id     = isset( $_POST[ Schema::META_GLOBAL_ID ] ) ? absint( wp_unslash( $_POST[ Schema::META_GLOBAL_ID ] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
 
 		$previous_source    = get_post_meta( $product_id, Schema::META_SOURCE, true );
 		$previous_global_id = (int) get_post_meta( $product_id, Schema::META_GLOBAL_ID, true );
