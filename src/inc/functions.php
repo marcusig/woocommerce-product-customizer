@@ -125,7 +125,7 @@ function mkl_pc_sanitize_3d_material_property_name( $name ) {
 if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 
 	function request_is_frontend_ajax() {
-		$script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? wp_unslash( $_SERVER['SCRIPT_FILENAME'] ) : '';
+		$script_filename = isset( $_SERVER['SCRIPT_FILENAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_FILENAME'] ) ) : '';
 		// Try to figure out if frontend AJAX request... If we are DOING_AJAX; let's look closer
 		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$ref = '';
@@ -222,11 +222,11 @@ function mkl_pc_is_settings_page() {
  * @return string
  */
 function mkl_pc_include_svg_icon( $icon ) {
-	$path = trailingslashit( MKL_PC_ASSETS_PATH ) . '/icons/' . $icon . '.svg';
-	if ( file_exists( $path ) ) {
-		return file_get_contents( $path );
+	if ( ! is_string( $icon ) || false !== strpos( $icon, '..' ) ) {
+		return '';
 	}
-	return '';
+	$path = trailingslashit( MKL_PC_ASSETS_PATH ) . 'icons/' . $icon . '.svg';
+	return \MKL\PC\Utils::inline_svg( $path );
 }
 
 /**
