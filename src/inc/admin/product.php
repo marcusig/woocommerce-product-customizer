@@ -183,7 +183,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 						<div class="mkl-home-actions-content mkl-home-section">
 							<?php 
 								foreach ( $this->get_home_actions() as $action ) {
-									echo '<a href="' . $action['url'] . '" class="button button-hero">' . $action['label'] . '</a>';
+									$url   = isset( $action['url'] ) ? $action['url'] : '';
+									$label = isset( $action['label'] ) ? $action['label'] : '';
+									echo '<a href="' . esc_url( $url ) . '" class="button button-hero">' . wp_kses_post( $label ) . '</a>';
 								}
 								do_action( 'mkl_pc_admin_home_actions_after', $this->ID, $this->_product ); 
 							?>
@@ -425,7 +427,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
 					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
 					'gltf_load_failed' => esc_html__( 'Failed to load the 3D model.', 'product-configurator-for-woocommerce' ),
-					'gltf_load_failed_for' => esc_html__( 'Could not load “%s”: %s', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: 3D file name, 2: error details */
+					'gltf_load_failed_for' => esc_html__( 'Could not load “%1$s”: %2$s', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_invalid' => esc_html__( 'This file is not a valid glTF / GLB model.', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_glb_header' => esc_html__( 'This file is not a valid GLB (binary glTF) file.', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_legacy' => esc_html__( 'This is a legacy binary glTF file. Re-export as glTF 2.0.', 'product-configurator-for-woocommerce' ),
@@ -434,6 +437,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'gltf_load_failed_ktx2' => esc_html__( 'This model uses KTX2 textures, but the KTX2 loader is not enabled.', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_meshopt' => esc_html__( 'This model uses Meshopt compression, but the Meshopt decoder is not enabled.', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_network' => esc_html__( 'The model could not be downloaded (network or CORS error).', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: HTTP status code */
 					'gltf_load_failed_http' => esc_html__( 'The model file could not be downloaded (HTTP %s).', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_no_scene' => esc_html__( 'The model loaded but did not contain a scene.', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_missing_url' => esc_html__( 'No 3D file is assigned to this object.', 'product-configurator-for-woocommerce' ),
@@ -563,7 +567,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				);
 				?>
 			</p>
-			<p><?php echo $this->start_button( (int) $post->ID ); ?></p>
+			<p><?php echo $this->start_button( (int) $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
 			<?php
 		}
 
@@ -574,10 +578,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function save_product_setting( $post_id ) {
-			$_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? 'yes' : 'no';
-			update_post_meta( $post_id, MKL_PC_PREFIX.'_is_configurable', $_is_configurable );
-			if ( isset( $_POST[MKL_PC_PREFIX.'_configurator_type'] ) ) {
-				update_post_meta( $post_id, MKL_PC_PREFIX.'_configurator_type', sanitize_key( $_POST[MKL_PC_PREFIX.'_configurator_type'] ) );
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the product save nonce before woocommerce_process_product_meta_*.
+			$_is_configurable = isset( $_POST[ MKL_PC_PREFIX . '_is_configurable' ] ) ? 'yes' : 'no';
+			update_post_meta( $post_id, MKL_PC_PREFIX . '_is_configurable', $_is_configurable );
+			if ( isset( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+				update_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type', sanitize_key( wp_unslash( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) );
 			}
 		}	
 

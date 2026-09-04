@@ -94,7 +94,7 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 
 			if ( ( empty($options['id'] ) || empty( $options['label'] ) ) && 'separator' != $options['type'] ) {
 				$output = '<div class="error">Setting options must have and `id` and `label` fields</div>';
-				$output .= '<pre>' . wp_kses_post( print_r( $options, true ) ) . '</pre>';
+				$output .= '<pre>' . esc_html( wp_json_encode( $options, JSON_PRETTY_PRINT ) ) . '</pre>';
 
 				if ($echo) {
 					echo wp_kses_post( $output );

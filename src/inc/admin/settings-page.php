@@ -1268,7 +1268,10 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				<div class="theme_setting_view"></div>
 				<input type='hidden' name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' value='<?php echo isset( $options[ $field_options[ 'setting_name' ] ] ) ? esc_attr( $options[ $field_options[ 'setting_name' ] ] ) : ''; ?>'>
 			</div>
-			<p><a href="<?php echo esc_url( add_query_arg( [ 'autofocus[section]' => 'mlk_pc', 'return' => urlencode( esc_url_raw( remove_query_arg( wp_removable_query_args(), wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) ) ], wp_customize_url() ) ); ?>"><?php esc_html_e( 'Edit the theme settings in the customizer', 'product-configurator-for-woocommerce' ); ?></a></p>
+			<p><a href="<?php
+			$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+			echo esc_url( add_query_arg( [ 'autofocus[section]' => 'mlk_pc', 'return' => urlencode( esc_url_raw( remove_query_arg( wp_removable_query_args(), $request_uri ) ) ) ], wp_customize_url() ) );
+			?>"><?php esc_html_e( 'Edit the theme settings in the customizer', 'product-configurator-for-woocommerce' ); ?></a></p>
 			<?php
 		}
 
