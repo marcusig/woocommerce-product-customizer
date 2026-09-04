@@ -197,7 +197,12 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			do_action('mkl_pc_before_template', $template_file, $return_instead_of_echo, $extract_these);
 
 			if (!file_exists($template_file)) {
-				error_log("MKL Product Configurator: template not found: ".$template_file);
+				if ( function_exists( 'wc_get_logger' ) ) {
+					wc_get_logger()->warning(
+						'MKL Product Configurator: template not found: ' . $template_file,
+						array( 'source' => 'mkl-pc' )
+					);
+				}
 				echo esc_html__( 'Error:', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'template not found', 'product-configurator-for-woocommerce' ) . ' (' . esc_html( $template_file ) . ')';
 			} else {
 				extract($extract_these, EXTR_SKIP);
