@@ -254,7 +254,12 @@ class Admin_Product_3D {
 		$max_zip_bytes = (int) apply_filters( 'mkl_pc_3d_max_zip_bytes', self::DEFAULT_MAX_ZIP_BYTES, $attachment_id );
 		$file_size     = @filesize( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		if ( false !== $file_size && $max_zip_bytes > 0 && $file_size > $max_zip_bytes ) {
-			error_log( sprintf( 'MKL PC 3D: ZIP attachment %d exceeds max size (%d > %d).', $attachment_id, $file_size, $max_zip_bytes ) );
+			if ( function_exists( 'wc_get_logger' ) ) {
+				wc_get_logger()->warning(
+					sprintf( 'MKL PC 3D: ZIP attachment %d exceeds max size (%d > %d).', $attachment_id, $file_size, $max_zip_bytes ),
+					array( 'source' => 'mkl-pc-3d' )
+				);
+			}
 			return;
 		}
 
@@ -263,7 +268,12 @@ class Admin_Product_3D {
 
 		$precheck = $this->precheck_zip_archive( $file, $max_files, $max_extracted_bytes );
 		if ( is_wp_error( $precheck ) ) {
-			error_log( sprintf( 'MKL PC 3D: ZIP precheck failed for attachment %d: %s', $attachment_id, $precheck->get_error_message() ) );
+			if ( function_exists( 'wc_get_logger' ) ) {
+				wc_get_logger()->warning(
+					sprintf( 'MKL PC 3D: ZIP precheck failed for attachment %d: %s', $attachment_id, $precheck->get_error_message() ),
+					array( 'source' => 'mkl-pc-3d' )
+				);
+			}
 			return;
 		}
 
@@ -279,14 +289,24 @@ class Admin_Product_3D {
 
 		$result = unzip_file( $file, $target_dir );
 		if ( is_wp_error( $result ) ) {
-			error_log( sprintf( 'MKL PC 3D: Unzip failed for attachment %d: %s', $attachment_id, $result->get_error_message() ) );
+			if ( function_exists( 'wc_get_logger' ) ) {
+				wc_get_logger()->warning(
+					sprintf( 'MKL PC 3D: Unzip failed for attachment %d: %s', $attachment_id, $result->get_error_message() ),
+					array( 'source' => 'mkl-pc-3d' )
+				);
+			}
 			$this->delete_directory( $target_dir );
 			return;
 		}
 
 		$postcheck = $this->postcheck_extracted_directory( $target_dir, $max_files, $max_extracted_bytes );
 		if ( is_wp_error( $postcheck ) ) {
-			error_log( sprintf( 'MKL PC 3D: Extracted ZIP rejected for attachment %d: %s', $attachment_id, $postcheck->get_error_message() ) );
+			if ( function_exists( 'wc_get_logger' ) ) {
+				wc_get_logger()->warning(
+					sprintf( 'MKL PC 3D: Extracted ZIP rejected for attachment %d: %s', $attachment_id, $postcheck->get_error_message() ),
+					array( 'source' => 'mkl-pc-3d' )
+				);
+			}
 			$this->delete_directory( $target_dir );
 			delete_post_meta( $attachment_id, '_configurator_entry_file' );
 			return;
@@ -536,7 +556,7 @@ class Admin_Product_3D {
 
 		foreach ( $to_remove as $path ) {
 			if ( $this->is_path_inside_directory( $path, $target_dir ) ) {
-				@unlink( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+				wp_delete_file( $path );
 			}
 		}
 
