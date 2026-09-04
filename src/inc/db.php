@@ -622,7 +622,7 @@ class DB {
 				$post_id,
 				$like
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off orphan-chunk scan; result is not reused.
 		if ( ! is_array( $keys ) ) {
 			return array();
 		}
@@ -2947,7 +2947,7 @@ class DB {
 				"SELECT post_id, meta_value FROM $wpdb->postmeta WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s",
 				'%/'.$image_path['basename']
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fallback lookup by filename after a site migration; WP has no API for this.
 		$post_id = null;
 	
 		if ( $results ) {
@@ -2990,32 +2990,55 @@ class DB {
 
 		
 		$supported_fields = $this->get_fields();
-		
-		// No key is set, we treat as a text field
-		if ( ! $the_key ) return sanitize_text_field( $data );
-		
-		// Default to empty field
-		if ( ! in_array( $the_key, array_keys( $supported_fields ) ) ) {
-			return sanitize_text_field( $data );
+
+		// No key is set, we treat as a text field.
+		if ( ! $the_key ) {
+			return $this->default_sanitize_or_escape( $action, $data );
 		}
 
-		// Default 
-		if ( ! isset( $supported_fields[$the_key][$action] ) ) {
-			if ( 'sanitize' === $action) return sanitize_text_field( $data );
-			return sanitize_text_field( $data );
+		// Unknown field keys still go through the text default so add-on data is not left raw.
+		if ( ! in_array( $the_key, array_keys( $supported_fields ), true ) ) {
+			return $this->default_sanitize_or_escape( $action, $data );
 		}
 
-		if ( is_callable( $supported_fields[$the_key][$action] ) ) {
-			$data = call_user_func( $supported_fields[$the_key][$action], $data );
+		// Field exists but has no callback for this action.
+		if ( ! isset( $supported_fields[ $the_key ][ $action ] ) ) {
+			return $this->default_sanitize_or_escape( $action, $data );
+		}
+
+		if ( is_callable( $supported_fields[ $the_key ][ $action ] ) ) {
+			$data = call_user_func( $supported_fields[ $the_key ][ $action ], $data );
 			return $data;
 		}
 
-		if ( 'boolean' == $supported_fields[$the_key][$action] ) {
+		if ( 'boolean' == $supported_fields[ $the_key ][ $action ] ) {
 			return filter_var( $data, FILTER_VALIDATE_BOOLEAN );
 		}
 
-		error_log( 'MKL Product Configurator: Sanitazing could not be done for the variable ' . $the_key . ' (The function returned and empty string instead)');
+		if ( function_exists( 'wc_get_logger' ) ) {
+			wc_get_logger()->warning(
+				sprintf(
+					'MKL Product Configurator: sanitization could not be done for the variable %s (empty string returned instead).',
+					$the_key
+				),
+				array( 'source' => 'mkl-pc' )
+			);
+		}
 		return '';
+	}
+
+	/**
+	 * Default sanitization / escaping when a field has no dedicated callback.
+	 *
+	 * @param string $action 'sanitize' or 'escape'.
+	 * @param mixed  $data   Scalar value.
+	 * @return string
+	 */
+	private function default_sanitize_or_escape( $action, $data ) {
+		if ( 'escape' === $action ) {
+			return esc_html( $data );
+		}
+		return sanitize_text_field( $data );
 	}
 
 	public function get_context() {
