@@ -81,8 +81,7 @@ class Ajax {
 	 * @return void
 	 */
 	public function get_configurator_data() {
-
-		// check_ajax_referer( 'config-ajax', 'security' );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public read of published configurator data; access is gated by user_can_view_configurator_data().
 
 		if ( ! isset( $_REQUEST['data'], $_REQUEST['id'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) ], 400 );
@@ -229,6 +228,7 @@ class Ajax {
 		} else { 
 			wp_send_json( $data );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	/**
@@ -346,14 +346,18 @@ class Ajax {
 	public function set_configurator_data() {
 
 		// CHECK IF THE REQUIRED FIELDS WERE SENT
-		if ( ! isset( $_REQUEST['id'] ) ) wp_send_json_error();
+		if ( ! isset( $_REQUEST['id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Product ID is required to select the matching nonce action below.
+			wp_send_json_error();
+		}
 
-		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) wp_send_json_error();
+		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same as above.
+			wp_send_json_error();
+		}
 
 		// CHECK IF THE USER IS ALLOWED TO EDIT 
 		$ref_id = $id;
 
-		if ( isset( $_REQUEST['parent_id'] ) ) {
+		if ( isset( $_REQUEST['parent_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Parent ID is required to select the matching nonce action below.
 			$ref_id = absint( wp_unslash( $_REQUEST['parent_id'] ) );
 		}
 
@@ -381,7 +385,7 @@ class Ajax {
 			wp_send_json_error( [ 'message' => __( 'No data was received', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
 
-		$raw_component_data = wp_unslash( $_REQUEST[ $component ] );
+		$raw_component_data = wp_unslash( $_REQUEST[ $component ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is decoded then sanitized via db->sanitize(); nonce was verified above.
 
 		if ( apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
 			$data = json_decode( $raw_component_data, true );
@@ -398,7 +402,13 @@ class Ajax {
 
 		$modified_choices = false;
 		if ( isset( $_REQUEST['modified_choices'] ) ) {
-			$modified_choices = wp_unslash( $_REQUEST['modified_choices'] );
+			// Form-encoded JS array of "layerId_choiceId" strings (not JSON).
+			$modified_choices = wp_unslash( $_REQUEST['modified_choices'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized as text fields below.
+			if ( is_array( $modified_choices ) ) {
+				$modified_choices = array_map( 'sanitize_text_field', $modified_choices );
+			} else {
+				$modified_choices = sanitize_text_field( $modified_choices );
+			}
 		}
 
 		$result = $this->db->set( $id, $ref_id, $component, $data, $modified_choices );
@@ -479,7 +489,7 @@ class Ajax {
 				'attachment',
 				$like
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk status update of generated config images; no object cache group for this.
 
 		$settings = mkl_pc( 'settings' )->set( 'show_config_images_in_the_library', ! $mode );
 
@@ -496,7 +506,10 @@ class Ajax {
 	public function fix_image_ids() {
 		$security = isset( $_REQUEST['security'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['security'] ) ) : '';
 		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $security, 'mlk_pc_settings-options' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to fix the image ids.', 'product-configurator-for-woocommerce' ) ], 403 );
-		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) wp_send_json_error();
+		$id = isset( $_REQUEST['id'] ) ? absint( wp_unslash( $_REQUEST['id'] ) ) : 0;
+		if ( ! $id ) {
+			wp_send_json_error();
+		}
 		delete_transient( 'mkl_pc_data_init_' . $id );
 		wp_send_json_success( [ 'changed_items' => $this->db->scan_product_images( $id ) ] );
 	}
@@ -506,7 +519,10 @@ class Ajax {
 	 */
 	public function fix_image_ids_from_configurator() {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to fix the image ids from the configurator.', 'product-configurator-for-woocommerce' ) ], 403 );
-		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) wp_send_json_error();
+		$id = isset( $_REQUEST['id'] ) ? absint( wp_unslash( $_REQUEST['id'] ) ) : 0;
+		if ( ! $id ) {
+			wp_send_json_error();
+		}
 		if ( ! check_ajax_referer( 'update-pc-post_' . $id, 'security', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Error processing the request:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
@@ -599,7 +615,8 @@ class Ajax {
 	 */
 	private function gzip_accepted() {
 		$headers = $this->get_http_headers();
-		return isset($headers['Accept-Encoding']) && preg_match('/gzip/i', $headers['Accept-Encoding']) && false === strpos( $_SERVER['SERVER_SOFTWARE'], 'LiteSpeed' );
+		$server_software = isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '';
+		return isset( $headers['Accept-Encoding'] ) && preg_match( '/gzip/i', $headers['Accept-Encoding'] ) && false === strpos( $server_software, 'LiteSpeed' );
 	}
 
 	public function get_configurable_products() {
@@ -661,6 +678,7 @@ class Ajax {
 	 */
 	public function add_to_cart() {
 		ob_start();
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Storefront AJAX add-to-cart matches WooCommerce's own wc_ajax_add_to_cart; the cart session cookie is the CSRF surface and payload is sanitized below.
 		if ( ! isset( $_POST['product_id'] ) ) {
 			$data = array(
 				'error'       => true,
@@ -672,7 +690,8 @@ class Ajax {
 		$product_id        = isset( $_POST['variation_id'] ) && absint( wp_unslash( $_POST['variation_id'] ) ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : absint( wp_unslash( $_POST['product_id'] ) );
 		$product_id        = apply_filters( 'woocommerce_add_to_cart_product_id', $product_id );
 		$product           = wc_get_product( $product_id );
-		$quantity          = empty( $_POST['quantity'] ) ? 1 : wc_stock_amount( wp_unslash( $_POST['quantity'] ) );
+		$raw_quantity      = isset( $_POST['quantity'] ) ? sanitize_text_field( wp_unslash( $_POST['quantity'] ) ) : '';
+		$quantity          = ( '' === $raw_quantity || '0' === $raw_quantity ) ? 1 : wc_stock_amount( $raw_quantity );
 		$passed_validation = apply_filters( 'woocommerce_add_to_cart_validation', true, $product_id, $quantity );
 		$product_status    = get_post_status( $product_id );
 		$variation_id      = 0;
@@ -724,26 +743,36 @@ class Ajax {
 
 			wp_send_json( $data );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+	}
+
+	/**
+	 * Verify the global layers AJAX nonce.
+	 *
+	 * @return void Sends JSON error and exits on failure.
+	 */
+	private function verify_global_layers_nonce() {
+		$nonce = isset( $_REQUEST['nonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'mkl_pc_global_layers' ) ) {
+			wp_send_json_error( 'Security check failed', 403 );
+		}
 	}
 
 	/**
 	 * Get a global layer (layer + content) from CPT
 	 */
 	public function get_global_layer() {
-		if ( ! isset( $_REQUEST['global_id'] ) ) {
-			wp_send_json_error( 'Missing global_id parameter' );
-		}
-
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( 'Insufficient permissions', 403 );
 		}
 
-		// Verify nonce if provided - use global layers nonce
-		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'mkl_pc_global_layers' ) ) {
-			wp_send_json_error( 'Security check failed', 403 );
+		$this->verify_global_layers_nonce();
+
+		if ( ! isset( $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( 'Missing global_id parameter' );
 		}
 
-		$global_id = absint( $_REQUEST['global_id'] );
+		$global_id = absint( wp_unslash( $_REQUEST['global_id'] ) );
 		if ( $global_id <= 0 ) {
 			wp_send_json_error( 'Invalid global_id' );
 		}
@@ -765,25 +794,22 @@ class Ajax {
 	 * Save/update a global layer (layer + content) to CPT
 	 */
 	public function save_global_layer() {
-		if ( ! isset( $_REQUEST['global_id'] ) ) {
-			wp_send_json_error( 'Missing global_id parameter' );
-		}
-
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			wp_send_json_error( 'Insufficient permissions', 403 );
 		}
 
-		// Verify nonce if provided - use global layers nonce
-		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'mkl_pc_global_layers' ) ) {
-			wp_send_json_error( 'Security check failed', 403 );
+		$this->verify_global_layers_nonce();
+
+		if ( ! isset( $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( 'Missing global_id parameter' );
 		}
 
-		$global_id = absint( $_REQUEST['global_id'] );
+		$global_id = absint( wp_unslash( $_REQUEST['global_id'] ) );
 		
 		// Parse layer data
 		$layer = null;
 		if ( isset( $_REQUEST['layer'] ) && ! empty( $_REQUEST['layer'] ) ) {
-			$layer = json_decode( stripslashes( $_REQUEST['layer'] ), true );
+			$layer = json_decode( wp_unslash( $_REQUEST['layer'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is sanitized via db->sanitize() after decode.
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				wp_send_json_error( 'Invalid layer JSON data' );
 			}
@@ -793,7 +819,7 @@ class Ajax {
 		// Parse content data
 		$content = null;
 		if ( isset( $_REQUEST['content'] ) && ! empty( $_REQUEST['content'] ) ) {
-			$content = json_decode( stripslashes( $_REQUEST['content'] ), true );
+			$content = json_decode( wp_unslash( $_REQUEST['content'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is sanitized via db->sanitize() after decode.
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				wp_send_json_error( 'Invalid content JSON data' );
 			}
@@ -860,10 +886,7 @@ class Ajax {
 			wp_send_json_error( 'Insufficient permissions', 403 );
 		}
 
-		// Verify nonce if provided - use global layers nonce
-		if ( isset( $_REQUEST['nonce'] ) && ! wp_verify_nonce( $_REQUEST['nonce'], 'mkl_pc_global_layers' ) ) {
-			wp_send_json_error( 'Security check failed', 403 );
-		}
+		$this->verify_global_layers_nonce();
 
 		$global_ids = Global_Layers::list();
 		$layers = array();
