@@ -3,11 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-global $is_IE;
 $class = 'mkl-pc-admin-ui wp-core-ui pc-modal';
-$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
-if ( $is_IE && strpos( $user_agent, 'MSIE 7' ) !== false )
-	$class .= ' ie7';
 
 function mkl_pc_get_admin_actions() {
 	return '' .
