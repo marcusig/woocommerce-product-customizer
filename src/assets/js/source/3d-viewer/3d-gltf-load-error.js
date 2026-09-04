@@ -249,6 +249,6 @@ export function format_gltf_load_notice( label, err ) {
 	if ( ! name ) {
 		return reason;
 	}
-	const template = lang.gltf_load_failed_for || 'Could not load “%s”: %s';
-	return template.replace( '%s', name ).replace( '%s', reason );
+	const template = lang.gltf_load_failed_for || 'Could not load “%1$s”: %2$s';
+	return template.replace( '%1$s', name ).replace( '%2$s', reason );
 }
