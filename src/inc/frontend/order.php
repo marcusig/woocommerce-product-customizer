@@ -167,7 +167,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$safe_key   = sanitize_file_name( substr( $cart_item_key, 0, 32 ) );
 			$final_name = 'order-' . $order_id . '-' . $safe_key . '.png';
 			$final_path = $orders_dir . '/' . $final_name;
-			if ( rename( $temp_path, $final_path ) ) {
+			if ( \MKL\PC\Utils::fs_move( $temp_path, $final_path, true ) ) {
 				return 'orders/' . $final_name;
 			}
 			return false;
