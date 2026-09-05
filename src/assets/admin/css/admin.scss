@@ -644,12 +644,35 @@ html .mkl-pc-admin-ui.pc-modal {
 		}
 		> .mkl-pc-admin-ui__state:has( .state.home ),
 		> .mkl-pc-admin-ui__state:has( .font-library-app ),
+		> .mkl-pc-admin-ui__state:has( .state.conditional_placeholder ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content > .no-data ),
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.price-bulk-edit ),
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.import-export ) {
 			background: #FFF;
 			box-shadow: none;
 			@media ( min-width: 900px ) {
 				border-radius: 8px;
+			}
+		}
+		/* Message-only panes — the Conditional logic add-on upsell and the Content
+		   tab before layers/angles exist. They have no chrome of their own, so
+		   without a light surface they render dark text on the dark canvas. */
+		> .mkl-pc-admin-ui__state:has( .state.conditional_placeholder ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content > .no-data ) {
+			overflow: auto;
+			.tab_content,
+			.no-data {
+				max-width: 640px;
+				padding: 1.6em;
+				color: #1d2327;
+				p {
+					margin: 0 0 1em;
+					font-size: 13px;
+					line-height: 1.6;
+				}
+				p:last-child {
+					margin-bottom: 0;
+				}
 			}
 		}
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content ) {
