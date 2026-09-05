@@ -235,7 +235,7 @@ function mkl_pc_frontend_configurator_display_mode_fullscreen() { ?>
 add_action( 'tmpl-mkl-pc-atc-redirection-content', 'mkl_pc_frontend_added_to_cart_redirection_message' );
 function mkl_pc_frontend_added_to_cart_redirection_message() {
 	?>
-		<div class="header"><?php esc_html_x( 'Done!', 'Part of message displayed when the product is successfully added to the cart', 'product-configurator-for-woocommerce' ); ?> </div>
+		<div class="header"><?php echo esc_html_x( 'Done!', 'Part of message displayed when the product is successfully added to the cart', 'product-configurator-for-woocommerce' ); ?> </div>
 		<p>{{{data.messages}}}</p>
 		<div class="spinner"></div>
 	<?php
