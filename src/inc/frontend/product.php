@@ -247,7 +247,7 @@ if ( ! class_exists('MKL\PC\Frontend_Product') ) {
 					<button type="button" class="<?php echo esc_attr( $this->button_class ) ?> configurator-add-to-cart">
 						<?php echo wp_kses_post( $this->get_cart_icon() ); ?>
 						<span><?php echo esc_html( $add_to_cart ); ?></span>
-						<span class="screen-reader-text"><?php esc_html_x( 'Total item price: ', 'Screen reader text, total price prefix for add to cart button', 'product-configurator-for-woocommerce' ); ?> <span class="pc-total-price"></span></span>
+						<span class="screen-reader-text"><?php echo esc_html_x( 'Total item price: ', 'Screen reader text, total price prefix for add to cart button', 'product-configurator-for-woocommerce' ); ?> <span class="pc-total-price"></span></span>
 					</button>
 					<?php do_action( 'mkl_pc_frontend_configurator_after_add_to_cart' ); ?>
 				<?php
