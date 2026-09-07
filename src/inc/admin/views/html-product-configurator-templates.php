@@ -431,6 +431,11 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--step-front" title="<?php echo esc_attr_x( 'Move the selection forward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>" aria-label="<?php echo esc_attr_x( 'Move the selection forward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
 				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--step-back" title="<?php echo esc_attr_x( 'Move the selection backward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>" aria-label="<?php echo esc_attr_x( 'Move the selection backward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--to-back"><?php echo esc_html_x( 'To the back', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--visibility">
+					<span class="dashicons mkl-pc-bulk__icon" aria-hidden="true"></span>
+					<span class="mkl-pc-bulk__label mkl-pc-bulk__label--hide"><?php echo esc_html_x( 'Hide', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></span>
+					<span class="mkl-pc-bulk__label mkl-pc-bulk__label--show"><?php echo esc_html_x( 'Show', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></span>
+				</button>
 				<button type="button" class="button-link mkl-pc-bulk-clear"><?php echo esc_html_x( 'Clear selection', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></button>
 			</div>
 		</div>

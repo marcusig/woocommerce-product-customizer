@@ -2602,6 +2602,7 @@ html .pc-modal-container {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		gap: 4px;
 		min-height: 30px;
 
 		.dashicons {
@@ -2609,6 +2610,17 @@ html .pc-modal-container {
 			height: 18px;
 			font-size: 18px;
 			line-height: 18px;
+		}
+	}
+
+	/* One control that names the action it will take, rather than a Hide and a
+	   Show sitting next to each other with one of them always inert. */
+	.mkl-pc-bulk--visibility {
+		.mkl-pc-bulk__label--show { display: none; }
+
+		&.is-showing {
+			.mkl-pc-bulk__label--hide { display: none; }
+			.mkl-pc-bulk__label--show { display: inline; }
 		}
 	}
 }

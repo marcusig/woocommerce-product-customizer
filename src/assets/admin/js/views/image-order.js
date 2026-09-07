@@ -27,6 +27,7 @@ PC.views = PC.views || {};
 
 		events: {
 			'click .mkl-pc-order-reset': 'reset_order',
+			'click .mkl-pc-stack-vis': 'on_toggle_visible',
 			'click .mkl-pc-stack-move__btn--front': 'on_move_front',
 			'click .mkl-pc-stack-move__btn--back': 'on_move_back',
 			'input .mkl-pc-image-order__filter-input': 'on_filter',
@@ -40,6 +41,7 @@ PC.views = PC.views || {};
 			'click .mkl-pc-bulk--to-back': 'bulk_to_back',
 			'click .mkl-pc-bulk--step-front': 'bulk_step_front',
 			'click .mkl-pc-bulk--step-back': 'bulk_step_back',
+			'click .mkl-pc-bulk--visibility': 'bulk_toggle_visible',
 			'click .mkl-pc-bulk-clear': 'clear_selection',
 		},
 
@@ -49,6 +51,10 @@ PC.views = PC.views || {};
 			this.items = [];
 			this.query = '';
 			this.last_checked_index = null;
+			// Layers switched off in the preview. Session-only and deliberately not
+			// saved: this hides a layer from *this screen* so you can see what sits
+			// under it, which is a different thing from hiding it from customers.
+			this.hidden_layers = {};
 
 			PC.selection.reset();
 
@@ -68,6 +74,11 @@ PC.views = PC.views || {};
 
 		remove: function() {
 			this.destroy_items();
+			if ( this.$list ) this.$list.off( '.mklPcPreview' );
+			if ( this.preview ) {
+				this.preview.remove();
+				this.preview = null;
+			}
 			return Backbone.View.prototype.remove.call( this );
 		},
 
@@ -76,7 +87,30 @@ PC.views = PC.views || {};
 			this.$list = this.$( '.mkl-pc-stack__list' );
 			this.$selection_bar = this.$( '.mkl-pc-image-order__selection' );
 			this.render_list();
+			this.mount_preview();
 			return this;
+		},
+
+		mount_preview: function() {
+			if ( ! PC.views.image_order_preview ) return;
+			this.preview = new PC.views.image_order_preview( { parent: this } );
+			this.$( '.mkl-pc-image-order__preview' ).append( this.preview.$el );
+
+			// Hovering a row dims everything else in the preview, which answers "which
+			// one is that?" without having to move the layer to find out.
+			var self = this;
+			this.$list.on( 'mouseenter.mklPcPreview', '.mkl-list-item', function() {
+				var view = $( this ).data( 'view' );
+				if ( view && view.model ) self.preview.highlight( view.model.id );
+			} );
+			this.$list.on( 'mouseleave.mklPcPreview', function() {
+				self.preview.highlight( null );
+			} );
+		},
+
+		/** Redraw the preview from whatever is on screen now. */
+		refresh_preview: function() {
+			if ( this.preview ) this.preview.invalidate();
 		},
 
 		/* ---------------------------------------------------------------- order */
@@ -161,6 +195,11 @@ PC.views = PC.views || {};
 				forcePlaceholderSize: true,
 				helper: 'clone',
 				opacity: 0.65,
+				change: _.bind( function() {
+					// Redraw while the row is still being dragged: the preview follows the
+					// placeholder, so the new stacking is visible before the mouse is let go.
+					this.refresh_preview();
+				}, this ),
 				stop: _.bind( function() {
 					this.renumber();
 				}, this ),
@@ -205,6 +244,33 @@ PC.views = PC.views || {};
 			if ( this.$list.sortable( 'instance' ) ) this.$list.sortable( 'refresh' );
 			this.items = this.rows();
 			this.sync_state();
+			this.refresh_preview();
+		},
+
+		/**
+		 * Whether a layer is switched off in the preview.
+		 *
+		 * @param {String|Number} layer_id
+		 * @return {Boolean}
+		 */
+		is_layer_hidden: function( layer_id ) {
+			return true === this.hidden_layers[ layer_id ];
+		},
+
+		on_toggle_visible: function( e ) {
+			e.preventDefault();
+			var view = $( e.currentTarget ).closest( '.mkl-list-item' ).data( 'view' );
+			if ( ! view || ! view.model ) return;
+
+			var id = view.model.id;
+			if ( this.hidden_layers[ id ] ) {
+				delete this.hidden_layers[ id ];
+			} else {
+				this.hidden_layers[ id ] = true;
+			}
+
+			view.set_visible_state( ! this.is_layer_hidden( id ) );
+			this.refresh_preview();
 		},
 
 		mark_modified: function( models ) {
@@ -230,7 +296,8 @@ PC.views = PC.views || {};
 			_.each( this.items, function( item, i ) {
 				item.set_position( i + 1, total );
 				item.set_bounds( 0 === i, i === last, filtering );
-			} );
+				item.set_visible_state( ! this.is_layer_hidden( item.model.id ) );
+			}, this );
 
 			this.sync_selection_ui();
 		},
@@ -362,6 +429,47 @@ PC.views = PC.views || {};
 			this.$( '.mkl-pc-bulk--step-back' ).prop( 'disabled', filtering || ! can_step( 'back' ) );
 			this.$( '.mkl-pc-bulk--to-front' ).prop( 'disabled', ! count );
 			this.$( '.mkl-pc-bulk--to-back' ).prop( 'disabled', ! count );
+
+			// The visibility control says what it is about to do, so it has to know
+			// whether anything in the selection is still being drawn.
+			var any_visible = _.some( rows, function( item ) {
+				return item.is_selected() && ! this.is_layer_hidden( item.model.id );
+			}, this );
+			this.$( '.mkl-pc-bulk--visibility' )
+				.prop( 'disabled', ! count )
+				.toggleClass( 'is-showing', ! any_visible )
+				.find( '.mkl-pc-bulk__icon' )
+				.toggleClass( 'dashicons-visibility', any_visible )
+				.toggleClass( 'dashicons-hidden', ! any_visible );
+		},
+
+		/**
+		 * Hide or show every selected layer in the preview.
+		 *
+		 * One control rather than a Hide and a Show: it hides while anything in the
+		 * selection is still drawn, and only offers to show once the whole selection
+		 * is off, so what the button will do is always what it says.
+		 */
+		bulk_toggle_visible: function( e ) {
+			if ( e && e.preventDefault ) e.preventDefault();
+			var selected = this.selected_rows();
+			if ( ! selected.length ) return;
+
+			var hide = _.some( selected, function( item ) {
+				return ! this.is_layer_hidden( item.model.id );
+			}, this );
+
+			_.each( selected, function( item ) {
+				if ( hide ) {
+					this.hidden_layers[ item.model.id ] = true;
+				} else {
+					delete this.hidden_layers[ item.model.id ];
+				}
+				item.set_visible_state( ! hide );
+			}, this );
+
+			this.sync_selection_ui();
+			this.refresh_preview();
 		},
 
 		/* ----------------------------------------------------------- bulk moves */
@@ -606,6 +714,7 @@ PC.views = PC.views || {};
 
 			if ( changed.length ) this.mark_modified( changed );
 			this.render_list();
+			this.refresh_preview();
 		},
 	} );
 
@@ -700,6 +809,26 @@ PC.views = PC.views || {};
 		 * @param {Boolean} is_back
 		 * @param {Boolean} filtering
 		 */
+		/**
+		 * Show whether this layer is drawn in the preview.
+		 *
+		 * @param {Boolean} visible
+		 */
+		set_visible_state: function( visible ) {
+			var lang = PC.lang || {};
+			var name = this.layer_label();
+			var label = visible
+				? ( lang.image_order_hide || 'Hide %s from the preview' ).replace( '%s', name )
+				: ( lang.image_order_show || 'Show %s in the preview' ).replace( '%s', name );
+
+			this.$el.toggleClass( 'is-preview-hidden', ! visible );
+			this.$( '.mkl-pc-stack-vis' )
+				.attr( { 'aria-label': label, title: label, 'aria-pressed': visible ? 'false' : 'true' } )
+				.find( '.dashicons' )
+				.toggleClass( 'dashicons-visibility', visible )
+				.toggleClass( 'dashicons-hidden', ! visible );
+		},
+
 		set_bounds: function( is_front, is_back, filtering ) {
 			this.$( '.mkl-pc-stack-move__btn--front' ).prop( 'disabled', !! filtering || !! is_front );
 			this.$( '.mkl-pc-stack-move__btn--back' ).prop( 'disabled', !! filtering || !! is_back );
