@@ -643,6 +643,7 @@ html .mkl-pc-admin-ui.pc-modal {
 			box-shadow: none;
 		}
 		> .mkl-pc-admin-ui__state:has( .state.home ),
+		> .mkl-pc-admin-ui__state:has( .state.image-order-state ),
 		> .mkl-pc-admin-ui__state:has( .font-library-app ),
 		> .mkl-pc-admin-ui__state:has( .state.conditional_placeholder ),
 		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content > .no-data ),
@@ -2253,6 +2254,395 @@ html .pc-modal-container {
 		margin-left: 9px;
 		background: #efefef;
 		border-radius: 4px;
+	}
+}
+
+/**
+ * The Image order screen.
+ *
+ * A stack, not a list: both ends are labelled, because "the top of the list" is
+ * exactly the thing that gets read the wrong way round. Rows carry no thumbnail
+ * and no layer type - this screen arranges layers rather than editing them, and
+ * on a product with a hundred and fifty of them row height is scrolling.
+ */
+.mkl-pc-admin-ui__content.image-order {
+	overflow: auto;
+	padding: 16px;
+	box-sizing: border-box;
+}
+
+.mkl-pc-image-order {
+	max-width: 720px;
+}
+
+.mkl-pc-image-order__header {
+	margin-bottom: 16px;
+
+	h1 {
+		margin: 0;
+		font-size: 1.1em;
+		font-weight: 600;
+		line-height: 1.3;
+		color: $text-color;
+	}
+
+	@media ( max-width: 900px ) {
+		h1 {
+			display: none;
+		}
+	}
+}
+
+.mkl-pc-image-order__intro {
+	margin: 6px 0 0;
+	max-width: 60ch;
+	font-size: 13px;
+	line-height: 1.6;
+	color: #646970;
+}
+
+.mkl-pc-image-order__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+	margin-bottom: 12px;
+}
+
+.mkl-pc-order-state {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	font-size: 13px;
+	color: #646970;
+
+	.mkl-pc-order-state__dot {
+		flex: 0 0 auto;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #c3c4c7;
+	}
+
+	.mkl-pc-order-state__chip--custom {
+		display: none;
+	}
+
+	&.is-custom {
+		color: #1d2327;
+
+		.mkl-pc-order-state__chip--follows {
+			display: none;
+		}
+
+		.mkl-pc-order-state__chip--custom {
+			display: inline;
+		}
+
+		.mkl-pc-order-state__dot {
+			background: var(--wp-admin-theme-color, #2271b1);
+		}
+	}
+}
+
+.mkl-pc-image-order .mkl-pc-order-reset {
+	display: none;
+	flex: 0 0 auto;
+	font-size: 13px;
+}
+
+.mkl-pc-image-order__bar.is-custom .mkl-pc-order-reset {
+	display: inline;
+}
+
+/* ------------------------------------------------------------------ filter */
+
+.mkl-pc-image-order__filter {
+	position: relative;
+	margin-bottom: 8px;
+
+	&::before {
+		content: '\f179';
+		font-family: dashicons;
+		font-size: 18px;
+		line-height: 1;
+		color: #787c82;
+		position: absolute;
+		left: 7px;
+		top: 50%;
+		transform: translateY(-50%);
+	}
+
+	.mkl-pc-image-order__filter-input {
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 32px;
+		padding-left: 30px;
+		font-size: 13px;
+	}
+}
+
+.mkl-pc-image-order__filter-note {
+	display: none;
+	margin: 0 0 12px;
+	padding: 8px 12px;
+	max-width: none;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #646970;
+	background: #f6f7f7;
+	border-left: 3px solid #c3c4c7;
+	border-radius: 0 4px 4px 0;
+}
+
+.mkl-pc-image-order--filtering .mkl-pc-image-order__filter-note {
+	display: block;
+}
+
+.mkl-pc-image-order__no-results {
+	margin: 12px 0 0;
+	padding: 20px 14px;
+	color: #646970;
+	text-align: center;
+}
+
+/* --------------------------------------------------------------- selection */
+
+.mkl-pc-image-order__selection {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+	margin-bottom: 8px;
+	padding: 8px 12px;
+	background: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.06);
+	border: 1px solid rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.25);
+	border-radius: 4px;
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.mkl-pc-image-order__selection-count {
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.mkl-pc-image-order__selection-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+
+	.mkl-pc-bulk {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 30px;
+
+		.dashicons {
+			width: 18px;
+			height: 18px;
+			font-size: 18px;
+			line-height: 18px;
+		}
+	}
+}
+
+/* ------------------------------------------------------------------- stack */
+
+.mkl-pc-stack {
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+	overflow: hidden;
+}
+
+.mkl-pc-stack-edge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 14px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.3;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: #646970;
+	background: #f6f7f7;
+
+	&::after {
+		content: '';
+		flex: 1 1 auto;
+		height: 1px;
+		background: linear-gradient(to right, #dcdcde, rgba(220, 220, 222, 0));
+	}
+}
+
+.mkl-pc-stack-edge--front {
+	border-bottom: 1px solid #dcdcde;
+
+	.mkl-pc-stack-edge__label {
+		color: var(--wp-admin-theme-color, #2271b1);
+	}
+}
+
+.mkl-pc-stack-edge--back {
+	border-top: 1px solid #dcdcde;
+}
+
+/* The generic list padding would open a gap above the "Back" edge. */
+.mkl-pc-admin-ui__content .mkl-pc-stack__list {
+	padding-bottom: 0;
+}
+
+.mkl-pc-stack__list:empty {
+	display: none;
+}
+
+/* sortable('disable') also adds ui-state-disabled, which the jQuery UI theme
+   fades out. The list is still being read while it is filtered. */
+.mkl-pc-stack__list.ui-state-disabled {
+	opacity: 1;
+	filter: none;
+}
+
+.mkl-pc-stack-item {
+	background: #fff;
+
+	&.layer > .mkl-pc-admin-list-row__inner {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 0;
+		padding: 4px 12px 4px 30px;
+	}
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&.is-selected {
+		background: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.06);
+	}
+
+	&.mkl-pc-stack-item--moved {
+		background-color: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.16);
+		transition: background-color 0.4s ease-out;
+	}
+}
+
+.mkl-pc-stack-item__select {
+	display: inline-flex;
+	align-items: center;
+	flex: 0 0 auto;
+	margin: 0;
+
+	input[type="checkbox"] {
+		margin: 0;
+	}
+}
+
+.mkl-pc-stack-item__name {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-size: 13px;
+	line-height: 1.4;
+	color: #1d2327;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mkl-pc-stack-pos {
+	flex: 0 0 auto;
+
+	.mkl-pc-stack-pos__input {
+		width: 58px;
+		min-height: 28px;
+		padding: 0 4px;
+		font-size: 12px;
+		text-align: center;
+	}
+}
+
+.mkl-pc-stack-move {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 2px;
+}
+
+.mkl-pc-stack-move__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	color: #50575e;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	cursor: pointer;
+
+	.dashicons {
+		width: 18px;
+		height: 18px;
+		font-size: 18px;
+		line-height: 18px;
+	}
+
+	&:hover:not( [disabled] ) {
+		color: var(--wp-admin-theme-color, #2271b1);
+		border-color: #dcdcde;
+		background: #f6f7f7;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+		outline-offset: 1px;
+	}
+
+	&[disabled] {
+		color: #c3c4c7;
+		cursor: default;
+	}
+}
+
+/* Dragging moves a layer past its neighbours; with rows hidden they are not the
+   neighbours the screen is showing. */
+.mkl-pc-image-order--filtering .mkl-pc-stack-item > .mkl-pc-admin-list-row__inner > .sort {
+	visibility: hidden;
+}
+
+/* ------------------------------------------------------------ empty states */
+
+.mkl-pc-image-order__empty {
+	display: none;
+	margin: 0;
+	padding: 24px 14px;
+	color: #646970;
+	text-align: center;
+	border: 1px dashed #dcdcde;
+	border-radius: 8px;
+}
+
+.mkl-pc-image-order--empty {
+	.mkl-pc-stack,
+	.mkl-pc-image-order__bar,
+	.mkl-pc-image-order__filter,
+	.mkl-pc-image-order__selection {
+		display: none;
+	}
+
+	.mkl-pc-image-order__empty {
+		display: block;
 	}
 }
 

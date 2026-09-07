@@ -55,7 +55,6 @@ TODO:
 			'click .add-layer': 'create',
 			'click .import-layer': 'import_global_layer',
 			'click .mkl-pc-toolbar-more': 'on_toolbar_more_click',
-			'click .order-layers': 'change_order_type',
 			'keypress .structure-toolbar h4 input': 'create',
 			'input .mkl-pc-list-filter-input': 'on_list_filter',
 			'click .mkl-pc-mobile-back-to-structure-list': 'on_mobile_back_to_structure_list',
@@ -162,33 +161,6 @@ TODO:
 			}
 			this.admin.remove_relationships( this.collectionName, m );
 			this.mark_collection_as_modified( m );
-		},
-		change_order_type: function( e ) {
-			e.preventDefault();
-			var $e = $( e.currentTarget );
-			var selection = $e.attr( 'data-order_type' ) || $e.data( 'order_type' );
-
-			// check if it's the first time
-			if ( 'image_order' == selection ) {
-				var orders = this.col.pluck( 'image_order' );
-				if ( orders.length && ! _.max( orders ) ) {
-					this.col.each( function( m ) {
-						m.set( 'image_order', m.get( 'order' ) );
-					} );
-				}
-			}
-
-			if ( selection && this.orderAttr != selection ) {
-				var $menu = this.$( '.mkl-pc-toolbar-dropdown__menu' );
-				$menu.find( '.order-layers' ).removeClass( 'mkl-pc-toolbar-dropdown__item--active' ).attr( 'aria-checked', 'false' );
-				$e.addClass( 'mkl-pc-toolbar-dropdown__item--active' ).attr( 'aria-checked', 'true' );
-				this.orderAttr = selection;
-				this.col.orderBy = selection;
-
-				this.col.sort({silent: true});
-				this.add_all();
-				this.closeToolbarDropdown();
-			}
 		},
 		add_one: function( layer ) {
 			// Skip groups when reordering images
@@ -319,7 +291,7 @@ TODO:
 				_id: PC.app.get_new_id( this.col ),
 				name: name,
 				order: this.col.nextOrder(),
-				image_order: this.col.nextOrder(),
+				image_order: this.col.next_image_order ? this.col.next_image_order() : this.col.nextOrder( 'image_order' ),
 				is_global: false,
 				global_id: null,
 				active: true,

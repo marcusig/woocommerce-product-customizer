@@ -1658,6 +1658,23 @@ class DB {
 		);
 
 
+		if ( ! $id || '3d' !== mkl_pc_get_configurator_type( $id ) ) {
+			$default_menu[] = array(
+				'type' 	=> 'part',
+				'menu_id' 	=> 'image_order',
+				'label' => __( 'Image order', 'product-configurator-for-woocommerce' ),
+				'title' => __( 'Image order', 'product-configurator-for-woocommerce' ),
+				'menu' => array(
+					array(
+						'class' => 'button-primary pc-main-save-all',
+						'text' => __( 'Save' , 'product-configurator-for-woocommerce' ),
+					),
+				),
+				'description' => __( 'The order the layers\' images are stacked in, which is separate from the order they appear in the menu. The layer at the top of the list is drawn over the ones below it.', 'product-configurator-for-woocommerce' ),
+				'order' => 25,
+			);
+		}
+
 		if ( ! class_exists( 'MKL_PC_Conditional_Logic_Admin' ) && ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__conditional_placeholder', true )  ) {
 			$default_menu[] = array(
 				'type' 	=> 'separator',

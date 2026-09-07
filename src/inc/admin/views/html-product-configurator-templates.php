@@ -322,20 +322,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 								 * Add extra items at the top of the layers “more” menu (after Import).
 								 */
 								do_action( 'mkl_pc_layers_toolbar_dropdown_top' );
-								?>
-								<div class="mkl-pc-toolbar-dropdown__sep" role="separator" aria-hidden="true"></div>
-								<div class="mkl-pc-toolbar-dropdown__label" id="mkl-pc-toolbar-order-layers-label">
-									<?php echo esc_html_x( 'Order layers:', 'Layers tab: more menu section', 'product-configurator-for-woocommerce' ); ?>
-								</div>
-								<div class="mkl-pc-toolbar-dropdown__group" role="group" aria-labelledby="mkl-pc-toolbar-order-layers-label">
-									<button type="button" role="menuitemradio" data-order_type="order" class="mkl-pc-toolbar-dropdown__item mkl-pc-toolbar-dropdown__item--choice order-layers mkl-pc-toolbar-dropdown__item--active" aria-checked="true">
-										<?php echo esc_html_x( 'Order the menu', 'Layer list ordering mode', 'product-configurator-for-woocommerce' ); ?>
-									</button>
-									<button type="button" role="menuitemradio" data-order_type="image_order" class="mkl-pc-toolbar-dropdown__item mkl-pc-toolbar-dropdown__item--choice order-layers" aria-checked="false">
-										<?php echo esc_html_x( 'Order the images', 'Layer list ordering mode', 'product-configurator-for-woocommerce' ); ?>
-									</button>
-								</div>
-								<?php
+
 								/**
 								 * Add extra items at the bottom of the layers “more” menu.
 								 */
@@ -408,6 +395,84 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	<# if ( 'group' == data.type && 'order' == data.orderAttr ) { #>
 		<div class="layers group-list ui-sortable sortable-list" data-item-id="{{data._id}}"></div>
 	<# } #>		
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-image-order">
+	<div class="mkl-pc-admin-ui__content image-order mkl-pc-image-order">
+		<div class="mkl-pc-image-order__header">
+			<h1>{{data.title}}</h1>
+			<# if ( data.description ) { #><p class="mkl-pc-image-order__intro">{{data.description}}</p><# } #>
+		</div>
+
+		<div class="mkl-pc-image-order__bar">
+			<span class="mkl-pc-order-state">
+				<span class="mkl-pc-order-state__dot" aria-hidden="true"></span>
+				<span class="mkl-pc-order-state__chip mkl-pc-order-state__chip--follows"><?php echo esc_html_x( 'The images follow the layer order', 'Image order screen: state', 'product-configurator-for-woocommerce' ); ?></span>
+				<span class="mkl-pc-order-state__chip mkl-pc-order-state__chip--custom"><?php echo esc_html_x( 'The images have their own order', 'Image order screen: state', 'product-configurator-for-woocommerce' ); ?></span>
+			</span>
+			<button type="button" class="button-link mkl-pc-order-reset">
+				<?php echo esc_html_x( 'Reset to the layer order', 'Image order screen: action', 'product-configurator-for-woocommerce' ); ?>
+			</button>
+		</div>
+
+		<div class="mkl-pc-image-order__filter">
+			<input type="search" class="mkl-pc-list-filter-input mkl-pc-image-order__filter-input" placeholder="<?php echo esc_attr_x( 'Filter layers…', 'Image order screen: filter', 'product-configurator-for-woocommerce' ); ?>" autocomplete="off" />
+		</div>
+		<p class="mkl-pc-image-order__filter-note">
+			<?php echo esc_html_x( 'While the list is filtered, layers can be sent to a position, to the front or to the back. Stepping and dragging need the whole list — clear the filter to use them.', 'Image order screen: filtering note', 'product-configurator-for-woocommerce' ); ?>
+		</p>
+
+		<div class="mkl-pc-image-order__selection" hidden>
+			<span class="mkl-pc-image-order__selection-count" aria-live="polite"></span>
+			<div class="mkl-pc-image-order__selection-actions">
+				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--to-front"><?php echo esc_html_x( 'To the front', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--step-front" title="<?php echo esc_attr_x( 'Move the selection forward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>" aria-label="<?php echo esc_attr_x( 'Move the selection forward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>"><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
+				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--step-back" title="<?php echo esc_attr_x( 'Move the selection backward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>" aria-label="<?php echo esc_attr_x( 'Move the selection backward', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?>"><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
+				<button type="button" class="button mkl-pc-bulk mkl-pc-bulk--to-back"><?php echo esc_html_x( 'To the back', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button-link mkl-pc-bulk-clear"><?php echo esc_html_x( 'Clear selection', 'Image order screen: bulk action', 'product-configurator-for-woocommerce' ); ?></button>
+			</div>
+		</div>
+
+		<div class="mkl-pc-stack">
+			<div class="mkl-pc-stack-edge mkl-pc-stack-edge--front">
+				<span class="mkl-pc-stack-edge__label"><?php echo esc_html_x( 'Front — drawn on top', 'Image order screen: top of the stack', 'product-configurator-for-woocommerce' ); ?></span>
+			</div>
+			<div class="mkl-list layers mkl-pc-stack__list ui-sortable sortable-list"></div>
+			<div class="mkl-pc-stack-edge mkl-pc-stack-edge--back">
+				<span class="mkl-pc-stack-edge__label"><?php echo esc_html_x( 'Back — drawn first', 'Image order screen: bottom of the stack', 'product-configurator-for-woocommerce' ); ?></span>
+			</div>
+		</div>
+
+		<p class="mkl-pc-image-order__no-results" hidden>
+			<?php echo esc_html_x( 'No layer matches this filter.', 'Image order screen: empty filter result', 'product-configurator-for-woocommerce' ); ?>
+		</p>
+
+		<p class="mkl-pc-image-order__empty">
+			<?php echo esc_html_x( 'There are no layers to stack yet. Add them on the Layers screen first.', 'Image order screen: empty state', 'product-configurator-for-woocommerce' ); ?>
+		</p>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-image-order-item">
+	<div class="mkl-pc-admin-list-row__inner">
+		<div class="tips sort ui-sortable-handle" aria-hidden="true"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false"><path d="M8 7h2V5H8v2zm0 6h2v-2H8v2zm0 6h2v-2H8v2zm6-14v2h2V5h-2zm0 8h2v-2h-2v2zm0 6h2v-2h-2v2z"></path></svg></div>
+		<label class="mkl-pc-stack-item__select">
+			<input type="checkbox" class="mkl-pc-stack-select" />
+			<span class="screen-reader-text mkl-pc-stack-select__text"></span>
+		</label>
+		<span class="mkl-pc-stack-item__name"></span>
+		<span class="mkl-pc-stack-pos">
+			<input type="number" class="mkl-pc-stack-pos__input" min="1" step="1" inputmode="numeric" />
+		</span>
+		<span class="mkl-pc-stack-move">
+			<button type="button" class="mkl-pc-stack-move__btn mkl-pc-stack-move__btn--front">
+				<span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span>
+			</button>
+			<button type="button" class="mkl-pc-stack-move__btn mkl-pc-stack-move__btn--back">
+				<span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+			</button>
+		</span>
+	</div>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-layer-list-item--label">

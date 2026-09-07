@@ -280,6 +280,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
 				) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
+				array( 'backbone/views/image_order', 'views/image-order.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
 				array('backbone/views/objects3d', 'views/objects3d.js'),
 				array( 'generated/svg-icon-registry', 'generated/svg-icon-registry.js' ),
 				array(
@@ -387,6 +388,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'list_filter_placeholder' => esc_html__( 'Filter list…', 'product-configurator-for-woocommerce' ),
 					'group_with_content_warning' => esc_html__( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'angles_no_delete_message' => esc_html__( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
+					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_move_front' => esc_attr__( 'Move %s forward', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_move_back' => esc_attr__( 'Move %s backward', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: position in the stack, 2: number of layers */
+					'image_order_position' => esc_html__( '%1$d of %2$d from the front', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_select' => esc_attr__( 'Select %s', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_position_label' => esc_attr__( 'Position of %s in the stack', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of selected layers */
+					'image_order_selected' => esc_html__( '%d selected', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
 					'use_steps' => mkl_pc( 'settings' )->get( 'use_steps', false ),
 					'is_rest_enabled' => true,
