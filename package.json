@@ -14,15 +14,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "three": "^0.182.0"
+  },
+  "devDependencies": {
     "chalk": "^2.4.2",
     "gulp": "^4.0.2",
     "gulp-clean": "^0.4.0",
     "gulp-plumber": "^1.2.1",
     "gulp-zip": "^4.2.0",
     "run-sequence": "^2.2.1",
-    "three": "^0.182.0"
-  },
-  "devDependencies": {
     "@wordpress/scripts": "^30.27.0",
     "fs-extra": "^11.3.4",
     "gulp-concat-util": "^0.5.5",
