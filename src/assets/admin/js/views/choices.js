@@ -114,7 +114,10 @@ PC.views = PC.views || {};
 				this.update_lock_state();
 			}
 			// Ensure parent view has correct classes for button visibility
-			this.state.$el.toggleClass( 'is-global-layer', this.model.get( 'is_global' ) );
+			this.state.$el.toggleClass(
+				'is-global-layer',
+				!! this.model.get( 'is_global' ) && ! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() )
+			);
 			if ( this.state && this.state.update_global_actions_visibility ) {
 				this.state.update_global_actions_visibility();
 			}

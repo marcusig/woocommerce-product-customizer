@@ -300,9 +300,45 @@ PC.toJSON = function( item ) {
 			return this.global_layers;
 		},
 		/**
+		 * True when the editor was opened on a global layer post itself, rather than on a product
+		 * that uses one.
+		 *
+		 * There is no product to save a delta against: the layer and its choices are the document,
+		 * so nothing is locked, there is nothing to disconnect from, and saving writes the CPT.
+		 *
+		 * @return {boolean}
+		 */
+		isGlobalLayerStandalone: function() {
+			return !! ( this.admin_data && 'global_layer' === this.admin_data.get( 'configurator_source' ) );
+		},
+		/**
+		 * The single layer a standalone global layer editor is editing.
+		 *
+		 * @return {null|{ global_id: number, layerModel: Backbone.Model }}
+		 */
+		getStandaloneGlobalLayerContext: function() {
+			if ( ! this.isGlobalLayerStandalone() ) {
+				return null;
+			}
+			var info = this.admin_data.get( 'global_layer' ) || {};
+			var global_id = parseInt( info.id, 10 );
+			if ( ! global_id ) {
+				return null;
+			}
+			var layerModel = this.getProductLayerByGlobalId( global_id );
+			if ( ! layerModel && this.admin && this.admin.layers && this.admin.layers.length ) {
+				layerModel = this.admin.layers.first();
+			}
+			return layerModel ? { global_id: global_id, layerModel: layerModel } : null;
+		},
+		/**
 		 * @return {null|{ global_id: number, globalModel: Backbone.Model, layerModel: Backbone.Model }}
 		 */
 		getGlobalLayerFocusContext: function() {
+			// Standalone editing is not focus mode: the sidebar keeps its normal navigation.
+			if ( this.isGlobalLayerStandalone() ) {
+				return null;
+			}
 			var gl = this.get_global_layers();
 			var found = null;
 			gl.each( function( gm ) {
@@ -360,6 +396,16 @@ PC.toJSON = function( item ) {
 			return !! this.getGlobalLayerFocusContext();
 		},
 		markGlobalSessionDirty: function() {
+			// Standalone editing has no product delta to keep separate: every edit is an edit to the
+			// layer post, and one save writes both its attributes and its choices.
+			if ( this.isGlobalLayerStandalone() ) {
+				this.is_modified.layers = true;
+				this.is_modified.content = true;
+				if ( this.syncSidebarSaveButtonState ) {
+					this.syncSidebarSaveButtonState();
+				}
+				return;
+			}
 			if ( ! this.isGlobalLayerFocusActive() ) {
 				return;
 			}
@@ -500,6 +546,9 @@ PC.toJSON = function( item ) {
 			if ( ! shell.$sidebar.length ) {
 				return;
 			}
+			// Standalone global layer editing: one layer, no product, so the structure list loses
+			// its add / import / delete affordances (CSS keys off this class).
+			shell.$modal.toggleClass( 'is-global-layer-standalone', this.isGlobalLayerStandalone() );
 			shell.$modal.removeClass( 'is-global-layer-focus is-settings-3d-focus' );
 			if ( ctx ) {
 				shell.$modal.addClass( ctx.mode === 'global_layer' ? 'is-global-layer-focus' : 'is-settings-3d-focus' );
@@ -849,7 +898,9 @@ PC.toJSON = function( item ) {
 			this.get_global_layers();
 
 			$( window ).off( 'beforeunload.mklPcGlobalLayer' ).on( 'beforeunload.mklPcGlobalLayer', function( unloadEv ) {
-				if ( PC.app && PC.app.global_layer_session_dirty && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				var standaloneDirty = PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() &&
+					_.indexOf( _.values( PC.app.is_modified ), true ) !== -1;
+				if ( standaloneDirty || ( PC.app && PC.app.global_layer_session_dirty && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) ) {
 					var msg = ( typeof PC_lang === 'object' && PC_lang && PC_lang.editor_global_layer_unsaved_discard )
 						? PC_lang.editor_global_layer_unsaved_discard
 						: '';
@@ -1239,7 +1290,64 @@ PC.toJSON = function( item ) {
 				}.bind( this ) );
 			}
 		},
+		/**
+		 * Save a standalone global layer: one CPT write covering both the layer and its choices.
+		 *
+		 * The product save path sends deltas against product meta, which a global layer post has
+		 * none of, so it is bypassed entirely here.
+		 *
+		 * @param {Object} state   Active state view, or null.
+		 * @param {Object} options save_all options (`saved_one` / `saved_all` callbacks).
+		 * @return {jQuery.jqXHR|undefined}
+		 */
+		save_standalone_global_layer: function( state, options ) {
+			options = options || {};
+			var ctx = this.getStandaloneGlobalLayerContext();
+			var dirty = _.indexOf( _.values( this.is_modified ), true ) !== -1;
+			if ( ! ctx || ! dirty ) {
+				if ( options.saved_all ) options.saved_all();
+				return;
+			}
+
+			var app = this;
+			this.saving = 1;
+			if ( state ) {
+				state.$toolbar.addClass( 'saving' );
+				state.$el.addClass( 'saving' );
+			}
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+
+			var xhr = this.persistGlobalLayerCpt( ctx.global_id, ctx.layerModel );
+			this.afterJqXHR( xhr, function() {
+				app.saving = 0;
+				_.each( app.is_modified, function( value, key ) {
+					app.is_modified[ key ] = false;
+				} );
+				app.modified_layer_ids = {};
+				app.deleted_layer_ids = [];
+				app.modified_content_layer_ids = {};
+				app.modified_choices = [];
+				if ( state ) {
+					state.$toolbar.removeClass( 'saving' );
+					state.$el.removeClass( 'saving' );
+				}
+				if ( app.syncSidebarSaveButtonState ) {
+					app.syncSidebarSaveButtonState();
+				}
+				if ( options.saved_one ) {
+					options.saved_one( 'layers' );
+					options.saved_one( 'content' );
+				}
+				if ( options.saved_all ) options.saved_all();
+			} );
+			return xhr;
+		},
 		save_all: function( state, options ) {
+			if ( this.isGlobalLayerStandalone() ) {
+				return this.save_standalone_global_layer( state, options );
+			}
 			options = options || {};
 			this.saving = 0;
 			this.errors = [];

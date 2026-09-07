@@ -346,6 +346,22 @@ class DB {
 
 		if ( ! is_string( $that ) ) return false;
 
+		// A global layer post has no configurator meta of its own: it stores one layer and its
+		// choices, which are projected into the editor's shapes here.
+		if ( Global_Layers::is_global_layer_id( $product_id ) ) {
+			switch ( $that ) {
+				case 'layers':
+					$init = $this->get_init_data_for_global_layer( (int) $product_id );
+					return isset( $init['layers'] ) ? $init['layers'] : false;
+				case 'content':
+					$content = $this->get_content_for_global_layer( (int) $product_id );
+					return empty( $content ) ? false : $content;
+				case 'angles':
+					return Global_Layers::get_angles( (int) $product_id );
+			}
+			return false;
+		}
+
 		$owner_id = $this->resolve_storage_owner_id( $product_id, 0, $that );
 		if ( $owner_id <= 0 ) {
 			$owner_id = (int) $product_id;
@@ -1731,7 +1747,44 @@ class DB {
 			);
 		}
 
-		return apply_filters( 'mkl_product_configurator_admin_menu', $default_menu );
+		$menu = apply_filters( 'mkl_product_configurator_admin_menu', $default_menu );
+
+		if ( Global_Layers::is_global_layer_id( $id ) ) {
+			$menu = $this->filter_menu_for_global_layer( $menu );
+		}
+
+		return $menu;
+	}
+
+	/**
+	 * Reduce the editor menu to what a standalone global layer can edit.
+	 *
+	 * A global layer owns one layer and its choices, nothing else: no views, no image order, no 3D,
+	 * no import/export. Add-on screens that operate on choices (price bulk edit) are kept.
+	 *
+	 * @param array $menu
+	 * @return array
+	 */
+	private function filter_menu_for_global_layer( $menu ) {
+		/**
+		 * Filter which editor screens a global layer is edited with.
+		 *
+		 * @param array $menu_ids
+		 */
+		$allowed = apply_filters(
+			'mkl_pc_global_layer_menu_ids',
+			array( 'layers', 'content', 'price_bulk_edit' )
+		);
+
+		$filtered = array();
+		foreach ( $menu as $item ) {
+			// Separators only make sense between the parts they separate; rebuilt below.
+			if ( ! isset( $item['type'] ) || 'part' !== $item['type'] ) continue;
+			if ( ! isset( $item['menu_id'] ) || ! in_array( $item['menu_id'], $allowed, true ) ) continue;
+			$filtered[] = $item;
+		}
+
+		return $filtered;
 	}
 
 	/**
@@ -1847,6 +1900,10 @@ class DB {
 			return $this->get_init_data_for_global_configurator( (int) $id );
 		}
 
+		if ( Global_Layers::is_global_layer_id( $id ) ) {
+			return $this->get_init_data_for_global_layer( (int) $id );
+		}
+
 		$product = wc_get_product( $id );
 		if ( ! $product ) {
 			return array();
@@ -1898,6 +1955,111 @@ class DB {
 		}
 
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $product );
+	}
+
+	/**
+	 * The layer id used while a global layer is edited on its own.
+	 *
+	 * The stored layer keeps the `_id` of the product it was made global from. Reusing it keeps the
+	 * saved payload identical in shape to the one the product editor writes.
+	 *
+	 * @param array|false $layer
+	 * @return int
+	 */
+	private function get_global_layer_local_id( $layer ) {
+		if ( is_array( $layer ) ) {
+			foreach ( array( '_id', 'id', 'layerId' ) as $key ) {
+				if ( isset( $layer[ $key ] ) && intval( $layer[ $key ] ) > 0 ) {
+					return intval( $layer[ $key ] );
+				}
+			}
+		}
+		return 1;
+	}
+
+	/**
+	 * Build editor init data when a global layer CPT is being edited directly.
+	 *
+	 * A global layer holds exactly one layer, so the editor gets a single-row layers collection and
+	 * the views snapshot the layer carries.
+	 *
+	 * @param int $global_id
+	 * @return array
+	 */
+	private function get_init_data_for_global_layer( $global_id ) {
+		$post = get_post( $global_id );
+		if ( ! $post || Global_Layers::CPT_SLUG !== $post->post_type ) {
+			return array();
+		}
+
+		$data     = Global_Layers::get( $global_id );
+		$layer    = is_array( $data['layer'] ) ? $data['layer'] : array();
+		$layer_id = $this->get_global_layer_local_id( $data['layer'] );
+
+		$layer['_id']       = $layer_id;
+		$layer['id']        = $layer_id;
+		$layer['is_global'] = true;
+		$layer['global_id'] = (int) $global_id;
+		if ( empty( $layer['name'] ) ) {
+			$layer['name'] = get_the_title( $global_id );
+		}
+		if ( ! isset( $layer['order'] ) ) {
+			$layer['order'] = 1;
+		}
+
+		$init_data = array(
+			'layers'              => array( $layer ),
+			'angles'              => Global_Layers::get_angles( $global_id ),
+			'nonces'              => array(
+				'update' => false,
+				'delete' => false,
+			),
+			'product_info'        => array(
+				'title'        => get_the_title( $global_id ),
+				'product_type' => Global_Layers::CPT_SLUG,
+			),
+			'pc_storage'          => null,
+			'configurator_source' => 'global_layer',
+			'global_configurator' => null,
+			'global_layer'        => array(
+				'id'       => (int) $global_id,
+				'title'    => get_the_title( $global_id ),
+				'layer_id' => $layer_id,
+			),
+		);
+
+		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $post );
+	}
+
+	/**
+	 * Build the editor's content payload for a global layer: one row holding the layer's choices.
+	 *
+	 * @param int $global_id
+	 * @return array
+	 */
+	private function get_content_for_global_layer( $global_id ) {
+		$data     = Global_Layers::get( $global_id );
+		$layer_id = $this->get_global_layer_local_id( $data['layer'] );
+		$choices  = Global_Layers::normalize_choices( $data['content'] );
+
+		foreach ( $choices as $index => $choice ) {
+			if ( is_array( $choice ) ) {
+				$choice['layerId']  = $layer_id;
+				$choices[ $index ] = $choice;
+			}
+		}
+
+		if ( empty( $choices ) ) {
+			return array();
+		}
+
+		return array(
+			array(
+				'layerId'   => $layer_id,
+				'global_id' => (int) $global_id,
+				'choices'   => array_values( $choices ),
+			),
+		);
 	}
 
 	/**

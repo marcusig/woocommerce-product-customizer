@@ -105,9 +105,18 @@ var PC = PC || {};
 		},
 
 		/**
+		 * Whether the editor is opened on the global layer post itself, where the layer is the
+		 * document being edited rather than a locked copy borrowed by a product.
+		 */
+		is_standalone: function() {
+			return !! ( PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
+		},
+
+		/**
 		 * Get edit state for layer
 		 */
 		is_editing_layer: function( global_id ) {
+			if ( this.is_standalone() ) return true;
 			var model = this.get( global_id );
 			return model ? model.get( 'is_editing_layer' ) : false;
 		},
@@ -116,6 +125,7 @@ var PC = PC || {};
 		 * Get edit state for choices
 		 */
 		is_editing_choices: function( global_id ) {
+			if ( this.is_standalone() ) return true;
 			var model = this.get( global_id );
 			return model ? model.get( 'is_editing_choices' ) : false;
 		},
@@ -175,6 +185,7 @@ var PC = PC || {};
 				global_id: global_id,
 				layer: layer_data ? JSON.stringify( layer_data ) : null,
 				content: content_data ? JSON.stringify( content_data ) : null,
+				angles: this.get_angles_snapshot(),
 				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
 			} ).done( function( response ) {
 				// Update local model with saved data
@@ -190,6 +201,22 @@ var PC = PC || {};
 			}.bind( this ) ).fail( function( error ) {
 				if ( options.error ) options.error( model, error );
 			}.bind( this ) );
+		},
+
+		/**
+		 * The editing product's views, stored alongside the layer so it can be edited on its own
+		 * later (a global layer post has no views of its own).
+		 *
+		 * Standalone editing sends nothing: its views are rebuilt from this same snapshot, so
+		 * writing them back would only ever degrade it.
+		 *
+		 * @return {string|undefined} JSON views list, or undefined when there is nothing to store.
+		 */
+		get_angles_snapshot: function() {
+			if ( this.is_standalone() ) return undefined;
+			var angles = PC.app && PC.app.get_collection ? PC.app.get_collection( 'angles' ) : null;
+			if ( ! angles || ! angles.length ) return undefined;
+			return JSON.stringify( PC.toJSON( angles ) );
 		},
 
 		/**

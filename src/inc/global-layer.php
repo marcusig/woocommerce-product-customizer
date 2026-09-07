@@ -16,6 +16,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Global_Layers {
 
 	/**
+	 * Post type slug holding a single reusable layer and its choices.
+	 */
+	const CPT_SLUG = 'mkl_global_layer';
+
+	/**
+	 * Whether the id points at a global layer post.
+	 *
+	 * @param int $post_id
+	 * @return bool
+	 */
+	public static function is_global_layer_id( $post_id ) {
+		$post_id = intval( $post_id );
+		if ( $post_id <= 0 ) return false;
+		return self::CPT_SLUG === get_post_type( $post_id );
+	}
+
+	/**
 	 * Register hooks
 	 */
 	public static function init() {
@@ -36,7 +53,7 @@ class Global_Layers {
 		// Make columns sortable
 		add_filter( 'manage_edit-mkl_global_layer_sortable_columns', [ __CLASS__, 'set_sortable_columns' ] );
 		
-		// Remove edit/quick edit for now (they only want list/delete)
+		// Keep Edit (it opens the configurator editor) but drop quick edit, which cannot edit layer data.
 		add_filter( 'post_row_actions', [ __CLASS__, 'customize_row_actions' ], 10, 2 );
 	}
 
@@ -161,11 +178,9 @@ class Global_Layers {
 			return $actions;
 		}
 		
-		// Remove edit and quick edit
-		unset( $actions['edit'] );
+		// Quick edit only exposes post fields, which say nothing about the layer.
 		unset( $actions['inline hide-if-no-js'] );
-		
-		// Keep view and trash/delete
+
 		return $actions;
 	}
 
@@ -184,13 +199,107 @@ class Global_Layers {
 	}
 
 	/**
+	 * Normalize the stored content to a list of choices.
+	 *
+	 * The CPT stores either a bare list of choices or a `{ layerId, choices }` row, depending on
+	 * which code path wrote it. Callers that need the choices always want the bare list.
+	 *
+	 * @param mixed $content Raw `_mkl_pc_content` value.
+	 * @return array
+	 */
+	public static function normalize_choices( $content ) {
+		if ( ! is_array( $content ) ) return array();
+		if ( isset( $content['choices'] ) && is_array( $content['choices'] ) ) {
+			return array_values( $content['choices'] );
+		}
+		return array_values( $content );
+	}
+
+	/**
+	 * Views (angles) to edit this layer's images against.
+	 *
+	 * A global layer has no product of its own, so the views come from a snapshot taken when the
+	 * layer was made global or last saved from a product editor. Older layers have no snapshot, so
+	 * fall back to the view ids their images already reference, then to a single default view.
+	 *
+	 * @param int $global_id
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function get_angles( $global_id ) {
+		$global_id = intval( $global_id );
+		if ( $global_id <= 0 ) return array();
+
+		$stored = maybe_unserialize( get_post_meta( $global_id, '_mkl_pc_angles', true ) );
+		if ( is_array( $stored ) && ! empty( $stored ) ) {
+			$angles = array_values( $stored );
+		} else {
+			$data   = self::get( $global_id );
+			$angles = self::derive_angles_from_choices( self::normalize_choices( $data['content'] ) );
+		}
+
+		if ( empty( $angles ) ) {
+			$angles = array(
+				array(
+					'_id'   => 1,
+					'id'    => 1,
+					'name'  => __( 'View 1', 'product-configurator-for-woocommerce' ),
+					'order' => 1,
+				),
+			);
+		}
+
+		/**
+		 * Filter the views a global layer is edited against.
+		 *
+		 * @param array $angles
+		 * @param int   $global_id
+		 */
+		return apply_filters( 'mkl_pc_global_layer_angles', $angles, $global_id );
+	}
+
+	/**
+	 * Rebuild a minimal views list from the view ids the stored images reference.
+	 *
+	 * @param array $choices
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function derive_angles_from_choices( $choices ) {
+		$ids = array();
+		foreach ( $choices as $choice ) {
+			if ( ! is_array( $choice ) || empty( $choice['images'] ) || ! is_array( $choice['images'] ) ) continue;
+			foreach ( $choice['images'] as $image ) {
+				if ( ! is_array( $image ) || ! isset( $image['angleId'] ) ) continue;
+				$angle_id = intval( $image['angleId'] );
+				if ( $angle_id > 0 ) $ids[ $angle_id ] = true;
+			}
+		}
+		if ( empty( $ids ) ) return array();
+
+		$ids = array_keys( $ids );
+		sort( $ids );
+
+		$angles = array();
+		foreach ( $ids as $index => $angle_id ) {
+			$angles[] = array(
+				'_id'   => $angle_id,
+				'id'    => $angle_id,
+				/* translators: %d: view number */
+				'name'  => sprintf( __( 'View %d', 'product-configurator-for-woocommerce' ), $index + 1 ),
+				'order' => $index + 1,
+			);
+		}
+		return $angles;
+	}
+
+	/**
 	 * Create or update a global layer
 	 * @param array $layer   Layer structure
 	 * @param array $content Content/choices structure for that layer
 	 * @param int|null $global_id Existing post ID to update, or null to create
+	 * @param array|null $angles Views snapshot from the editing product, or null to keep the stored one
 	 * @return int|WP_Error The post ID on success
 	 */
-	public static function save( $layer, $content, $global_id = null ) {
+	public static function save( $layer, $content, $global_id = null, $angles = null ) {
 		$postarr = array(
 			'post_type' => 'mkl_global_layer',
 			'post_status' => 'publish',
@@ -205,6 +314,9 @@ class Global_Layers {
 		if ( is_wp_error( $global_id ) ) return $global_id;
 		update_post_meta( $global_id, '_mkl_pc_layer', $layer );
 		update_post_meta( $global_id, '_mkl_pc_content', $content );
+		if ( is_array( $angles ) && ! empty( $angles ) ) {
+			update_post_meta( $global_id, '_mkl_pc_angles', array_values( $angles ) );
+		}
 		return $global_id;
 	}
 

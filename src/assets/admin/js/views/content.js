@@ -325,7 +325,9 @@ PC.views = PC.views || {};
 			// CSS handles visibility via .is-global-layer and .is-global-locked classes
 			// We just need to ensure the state classes are set correctly
 			if ( ! this.$el ) return;
-			var is_global = this.active_layer && this.active_layer.model && this.active_layer.model.get( 'is_global' );
+			// Standalone editing has no lock/unlock step: the choices are the document.
+			var is_global = ! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() ) &&
+				this.active_layer && this.active_layer.model && this.active_layer.model.get( 'is_global' );
 			// Get edit state from global collection if layer is global
 			var is_editing = false;
 			if ( is_global && this.active_layer.model.get( 'global_id' ) ) {

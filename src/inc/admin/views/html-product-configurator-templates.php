@@ -415,6 +415,8 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			</button>
 		</div>
 
+		<div class="mkl-pc-image-order__body">
+		<div class="mkl-pc-image-order__main">
 		<div class="mkl-pc-image-order__filter">
 			<input type="search" class="mkl-pc-list-filter-input mkl-pc-image-order__filter-input" placeholder="<?php echo esc_attr_x( 'Filter layers…', 'Image order screen: filter', 'product-configurator-for-woocommerce' ); ?>" autocomplete="off" />
 		</div>
@@ -450,6 +452,32 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		<p class="mkl-pc-image-order__empty">
 			<?php echo esc_html_x( 'There are no layers to stack yet. Add them on the Layers screen first.', 'Image order screen: empty state', 'product-configurator-for-woocommerce' ); ?>
 		</p>
+		</div>
+		<div class="mkl-pc-image-order__preview"></div>
+		</div>
+	</div>
+</script>
+
+<script type="text/html" id="tmpl-mkl-pc-image-order-preview">
+	<div class="mkl-pc-preview__inner">
+		<div class="mkl-pc-preview__canvas-wrap">
+			<canvas class="mkl-pc-preview__canvas" role="img" aria-label="<?php echo esc_attr_x( 'Preview of the stacked layer images', 'Image order screen: preview', 'product-configurator-for-woocommerce' ); ?>"></canvas>
+			<span class="mkl-pc-preview__spinner spinner" aria-hidden="true"></span>
+		</div>
+		<div class="mkl-pc-preview__side">
+		<# if ( data.angles && data.angles.length > 1 ) { #>
+		<div class="mkl-pc-preview__angles">
+			<label class="screen-reader-text" for="mkl-pc-preview-angle"><?php echo esc_attr_x( 'View', 'Image order screen: preview view selector', 'product-configurator-for-woocommerce' ); ?></label>
+			<select id="mkl-pc-preview-angle" class="mkl-pc-preview__angle-select">
+				<# _.each( data.angles, function( angle ) { #>
+					<option value="{{angle.id}}" <# if ( String( angle.id ) === String( data.angle_id ) ) { #>selected<# } #>>{{angle.name}}</option>
+				<# } ); #>
+			</select>
+		</div>
+		<# } #>
+		<p class="mkl-pc-preview__status" aria-live="polite"></p>
+		<button type="button" class="button-link mkl-pc-preview__retry" hidden><?php echo esc_html_x( 'Try loading the images again', 'Image order screen: preview', 'product-configurator-for-woocommerce' ); ?></button>
+		</div>
 	</div>
 </script>
 
@@ -465,6 +493,9 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<input type="number" class="mkl-pc-stack-pos__input" min="1" step="1" inputmode="numeric" />
 		</span>
 		<span class="mkl-pc-stack-move">
+			<button type="button" class="mkl-pc-stack-move__btn mkl-pc-stack-vis">
+				<span class="dashicons dashicons-visibility" aria-hidden="true"></span>
+			</button>
 			<button type="button" class="mkl-pc-stack-move__btn mkl-pc-stack-move__btn--front">
 				<span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span>
 			</button>
@@ -567,7 +598,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 
 <script type="text/html" id="tmpl-mkl-pc-structure-layer-form">
 	<div class="form-details">
-		<# if ( data.is_global ) { #>
+		<# if ( data.is_global && ! data.standalone_global ) { #>
 			<div class="mkl-pc-global-layer-heading">
 				<h4><span class="dashicons dashicons-networking" aria-hidden="true"></span> <?php esc_html_e( 'Global layer', 'product-configurator-for-woocommerce' ); ?></h4>
 				<div class="mkl-pc-global-layer--actions">

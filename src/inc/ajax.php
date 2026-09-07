@@ -42,6 +42,7 @@ class Ajax {
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids', array( $this, 'fix_image_ids' ) );
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids_config', array( $this, 'fix_image_ids_from_configurator' ) );
 		add_action( 'wp_ajax_mkl_pc_get_configurable_products', array( $this, 'get_configurable_products' ) );
+		add_action( 'wp_ajax_mkl_pc_preview_sources', array( $this, 'get_preview_sources' ) );
 		add_filter( 'weglot_js-data_treat_page', array( $this, 'weglot_compat' ), 20, 4 );
 		add_action( 'wp_ajax_pc_add_to_cart', array( $this, 'add_to_cart' ) );
 		add_action( 'wp_ajax_nopriv_pc_add_to_cart', array( $this, 'add_to_cart' ) );
@@ -321,6 +322,13 @@ class Ajax {
 			return $this->verify_configurator_data_nonce( $product_id );
 		}
 
+		if ( Global_Layers::is_global_layer_id( $product_id ) ) {
+			if ( ! is_user_logged_in() || ! current_user_can( 'edit_post', $product_id ) ) {
+				return false;
+			}
+			return $this->verify_configurator_data_nonce( $product_id );
+		}
+
 		$product = $this->get_configurator_product( $product_id );
 
 		if ( ! $product ) {
@@ -581,6 +589,73 @@ class Ajax {
 	 *
 	 * @return array
 	 */
+	/**
+	 * Resolve attachment ids to a scaled image URL for the editor's stack preview.
+	 *
+	 * The editor's `content` payload carries whatever URL was stored when the image
+	 * was picked, which is the full-size one - 3840x2160 is not unusual for a layer.
+	 * Compositing a hundred of those to fill a panel a few hundred pixels wide means
+	 * downloading and decoding gigabytes to throw almost all of it away.
+	 *
+	 * The size is the one the shop already serves (`preview_image_size`), so the
+	 * preview is built from the same pixels a customer gets.
+	 *
+	 * Ids that do not resolve are simply absent from the response - an attachment can
+	 * be missing, or the stored URL can point somewhere this site has no attachment
+	 * for at all (common after a migration). The caller falls back to the stored URL.
+	 *
+	 * @return void
+	 */
+	public function get_preview_sources() {
+		$security = isset( $_REQUEST['security'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['security'] ) ) : '';
+		if ( ! wp_verify_nonce( $security, 'mkl_pc_preview_sources' ) ) {
+			wp_send_json_error( array( 'message' => __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ), 401 );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to view this product.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+
+		$raw = isset( $_REQUEST['ids'] ) ? wp_unslash( $_REQUEST['ids'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cast to ints below.
+		if ( ! is_array( $raw ) ) {
+			$raw = explode( ',', (string) $raw );
+		}
+
+		$ids = array_values( array_unique( array_filter( array_map( 'absint', $raw ) ) ) );
+		if ( empty( $ids ) ) {
+			wp_send_json_success( array( 'sources' => array(), 'size' => '' ) );
+		}
+
+		// A cap, so a malformed request cannot turn into thousands of lookups.
+		$max = (int) apply_filters( 'mkl_pc_preview_sources_max', 500 );
+		if ( count( $ids ) > $max ) {
+			$ids = array_slice( $ids, 0, $max );
+		}
+
+		$size = mkl_pc( 'settings' )->get( 'preview_image_size', 'large' );
+		if ( ! $size || 'full' === $size ) {
+			$size = 'large';
+		}
+
+		/**
+		 * Filter the image size the editor's stack preview is built from.
+		 *
+		 * @param string $size
+		 * @param array  $ids  Attachment ids being resolved.
+		 */
+		$size = apply_filters( 'mkl_pc_preview_sources_size', $size, $ids );
+
+		$sources = array();
+		foreach ( $ids as $id ) {
+			$url = wp_get_attachment_image_url( $id, $size );
+			if ( $url ) {
+				$sources[ (string) $id ] = $url;
+			}
+		}
+
+		wp_send_json_success( array( 'sources' => $sources, 'size' => $size ) );
+	}
+
 	private function get_http_headers() {
 		static $headers;
 	
@@ -826,6 +901,16 @@ class Ajax {
 			$content = $this->db->sanitize( $content );
 		}
 
+		// Views snapshot from the editing product, so the layer can be edited on its own later.
+		$angles = null;
+		if ( isset( $_REQUEST['angles'] ) && ! empty( $_REQUEST['angles'] ) ) {
+			$angles = json_decode( wp_unslash( $_REQUEST['angles'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is sanitized via db->sanitize() after decode.
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( 'Invalid angles JSON data' );
+			}
+			$angles = $this->db->sanitize( $angles );
+		}
+
 		// At least one of layer or content must be provided
 		if ( null === $layer && null === $content ) {
 			wp_send_json_error( 'No data provided' );
@@ -856,7 +941,7 @@ class Ajax {
 			$content = array();
 		}
 
-		$result = Global_Layers::save( $layer, $content, $result_id );
+		$result = Global_Layers::save( $layer, $content, $result_id, $angles );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( $result->get_error_message() );

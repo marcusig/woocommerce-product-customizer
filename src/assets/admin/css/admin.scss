@@ -877,6 +877,24 @@ html .mkl-pc-admin-ui.pc-modal {
 		}
 	}
 
+	// Editing a global layer on its own screen: the post holds exactly one layer, so the structure
+	// list has nothing to add, import, duplicate or delete.
+	&.is-global-layer-standalone {
+		.structure-content {
+			.structure-toolbar__add,
+			.floating-add {
+				display: none !important;
+			}
+		}
+		.form-details > header .actions-container {
+			.delete-item,
+			.duplicate-item,
+			.prompt-delete {
+				display: none !important;
+			}
+		}
+	}
+
 	&.is-settings-3d-focus {
 		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
 			// button.mkl-pc-admin-ui__product-icon-back-button {
@@ -2272,7 +2290,148 @@ html .pc-modal-container {
 }
 
 .mkl-pc-image-order {
-	max-width: 720px;
+	max-width: 1160px;
+}
+
+/* -------------------------------------------------------- two-column body */
+
+.mkl-pc-image-order__body {
+	display: flex;
+	align-items: flex-start;
+	gap: 20px;
+}
+
+.mkl-pc-image-order__main {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mkl-pc-image-order__preview {
+	flex: 0 0 340px;
+	position: sticky;
+	top: 0;
+	max-width: 340px;
+}
+
+/* The preview earns its own column only when there is room for both. Below that
+   it moves above the stack - source order puts it second, so it has to be pulled
+   back - and turns into a wide, short strip: still sticky, so a reorder stays
+   visible, but not eating the screen the list needs. */
+@media ( max-width: 1100px ) {
+	.mkl-pc-image-order__body {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.mkl-pc-image-order__preview {
+		order: -1;
+		flex: 0 0 auto;
+		max-width: none;
+		width: 100%;
+		margin-bottom: 12px;
+		z-index: 2;
+	}
+
+	.mkl-pc-preview__inner {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		background: #fff;
+	}
+
+	.mkl-pc-preview__canvas-wrap {
+		flex: 0 0 auto;
+		width: 132px;
+	}
+
+	.mkl-pc-preview__side {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.mkl-pc-preview__angles {
+		margin-bottom: 6px;
+	}
+
+	.mkl-pc-preview__status {
+		margin-top: 0;
+	}
+}
+
+/* ----------------------------------------------------------------- preview */
+
+.mkl-pc-preview__inner {
+	display: flex;
+	flex-direction: column-reverse;
+	gap: 8px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+	padding: 10px;
+	box-sizing: border-box;
+}
+
+.mkl-pc-preview__side {
+	min-width: 0;
+}
+
+.mkl-pc-preview__angles {
+	margin-bottom: 8px;
+
+	.mkl-pc-preview__angle-select {
+		width: 100%;
+		max-width: 100%;
+		font-size: 12px;
+		min-height: 30px;
+	}
+}
+
+.mkl-pc-preview__canvas-wrap {
+	position: relative;
+	width: 100%;
+	border-radius: 4px;
+	overflow: hidden;
+	/* A checkerboard, because layer images are transparent and most of what they
+	   draw is white or near-white. On a plain white panel half the stack would be
+	   invisible. */
+	background-color: #fff;
+	background-image:
+		linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%),
+		linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%);
+	background-size: 16px 16px;
+	background-position: 0 0, 8px 8px;
+}
+
+.mkl-pc-preview__canvas {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+/* Visibility is WP's own .spinner / .spinner.is-active; this only places it. */
+.mkl-pc-preview__spinner {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin: -10px 0 0 -10px;
+	float: none;
+}
+
+.mkl-pc-preview__status {
+	margin: 8px 0 0;
+	min-height: 1.4em;
+	font-size: 11px;
+	line-height: 1.4;
+	color: #646970;
+}
+
+.mkl-pc-preview__retry {
+	font-size: 11px;
+
+	&[hidden] {
+		display: none;
+	}
 }
 
 .mkl-pc-image-order__header {
@@ -2576,6 +2735,18 @@ html .pc-modal-container {
 	flex: 0 0 auto;
 	align-items: center;
 	gap: 2px;
+}
+
+/* Switched off in the preview only - the layer still ships, it is just not drawn
+   here while you look at what sits under it. */
+.mkl-pc-stack-item.is-preview-hidden .mkl-pc-stack-item__name {
+	color: #8c929b;
+	text-decoration: line-through;
+	text-decoration-color: #c3c4c7;
+}
+
+.mkl-pc-stack-item.is-preview-hidden .mkl-pc-stack-vis {
+	color: var(--wp-admin-theme-color, #2271b1);
 }
 
 .mkl-pc-stack-move__btn {

@@ -702,7 +702,12 @@ TODO:
 				data = _.extend( {}, data, { maybe_step: true } );
 			}
 
-			data = _.extend( {}, data, { toggled_status: this.toggled_status.statuses, is_editing_global_layer: this.global_editing } );
+			data = _.extend( {}, data, {
+				toggled_status: this.toggled_status.statuses,
+				is_editing_global_layer: this.global_editing,
+				// On the layer's own screen there is no original to open or disconnect from: this is it.
+				standalone_global: !! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() ),
+			} );
 			this.$el.html( this.template( data ) );
 			this.delete_btns = {
 				prompt: this.$('.delete-item'),
@@ -728,7 +733,9 @@ TODO:
 			return this;
 		},
 		update_global_lock_state: function() {
-			var is_global = !! this.model.get( 'is_global' );
+			// Standalone editing never locks: the layer is the document, not a borrowed copy.
+			var is_global = !! this.model.get( 'is_global' ) &&
+				! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
 			var locked = is_global && ! this.global_editing;
 			this.$el.toggleClass( 'is-global', is_global );
 			this.$el.toggleClass( 'is-global-locked', locked );

@@ -49,6 +49,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_action( 'mkl_pc_admin_documentation_content', array( $this, 'home_documentation_content' ) );
 
 			add_action( 'add_meta_boxes', array( $this, 'add_global_configurator_meta_box' ) );
+			add_action( 'add_meta_boxes', array( $this, 'add_global_layer_meta_box' ) );
 		}
 
 		/**
@@ -231,6 +232,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			$data = json_encode( $structure );
 			if ( $this->_product ) {
 				$product_type = $this->_product->get_type();
+			} elseif ( $this->_is_global_layer_screen() ) {
+				$product_type = \MKL\PC\Global_Layers::CPT_SLUG;
 			} else {
 				$product_type = \MKL\PC\Global_Configurators\Schema::OWNER_TYPE_GLOBAL;
 			}
@@ -280,7 +283,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
 				) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
-				array( 'backbone/views/image_order', 'views/image-order.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
+				array( 'backbone/views/image_order_preview', 'views/image-order-preview.js' ),
+				array( 'backbone/views/image_order', 'views/image-order.js', array(
+					'mkl_pc/js/admin/backbone/views/layers',
+					'mkl_pc/js/admin/backbone/views/image_order_preview',
+				) ),
 				array('backbone/views/objects3d', 'views/objects3d.js'),
 				array( 'generated/svg-icon-registry', 'generated/svg-icon-registry.js' ),
 				array(
@@ -312,7 +319,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// array('backbone', 'admin.js'),
 			);
 
-			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) || $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) ) {
+			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) || $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) || $this->_is_global_layer_screen() ) {
 				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], filemtime( MKL_PC_ASSETS_PATH . 'admin/css/admin.css' ) );
 			}
 
@@ -401,12 +408,22 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'image_order_position_label' => esc_attr__( 'Position of %s in the stack', 'product-configurator-for-woocommerce' ),
 					/* translators: %d: number of selected layers */
 					'image_order_selected' => esc_html__( '%d selected', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_hide' => esc_attr__( 'Hide %s from the preview', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_show' => esc_attr__( 'Show %s in the preview', 'product-configurator-for-woocommerce' ),
+					'preview_no_images' => esc_html__( 'No layer has an image for this view.', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: layers drawn so far, 2: total layers */
+					'preview_loading' => esc_html__( 'Drawing %1$d of %2$d layers…', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of layer images that failed */
+					'preview_failed' => esc_html__( '%d layer image could not be loaded.', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
 					'use_steps' => mkl_pc( 'settings' )->get( 'use_steps', false ),
 					'is_rest_enabled' => true,
 					'rest_url' => get_rest_url(),
 					'timeout' => (int) mkl_pc( 'settings' )->get( 'admin_save_timeout', 30000, true ),
 					'user_preferences_nonce' => wp_create_nonce( 'mkl_pc_user_preferences' ),
+					'preview_sources_nonce' => wp_create_nonce( 'mkl_pc_preview_sources' ),
 					'languages' => mkl_pc( 'languages' )->get_languages(),
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
 					'layer_types' => apply_filters( 'mkl_pc_layer_types', array(
@@ -473,6 +490,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['global_configurator_banner_label'] = esc_html__( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );
 				$pc_lang['editor_back_to_product']    = esc_html__( 'Back to product', 'product-configurator-for-woocommerce' );
+				if ( $this->_is_global_layer_screen() ) {
+					// A global layer post has no storefront page, and closing returns to its edit screen.
+					$pc_lang['editor_product_permalink'] = '';
+					$pc_lang['editor_back_to_product']   = esc_html__( 'Close the layer editor', 'product-configurator-for-woocommerce' );
+				}
 				$pc_lang['editor_close_sidebar_menu'] = esc_attr__( 'Close menu', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_save']                = esc_html__( 'Save', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_save_global_layer']  = esc_html__( 'Save global layer', 'product-configurator-for-woocommerce' );
@@ -528,7 +550,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			if ( class_exists( \MKL\PC\Global_Configurators\Schema::class ) && $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) ) {
 				return true;
 			}
+			if ( $this->_is_global_layer_screen() ) {
+				return true;
+			}
 			return false;
+		}
+
+		/**
+		 * Whether the current screen edits a single global layer.
+		 *
+		 * @return bool
+		 */
+		private function _is_global_layer_screen() {
+			return class_exists( \MKL\PC\Global_Layers::class ) && $this->_current_screen_is( \MKL\PC\Global_Layers::CPT_SLUG );
 		}
 
 		/**
@@ -586,6 +620,57 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		}
 
 		/**
+		 * Add a meta box on the global layer CPT edit screen with the "Start configurator" button,
+		 * so the layer and its choices can be edited with the same backbone editor used for products.
+		 *
+		 * @return void
+		 */
+		public function add_global_layer_meta_box() {
+			if ( ! class_exists( \MKL\PC\Global_Layers::class ) ) {
+				return;
+			}
+			add_meta_box(
+				'mkl_pc_global_layer',
+				__( 'Layer', 'product-configurator-for-woocommerce' ),
+				array( $this, 'render_global_layer_meta_box' ),
+				\MKL\PC\Global_Layers::CPT_SLUG,
+				'normal',
+				'high'
+			);
+		}
+
+		/**
+		 * Renders the "Start configurator" button inside the global layer meta box.
+		 *
+		 * @param \WP_Post $post
+		 * @return void
+		 */
+		public function render_global_layer_meta_box( $post ) {
+			if ( ! $post || ! isset( $post->ID ) ) {
+				return;
+			}
+			if ( 'auto-draft' === ( isset( $post->post_status ) ? $post->post_status : '' ) ) {
+				echo '<p>' . esc_html__( 'Save the post once to enable the layer editor.', 'product-configurator-for-woocommerce' ) . '</p>';
+				return;
+			}
+			$data    = \MKL\PC\Global_Layers::get( (int) $post->ID );
+			$choices = \MKL\PC\Global_Layers::normalize_choices( $data['content'] );
+			?>
+			<p>
+				<?php
+				printf(
+					/* translators: %d: number of choices the layer holds. */
+					esc_html( _n( 'This layer holds %d choice.', 'This layer holds %d choices.', count( $choices ), 'product-configurator-for-woocommerce' ) ),
+					(int) count( $choices )
+				);
+				?>
+			</p>
+			<p><?php esc_html_e( 'Editing it here changes it for every product that uses this layer.', 'product-configurator-for-woocommerce' ); ?></p>
+			<p><?php echo $this->start_button( (int) $post->ID, null, __( 'Edit the layer', 'product-configurator-for-woocommerce' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
+			<?php
+		}
+
+		/**
 		 * Save a product's settigns
 		 *
 		 * @param integer $post_id
@@ -605,14 +690,16 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 *
 		 * @param integer $id
 		 * @param integer $parent_id
+		 * @param string  $label     Button text, when the default product wording does not fit.
 		 * @return string
 		 */
-		public function start_button($id, $parent_id = NULL) {
+		public function start_button($id, $parent_id = NULL, $label = '') {
 			ob_start();
 			$id = absint( $id );
 			$parent_id = is_null( $parent_id ) ? null : absint( $parent_id );
+			$label = '' !== $label ? $label : __( "Start product's configurator", 'product-configurator-for-woocommerce' );
 			?>
-				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo esc_attr( $id ); ?>" <?php echo ( null !== $parent_id ) ? 'data-parent-id="' . esc_attr( $parent_id ) . '"' : ''; ?>><?php esc_html_e( "Start product's configurator", 'product-configurator-for-woocommerce' ); ?></a>
+				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo esc_attr( $id ); ?>" <?php echo ( null !== $parent_id ) ? 'data-parent-id="' . esc_attr( $parent_id ) . '"' : ''; ?>><?php echo esc_html( $label ); ?></a>
 			<?php 
 			$return = ob_get_clean();
 			return $return;
