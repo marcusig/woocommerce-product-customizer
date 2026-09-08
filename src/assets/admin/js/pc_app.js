@@ -274,8 +274,27 @@ PC.toJSON = function( item ) {
 	PC.setActionParameter = 'pc_set_data';
 	PC.get_ajax_nonce_param = function() {
 		return PC_lang && PC_lang.update_nonce ? '&nonce=' + encodeURIComponent( PC_lang.update_nonce ) : '';
-	}; 
-	// PC.base_url = 
+	};
+
+	// Keep the editor's nonces fresh via the WP heartbeat. A nonce is only good for
+	// 12-24h, but the editor tab can stay open much longer than that; without this,
+	// saves eventually start failing with a stale-nonce error until the page reloads.
+	$( document ).on( 'heartbeat-send', function( event, data ) {
+		if ( PC.app && PC.app.id ) {
+			data.mkl_pc_refresh_nonces = PC.app.id;
+		}
+	} );
+
+	$( document ).on( 'heartbeat-tick', function( event, data ) {
+		var nonces = data && data.mkl_pc_nonces;
+		if ( ! nonces || ! window.PC_lang ) return;
+
+		if ( nonces.update_nonce ) PC_lang.update_nonce = nonces.update_nonce;
+		if ( nonces.delete_nonce ) PC_lang.delete_nonce = nonces.delete_nonce;
+		if ( nonces.global_layers_nonce ) PC_lang.global_layers_nonce = nonces.global_layers_nonce;
+	} );
+
+	// PC.base_url =
 	PC.app = PC.app || {
 		is_modified: {
 			layers: false,

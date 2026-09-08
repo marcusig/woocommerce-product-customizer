@@ -50,6 +50,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			add_action( 'add_meta_boxes', array( $this, 'add_global_configurator_meta_box' ) );
 			add_action( 'add_meta_boxes', array( $this, 'add_global_layer_meta_box' ) );
+
+			add_filter( 'heartbeat_received', array( $this, 'refresh_nonces_on_heartbeat' ), 10, 2 );
 		}
 
 		/**
@@ -243,6 +245,46 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		}
 
 		/**
+		 * Reissue the configurator's editor nonces on each WordPress heartbeat tick.
+		 *
+		 * The editor can stay open in a browser tab far longer than a nonce's 12-24h
+		 * lifetime; without this, saves/deletes eventually fail with a stale-nonce
+		 * 403 until the page is reloaded. Nonces are only handed back if the current
+		 * user still passes the same capability check used when they were first
+		 * generated in load_scripts(), so this can't grant anything the ajax
+		 * handlers wouldn't already allow on their own.
+		 *
+		 * @param array $response The heartbeat response payload to send back to the browser.
+		 * @param array $data     The data the browser sent with this heartbeat tick.
+		 * @return array
+		 */
+		public function refresh_nonces_on_heartbeat( $response, $data ) {
+			if ( empty( $data['mkl_pc_refresh_nonces'] ) ) {
+				return $response;
+			}
+
+			$product_id = absint( $data['mkl_pc_refresh_nonces'] );
+			if ( ! $product_id ) {
+				return $response;
+			}
+
+			$nonces = array();
+			if ( current_user_can( 'edit_post', $product_id ) ) {
+				$nonces['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $product_id );
+			}
+			if ( current_user_can( 'delete_post', $product_id ) ) {
+				$nonces['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $product_id );
+			}
+			if ( current_user_can( 'edit_posts' ) ) {
+				$nonces['global_layers_nonce'] = wp_create_nonce( 'mkl_pc_global_layers' );
+			}
+
+			$response['mkl_pc_nonces'] = $nonces;
+
+			return $response;
+		}
+
+		/**
 		 * Load the scripts
 		 *
 		 * @return void
@@ -336,6 +378,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 				wp_enqueue_style( 'wp-color-picker' );
 				wp_enqueue_script( 'wp-color-picker' );
+
+				// Some configurator screens (global layer / global configurator CPT) don't
+				// autoload heartbeat the way the native post editor does; enqueue it
+				// explicitly so nonce refresh works on every screen that hosts the editor.
+				wp_enqueue_script( 'heartbeat' );
 
 				// `wp.template()` (used throughout backbone views) is provided by `wp-util` (declared
 				// in each script's dependency list below). WooCommerce product edit screens often load
