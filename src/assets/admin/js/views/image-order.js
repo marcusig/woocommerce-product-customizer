@@ -100,13 +100,23 @@ PC.views = PC.views || {};
 			if ( ! PC.views.image_order_preview ) return;
 			this.preview = new PC.views.image_order_preview( { parent: this } );
 			this.$( '.mkl-pc-image-order__preview' ).append( this.preview.$el );
+			// It builds itself before the state view inserts the screen, so the first
+			// measurement of the room below it has to wait for the next frame.
+			this.preview.schedule_fit();
 
 			// Hovering a row dims everything else in the preview, which answers "which
 			// one is that?" without having to move the layer to find out.
 			var self = this;
 			this.$list.on( 'mouseenter.mklPcPreview', '.mkl-list-item', function() {
 				var view = $( this ).data( 'view' );
-				if ( view && view.model ) self.preview.highlight( view.model.id );
+				if ( ! view || ! view.model ) return;
+				// A layer that is not being drawn has nothing to pick out, and dimming
+				// the rest to point at it would just dim the whole preview.
+				if ( self.is_layer_hidden( view.model.id ) ) {
+					self.preview.highlight( null );
+					return;
+				}
+				self.preview.highlight( view.model.id );
 			} );
 			this.$list.on( 'mouseleave.mklPcPreview', function() {
 				self.preview.highlight( null );
@@ -438,6 +448,7 @@ PC.views = PC.views || {};
 			delete this.auto_hidden[ id ];
 
 			view.set_visible_state( ! this.is_layer_hidden( id ) );
+			if ( this.preview && this.is_layer_hidden( id ) ) this.preview.highlight( null );
 			this.refresh_preview();
 		},
 

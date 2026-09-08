@@ -2348,13 +2348,15 @@ html .pc-modal-container {
 
 .mkl-pc-preview__canvas {
 	/* Scaled by whichever axis runs out first, so a tall product on a short screen
-	   is made smaller rather than cut off. `width`/`height` auto keeps the canvas
-	   at its own aspect: both maxima can bite without distorting it. */
+	   is made smaller rather than cut off. `width`/`height` auto keeps the canvas at
+	   its own aspect, so either maximum can bite without distorting it.
+	   The height cap is set from measurement in fit_canvas(): a percentage here
+	   would resolve against a parent whose height is capped rather than definite,
+	   which makes it no cap at all. */
 	display: block;
 	width: auto;
 	height: auto;
 	max-width: 100%;
-	max-height: 100%;
 	border-radius: 4px;
 	/* A checkerboard, because layer images are transparent and most of what they
 	   draw is white or near-white. On a plain white panel half the stack would be

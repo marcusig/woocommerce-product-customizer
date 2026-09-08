@@ -76,6 +76,8 @@ PC.views = PC.views || {};
 		},
 
 		remove: function() {
+			$( window ).off( 'resize.mklPcPreview' + this.cid );
+			if ( this._fit_raf ) cancelAnimationFrame( this._fit_raf );
 			this.generation++;
 			this.tiles = {};
 			this.queue = [];
@@ -97,6 +99,8 @@ PC.views = PC.views || {};
 				angle_id: this.angle_id,
 			} ) );
 			this.canvas = this.$( '.mkl-pc-preview__canvas' )[ 0 ];
+			this._on_resize = _.debounce( _.bind( this.fit_canvas, this ), 120 );
+			$( window ).on( 'resize.mklPcPreview' + this.cid, this._on_resize );
 			this.ctx = this.canvas ? this.canvas.getContext( '2d' ) : null;
 			this.$status = this.$( '.mkl-pc-preview__status' );
 			this.build();
@@ -364,9 +368,55 @@ PC.views = PC.views || {};
 			this.width = ratio >= 1 ? PREVIEW_MAX : Math.round( PREVIEW_MAX * ratio );
 			this.height = ratio >= 1 ? Math.round( PREVIEW_MAX / ratio ) : PREVIEW_MAX;
 
+			// The canvas' own width/height give it an intrinsic aspect ratio, which is
+			// what lets CSS scale it down by either axis without distorting it.
 			this.canvas.width = this.width;
 			this.canvas.height = this.height;
-			this.$( '.mkl-pc-preview__canvas-wrap' ).css( 'aspect-ratio', this.width + ' / ' + this.height );
+			this.schedule_fit();
+		},
+
+		/**
+		 * Cap the canvas to the room actually left below it.
+		 *
+		 * The panel does not scroll on desktop, so a tall product on a short screen
+		 * would be cut off at the bottom rather than shown smaller. CSS cannot express
+		 * this on its own here: a percentage max-height resolves against a parent whose
+		 * height is capped, not definite, and so resolves to no cap at all.
+		 *
+		 * Measured rather than guessed with a viewport formula, because how much sits
+		 * above the canvas depends on how the description and the view selector wrap.
+		 */
+		/**
+		 * Measure on the next frame.
+		 *
+		 * The screen builds its whole subtree before the state view inserts it, so at
+		 * construction time every rect is zero. A frame later it is in the document and
+		 * laid out.
+		 */
+		schedule_fit: function() {
+			if ( this._fit_raf ) return;
+			this._fit_raf = requestAnimationFrame( _.bind( function() {
+				this._fit_raf = null;
+				this.fit_canvas();
+			}, this ) );
+		},
+
+		fit_canvas: function() {
+			if ( ! this.canvas ) return;
+
+			// Not mounted yet: the caller re-runs this once it is.
+			var panel = this.$el.closest( '.mkl-pc-admin-ui__content' )[ 0 ];
+			if ( ! panel ) return;
+
+			// Measure unconstrained. The canvas sits last in the column, so where it
+			// starts does not depend on how tall it is - only on what is above it.
+			this.canvas.style.maxHeight = '';
+			var top = this.canvas.getBoundingClientRect().top;
+			var bottom = panel.getBoundingClientRect().bottom;
+			var available = bottom - top - 12;
+
+			if ( available <= 0 || ! isFinite( available ) ) return;
+			this.canvas.style.maxHeight = Math.max( 80, Math.round( available ) ) + 'px';
 		},
 
 		/** Keep CONCURRENCY loads in the air until the queue drains. */
@@ -554,6 +604,11 @@ PC.views = PC.views || {};
 
 			var rows = this.parent.rows();
 			var highlighted = this.highlighted;
+			// If whatever is highlighted is not on screen, there is nothing to set off
+			// against the rest, so draw everything at full strength.
+			if ( null !== highlighted && this.parent.is_layer_hidden && this.parent.is_layer_hidden( highlighted ) ) {
+				highlighted = null;
+			}
 
 			// Rows run front first; the stack is painted the other way round.
 			for ( var i = rows.length - 1; i >= 0; i-- ) {
