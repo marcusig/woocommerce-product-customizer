@@ -2289,10 +2289,6 @@ html .pc-modal-container {
 	box-sizing: border-box;
 }
 
-.mkl-pc-image-order {
-	max-width: 1160px;
-}
-
 /* -------------------------------------------------------- two-column body */
 
 .mkl-pc-image-order__body {
@@ -2343,9 +2339,23 @@ html .pc-modal-container {
 
 .mkl-pc-preview__canvas-wrap {
 	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
 	width: 100%;
+	min-height: 0;
+}
+
+.mkl-pc-preview__canvas {
+	/* Scaled by whichever axis runs out first, so a tall product on a short screen
+	   is made smaller rather than cut off. `width`/`height` auto keeps the canvas
+	   at its own aspect: both maxima can bite without distorting it. */
+	display: block;
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	max-height: 100%;
 	border-radius: 4px;
-	overflow: hidden;
 	/* A checkerboard, because layer images are transparent and most of what they
 	   draw is white or near-white. On a plain white panel half the stack would be
 	   invisible. */
@@ -2355,12 +2365,6 @@ html .pc-modal-container {
 		linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%);
 	background-size: 16px 16px;
 	background-position: 0 0, 8px 8px;
-}
-
-.mkl-pc-preview__canvas {
-	display: block;
-	width: 100%;
-	height: auto;
 }
 
 /* Visibility is WP's own .spinner / .spinner.is-active; this only places it. */
@@ -2886,6 +2890,76 @@ html .pc-modal-container {
 
 	.mkl-pc-image-order__empty {
 		display: block;
+	}
+}
+
+/* ------------------------------------------------------- desktop: inner scroll */
+
+/**
+ * With room for two columns, the screen holds still and the stack scrolls inside
+ * it. Scrolling the whole panel took the filter, the selection bar and both end
+ * labels off screen - and those are the things you navigate a long stack with,
+ * so they are exactly what should not move.
+ *
+ * The stack shrinks rather than grows: `0 1 auto` keeps a short list compact
+ * instead of stretching an mostly-empty bordered box down the page, and lets a
+ * long one give way to the scroller.
+ */
+@media ( min-width: 1101px ) {
+	.mkl-pc-admin-ui__content.image-order {
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.mkl-pc-image-order__body {
+		align-items: stretch;
+		flex: 1 1 auto;
+		min-height: 0;
+		min-width: 690px;
+	}
+
+	.mkl-pc-image-order__main {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+	}
+
+	/* Stretching the column is what bounds the preview's height; without it
+	   `max-height: 100%` on the canvas resolves against nothing and a tall product
+	   overflows the panel, which no longer scrolls. */
+	.mkl-pc-image-order__preview {
+		align-self: stretch;
+		min-height: 0;
+	}
+
+	.mkl-pc-preview__inner {
+		max-height: 100%;
+		/* column-reverse runs bottom-up, so packing at main-end is what puts the
+		   group at the top of a column taller than its content. */
+		justify-content: flex-end;
+		min-height: 0;
+	}
+
+	.mkl-pc-preview__canvas-wrap {
+		flex: 0 1 auto;
+	}
+
+	.mkl-pc-stack {
+		display: flex;
+		flex-direction: column;
+		flex: 0 1 auto;
+		min-height: 0;
+	}
+
+	.mkl-pc-stack-edge {
+		flex: 0 0 auto;
+	}
+
+	.mkl-pc-stack__list {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
 	}
 }
 
