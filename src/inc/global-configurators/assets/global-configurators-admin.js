@@ -27,9 +27,25 @@
 		});
 	}
 
+	/**
+	 * The "Configurator type" select lives outside .mkl-pc-configurator-source-group (it's
+	 * rendered by a separate PHP hook callback further down the tab), so it isn't covered by
+	 * syncVisibility()'s [data-show-when-source] scope. Disable it once source is "global" —
+	 * the type becomes a property of the shared configurator at that point (see
+	 * mkl_pc_get_configurator_type()), edited on the global configurator's own screen instead.
+	 */
+	function syncConfiguratorTypeField($scope) {
+		var $typeSelect = $('#_mkl_pc__configurator_type');
+		if (!$typeSelect.length) {
+			return;
+		}
+		$typeSelect.prop('disabled', currentSource($scope) === 'global');
+	}
+
 	function bindSelect($scope) {
 		$scope.on('change', '#mkl_pc_configurator_source', function () {
 			syncVisibility($scope);
+			syncConfiguratorTypeField($scope);
 		});
 	}
 
@@ -299,6 +315,7 @@
 			return;
 		}
 		syncVisibility($scope);
+		syncConfiguratorTypeField($scope);
 		bindSelect($scope);
 		bindPicker($scope);
 	});

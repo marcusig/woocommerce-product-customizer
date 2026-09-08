@@ -50,6 +50,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 			add_action( 'add_meta_boxes', array( $this, 'add_global_configurator_meta_box' ) );
 			add_action( 'add_meta_boxes', array( $this, 'add_global_layer_meta_box' ) );
+			if ( class_exists( \MKL\PC\Global_Configurators\Schema::class ) ) {
+				add_action( 'save_post_' . \MKL\PC\Global_Configurators\Schema::CPT_SLUG, array( $this, 'save_global_configurator_type' ), 10, 2 );
+			}
 
 			add_filter( 'heartbeat_received', array( $this, 'refresh_nonces_on_heartbeat' ), 10, 2 );
 		}
@@ -130,7 +133,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 */
 		public function add_pc_settings_tab_content() {
 			global $post;
+			$product_id = $post ? (int) $post->ID : 0;
 
+			$is_global = $product_id > 0 && class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class )
+				&& \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( $product_id ) > 0;
+			$type_value = $product_id > 0 ? mkl_pc_get_configurator_type( $product_id ) : 'configurator';
 			?>
 			<div id="mkl_pc_configurator_product_data" class="panel woocommerce_options_panel hidden">
 				<?php do_action( 'mkl_pc_admin_general_tab_before_start_button' ); ?>
@@ -138,15 +145,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					<?php
 					woocommerce_wp_select(
 						array(
-							'id'          => MKL_PC_PREFIX . '_configurator_type',
-							'options'     => array(
+							'id'                => MKL_PC_PREFIX . '_configurator_type',
+							'value'             => $type_value,
+							'options'           => array(
 								'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
 								'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
 							),
-							'class'       => 'configurator-type',
-							'label'       => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
-							'description' => __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
-							'desc_tip'    => true,
+							'class'             => 'configurator-type',
+							'custom_attributes' => $is_global ? array( 'disabled' => 'disabled' ) : array(),
+							'label'             => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+							'description'       => $is_global
+								? __( 'Set on the global configurator this product uses. Edit it there to change it for every product that uses it.', 'product-configurator-for-woocommerce' )
+								: __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
+							'desc_tip'          => true,
 						)
 					);
 					?>
@@ -665,8 +676,49 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				);
 				?>
 			</p>
-			<p><?php echo $this->start_button( (int) $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
+			<?php wp_nonce_field( 'mkl_pc_global_configurator_type_' . $post->ID, 'mkl_pc_global_configurator_type_nonce' ); ?>
 			<?php
+			// No 'desc_tip': wc_help_tip()'s .woocommerce-help-tip relies on WooCommerce's own
+			// admin tooltip init, which is only enqueued on recognized WooCommerce screens
+			// (product, shop_order, …) — not this CPT screen. Description renders inline instead.
+			woocommerce_wp_select(
+				array(
+					'id'          => MKL_PC_PREFIX . '_configurator_type',
+					'value'       => mkl_pc_get_configurator_type( (int) $post->ID ),
+					'options'     => array(
+						'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
+						'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
+					),
+					'class'       => 'configurator-type',
+					'label'       => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+					'description' => __( 'Applies to every product currently using this global configurator.', 'product-configurator-for-woocommerce' ),
+				)
+			);
+			?>
+			<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php esc_html_e( 'Configurator type changed. Please update this global configurator to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
+			<p class="start_button_container"><?php echo $this->start_button( (int) $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
+			<?php
+		}
+
+		/**
+		 * Persist the "Configurator type" select from the global configurator CPT's meta box.
+		 *
+		 * @param int      $post_id
+		 * @param \WP_Post $post
+		 * @return void
+		 */
+		public function save_global_configurator_type( $post_id, $post ) {
+			$post_id = (int) $post_id;
+			if ( $post_id <= 0 ) return;
+			if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+			if ( wp_is_post_revision( $post_id ) ) return;
+			if ( ! isset( $_POST['mkl_pc_global_configurator_type_nonce'] ) ) return;
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mkl_pc_global_configurator_type_nonce'] ) ), 'mkl_pc_global_configurator_type_' . $post_id ) ) return;
+			if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+			if ( isset( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) {
+				update_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type', sanitize_key( wp_unslash( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) );
+			}
 		}
 
 		/**
@@ -730,10 +782,41 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the product save nonce before woocommerce_process_product_meta_*.
 			$_is_configurable = isset( $_POST[ MKL_PC_PREFIX . '_is_configurable' ] ) ? 'yes' : 'no';
 			update_post_meta( $post_id, MKL_PC_PREFIX . '_is_configurable', $_is_configurable );
-			if ( isset( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+
+			if ( $this->is_posted_source_global( $post_id ) ) {
+				// Configurator type is a property of the shared global configurator, not this
+				// product — never pin a local value here, or mkl_pc_get_configurator_type()
+				// will keep using it instead of following the global configurator's own type.
+				delete_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type' );
+			} elseif ( isset( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
 				update_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type', sanitize_key( wp_unslash( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) );
 			}
-		}	
+		}
+
+		/**
+		 * Whether this save request is setting the product to use a global configurator.
+		 * Reads the raw posted values directly (rather than the already-saved
+		 * `Owner_Resolver::get_global_id()`) since this callback and
+		 * `Global_Configurators\Admin_Ui::save_product_settings()` are both hooked to the same
+		 * `woocommerce_process_product_meta_*` actions at the default priority, so relying on
+		 * one having already run before the other would be a registration-order assumption.
+		 *
+		 * @param int $post_id
+		 * @return bool
+		 */
+		private function is_posted_source_global( $post_id ) {
+			if ( ! class_exists( \MKL\PC\Global_Configurators\Schema::class ) ) return false;
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+			$posted_source = isset( $_POST[ \MKL\PC\Global_Configurators\Schema::META_SOURCE ] ) ? sanitize_key( wp_unslash( $_POST[ \MKL\PC\Global_Configurators\Schema::META_SOURCE ] ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+			$posted_id = isset( $_POST[ \MKL\PC\Global_Configurators\Schema::META_GLOBAL_ID ] ) ? absint( wp_unslash( $_POST[ \MKL\PC\Global_Configurators\Schema::META_GLOBAL_ID ] ) ) : 0;
+
+			return \MKL\PC\Global_Configurators\Schema::SOURCE_GLOBAL === $posted_source
+				&& $posted_id > 0
+				&& \MKL\PC\Global_Configurators\Schema::is_global_configurator_id( $posted_id )
+				&& ( ! class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class ) || \MKL\PC\Global_Configurators\Owner_Resolver::can_use_global( $post_id ) );
+		}
 
 		/**
 		 * Outputs the button to start the editor
