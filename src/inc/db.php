@@ -1687,7 +1687,7 @@ class DB {
 					),
 				),
 				'description' => __( 'The order the layers\' images are stacked in, which is separate from the order they appear in the menu. The layer at the top of the list is drawn over the ones below it.', 'product-configurator-for-woocommerce' ),
-				'order' => 25,
+				'order' => 45,
 			);
 		}
 
