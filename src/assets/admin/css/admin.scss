@@ -2313,52 +2313,6 @@ html .pc-modal-container {
 	max-width: 340px;
 }
 
-/* The preview earns its own column only when there is room for both. Below that
-   it moves above the stack - source order puts it second, so it has to be pulled
-   back - and turns into a wide, short strip: still sticky, so a reorder stays
-   visible, but not eating the screen the list needs. */
-@media ( max-width: 1100px ) {
-	.mkl-pc-image-order__body {
-		display: flex;
-		flex-direction: column;
-		gap: 0;
-	}
-
-	.mkl-pc-image-order__preview {
-		order: -1;
-		flex: 0 0 auto;
-		max-width: none;
-		width: 100%;
-		margin-bottom: 12px;
-		z-index: 2;
-	}
-
-	.mkl-pc-preview__inner {
-		display: flex;
-		align-items: flex-start;
-		gap: 12px;
-		background: #fff;
-	}
-
-	.mkl-pc-preview__canvas-wrap {
-		flex: 0 0 auto;
-		width: 132px;
-	}
-
-	.mkl-pc-preview__side {
-		flex: 1 1 auto;
-		min-width: 0;
-	}
-
-	.mkl-pc-preview__angles {
-		margin-bottom: 6px;
-	}
-
-	.mkl-pc-preview__status {
-		margin-top: 0;
-	}
-}
-
 /* ----------------------------------------------------------------- preview */
 
 .mkl-pc-preview__inner {
@@ -2625,6 +2579,66 @@ html .pc-modal-container {
 	}
 }
 
+/* The preview earns its own column only when there is room for both. Below that
+   it moves above the stack - source order puts it second, so it has to be pulled
+   back - and turns into a wide, short strip: still sticky, so a reorder stays
+   visible, but not eating the screen the list needs. */
+@media ( max-width: 1100px ) {
+	.mkl-pc-image-order__body {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.mkl-pc-image-order__main {
+		width: 100%;
+	}
+
+	.mkl-pc-image-order__preview {
+		order: -1;
+		flex: 0 0 auto;
+		max-width: none;
+		width: 100%;
+		margin-bottom: 12px;
+		z-index: 2;
+	}
+
+	.mkl-pc-preview__inner {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 12px;
+		background: #fff;
+	}
+
+	.mkl-pc-preview__canvas-wrap {
+		flex: 0 0 auto;
+		width: 132px;
+	}
+
+	.mkl-pc-preview__side {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.mkl-pc-preview__angles {
+		margin-bottom: 6px;
+	}
+
+	.mkl-pc-preview__status {
+		margin-top: 0;
+	}
+}
+
+/* On a phone the strip is a big share of the viewport, and pinning it there puts
+   it over the list rather than beside it. It scrolls away with the page instead. */
+@media ( max-width: 900px ) {
+	.mkl-pc-image-order__preview {
+		position: static;
+		top: auto;
+	}
+}
+
 /* ------------------------------------------------------------------- stack */
 
 .mkl-pc-stack {
@@ -2747,6 +2761,50 @@ html .pc-modal-container {
 	flex: 0 0 auto;
 	align-items: center;
 	gap: 2px;
+}
+
+.mkl-pc-image-order__conditions {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	margin: 0 0 8px;
+	padding: 8px 12px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #50575e;
+	background: #f6f7f7;
+	border-left: 3px solid var(--wp-admin-theme-color, #2271b1);
+	border-radius: 0 4px 4px 0;
+
+	&[hidden] { display: none; }
+
+	.dashicons {
+		flex: 0 0 auto;
+		width: 16px;
+		height: 16px;
+		font-size: 16px;
+		line-height: 16px;
+		color: var(--wp-admin-theme-color, #2271b1);
+	}
+
+	.mkl-pc-conditions-show-all {
+		flex: 0 0 auto;
+		margin-left: auto;
+		font-size: 12px;
+	}
+}
+
+/* Off because the rules say a customer would not see it here - distinct from a
+   row somebody switched off to look underneath. */
+.mkl-pc-stack-item.is-hidden-by-conditions .mkl-pc-stack-item__name::after {
+	content: '\f504';
+	font-family: dashicons;
+	font-size: 14px;
+	line-height: 1;
+	vertical-align: -2px;
+	margin-left: 6px;
+	color: var(--wp-admin-theme-color, #2271b1);
+	text-decoration: none;
 }
 
 /* Switched off in the preview only - the layer still ships, it is just not drawn

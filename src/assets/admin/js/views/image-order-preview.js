@@ -596,6 +596,9 @@ PC.views = PC.views || {};
 			var angle = this.angles ? this.angles.get( value ) : null;
 			this.angle_id = angle ? angle.id : value;
 			this.build();
+			// Conditions can test which view is selected, so what they hide is a
+			// per-view answer too.
+			if ( this.parent && this.parent.apply_conditions ) this.parent.apply_conditions();
 		},
 
 		on_retry: function( e ) {

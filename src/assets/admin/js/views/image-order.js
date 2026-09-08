@@ -42,6 +42,7 @@ PC.views = PC.views || {};
 			'click .mkl-pc-bulk--step-front': 'bulk_step_front',
 			'click .mkl-pc-bulk--step-back': 'bulk_step_back',
 			'click .mkl-pc-bulk--visibility': 'bulk_toggle_visible',
+			'click .mkl-pc-conditions-show-all': 'show_conditionally_hidden',
 			'click .mkl-pc-bulk-clear': 'clear_selection',
 		},
 
@@ -55,6 +56,10 @@ PC.views = PC.views || {};
 			// saved: this hides a layer from *this screen* so you can see what sits
 			// under it, which is a different thing from hiding it from customers.
 			this.hidden_layers = {};
+			// The subset of the above that conditional logic switched off rather than
+			// the user. Tracked separately so re-resolving replaces its own decisions
+			// without trampling the ones somebody made by hand.
+			this.auto_hidden = {};
 
 			PC.selection.reset();
 
@@ -106,6 +111,123 @@ PC.views = PC.views || {};
 			this.$list.on( 'mouseleave.mklPcPreview', function() {
 				self.preview.highlight( null );
 			} );
+
+			this.apply_conditions();
+		},
+
+		/**
+		 * Switch off the layers a customer would never see in this view.
+		 *
+		 * The rules are not re-implemented here. The conditional logic add-on runs its
+		 * own evaluator over a throwaway copy of the configuration - see
+		 * PC.conditionalLogic.resolve - so the answer is the shop's answer, and stays
+		 * the shop's answer when the rules change.
+		 */
+		apply_conditions: function() {
+			if ( ! PC.conditionalLogic || 'function' !== typeof PC.conditionalLogic.resolve ) return;
+
+			var snapshot = this.build_conditions_snapshot();
+			if ( ! snapshot ) return;
+
+			var resolved = PC.conditionalLogic.resolve( snapshot );
+			var hidden = ( resolved && resolved.hidden_layers ) || [];
+
+			// Clear what the last pass decided, keeping anything switched off by hand.
+			_.each( _.keys( this.auto_hidden ), function( id ) {
+				delete this.hidden_layers[ id ];
+			}, this );
+			this.auto_hidden = {};
+
+			_.each( hidden, function( id ) {
+				this.hidden_layers[ id ] = true;
+				this.auto_hidden[ id ] = true;
+			}, this );
+
+			this.sync_conditions_note( hidden.length );
+			this.sync_state();
+			this.refresh_preview();
+		},
+
+		/**
+		 * Draw everything again, conditions or not.
+		 *
+		 * On a stepped configurator the default state can hide almost every layer -
+		 * correctly, but it leaves nothing to arrange. This is the way back without
+		 * clicking through a hundred rows.
+		 */
+		show_conditionally_hidden: function( e ) {
+			if ( e && e.preventDefault ) e.preventDefault();
+			_.each( _.keys( this.auto_hidden ), function( id ) {
+				delete this.hidden_layers[ id ];
+			}, this );
+			this.auto_hidden = {};
+			this.sync_conditions_note( 0 );
+			this.sync_state();
+			this.refresh_preview();
+		},
+
+		sync_conditions_note: function( count ) {
+			var $note = this.$( '.mkl-pc-image-order__conditions' );
+			if ( ! $note.length ) return;
+
+			$note.prop( 'hidden', ! count );
+			if ( ! count ) return;
+
+			var pattern = ( PC.lang && PC.lang.image_order_conditions_hidden )
+				? PC.lang.image_order_conditions_hidden
+				: '%d layer is hidden by conditions in this view.';
+			$note.find( '.mkl-pc-image-order__conditions-text' ).text( pattern.replace( '%d', count ) );
+		},
+
+		/**
+		 * A disposable copy of the configuration, seeded to its default choices.
+		 *
+		 * Disposable is the point: resolve() runs every action, not only the ones that
+		 * hide things, because later rules test what earlier actions did. Handing it
+		 * the editor's own models would select choices and flip layer flags underneath
+		 * the screens that are using them.
+		 *
+		 * Built from the editor's current state rather than what is saved, so it
+		 * answers for the configuration on screen, unsaved edits included.
+		 *
+		 * @return {Object|null}
+		 */
+		build_conditions_snapshot: function() {
+			var conditions = PC.app.get_collection( 'conditions' );
+			conditions = conditions ? PC.toJSON( conditions ) : [];
+			if ( ! conditions.length ) return null;
+
+			var layers = new PC.layers( PC.toJSON( this.col ) );
+
+			var source_angles = PC.app.get_admin().angles;
+			var angles = new PC.angles( source_angles ? PC.toJSON( source_angles ) : [] );
+			// Rules can test which view is on screen, so the copy has to agree with the
+			// view the preview is showing.
+			var current_angle = this.preview ? this.preview.angle_id : null;
+			angles.each( function( angle ) {
+				angle.set( 'active', current_angle ? angle.id == current_angle : false ); // eslint-disable-line eqeqeq
+			} );
+			if ( current_angle === null && angles.length ) angles.first().set( 'active', true );
+
+			var content = PC.app.get_product().get( 'content' );
+			var by_layer = {};
+			layers.each( function( layer ) {
+				var entry = content ? content.get( layer.id ) : null;
+				var source = entry ? entry.get( 'choices' ) : null;
+				var choices = new PC.choices( source ? PC.toJSON( source ) : [], { layer: layer } );
+				// What a customer sees before touching anything.
+				choices.resetChoice();
+				by_layer[ layer.id ] = choices;
+			} );
+
+			return {
+				layers: layers,
+				angles: angles,
+				conditions: conditions,
+				get_layer_content: function( layer_id ) {
+					return by_layer[ layer_id ] || null;
+				},
+			};
 		},
 
 		/** Redraw the preview from whatever is on screen now. */
@@ -268,6 +390,8 @@ PC.views = PC.views || {};
 			} else {
 				this.hidden_layers[ id ] = true;
 			}
+			// Once it has been set by hand it is no longer the resolver's to undo.
+			delete this.auto_hidden[ id ];
 
 			view.set_visible_state( ! this.is_layer_hidden( id ) );
 			this.refresh_preview();
@@ -465,6 +589,7 @@ PC.views = PC.views || {};
 				} else {
 					delete this.hidden_layers[ item.model.id ];
 				}
+				delete this.auto_hidden[ item.model.id ];
 				item.set_visible_state( ! hide );
 			}, this );
 
@@ -822,6 +947,8 @@ PC.views = PC.views || {};
 				: ( lang.image_order_show || 'Show %s in the preview' ).replace( '%s', name );
 
 			this.$el.toggleClass( 'is-preview-hidden', ! visible );
+			var by_conditions = ! visible && this.parent && this.parent.auto_hidden && true === this.parent.auto_hidden[ this.model.id ];
+			this.$el.toggleClass( 'is-hidden-by-conditions', !! by_conditions );
 			this.$( '.mkl-pc-stack-vis' )
 				.attr( { 'aria-label': label, title: label, 'aria-pressed': visible ? 'false' : 'true' } )
 				.find( '.dashicons' )

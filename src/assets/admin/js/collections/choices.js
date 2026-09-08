@@ -47,7 +47,7 @@ var PC = PC || {};
 				}
 			} else if ( 'multiple' === this.layer_type && ( multiple_activate_defaults || 'undefined' == typeof multiple_activate_defaults ) ) {
 				// if we are setting a configuration, do not set the default choices
-				if ( PC.fe.is_setting_config ) return;
+				if ( PC.fe && PC.fe.is_setting_config ) return;
 				var default_selection = this.where( { is_default: true, available: true } );
 				_.each( default_selection, function( item ) {
 					item.set( 'active', true );

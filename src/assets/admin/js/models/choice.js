@@ -21,8 +21,13 @@ PC.choice = Backbone.Model.extend({
 			this.set('images', images); 
 		}
 
-		// Reset choice selection to false by default
-		if ( PC.fe ) this.set( 'active', false );
+		// Reset choice selection to false by default, but only with a configurator
+		// actually running. `PC.fe` is a namespace several scripts create defensively
+		// on load, so its mere existence does not mean the frontend is up - and in the
+		// editor this would quietly clear the selection state off every choice it
+		// builds. `layers` is assigned before any choice is constructed, so it is the
+		// earliest thing that only a running configurator has.
+		if ( PC.fe && PC.fe.layers ) this.set( 'active', false );
 
 		switch ( attributes.available ) {
 			case '0':

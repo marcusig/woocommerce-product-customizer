@@ -424,6 +424,12 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<?php echo esc_html_x( 'While the list is filtered, layers can be sent to a position, to the front or to the back. Stepping and dragging need the whole list — clear the filter to use them.', 'Image order screen: filtering note', 'product-configurator-for-woocommerce' ); ?>
 		</p>
 
+		<p class="mkl-pc-image-order__conditions" hidden>
+			<span class="dashicons dashicons-randomize" aria-hidden="true"></span>
+			<span class="mkl-pc-image-order__conditions-text"></span>
+			<button type="button" class="button-link mkl-pc-conditions-show-all"><?php echo esc_html_x( 'Show them anyway', 'Image order screen: conditions note', 'product-configurator-for-woocommerce' ); ?></button>
+		</p>
+
 		<div class="mkl-pc-image-order__selection" hidden>
 			<span class="mkl-pc-image-order__selection-count" aria-live="polite"></span>
 			<div class="mkl-pc-image-order__selection-actions">
