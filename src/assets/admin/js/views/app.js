@@ -287,6 +287,19 @@ PC.views = PC.views || {};
 				this.refresh(); 
 				this.$el.removeClass( 'loading' );
 				this.clearLoadErrorUI();
+
+				/**
+				 * The editor has everything it fetches on open.
+				 *
+				 * The point for an add-on to pull data of its own: the editor is up and
+				 * usable, so a fetch from here costs nothing anyone is waiting on, and
+				 * whatever it loads is in place long before a screen that needs it is
+				 * opened.
+				 *
+				 * @param {Backbone.View} editor
+				 * @param {Backbone.Model} product
+				 */
+				wp.hooks.doAction( 'PC.admin.data_loaded', this, this.product );
 			}
 		},
 

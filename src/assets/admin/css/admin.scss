@@ -2787,6 +2787,8 @@ html .pc-modal-container {
 		color: var(--wp-admin-theme-color, #2271b1);
 	}
 
+	&.is-pending .mkl-pc-conditions-show-all { display: none; }
+
 	.mkl-pc-conditions-show-all {
 		flex: 0 0 auto;
 		margin-left: auto;

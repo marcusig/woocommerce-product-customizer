@@ -126,8 +126,52 @@ PC.views = PC.views || {};
 		apply_conditions: function() {
 			if ( ! PC.conditionalLogic || 'function' !== typeof PC.conditionalLogic.resolve ) return;
 
+			// Conditions are fetched separately from the rest of the editor's data, and
+			// an empty collection reads exactly like a product with no conditions. So
+			// wait for the loader rather than resolving against nothing and hiding
+			// layers a moment later, once it turns out there were rules after all.
+			if ( 'function' === typeof PC.conditionalLogic.load ) {
+				var product = PC.app.get_product();
+				var pending = product ? PC.conditionalLogic.load( product.id ) : null;
+				if ( pending && 'function' === typeof pending.then ) {
+					this.set_conditions_pending( true );
+					pending.then( _.bind( function() {
+						this.set_conditions_pending( false );
+						this.resolve_conditions();
+					}, this ), _.bind( function() {
+						this.set_conditions_pending( false );
+					}, this ) );
+					return;
+				}
+			}
+
+			this.resolve_conditions();
+		},
+
+		/**
+		 * Say that the answer is still being fetched, rather than showing an
+		 * unconditioned preview that looks like a finished one.
+		 *
+		 * @param {Boolean} pending
+		 */
+		set_conditions_pending: function( pending ) {
+			var $note = this.$( '.mkl-pc-image-order__conditions' );
+			if ( ! $note.length ) return;
+			$note.toggleClass( 'is-pending', !! pending );
+			if ( ! pending ) return;
+
+			$note.prop( 'hidden', false );
+			$note.find( '.mkl-pc-image-order__conditions-text' ).text(
+				( PC.lang && PC.lang.image_order_conditions_loading ) || 'Checking which layers conditions hide…'
+			);
+		},
+
+		resolve_conditions: function() {
 			var snapshot = this.build_conditions_snapshot();
-			if ( ! snapshot ) return;
+			if ( ! snapshot ) {
+				this.sync_conditions_note( 0 );
+				return;
+			}
 
 			var resolved = PC.conditionalLogic.resolve( snapshot );
 			var hidden = ( resolved && resolved.hidden_layers ) || [];

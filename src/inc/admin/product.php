@@ -412,6 +412,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'image_order_hide' => esc_attr__( 'Hide %s from the preview', 'product-configurator-for-woocommerce' ),
 					/* translators: %s: layer name */
 					'image_order_show' => esc_attr__( 'Show %s in the preview', 'product-configurator-for-woocommerce' ),
+					'image_order_conditions_loading' => esc_html__( 'Checking which layers conditions hide…', 'product-configurator-for-woocommerce' ),
 					/* translators: %d: number of layers hidden by conditional logic */
 					'image_order_conditions_hidden' => esc_html__( '%d layers are hidden by conditions in this view.', 'product-configurator-for-woocommerce' ),
 					'preview_no_images' => esc_html__( 'No layer has an image for this view.', 'product-configurator-for-woocommerce' ),
