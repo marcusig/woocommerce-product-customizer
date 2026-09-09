@@ -74,6 +74,88 @@ class DB {
 	}
 
 	/**
+	 * Encode a structured value for meta storage.
+	 *
+	 * Configurator data is stored as JSON rather than PHP-serialized arrays: serialized strings
+	 * embed byte lengths, so any tool that rewrites the database (search-replace, a domain change,
+	 * a migration) silently corrupts them, and reading them back runs user data through
+	 * `maybe_unserialize()`. JSON has neither problem and stays readable in SQL.
+	 *
+	 * @param array $value
+	 * @return string|null JSON, or null when the value cannot be stored as JSON.
+	 */
+	private function encode_for_storage( $value ) {
+		if ( ! is_array( $value ) ) {
+			return null;
+		}
+
+		// wp_json_encode() strips invalid UTF-8 rather than failing outright, so legacy latin-1
+		// leftovers in a choice name do not make a product unsaveable.
+		$json = wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		if ( ! is_string( $json ) || '' === $json ) {
+			return null;
+		}
+
+		// Refuse anything that does not read back as an array: the read path would treat it as
+		// "no data", which is exactly the state we must never write.
+		$decoded = json_decode( $json, true );
+		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+			return null;
+		}
+
+		return $json;
+	}
+
+	/**
+	 * Encode a whole set of meta writes before any of them is persisted.
+	 *
+	 * Chunked storage writes an index plus one meta per layer. Encoding up-front means a value that
+	 * cannot be stored aborts the save while the stored data is still intact, instead of leaving an
+	 * index that points at chunks which were never written.
+	 *
+	 * @param array<string, array> $values meta_key => structured value.
+	 * @return array<string, mixed>|false Values ready for update_meta_data(), or false if any failed.
+	 */
+	private function encode_meta_batch( $values ) {
+		$encoded = array();
+		foreach ( $values as $meta_key => $value ) {
+			if ( ! is_array( $value ) ) {
+				return false;
+			}
+			if ( empty( $value ) ) {
+				// Keep the historical semantics: WC_Data_Store_WP deletes the row for an empty array.
+				$encoded[ $meta_key ] = array();
+				continue;
+			}
+			$json = $this->encode_for_storage( $value );
+			if ( null === $json ) {
+				return false;
+			}
+			// update_metadata() runs wp_unslash() on the value, which would strip the JSON's own
+			// escapes and leave unparseable text in the row. Pre-slash so it survives that.
+			$encoded[ $meta_key ] = wp_slash( $json );
+		}
+		return $encoded;
+	}
+
+	/**
+	 * Encode and write one structured meta value.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
+	 * @param string $meta_key
+	 * @param array  $value
+	 * @return bool False when the value could not be encoded; nothing is written in that case.
+	 */
+	private function write_structured_meta( $product, $meta_key, $value ) {
+		$encoded = $this->encode_meta_batch( array( $meta_key => $value ) );
+		if ( false === $encoded ) {
+			return false;
+		}
+		$product->update_meta_data( $meta_key, $encoded[ $meta_key ] );
+		return true;
+	}
+
+	/**
 	 * Resolve the effective storage owner id for a selling context, honoring global links.
 	 *
 	 * @param int    $product_id
@@ -486,6 +568,90 @@ class DB {
 	const META_INTEGRITY_CACHE = '_mkl_product_configurator_integrity_cache';
 
 	/**
+	 * Post meta on parent: set once the one-time serialized -> JSON sweep has run over this
+	 * configurator's chunk metas. Absent means "not swept yet", not "definitely serialized".
+	 *
+	 * Reads accept both encodings and every write produces JSON, so this is only an accelerator: it
+	 * stops finalize from re-scanning the chunks, and marks which products have been converted.
+	 * Component metas that live on a variation rather than the parent convert on their next save.
+	 */
+	const META_STORAGE_ENCODING = '_mkl_product_configurator_storage_encoding';
+
+	/**
+	 * Value of {@see self::META_STORAGE_ENCODING} once every chunk is stored as JSON.
+	 */
+	const STORAGE_ENCODING_JSON = 'json';
+
+	/**
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $product
+	 * @return bool
+	 */
+	private function storage_encoding_is_json( $product ) {
+		if ( ! $product ) {
+			return false;
+		}
+		return self::STORAGE_ENCODING_JSON === $product->get_meta( self::META_STORAGE_ENCODING, true );
+	}
+
+	/**
+	 * Rewrite any PHP-serialized chunk meta as JSON, once per product.
+	 *
+	 * A serialized row comes back from get_meta() as an array (WP unserializes on read); a JSON row
+	 * comes back as a string. That is the same distinction the read path already makes, so it is
+	 * enough to tell converted rows from unconverted ones.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner      $parent
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $content_product
+	 * @param int[] $index Layer ids.
+	 * @return bool True when the product is fully JSON afterwards.
+	 */
+	private function maybe_convert_storage_to_json( $parent, $content_product, $index ) {
+		if ( ! $parent || $this->storage_encoding_is_json( $parent ) ) {
+			return true;
+		}
+
+		$targets = array(
+			array( $parent, '_mkl_product_configurator_layers_index' ),
+			array( $parent, '_mkl_product_configurator_angles' ),
+			array( $parent, '_mkl_product_configurator_conditions' ),
+		);
+		$content_owner = $content_product ? $content_product : $parent;
+		foreach ( $index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) {
+				continue;
+			}
+			$targets[] = array( $parent, '_mkl_product_configurator_layer_' . $layer_id );
+			$targets[] = array( $content_owner, '_mkl_product_configurator_content_' . $layer_id );
+		}
+
+		$dirty_owners = array();
+		foreach ( $targets as $target ) {
+			list( $owner, $meta_key ) = $target;
+			$raw = maybe_unserialize( $owner->get_meta( $meta_key, true ) );
+			// Strings are already JSON; anything not a non-empty array has nothing to rewrite.
+			if ( ! is_array( $raw ) || empty( $raw ) ) {
+				continue;
+			}
+			if ( ! $this->write_structured_meta( $owner, $meta_key, $raw ) ) {
+				// Leave the serialized row in place: it still reads correctly.
+				return false;
+			}
+			$dirty_owners[ spl_object_hash( $owner ) ] = $owner;
+			do_action( 'wpml_sync_custom_field', $owner->get_id(), $meta_key );
+		}
+		foreach ( $dirty_owners as $owner ) {
+			$owner->save();
+		}
+
+		$parent->update_meta_data( self::META_STORAGE_ENCODING, self::STORAGE_ENCODING_JSON );
+		$parent->save();
+		do_action( 'wpml_sync_custom_field', $parent->get_id(), self::META_STORAGE_ENCODING );
+
+		return true;
+	}
+
+	/**
 	 * Read layers index array from a product meta (no cache).
 	 *
 	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product
@@ -886,7 +1052,11 @@ class DB {
 		$parent_index = $this->read_layers_index_array( $parent );
 		$this->purge_orphan_chunks_for_index( $parent, $content_product, $parent_index );
 
-		if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version && $integrity_cached >= 1 ) {
+		// One-time rewrite of PHP-serialized chunks into JSON. Runs before the cached early return so
+		// products that were already verified under the old encoding still get converted.
+		$this->maybe_convert_storage_to_json( $parent, $content_product, $parent_index );
+
+		if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version && $integrity_cached >= 1 && $this->storage_encoding_is_json( $parent ) ) {
 			$verify = array(
 				'ok'             => true,
 				'layers_ok'      => true,
@@ -949,7 +1119,7 @@ class DB {
 		$parent          = $this->get_owner( $owner_parent_id );
 		$version         = $parent ? (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true ) : 0;
 
-		if ( $skip_deep_verify && self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $parent ) {
+		if ( $skip_deep_verify && self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $parent && $this->storage_encoding_is_json( $parent ) ) {
 			$integrity_cached = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
 			if ( $integrity_cached >= 1 ) {
 				$statuses = $this->classify_storage_statuses_for_cache_hit( $parent_id, $variation_id );
@@ -957,6 +1127,7 @@ class DB {
 					'layers'                    => $statuses['layers_status'],
 					'content'                   => $statuses['content_status'],
 					'storage_format_version'    => $version,
+					'storage_encoding'          => self::STORAGE_ENCODING_JSON,
 					'integrity_ok'              => true,
 					'integrity_issues'          => array(),
 					'needs_batch_migration'     => false,
@@ -985,7 +1156,10 @@ class DB {
 			}
 		}
 
-		$needs_finalize = ! $empty_both && $verify['ok'] && self::STORAGE_FORMAT_CHUNKED_VERIFIED !== $version;
+		// Also finalize when the chunks still need converting to JSON: that pass runs inside
+		// maybe_finalize_chunked_storage(), and this is what makes the editor ask for it.
+		$needs_finalize = ! $empty_both && $verify['ok']
+			&& ( self::STORAGE_FORMAT_CHUNKED_VERIFIED !== $version || ! $this->storage_encoding_is_json( $parent ) );
 
 		// needs_format_finalize: version stamp / silent finalize after save (JS). Native chunked-only configs
 		// may need this while never having been "migrated" from legacy — do not show a migration warning for that.
@@ -997,6 +1171,7 @@ class DB {
 			'layers'                    => $verify['layers_status'],
 			'content'                   => $verify['content_status'],
 			'storage_format_version'    => $version,
+			'storage_encoding'          => $this->storage_encoding_is_json( $parent ) ? self::STORAGE_ENCODING_JSON : 'serialized',
 			'integrity_ok'              => (bool) $verify['ok'],
 			'integrity_issues'          => $verify['issues'],
 			'needs_batch_migration'     => $needs_batch,
@@ -1059,8 +1234,10 @@ class DB {
 		if ( ! $product ) {
 			return false;
 		}
+		if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_' . $component, $data ) ) {
+			return false;
+		}
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
-		$product->update_meta_data( '_mkl_product_configurator_' . $component, $data );
 		$product->save();
 		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_' . $component );
 		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
@@ -1174,22 +1351,32 @@ class DB {
 			$old_index = array();
 		}
 
-		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
-		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
-		$product->save();
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
-
+		$meta_writes = array( '_mkl_product_configurator_layers_index' => $layer_ids );
 		foreach ( $data as $layer ) {
 			$layer_id = isset( $layer['_id'] ) ? (int) $layer['_id'] : 0;
 			if ( ! $layer_id ) {
 				continue;
 			}
 			$stripped = $this->strip_global_layers_to_references( array( $layer ) );
-			$layer    = isset( $stripped[0] ) ? $stripped[0] : $layer;
-			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
+			$meta_writes[ '_mkl_product_configurator_layer_' . $layer_id ] = isset( $stripped[0] ) ? $stripped[0] : $layer;
+		}
+		$encoded = $this->encode_meta_batch( $meta_writes );
+		if ( false === $encoded ) {
+			return false;
+		}
+		$encoded_index = $encoded['_mkl_product_configurator_layers_index'];
+		unset( $encoded['_mkl_product_configurator_layers_index'] );
+
+		$product->update_meta_data( '_mkl_product_configurator_layers_index', $encoded_index );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
+
+		foreach ( $encoded as $meta_key => $meta_value ) {
+			$product->update_meta_data( $meta_key, $meta_value );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layer_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
 
 		$this->delete_layer_chunk_metas( $product, $layer_ids, $old_index );
@@ -1229,12 +1416,7 @@ class DB {
 			return false;
 		}
 
-		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
-		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
-		$product->save();
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
-
+		$meta_writes = array( '_mkl_product_configurator_layers_index' => $layer_ids );
 		foreach ( $layers as $layer_id => $layer ) {
 			$layer_id = (int) $layer_id;
 			if ( ! $layer_id ) continue;
@@ -1243,10 +1425,25 @@ class DB {
 			$layer = apply_filters( 'mkl_product_configurator/data/set/layers', array( $layer ), $id );
 			$layer = isset( $layer[0] ) ? $layer[0] : $layer;
 			$stripped = $this->strip_global_layers_to_references( array( $layer ) );
-			$layer    = isset( $stripped[0] ) ? $stripped[0] : $layer;
-			$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $layer );
+			$meta_writes[ '_mkl_product_configurator_layer_' . $layer_id ] = isset( $stripped[0] ) ? $stripped[0] : $layer;
+		}
+		$encoded = $this->encode_meta_batch( $meta_writes );
+		if ( false === $encoded ) {
+			return false;
+		}
+		$encoded_index = $encoded['_mkl_product_configurator_layers_index'];
+		unset( $encoded['_mkl_product_configurator_layers_index'] );
+
+		$product->update_meta_data( '_mkl_product_configurator_layers_index', $encoded_index );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
+
+		foreach ( $encoded as $meta_key => $meta_value ) {
+			$product->update_meta_data( $meta_key, $meta_value );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layer_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
 
 		foreach ( $deleted as $layer_id ) {
@@ -1338,16 +1535,24 @@ class DB {
 			$layer_ids = $current_index;
 		}
 
+		$meta_writes = array();
 		foreach ( $data as $item ) {
 			$layer_id = isset( $item['layerId'] ) ? (int) $item['layerId'] : 0;
 			if ( ! $layer_id ) {
 				continue;
 			}
 			$stripped = $this->strip_global_content_to_references( array( $item ) );
-			$item     = isset( $stripped[0] ) ? $stripped[0] : $item;
-			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
+			$meta_writes[ '_mkl_product_configurator_content_' . $layer_id ] = isset( $stripped[0] ) ? $stripped[0] : $item;
+		}
+		$encoded = $this->encode_meta_batch( $meta_writes );
+		if ( false === $encoded ) {
+			return false;
+		}
+
+		foreach ( $encoded as $meta_key => $meta_value ) {
+			$product->update_meta_data( $meta_key, $meta_value );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
 
 		$this->delete_content_chunk_metas( $product, $layer_ids, $current_index );
@@ -1382,6 +1587,7 @@ class DB {
 			$owner_id = (int) $id;
 		}
 		$content_chunks = isset( $payload['content'] ) && is_array( $payload['content'] ) ? $payload['content'] : array();
+		$meta_writes = array();
 		foreach ( $content_chunks as $layer_id => $item ) {
 			$layer_id = (int) $layer_id;
 			if ( ! $layer_id ) continue;
@@ -1393,10 +1599,17 @@ class DB {
 				$item['layerId'] = $layer_id;
 			}
 			$stripped = $this->strip_global_content_to_references( array( $item ) );
-			$item     = isset( $stripped[0] ) ? $stripped[0] : $item;
-			$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $item );
+			$meta_writes[ '_mkl_product_configurator_content_' . $layer_id ] = isset( $stripped[0] ) ? $stripped[0] : $item;
+		}
+		$encoded = $this->encode_meta_batch( $meta_writes );
+		if ( false === $encoded ) {
+			return false;
+		}
+
+		foreach ( $encoded as $meta_key => $meta_value ) {
+			$product->update_meta_data( $meta_key, $meta_value );
 			$product->save();
-			do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
+			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
 		$layers_index = $this->read_layers_index_array( $product );
 		if ( ! empty( $layers_index ) ) {
@@ -1515,7 +1728,9 @@ class DB {
 		if ( ! isset( $layer_content['layerId'] ) ) {
 			$layer_content['layerId'] = (int) $layer_id;
 		}
-		$product->update_meta_data( '_mkl_product_configurator_content_' . $layer_id, $layer_content );
+		if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_content_' . $layer_id, $layer_content ) ) {
+			return false;
+		}
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
 		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
@@ -3045,7 +3260,9 @@ class DB {
 				if ( $new_layer_id && ( ! isset( $chunk['image']['id'] ) || $new_layer_id != $chunk['image']['id'] ) ) {
 					$chunk['image']['id'] = $new_layer_id;
 					$chunk['image']['url'] = wp_get_attachment_url( $new_layer_id );
-					$product->update_meta_data( '_mkl_product_configurator_layer_' . $layer_id, $chunk );
+					if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_layer_' . $layer_id, $chunk ) ) {
+						continue;
+					}
 					$product->save();
 					do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_layer_' . $layer_id );
 				}

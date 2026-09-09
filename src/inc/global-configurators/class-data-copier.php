@@ -208,6 +208,36 @@ final class Data_Copier {
 	}
 
 	/**
+	 * Copy one meta value verbatim, whatever encoding it is stored in.
+	 *
+	 * Configurator data is stored as JSON, and meta writes run wp_unslash() on the value, which would
+	 * strip the JSON's own escapes. Pre-slash strings so the copy is byte-identical to the source.
+	 *
+	 * @param Storage_Owner $target
+	 * @param string        $key
+	 * @param mixed         $value
+	 * @return void
+	 */
+	private static function copy_meta_value( $target, $key, $value ) {
+		$target->update_meta( $key, is_string( $value ) ? wp_slash( $value ) : $value );
+	}
+
+	/**
+	 * Read the layers index as an array of ids, whether it is stored as JSON or PHP-serialized.
+	 *
+	 * @param Storage_Owner $owner
+	 * @return int[]
+	 */
+	private static function read_index_array( $owner ) {
+		$index = maybe_unserialize( $owner->get_meta( self::get_layers_index_key(), true ) );
+		if ( is_string( $index ) ) {
+			$decoded = json_decode( $index, true );
+			$index   = ( JSON_ERROR_NONE === json_last_error() ) ? $decoded : null;
+		}
+		return is_array( $index ) ? $index : array();
+	}
+
+	/**
 	 * Copy chunked + single-meta + legacy-blob configurator data from one owner to another.
 	 *
 	 * @param Storage_Owner $source
@@ -221,7 +251,7 @@ final class Data_Copier {
 				$target->delete_meta( $key );
 				continue;
 			}
-			$target->update_meta( $key, $value );
+			self::copy_meta_value( $target, $key, $value );
 		}
 
 		foreach ( self::get_legacy_blob_keys() as $key ) {
@@ -230,12 +260,14 @@ final class Data_Copier {
 				$target->delete_meta( $key );
 				continue;
 			}
-			$target->update_meta( $key, $value );
+			self::copy_meta_value( $target, $key, $value );
 		}
 
-		$index = $source->get_meta( self::get_layers_index_key(), true );
-		if ( is_array( $index ) && ! empty( $index ) ) {
-			$target->update_meta( self::get_layers_index_key(), $index );
+		// The raw value is copied as-is; the decoded copy is only used to walk the layer ids.
+		$raw_index = $source->get_meta( self::get_layers_index_key(), true );
+		$index     = self::read_index_array( $source );
+		if ( ! empty( $index ) ) {
+			self::copy_meta_value( $target, self::get_layers_index_key(), $raw_index );
 			foreach ( self::get_chunked_prefixes() as $prefix ) {
 				foreach ( $index as $layer_id ) {
 					$layer_id = (int) $layer_id;
@@ -248,7 +280,7 @@ final class Data_Copier {
 						$target->delete_meta( $key );
 						continue;
 					}
-					$target->update_meta( $key, $value );
+					self::copy_meta_value( $target, $key, $value );
 				}
 			}
 		} else {
@@ -272,8 +304,8 @@ final class Data_Copier {
 		foreach ( self::get_legacy_blob_keys() as $key ) {
 			$owner->delete_meta( $key );
 		}
-		$index = $owner->get_meta( self::get_layers_index_key(), true );
-		if ( is_array( $index ) ) {
+		$index = self::read_index_array( $owner );
+		if ( ! empty( $index ) ) {
 			foreach ( self::get_chunked_prefixes() as $prefix ) {
 				foreach ( $index as $layer_id ) {
 					$layer_id = (int) $layer_id;

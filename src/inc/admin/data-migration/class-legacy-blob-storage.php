@@ -187,7 +187,12 @@ final class Legacy_Blob_Storage {
 		}
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			// Try the value as-is first: correctly stored JSON keeps escapes that stripslashes would eat.
+			$decoded = json_decode( $data, true );
+			if ( JSON_ERROR_NONE !== json_last_error() ) {
+				$decoded = json_decode( stripslashes( $data ), true );
+			}
+			$data = $decoded;
 		}
 		return is_array( $data ) && count( $data ) > 0;
 	}
@@ -203,7 +208,12 @@ final class Legacy_Blob_Storage {
 		}
 		$data = maybe_unserialize( $data );
 		if ( is_string( $data ) ) {
-			$data = json_decode( stripslashes( $data ), true );
+			// Try the value as-is first: correctly stored JSON keeps escapes that stripslashes would eat.
+			$decoded = json_decode( $data, true );
+			if ( JSON_ERROR_NONE !== json_last_error() ) {
+				$decoded = json_decode( stripslashes( $data ), true );
+			}
+			$data = $decoded;
 		}
 		return is_array( $data ) && count( $data ) > 0;
 	}

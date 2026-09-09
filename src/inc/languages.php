@@ -433,7 +433,9 @@ class Languages {
 			if ( is_array( $meta ) && 1 < count( $meta ) ) {
 				$keep = end( $meta );
 				delete_post_meta( $post_id_to, $meta_key );
-				add_post_meta( $post_id_to, $meta_key, $keep );
+				// Configurator data is stored as JSON and add_post_meta() runs wp_unslash() on the
+				// value, which would strip the JSON's own escapes. Pre-slash so it round-trips.
+				add_post_meta( $post_id_to, $meta_key, is_string( $keep ) ? wp_slash( $keep ) : $keep );
 			}
 		}
 	}
