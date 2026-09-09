@@ -1461,6 +1461,8 @@ PC.toJSON = function( item ) {
 					const response = error?.responseJSON;
 					this.errors.push( 'Error type: ' + type );
 					if ( response && response.data && response.data.message ) this.errors.push( 'Error message: ' + response.data.message );
+					// wp.ajax rejects a wp_send_json_error() with its data payload, not a jqXHR.
+					else if ( error.message ) this.errors.push( 'Error message: ' + error.message );
 					if ( !response && error?.responseText ) this.errors.push( 'Error response: ' + error.responseText );
 				}
 				console.log( key, state, options, error, a, b, this.errors );

@@ -1011,12 +1011,19 @@ class DB {
 	 * @param integer $id        - The product ID
 	 * @param integer $ref_id    - The referring ID
 	 * @param string  $component - Which component to save (Layers, angles, content)
-	 * @param array   $raw_data  - The data (full array or delta object for layers/content)
-	 * @return array
+	 * @param array   $raw_data  - The data (full array or delta object for layers/content), or the 'empty' sentinel
+	 * @return array|false False when the write is refused (unknown product, or data that cannot be trusted).
 	 */
 	public function set( $id, $ref_id, $component, $raw_data, $modified_choices = false ) {
 		if ( ! $this->is_product( $id ) ) return false;
 		if ( $ref_id !== $id && ! $this->is_product( $ref_id ) ) return false;
+
+		// Only an array, or the explicit 'empty' sentinel, may reach the writers below. Anything else
+		// (typically a payload that failed to decode) is read as "no data" by the chunked writers and
+		// would purge the stored chunks. Refuse the write instead.
+		if ( 'empty' !== $raw_data && ! is_array( $raw_data ) ) {
+			return false;
+		}
 
 		do_action( 'mkl_pc_before_save_product_configuration_' . $component, $id, $raw_data );
 		do_action( 'mkl_pc_before_save_product_configuration', $id, $raw_data );
@@ -1119,11 +1126,17 @@ class DB {
 		} elseif ( is_array( $raw_data ) ) {
 			$data = $this->normalize_for_set( $raw_data, $id, 'layers', false );
 		} else {
-			$data = $raw_data;
+			return false;
 		}
 		$data = apply_filters( 'mkl_product_configurator/data/set/layers', $data, $id );
 
-		if ( empty( $data ) || ! is_array( $data ) ) {
+		// A filter that returned something unusable must not be read as "delete everything".
+		if ( ! is_array( $data ) ) {
+			return false;
+		}
+
+		// Reached only for a deliberate empty save ('empty' sentinel or a genuinely empty array).
+		if ( empty( $data ) ) {
 			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
 			$old_index = maybe_unserialize( $old_index );
 			if ( is_string( $old_index ) ) {
@@ -1199,7 +1212,7 @@ class DB {
 	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product Storage owner (may be CPT when linked globally).
 	 * @param array       $payload  { layers_index: [], layers: { id => data }, deleted: [] }
 	 * @param int|null    $owner_id Storage owner id (defaults to $id when not provided).
-	 * @return array
+	 * @return array|false False when the payload carries no layer index (malformed / truncated request).
 	 */
 	private function set_layers_delta( $id, $product, $payload, $owner_id = null ) {
 		if ( null === $owner_id ) {
@@ -1208,6 +1221,13 @@ class DB {
 		$layer_ids = isset( $payload['layers_index'] ) && is_array( $payload['layers_index'] ) ? $payload['layers_index'] : array();
 		$layers = isset( $payload['layers'] ) && is_array( $payload['layers'] ) ? $payload['layers'] : array();
 		$deleted = isset( $payload['deleted'] ) && is_array( $payload['deleted'] ) ? $payload['deleted'] : array();
+
+		// A delta always carries the full layer index; an empty one means the payload lost it (a
+		// truncated or malformed request). Writing it would blank the index and purge every chunk.
+		// A configurator the user really emptied is saved through the 'empty' sentinel instead.
+		if ( empty( $layer_ids ) ) {
+			return false;
+		}
 
 		$product->update_meta_data( '_mkl_product_configurator_layers_index', $layer_ids );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
@@ -1290,16 +1310,19 @@ class DB {
 		} elseif ( is_array( $raw_data ) ) {
 			$data = $this->normalize_for_set( $raw_data, $id, 'content', $modified_choices );
 		} else {
-			$data = $raw_data;
+			return false;
 		}
 		$data = apply_filters( 'mkl_product_configurator/data/set/content', $data, $id );
 
+		// A filter that returned something unusable must not be read as "delete everything".
+		if ( ! is_array( $data ) ) {
+			return false;
+		}
+
 		$layer_ids = array();
-		if ( is_array( $data ) ) {
-			foreach ( $data as $item ) {
-				if ( isset( $item['layerId'] ) ) {
-					$layer_ids[] = (int) $item['layerId'];
-				}
+		foreach ( $data as $item ) {
+			if ( isset( $item['layerId'] ) ) {
+				$layer_ids[] = (int) $item['layerId'];
 			}
 		}
 
