@@ -174,70 +174,6 @@ class DB {
 	}
 
 	/**
-	 * @param array $legacy_content
-	 * @param int   $layer_id
-	 * @return bool
-	 */
-	private function content_row_exists_in_legacy_content_array( $legacy_content, $layer_id ) {
-		foreach ( $legacy_content as $row ) {
-			if ( is_array( $row ) && isset( $row['layerId'] ) && (int) $row['layerId'] === (int) $layer_id ) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Whether this layer is expected to have a content row (choices UI).
-	 *
-	 * @param array    $layer_row Layer attributes (from chunk or legacy blob).
-	 * @param int|null $layer_id  For filters.
-	 * @return bool
-	 */
-	private function layer_requires_content_row( $layer_row, $layer_id = null ) {
-		if ( ! is_array( $layer_row ) ) {
-			return true;
-		}
-		$nac = isset( $layer_row['not_a_choice'] ) ? $layer_row['not_a_choice'] : false;
-		if ( true === $nac || 1 === $nac || '1' === $nac || 'true' === $nac ) {
-			return false;
-		}
-		$type = isset( $layer_row['type'] ) ? strtolower( (string) $layer_row['type'] ) : 'simple';
-		if ( 'group' === $type ) {
-			return false;
-		}
-		return (bool) apply_filters( 'mkl_pc_layer_requires_content_row', true, $layer_row, $layer_id );
-	}
-
-	/**
-	 * Layer definition from chunked meta, else from legacy layers array.
-	 *
-	 * @param \WC_Product $parent
-	 * @param int         $layer_id
-	 * @param bool        $has_legacy_l
-	 * @param array       $legacy_layers
-	 * @return array<string, mixed>|null
-	 */
-	private function get_layer_row_for_integrity( $parent, $layer_id, $has_legacy_l, $legacy_layers ) {
-		$raw = $parent->get_meta( '_mkl_product_configurator_layer_' . $layer_id, true );
-		$raw = maybe_unserialize( $raw );
-		if ( is_string( $raw ) ) {
-			$raw = $this->decode_stored_json( $raw );
-		}
-		if ( is_array( $raw ) && isset( $raw['_id'] ) ) {
-			return $raw;
-		}
-		if ( $has_legacy_l ) {
-			foreach ( $legacy_layers as $row ) {
-				if ( is_array( $row ) && isset( $row['_id'] ) && (int) $row['_id'] === (int) $layer_id ) {
-					return $row;
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
 	 * Quick status labels when integrity cache says OK (avoid re-reading all chunks).
 	 *
 	 * @param int $parent_id
@@ -701,7 +637,8 @@ class DB {
 	 *
 	 * Uses {@see self::META_INTEGRITY_CACHE}: when 1 and $force_refresh is false, returns a cached OK result with fresh status labels.
 	 * When no legacy blobs exist on parent (layers) and content product, integrity is considered OK without requiring every optional content chunk.
-	 * When legacy exists, missing chunked rows may be satisfied by matching entries in the legacy arrays.
+	 * When legacy exists, the test is conservation: every legacy content row that carried choices must have a matching chunk. Layers with no
+	 * legacy content row (unfinished setup, summaries, static elements) are not treated as missing data, whatever their type.
 	 *
 	 * @param int  $parent_id      Product ID where layer structure + layer chunks live (variable parent or simple).
 	 * @param int  $variation_id   Variation ID when editing a variation (0 otherwise).
@@ -853,25 +790,37 @@ class DB {
 					$issues[]       = 'legacy_content_blob_present';
 				} else {
 					$content_status = ( false !== $content_data && ! empty( $content_index ) ) ? 'mixed' : 'legacy';
-					foreach ( $content_index as $layer_id ) {
+					// Conservation, not validation: the only thing a migration can get wrong is losing a
+					// content row that existed in the legacy blob. Whether a layer *ought* to have content
+					// is not derivable from its type -- `not_a_choice` layers keep their static image in a
+					// one-choice row, and a layer retyped to `group` keeps the choices it already had -- so
+					// the layer definition is not consulted at all here.
+					//
+					// A layer with no legacy content row is not missing data: it is an unfinished layer, a
+					// summary, or a static element. The frontend skips it, and get_content_chunked() already
+					// reads it back as an empty { layerId, choices: [] } row.
+					$indexed_layer_ids = array_map( 'intval', $content_index );
+					foreach ( $legacy_c_array as $legacy_row ) {
+						if ( ! is_array( $legacy_row ) || ! isset( $legacy_row['layerId'] ) ) {
+							continue;
+						}
+						$layer_id = (int) $legacy_row['layerId'];
+						if ( empty( $legacy_row['choices'] ) ) {
+							continue; // Nothing to lose.
+						}
+						if ( ! in_array( $layer_id, $indexed_layer_ids, true ) ) {
+							continue; // Layer deleted since; its content is legitimately gone.
+						}
 						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
 						$raw = maybe_unserialize( $raw );
 						if ( is_string( $raw ) ) {
 							$raw = $this->decode_stored_json( $raw );
 						}
-						$chunk_ok = is_array( $raw ) && isset( $raw['layerId'] ) && (int) $raw['layerId'] === (int) $layer_id;
-						if ( $chunk_ok ) {
-							continue;
-						}
-						$layer_row = $this->get_layer_row_for_integrity( $parent, $layer_id, $has_legacy_l, $legacy_l_array );
-						if ( ! $this->layer_requires_content_row( $layer_row, $layer_id ) ) {
-							continue;
-						}
-						if ( $this->content_row_exists_in_legacy_content_array( $legacy_c_array, $layer_id ) ) {
+						if ( is_array( $raw ) && isset( $raw['layerId'] ) && (int) $raw['layerId'] === $layer_id ) {
 							continue;
 						}
 						$content_ok = false;
-						$issues[]   = 'invalid_content_chunk:' . (int) $layer_id;
+						$issues[]   = 'invalid_content_chunk:' . $layer_id;
 					}
 					if ( $content_ok && false !== $content_data ) {
 						$orphans_c = $this->find_orphan_chunk_meta_keys( $content_owner_id, $content_index, '_mkl_product_configurator_content_' );
