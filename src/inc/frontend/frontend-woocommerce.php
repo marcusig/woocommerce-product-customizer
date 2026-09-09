@@ -207,7 +207,12 @@ class Frontend_Woocommerce {
 		// same method - rather than a page-wide JS global, so it can't be dropped by
 		// a JS optimization plugin (defer/async/combine) rewriting <script> tags.
 		if ( mkl_pc( 'settings' )->get( 'async_data' ) ) {
-			$config_data_url = mkl_pc( 'cache' )->get_config_file( $product->get_id(), true, 'json' );
+			// get_config_file_url(), not get_config_file(): building the payload here would
+			// happen before a byte of HTML is sent, so a shopper landing on a product whose
+			// cache was just purged would wait for the whole rebuild before the page renders.
+			// The URL is emitted whether or not the file exists yet - check_and_regenerate_js_file()
+			// rebuilds it when the preload in <head> asks for it.
+			$config_data_url = mkl_pc( 'cache' )->get_config_file_url( $product->get_id(), 'json' );
 			if ( $config_data_url ) {
 				$data_attributes['config_data_url'] = $config_data_url;
 			}
@@ -731,7 +736,12 @@ class Frontend_Woocommerce {
 			// admin-ajax.php fallback (edit_posts users / disable_caching) - that endpoint
 			// isn't cacheable, so preloading it would force a full postmeta rebuild on
 			// every single page view instead of only when the shopper opens the configurator.
-			$preload_url = mkl_pc( 'cache' )->get_config_file( $prod->get_id(), true, 'json' );
+			//
+			// The static URL is returned whether or not the file exists yet, and nothing is
+			// built here: on a cold cache the preload request itself 404s into
+			// Cache::check_and_regenerate_js_file(), which rebuilds and serves it. That keeps
+			// the rebuild off the critical path of the HTML response.
+			$preload_url = mkl_pc( 'cache' )->get_config_file_url( $prod->get_id(), 'json' );
 			if ( $preload_url && false === strpos( $preload_url, 'admin-ajax.php' ) ) {
 				$this->async_config_preload_url = $preload_url;
 				add_action( 'wp_head', array( $this, 'print_async_config_preload_link' ), 2 );
