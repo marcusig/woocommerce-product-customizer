@@ -944,6 +944,18 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'purge_with_page_cache',
+				__( 'Clear cached configurations when a page cache is cleared', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'purge_with_page_cache',
+					'description'  => __( 'Applies to WP Rocket, LiteSpeed Cache and WP-Optimize. On by default. Turning it off is usually safe and faster: a cached configuration is already rebuilt whenever the product is saved, so clearing a page cache does not make it out of date. Leaving it on means every configurable product has to be rebuilt the next time someone views it, all at the moment the page cache is cold - on a store with many configurable products that is a lot of work at once. Keep it on if something outside the product changes the configuration data.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'disable_configuration_gzip',
 				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

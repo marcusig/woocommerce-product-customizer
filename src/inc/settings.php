@@ -42,6 +42,7 @@ if ( ! class_exists('MKL\PC\Settings') ) {
 					'show_active_choice_in_layer' => 'on',
 					'show_angle_name' => 'on',
 					'viewer_active_images_only' => 'on',
+					'purge_with_page_cache' => 'on',
 				)
 			) );
 		}

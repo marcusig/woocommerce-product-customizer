@@ -20,11 +20,39 @@ class Cache {
 	}
 
 	private function _hooks() {
+		// WooCommerce settings can change the payload itself - prices are part of it - so
+		// this one is not gated.
 		add_action( 'woocommerce_settings_saved', array( $this, 'purge' ) );
-		add_action( 'wpo_cache_flush', array( $this, 'purge' ) );
-		add_action( 'litespeed_purged_all', array( $this, 'purge' ) );
-		add_action( 'after_rocket_clean_domain', array( $this, 'purge' ) );
+
+		// A page cache being cleared says nothing about the configuration data, which is
+		// already rebuilt when the product is saved. On by default so that updating the
+		// plugin does not change how an existing store behaves, but worth turning off:
+		// emptying these files costs a rebuild per configurable product on the next view
+		// of each, at the exact moment the page cache is cold and everything hits PHP.
+		add_action( 'wpo_cache_flush', array( $this, 'maybe_purge_with_page_cache' ) );
+		add_action( 'litespeed_purged_all', array( $this, 'maybe_purge_with_page_cache' ) );
+		add_action( 'after_rocket_clean_domain', array( $this, 'maybe_purge_with_page_cache' ) );
+
 		add_action( 'template_redirect', array( $this, 'check_and_regenerate_js_file' ) );
+	}
+
+	/**
+	 * Purge the cached configurations along with a page cache, if the store asked for it.
+	 *
+	 * Checked when the hook fires rather than when it is registered, so the setting takes
+	 * effect without worrying about the order the plugin and the caching plugin load in.
+	 */
+	public function maybe_purge_with_page_cache() {
+		/**
+		 * Filter whether clearing a page cache also clears the cached configurations.
+		 *
+		 * @param bool $purge
+		 */
+		if ( ! apply_filters( 'mkl_pc_purge_with_page_cache', (bool) mkl_pc( 'settings' )->get( 'purge_with_page_cache' ) ) ) {
+			return;
+		}
+
+		$this->purge();
 	}
 
 	public function cache( $key, $data, $options = [] ) {

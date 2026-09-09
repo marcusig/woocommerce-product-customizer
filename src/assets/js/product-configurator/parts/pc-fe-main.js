@@ -335,21 +335,49 @@
 		// Not usable for omitImages: the cached file is the full payload, image URLs
 		// included, so an engine-only consumer that asked for them to be stripped has to
 		// go through the ajax endpoint that does the stripping.
-		var data_url = ( ! options.omitImages && options.$element ) ? options.$element.data( 'config_data_url' ) : null;
+		var cached_url = ( ! options.omitImages && options.$element ) ? options.$element.data( 'config_data_url' ) : null;
 
-		if ( ! data_url ) {
-			data_url = PC_config.ajaxurl + '?action=pc_get_data&data=init&fe=1&id=' + product_id;
-			if ( PC_config.update_nonce ) {
-				data_url += '&nonce=' + encodeURIComponent( PC_config.update_nonce );
-			}
-			if ( options.omitImages ) {
-				data_url += '&omit_images=1';
-			}
+		var ajax_url = PC_config.ajaxurl + '?action=pc_get_data&data=init&fe=1&id=' + product_id;
+		if ( PC_config.update_nonce ) {
+			ajax_url += '&nonce=' + encodeURIComponent( PC_config.update_nonce );
+		}
+		if ( options.omitImages ) {
+			ajax_url += '&omit_images=1';
 		}
 
-		return fetch( data_url ).then( function( response ) {
-			return response.json();
-		} ).then( function( data ) {
+		var load = function( url ) {
+			return fetch( url ).then( function( response ) {
+				if ( ! response.ok ) {
+					throw new Error( 'HTTP ' + response.status );
+				}
+				return response.json();
+			} );
+		};
+
+		var request;
+
+		if ( cached_url && cached_url !== ajax_url ) {
+			// The cached file is linked unconditionally, whether or not it exists yet:
+			// its URL is printed into markup that is itself page-cached, and a cache
+			// purge deletes the file at the same moment (see get_config_file_url in
+			// cache.php). Normally a request for a missing one is rescued by
+			// Cache::check_and_regenerate_js_file, which rebuilds and serves it.
+			//
+			// That rescue needs the server to route a miss under wp-content/uploads/ to
+			// index.php. Plenty of setups do not: an nginx vhost serving static assets
+			// with `try_files $uri =404`, uploads offloaded to S3, a CDN negative-caching
+			// the 404. There the request fails outright, so fall back to the ajax
+			// endpoint - which also covers a truncated or half-written file, since a body
+			// that will not parse as JSON lands in the same catch.
+			request = load( cached_url ).catch( function( error ) {
+				console.warn( 'Product configurator: cached data file unavailable (' + error.message + '), falling back to the ajax endpoint.' );
+				return load( ajax_url );
+			} );
+		} else {
+			request = load( ajax_url );
+		}
+
+		return request.then( function( data ) {
 			PC.productData = window.PC.productData || {};
 			PC.productData[ key ] = data;
 

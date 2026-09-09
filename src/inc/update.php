@@ -126,7 +126,14 @@ class Update {
 	}
 
 	/**
-	 * Enable Draco decoder by default on upgrade to 2.0
+	 * Set default values on upgrade to 2.0
+	 *
+	 * `purge_with_page_cache` is written here rather than defaulted at runtime: an
+	 * unticked checkbox submits nothing, so the key is simply absent from the saved
+	 * settings, and a default in Settings::get_defaults() would put it straight back -
+	 * making the box impossible to turn off. Seeding the stored option instead keeps
+	 * the existing behaviour for stores upgrading to 2.0, while an absent key ( the box
+	 * having been unticked ) correctly reads as off.
 	 *
 	 * @return void
 	 */
@@ -136,6 +143,7 @@ class Update {
 			$options = array();
 		}
 		$options['fe_3d_use_draco_loader'] = true;
+		$options['purge_with_page_cache']  = 'on';
 		update_option( 'mkl_pc__settings', $options );
 	}
 
