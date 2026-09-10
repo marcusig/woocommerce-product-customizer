@@ -36,6 +36,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 </div>
 <?php endif; ?>
 <div class="pc-3d-setting-group">
+	<h4><?php esc_html_e( 'Orbit hint', 'product-configurator-for-woocommerce' ); ?></h4>
+	<p class="description"><?php esc_html_e( 'Shows a short "drag to rotate" prompt over the model the first time a visitor sees a 3D product, so it does not read as a still image. It disappears as soon as they rotate anything, and is not shown again for the rest of their visit.', 'product-configurator-for-woocommerce' ); ?></p>
+	<p class="field-row">
+		<label for="pc-3d-orbit-hint">
+			<input type="checkbox" id="pc-3d-orbit-hint" class="pc-3d-orbit-hint" data-key="orbit_hint" <# if ( data.orbit_hint !== false ) { #>checked<# } #> />
+			<?php esc_html_e( 'Show the orbit hint', 'product-configurator-for-woocommerce' ); ?>
+		</label>
+	</p>
+</div>
+<div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Hidden objects', 'product-configurator-for-woocommerce' ); ?></h4>
 	<p class="description"><?php esc_html_e( 'Objects with these names are automatically hidden in the viewer. Default names (e.g. product_bounding_box, material_placeholders) are always hidden; add more below, one per line.', 'product-configurator-for-woocommerce' ); ?></p>
 	<p class="field-row">

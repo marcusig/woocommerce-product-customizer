@@ -651,6 +651,8 @@ class Frontend_Woocommerce {
 				'loading_viewer_preparing' => __( 'Preparing 3D…', 'product-configurator-for-woocommerce' ),
 				'loading_model' => __( 'Loading 3D model…', 'product-configurator-for-woocommerce' ),
 				'loading_viewer_setup' => __( 'Setting up scene…', 'product-configurator-for-woocommerce' ),
+				'orbit_hint' => _x( 'Drag to rotate', 'Hint shown over the 3D viewer on pointer devices', 'product-configurator-for-woocommerce' ),
+				'orbit_hint_touch' => _x( 'Swipe to rotate', 'Hint shown over the 3D viewer on touch devices', 'product-configurator-for-woocommerce' ),
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,

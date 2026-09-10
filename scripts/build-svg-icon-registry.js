@@ -1,7 +1,16 @@
 /**
- * Reads all .svg files under src/assets/icons/ (recursive) and writes
- * src/assets/admin/js/generated/svg-icon-registry.js so admin JS can merge SVG markup
- * without runtime PHP file reads.
+ * Reads all .svg files under src/assets/icons/ (recursive) and writes them into JS,
+ * so neither side has to read SVG files from PHP at runtime.
+ *
+ * Two outputs, because the two bundles cannot share one:
+ *
+ *   src/assets/admin/js/generated/svg-icon-registry.js
+ *       Every icon, as a global (PC.MKL_PC_SVG_ICON_REGISTRY) for the admin scripts.
+ *
+ *   src/assets/js/source/generated/svg-icons.js
+ *       Only icons under icons/frontend/, as an ES module for the webpack frontend
+ *       bundle. Scoped deliberately: everything in that module ships to every
+ *       visitor, and the admin's icon set is far larger than the shop needs.
  *
  * Usage: node scripts/build-svg-icon-registry.js
  */
@@ -18,6 +27,17 @@ const out_file = path.join(
 	'js',
 	'generated',
 	'svg-icon-registry.js'
+);
+/** Icons under this prefix are also emitted as an ES module for the frontend. */
+const frontend_prefix = 'svg/frontend/';
+const frontend_out_file = path.join(
+	project_root,
+	'src',
+	'assets',
+	'js',
+	'source',
+	'generated',
+	'svg-icons.js'
 );
 
 function segment_is_safe( segment ) {
@@ -83,4 +103,36 @@ console.log(
 	Object.keys( registry ).length,
 	'icons to',
 	path.relative( project_root, out_file )
+);
+
+// Frontend module: same markup, keyed without the icons/frontend/ prefix so a
+// caller asks for 'orbit-hint/ring' rather than repeating where it lives.
+const frontend_registry = {};
+for ( const key of Object.keys( registry ) ) {
+	if ( key.startsWith( frontend_prefix ) ) {
+		frontend_registry[ key.slice( frontend_prefix.length ) ] = registry[ key ];
+	}
+}
+
+const frontend_banner =
+	'/* eslint-disable */\n' +
+	'/**\n' +
+	' * AUTO-GENERATED — do not edit by hand.\n' +
+	' * Source: .svg files under src/assets/icons/frontend/ (recursive).\n' +
+	' * Regenerate: npm run build:svg-icons\n' +
+	' */\n' +
+	'export default ';
+
+fs.mkdirSync( path.dirname( frontend_out_file ), { recursive: true } );
+fs.writeFileSync(
+	frontend_out_file,
+	frontend_banner + JSON.stringify( frontend_registry, null, '\t' ) + ';\n',
+	'utf8'
+);
+
+console.log(
+	'[build-svg-icon-registry] Wrote',
+	Object.keys( frontend_registry ).length,
+	'frontend icons to',
+	path.relative( project_root, frontend_out_file )
 );

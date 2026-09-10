@@ -34,6 +34,12 @@ import {
 	set_loading_progress,
 	set_loading_step,
 } from './loading-overlay.js';
+import {
+	create_orbit_hint,
+	dismiss_orbit_hint,
+	mark_orbit_hint_done,
+	orbit_hint_done,
+} from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
@@ -47,6 +53,15 @@ const wp = window.wp;
  * newer member should feature-detect it rather than compare numbers.
  */
 const RUNTIME_API_VERSION = 1;
+
+/**
+ * How long the orbit hint will wait on a `PC.fe.viewer.intro` promise.
+ *
+ * An add-on whose intro never settles — a rejected asset load it forgot to
+ * catch, a tween cancelled by a choice change — would otherwise cost the
+ * customer the affordance entirely, silently and only on some products.
+ */
+const INTRO_MAX_WAIT = 8000;
 
 /**
  * Release passes that never made it into a composer. A pass holds render
@@ -82,6 +97,11 @@ export default Backbone.View.extend({
 	_rebuilding: false,
 	_onContextLost: null,
 	_onContextRestored: null,
+	_orbitHint: null,
+	_orbitHintSuppressed: false,
+	_onOrbitHintInteract: null,
+	_orbitHintControls: null,
+	_orbitHintCanvas: null,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
@@ -99,6 +119,11 @@ export default Backbone.View.extend({
 		this._container = null;
 		this._contextLost = false;
 		this._rebuilding = false;
+		this._orbitHint = null;
+		this._orbitHintSuppressed = false;
+		this._onOrbitHintInteract = null;
+		this._orbitHintControls = null;
+		this._orbitHintCanvas = null;
 		if ( window.PC.fe && window.PC.fe.angles ) {
 			// Wrapped: Backbone calls change handlers with (model, value, options),
 			// which would otherwise arrive as _applyAngleCamera's options argument.
@@ -426,6 +451,7 @@ export default Backbone.View.extend({
 			.then( () => {
 				this._hideLoadingOverlay();
 				wp.hooks.doAction( 'PC.fe.viewer.render', this );
+				this._afterViewerVisible();
 			} )
 			.catch( ( err ) => {
 				this._hideLoadingOverlay();
@@ -559,6 +585,7 @@ export default Backbone.View.extend({
 				this._rebuilding = false;
 				this._hideLoadingOverlay();
 				wp.hooks.doAction( 'PC.fe.viewer.render', this );
+				this._afterViewerVisible();
 			} )
 			.catch( ( err ) => {
 				this._rebuilding = false;
@@ -585,6 +612,167 @@ export default Backbone.View.extend({
 		const overlay = this._loadingOverlay;
 		this._loadingOverlay = null;
 		hide_loading_overlay( overlay );
+	},
+
+	/**
+	 * Everything that belongs after the model is first on screen: whatever wants
+	 * to play, and then the invitation to interact.
+	 */
+	_afterViewerVisible() {
+		this._runViewerIntro().then( () => this._showOrbitHint() );
+	},
+
+	/**
+	 * Seam for anything that should play before the shopper is invited to touch
+	 * the model.
+	 *
+	 * Nothing here by default. An add-on — a premium entering animation, for
+	 * one — hooks the `PC.fe.viewer.intro` filter, starts its camera move, and
+	 * returns a promise it resolves when the model has settled. The orbit hint
+	 * waits on that instead of appearing over a camera that is still moving,
+	 * which would read as two things competing for the customer's attention.
+	 *
+	 * The filter runs at the moment the intro should start, and is handed the
+	 * view, the live Three.js bag and the runtime API, so a hook has everything
+	 * it needs to drive the camera without reaching into internals.
+	 *
+	 * @returns {Promise<void>}
+	 */
+	_runViewerIntro() {
+		let intro = null;
+		if ( wp && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+			try {
+				intro = wp.hooks.applyFilters(
+					'PC.fe.viewer.intro',
+					null,
+					this,
+					this._three,
+					this._runtimeApi
+				);
+			} catch ( err ) {
+				// eslint-disable-next-line no-console
+				console.warn( '3D viewer: PC.fe.viewer.intro threw; skipping the intro.', err );
+				intro = null;
+			}
+		}
+		if ( ! intro || typeof intro.then !== 'function' ) return Promise.resolve();
+
+		return Promise.race( [
+			// A rejected intro is the add-on's problem to report; here it just
+			// means the hint stops waiting.
+			Promise.resolve( intro ).catch( () => {} ),
+			new Promise( ( resolve ) => window.setTimeout( resolve, INTRO_MAX_WAIT ) ),
+		] );
+	},
+
+	/**
+	 * Put the orbit affordance on screen.
+	 *
+	 * Skipped when the product turned it off, when the model cannot be orbited
+	 * anyway, when the customer has already orbited something this session, and
+	 * when they got ahead of us and grabbed the model during loading. The point
+	 * is to teach the gesture to someone who has not found it — anything else is
+	 * decoration over a product photo.
+	 */
+	_showOrbitHint() {
+		if ( this._orbitHint || this._orbitHintSuppressed ) return;
+		if ( ! this._three || this._contextLost ) return;
+		if ( ! this._canOrbit() ) return;
+		const s = getSettings();
+		if ( ! s || s.orbit_hint === false ) return;
+		if ( orbit_hint_done() ) return;
+		const container = this._container;
+		if ( ! container || ! container.parentNode ) return;
+
+		const hint = create_orbit_hint();
+		container.after( hint );
+		this._orbitHint = hint;
+		this._emitRuntimeEvent( 'hint:shown', {} );
+	},
+
+	/**
+	 * Take the hint away because the customer found the gesture on their own.
+	 * Remembered for the session, so the next product does not repeat the lesson.
+	 */
+	_dismissOrbitHint() {
+		this._orbitHintSuppressed = true;
+		mark_orbit_hint_done();
+		if ( ! this._orbitHint ) return;
+		const hint = this._orbitHint;
+		this._orbitHint = null;
+		dismiss_orbit_hint( hint );
+		this._emitRuntimeEvent( 'hint:dismissed', {} );
+	},
+
+	/** Drop the hint from the DOM without the fade — teardown, not dismissal. */
+	_removeOrbitHint() {
+		const hint = this._orbitHint;
+		this._orbitHint = null;
+		if ( hint && hint.parentNode ) hint.parentNode.removeChild( hint );
+	},
+
+	/**
+	 * Watch for the interaction that makes the hint unnecessary.
+	 *
+	 * Bound as soon as the controls exist, which is before the hint is shown —
+	 * deliberately. A customer who grabs the model while it is still loading has
+	 * already answered the question the hint asks, and should not then be told
+	 * how to do the thing they just did.
+	 *
+	 * OrbitControls' 'start' covers pointer, touch and wheel, and — unlike
+	 * 'change' — is never fired by the viewer moving the camera itself, so an
+	 * angle preset or an intro animation does not count as the customer finding
+	 * the gesture.
+	 *
+	 * @param {OrbitControls} controls
+	 * @param {HTMLCanvasElement} canvas
+	 */
+	_bindOrbitHintDismissal( controls, canvas ) {
+		this._unbindOrbitHintDismissal();
+		if ( ! controls ) return;
+		const onInteract = () => this._dismissOrbitHint();
+		controls.addEventListener( 'start', onInteract );
+		if ( canvas ) {
+			// The canvas is focusable and orbits from the arrow keys, so a
+			// keyboard user reaching it has found the gesture too.
+			canvas.addEventListener( 'keydown', onInteract );
+			canvas.addEventListener( 'focus', onInteract );
+		}
+		this._onOrbitHintInteract = onInteract;
+		this._orbitHintControls = controls;
+		this._orbitHintCanvas = canvas || null;
+	},
+
+	_unbindOrbitHintDismissal() {
+		const onInteract = this._onOrbitHintInteract;
+		if ( ! onInteract ) return;
+		if ( this._orbitHintControls ) {
+			this._orbitHintControls.removeEventListener( 'start', onInteract );
+		}
+		if ( this._orbitHintCanvas ) {
+			this._orbitHintCanvas.removeEventListener( 'keydown', onInteract );
+			this._orbitHintCanvas.removeEventListener( 'focus', onInteract );
+		}
+		this._onOrbitHintInteract = null;
+		this._orbitHintControls = null;
+		this._orbitHintCanvas = null;
+	},
+
+	/**
+	 * Whether orbiting actually moves anything.
+	 *
+	 * A product can be saved with its azimuth and polar ranges pinned shut, and
+	 * on one of those both the grab cursor and the hint would be promising a
+	 * gesture that does nothing.
+	 *
+	 * @returns {boolean}
+	 */
+	_canOrbit() {
+		const t = this._three;
+		if ( ! t || ! t.controls ) return false;
+		const controls = t.controls;
+		return controls.minAzimuthAngle !== controls.maxAzimuthAngle
+			|| controls.minPolarAngle !== controls.maxPolarAngle;
 	},
 
 	_showError( msg ) {
@@ -1101,6 +1289,12 @@ export default Backbone.View.extend({
 			),
 		} );
 		this._quality.attach( t.controls );
+
+		// Before the hint exists, so an impatient customer who grabs the model
+		// mid-load is never shown it. The class drives the grab cursor, which is
+		// the half of the affordance that outlives the once-per-session hint.
+		this._bindOrbitHintDismissal( t.controls, t.renderer.domElement );
+		this.$el.toggleClass( 'mkl_pc_viewer--orbitable', this._canOrbit() );
 
 		// Create postprocessing pipeline and keep it in sync with container resize events.
 		const passFactories = modules.passFactories || [];
@@ -1763,6 +1957,10 @@ export default Backbone.View.extend({
 		this._shadowsEnabled = false;
 		this._hiddenObjectNames = [];
 		this._sceneReady = false;
+		// _orbitHintSuppressed is view state, not scene state: a customer who has
+		// already orbited should not be re-taught by a context-loss rebuild.
+		this._unbindOrbitHintDismissal();
+		this._removeOrbitHint();
 		if ( this._three && this._three.renderer && this._onContextLost ) {
 			const canvas = this._three.renderer.domElement;
 			canvas.removeEventListener( 'webglcontextlost', this._onContextLost );

@@ -272,7 +272,7 @@ PC.views = window.PC.views || {};
 			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth, .pc-3d-exposure, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth': 'on_slider_input',
 			'change .pc-3d-shadow-mode': 'on_shadow_mode_change',
 			'change .pc-3d-shadow-light': 'on_shadow_light_change',
-			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-extend-under-toolbar': 'on_setting_change',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-extend-under-toolbar, .pc-3d-orbit-hint': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
 			'change .pc-3d-postprocess': 'on_setting_change',
 			// Postprocessing effects are contributed by add-ons, so bind their sliders
@@ -395,6 +395,9 @@ PC.views = window.PC.views || {};
 			}
 			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
 			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
+			// On by default: a shopper who cannot tell the viewer is interactive
+			// is the problem it exists to solve, and it costs one gesture to clear.
+			if ( s.orbit_hint === undefined ) s.orbit_hint = true;
 			if ( !s.renderer ) s.renderer = { tone_mapping: 'aces', exposure: 1, output_color_space: 'srgb', alpha: false };
 			if ( !s.lighting ) s.lighting = {};
 			// Postprocessing defaults belong to whichever add-on provides the effects;

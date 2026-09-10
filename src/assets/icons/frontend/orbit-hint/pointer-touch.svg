@@ -1,0 +1,8 @@
+<!-- Orbit hint: pointer glyph for touch — the contact point, not a hand.
+     A drawn hand is the obvious choice and the wrong one: at twenty-odd
+     pixels the fingers collapse into each other and the result is a gesture
+     nobody wants on a product page. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+	<circle cx="12" cy="12" r="7.4" opacity=".9"/>
+	<circle cx="12" cy="12" r="3.1" fill="currentColor" stroke="none"/>
+</svg>

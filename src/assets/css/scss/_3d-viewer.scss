@@ -199,6 +199,184 @@
 	transition: width 0.2s linear;
 }
 
+
+/*
+ * Orbit affordance.
+ *
+ * A still render and a model that turns look the same until something moves, so
+ * this says the gesture out loud once and then quiets down: the pointer sweeps
+ * across the orbit ring four times, after which the label fades away and the
+ * puck shrinks to a dim resting disc that stays until the customer grabs the
+ * model. Loud enough to be read, small enough to leave the product alone.
+ *
+ * Nothing here takes pointer events. The drag that dismisses the hint has to
+ * reach the canvas underneath and orbit the model — an affordance that eats the
+ * interaction it just asked for is worse than no affordance at all.
+ *
+ * Timings below are one 2.4s sweep x 4, so the settle starts at 9.6s. Change
+ * one and change the others.
+ */
+@keyframes mkl_pc_3d_hint_in {
+	from {
+		opacity: 0;
+		transform: scale(0.92);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes mkl_pc_3d_hint_sweep {
+	0%,
+	6% {
+		transform: translateX(0);
+	}
+
+	28% {
+		transform: translateX(-11px);
+	}
+
+	72% {
+		transform: translateX(11px);
+	}
+
+	94%,
+	100% {
+		transform: translateX(0);
+	}
+}
+
+// Where the hint ends up once it has said its piece: a small quiet disc that
+// keeps standing for "this one is interactive" without holding the middle of
+// the product. To have it leave entirely instead, take this to opacity 0.
+@keyframes mkl_pc_3d_hint_settle {
+	to {
+		opacity: 0.6;
+		transform: scale(0.72);
+	}
+}
+
+@keyframes mkl_pc_3d_hint_label_out {
+	to {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+}
+
+.mkl_pc_3d_hint {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.7em;
+	// Never an event target: see the note above.
+	pointer-events: none;
+	color: #fff;
+	opacity: 1;
+	// Only a transition here — an entry animation on this element would keep
+	// filling opacity and the dismissal fade would never be seen.
+	transition: opacity 0.3s ease;
+
+	&.is-hiding {
+		opacity: 0;
+	}
+}
+
+.mkl_pc_3d_hint__puck {
+	position: relative;
+	box-sizing: border-box;
+	width: 78px;
+	height: 78px;
+	border: 1px solid rgba(255, 255, 255, 0.24);
+	border-radius: 50%;
+	// Dark enough to hold a white glyph over a white studio backdrop; the
+	// hairline border is what keeps it from disappearing into a dark one.
+	background: rgba(18, 18, 20, 0.42);
+	box-shadow: 0 3px 16px rgba(0, 0, 0, 0.28);
+	backdrop-filter: blur(7px) saturate(1.1);
+	-webkit-backdrop-filter: blur(7px) saturate(1.1);
+	animation:
+		mkl_pc_3d_hint_in 0.45s 0.1s ease both,
+		mkl_pc_3d_hint_settle 0.6s 9.6s ease forwards;
+}
+
+// Both icon wrappers are sized to their file's viewBox aspect — ring 42x22,
+// pointer 24x24. Change one there and change it here.
+.mkl_pc_3d_hint__orbit {
+	position: absolute;
+	bottom: 16px;
+	left: 50%;
+	display: block;
+	width: 42px;
+	height: 22px;
+	margin-left: -21px;
+	opacity: 0.85;
+}
+
+.mkl_pc_3d_hint__glyph {
+	position: absolute;
+	top: 14px;
+	left: 50%;
+	display: block;
+	width: 21px;
+	height: 21px;
+	// Centring lives in the margin so the sweep owns `transform` outright.
+	margin-left: -10.5px;
+	animation: mkl_pc_3d_hint_sweep 2.4s ease-in-out 4 both;
+}
+
+.mkl_pc_3d_hint__orbit svg,
+.mkl_pc_3d_hint__glyph svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.mkl_pc_3d_hint__label {
+	// A pill of its own rather than a text shadow: the backdrop behind the
+	// viewer is per-product and can be anything from a dark HDRI to white.
+	margin: 0;
+	padding: 0.35em 0.85em;
+	border: 1px solid rgba(255, 255, 255, 0.24);
+	border-radius: 999px;
+	background: rgba(18, 18, 20, 0.42);
+	box-shadow: 0 3px 16px rgba(0, 0, 0, 0.28);
+	backdrop-filter: blur(7px);
+	-webkit-backdrop-filter: blur(7px);
+	font-size: 0.8125em;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	line-height: 1.3;
+	text-align: center;
+	animation:
+		mkl_pc_3d_hint_in 0.45s 0.2s ease both,
+		mkl_pc_3d_hint_label_out 0.5s 9.6s ease forwards;
+}
+
+// Without a blurred backdrop the translucent fills lose most of their contrast.
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+	.mkl_pc_3d_hint__puck,
+	.mkl_pc_3d_hint__label {
+		background: rgba(18, 18, 20, 0.68);
+	}
+}
+
+// The other half of the affordance, and the half that survives the once-per-
+// session hint: on a product whose orbit is not pinned shut, the cursor says
+// the model is grabbable on every later visit too.
+.mkl_pc_viewer--orbitable .mkl_pc_3d_canvas_container canvas {
+	cursor: grab;
+
+	&:active {
+		cursor: grabbing;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.mkl_pc_3d_loader {
 		transition: none;
@@ -212,5 +390,21 @@
 
 	.mkl_pc_3d_loader__text-item {
 		transition: none;
+	}
+
+	.mkl_pc_3d_hint {
+		transition: none;
+	}
+
+	// The sweep is the whole message, so with motion off the hint has nothing
+	// left to say that the label does not say better. Keep it static and full
+	// strength rather than animating it into a resting state nobody saw it
+	// leave.
+	.mkl_pc_3d_hint__puck,
+	.mkl_pc_3d_hint__glyph,
+	.mkl_pc_3d_hint__label {
+		animation: none;
+		opacity: 1;
+		transform: none;
 	}
 }
