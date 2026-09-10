@@ -56,6 +56,41 @@
 		},
 	};
 
+	/**
+	 * Turning a product into a global configurator reuses this overlay: the editor pushes its
+	 * whole configuration to the new post in the same batches a save uses, so the phases line up
+	 * one-for-one and only the wording differs.
+	 */
+	var toGlobalMessages = {
+		layers: function () {
+			return PC_lang().mkl_pc_global_convert_layers || messages.layers();
+		},
+		content: function () {
+			return PC_lang().mkl_pc_global_convert_content || messages.content();
+		},
+		finalize: function () {
+			return PC_lang().mkl_pc_global_convert_finalize || messages.finalize();
+		},
+		other: function () {
+			return PC_lang().mkl_pc_global_convert_other || messages.other();
+		},
+		complete: function () {
+			return PC_lang().mkl_pc_global_convert_complete || messages.complete();
+		},
+		note: function () {
+			return PC_lang().mkl_pc_global_convert_note || '';
+		},
+		dismiss: function () {
+			return PC_lang().mkl_pc_global_convert_dismiss || messages.dismiss();
+		},
+	};
+
+	var modes = {
+		migration: messages,
+		bulk_save: bulkMessages,
+		to_global: toGlobalMessages,
+	};
+
 	function ensureDom() {
 		if ( $( '.mkl-pc-migration-overlay' ).length ) {
 			return $( '.mkl-pc-migration-overlay' );
@@ -72,7 +107,11 @@
 		);
 		$( document.body ).append( $el );
 		$el.on( 'click', '.mkl-pc-migration-overlay__dismiss', function () {
+			var onDismiss = window.MKL_PC_DataMigrationOverlay._onDismiss;
 			window.MKL_PC_DataMigrationOverlay.hide();
+			if ( onDismiss ) {
+				onDismiss();
+			}
 		} );
 		return $el;
 	}
@@ -80,10 +119,22 @@
 	window.MKL_PC_DataMigrationOverlay = {
 		active: false,
 		_mode: 'migration',
+		_onDismiss: null,
+
+		/**
+		 * Run a callback when the user dismisses the completion panel. Cleared on show/hide, so
+		 * it only ever applies to the run that set it.
+		 *
+		 * @param {Function|null} callback
+		 */
+		setDismissHandler: function ( callback ) {
+			this._onDismiss = callback || null;
+		},
 
 		show: function ( phase, mode ) {
 			this.active = true;
 			this._mode = mode || 'migration';
+			this._onDismiss = null;
 			var $root = ensureDom();
 			$root.removeClass( 'is-complete' ).addClass( 'is-visible' ).attr( 'aria-busy', 'true' );
 			$root.find( '.mkl-pc-migration-overlay__note' ).empty().hide();
@@ -99,7 +150,7 @@
 			if ( ! $root.length ) {
 				return;
 			}
-			var m = this._mode === 'bulk_save' ? bulkMessages : messages;
+			var m = modes[ this._mode ] || messages;
 			var $status = $root.find( '.mkl-pc-migration-overlay__status' );
 			if ( phase === 'complete' ) {
 				$root.addClass( 'is-complete' ).attr( 'aria-busy', 'false' );
@@ -133,6 +184,7 @@
 		hide: function () {
 			this.active = false;
 			this._mode = 'migration';
+			this._onDismiss = null;
 			$( '.mkl-pc-migration-overlay' ).removeClass( 'is-visible is-complete' ).remove();
 			if ( window.PC && PC.app ) {
 				PC.app._chunk_storage_migration_ui = false;

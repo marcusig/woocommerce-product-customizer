@@ -4,7 +4,7 @@
  *  - With a global selected: summary + Change (or click summary) opens the search; picking a row
  *    updates the hidden id, then the search row is hidden again.
  *  - With no global selected: search is always visible.
- *  - Home tab: "Turn into global" / "Make local copy" (handlers on <body>).
+ *  - Home tab: "Turn into global" / "Make local copy" / "Delete local data" (handlers on <body>).
  *
  * Public globals: ajaxurl, PC_lang (optional; English fallbacks).
  */
@@ -255,30 +255,185 @@
 		$(document.body).trigger('wc-enhanced-select-init');
 	}
 
+	function overlay() {
+		return window.MKL_PC_DataMigrationOverlay || null;
+	}
+
+	function ajaxMessage(resp, fallback) {
+		if (resp && resp.data && resp.data.message) {
+			return resp.data.message;
+		}
+		return fallback;
+	}
+
+	/**
+	 * Make sure the product's own data is on the server before it is copied anywhere.
+	 *
+	 * The copy is taken from the collections loaded in the editor, and pushing them to the new
+	 * post clears the editor's dirty tracking. Saving first means the product and the global
+	 * configurator end up with the same configuration either way, including if the conversion
+	 * fails half-way.
+	 */
+	function saveProductFirst(app, done, abort) {
+		var dirty = false;
+		Object.keys(app.is_modified || {}).forEach(function (key) {
+			if (app.is_modified[key] === true) {
+				dirty = true;
+			}
+		});
+		if (!dirty) {
+			done();
+			return;
+		}
+		if (!window.confirm(__('mkl_pc_global_convert_save_first', 'You have unsaved changes. They will be saved to this product first, then copied to the new global configurator.'))) {
+			abort();
+			return;
+		}
+		// No bulk overlay here: its completion panel would appear for the moment between this
+		// save finishing and the conversion overlay opening, offering to dismiss a conversion
+		// that has not started. A storage migration still raises its own overlay, which is
+		// correct - that one really did happen.
+		app.save_all(null, {
+			saved_all: function () { done(); },
+			failed: function () { abort(); }
+		});
+	}
+
+	/**
+	 * Remove a global configurator this flow just created but never linked to anything.
+	 */
+	function discardGlobal(productId, nonce, globalId) {
+		if (!globalId) {
+			return;
+		}
+		$.post(window.ajaxurl, {
+			action: 'mkl_pc_discard_global_configurator',
+			product_id: productId,
+			global_id: globalId,
+			nonce: nonce
+		});
+	}
+
+	/**
+	 * Turn the product being edited into a global configurator.
+	 *
+	 * The server only creates the (empty) post; the configuration itself is uploaded from here
+	 * through the editor's normal chunked save, so a large configurator is not squeezed into one
+	 * request and the user watches it progress. The product is linked last, so a conversion that
+	 * fails part-way leaves the product exactly as it was.
+	 */
+	function turnIntoGlobal($btn) {
+		var productId = parseInt($btn.attr('data-product-id'), 10) || 0;
+		var nonce = $btn.attr('data-nonce') || '';
+		var app = (window.PC && window.PC.app) ? window.PC.app : null;
+
+		if (!app || typeof app.saveConfigurationToOwner !== 'function') {
+			window.alert(__('mkl_pc_global_convert_failed', 'The configurator data could not be copied, so the product was left as it is.'));
+			return;
+		}
+		if (!window.confirm(__('mkl_pc_global_confirm_turn_global', 'Create a new global configurator from this product\'s configurator and link the product to it?'))) {
+			return;
+		}
+
+		var release = function () { $btn.prop('disabled', false); };
+		$btn.prop('disabled', true);
+
+		saveProductFirst(app, function () {
+			// Conditions are fetched lazily by the editor; without this the copy would silently
+			// leave them behind.
+			app.ensureConditionsLoaded(function () {
+				$.post(window.ajaxurl, {
+					action: 'mkl_pc_create_global_from_product',
+					product_id: productId,
+					nonce: nonce
+				}).done(function (resp) {
+					if (!resp || !resp.success || !resp.data || !resp.data.global_id) {
+						window.alert(ajaxMessage(resp, __('mkl_pc_global_convert_failed', 'The configurator data could not be copied, so the product was left as it is.')));
+						release();
+						return;
+					}
+					var globalId = parseInt(resp.data.global_id, 10);
+					var started = app.saveConfigurationToOwner(globalId, resp.data.save_nonce, {
+						saved_all: function () {
+							if (overlay()) {
+								overlay().setPhase('finalize');
+							}
+							return $.post(window.ajaxurl, {
+								action: 'mkl_pc_link_product_to_global',
+								product_id: productId,
+								global_id: globalId,
+								nonce: nonce
+							}).then(function (linkResp) {
+								if (!linkResp || !linkResp.success) {
+									window.alert(ajaxMessage(linkResp, __('mkl_pc_global_convert_failed', 'The configurator data could not be copied, so the product was left as it is.')));
+									discardGlobal(productId, nonce, globalId);
+									release();
+									return $.Deferred().reject().promise();
+								}
+								// The page is showing a product that is now reading from somewhere
+								// else, so nothing on it is trustworthy any more - but reloading
+								// out from under the completion notice would hide what happened.
+								if (overlay()) {
+									overlay().setDismissHandler(function () { window.location.reload(); });
+								}
+								return true;
+							}, function () {
+								window.alert(__('mkl_pc_global_convert_failed', 'The configurator data could not be copied, so the product was left as it is.'));
+								discardGlobal(productId, nonce, globalId);
+								release();
+								// jQuery 3 fulfils the derived promise when a rejection handler
+								// returns a plain value, which would report the conversion as done.
+								return $.Deferred().reject().promise();
+							});
+						},
+						failed: function (errors) {
+							discardGlobal(productId, nonce, globalId);
+							window.alert(
+								__('mkl_pc_global_convert_failed', 'The configurator data could not be copied, so the product was left as it is.') +
+								(errors && errors.length ? '\n\n' + errors.join('\n') : '')
+							);
+							release();
+						}
+					});
+					if (!started) {
+						discardGlobal(productId, nonce, globalId);
+						window.alert(__('mkl_pc_global_convert_empty', 'This configurator has no data to copy yet.'));
+						release();
+					}
+				}).fail(function () {
+					window.alert('Network error');
+					release();
+				});
+			});
+		}, release);
+	}
+
 	function bindActions($scope) {
 		$scope.on('click', '.mkl-pc-turn-into-global', function (e) {
 			e.preventDefault();
+			turnIntoGlobal($(this));
+		});
+
+		$scope.on('click', '.mkl-pc-delete-local-config', function (e) {
+			e.preventDefault();
 			var $btn = $(this);
-			if (!window.confirm(__('mkl_pc_global_confirm_turn_global', 'Create a new global configurator from this product\'s configurator and link the product to it?'))) return;
+			if (!window.confirm(__('mkl_pc_delete_local_config_confirm', 'Delete this product\'s own configurator data?'))) {
+				return;
+			}
 			$btn.prop('disabled', true);
 			$.post(window.ajaxurl, {
-				action: 'mkl_pc_create_global_from_product',
+				action: 'mkl_pc_delete_local_configurator_data',
 				product_id: $btn.attr('data-product-id'),
 				nonce: $btn.attr('data-nonce')
 			}).done(function (resp) {
-				if (resp && resp.success && resp.data) {
-					if (resp.data.edit_url) {
-						window.location.href = resp.data.edit_url;
-					} else {
-						window.location.reload();
-					}
-				} else {
-					var msg = resp && resp.data && resp.data.message ? resp.data.message : 'Error';
-					window.alert(msg);
+				if (resp && resp.success) {
+					$btn.closest('.mkl-pc-data-migration').remove();
+					return;
 				}
+				window.alert(ajaxMessage(resp, 'Error'));
+				$btn.prop('disabled', false);
 			}).fail(function () {
 				window.alert('Network error');
-			}).always(function () {
 				$btn.prop('disabled', false);
 			});
 		});

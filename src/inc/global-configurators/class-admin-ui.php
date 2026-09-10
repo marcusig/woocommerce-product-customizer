@@ -38,6 +38,9 @@ final class Admin_Ui {
 
 		add_action( 'wp_ajax_mkl_pc_search_global_configurators', array( __CLASS__, 'ajax_search_global_configurators' ) );
 		add_action( 'wp_ajax_mkl_pc_create_global_from_product', array( __CLASS__, 'ajax_create_global_from_product' ) );
+		add_action( 'wp_ajax_mkl_pc_link_product_to_global', array( __CLASS__, 'ajax_link_product_to_global' ) );
+		add_action( 'wp_ajax_mkl_pc_discard_global_configurator', array( __CLASS__, 'ajax_discard_global_configurator' ) );
+		add_action( 'wp_ajax_mkl_pc_delete_local_configurator_data', array( __CLASS__, 'ajax_delete_local_configurator_data' ) );
 		add_action( 'wp_ajax_mkl_pc_make_local_copy', array( __CLASS__, 'ajax_make_local_copy' ) );
 
 		add_action( 'mkl_pc_admin_scripts_product_page', array( __CLASS__, 'enqueue_assets' ) );
@@ -257,6 +260,7 @@ final class Admin_Ui {
 				</p>
 			</div>
 			<?php
+			self::render_local_data_leftover_notice( $post_id, $nonce );
 			return;
 		}
 
@@ -275,6 +279,45 @@ final class Admin_Ui {
 					<?php esc_html_e( 'Turn into global configurator', 'product-configurator-for-woocommerce' ); ?>
 				</button>
 			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Notice offering to delete the configurator data a linked product still holds.
+	 *
+	 * Turning a product into a global configurator copies its data up and leaves the original in
+	 * place: the link alone decides which one is read, so the copy is dormant rather than
+	 * conflicting, and keeping it means an unlink puts the product back the way it was. It is
+	 * only worth removing once the shared configurator has been checked, which is a decision for
+	 * whoever did the conversion - hence a button rather than an automatic cleanup.
+	 *
+	 * @param int    $product_id
+	 * @param string $nonce Conversion nonce for this product.
+	 * @return void
+	 */
+	private static function render_local_data_leftover_notice( $product_id, $nonce ) {
+		$product = Storage_Owner::for_post( $product_id );
+		if ( ! $product || ! Data_Copier::has_local_configurator_data( $product ) ) {
+			return;
+		}
+		?>
+		<div class="mkl-pc-data-migration migration-warning mkl-home-section">
+			<div class="notice notice-warning mkl-pc-local-data-notice">
+				<p>
+					<strong><?php esc_html_e( 'This product still has its own configurator data.', 'product-configurator-for-woocommerce' ); ?></strong>
+				</p>
+				<p>
+					<?php esc_html_e( 'It is not used while the product is linked to a global configurator, and it is what the product falls back to if you unlink it. Delete it once you have checked that the global configurator is correct.', 'product-configurator-for-woocommerce' ); ?>
+				</p>
+				<p>
+					<button type="button" class="button button-secondary mkl-pc-delete-local-config"
+						data-product-id="<?php echo esc_attr( (string) $product_id ); ?>"
+						data-nonce="<?php echo esc_attr( $nonce ); ?>">
+						<?php esc_html_e( 'Delete local configurator data', 'product-configurator-for-woocommerce' ); ?>
+					</button>
+				</p>
+			</div>
 		</div>
 		<?php
 	}
@@ -323,7 +366,28 @@ final class Admin_Ui {
 	}
 
 	/**
-	 * Create a new CPT from the product's current data and link the product to it.
+	 * Shared request guard for the conversion endpoints.
+	 *
+	 * @param int $product_id
+	 * @return void Sends a JSON error and exits when the request may not proceed.
+	 */
+	private static function require_conversion_access( $product_id ) {
+		if ( ! check_ajax_referer( 'mkl_pc_global_configurators_admin_' . $product_id, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Session expired.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		if ( ! current_user_can( 'edit_post', $product_id ) || ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Not allowed.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+	}
+
+	/**
+	 * Step 1 of turning a product into a global configurator: create the empty post.
+	 *
+	 * The configuration itself is not copied here. The editor already holds it in memory and
+	 * uploads it to the new post in the same chunked batches a normal save uses, so a large
+	 * configurator is not pushed through one request that can hit post_max_size or a proxy
+	 * timeout, and the user gets progress instead of a stalled spinner. The product is linked
+	 * only once that upload succeeds - see {@see self::ajax_link_product_to_global()}.
 	 *
 	 * @return void
 	 */
@@ -332,31 +396,123 @@ final class Admin_Ui {
 			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
 		}
 		$product_id = absint( $_REQUEST['product_id'] );
-		if ( ! check_ajax_referer( 'mkl_pc_global_configurators_admin_' . $product_id, 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Session expired.', 'product-configurator-for-woocommerce' ) ), 403 );
-		}
-		if ( ! current_user_can( 'edit_post', $product_id ) || ! current_user_can( 'edit_posts' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Not allowed.', 'product-configurator-for-woocommerce' ) ), 403 );
-		}
+		self::require_conversion_access( $product_id );
 		if ( ! Owner_Resolver::can_use_global( $product_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'This product cannot use a global configurator.', 'product-configurator-for-woocommerce' ) ), 400 );
 		}
+		if ( Owner_Resolver::get_global_id( $product_id ) > 0 ) {
+			wp_send_json_error( array( 'message' => __( 'This product already uses a global configurator.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
 		$title  = isset( $_REQUEST['title'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['title'] ) ) : '';
-		$new_id = Data_Copier::create_global_from_product( $product_id, $title );
+		$new_id = Data_Copier::create_global_from_product( $product_id, $title, false );
 		if ( is_wp_error( $new_id ) ) {
 			wp_send_json_error( array( 'message' => $new_id->get_error_message() ), 400 );
 		}
-		$linked = Data_Copier::link_product_to_global( $product_id, (int) $new_id, true );
+		$new_id = (int) $new_id;
+
+		wp_send_json_success(
+			array(
+				'global_id'    => $new_id,
+				'global_title' => self::decode_post_title( get_the_title( $new_id ) ),
+				'edit_url'     => get_edit_post_link( $new_id, 'raw' ),
+				// The editor saves to the new post through the normal configurator-data endpoint,
+				// which checks a nonce bound to the post being written.
+				'save_nonce'   => wp_create_nonce( 'update-pc-post_' . $new_id ),
+			)
+		);
+	}
+
+	/**
+	 * Step 2: point the product at the global configurator once its data is uploaded.
+	 *
+	 * The product keeps its own configurator rows. They are unreachable while the link is in
+	 * place, and deleting them is left to an explicit action on the home tab so a conversion
+	 * that turns out wrong can be undone by unlinking.
+	 *
+	 * @return void
+	 */
+	public static function ajax_link_product_to_global() {
+		if ( ! isset( $_REQUEST['nonce'], $_REQUEST['product_id'], $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$product_id = absint( $_REQUEST['product_id'] );
+		$global_id  = absint( $_REQUEST['global_id'] );
+		self::require_conversion_access( $product_id );
+		if ( ! current_user_can( 'edit_post', $global_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Not allowed.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+
+		$linked = Data_Copier::link_product_to_global( $product_id, $global_id, false );
 		if ( is_wp_error( $linked ) ) {
 			wp_send_json_error( array( 'message' => $linked->get_error_message() ), 400 );
 		}
 		wp_send_json_success(
 			array(
-				'global_id'    => (int) $new_id,
-				'global_title' => self::decode_post_title( get_the_title( (int) $new_id ) ),
-				'edit_url'     => get_edit_post_link( (int) $new_id, 'raw' ),
+				'global_id'    => $global_id,
+				'global_title' => self::decode_post_title( get_the_title( $global_id ) ),
+				'edit_url'     => get_edit_post_link( $global_id, 'raw' ),
 			)
 		);
+	}
+
+	/**
+	 * Remove a global configurator created by a conversion that then failed part-way.
+	 *
+	 * Refuses anything another product already points at, so a mis-sent id cannot take out a
+	 * configurator that is in use.
+	 *
+	 * @return void
+	 */
+	public static function ajax_discard_global_configurator() {
+		if ( ! isset( $_REQUEST['nonce'], $_REQUEST['product_id'], $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$product_id = absint( $_REQUEST['product_id'] );
+		$global_id  = absint( $_REQUEST['global_id'] );
+		self::require_conversion_access( $product_id );
+		if ( ! Schema::is_global_configurator_id( $global_id ) || ! current_user_can( 'delete_post', $global_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Not allowed.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		if ( ! empty( Owner_Resolver::get_consumer_product_ids( $global_id ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'This global configurator is in use and was not deleted.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		wp_delete_post( $global_id, true );
+		wp_send_json_success();
+	}
+
+	/**
+	 * Delete the configurator data a product still holds after being linked to a global one.
+	 *
+	 * Only ever runs on a product that is currently reading from a global configurator, so the
+	 * rows being removed are the unreachable copy and not the configuration in use.
+	 *
+	 * @return void
+	 */
+	public static function ajax_delete_local_configurator_data() {
+		if ( ! isset( $_REQUEST['nonce'], $_REQUEST['product_id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$product_id = absint( $_REQUEST['product_id'] );
+		self::require_conversion_access( $product_id );
+
+		$global_id = Owner_Resolver::get_global_id( $product_id );
+		if ( $global_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'This product is not linked to a global configurator, so its data was left alone.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+
+		$product = Storage_Owner::for_post( $product_id );
+		if ( ! $product ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid product.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+
+		$wiped = Data_Copier::wipe_configurator_meta( $product );
+		if ( is_wp_error( $wiped ) ) {
+			wp_send_json_error( array( 'message' => $wiped->get_error_message() ), 400 );
+		}
+		$product->save();
+
+		do_action( 'mkl_pc/global_configurators/local_data_deleted', $product_id, $global_id );
+		wp_send_json_success();
 	}
 
 	/**
@@ -425,7 +581,18 @@ final class Admin_Ui {
 		if ( ! is_array( $pc_lang ) ) {
 			$pc_lang = array();
 		}
-		$pc_lang['mkl_pc_global_confirm_turn_global']  = __( 'Create a new global configurator from this product\'s configurator and link the product to it? The product\'s own configurator data will be replaced by the link.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_confirm_turn_global']  = __( 'Create a new global configurator from this product\'s configurator and link the product to it? This product\'s own data is kept until you delete it from the home tab.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_layers']       = __( 'Copying layers to the global configurator…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_content']      = __( 'Copying options and choices…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_other']        = __( 'Copying configurator data…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_finalize']     = __( 'Linking this product to the global configurator…', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_complete']     = __( 'The global configurator was created and this product is now linked to it.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_note']         = __( 'This product still has its own copy of the configuration. It is no longer used, and you can delete it from the home tab once you have checked the global configurator.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_dismiss']      = __( 'Reload the page', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_save_first']   = __( 'You have unsaved changes. They will be saved to this product first, then copied to the new global configurator.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_empty']        = __( 'This configurator has no data to copy yet.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_global_convert_failed']       = __( 'The configurator data could not be copied, so the product was left as it is.', 'product-configurator-for-woocommerce' );
+		$pc_lang['mkl_pc_delete_local_config_confirm'] = __( 'Delete this product\'s own configurator data? The product will keep using the global configurator, and unlinking it later will leave it with no configuration.', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_confirm_make_local']   = __( 'Copy the global configurator\'s data onto this product and unlink it? Future changes will only affect this product.', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_picker_searching']     = __( 'Searching…', 'product-configurator-for-woocommerce' );
 		$pc_lang['mkl_pc_global_picker_request_failed'] = __( 'Search failed. Please refresh the page and try again.', 'product-configurator-for-woocommerce' );

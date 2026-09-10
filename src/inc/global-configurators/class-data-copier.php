@@ -75,9 +75,12 @@ final class Data_Copier {
 	 *
 	 * @param int    $source_product_id
 	 * @param string $title Optional post_title for the new CPT.
+	 * @param bool   $copy_data Copy the product's configurator meta onto the new post. Pass false to
+	 *                          create the post empty, for callers that upload the data themselves
+	 *                          (the editor pushes it in chunks from the browser).
 	 * @return int|\WP_Error Post id or error.
 	 */
-	public static function create_global_from_product( $source_product_id, $title = '' ) {
+	public static function create_global_from_product( $source_product_id, $title = '', $copy_data = true ) {
 		$source_product_id = (int) $source_product_id;
 		if ( $source_product_id <= 0 ) {
 			return new \WP_Error( 'invalid_source', __( 'Invalid source product.', 'product-configurator-for-woocommerce' ) );
@@ -117,12 +120,14 @@ final class Data_Copier {
 			return new \WP_Error( 'insert_failed', __( 'Could not create global configurator.', 'product-configurator-for-woocommerce' ) );
 		}
 
-		$copied = self::copy_all_configurator_meta( $source, $target );
-		if ( is_wp_error( $copied ) ) {
-			// Nothing useful landed on the new post, and the caller links (and wipes the product)
-			// on success. Take the empty CPT back out so a retry starts clean.
-			wp_delete_post( $new_id, true );
-			return $copied;
+		if ( $copy_data ) {
+			$copied = self::copy_all_configurator_meta( $source, $target );
+			if ( is_wp_error( $copied ) ) {
+				// Nothing useful landed on the new post. Take the empty CPT back out so a retry
+				// starts clean.
+				wp_delete_post( $new_id, true );
+				return $copied;
+			}
 		}
 
 		$configurator_type = $source->get_meta( MKL_PC_PREFIX . '_configurator_type', true );
@@ -452,6 +457,43 @@ final class Data_Copier {
 
 		$target->save();
 		return true;
+	}
+
+	/**
+	 * Whether an owner still holds configurator data of its own.
+	 *
+	 * A product linked to a global configurator reads through the link, so its own rows become
+	 * invisible rather than gone. This is what tells the editor there is still a local copy to
+	 * offer to delete.
+	 *
+	 * @param Storage_Owner $owner
+	 * @return bool
+	 */
+	public static function has_local_configurator_data( $owner ) {
+		if ( ! $owner ) {
+			return false;
+		}
+
+		$index = self::read_index_array( $owner );
+		// An index that exists but will not decode is still data.
+		if ( null === $index || ! empty( $index ) ) {
+			return true;
+		}
+
+		foreach ( self::get_legacy_blob_keys() as $key ) {
+			$value = self::decode_structured_value( $owner->get_meta( $key, true ) );
+			if ( null === $value || ! empty( $value ) ) {
+				return true;
+			}
+		}
+
+		foreach ( self::get_chunked_prefixes() as $prefix ) {
+			if ( ! empty( $owner->get_meta_keys_with_prefix( $prefix ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

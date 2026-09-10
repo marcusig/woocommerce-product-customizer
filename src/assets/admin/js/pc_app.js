@@ -1321,14 +1321,17 @@ PC.toJSON = function( item ) {
 		 */
 		run_chunk_storage_finalize_if_needed: function() {
 			var app = this;
-			var variation_id = ( this.options.product_type === 'variation' && this.options.product_id ) ? this.options.product_id : 0;
+			var save_target = this.save_target || null;
+			var variation_id = ( ! save_target && this.options.product_type === 'variation' && this.options.product_id ) ? this.options.product_id : 0;
 			return $.post( ajaxurl, {
 				action: 'mkl_pc_finalize_chunked_storage',
-				nonce: PC_lang.update_nonce,
-				id: this.id,
+				nonce: save_target ? save_target.nonce : PC_lang.update_nonce,
+				id: save_target ? save_target.id : this.id,
 				variation_id: variation_id,
 			} ).done( function( response ) {
-				if ( response && response.success && response.data && response.data.snapshot && app.admin_data ) {
+				// The snapshot describes whatever was just written. While a save is redirected at
+				// another post it says nothing about this product, so leave the editor's own state.
+				if ( ! save_target && response && response.success && response.data && response.data.snapshot && app.admin_data ) {
 					app.admin_data.set( 'pc_storage', response.data.snapshot );
 				}
 			} );
@@ -1411,6 +1414,116 @@ PC.toJSON = function( item ) {
 			} );
 			return xhr;
 		},
+		/**
+		 * Load the conditions collection if the add-on is active and it was never fetched.
+		 *
+		 * The editor fetches conditions lazily, so anything that has to send the whole
+		 * configuration elsewhere has to ask for them first or it silently sends none.
+		 *
+		 * @param {Function} done Called once conditions are available, the add-on is inactive,
+		 *                        or the fetch failed.
+		 * @return {void}
+		 */
+		ensureConditionsLoaded: function( done ) {
+			var product = this.get_product();
+			if ( ! PC.views.conditional || ! product || product.get( 'conditions' ) ) {
+				done();
+				return;
+			}
+			var conditions = new PC.conditionsCollection();
+			product.set( 'conditions', conditions );
+			conditions.fetch( {
+				url: conditions.url() + '&id=' + product.id,
+				success: function() { done(); },
+				error: function() { done(); }
+			} );
+		},
+		/**
+		 * Components this editor could push to another owner, in the order they are sent.
+		 *
+		 * @return {string[]}
+		 */
+		getTransferableComponents: function() {
+			var components = [ 'layers', 'angles', 'content' ];
+			if ( PC.views.conditional ) {
+				components.push( 'conditions' );
+			}
+			return wp.hooks.applyFilters( 'PC.admin.transferable_components', components );
+		},
+		/**
+		 * Send the configuration currently loaded in the editor to a different owner post.
+		 *
+		 * Used when a product is turned into a global configurator: rather than have the server
+		 * duplicate meta rows behind a single request, the editor writes to the new post through
+		 * the ordinary save path, which already splits layers and content into batches sized for
+		 * the request limits and reports progress as it goes.
+		 *
+		 * The caller is responsible for having saved the product first - this marks every
+		 * component modified and then clears that state, so pending edits would otherwise be
+		 * silently dropped from the product's own dirty tracking.
+		 *
+		 * @param {number} target_id    Post id to write to.
+		 * @param {string} target_nonce Nonce for `update-pc-post_<target_id>`.
+		 * @param {Object} options      `saved_all` / `failed` callbacks, `overlay_mode`.
+		 * @return {boolean} False when there is nothing to send.
+		 */
+		saveConfigurationToOwner: function( target_id, target_nonce, options ) {
+			options = options || {};
+			target_id = parseInt( target_id, 10 ) || 0;
+			if ( ! target_id || ! target_nonce ) {
+				return false;
+			}
+
+			var app = this;
+			var components = this.getTransferableComponents();
+			var has_data = false;
+
+			this.mark_all_layers_and_content_modified_for_save();
+			this.deleted_layer_ids = [];
+			this.modified_choices = [];
+			_.each( this.is_modified, function( value, key ) {
+				app.is_modified[ key ] = false;
+			} );
+			components.forEach( function( key ) {
+				var collection = app.get_collection( key );
+				if ( collection && collection.length ) {
+					app.is_modified[ key ] = true;
+					has_data = true;
+				}
+			} );
+
+			if ( ! has_data ) {
+				return false;
+			}
+
+			this.save_target = { id: target_id, nonce: target_nonce };
+			// The target post has no chunked storage yet, so there is nothing to migrate and
+			// nothing to finalize against this product.
+			this._pending_chunk_storage_finalize = false;
+
+			var release = function() {
+				app.save_target = null;
+			};
+
+			this.save_all( null, {
+				bulk_save_overlay: true,
+				overlay_mode: options.overlay_mode || 'to_global',
+				suppress_error_alert: true,
+				saved_all: function() {
+					release();
+					// Returned so save_all holds the overlay until the caller's follow-up work
+					// (linking the product) has actually finished. See show_complete_when().
+					return options.saved_all ? options.saved_all() : undefined;
+				},
+				failed: function( errors ) {
+					release();
+					if ( options.failed ) {
+						options.failed( errors );
+					}
+				}
+			} );
+			return true;
+		},
 		save_all: function( state, options ) {
 			if ( this.isGlobalLayerStandalone() ) {
 				return this.save_standalone_global_layer( state, options );
@@ -1464,7 +1577,7 @@ PC.toJSON = function( item ) {
 						}
 					}
 					var firstMigrationPhase = this._migration_messaging_keys.length ? this._migration_messaging_keys[ 0 ] : 'finalize';
-					var overlayMode = migrationSaveUi ? 'migration' : ( this._bulk_save_overlay ? 'bulk_save' : 'migration' );
+					var overlayMode = options.overlay_mode || ( migrationSaveUi ? 'migration' : ( this._bulk_save_overlay ? 'bulk_save' : 'migration' ) );
 					window.MKL_PC_DataMigrationOverlay.show( firstMigrationPhase, overlayMode );
 				}
 				this.saving = modified_collection_keys.length;
@@ -1486,6 +1599,15 @@ PC.toJSON = function( item ) {
 						return $.when( true );
 					} );
 				} );
+				// A rejected batch stops the chain, so the components queued behind it never run
+				// and never decrement `saving`. Without this the save never settles: the overlay
+				// stays up and no error is reported.
+				save_all_chain.fail( function() {
+					if ( app.saving > 0 ) {
+						app.saving = 1;
+						app.error_saving( null, state, options, null );
+					}
+				} );
 			} else {
 				if ( options && options.saved_all ) options.saved_all();
 			}
@@ -1502,7 +1624,9 @@ PC.toJSON = function( item ) {
 				this._chunk_storage_migration_ui = false;
 				this._migration_messaging_keys = null;
 				this._bulk_save_overlay = false;
-				state.state_saved( 1 );
+				if ( state && state.state_saved ) {
+					state.state_saved( 1 );
+				}
 				if ( error && 'string' == typeof error && error.length > 0 ) this.errors.push( error );
 				if ( error && 'object' == typeof error ) {
 					const type = error?.status || 'unknown';
@@ -1514,7 +1638,12 @@ PC.toJSON = function( item ) {
 					if ( !response && error?.responseText ) this.errors.push( 'Error response: ' + error.responseText );
 				}
 				console.log( key, state, options, error, a, b, this.errors );
-				alert( this.errors.join( "\n" ) );
+				if ( options && options.failed ) {
+					options.failed( this.errors.slice() );
+				}
+				if ( ! options || ! options.suppress_error_alert ) {
+					alert( this.errors.join( "\n" ) );
+				}
 			}
 		},
 		saved_all: function( key, state, options ) {
@@ -1538,33 +1667,55 @@ PC.toJSON = function( item ) {
 				var pc_storage = this.admin_data && this.admin_data.get( 'pc_storage' );
 				var run_finalize = this._pending_chunk_storage_finalize || ( pc_storage && pc_storage.needs_format_finalize );
 				this._pending_chunk_storage_finalize = false;
+				var overlay_ui = this._chunk_storage_migration_ui;
 				var finish_save_all_ui = function() {
 					if ( state && state.state_saved ) {
 						state.state_saved();
 					}
 					if ( options && options.saved_all ) {
-						options.saved_all();
+						return options.saved_all();
 					}
 				};
+				/**
+				 * A saved_all handler may still have work to do once every chunk has landed - the
+				 * turn-into-global flow only links the product at that point. When it returns a
+				 * promise, hold the overlay on its current phase until that settles, so the user
+				 * is not shown (and offered to dismiss) a completion that has not happened yet.
+				 */
+				var show_complete_when = function( pending ) {
+					if ( ! overlay_ui || ! window.MKL_PC_DataMigrationOverlay ) {
+						return;
+					}
+					if ( pending && typeof pending.then === 'function' ) {
+						pending.then(
+							function() { window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' ); },
+							function() { window.MKL_PC_DataMigrationOverlay.hide(); }
+						);
+						return;
+					}
+					window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' );
+				};
 				if ( run_finalize ) {
-					if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+					if ( overlay_ui && window.MKL_PC_DataMigrationOverlay ) {
 						window.MKL_PC_DataMigrationOverlay.setPhase( 'finalize' );
 					}
 					var finalizeXhr = this.run_chunk_storage_finalize_if_needed();
-					if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
-						finalizeXhr.done( function() {
-							window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' );
-						} );
-						finalizeXhr.fail( function() {
-							window.MKL_PC_DataMigrationOverlay.hide();
-						} );
-					}
-					finalizeXhr.always( finish_save_all_ui );
+					var finalize_failed = false;
+					finalizeXhr.fail( function() {
+						finalize_failed = true;
+					} );
+					finalizeXhr.always( function() {
+						var pending = finish_save_all_ui();
+						if ( finalize_failed ) {
+							if ( overlay_ui && window.MKL_PC_DataMigrationOverlay ) {
+								window.MKL_PC_DataMigrationOverlay.hide();
+							}
+							return;
+						}
+						show_complete_when( pending );
+					} );
 				} else {
-					finish_save_all_ui();
-					if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
-						window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' );
-					}
+					show_complete_when( finish_save_all_ui() );
 				}
 
 			}
@@ -1581,12 +1732,17 @@ PC.toJSON = function( item ) {
 				console.log( 'Collection or data must be set in order to save properly.' );
 				return;
 			}
-			var save_id = this.id;
-			if ( this.options.product_type == 'variation' && ( 'content' == what || 'conditions' == what  ) ) {
+			// A save target redirects the whole save at another owner post (a global configurator
+			// being created from this product). That post owns every component itself, so the
+			// variation split below and the parent_id hint do not apply to it.
+			var save_target = this.save_target || null;
+			var save_id = save_target ? save_target.id : this.id;
+			if ( ! save_target && this.options.product_type == 'variation' && ( 'content' == what || 'conditions' == what  ) ) {
 				save_id = this.options.product_id;
 			}
+			var save_nonce = save_target ? save_target.nonce : PC_lang.update_nonce;
 			// If we do not have the necessary nonce, fail immeditately.
-			if ( ! PC_lang.update_nonce ) {
+			if ( ! save_nonce ) {
 				console.log('nonce problem');
 				return $.Deferred().rejectWith( this ).promise();
 			}
@@ -1603,12 +1759,12 @@ PC.toJSON = function( item ) {
 			options.data = _.extend( options.data || {}, {
 				action:  PC.setActionParameter,
 				id:      save_id,
-				nonce:   PC_lang.update_nonce,
+				nonce:   save_nonce,
 				data: what,
 				// id: wp.media.model.settings.post.id
 			});
 
-			if ( save_id != this.id ) {
+			if ( ! save_target && save_id != this.id ) {
 				options.data.parent_id = this.id;
 			}
 
