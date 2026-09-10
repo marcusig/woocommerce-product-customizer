@@ -7,6 +7,8 @@
 
 namespace MKL\PC\Global_Configurators;
 
+use MKL\PC\DB;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -115,7 +117,13 @@ final class Data_Copier {
 			return new \WP_Error( 'insert_failed', __( 'Could not create global configurator.', 'product-configurator-for-woocommerce' ) );
 		}
 
-		self::copy_all_configurator_meta( $source, $target );
+		$copied = self::copy_all_configurator_meta( $source, $target );
+		if ( is_wp_error( $copied ) ) {
+			// Nothing useful landed on the new post, and the caller links (and wipes the product)
+			// on success. Take the empty CPT back out so a retry starts clean.
+			wp_delete_post( $new_id, true );
+			return $copied;
+		}
 
 		$configurator_type = $source->get_meta( MKL_PC_PREFIX . '_configurator_type', true );
 		if ( $configurator_type ) {
@@ -156,13 +164,18 @@ final class Data_Copier {
 			return new \WP_Error( 'invalid_product', __( 'Invalid product.', 'product-configurator-for-woocommerce' ) );
 		}
 
-		update_post_meta( $product_id, Schema::META_SOURCE, Schema::SOURCE_GLOBAL );
-		update_post_meta( $product_id, Schema::META_GLOBAL_ID, $global_id );
-
 		if ( $wipe_product_configurator_data ) {
-			self::wipe_configurator_meta( $product );
+			// Wipe first: it is the only step that destroys data, so a refusal has to leave the
+			// product local and pointing at nothing rather than global with its data still here.
+			$wiped = self::wipe_configurator_meta( $product );
+			if ( is_wp_error( $wiped ) ) {
+				return $wiped;
+			}
 			$product->save();
 		}
+
+		update_post_meta( $product_id, Schema::META_SOURCE, Schema::SOURCE_GLOBAL );
+		update_post_meta( $product_id, Schema::META_GLOBAL_ID, $global_id );
 
 		Owner_Resolver::invalidate_consumers_cache( $global_id );
 
@@ -190,9 +203,21 @@ final class Data_Copier {
 			if ( ! $source || ! $target ) {
 				return new \WP_Error( 'invalid_state', __( 'Could not resolve source or target post.', 'product-configurator-for-woocommerce' ) );
 			}
-			self::wipe_configurator_meta( $target );
+			// Read the global configurator's index before touching the product: an unreadable
+			// index here means the copy back would be empty, and the product is about to be
+			// wiped to make room for it.
+			if ( null === self::read_index_array( $source ) ) {
+				return self::unreadable_index_error();
+			}
+			$wiped = self::wipe_configurator_meta( $target );
+			if ( is_wp_error( $wiped ) ) {
+				return $wiped;
+			}
 			$target->save();
-			self::copy_all_configurator_meta( $source, $target );
+			$copied = self::copy_all_configurator_meta( $source, $target );
+			if ( is_wp_error( $copied ) ) {
+				return $copied;
+			}
 		}
 
 		delete_post_meta( $product_id, Schema::META_GLOBAL_ID );
@@ -208,86 +233,225 @@ final class Data_Copier {
 	}
 
 	/**
-	 * Copy one meta value verbatim, whatever encoding it is stored in.
+	 * Meta keys holding a structured (array) configurator value rather than a scalar.
 	 *
-	 * Configurator data is stored as JSON, and meta writes run wp_unslash() on the value, which would
-	 * strip the JSON's own escapes. Pre-slash strings so the copy is byte-identical to the source.
+	 * These are copied by value - decoded on read, re-encoded by the DB service on write - never
+	 * byte-for-byte. How many levels of backslash escaping a JSON string carries in the column
+	 * depends on which owner wrote it: a product goes through `WC_Data_Store_WP`, which slashes the
+	 * value again before `update_metadata()` unslashes it, while a global configurator CPT goes
+	 * straight to `update_post_meta()`. Copying the raw string between the two adds or removes a
+	 * level every hop, and after one round trip the JSON no longer parses.
+	 *
+	 * @param string $key
+	 * @return bool
+	 */
+	private static function is_structured_meta_key( $key ) {
+		if ( in_array( $key, self::get_legacy_blob_keys(), true ) ) {
+			return true;
+		}
+		if ( self::get_layers_index_key() === $key ) {
+			return true;
+		}
+		if ( in_array( $key, array( '_mkl_product_configurator_angles', '_mkl_product_configurator_conditions' ), true ) ) {
+			return true;
+		}
+		foreach ( self::get_chunked_prefixes() as $prefix ) {
+			if ( 0 === strpos( $key, $prefix ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Decode a stored configurator value to the array the DB service works with.
+	 *
+	 * Mirrors the read path in `DB`: WordPress hands back an array for a PHP-serialized row and a
+	 * string for a JSON one, and the JSON may or may not still be slashed.
+	 *
+	 * @param mixed $raw
+	 * @return array|null Null when a value is stored but could not be decoded.
+	 */
+	private static function decode_structured_value( $raw ) {
+		if ( '' === $raw || null === $raw || false === $raw ) {
+			return array();
+		}
+		$value = maybe_unserialize( $raw );
+		if ( is_array( $value ) ) {
+			return $value;
+		}
+		if ( ! is_string( $value ) ) {
+			return null;
+		}
+		$db      = function_exists( 'mkl_pc' ) ? mkl_pc( 'db' ) : null;
+		$decoded = ( $db && method_exists( $db, 'decode_stored_json' ) )
+			? $db->decode_stored_json( $value )
+			: self::decode_json_tolerant( $value );
+
+		return is_array( $decoded ) ? $decoded : null;
+	}
+
+	/**
+	 * Copy one meta value from source to target.
+	 *
+	 * Structured values are decoded and re-encoded through the DB service so the target ends up in
+	 * whatever escaping its own owner type uses. Scalars (timestamps, version flags) are copied
+	 * across as they are.
 	 *
 	 * @param Storage_Owner $target
 	 * @param string        $key
-	 * @param mixed         $value
-	 * @return void
+	 * @param mixed         $value Raw source value.
+	 * @return bool False when a structured value could not be decoded or re-encoded.
 	 */
 	private static function copy_meta_value( $target, $key, $value ) {
-		$target->update_meta( $key, is_string( $value ) ? wp_slash( $value ) : $value );
+		if ( ! self::is_structured_meta_key( $key ) ) {
+			$target->update_meta( $key, is_string( $value ) ? wp_slash( $value ) : $value );
+			return true;
+		}
+
+		$decoded = self::decode_structured_value( $value );
+		if ( null === $decoded ) {
+			return false;
+		}
+		if ( empty( $decoded ) ) {
+			$target->delete_meta( $key );
+			return true;
+		}
+
+		$db = function_exists( 'mkl_pc' ) ? mkl_pc( 'db' ) : null;
+		if ( ! $db || ! method_exists( $db, 'write_structured_meta' ) ) {
+			return false;
+		}
+		return (bool) $db->write_structured_meta( $target, $key, $decoded );
 	}
 
 	/**
 	 * Read the layers index as an array of ids, whether it is stored as JSON or PHP-serialized.
 	 *
+	 * A product stores the JSON index slashed - `DB::encode_meta_batch()` pre-slashes it to survive
+	 * the `wp_unslash()` in `update_metadata()`, and WooCommerce re-slashes on top of that for a new
+	 * meta row, so one level of escapes stays in the column. A global configurator CPT is written
+	 * through `update_post_meta()` and keeps none. Both shapes have to decode here, or the caller
+	 * reads a configurator with layers as "no layers" - see the null contract below.
+	 *
 	 * @param Storage_Owner $owner
-	 * @return int[]
+	 * @return int[]|null Ids, or null when a value is stored but could not be decoded.
 	 */
 	private static function read_index_array( $owner ) {
-		$index = maybe_unserialize( $owner->get_meta( self::get_layers_index_key(), true ) );
-		if ( is_string( $index ) ) {
-			$decoded = json_decode( $index, true );
-			$index   = ( JSON_ERROR_NONE === json_last_error() ) ? $decoded : null;
+		return self::decode_index_value( $owner->get_meta( self::get_layers_index_key(), true ) );
+	}
+
+	/**
+	 * Decode a stored layers index.
+	 *
+	 * Distinguishes "there is no index" (empty array) from "there is one and it did not decode"
+	 * (null). Callers must never treat the second as an empty configurator: the copy would take
+	 * nothing and the wipe that follows it would delete the only remaining copy of the data.
+	 *
+	 * @param mixed $raw Raw meta value.
+	 * @return int[]|null
+	 */
+	private static function decode_index_value( $raw ) {
+		if ( '' === $raw || null === $raw || false === $raw || array() === $raw ) {
+			return array();
 		}
-		return is_array( $index ) ? $index : array();
+
+		$index = maybe_unserialize( $raw );
+		if ( is_array( $index ) ) {
+			return $index;
+		}
+		if ( ! is_string( $index ) ) {
+			return null;
+		}
+
+		// Same tolerant decode the read path uses, so a slashed product index and a clean CPT
+		// index both parse.
+		$db      = function_exists( 'mkl_pc' ) ? mkl_pc( 'db' ) : null;
+		$decoded = ( $db && method_exists( $db, 'decode_stored_json' ) )
+			? $db->decode_stored_json( $index )
+			: self::decode_json_tolerant( $index );
+
+		return is_array( $decoded ) ? $decoded : null;
+	}
+
+	/**
+	 * Fallback for {@see self::decode_index_value()} when the DB service is unavailable.
+	 *
+	 * @param string $data
+	 * @return mixed
+	 */
+	private static function decode_json_tolerant( $data ) {
+		$decoded = json_decode( $data, true );
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
+			$decoded = json_decode( stripslashes( $data ), true );
+		}
+		return ( JSON_ERROR_NONE === json_last_error() ) ? $decoded : null;
+	}
+
+	/**
+	 * Error returned when an owner's layers index exists but cannot be read.
+	 *
+	 * @return \WP_Error
+	 */
+	private static function unreadable_index_error() {
+		return new \WP_Error(
+			'unreadable_index',
+			__( 'This configurator\'s layer index could not be read, so its layers cannot be copied safely. Nothing was changed.', 'product-configurator-for-woocommerce' )
+		);
 	}
 
 	/**
 	 * Copy chunked + single-meta + legacy-blob configurator data from one owner to another.
 	 *
+	 * The source index is read before anything is written: a source whose index cannot be read
+	 * would copy as an empty configurator, and every caller wipes one side straight afterwards.
+	 *
 	 * @param Storage_Owner $source
 	 * @param Storage_Owner $target
-	 * @return void
+	 * @return true|\WP_Error
 	 */
 	public static function copy_all_configurator_meta( $source, $target ) {
-		foreach ( self::get_single_meta_keys() as $key ) {
-			$value = $source->get_meta( $key, true );
-			if ( '' === $value || false === $value || null === $value ) {
-				$target->delete_meta( $key );
-				continue;
-			}
-			self::copy_meta_value( $target, $key, $value );
+		$index = self::read_index_array( $source );
+		if ( null === $index ) {
+			return self::unreadable_index_error();
 		}
 
-		foreach ( self::get_legacy_blob_keys() as $key ) {
-			$value = $source->get_meta( $key, true );
-			if ( '' === $value || false === $value || null === $value ) {
-				$target->delete_meta( $key );
-				continue;
-			}
-			self::copy_meta_value( $target, $key, $value );
-		}
-
-		// The raw value is copied as-is; the decoded copy is only used to walk the layer ids.
-		$raw_index = $source->get_meta( self::get_layers_index_key(), true );
-		$index     = self::read_index_array( $source );
+		$keys = array_merge( self::get_single_meta_keys(), self::get_legacy_blob_keys() );
 		if ( ! empty( $index ) ) {
-			self::copy_meta_value( $target, self::get_layers_index_key(), $raw_index );
+			$keys[] = self::get_layers_index_key();
 			foreach ( self::get_chunked_prefixes() as $prefix ) {
 				foreach ( $index as $layer_id ) {
 					$layer_id = (int) $layer_id;
-					if ( $layer_id <= 0 ) {
-						continue;
+					if ( $layer_id > 0 ) {
+						$keys[] = $prefix . $layer_id;
 					}
-					$key   = $prefix . $layer_id;
-					$value = $source->get_meta( $key, true );
-					if ( '' === $value || false === $value || null === $value ) {
-						$target->delete_meta( $key );
-						continue;
-					}
-					self::copy_meta_value( $target, $key, $value );
 				}
 			}
-		} else {
+		}
+
+		foreach ( $keys as $key ) {
+			$value = $source->get_meta( $key, true );
+			if ( '' === $value || false === $value || null === $value ) {
+				$target->delete_meta( $key );
+				continue;
+			}
+			if ( ! self::copy_meta_value( $target, $key, $value ) ) {
+				/* translators: %s: meta key */
+				return new \WP_Error( 'copy_failed', sprintf( __( 'Could not copy configurator data (%s). Nothing was changed.', 'product-configurator-for-woocommerce' ), $key ) );
+			}
+		}
+
+		if ( empty( $index ) ) {
 			$target->delete_meta( self::get_layers_index_key() );
 		}
 
+		// Everything above was written as JSON by the DB service, so the target must not be left
+		// looking like an unconverted owner - the lazy conversion pass would try to rewrite rows
+		// that are already JSON.
+		$target->update_meta( DB::META_STORAGE_ENCODING, DB::STORAGE_ENCODING_JSON );
+
 		$target->save();
+		return true;
 	}
 
 	/**
@@ -295,16 +459,23 @@ final class Data_Copier {
 	 * or when unlinking and copying back.
 	 *
 	 * @param Storage_Owner $owner
-	 * @return void
+	 * @return true|\WP_Error
 	 */
 	public static function wipe_configurator_meta( $owner ) {
+		// The prefix scan below deletes every chunk whether or not the index names it, so an index
+		// we cannot read is not a reason to delete less - it is a reason to not delete at all,
+		// because it means the copy that was supposed to precede this wipe took nothing.
+		$index = self::read_index_array( $owner );
+		if ( null === $index ) {
+			return self::unreadable_index_error();
+		}
+
 		foreach ( self::get_single_meta_keys() as $key ) {
 			$owner->delete_meta( $key );
 		}
 		foreach ( self::get_legacy_blob_keys() as $key ) {
 			$owner->delete_meta( $key );
 		}
-		$index = self::read_index_array( $owner );
 		if ( ! empty( $index ) ) {
 			foreach ( self::get_chunked_prefixes() as $prefix ) {
 				foreach ( $index as $layer_id ) {
@@ -322,5 +493,7 @@ final class Data_Copier {
 			}
 		}
 		$owner->delete_meta( self::get_layers_index_key() );
+		$owner->delete_meta( DB::META_STORAGE_ENCODING );
+		return true;
 	}
 }
