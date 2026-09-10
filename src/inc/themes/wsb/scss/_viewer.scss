@@ -94,7 +94,6 @@
 		user-select: none;
 
 		img {
-			transition: .2s all;
 			&:not(.active), &.loading {
 				opacity: 0;
 			}
@@ -106,7 +105,6 @@
 			-webkit-user-drag: none;
 		}
 		svg {
-			transition: .2s all;
 			position: absolute;
 			left: 50%;
 			top: 50%;

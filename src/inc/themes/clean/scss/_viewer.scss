@@ -46,7 +46,6 @@
 		user-select: none;
 
 		img {
-			transition: opacity 0.2s ease;
 			&:not(.active), &.loading {
 				opacity: 0;
 				visibility: hidden;
