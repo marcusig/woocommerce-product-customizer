@@ -7,6 +7,7 @@ PC.views = PC.views || {};
 	var MKL_PC_NAV_ICONS = {
 		home: 'dashicons-admin-home',
 		layers: 'dashicons-screenoptions',
+		layer_details: 'dashicons-screenoptions',
 		image_order: 'dashicons-sort',
 		angles: 'dashicons-visibility',
 		content: 'dashicons-list-view',

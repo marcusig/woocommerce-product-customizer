@@ -57,6 +57,14 @@ PC.views = PC.views || {};
 		is_narrow_content_editor: function() {
 			return typeof window.matchMedia === 'function' && window.matchMedia( '(max-width: 900px)' ).matches;
 		},
+		/**
+		 * True on a global layer's own screen: the configurator holds one layer, so picking which
+		 * layer's choices to edit is a choice with one answer. The list stays in the DOM (it is how
+		 * a layer gets opened) but is hidden, and the layer is opened for the user.
+		 */
+		is_single_layer_mode: function() {
+			return !! ( PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
+		},
 		get_layer_list_mount: function() {
 			if ( this.is_narrow_content_editor() && this.$list_main && this.$list_main.length ) {
 				return this.$list_main;
@@ -102,7 +110,11 @@ PC.views = PC.views || {};
 				this.$el.append( content() );
 			} else {
 				if ( this.main_view && this.main_view.$el && this.main_view.$el.length ) {
+					// This class carries the canonical content layout, so it goes on either way; only
+					// the sidebar layer list below is skipped when there is a single layer to pick.
 					this.main_view.$el.addClass( 'mkl-pc-admin-ui--content-mode' );
+				}
+				if ( this.main_view && this.main_view.$el && this.main_view.$el.length && ! this.is_single_layer_mode() ) {
 					this.$list_sidebar = this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers-list' );
 					this.main_view.$( '.mkl-pc-admin-ui__sidebar-layers' ).removeAttr( 'hidden' ).attr( 'aria-hidden', 'false' );
 					var selfSidebar = this;
@@ -147,9 +159,23 @@ PC.views = PC.views || {};
 					this.applySidebarLayersFilter();
 					var self = this;
 					window.requestAnimationFrame( function() {
+						if ( self.is_single_layer_mode() ) {
+							self.open_single_layer();
+							return;
+						}
 						self.focusSidebarLayerButton();
 					} );
 				}
+			}
+		},
+		/** Open the only layer's choices, so the screen lands on the content instead of a one-row list. */
+		open_single_layer: function() {
+			if ( this.active_layer || ! this.layers || ! this.layers.$el || ! this.layers.$el.length ) {
+				return;
+			}
+			var $btn = this.layers.$el.find( 'button.layer' ).first();
+			if ( $btn.length ) {
+				$btn.trigger( 'click' );
 			}
 		},
 		/** Move keyboard focus into the sidebar layer list (opened layer row, otherwise first layer). */

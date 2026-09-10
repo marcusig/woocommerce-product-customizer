@@ -659,6 +659,14 @@ final class Linker {
 			if ( ! isset( $item['menu_id'] ) || ! in_array( $item['menu_id'], $allowed, true ) ) {
 				continue;
 			}
+			// The post holds one layer, so the structure screen has no list to browse: swap it for
+			// the screen that shows that layer's form on its own.
+			if ( 'layers' === $item['menu_id'] ) {
+				$item['menu_id']     = 'layer_details';
+				$item['label']       = __( 'Layer details', 'product-configurator-for-woocommerce' );
+				$item['title']       = __( 'Layer details', 'product-configurator-for-woocommerce' );
+				$item['description'] = __( 'The settings of this global layer.', 'product-configurator-for-woocommerce' );
+			}
 			$filtered[] = $item;
 		}
 

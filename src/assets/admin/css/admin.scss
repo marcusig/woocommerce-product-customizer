@@ -5,6 +5,52 @@
 	--global-layer-bg: rgba(var(--global-layer-primary-rgb), 0.08);
 }
 
+/**
+ * Undo the Content tab's collapsed icon rail: give the sidebar nav its full width and its labels
+ * back, and drop the layers list it was making room for. Used where that list is not shown —
+ * narrow viewports, and a global layer's own screen, which has a single layer to begin with.
+ */
+@mixin mkl-pc-sidebar-nav-expanded {
+	.mkl-pc-admin-ui__sidebar-mid {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.mkl-pc-admin-ui__nav-wrap--primary {
+		flex: 1 1 auto;
+		width: 100%;
+		max-width: none;
+		align-self: stretch;
+		position: relative;
+		top: auto;
+	}
+	.mkl-pc-admin-ui__nav .mkl-pc-admin-ui__nav-item {
+		justify-content: flex-start;
+		padding-left: 2px;
+		padding-right: 8px;
+		.mkl-pc-admin-ui__nav-item-text {
+			position: static;
+			width: auto;
+			height: auto;
+			padding: 0;
+			margin: 0;
+			overflow: visible;
+			clip: auto;
+			white-space: nowrap;
+			border: 0;
+		}
+		.mkl-pc-admin-ui__nav-item-chevron {
+			display: flex;
+		}
+		&::after {
+			content: none;
+			display: none;
+		}
+	}
+	.mkl-pc-admin-ui__sidebar-layers {
+		display: none !important;
+	}
+}
+
 #woocommerce-product-data .panel .wc-metaboxes-wrapper {
 	width: 100%;
 }
@@ -808,44 +854,7 @@ html .mkl-pc-admin-ui.pc-modal {
 					}
 				}
 				@media ( max-width: 900px ) {
-					.mkl-pc-admin-ui__sidebar-mid {
-						flex-direction: column;
-						align-items: stretch;
-					}
-					.mkl-pc-admin-ui__nav-wrap--primary {
-						flex: 1 1 auto;
-						width: 100%;
-						max-width: none;
-						align-self: stretch;
-						position: relative;
-						top: auto;
-					}
-					.mkl-pc-admin-ui__nav .mkl-pc-admin-ui__nav-item {
-						justify-content: flex-start;
-						padding-left: 2px;
-						padding-right: 8px;
-						.mkl-pc-admin-ui__nav-item-text {
-							position: static;
-							width: auto;
-							height: auto;
-							padding: 0;
-							margin: 0;
-							overflow: visible;
-							clip: auto;
-							white-space: nowrap;
-							border: 0;
-						}
-						.mkl-pc-admin-ui__nav-item-chevron {
-							display: flex;
-						}
-						&::after {
-							content: none;
-							display: none;
-						}
-					}
-					.mkl-pc-admin-ui__sidebar-layers {
-						display: none !important;
-					}
+					@include mkl-pc-sidebar-nav-expanded;
 				}
 			}
 		}
@@ -877,20 +886,41 @@ html .mkl-pc-admin-ui.pc-modal {
 		}
 	}
 
-	// Editing a global layer on its own screen: the post holds exactly one layer, so the structure
-	// list has nothing to add, import, duplicate or delete.
+	// Editing a global layer on its own screen: the post holds exactly one layer, so nothing on
+	// these screens gets to pick, add, duplicate or delete a layer. Choices are untouched — they
+	// are the part of the layer this screen exists to edit.
 	&.is-global-layer-standalone {
-		.structure-content {
-			.structure-toolbar__add,
-			.floating-add {
-				display: none !important;
-			}
-		}
-		.form-details > header .actions-container {
+		// Only the layer form loses its actions; the choice form keeps Duplicate and Delete.
+		.layer-form > .form-details > header .actions-container {
 			.delete-item,
 			.duplicate-item,
 			.prompt-delete {
 				display: none !important;
+			}
+		}
+		// The Content screen's layer picker has one entry: hide it, and the ways back to it.
+		.mkl-pc-content-main-layer-panel,
+		.mkl-pc-mobile-content-toolbar--layers-back {
+			display: none !important;
+		}
+		// Content mode collapses the nav to an icon rail to make room for that list; without it
+		// the rail would just leave the sidebar empty.
+		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
+			@include mkl-pc-sidebar-nav-expanded;
+		}
+	}
+
+	// Layer details: the structure screen's card styling, but with the form as the only column.
+	// It borrows .structure for that styling, so the width cap and the narrow-view slide stack —
+	// both of which assume a list column to slide away from — have to be undone here.
+	.mkl-pc-admin-ui__content.structure.layer-details {
+		> .mkl-pc-admin-layout__column-track > .pc-sidebar {
+			max-width: none;
+		}
+		@media ( max-width: 900px ) {
+			> .mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+				position: relative;
+				transform: none;
 			}
 		}
 	}

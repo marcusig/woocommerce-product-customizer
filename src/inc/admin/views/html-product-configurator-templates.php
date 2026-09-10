@@ -353,6 +353,14 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 		</div>
 	</div>
 </script>
+<script type="text/html" id="tmpl-mkl-pc-layer-details">
+	<div class="mkl-pc-admin-ui__content structure layer-details mkl-pc-admin-layout mkl-pc-admin-layout--single-column">
+		<div class="mkl-pc-admin-layout__column-track">
+			<div class="mkl-pc-layer-details__rows" hidden aria-hidden="true"></div>
+			<div class="pc-sidebar visible mkl-pc-admin-layout__column mkl-pc-admin-layout__column--detail"></div>
+		</div>
+	</div>
+</script>
 <script type="text/html" id="tmpl-mkl-pc-home">
 	<div class="mkl-pc-admin-ui__content home">
 		<div class="tab_content">

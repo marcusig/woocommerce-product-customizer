@@ -370,6 +370,8 @@ TODO:
 		on_paste( json ) {
 			
 			if ( !json || json.type !== this.collectionName || !json.models ) return;
+			// A global layer's own screen holds exactly one layer: there is no list to paste into.
+			if ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() ) return;
 
 			const id_map = []; // { original_id, new_id }
 			const new_layers = [];
@@ -405,7 +407,55 @@ TODO:
 
 	} );
 
-	
+	/**
+	 * LAYER DETAILS STATE
+	 *
+	 * A global layer edited on its own screen is a single layer, not a structure: there is no list
+	 * to browse, filter, reorder, add to or paste into. This state drops the two-column structure
+	 * layout and shows the layer form alone.
+	 *
+	 * The list row view is still created — off-screen — because it owns the collection wiring the
+	 * form relies on: dirty marking, label sync, active state and destroy.
+	 */
+	PC.views.layer_details = PC.views.layers.extend( {
+		className: 'state layer-details-state',
+		template: wp.template( 'mkl-pc-layer-details' ),
+		events: {
+			'remove': 'cleanup_on_remove',
+		},
+		render: function() {
+			this.col.orderBy = 'order';
+			this.col.sort();
+			this.$el.append( this.template( {} ) );
+			this.$list = this.$( '.mkl-pc-layer-details__rows' );
+			this.$form = this.$( '.pc-sidebar' );
+			this.add_all();
+			return this;
+		},
+		add_all: function() {
+			this.$list.empty();
+			_.each( this.items, this.remove_item );
+			this.items = [];
+			this.col.each( this.add_one, this );
+			this.open_edited_layer();
+			return this;
+		},
+		/** Open the form for the layer this screen edits. */
+		open_edited_layer: function() {
+			var ctx = PC.app.getStandaloneGlobalLayerContext && PC.app.getStandaloneGlobalLayerContext();
+			var model = ctx && ctx.layerModel ? ctx.layerModel : this.col.first();
+			if ( ! model ) return;
+			var row = _.find( this.items, function( item ) {
+				return item.model === model;
+			} );
+			// edit() without an event only builds the form when the row has none, so this is idempotent.
+			if ( row ) row.edit();
+		},
+		// No list means nothing to filter and nothing to paste into.
+		apply_list_filter: function() {},
+		on_list_filter: function() {},
+		on_paste: function() {},
+	} );
 
 	// SINGLE LAYER VIEW (List item)
 	PC.views.layer = Backbone.View.extend({
