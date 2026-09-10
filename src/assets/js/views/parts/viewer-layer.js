@@ -167,15 +167,27 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 		this.$el.removeClass( 'loading' );
 		// Whatever the outcome, anything waiting on this image now has its answer.
 		this.settle();
-		if (this.empty_img == this.$el.prop('src')) return;
+		// An active choice with nothing to show at this angle is still handed a
+		// src - the transparent placeholder - and this is the only load it will
+		// ever report. It stays "not loaded", so a later angle gets it its real
+		// image, but it does have to be counted off: it was counted when the
+		// placeholder was set, and the viewer would otherwise be loading for good.
+		if (this.empty_img == this.$el.prop('src')) return this.release();
 		this.is_loaded = true;
 
 		if ( 'load' == e.type ) wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
 
-		// Only images that were counted when their src was set may count down
-		// again. An inactive image also gets a src, but was never added to
-		// imagesLoading: decrementing for it drove the counter below zero, so it
-		// never came back to 0 and the viewer kept its `is-loading-image` class.
+		this.release();
+	},
+	/**
+	 * Count this image off the viewer's tally of images being loaded.
+	 *
+	 * Only images that were counted when their src was set may count down again.
+	 * An inactive image also gets a src, but was never added to imagesLoading:
+	 * decrementing for it drove the counter below zero, so it never came back to
+	 * 0 and the viewer kept its `is-loading-image` class.
+	 */
+	release: function() {
 		if ( ! this.counted ) return;
 		this.counted = false;
 
@@ -184,7 +196,6 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			this.parent.$el.removeClass('is-loading-image');
 			wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
 		}
-
 	},
 	/**
 	 * Release a load that will never complete.
@@ -437,9 +448,9 @@ PC.fe.views.viewer_layer_pool = Backbone.View.extend({
 	 * Take an image out of the layer, but leave it on the screen.
 	 *
 	 * It has to stop following its model right now, in this pass: the choice is
-	 * already inactive, and the view's own listener - which runs after this one -
-	 * would re-render it out of sight. From here on it is a picture with nothing
-	 * behind it, held by sweep() until its replacement can take over.
+	 * already inactive, and the view's own listener has already run and taken the
+	 * image out of sight - retire() puts it back. From here on it is a picture
+	 * with nothing behind it, held by sweep() until its replacement takes over.
 	 *
 	 * @param {String|Number} id Choice id.
 	 */
