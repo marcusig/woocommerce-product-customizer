@@ -781,6 +781,11 @@ TODO:
 						
 						// Mark layers as modified (so the global_id gets saved with the product)
 						PC.app.is_modified['layers'] = true;
+
+						// The choices belong to the global layer from now on, so the product's
+						// content row becomes a reference to it. Without this the product keeps a
+						// private copy and silently stops tracking the global layer.
+						PC.app.setContentRowGlobalId( self.model, global_id );
 						
 						// Add to global layers collection
 						var global_model = PC.app.get_global_layers().get_or_create( global_id );
@@ -821,6 +826,9 @@ TODO:
 			// Local toggle off by default; persistence handled on save
 			this.model.set( { is_global: false, global_id: null } );
 			PC.app.is_modified['layers'] = true;
+			// The choices were being served from the global layer; the product needs its own copy
+			// now, or the layer keeps reading from a layer it is no longer connected to.
+			PC.app.setContentRowGlobalId( this.model, null );
 			// Re-render header to reflect buttons/badge change
 			this.render();
 		},

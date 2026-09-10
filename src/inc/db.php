@@ -424,10 +424,10 @@ class DB {
 
 			// Resolve global references for layers and content.
 			if ( 'layers' === $that && is_array( $data ) ) {
-				$data = $this->resolve_global_layers( $data );
+				$data = $this->resolve_global_layers( $data, $owner_id );
 			}
 			if ( 'content' === $that && is_array( $data ) ) {
-				$data = $this->resolve_global_content( $data );
+				$data = $this->resolve_global_content( $data, $owner_id );
 			}
 			wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
 			return $data; 
@@ -506,7 +506,15 @@ class DB {
 			$index = $this->decode_stored_json( $index );
 		}
 		if ( ! is_array( $index ) || empty( $index ) ) {
-			return false;
+			// The index describes the layer structure, and it is only ever written where that
+			// structure lives. A variable product keeps its choices per variation and its layers on
+			// the parent, so a variation has content chunks and no index of its own - reading it
+			// against its own post found nothing and fell through to a legacy blob that the chunked
+			// writer had already deleted.
+			$index = $this->read_layers_index_array( $this->get_layers_owner_for( $product_id ) );
+			if ( empty( $index ) ) {
+				return false;
+			}
 		}
 		$content = array();
 		foreach ( $index as $layer_id ) {
@@ -785,17 +793,95 @@ class DB {
 	}
 
 	/**
-	 * Remove layer/content chunk metas that are not in the current layers index.
+	 * The storage owner holding the layer structure that a given post's content belongs to.
 	 *
-	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $layers_product
-	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $content_product
-	 * @param int[] $keep_ids
+	 * @param int $post_id Content owner id (product, variation, or global configurator CPT).
+	 * @return \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null
+	 */
+	private function get_layers_owner_for( $post_id ) {
+		$layers_owner_id = $this->resolve_storage_owner_id( (int) $post_id, 0, 'layers' );
+		if ( $layers_owner_id <= 0 || $layers_owner_id === (int) $post_id ) {
+			return null;
+		}
+		return $this->get_owner( $layers_owner_id );
+	}
+
+	/**
+	 * Every post that can hold content chunks belonging to one layer structure.
+	 *
+	 * Layers and content do not always live on the same post: a variable product in
+	 * `share_layers_config` mode keeps one layer structure on the parent and a separate set of
+	 * choices per variation. Anything that acts on the layer structure as a whole - purging chunks
+	 * for layers that no longer exist, reconciling global layer links - has to visit all of them,
+	 * or the variations quietly keep data for a structure that has moved on.
+	 *
+	 * The parent stays in the list even in per-variation mode: it can still hold content chunks
+	 * from before the mode was switched.
+	 *
+	 * @param int $layers_owner_id Post holding the layer structure.
+	 * @return int[]
+	 */
+	private function get_content_owner_ids( $layers_owner_id ) {
+		$layers_owner_id = (int) $layers_owner_id;
+		if ( $layers_owner_id <= 0 ) {
+			return array();
+		}
+
+		// A global configurator CPT owns both halves itself.
+		if ( class_exists( Schema::class ) && Schema::is_global_configurator_id( $layers_owner_id ) ) {
+			return array( $layers_owner_id );
+		}
+
+		$product = function_exists( 'wc_get_product' ) ? wc_get_product( $layers_owner_id ) : null;
+		if ( ! $product || ! is_a( $product, 'WC_Product' ) || 'variable' !== $product->get_type() ) {
+			return array( $layers_owner_id );
+		}
+
+		$mode = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
+		if ( $mode && 'share_layers_config' !== $mode ) {
+			// share_all_config: one set of choices, on the parent.
+			return array( $layers_owner_id );
+		}
+
+		$ids = array( $layers_owner_id );
+		foreach ( $product->get_children() as $child_id ) {
+			$child_id = (int) $child_id;
+			if ( $child_id > 0 ) $ids[] = $child_id;
+		}
+
+		/**
+		 * Filter the posts that hold content chunks for a layer structure.
+		 *
+		 * @param int[] $ids
+		 * @param int   $layers_owner_id
+		 */
+		return apply_filters( 'mkl_pc_content_owner_ids', array_values( array_unique( $ids ) ), $layers_owner_id );
+	}
+
+	/**
+	 * Drop chunks for layers that no longer exist, across every post holding part of the structure.
+	 *
+	 * Only orphans go: a chunk whose layer id is still in the index is left exactly as it is, on
+	 * every variation. Variations legitimately hold different choices for the same layer - the same
+	 * configuration is often imported into several of them as a starting point - so the index says
+	 * which layers exist, never which variation is allowed to have content for one.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $layers_product Layer structure owner.
+	 * @param int $owner_id  Layer structure owner id.
+	 * @param array $keep_ids Current layers index.
 	 * @return void
 	 */
-	private function purge_orphan_chunks_for_index( $layers_product, $content_product, $keep_ids ) {
+	private function purge_orphan_chunks_for_structure( $layers_product, $owner_id, $keep_ids ) {
 		$this->delete_orphan_chunk_metas( $layers_product, $keep_ids, '_mkl_product_configurator_layer_' );
-		$content_owner = $content_product ? $content_product : $layers_product;
-		$this->delete_orphan_chunk_metas( $content_owner, $keep_ids, '_mkl_product_configurator_content_' );
+
+		foreach ( $this->get_content_owner_ids( $owner_id ) as $content_owner_id ) {
+			$content_product = ( (int) $content_owner_id === (int) $owner_id ) ? $layers_product : $this->get_owner( $content_owner_id );
+			if ( ! $content_product ) continue;
+			$removed = $this->delete_orphan_chunk_metas( $content_product, $keep_ids, '_mkl_product_configurator_content_' );
+			if ( ! empty( $removed ) ) {
+				$this->invalidate_layers_cache( (int) $content_owner_id );
+			}
+		}
 	}
 
 	/**
@@ -1050,7 +1136,9 @@ class DB {
 			? $this->get_owner( $content_owner_id )
 			: $parent;
 		$parent_index = $this->read_layers_index_array( $parent );
-		$this->purge_orphan_chunks_for_index( $parent, $content_product, $parent_index );
+		// Finalize is the one-time "tidy this product" pass, so it sweeps the whole structure
+		// rather than just the variation on screen - that is where orphans from past deletions sit.
+		$this->purge_orphan_chunks_for_structure( $parent, $owner_parent_id, $parent_index );
 
 		// One-time rewrite of PHP-serialized chunks into JSON. Runs before the cached early return so
 		// products that were already verified under the old encoding still get converted.
@@ -1253,13 +1341,16 @@ class DB {
 	/**
 	 * Normalize raw data for set (strip active, apply choice filter).
 	 *
+	 * Expects a list of layers, or of content rows `{ layerId, choices }`. A single
+	 * layer or a bare choice list should be wrapped in an array first, then unwrapped.
+	 *
 	 * @param array  $raw_data
 	 * @param int    $id
 	 * @param string $component
 	 * @param mixed  $modified_choices
 	 * @return array
 	 */
-	private function normalize_for_set( $raw_data, $id, $component, $modified_choices ) {
+	public function normalize_for_set( $raw_data, $id, $component, $modified_choices ) {
 		foreach ( $raw_data as $key => $value ) {
 			if ( isset( $value['active'] ) ) {
 				$raw_data[ $key ]['active'] = false;
@@ -1383,6 +1474,9 @@ class DB {
 		$product->delete_meta_data( '_mkl_product_configurator_layers' );
 		$product->save();
 
+		$this->purge_orphan_chunks_for_structure( $product, $owner_id, $layer_ids );
+		$this->reconcile_global_layer_links( $product, $owner_id, $layer_ids );
+
 		$this->invalidate_layers_cache( $owner_id );
 		if ( $owner_id !== (int) $id ) {
 			$this->invalidate_layers_cache( $id );
@@ -1454,7 +1548,9 @@ class DB {
 			}
 		}
 		$product->save();
-		$this->purge_orphan_chunks_for_index( $product, $product, $layer_ids );
+		$this->purge_orphan_chunks_for_structure( $product, $owner_id, $layer_ids );
+
+		$this->reconcile_global_layer_links( $product, $owner_id, $layer_ids );
 
 		$data = $this->get( 'layers', $id );
 		$this->invalidate_layers_cache( $owner_id );
@@ -1559,6 +1655,8 @@ class DB {
 		$product->delete_meta_data( '_mkl_product_configurator_content' );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
+
+		$this->reconcile_content_owner_after_write( $id, $product, $owner_id, $layer_ids );
 		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 
 		$this->invalidate_layers_cache( $owner_id );
@@ -1612,11 +1710,17 @@ class DB {
 			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
 		$layers_index = $this->read_layers_index_array( $product );
+		if ( empty( $layers_index ) ) {
+			// Per-variation content: the index lives with the layer structure, on the parent.
+			$layers_index = $this->read_layers_index_array( $this->get_layers_owner_for( $owner_id ) );
+		}
 		if ( ! empty( $layers_index ) ) {
 			$this->delete_orphan_chunk_metas( $product, $layers_index, '_mkl_product_configurator_content_' );
 		}
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->save();
+
+		$this->reconcile_content_owner_after_write( $id, $product, $owner_id, array_keys( $content_chunks ) );
 		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 		wp_cache_delete( 'mkl_pc_data_content_' . $owner_id, 'mkl_pc' );
 		if ( $owner_id !== (int) $id ) {
@@ -1693,7 +1797,10 @@ class DB {
 				if ( ! isset( $chunk['layerId'] ) ) {
 					$chunk['layerId'] = (int) $layer_id;
 				}
-				return $chunk;
+				// A global layer stores a bare `{ layerId, global_id }` reference here, so
+				// without this every caller sees a layer with no choices at all.
+				$resolved = $this->resolve_global_content( array( $chunk ), $owner_id );
+				return isset( $resolved[0] ) ? $resolved[0] : $chunk;
 			}
 		}
 		$content = $this->get( 'content', $product_id );
@@ -1728,6 +1835,22 @@ class DB {
 		if ( ! isset( $layer_content['layerId'] ) ) {
 			$layer_content['layerId'] = (int) $layer_id;
 		}
+
+		// The stored chunk is a reference to a global layer: the choices live on the layer post,
+		// so write them there and leave the reference alone. Writing them into the product meta
+		// instead would break the link, and returning early would silently drop the change -
+		// which is what used to happen to stock updates on a global layer's choices.
+		$global_id = $this->get_content_layer_global_id( $product, $layer_id );
+		if ( $global_id > 0 ) {
+			$choices = isset( $layer_content['choices'] ) && is_array( $layer_content['choices'] ) ? $layer_content['choices'] : array();
+			if ( ! Global_Layers::save_content( $global_id, $choices ) ) {
+				return false;
+			}
+			do_action( 'mkl_pc_saved_product_configuration_content', $product_id, array( $layer_content ) );
+			do_action( 'mkl_pc_saved_product_configuration', $product_id );
+			return true;
+		}
+
 		if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_content_' . $layer_id, $layer_content ) ) {
 			return false;
 		}
@@ -1742,6 +1865,250 @@ class DB {
 		do_action( 'mkl_pc_saved_product_configuration_content', $product_id, array( $layer_content ) );
 		do_action( 'mkl_pc_saved_product_configuration', $product_id );
 		return true;
+	}
+
+	/**
+	 * Keep a layer's content chunk in the same world as the layer chunk itself.
+	 *
+	 * A layer and its choices are stored in two separate metas and resolved independently: the
+	 * layer chunk carries `is_global` / `global_id`, the content chunk carries its own
+	 * `global_id`. The editor only ever marks one of the two as changed when a layer is made
+	 * global or disconnected, so the halves used to drift apart and stay that way:
+	 *
+	 * - made global, content left local: the product kept a private copy of the choices and
+	 *   silently stopped tracking the global layer;
+	 * - disconnected, content left global: the layer looked local but its choices still came from
+	 *   the global layer, and any edit to them was thrown away on the next save.
+	 *
+	 * Running this after every layers write fixes both at the source rather than relying on the
+	 * editor to flag the right collection, and repairs configurations that already drifted.
+	 *
+	 * The two halves can sit on different posts - a variable product keeps its layers on the parent
+	 * and a set of choices per variation - so each content owner is reconciled against the one layer
+	 * structure.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $layers_product Layer structure owner.
+	 * @param int   $owner_id  Layer structure owner id.
+	 * @param array $layer_ids Layer ids just written.
+	 * @return void
+	 */
+	private function reconcile_global_layer_links( $layers_product, $owner_id, $layer_ids ) {
+		if ( ! $layers_product || ! is_array( $layer_ids ) ) return;
+
+		$layer_globals = $this->map_layer_global_ids( $layers_product, $layer_ids );
+		if ( empty( $layer_globals ) ) return;
+
+		foreach ( $this->get_content_owner_ids( $owner_id ) as $content_owner_id ) {
+			$content_product = ( (int) $content_owner_id === (int) $owner_id ) ? $layers_product : $this->get_owner( $content_owner_id );
+			$this->reconcile_global_layer_links_for_owner( $content_product, (int) $content_owner_id, $layer_globals );
+		}
+	}
+
+	/**
+	 * Reconcile one content owner against a resolved map of layer id => global layer id (0 = local).
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $content_product
+	 * @param int   $content_owner_id
+	 * @param array $layer_globals
+	 * @return void
+	 */
+	private function reconcile_global_layer_links_for_owner( $content_product, $content_owner_id, $layer_globals ) {
+		if ( ! $content_product || ! is_array( $layer_globals ) || empty( $layer_globals ) ) return;
+
+		$changed = false;
+		foreach ( $layer_globals as $layer_id => $layer_global ) {
+			$content_global = $this->get_content_layer_global_id( $content_product, $layer_id );
+			if ( $layer_global === $content_global ) continue;
+
+			// The layer is global but this owner's content is not a reference yet. Only hand
+			// the choices over to a global layer that is actually there to hold them.
+			if ( $layer_global > 0 ) {
+				if ( ! $this->global_layer_can_own_content( $layer_global ) ) continue;
+				$this->write_structured_meta(
+					$content_product,
+					'_mkl_product_configurator_content_' . $layer_id,
+					array( 'layerId' => $layer_id, 'global_id' => $layer_global )
+				);
+				$changed = true;
+				continue;
+			}
+
+			// The layer is local but the content still points at a global layer. This owner has
+			// no copy of its own, so take one before the link goes.
+			$global = Global_Layers::get( $content_global );
+			if ( ! is_array( $global ) ) continue;
+			$choices = self::stamp_choices_layer_id( Global_Layers::normalize_choices( $global['content'] ), $layer_id );
+			$this->write_structured_meta(
+				$content_product,
+				'_mkl_product_configurator_content_' . $layer_id,
+				array( 'layerId' => $layer_id, 'choices' => $choices )
+			);
+			$changed = true;
+		}
+
+		if ( $changed ) {
+			$content_product->save();
+			$this->invalidate_layers_cache( (int) $content_owner_id );
+		}
+	}
+
+	/**
+	 * Re-align the content just written for one owner with the layer structure it belongs to.
+	 *
+	 * Runs on the content side as well as the layers side because either half can be written last:
+	 * an import, for instance, replaces every content row after the layers, and would otherwise
+	 * leave a layer marked global with a local copy of the choices sitting under it.
+	 *
+	 * @param int   $id        Logical product id the write came from.
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product Content owner just written.
+	 * @param int   $owner_id  Content owner id.
+	 * @param array $layer_ids Layer ids touched by the write.
+	 * @return void
+	 */
+	private function reconcile_content_owner_after_write( $id, $product, $owner_id, $layer_ids ) {
+		if ( empty( $layer_ids ) ) return;
+		$layers_product = $this->get_layers_owner_for( $owner_id );
+		if ( ! $layers_product ) {
+			$layers_product = $product;
+		}
+		$this->reconcile_global_layer_links_for_owner(
+			$product,
+			(int) $owner_id,
+			$this->map_layer_global_ids( $layers_product, $layer_ids )
+		);
+	}
+
+	/**
+	 * Resolve which of a set of layer ids are global references, reading the layer structure.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $layers_product
+	 * @param array $layer_ids
+	 * @return array<int,int> layer id => global layer id (0 when local)
+	 */
+	private function map_layer_global_ids( $layers_product, $layer_ids ) {
+		$map = array();
+		if ( ! $layers_product || ! is_array( $layer_ids ) ) return $map;
+		foreach ( $layer_ids as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+			$layer = $layers_product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
+			$layer = maybe_unserialize( $layer );
+			if ( is_string( $layer ) ) $layer = $this->decode_stored_json( $layer );
+			$map[ $layer_id ] = ( is_array( $layer ) && ! empty( $layer['is_global'] ) && ! empty( $layer['global_id'] ) ) ? (int) $layer['global_id'] : 0;
+		}
+		return $map;
+	}
+
+	/**
+	 * Whether a global layer is in a state where a product may hand its choices over to it.
+	 *
+	 * A trashed or emptied layer would take the choices with it, so a product holding a real copy
+	 * keeps it rather than trading it for a reference that resolves to nothing.
+	 *
+	 * @param int $global_id
+	 * @return bool
+	 */
+	private function global_layer_can_own_content( $global_id ) {
+		$post = get_post( (int) $global_id );
+		if ( ! $post || Global_Layers::CPT_SLUG !== $post->post_type || 'trash' === $post->post_status ) {
+			return false;
+		}
+		$data = Global_Layers::get( (int) $global_id );
+		return ! empty( Global_Layers::normalize_choices( $data['content'] ) );
+	}
+
+	/**
+	 * The global layer a stored content chunk points at, or 0 when the chunk is local.
+	 *
+	 * Read from the raw meta rather than from get_content_layer(), which resolves the reference
+	 * away.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner $product Storage owner.
+	 * @param int $layer_id
+	 * @return int
+	 */
+	private function get_content_layer_global_id( $product, $layer_id ) {
+		$chunk = $product->get_meta( '_mkl_product_configurator_content_' . (int) $layer_id );
+		if ( '' === $chunk ) return 0;
+		$chunk = maybe_unserialize( $chunk );
+		if ( is_string( $chunk ) ) {
+			$chunk = $this->decode_stored_json( $chunk );
+		}
+		if ( ! is_array( $chunk ) || empty( $chunk['global_id'] ) ) return 0;
+		return (int) $chunk['global_id'];
+	}
+
+	/**
+	 * Turn an owner's references to a global layer back into its own copy of the data.
+	 *
+	 * Used when the global layer is about to disappear: the reference would stop resolving and
+	 * the layer would lose every choice it has. Both halves of the link have to go - the layer
+	 * chunk's `is_global` / `global_id`, and the content chunk's `global_id` - because they are
+	 * resolved independently of one another.
+	 *
+	 * @param int $owner_id  Product, variation, or global configurator id holding the reference.
+	 * @param int $global_id Global layer being localized.
+	 * @return bool True when something was written.
+	 */
+	public function localize_global_layer( $owner_id, $global_id ) {
+		$owner_id  = (int) $owner_id;
+		$global_id = (int) $global_id;
+		if ( $owner_id <= 0 || $global_id <= 0 ) return false;
+
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) return false;
+
+		$global = Global_Layers::get( $global_id );
+		if ( ! is_array( $global ) || ! is_array( $global['layer'] ) ) return false;
+
+		$index = $this->read_layers_index_array( $product );
+		if ( empty( $index ) ) return false;
+
+		$changed = false;
+		foreach ( $index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+
+			$layer = $product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
+			$layer = maybe_unserialize( $layer );
+			if ( is_string( $layer ) ) $layer = $this->decode_stored_json( $layer );
+			$layer_is_ref = is_array( $layer ) && ! empty( $layer['is_global'] ) && (int) $layer['global_id'] === $global_id;
+
+			$content_is_ref = $this->get_content_layer_global_id( $product, $layer_id ) === $global_id;
+
+			if ( ! $layer_is_ref && ! $content_is_ref ) continue;
+
+			if ( $layer_is_ref ) {
+				$local = $global['layer'];
+				foreach ( array( '_id', 'id', 'order', 'image_order' ) as $key ) {
+					if ( isset( $layer[ $key ] ) ) $local[ $key ] = $layer[ $key ];
+				}
+				$local['_id']       = $layer_id;
+				$local['id']        = $layer_id;
+				$local['is_global'] = false;
+				$local['global_id'] = null;
+				$this->write_structured_meta( $product, '_mkl_product_configurator_layer_' . $layer_id, $local );
+				$changed = true;
+			}
+
+			if ( $content_is_ref ) {
+				$choices = self::stamp_choices_layer_id( Global_Layers::normalize_choices( $global['content'] ), $layer_id );
+				$this->write_structured_meta(
+					$product,
+					'_mkl_product_configurator_content_' . $layer_id,
+					array( 'layerId' => $layer_id, 'choices' => $choices )
+				);
+				$changed = true;
+			}
+		}
+
+		if ( $changed ) {
+			$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+			$product->save();
+			$this->invalidate_layers_cache( $owner_id );
+		}
+
+		return $changed;
 	}
 
 	/**
@@ -2227,14 +2594,7 @@ class DB {
 	private function get_content_for_global_layer( $global_id ) {
 		$data     = Global_Layers::get( $global_id );
 		$layer_id = $this->get_global_layer_local_id( $data['layer'] );
-		$choices  = Global_Layers::normalize_choices( $data['content'] );
-
-		foreach ( $choices as $index => $choice ) {
-			if ( is_array( $choice ) ) {
-				$choice['layerId']  = $layer_id;
-				$choices[ $index ] = $choice;
-			}
-		}
+		$choices  = self::stamp_choices_layer_id( Global_Layers::normalize_choices( $data['content'] ), $layer_id );
 
 		if ( empty( $choices ) ) {
 			return array();
@@ -3421,10 +3781,11 @@ class DB {
 	 * Replace layers marked as global with their global definitions while
 	 * preserving local identifiers and ordering.
 	 */
-	private function resolve_global_layers( $layers ) {
+	private function resolve_global_layers( $layers, $owner_id = 0 ) {
 		if ( ! is_array( $layers ) ) return $layers;
 		foreach ( $layers as $index => $layer ) {
 			if ( isset( $layer['is_global'] ) && $layer['is_global'] && ! empty( $layer['global_id'] ) ) {
+				Global_Layers::register_consumer( intval( $layer['global_id'] ), $owner_id );
 				$global = Global_Layers::get( intval( $layer['global_id'] ) );
 				if ( is_array( $global ) && isset( $global['layer'] ) && is_array( $global['layer'] ) ) {
 					$resolved = $global['layer'];
@@ -3457,10 +3818,11 @@ class DB {
 	 * For content entries associated to global layers, overlay choices/content
 	 * from the global storage, preserving the local layerId key.
 	 */
-	private function resolve_global_content( $content ) {
+	private function resolve_global_content( $content, $owner_id = 0 ) {
 		if ( ! is_array( $content ) ) return $content;
 		foreach ( $content as $index => $entry ) {
 			if ( isset( $entry['global_id'] ) && $entry['global_id'] ) {
+				Global_Layers::register_consumer( intval( $entry['global_id'] ), $owner_id );
 				$global = Global_Layers::get( intval( $entry['global_id'] ) );
 				if ( is_array( $global ) && isset( $global['content'] ) && is_array( $global['content'] ) ) {
 					$gc = $global['content'];
@@ -3476,11 +3838,41 @@ class DB {
 						$resolved['layerId'] = $entry['layerId'];
 					}
 					$resolved['global_id'] = intval( $entry['global_id'] );
-					$content[ $index ]     = $resolved;
+					// The choices belong to this owner's layer now, not to the layer they were
+					// authored in - see stamp_choices_layer_id().
+					$resolved['choices'] = self::stamp_choices_layer_id(
+						$resolved['choices'],
+						isset( $resolved['layerId'] ) ? $resolved['layerId'] : null
+					);
+					$content[ $index ] = $resolved;
 				}
 			}
 		}
 		return $content;
+	}
+
+	/**
+	 * Point a set of choices at the layer they are being served under.
+	 *
+	 * A choice carries the id of the layer it belongs to, and the frontend uses it to find that
+	 * layer back: `PC.fe.layers.get( choice.get( 'layerId' ) )` in the choice view, the viewer,
+	 * and the conditional logic add-on. Choices coming out of a global layer carry the id of the
+	 * layer they were authored in, which is not the id they are shown under in any product that
+	 * imported the layer - the lookup then returns nothing, so the layer renders but selecting a
+	 * choice does nothing (and conditional logic rules on it never match).
+	 *
+	 * @param mixed    $choices
+	 * @param int|null $layer_id Layer id to stamp; the choices are returned untouched without one.
+	 * @return array
+	 */
+	private static function stamp_choices_layer_id( $choices, $layer_id ) {
+		if ( ! is_array( $choices ) ) return array();
+		if ( null === $layer_id || '' === $layer_id ) return array_values( $choices );
+		foreach ( $choices as $index => $choice ) {
+			if ( ! is_array( $choice ) ) continue;
+			$choices[ $index ]['layerId'] = $layer_id;
+		}
+		return array_values( $choices );
 	}
 
 	/**
@@ -3490,6 +3882,17 @@ class DB {
 		if ( ! is_array( $layers ) ) return $layers;
 		foreach ( $layers as $index => $layer ) {
 			if ( isset( $layer['is_global'] ) && $layer['is_global'] && ! empty( $layer['global_id'] ) ) {
+				// A global id is a post id on this site and means nothing anywhere else, so an
+				// imported file can carry one that points at nothing here. Stripping the layer to a
+				// reference the resolver cannot expand again would throw away its name, type and
+				// every setting for good, leaving a blank row. Keep the layer as its own data
+				// instead - the definition that came with it is all there is.
+				if ( ! Global_Layers::is_global_layer_id( $layer['global_id'] ) ) {
+					$layer['is_global'] = false;
+					$layer['global_id'] = null;
+					$layers[ $index ]   = $layer;
+					continue;
+				}
 				$local_id = null;
 				if ( isset( $layer['_id'] ) ) {
 					$local_id = $layer['_id'];

@@ -995,6 +995,54 @@ PC.toJSON = function( item ) {
 			return content.get( choiceId ) || false;
 		},
 		/**
+		 * Link or unlink a layer's content row to a global layer, and flag it for saving.
+		 *
+		 * A layer and its choices live in two collections that are saved separately, so making a
+		 * layer global (or disconnecting it) has to move both: the layer row carries `is_global` /
+		 * `global_id`, the content row carries its own `global_id`, and the server reads them
+		 * independently. Setting only one leaves the layer linked while its choices are not, or
+		 * the other way round.
+		 *
+		 * @param {Backbone.Model} layerModel Layer whose content row should follow.
+		 * @param {Number|null}    global_id  Global layer id, or null to take a local copy back.
+		 * @return {Boolean} Whether a content row was found and updated.
+		 */
+		setContentRowGlobalId: function( layerModel, global_id ) {
+			if ( ! layerModel ) {
+				return false;
+			}
+			var layer_id = layerModel.get( '_id' ) || layerModel.id;
+			var content = this.get_collection( 'content' );
+			var row = content && content.get ? content.get( layer_id ) : null;
+			if ( ! row ) {
+				return false;
+			}
+
+			row.set( 'global_id', global_id ? parseInt( global_id, 10 ) : null );
+
+			// Choices coming out of a global layer carry the id of the layer they were authored
+			// in. Once they are this product's own, they have to point at this product's layer -
+			// the frontend finds a choice's layer with PC.fe.layers.get( choice.layerId ).
+			if ( ! global_id ) {
+				var choices = row.get( 'choices' );
+				if ( choices && choices.each ) {
+					choices.each( function( choice ) {
+						if ( choice.get( 'layerId' ) != layer_id ) {
+							choice.set( 'layerId', layer_id );
+						}
+						PC.app.modified_choices.push( { layerId: layer_id, choiceId: choice.id } );
+					} );
+				}
+			}
+
+			this.modified_content_layer_ids[ String( layer_id ) ] = true;
+			this.is_modified.content = true;
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+			return true;
+		},
+		/**
 		 * After a global layer CPT save, drop this layer from product delta maps and refresh sidebar save state.
 		 *
 		 * @param {Backbone.Model|number|string} layerModelOrId Layer model or local layer _id.

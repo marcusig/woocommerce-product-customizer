@@ -972,11 +972,13 @@ class Ajax {
 		/**
 		 * Action mkl_pc_saved_global_layer, triggered when a global layer is saved
 		 *
-		 * @param int    $result_id - The global layer CPT post ID
-		 * @param array  $layer     - The layer data
-		 * @param array  $content   - The content/choices data
+		 * `$result` rather than `$result_id`, which is null for a layer that was just created.
+		 *
+		 * @param int    $result  - The global layer CPT post ID
+		 * @param array  $layer   - The layer data
+		 * @param array  $content - The content/choices data
 		 */
-		do_action( 'mkl_pc_saved_global_layer', $result_id, $layer, $content );
+		do_action( 'mkl_pc_saved_global_layer', $result, $layer, $content );
 
 		wp_send_json_success( array(
 			'global_id' => $result,

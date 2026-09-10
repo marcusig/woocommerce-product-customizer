@@ -14,7 +14,15 @@ PC.choice = Backbone.Model.extend({
 	},
 	initialize: function( attributes, options ) {
 
-		if ( ! attributes.layerId ) this.set( 'layerId', options.layer.id );
+		// A choice belongs to the layer whose collection it is being built in. The stored value
+		// can say otherwise - choices served from a global layer carry the id of the layer they
+		// were authored in, not the id of the layer they are shown under - and everything that
+		// needs a choice's layer looks it up by this: PC.fe.layers.get( choice.get( 'layerId' ) )
+		// in the choice view and the viewer, and the actioner match in conditional logic.
+		var collection_layer_id = ( options && options.layer ) ? options.layer.id : null;
+		if ( collection_layer_id ) {
+			this.set( 'layerId', collection_layer_id );
+		}
 
 		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
 			var images = new PC.choice_pictures( attributes.images, { parse: true } );

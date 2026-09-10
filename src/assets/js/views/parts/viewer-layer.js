@@ -165,6 +165,8 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 	},
 	img_loaded: function( e ) {
 		this.$el.removeClass( 'loading' );
+		// Whatever the outcome, anything waiting on this image now has its answer.
+		this.settle();
 		if (this.empty_img == this.$el.prop('src')) return;
 		this.is_loaded = true;
 
@@ -191,6 +193,10 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 	 * only renders what it shows, so one can be removed while still loading.
 	 */
 	remove: function() {
+		this.is_removed = true;
+		// An image removed before it loaded is never going to appear: release
+		// anything that was waiting for it, or the wait only ends on its timeout.
+		this.settle();
 		if ( this.counted && this.parent ) {
 			this.counted = false;
 			this.parent.imagesLoading --;
@@ -200,6 +206,53 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			}
 		}
 		return Backbone.View.prototype.remove.apply( this, arguments );
+	},
+	/**
+	 * Call back once this image has finished loading - or once it is settled that
+	 * it never will (it failed, or it was removed while still on its way).
+	 *
+	 * This is how the image being replaced knows when it may leave the screen;
+	 * see viewer_layer_pool.wait_for().
+	 *
+	 * @param {Function} callback Receives this view.
+	 */
+	on_settled: function( callback ) {
+		if ( this.is_loaded || this.is_removed ) return callback( this );
+		this.settle_callbacks = this.settle_callbacks || [];
+		this.settle_callbacks.push( callback );
+	},
+
+	settle: function() {
+		if ( ! this.settle_callbacks ) return;
+		var callbacks = this.settle_callbacks;
+		this.settle_callbacks = null;
+		_.each( callbacks, function( callback ) {
+			callback( this );
+		}, this );
+	},
+
+	/**
+	 * Keep showing this image after its choice has been deselected.
+	 *
+	 * The view stops following its model - the model is inactive now, and
+	 * rendering that would blank the image, which is the very thing the caller is
+	 * holding it for - and it is put back in the state it was in when it was the
+	 * selected choice.
+	 *
+	 * That last part is not belt and braces: a model's own listeners run before
+	 * the ones its collection proxies, so this view has already reacted to the
+	 * deselection and dropped its `active` class by the time the pool gets to
+	 * call this. Nothing has been painted in between - it is all one turn - so
+	 * putting the class back leaves no trace, and the image is never taken off
+	 * the screen. It keeps the picture it has until remove() is called.
+	 */
+	retire: function() {
+		this.is_retired = true;
+		this.stopListening();
+		// It is on its way out, so it is no longer a landmark for insert_image():
+		// where it sits is decided by the image that replaces it.
+		this.$el.removeAttr( 'data-mkl-sorted' );
+		this.$el.removeClass( 'loading' ).addClass( 'active retired' );
 	},
 	toggle_current_layer_class: function( layer, new_val ) {
 		if ( layer.id !== this.model.get( 'layerId' ) ) return;
@@ -269,6 +322,16 @@ PC.fe.views.viewer_layer_html = Backbone.View.extend({
 		this.conditional_display();
 		// this.render();
 	},
+	/**
+	 * Keep this HTML on screen until the image it belongs with leaves.
+	 * See viewer_layer.retire().
+	 */
+	retire: function() {
+		this.is_retired = true;
+		this.stopListening();
+		this.$el.removeAttr( 'data-mkl-sorted' );
+		this.$el.addClass( 'active retired' ).show();
+	},
 	toggle_current_layer_class: function( layer, new_val ) {
 		if ( layer.id !== this.model.get( 'layerId' ) ) return;
 		this.$el.toggleClass( 'current_layer', layer.id == this.model.get( 'layerId' ) && new_val );
@@ -305,6 +368,12 @@ PC.fe.views.viewer_layer_pool = Backbone.View.extend({
 		this.views = {};
 		this.html_views = {};
 		this.preloaded = {};
+		// Images that are no longer selected but are still on screen, waiting for
+		// what replaces them - see hold() and sweep().
+		this.held = [];
+		this.incoming = [];
+		this.waits = [];
+		this.sweep_scheduled = false;
 
 		if ( ! this.choices ) return this;
 
@@ -339,6 +408,11 @@ PC.fe.views.viewer_layer_pool = Backbone.View.extend({
 
 	/**
 	 * Bring the images in line with what the layer currently shows.
+	 *
+	 * Adding happens here and now; removing is decided at the end of the turn, by
+	 * sweep(). A choice change reaches this in two steps - the old choice goes
+	 * inactive, then the new one goes active - and acting on the first would empty
+	 * the layer before the second says what to put in its place.
 	 */
 	sync: function() {
 		var wanted = {};
@@ -348,13 +422,178 @@ PC.fe.views.viewer_layer_pool = Backbone.View.extend({
 
 		_.each( _.keys( this.views ), function( id ) {
 			if ( wanted[ id ] ) return;
-			this.remove_view( id );
+			this.hold( id );
 		}, this );
 
 		_.each( wanted, function( choice, id ) {
 			if ( this.views[ id ] ) return;
-			this.add_view( choice );
+			this.incoming.push( this.add_view( choice ) );
 		}, this );
+
+		this.schedule_sweep();
+	},
+
+	/**
+	 * Take an image out of the layer, but leave it on the screen.
+	 *
+	 * It has to stop following its model right now, in this pass: the choice is
+	 * already inactive, and the view's own listener - which runs after this one -
+	 * would re-render it out of sight. From here on it is a picture with nothing
+	 * behind it, held by sweep() until its replacement can take over.
+	 *
+	 * @param {String|Number} id Choice id.
+	 */
+	hold: function( id ) {
+		var view = this.views[ id ];
+		var html_view = this.html_views[ id ];
+		delete this.views[ id ];
+		delete this.html_views[ id ];
+		if ( ! view ) {
+			if ( html_view ) html_view.remove();
+			return;
+		}
+		if ( this.parent.layer_views ) delete this.parent.layer_views[ this.parent.view_key( view.model ) ];
+
+		/**
+		 * Whether an image stays up until the one replacing it has loaded.
+		 *
+		 * @param {Boolean} hold
+		 * @param {Backbone.View} view
+		 */
+		var keep = wp.hooks.applyFilters( 'PC.fe.viewer.hold_previous_image', true, view, this );
+
+		// Nothing to hold on to: a view that is not one of ours to freeze, or an
+		// image that never made it to the screen in the first place.
+		if ( ! keep || ! view.is_loaded || ! view.retire ) {
+			view.remove();
+			if ( html_view ) html_view.remove();
+			return;
+		}
+
+		view.retire();
+		this.held.push( view );
+		if ( html_view && html_view.retire ) {
+			html_view.retire();
+			this.held.push( html_view );
+		} else if ( html_view ) {
+			html_view.remove();
+		}
+	},
+
+	/**
+	 * Decide what leaves the screen, once the whole selection change has been
+	 * seen. Runs before the browser paints, so a layer that is simply going away
+	 * does not linger for a frame.
+	 */
+	schedule_sweep: function() {
+		if ( this.sweep_scheduled ) return;
+		this.sweep_scheduled = true;
+		var that = this;
+		var run = function() { that.sweep(); };
+		if ( 'undefined' !== typeof Promise ) Promise.resolve().then( run );
+		else _.defer( run );
+	},
+
+	/**
+	 * Send the images that were held on their way.
+	 *
+	 * They leave at once if nothing is on its way in - a choice deselected, a
+	 * layer hidden by conditional logic. Otherwise they stay up until the images
+	 * added in the same change have loaded.
+	 */
+	sweep: function() {
+		this.sweep_scheduled = false;
+
+		var that = this;
+		var incoming = _.filter( this.incoming, function( view ) {
+			// Still ours, and still not on screen: those are the ones worth waiting
+			// for. One that loaded within the turn is already showing.
+			return view && ! view.is_loaded && that.views[ view.model.id ] === view;
+		} );
+		this.incoming = [];
+
+		var held = this.held;
+		this.held = [];
+		if ( ! held.length ) return;
+
+		if ( ! incoming.length ) return this.drop( held );
+
+		this.wait_for( incoming, held );
+	},
+
+	/**
+	 * Hold `held` on screen until `incoming` has loaded.
+	 *
+	 * The images being loaded are transparent until they are ready - every theme
+	 * hides `img.loading` - so what the customer sees for the length of the
+	 * request is the picture they had, rather than the background.
+	 *
+	 * @param {Array} incoming Views still loading.
+	 * @param {Array} held     Views to remove once they have.
+	 */
+	wait_for: function( incoming, held ) {
+		var that = this;
+		var wait = { held: held, pending: incoming.length, done: false, timer: null };
+		this.waits.push( wait );
+
+		// Underneath the images that replace them, so the new picture fades in over
+		// the old one instead of over the background.
+		_.each( held, function( view ) {
+			incoming[ 0 ].$el.before( view.$el );
+		} );
+
+		// However the loading turns out, these images do leave: a request that
+		// never completes must not strand a deselected choice on screen.
+		wait.timer = setTimeout( function() {
+			that.end_wait( wait );
+		}, wp.hooks.applyFilters( 'PC.fe.viewer.swap_timeout', 5000, this ) );
+
+		var settled = function( view ) {
+			if ( 0 < --wait.pending ) return;
+			// Let the new image finish fading in before taking the old one away.
+			setTimeout( function() { that.end_wait( wait ); }, that.fade_duration( view ) );
+		};
+
+		_.each( incoming, function( view ) {
+			if ( view.on_settled ) return view.on_settled( settled );
+			settled( view );
+		} );
+	},
+
+	end_wait: function( wait ) {
+		if ( wait.done ) return;
+		wait.done = true;
+		if ( wait.timer ) clearTimeout( wait.timer );
+		this.waits = _.without( this.waits, wait );
+		this.drop( wait.held );
+	},
+
+	drop: function( views ) {
+		_.each( views, function( view ) {
+			view.remove();
+		} );
+	},
+
+	/**
+	 * How long the stylesheet takes to fade an image in, in milliseconds.
+	 *
+	 * Read off the element rather than assumed: every theme fades the viewer's
+	 * images, but how long for is the theme's - or the store's - business.
+	 *
+	 * @param {Backbone.View} view
+	 * @return {Number}
+	 */
+	fade_duration: function( view ) {
+		if ( ! view || ! view.el || ! window.getComputedStyle ) return 0;
+		var declared = window.getComputedStyle( view.el ).transitionDuration || '';
+		var longest = 0;
+		_.each( declared.split( ',' ), function( part ) {
+			part = part.replace( /\s/g, '' );
+			var value = parseFloat( part );
+			if ( isNaN( value ) ) return;
+			longest = Math.max( longest, -1 === part.indexOf( 'ms' ) ? value * 1000 : value );
+		} );
+		return longest;
 	},
 
 	add_view: function( choice ) {
@@ -413,6 +652,12 @@ PC.fe.views.viewer_layer_pool = Backbone.View.extend({
 	},
 
 	remove: function() {
+		_.each( this.waits.slice(), function( wait ) {
+			this.end_wait( wait );
+		}, this );
+		this.drop( this.held );
+		this.held = [];
+		this.incoming = [];
 		_.each( _.keys( this.views ), function( id ) {
 			this.remove_view( id );
 		}, this );
