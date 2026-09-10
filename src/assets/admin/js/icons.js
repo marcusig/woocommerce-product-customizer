@@ -57,7 +57,7 @@ var PC = PC || {};
 		settings_3d_section_ar: { svg: 'svg/3d/view_in_ar' },
 		settings_3d_section_reset: { dashicon: 'dashicons-image-rotate' },
 		nav_home: { svg: 'svg/home' },
-		nav_layers: { svg: 'svg/renderlayers' },
+		nav_layers: { svg: 'svg/layers' },
 		nav_angles: { dashicon: 'dashicons-visibility' },
 		nav_content: { dashicon: 'dashicons-list-view' },
 		nav_conditional_placeholder: { dashicon: 'dashicons-randomize' },
