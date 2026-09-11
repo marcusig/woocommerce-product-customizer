@@ -215,7 +215,7 @@ class Compat_Yith_Raq {
 		if ( isset( $raq['pc_layers'] ) ) {
 			$configurator_data = $raq['pc_layers'];
 			$choices = array(); 
-			usort( $configurator_data, [ $this, '_order_images' ] );
+			$configurator_data = \MKL\PC\Utils::sort_layers_for_merging( $configurator_data );
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer  || ! is_callable( [ $layer, 'get_image_id' ] ) ) continue;
 				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
@@ -239,17 +239,6 @@ class Compat_Yith_Raq {
 	 * @param object $choice_b
 	 * @return integer
 	 */
-	private function _order_images( $choice_a, $choice_b ) {
-		if ( ! $choice_a || ! $choice_b ) return 0;
-		$a = $choice_a->get_layer( 'image_order' );
-		$b = $choice_b->get_layer( 'image_order' );
-		// fallback to normal sort
-		if ( false === $a ) {
-			$a = $choice_a->get_layer( 'order' );
-			$b = $choice_b->get_layer( 'order' );
-		}
-		return ($a > $b) ? +1 : -1;
-	}
 	
 	/**
 	 * Add the Add to quote button

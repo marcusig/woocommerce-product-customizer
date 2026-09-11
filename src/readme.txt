@@ -194,6 +194,12 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * TWEAK: The classic cart and checkout list one row per layer when the configuration is stored individually, to match the cart and checkout blocks
 * DEV: Added `mkl_pc_get_configuration_meta_mode()` and the filter `mkl_pc/configuration_meta_mode`, to set the mode per product
 * DEV: Added the filters `mkl_pc/order_created/individual_meta/key`, `mkl_pc/order_created/individual_meta/value` and `mkl_pc/order_created/individual_meta/keep_html`
+* FIX: Cart items, orders and quotes now render the configuration image that was saved with them, instead of resolving it against the product's current configurator data. Editing a configurator no longer changes or breaks the image of configurations placed before the edit - including edits that renumber layer or choice IDs, such as turning a layer into a global one. The current data is still used as the fallback, for configurations saved without an image and for images that have since been deleted
+* DEV: Added `MKL\PC\Choice::$source`, `set_source()` and `is_stored()`, to tell a configuration restored from a cart item, an order or a quote from one being configured right now
+* FIX: Cart items, orders and quotes keep the layer and choice names they were saved with, instead of re-reading them from the product. Renaming a layer or a choice no longer rewrites configurations placed before the rename, and layers whose IDs changed no longer render as blank rows
+* FIX: Configurations now save the order their layers are composited in, so the stacking of the configuration image survives the product's layers being reordered. Configurations saved before this update keep the order the configurator saved them in, rather than having their layers scattered through the stack
+* DEV: Added `MKL\PC\Choice::get_saved_image_id()`, `get_saved()` and `get_image_order()`, and the filters `mkl_pc/choice/image_id`, `mkl_pc/choice/source`, `mkl_pc/choice/saved_value` and `mkl_pc/choice/verify_saved_image`
+* DEV: Added `MKL\PC\Utils::sort_layers_for_merging()`, replacing the three copies of the private `_order_images()` comparator, and the JS filter `PC.fe.save_data.parse_choices.image_order`
 
 = 1.7.5 - 11/Aug/2026 =
 

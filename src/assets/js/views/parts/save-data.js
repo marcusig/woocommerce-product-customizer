@@ -144,6 +144,13 @@ PC.fe.save_data = {
 
 		var model_data = wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', model.attributes );
 		var angle_id = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.angle_id', angle.id );
+		// Save where the layer sits in the merged image, so the stacking order of a saved
+		// configuration survives the layers being reordered later. `image_order` is only set on
+		// the layers that are composited out of the layer order.
+		var image_order = parseInt( model_data.image_order, 10 );
+		if ( isNaN( image_order ) ) image_order = parseInt( model_data.order, 10 );
+		if ( isNaN( image_order ) ) image_order = 0;
+		image_order = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.image_order', image_order, model );
 
 		if ( 'group' == type ) {
 			if ( ! this.count_selected_choices_in_group( model.id ) ) return;
@@ -155,6 +162,7 @@ PC.fe.save_data = {
 						layer_id: model.id,
 						choice_id: 0,
 						angle_id: angle_id,
+						image_order: image_order,
 						layer_name: model_data.name,
 						image: 0,
 						name: '',
@@ -212,6 +220,7 @@ PC.fe.save_data = {
 						layer_id: model.id,
 						choice_id: choice.id,
 						angle_id: angle_id,
+						image_order: image_order,
 						layer_name: model_data.name,
 						image: img_id,
 						name: choice.get_name(),
@@ -238,6 +247,7 @@ PC.fe.save_data = {
 						layer_id: model.id, 
 						choice_id: choice.id, 
 						angle_id: angle_id,
+						image_order: image_order,
 						image: img_id,
 						layer_name: model_data.name,
 						name: choice.get_name(),
@@ -275,6 +285,7 @@ PC.fe.save_data = {
 						layer_id: model.id,
 						choice_id: choice.id,
 						angle_id: angle_id,
+						image_order: image_order,
 						image: img_id,
 						name: choice.get_name(),
 					}

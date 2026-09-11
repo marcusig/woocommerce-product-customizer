@@ -183,6 +183,53 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
+		 * Sort a configuration's layers into the order they must be composited in
+		 *
+		 * Lowest first. The order comes from each layer's `image_order`, which a stored
+		 * configuration keeps a copy of; when even one layer cannot report one - it no longer
+		 * exists and the configuration pre-dates the saving of `image_order` - the layers are
+		 * left in the order the configurator saved them.
+		 *
+		 * That order is the layer order at the time, so it is the right answer unless the
+		 * product also customises `image_order`. It is the only self-consistent fallback:
+		 * sorting the layers that can report an order against the ones that cannot puts the
+		 * unknown ones arbitrarily at one end, which scrambles the stack rather than degrading it.
+		 *
+		 * @param array $layers - Array of \MKL\PC\Choice instances
+		 * @return array
+		 */
+		public static function sort_layers_for_merging( $layers ) {
+			if ( ! is_array( $layers ) ) return [];
+
+			$layers = array_values( $layers );
+			$sortable = [];
+
+			foreach ( $layers as $position => $layer ) {
+				if ( ! $layer || ! is_callable( [ $layer, 'get_image_order' ] ) ) return $layers;
+
+				$order = $layer->get_image_order();
+				if ( null === $order ) return $layers;
+
+				$sortable[] = [
+					'order'    => $order,
+					'position' => $position,
+					'layer'    => $layer,
+				];
+			}
+
+			usort(
+				$sortable,
+				function( $a, $b ) {
+					// Equal orders keep the order the configurator saved them in.
+					if ( $a['order'] === $b['order'] ) return $a['position'] <=> $b['position'];
+					return $a['order'] <=> $b['order'];
+				}
+			);
+
+			return wp_list_pluck( $sortable, 'layer' );
+		}
+
+		/**
 		 * Include a template file, and extracts some values
 		 *
 		 * @param string  $template_file          - The template to include (full path)
