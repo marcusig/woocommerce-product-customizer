@@ -186,6 +186,7 @@ var PC = PC || {};
 				layer: layer_data ? JSON.stringify( layer_data ) : null,
 				content: content_data ? JSON.stringify( content_data ) : null,
 				angles: this.get_angles_snapshot(),
+				configurator_type: this.get_type_snapshot(),
 				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
 			} ).done( function( response ) {
 				// Update local model with saved data
@@ -217,6 +218,21 @@ var PC = PC || {};
 			var angles = PC.app && PC.app.get_collection ? PC.app.get_collection( 'angles' ) : null;
 			if ( ! angles || ! angles.length ) return undefined;
 			return JSON.stringify( PC.toJSON( angles ) );
+		},
+
+		/**
+		 * The editing product's configurator type, stored alongside the layer so the standalone
+		 * editor shows the right settings (a global layer post has no type of its own, and an
+		 * empty 3D layer has no data to infer one from).
+		 *
+		 * Standalone editing sends nothing, so saving a layer from its own editor never rewrites
+		 * the type - same reasoning as the views snapshot above.
+		 *
+		 * @return {string|undefined} Type key, or undefined when there is nothing to store.
+		 */
+		get_type_snapshot: function() {
+			if ( this.is_standalone() ) return undefined;
+			return window.configurator_type || undefined;
 		},
 
 		/**
