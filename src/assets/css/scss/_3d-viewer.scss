@@ -4,6 +4,20 @@
 	width: 100%;
 	top: 0;
 	bottom: 0;
+
+	/*
+	 * The renderer sizes the drawing buffer only (setSize with updateStyle off)
+	 * and leaves the box to CSS, so the canvas fills the container on the same
+	 * frame as the reflow. Inline pixel sizes written from the resize handler ran
+	 * a frame behind the layout and left a visible gap along the growing edge.
+	 * These three declarations are load-bearing, not cosmetic: without them the
+	 * canvas falls back to its attribute size, which is pixel-ratio scaled.
+	 */
+	canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
 }
 
 /*

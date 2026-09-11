@@ -214,14 +214,16 @@ function create_renderer( r ) {
  * Create renderer, scene, camera, controls, default light and the _three bag.
  * @param {HTMLElement} container
  * @param {Object} s - settings_3d (renderer, lighting, environment)
- * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, on_window_resize, resize_listeners, fake_shadow, model_root, current_env_url, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar }
+ * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, on_window_resize, apply_pending_resize, cancel_pending_resize, resize_listeners, fake_shadow, model_root, current_env_url, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar }
  */
 export function initScene( container, s ) {
 	const r = s.renderer || {};
 	const extend_under_toolbar = !!( s && s.extend_under_toolbar );
 	const renderer = create_renderer( r );
 	renderer.shadowMap.enabled = false;
-	renderer.setSize( container.clientWidth, container.clientHeight );
+	// Sized without updateStyle for the same reason as onResize below: CSS owns
+	// the canvas box, three owns the drawing buffer.
+	renderer.setSize( container.clientWidth, container.clientHeight, false );
 	renderer.setPixelRatio( getPixelRatio() );
 	renderer.toneMapping = getToneMapping( r );
 	renderer.toneMappingExposure = typeof r.exposure === 'number' ? r.exposure : 1;
@@ -270,7 +272,12 @@ export function initScene( container, s ) {
 		const width = container.clientWidth;
 		const height = container.clientHeight;
 		const ratio = getPixelRatio();
-		renderer.setSize( width, height );
+		// updateStyle false: the canvas box is CSS-sized at 100% of the container
+		// (see .mkl_pc_3d_canvas_container canvas), so it follows the layout on the
+		// same frame as the reflow. Letting three write inline pixel sizes here left
+		// the canvas a frame behind the container, showing a gap along whichever
+		// edge was growing.
+		renderer.setSize( width, height, false );
 		renderer.setPixelRatio( ratio );
 		for ( let i = 0; i < resize_listeners.length; i++ ) {
 			resize_listeners[ i ]( width, height, ratio );
@@ -282,11 +289,37 @@ export function initScene( container, s ) {
 	// onResize itself stays synchronous — screenshot capture relies on being able
 	// to restore the camera view offset immediately.
 	let resize_frame = null;
+	let needs_resize = false;
+
+	/**
+	 * Apply a pending resize, if there is one.
+	 *
+	 * The render loop drains this at the top of its tick so the reallocation and
+	 * the frame that refills it land together. They used to be a frame apart: the
+	 * loop queues its next rAF before the resize event queues its own, so the tick
+	 * drew at the old size, onResize then reallocated — and so cleared — the
+	 * buffers, and the browser composited an empty canvas. Dragging a window edge
+	 * alternated blank and drawn frames, which read as the viewer flickering in
+	 * and out rather than as a resize.
+	 *
+	 * @returns {boolean} Whether a resize was applied
+	 */
+	const applyPendingResize = () => {
+		if ( ! needs_resize ) return false;
+		needs_resize = false;
+		onResize();
+		return true;
+	};
+
+	// The rAF here is the fallback for whenever the render loop is not the one
+	// draining this: before it starts, and while it is paused. When the loop got
+	// there first this finds nothing pending and does nothing.
 	const onWindowResize = () => {
+		needs_resize = true;
 		if ( resize_frame != null ) return;
 		resize_frame = requestAnimationFrame( () => {
 			resize_frame = null;
-			onResize();
+			applyPendingResize();
 		} );
 	};
 	window.addEventListener( 'resize', onWindowResize );
@@ -300,6 +333,14 @@ export function initScene( container, s ) {
 		animation_id: null,
 		on_resize: onResize,
 		on_window_resize: onWindowResize,
+		apply_pending_resize: applyPendingResize,
+		cancel_pending_resize: () => {
+			needs_resize = false;
+			if ( resize_frame != null ) {
+				cancelAnimationFrame( resize_frame );
+				resize_frame = null;
+			}
+		},
 		unbind_keyboard_orbit,
 		resize_listeners,
 		fake_shadow: null,
@@ -344,11 +385,16 @@ export function cleanupThree( t ) {
 		cancelAnimationFrame( t.animation_id );
 		t.animation_id = null;
 	}
+	if ( typeof t.cancel_pending_resize === 'function' ) {
+		t.cancel_pending_resize();
+		t.cancel_pending_resize = null;
+	}
 	if ( t.on_window_resize ) {
 		window.removeEventListener( 'resize', t.on_window_resize );
 		t.on_window_resize = null;
 	}
 	t.on_resize = null;
+	t.apply_pending_resize = null;
 	if ( t.resize_listeners ) t.resize_listeners.length = 0;
 	if ( typeof t.unbind_keyboard_orbit === 'function' ) {
 		t.unbind_keyboard_orbit();
