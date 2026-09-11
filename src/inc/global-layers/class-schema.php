@@ -38,6 +38,15 @@ final class Schema {
 	const META_ANGLES = '_mkl_pc_angles';
 
 	/**
+	 * CPT meta: the configurator type this layer is authored for.
+	 *
+	 * Same key products and global configurators use, so `mkl_pc_get_configurator_type()` reads
+	 * one meta name whatever kind of post owns the configurator. Absent on layers made global
+	 * before this meta existed; `Global_Layers::get_type()` derives a value for those.
+	 */
+	const META_TYPE = MKL_PC_PREFIX . '_configurator_type';
+
+	/**
 	 * CPT meta: ids of products / variations / global configurators known to reference this layer.
 	 *
 	 * The list is a cache-invalidation index, not a source of truth: an entry that has since

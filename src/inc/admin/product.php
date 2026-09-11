@@ -147,10 +147,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 						array(
 							'id'                => MKL_PC_PREFIX . '_configurator_type',
 							'value'             => $type_value,
-							'options'           => array(
-								'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
-								'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
-							),
+							'options'           => mkl_pc_get_configurator_types(),
 							'class'             => 'configurator-type',
 							'custom_attributes' => $is_global ? array( 'disabled' => 'disabled' ) : array(),
 							'label'             => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
@@ -685,10 +682,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array(
 					'id'          => MKL_PC_PREFIX . '_configurator_type',
 					'value'       => mkl_pc_get_configurator_type( (int) $post->ID ),
-					'options'     => array(
-						'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
-						'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
-					),
+					'options'     => mkl_pc_get_configurator_types(),
 					'class'       => 'configurator-type',
 					'label'       => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
 					'description' => __( 'Applies to every product currently using this global configurator.', 'product-configurator-for-woocommerce' ),

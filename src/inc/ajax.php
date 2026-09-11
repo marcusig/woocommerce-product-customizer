@@ -933,6 +933,17 @@ class Ajax {
 			$angles = $this->db->sanitize( $angles );
 		}
 
+		// Configurator type of the product the layer is being saved from, so the layer can later be
+		// edited on its own with the right settings. Standalone editing sends nothing, which leaves
+		// the stored type alone - same reasoning as the views snapshot above.
+		$type = null;
+		if ( isset( $_REQUEST['configurator_type'] ) && ! empty( $_REQUEST['configurator_type'] ) ) {
+			$type = sanitize_key( wp_unslash( $_REQUEST['configurator_type'] ) );
+			if ( ! mkl_pc_is_valid_configurator_type( $type ) ) {
+				wp_send_json_error( 'Invalid configurator type' );
+			}
+		}
+
 		// At least one of layer or content must be provided
 		if ( null === $layer && null === $content ) {
 			wp_send_json_error( 'No data provided' );
@@ -963,7 +974,7 @@ class Ajax {
 			$content = array();
 		}
 
-		$result = Global_Layers::save( $layer, $content, $result_id, $angles );
+		$result = Global_Layers::save( $layer, $content, $result_id, $angles, $type );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( $result->get_error_message() );

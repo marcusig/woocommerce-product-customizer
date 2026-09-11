@@ -197,15 +197,97 @@ class Global_Layers {
 	}
 
 	/**
+	 * Attribute names whose presence marks a layer or choice as carrying 3D payload.
+	 *
+	 * @var string[]
+	 */
+	private static $threed_attributes = array( 'object_3d_id', 'target_object_id', 'actions_3d' );
+
+	/**
+	 * The configurator type this layer is authored for.
+	 *
+	 * A global layer post is not a product, so `mkl_pc_get_configurator_type()` delegates here.
+	 * The stored meta wins: it is stamped from the configurator the layer was made global in, and
+	 * it is the only answer available to a layer that is still empty. Layers made global before
+	 * that meta existed fall back to what their data already says, which keeps their 3D settings
+	 * reachable without a migration pass.
+	 *
+	 * @param int $global_id
+	 * @return string Type key, or '' when the id is not a global layer.
+	 */
+	public static function get_type( $global_id ) {
+		$global_id = intval( $global_id );
+		if ( $global_id <= 0 ) {
+			return '';
+		}
+
+		$type = get_post_meta( $global_id, Schema::META_TYPE, true );
+		if ( ! mkl_pc_is_valid_configurator_type( $type ) ) {
+			$data = self::get( $global_id );
+			$type = self::derive_type_from_data( $data['layer'], self::normalize_choices( $data['content'] ) );
+		}
+
+		/**
+		 * Filter the configurator type a global layer is edited as.
+		 *
+		 * @param string $type
+		 * @param int    $global_id
+		 */
+		return apply_filters( 'mkl_pc_global_layer_configurator_type', $type, $global_id );
+	}
+
+	/**
+	 * Read a layer's type back out of its own data, for layers stored before the type was stamped.
+	 *
+	 * Presence of 3D payload is the only signal available. Absence is not proof of a 2D layer -
+	 * an empty layer made global in a 3D configurator looks identical to a 2D one here - which is
+	 * why this is the fallback and the stamped meta is the source of truth.
+	 *
+	 * @param mixed $layer   Layer definition.
+	 * @param array $choices Normalized choice list.
+	 * @return string
+	 */
+	private static function derive_type_from_data( $layer, $choices ) {
+		if ( self::has_3d_payload( $layer ) ) {
+			return '3d';
+		}
+		foreach ( $choices as $choice ) {
+			if ( self::has_3d_payload( $choice ) ) {
+				return '3d';
+			}
+		}
+		return 'configurator';
+	}
+
+	/**
+	 * Whether a layer or choice array carries a non-empty 3D setting.
+	 *
+	 * @param mixed $item
+	 * @return bool
+	 */
+	private static function has_3d_payload( $item ) {
+		if ( ! is_array( $item ) ) {
+			return false;
+		}
+		foreach ( self::$threed_attributes as $attribute ) {
+			if ( ! empty( $item[ $attribute ] ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Create or update a global layer
 	 *
-	 * @param array      $layer     Layer structure
-	 * @param array      $content   Content/choices structure for that layer
-	 * @param int|null   $global_id Existing post ID to update, or null to create
-	 * @param array|null $angles    Views snapshot from the editing product, or null to keep the stored one
+	 * @param array       $layer     Layer structure
+	 * @param array       $content   Content/choices structure for that layer
+	 * @param int|null    $global_id Existing post ID to update, or null to create
+	 * @param array|null  $angles    Views snapshot from the editing product, or null to keep the stored one
+	 * @param string|null $type      Configurator type of the editing product, or null to keep the stored one
 	 * @return int|\WP_Error The post ID on success
 	 */
-	public static function save( $layer, $content, $global_id = null, $angles = null ) {
+	public static function save( $layer, $content, $global_id = null, $angles = null, $type = null ) {
 		$postarr = array(
 			'post_type'   => self::CPT_SLUG,
 			'post_status' => 'publish',
@@ -226,6 +308,9 @@ class Global_Layers {
 		update_post_meta( $global_id, Schema::META_CONTENT, self::normalize_content_for_storage( $content ) );
 		if ( is_array( $angles ) && ! empty( $angles ) ) {
 			update_post_meta( $global_id, Schema::META_ANGLES, array_values( $angles ) );
+		}
+		if ( mkl_pc_is_valid_configurator_type( $type ) ) {
+			update_post_meta( $global_id, Schema::META_TYPE, $type );
 		}
 		return $global_id;
 	}

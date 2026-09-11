@@ -633,8 +633,14 @@ final class Linker {
 	/**
 	 * Reduce the editor menu to what a standalone global layer can edit.
 	 *
-	 * A global layer owns one layer and its choices, nothing else: no views, no image order, no 3D,
+	 * A global layer owns one layer and its choices, nothing else: no views, no image order,
 	 * no import/export. Add-on screens that operate on choices (price bulk edit) are kept.
+	 *
+	 * The 3D screens stay out too, but for a different reason: `objects3d` is a registry owned by
+	 * the configurator, and a layer shared across products has no single one to manage. The 3D
+	 * sections on the layer and choice forms do render here for a layer typed `3d` - see
+	 * `Global_Layers::get_type()` - so mesh targets and actions are editable; only the
+	 * `object_3d_id` select, which points into a consumer's registry, has nothing to offer.
 	 *
 	 * @param array $menu
 	 * @return array

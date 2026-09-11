@@ -35,6 +35,14 @@ function mkl_pc_get_configurator_type( $product_id = NULL ) {
 		return $type ? $type : 'configurator';
 	}
 
+	// A global layer post owns no product, but it is edited with the same editor, and every 3D
+	// setting on the layer/choice forms is gated on this function. Without this branch it fell
+	// through to the is_product() bail below and returned false, so a layer made global from a
+	// 3D configurator could never have its 3D settings edited again.
+	if ( class_exists( '\\MKL\\PC\\Global_Layer\\Schema' ) && \MKL\PC\Global_Layer\Schema::is_global_layer_id( $product_id ) ) {
+		return \MKL\PC\Global_Layers::get_type( (int) $product_id );
+	}
+
 	// if $product_id doesn't match a product, exit
 	if ( ! MKL\PC\Utils::is_product( $product_id )  ) return false;
 
@@ -55,6 +63,38 @@ function mkl_pc_get_configurator_type( $product_id = NULL ) {
 	}
 
 	return 'configurator';
+}
+
+/**
+ * The configurator types a configurator owner (product, global configurator, global layer) can have.
+ *
+ * Single source for the admin selects and for validating a type before it is stored.
+ *
+ * @return array<string, string> Type key => translated label.
+ */
+function mkl_pc_get_configurator_types() {
+	/**
+	 * Filter the available configurator types.
+	 *
+	 * @param array<string, string> $types Type key => translated label.
+	 */
+	return apply_filters(
+		'mkl_pc_configurator_types',
+		array(
+			'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
+			'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
+		)
+	);
+}
+
+/**
+ * Whether a string is a configurator type that can be stored.
+ *
+ * @param string $type
+ * @return bool
+ */
+function mkl_pc_is_valid_configurator_type( $type ) {
+	return is_string( $type ) && '' !== $type && array_key_exists( $type, mkl_pc_get_configurator_types() );
 }
 
 /**
