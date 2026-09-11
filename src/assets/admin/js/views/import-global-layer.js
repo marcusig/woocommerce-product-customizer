@@ -39,6 +39,7 @@ PC.views = PC.views || {};
 			this.$filter = this.$body.find( '.global-layers-filter' );
 			this.$importBtn = this.$body.find( '.import-selected' );
 			this.$spinner = this.$body.find( '.mkl-pc-spinner' );
+			this.$warning = this.$body.find( '.mkl-pc-import-global-layer__warning' );
 			this.fetch_layers();
 		},
 
@@ -61,6 +62,9 @@ PC.views = PC.views || {};
 			wp.ajax
 				.post( {
 					action: 'mkl_pc_list_global_layers',
+					// The configurator being imported into, so the server can say which layers
+					// will actually render here. Undefined when unknown, which flags nothing.
+					configurator_type: window.configurator_type || undefined,
 					nonce:
 						window.PC_lang && PC_lang.global_layers_nonce
 							? PC_lang.global_layers_nonce
@@ -107,10 +111,45 @@ PC.views = PC.views || {};
 				return;
 			}
 
-			_.each( this.layers, function ( layer ) {
+			// Compatible layers first, original order preserved within each group: a layer that
+			// will not paint here is still importable, it just should not be the obvious pick.
+			var ordered = _.sortBy( this.layers, function ( layer ) {
+				return layer.compatible === false ? 1 : 0;
+			} );
+
+			_.each( ordered, function ( layer ) {
 				var $item = $( self.itemTemplate( layer ) );
+				$item.toggleClass( 'is-incompatible', layer.compatible === false );
 				self.$list.append( $item );
 			} );
+		},
+
+		/**
+		 * The layer behind a global id, as returned by the listing request.
+		 *
+		 * @param {number|string} global_id
+		 * @return {Object|undefined}
+		 */
+		get_layer: function ( global_id ) {
+			return _.find( this.layers, function ( layer ) {
+				return layer.global_id == global_id;
+			} );
+		},
+
+		/**
+		 * Show the server's mismatch warning for the selected layer, or hide it.
+		 *
+		 * The warning never blocks the import - a layer that paints nothing here can still carry
+		 * prices, SKUs and form data, and the missing half can be added afterwards.
+		 *
+		 * @param {Object|undefined} layer
+		 */
+		update_warning: function ( layer ) {
+			if ( ! this.$warning || ! this.$warning.length ) return;
+
+			var message = layer && layer.import_warning ? layer.import_warning : '';
+			this.$warning.find( 'p' ).text( message );
+			this.$warning.toggleClass( 'hidden', ! message );
 		},
 
 		filter_layers: function ( filter_value ) {
@@ -122,12 +161,7 @@ PC.views = PC.views || {};
 			var self = this;
 			this.$list.find( '.global-layer-item' ).each( function () {
 				var $item = $( this );
-				var $label = $item.find( 'h4' );
-				var layerName = $label.text().toLowerCase();
-				var globalId = $item.data( 'global-id' );
-				var layer = _.find( self.layers, function ( l ) {
-					return l.global_id == globalId;
-				} );
+				var layer = self.get_layer( $item.data( 'global-id' ) );
 
 				var matches = false;
 				if ( layer ) {
@@ -154,6 +188,7 @@ PC.views = PC.views || {};
 		on_selection_change: function ( e ) {
 			this.selected_global_id = $( e.currentTarget ).val();
 			this.$importBtn.prop( 'disabled', ! this.selected_global_id );
+			this.update_warning( this.get_layer( this.selected_global_id ) );
 		},
 
 		import_selected: function () {

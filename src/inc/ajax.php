@@ -1008,8 +1008,20 @@ class Ajax {
 
 		$this->verify_global_layers_nonce();
 
+		// Configurator the dialog is importing into, so each layer can be told apart as one that
+		// will render there or one that will not. Absent (or unknown) means no compatibility
+		// claim is made and nothing is flagged.
+		$destination_type = '';
+		if ( isset( $_REQUEST['configurator_type'] ) && ! empty( $_REQUEST['configurator_type'] ) ) {
+			$requested = sanitize_key( wp_unslash( $_REQUEST['configurator_type'] ) );
+			if ( mkl_pc_is_valid_configurator_type( $requested ) ) {
+				$destination_type = $requested;
+			}
+		}
+
 		$global_ids = Global_Layers::list();
 		$layers = array();
+		$labels = Global_Layers::get_capability_labels();
 
 		foreach ( $global_ids as $global_id ) {
 			$data = Global_Layers::get( $global_id );
@@ -1017,7 +1029,17 @@ class Ajax {
 				// Include only layer data, not content
 				$layer_info = $data['layer'];
 				$layer_info['global_id'] = $global_id;
-				$layers[] = $this->db->escape( $layer_info );
+				$layer_info = $this->db->escape( $layer_info );
+
+				// Added after escaping: these are generated here, not stored layer data, and
+				// db->escape() would walk them looking for keys it knows.
+				$capabilities                    = Global_Layers::derive_capabilities( $data['layer'], Global_Layers::normalize_choices( $data['content'] ) );
+				$layer_info['capabilities']      = $capabilities;
+				$layer_info['capability_labels'] = array_values( array_intersect_key( $labels, array_flip( $capabilities ) ) );
+				$layer_info['compatible']        = $destination_type ? Global_Layers::is_compatible_with( $capabilities, $destination_type ) : true;
+				$layer_info['import_warning']    = $destination_type ? Global_Layers::get_import_warning( $capabilities, $destination_type ) : '';
+
+				$layers[] = $layer_info;
 			}
 		}
 

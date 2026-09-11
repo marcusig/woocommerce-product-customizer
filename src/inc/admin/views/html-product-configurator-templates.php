@@ -1207,6 +1207,7 @@ IMPORT / EXPORT
 		<div class="global-layers-list">
 			<div class="mkl-pc-spinner" aria-hidden="true"></div>
 		</div>
+		<div class="notice notice-warning inline mkl-pc-import-global-layer__warning hidden" role="status" aria-live="polite"><p></p></div>
 		<div class="mkl-pc-admin-dialog__footer-actions">
 			<button type="button" class="button button-primary import-selected" disabled><?php esc_html_e( 'Import Selected', 'product-configurator-for-woocommerce' ); ?></button>
 			<button type="button" class="button mkl-pc-admin-dialog__cancel cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
@@ -1226,6 +1227,18 @@ IMPORT / EXPORT
 				<# if ( data.type ) { #>
 					<span class="layer-type"><?php esc_html_e( 'Type:', 'product-configurator-for-woocommerce' ); ?> {{data.type}}</span>
 				<# } #>
+				<span class="layer-capabilities">
+					<# if ( data.capability_labels && data.capability_labels.length ) { #>
+						<# _.each( data.capabilities, function ( capability, index ) { #>
+							<span class="mkl-pc-capability-tag mkl-pc-capability-tag--{{capability}}">{{data.capability_labels[ index ]}}</span>
+						<# } ); #>
+					<# } else { #>
+						<span class="mkl-pc-capability-tag mkl-pc-capability-tag--none"><?php esc_html_e( 'Nothing', 'product-configurator-for-woocommerce' ); ?></span>
+					<# } #>
+					<# if ( data.import_warning ) { #>
+						<span class="mkl-pc-capability-tag mkl-pc-capability-tag--mismatch" title="{{data.import_warning}}"><?php esc_html_e( 'Will not show here', 'product-configurator-for-woocommerce' ); ?></span>
+					<# } #>
+				</span>
 			</div>
 		</label>
 	</div>

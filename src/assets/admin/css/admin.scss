@@ -4539,6 +4539,65 @@ html .mkl-pc-admin-dialog-mount {
 			font-size: 12px;
 			color: #646970;
 		}
+
+		.layer-capabilities {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 4px;
+			margin-top: 6px;
+		}
+
+		// Dimmed, not hidden: a layer that paints nothing here can still carry prices, SKUs and
+		// form data, so it stays selectable - it just should not be the obvious pick.
+		&.is-incompatible label {
+			opacity: 0.75;
+		}
+	}
+
+	.mkl-pc-import-global-layer__warning {
+		flex: 0 0 auto;
+		margin: 0 16px 12px;
+
+		p {
+			margin: 8px 0;
+		}
+	}
+}
+
+// Capability tags: what a global layer can actually render. Shared by the import dialog and the
+// Global Layers list table, so they live outside the dialog's scope.
+.mkl-pc-capability-tag {
+	display: inline-block;
+	padding: 1px 7px;
+	border: 1px solid transparent;
+	border-radius: 9px;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.6;
+	white-space: nowrap;
+
+	&--2d {
+		border-color: #c3d9ed;
+		background: #eef5fb;
+		color: #1d4b75;
+	}
+
+	&--3d {
+		border-color: #cfc7e8;
+		background: #f2eefb;
+		color: #4b3b7a;
+	}
+
+	&--none {
+		border-color: #dcdcde;
+		background: #f6f7f7;
+		color: #646970;
+	}
+
+	&--mismatch {
+		border-color: #f0c48a;
+		background: #fcf3e7;
+		color: #8a5700;
 	}
 }
 

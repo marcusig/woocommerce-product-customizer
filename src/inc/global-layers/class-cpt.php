@@ -118,6 +118,7 @@ final class Cpt {
 
 		$columns['layer_type']    = __( 'Layer Type', 'product-configurator-for-woocommerce' );
 		$columns['layer_name']    = __( 'Layer Name', 'product-configurator-for-woocommerce' );
+		$columns['renders_in']    = __( 'Renders in', 'product-configurator-for-woocommerce' );
 		$columns['choices_count'] = __( 'Choices', 'product-configurator-for-woocommerce' );
 
 		return $columns;
@@ -147,6 +148,28 @@ final class Cpt {
 					echo esc_html( $data['layer']['name'] );
 				} else {
 					echo '<span aria-label="' . esc_attr__( 'Unknown', 'product-configurator-for-woocommerce' ) . '">—</span>';
+				}
+				break;
+
+			case 'renders_in':
+				$capabilities = \MKL\PC\Global_Layers::derive_capabilities( $data['layer'], \MKL\PC\Global_Layers::normalize_choices( $data['content'] ) );
+				if ( empty( $capabilities ) ) {
+					// Not a fault: an option list with no images and no 3D actions still carries
+					// prices, SKUs and form data, and it imports anywhere.
+					printf(
+						'<span class="mkl-pc-capability-tag mkl-pc-capability-tag--none" title="%s">%s</span>',
+						esc_attr__( 'No images and no 3D actions. This layer paints nothing, but its choices still import anywhere.', 'product-configurator-for-woocommerce' ),
+						esc_html__( 'Nothing', 'product-configurator-for-woocommerce' )
+					);
+					break;
+				}
+				$labels = \MKL\PC\Global_Layers::get_capability_labels();
+				foreach ( $capabilities as $capability ) {
+					printf(
+						'<span class="mkl-pc-capability-tag mkl-pc-capability-tag--%1$s">%2$s</span> ',
+						esc_attr( $capability ),
+						esc_html( isset( $labels[ $capability ] ) ? $labels[ $capability ] : $capability )
+					);
 				}
 				break;
 

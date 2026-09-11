@@ -657,24 +657,6 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				echo '<p>' . esc_html__( 'Save the post once to enable the configurator editor.', 'product-configurator-for-woocommerce' ) . '</p>';
 				return;
 			}
-			$consumer_count = 0;
-			if ( class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class ) ) {
-				$consumer_count = count( \MKL\PC\Global_Configurators\Owner_Resolver::get_consumer_product_ids( (int) $post->ID ) );
-			}
-			?>
-			<p>
-				<?php
-				echo wp_kses_post(
-					sprintf(
-						/* translators: %d: number of products currently using this configurator. */
-						_n( '%d product currently uses this configurator.', '%d products currently use this configurator.', max( 1, $consumer_count ), 'product-configurator-for-woocommerce' ),
-						(int) $consumer_count
-					)
-				);
-				?>
-			</p>
-			<?php wp_nonce_field( 'mkl_pc_global_configurator_type_' . $post->ID, 'mkl_pc_global_configurator_type_nonce' ); ?>
-			<?php
 			// No 'desc_tip': wc_help_tip()'s .woocommerce-help-tip relies on WooCommerce's own
 			// admin tooltip init, which is only enqueued on recognized WooCommerce screens
 			// (product, shop_order, …) — not this CPT screen. Description renders inline instead.
@@ -691,6 +673,33 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			?>
 			<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php esc_html_e( 'Configurator type changed. Please update this global configurator to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
 			<p class="start_button_container"><?php echo $this->start_button( (int) $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
+			<?php
+			$consumer_count = 0;
+			if ( class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class ) ) {
+				$consumer_count = count( \MKL\PC\Global_Configurators\Owner_Resolver::get_consumer_product_ids( (int) $post->ID ) );
+			}
+			?>
+			<hr>
+			<p>
+				<?php
+				echo wp_kses_post(
+					sprintf(
+						/* translators: %d: number of products currently using this configurator. */
+						_n( '%d product currently uses this configurator.', '%d products currently use this configurator.', max( 1, $consumer_count ), 'product-configurator-for-woocommerce' ),
+						(int) $consumer_count
+					)
+				);
+				?>
+			</p>
+			<?php if ( $consumer_count > 0 ) : 
+				echo '<div class="consumer-products">';
+				foreach ( \MKL\PC\Global_Configurators\Owner_Resolver::get_consumer_product_ids( (int) $post->ID ) as $product_id ) {
+					$product = wc_get_product( $product_id );
+					echo '<div><a href="' . esc_url( get_edit_post_link( $product_id ) ) . '" target="_blank">' . esc_html( $product->get_name() ) . '</a></div>';
+				}
+				echo '</div>';
+			endif; ?>
+			<?php wp_nonce_field( 'mkl_pc_global_configurator_type_' . $post->ID, 'mkl_pc_global_configurator_type_nonce' ); ?>
 			<?php
 		}
 

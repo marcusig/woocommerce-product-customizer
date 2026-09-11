@@ -197,6 +197,16 @@ class Global_Layers {
 	}
 
 	/**
+	 * Capability: the layer has images and can paint in a 2D configurator.
+	 */
+	const CAP_2D = '2d';
+
+	/**
+	 * Capability: the layer has 3D actions and can drive a 3D scene.
+	 */
+	const CAP_3D = '3d';
+
+	/**
 	 * Attribute names whose presence marks a layer or choice as carrying 3D payload.
 	 *
 	 * @var string[]
@@ -248,15 +258,151 @@ class Global_Layers {
 	 * @return string
 	 */
 	private static function derive_type_from_data( $layer, $choices ) {
-		if ( self::has_3d_payload( $layer ) ) {
-			return '3d';
+		$capabilities = self::derive_capabilities( $layer, $choices );
+		return in_array( self::CAP_3D, $capabilities, true ) ? '3d' : 'configurator';
+	}
+
+	/**
+	 * What a global layer can actually render, read from the payload its choices carry.
+	 *
+	 * Distinct from the type: the type is what the layer was *authored for* and is stamped once,
+	 * while capabilities are what it can render *right now* and are always re-read from the data.
+	 * A layer can have both (images and 3D actions), which is the portable case worth having, or
+	 * neither - an option list that only contributes price, SKU or form data and paints nothing.
+	 *
+	 * Deriving rather than storing is deliberate: unlike the type, capabilities have no
+	 * chicken-and-egg problem. An empty layer genuinely has no capabilities, and "none" is the
+	 * right answer for it - it imports anywhere without complaint.
+	 *
+	 * @param int $global_id
+	 * @return string[] Subset of CAP_2D / CAP_3D, possibly empty.
+	 */
+	public static function get_capabilities( $global_id ) {
+		$global_id = intval( $global_id );
+		if ( $global_id <= 0 ) {
+			return array();
 		}
+		$data = self::get( $global_id );
+		return self::derive_capabilities( $data['layer'], self::normalize_choices( $data['content'] ) );
+	}
+
+	/**
+	 * Capability list for an in-memory layer + choices pair.
+	 *
+	 * @param mixed $layer   Layer definition.
+	 * @param array $choices Normalized choice list.
+	 * @return string[]
+	 */
+	public static function derive_capabilities( $layer, $choices ) {
+		$has_2d = false;
+		$has_3d = self::has_3d_payload( $layer );
+
 		foreach ( $choices as $choice ) {
-			if ( self::has_3d_payload( $choice ) ) {
-				return '3d';
+			if ( ! $has_3d && self::has_3d_payload( $choice ) ) {
+				$has_3d = true;
+			}
+			if ( ! $has_2d && self::has_2d_payload( $choice ) ) {
+				$has_2d = true;
+			}
+			if ( $has_2d && $has_3d ) {
+				break;
 			}
 		}
-		return 'configurator';
+
+		$capabilities = array();
+		if ( $has_2d ) {
+			$capabilities[] = self::CAP_2D;
+		}
+		if ( $has_3d ) {
+			$capabilities[] = self::CAP_3D;
+		}
+
+		/**
+		 * Filter what a global layer reports it can render.
+		 *
+		 * @param string[] $capabilities
+		 * @param mixed    $layer
+		 * @param array    $choices
+		 */
+		return apply_filters( 'mkl_pc_global_layer_capabilities', $capabilities, $layer, $choices );
+	}
+
+	/**
+	 * The capability a configurator of this type needs from a layer to render it.
+	 *
+	 * @param string $configurator_type
+	 * @return string CAP_2D or CAP_3D.
+	 */
+	public static function required_capability( $configurator_type ) {
+		return '3d' === $configurator_type ? self::CAP_3D : self::CAP_2D;
+	}
+
+	/**
+	 * Whether a layer with these capabilities renders in a configurator of this type.
+	 *
+	 * A layer with no capabilities at all is compatible with everything on purpose: it paints
+	 * nothing anywhere, so there is no mismatch to warn about. Only a layer that demonstrably
+	 * renders in the *other* mode is worth flagging.
+	 *
+	 * @param string[] $capabilities
+	 * @param string   $configurator_type
+	 * @return bool
+	 */
+	public static function is_compatible_with( $capabilities, $configurator_type ) {
+		if ( empty( $capabilities ) ) {
+			return true;
+		}
+		return in_array( self::required_capability( $configurator_type ), (array) $capabilities, true );
+	}
+
+	/**
+	 * Short labels for the capability tags shown in the admin list and the import dialog.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function get_capability_labels() {
+		/**
+		 * Filter the capability tag labels.
+		 *
+		 * @param array<string, string> $labels
+		 */
+		return apply_filters(
+			'mkl_pc_global_layer_capability_labels',
+			array(
+				self::CAP_2D => __( 'Images', 'product-configurator-for-woocommerce' ),
+				self::CAP_3D => __( '3D', 'product-configurator-for-woocommerce' ),
+			)
+		);
+	}
+
+	/**
+	 * The sentence shown when a layer is about to be imported into a configurator it cannot paint in.
+	 *
+	 * Deliberately not phrased as a refusal: the import is allowed, because the layer may still
+	 * carry price, SKU or form data that is worth having, and because the missing half can be
+	 * filled in afterwards.
+	 *
+	 * @param string[] $capabilities
+	 * @param string   $configurator_type
+	 * @return string Empty when there is nothing to warn about.
+	 */
+	public static function get_import_warning( $capabilities, $configurator_type ) {
+		if ( self::is_compatible_with( $capabilities, $configurator_type ) ) {
+			return '';
+		}
+
+		$warning = '3d' === $configurator_type
+			? __( 'This layer has images but no 3D actions, so it will not show in this 3D configurator until you add them. Its choices, prices and SKUs still import.', 'product-configurator-for-woocommerce' )
+			: __( 'This layer has 3D actions but no images, so it will not show in this 2D configurator until you add them. Its choices, prices and SKUs still import.', 'product-configurator-for-woocommerce' );
+
+		/**
+		 * Filter the mismatched-import warning.
+		 *
+		 * @param string   $warning
+		 * @param string[] $capabilities
+		 * @param string   $configurator_type
+		 */
+		return apply_filters( 'mkl_pc_global_layer_import_warning', $warning, $capabilities, $configurator_type );
 	}
 
 	/**
@@ -271,6 +417,27 @@ class Global_Layers {
 		}
 		foreach ( self::$threed_attributes as $attribute ) {
 			if ( ! empty( $item[ $attribute ] ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Whether a choice carries an image for at least one view.
+	 *
+	 * An `images` entry exists per view and can legitimately hold no picture, so the entry's own
+	 * presence proves nothing - only a non-empty `image` inside it does.
+	 *
+	 * @param mixed $choice
+	 * @return bool
+	 */
+	private static function has_2d_payload( $choice ) {
+		if ( ! is_array( $choice ) || empty( $choice['images'] ) || ! is_array( $choice['images'] ) ) {
+			return false;
+		}
+		foreach ( $choice['images'] as $image ) {
+			if ( is_array( $image ) && ! empty( $image['image'] ) ) {
 				return true;
 			}
 		}
