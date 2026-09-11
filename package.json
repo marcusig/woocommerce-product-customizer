@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "wp-scripts test-unit-js --passWithNoTests",
+    "build": "gulp build",
     "tag": "node scripts/release.js",
     "build:svg-icons": "node scripts/build-svg-icon-registry.js",
     "start": "wp-scripts start src/assets/js/source/fe-3d-viewer-entry.js --output-path=dist/assets/build",

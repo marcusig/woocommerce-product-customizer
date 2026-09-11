@@ -4,7 +4,6 @@ const zip = require('gulp-zip')
 const sass = require('gulp-sass')(require('sass'));
 const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
-const sourcemaps = require('gulp-sourcemaps');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
 const gutil = require('gulp-util');
@@ -110,6 +109,20 @@ const cleanPaths = [
 
 const folder_name = 'product-configurator-for-woocommerce';
 
+/**
+ * Globs that never make it into the package.
+ *
+ * Unit tests sit next to the code they cover, which puts them under `src/` along
+ * with everything else — so without this both `move_src` and `js` pick them up and
+ * the shipped plugin carries a `__tests__` folder of specs plus a `.min.js` of every
+ * spec in it. One list, used by both tasks and by the watcher, so they cannot drift.
+ */
+const excludeFromPackage = [
+	// The directory entry itself and its contents: `src/**` matches both.
+	'!src/**/__tests__',
+	'!src/**/__tests__/**',
+];
+
 /** Source fragments concatenated into dist/assets/js/product_configurator.js (order matters). */
 const productConfiguratorParts = [
 	'src/assets/js/product-configurator/parts/pc-globals.js',
@@ -149,7 +162,7 @@ gulp.task('move_src', function(done) {
 		[
 			'src/**',
 			'!src/assets/js/product-configurator/parts/**',
-		])
+		].concat(excludeFromPackage))
 		.pipe(plumber(reportError))
 		.pipe(gulp.dest('dist'))
 		.on('end', done)
@@ -171,10 +184,8 @@ gulp.task('composer', function(done) {
 
 gulp.task('scss', function(done) {
 	return gulp.src('src/**/*.scss', { base: 'src', allowEmpty: true })
-		.pipe(sourcemaps.init())
 		.pipe(plumber(reportError))
 		.pipe(sass().on('error', sass.logError))
-		.pipe(sourcemaps.write('maps'))
 		.pipe(gulp.dest('dist'))
 		.on('end', done);
 
@@ -182,13 +193,11 @@ gulp.task('scss', function(done) {
 
 gulp.task('concat_js_views', function(done) {
 	return gulp.src(['src/assets/js/views/parts/*.js'], { base: 'src', allowEmpty: true })
-		// .pipe(sourcemaps.init())
 		.pipe( concat( 'configurator.js' ) )
 		.pipe( concat.header( 'var PC = PC || {};\nPC.fe = PC.fe || {};\n\nPC.fe.views = PC.fe.views || {};\nPC.options = PC.options || {};\n\n!( function( $, _ ) {\n\n\'use strict\';\n' ) )
 		.pipe( concat.footer( '\n} ) ( jQuery, PC._us || window._ );\n' ) )
 		.pipe(gulp.dest( 'dist/assets/js/views/' ))
 		.pipe(uglify())
-		// .pipe(sourcemaps.write('maps'))
 		.pipe( rename( { suffix: '.min' } ) )
 		.pipe( gulp.dest( 'dist/assets/js/views/' ) )
 		.on('end', done);
@@ -204,11 +213,9 @@ gulp.task('js', function(done) {
 		'!src/assets/build/**/*.js',
 		'!src/assets/js/vendor/draco/**/*.js',
 		'!src/assets/admin/js/generated/**',
-	], { base: 'src', allowEmpty: true })
+	].concat(excludeFromPackage), { base: 'src', allowEmpty: true })
 		.pipe(gulp.dest('dist'))
-		// .pipe(sourcemaps.init())
 		.pipe(uglify())
-		// .pipe(sourcemaps.write('maps'))
 		.pipe(rename({suffix: '.min'}))
 		.pipe(gulp.dest('dist'))
 		.on('end', done);
@@ -326,6 +333,9 @@ gulp.task('watch', function() {
 			// console.log(stats);
 			var rel = get_relative_file_path(path);
 			if ( rel.indexOf('assets/js/product-configurator/parts/') !== -1 ) {
+				return;
+			}
+			if ( rel.indexOf('__tests__') !== -1 ) {
 				return;
 			}
 			console.log('File ' + colorize.cyan(rel) + ' was modified');
