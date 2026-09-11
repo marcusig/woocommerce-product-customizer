@@ -5,8 +5,16 @@ import {
 	create_orbit_hint,
 	dismiss_orbit_hint,
 	mark_orbit_hint_done,
+	on_orbit_hint_settled,
 	orbit_hint_done,
 } from '../orbit-hint.js';
+
+/** jsdom has no CSS engine, so the animation end has to be posted by hand. */
+function end_animation( element, name ) {
+	const event = new Event( 'animationend', { bubbles: true } );
+	event.animationName = name;
+	element.dispatchEvent( event );
+}
 
 describe( 'orbit hint', () => {
 	beforeEach( () => {
@@ -98,6 +106,57 @@ describe( 'orbit hint', () => {
 
 		expect( hint.parentNode ).toBeNull();
 		expect( on_done ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	describe( 'settle signal', () => {
+		it( 'fires when the settle animation ends, not the entry one', () => {
+			const hint = create_orbit_hint( { touch: false } );
+			const puck = hint.querySelector( '.mkl_pc_3d_hint__puck' );
+			const on_settled = jest.fn();
+			on_orbit_hint_settled( hint, on_settled );
+
+			end_animation( puck, 'mkl_pc_3d_hint_in' );
+			expect( on_settled ).not.toHaveBeenCalled();
+
+			end_animation( puck, 'mkl_pc_3d_hint_settle' );
+			expect( on_settled ).toHaveBeenCalledTimes( 1 );
+
+			// The listener retires after the one settle it is waiting for.
+			end_animation( puck, 'mkl_pc_3d_hint_settle' );
+			expect( on_settled ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'stops listening once unsubscribed', () => {
+			const hint = create_orbit_hint( { touch: false } );
+			const on_settled = jest.fn();
+			const off = on_orbit_hint_settled( hint, on_settled );
+
+			off();
+			end_animation( hint.querySelector( '.mkl_pc_3d_hint__puck' ), 'mkl_pc_3d_hint_settle' );
+
+			expect( on_settled ).not.toHaveBeenCalled();
+		} );
+
+		it( 'settles immediately when the visitor has asked for reduced motion', () => {
+			// Nothing animates in that case, so there is no animationend coming
+			// and an add-on waiting on this would wait forever.
+			window.matchMedia = jest.fn().mockReturnValue( { matches: true } );
+			jest.useFakeTimers();
+			const on_settled = jest.fn();
+
+			on_orbit_hint_settled( create_orbit_hint( { touch: false } ), on_settled );
+			expect( on_settled ).not.toHaveBeenCalled();
+			jest.runAllTimers();
+			expect( on_settled ).toHaveBeenCalledTimes( 1 );
+
+			jest.useRealTimers();
+			delete window.matchMedia;
+		} );
+
+		it( 'is a no-op without a hint or a callback', () => {
+			expect( () => on_orbit_hint_settled( null, jest.fn() )() ).not.toThrow();
+			expect( () => on_orbit_hint_settled( create_orbit_hint( {} ), null )() ).not.toThrow();
+		} );
 	} );
 
 	it( 'is a no-op with nothing to dismiss', () => {

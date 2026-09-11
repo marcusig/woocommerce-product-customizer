@@ -151,6 +151,54 @@ export function create_orbit_hint( options ) {
 }
 
 /**
+ * Name of the CSS animation that leaves the hint in its quiet resting state.
+ * Declared in _3d-viewer.scss; the timing lives there and only there.
+ */
+const SETTLE_ANIMATION = 'mkl_pc_3d_hint_settle';
+
+/**
+ * Call back once the hint has stopped being loud — the sweep loops are done and
+ * it has shrunk to its resting disc.
+ *
+ * Driven by the animation itself rather than a timer, so the duration stays a
+ * CSS concern: retune the keyframes and everything waiting on this follows. The
+ * viewer republishes it as a `hint:settled` runtime event, which is what lets
+ * an add-on hold its own overlay back while the hint has the stage.
+ *
+ * @param {HTMLElement|null} hint
+ * @param {Function} callback
+ * @returns {function(): void} unsubscribe
+ */
+export function on_orbit_hint_settled( hint, callback ) {
+	const noop = () => {};
+	if ( ! hint || typeof callback !== 'function' ) return noop;
+
+	const prefers_reduced_motion = typeof window !== 'undefined'
+		&& window.matchMedia
+		&& window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+	const puck = hint.querySelector( '.mkl_pc_3d_hint__puck' );
+
+	// With motion reduced nothing animates, so there is no settling to wait for
+	// — the hint is quiet from its first frame. Deferred rather than called
+	// straight through, so this is asynchronous either way and callers never
+	// have to reason about which.
+	if ( prefers_reduced_motion || ! puck ) {
+		const timer = window.setTimeout( callback, 0 );
+		return () => window.clearTimeout( timer );
+	}
+
+	const on_animation_end = ( event ) => {
+		// The puck also runs the entry animation; only the settle counts.
+		if ( event.animationName !== SETTLE_ANIMATION ) return;
+		puck.removeEventListener( 'animationend', on_animation_end );
+		callback();
+	};
+	puck.addEventListener( 'animationend', on_animation_end );
+
+	return () => puck.removeEventListener( 'animationend', on_animation_end );
+}
+
+/**
  * Fade the hint out and remove it.
  *
  * @param {HTMLElement|null} hint

@@ -268,7 +268,7 @@
 .mkl_pc_3d_hint {
 	position: absolute;
 	inset: 0;
-	z-index: 2;
+	z-index: 7;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -327,7 +327,7 @@
 	height: 21px;
 	// Centring lives in the margin so the sweep owns `transform` outright.
 	margin-left: -10.5px;
-	animation: mkl_pc_3d_hint_sweep 2.4s ease-in-out 4 both;
+	animation: mkl_pc_3d_hint_sweep 2.4s ease-in-out 3 both;
 }
 
 .mkl_pc_3d_hint__orbit svg,

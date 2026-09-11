@@ -38,6 +38,7 @@ import {
 	create_orbit_hint,
 	dismiss_orbit_hint,
 	mark_orbit_hint_done,
+	on_orbit_hint_settled,
 	orbit_hint_done,
 } from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
@@ -52,7 +53,7 @@ const wp = window.wp;
  * Bumped when something an add-on can observe changes; add-ons that need a
  * newer member should feature-detect it rather than compare numbers.
  */
-const RUNTIME_API_VERSION = 1;
+const RUNTIME_API_VERSION = 2;
 
 /**
  * How long the orbit hint will wait on a `PC.fe.viewer.intro` promise.
@@ -102,6 +103,7 @@ export default Backbone.View.extend({
 	_onOrbitHintInteract: null,
 	_orbitHintControls: null,
 	_orbitHintCanvas: null,
+	_orbitHintSettleOff: null,
 
 	initialize( options ) {
 		this.parent = options.parent || window.PC.fe;
@@ -124,6 +126,7 @@ export default Backbone.View.extend({
 		this._onOrbitHintInteract = null;
 		this._orbitHintControls = null;
 		this._orbitHintCanvas = null;
+		this._orbitHintSettleOff = null;
 		if ( window.PC.fe && window.PC.fe.angles ) {
 			// Wrapped: Backbone calls change handlers with (model, value, options),
 			// which would otherwise arrive as _applyAngleCamera's options argument.
@@ -269,6 +272,19 @@ export default Backbone.View.extend({
 				if ( ! this._runtimeBus || typeof this._runtimeBus.off !== 'function' ) return;
 				this._runtimeBus.off( eventName, callback );
 			},
+			/**
+			 * Whether this viewer intends to show the orbit hint.
+			 *
+			 * Answerable at runtime:ready, which is well before `hint:shown`
+			 * fires — an add-on with an overlay of its own needs to know at mount
+			 * time whether to start out of the way, or it flashes on screen and
+			 * then hides. Absent on hosts older than API version 2, so feature-
+			 * detect it and default to showing your overlay: never let a missing
+			 * signal leave your own content hidden.
+			 *
+			 * @returns {boolean}
+			 */
+			willShowOrbitHint: () => this._shouldShowOrbitHint(),
 			pauseRenderLoop: () => this._pauseRenderLoop(),
 			resumeRenderLoop: () => this._resumeRenderLoop(),
 			// Rendering is on-demand. Add-ons that mutate the scene outside of the
@@ -675,12 +691,8 @@ export default Backbone.View.extend({
 	 * decoration over a product photo.
 	 */
 	_showOrbitHint() {
-		if ( this._orbitHint || this._orbitHintSuppressed ) return;
-		if ( ! this._three || this._contextLost ) return;
-		if ( ! this._canOrbit() ) return;
-		const s = getSettings();
-		if ( ! s || s.orbit_hint === false ) return;
-		if ( orbit_hint_done() ) return;
+		if ( this._orbitHint ) return;
+		if ( ! this._shouldShowOrbitHint() ) return;
 		const container = this._container;
 		if ( ! container || ! container.parentNode ) return;
 
@@ -688,6 +700,32 @@ export default Backbone.View.extend({
 		container.after( hint );
 		this._orbitHint = hint;
 		this._emitRuntimeEvent( 'hint:shown', {} );
+
+		// Republish the end of the sweep loops. An add-on holding an overlay back
+		// waits on this rather than on dismissal — dismissal needs the customer to
+		// act, and one who never does would never get the overlay at all.
+		this._orbitHintSettleOff = on_orbit_hint_settled( hint, () => {
+			this._orbitHintSettleOff = null;
+			if ( this._orbitHint !== hint ) return;
+			this._emitRuntimeEvent( 'hint:settled', {} );
+		} );
+	},
+
+	/**
+	 * Whether the orbit hint is going to be shown, asked before it is.
+	 *
+	 * Shared with the runtime API's willShowOrbitHint so an add-on's answer and
+	 * the viewer's own behaviour cannot drift apart.
+	 *
+	 * @returns {boolean}
+	 */
+	_shouldShowOrbitHint() {
+		if ( this._orbitHintSuppressed ) return false;
+		if ( ! this._three || this._contextLost ) return false;
+		if ( ! this._canOrbit() ) return false;
+		const s = getSettings();
+		if ( ! s || s.orbit_hint === false ) return false;
+		return ! orbit_hint_done();
 	},
 
 	/**
@@ -697,6 +735,7 @@ export default Backbone.View.extend({
 	_dismissOrbitHint() {
 		this._orbitHintSuppressed = true;
 		mark_orbit_hint_done();
+		this._stopWaitingForOrbitHintSettle();
 		if ( ! this._orbitHint ) return;
 		const hint = this._orbitHint;
 		this._orbitHint = null;
@@ -706,9 +745,16 @@ export default Backbone.View.extend({
 
 	/** Drop the hint from the DOM without the fade — teardown, not dismissal. */
 	_removeOrbitHint() {
+		this._stopWaitingForOrbitHintSettle();
 		const hint = this._orbitHint;
 		this._orbitHint = null;
 		if ( hint && hint.parentNode ) hint.parentNode.removeChild( hint );
+	},
+
+	_stopWaitingForOrbitHintSettle() {
+		const off = this._orbitHintSettleOff;
+		this._orbitHintSettleOff = null;
+		if ( typeof off === 'function' ) off();
 	},
 
 	/**
@@ -1407,6 +1453,12 @@ export default Backbone.View.extend({
 	_onRenderFrame( now ) {
 		const t = this._three;
 		if ( ! t ) return;
+
+		// Drain a pending window resize before drawing rather than from its own
+		// animation frame, so the reallocation and the frame that refills the
+		// cleared buffers happen together. See apply_pending_resize.
+		if ( typeof t.apply_pending_resize === 'function' ) t.apply_pending_resize();
+
 		const g = t._ground_settings || {};
 		if ( t._lastFrameTs == null ) t._lastFrameTs = now;
 		const deltaSeconds = Math.max( 0, ( now - t._lastFrameTs ) / 1000 );
