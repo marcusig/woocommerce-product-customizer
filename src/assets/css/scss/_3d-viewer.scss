@@ -219,17 +219,27 @@
  *
  * A still render and a model that turns look the same until something moves, so
  * this says the gesture out loud once and then quiets down: the pointer sweeps
- * across the orbit ring four times, after which the label fades away and the
- * puck shrinks to a dim resting disc that stays until the customer grabs the
- * model. Loud enough to be read, small enough to leave the product alone.
+ * back and forth across the orbit ring, after which the label fades away and
+ * the puck shrinks to a dim resting disc that stays until the customer grabs
+ * the model. Loud enough to be read, small enough to leave the product alone.
  *
  * Nothing here takes pointer events. The drag that dismisses the hint has to
  * reach the canvas underneath and orbit the model — an affordance that eats the
  * interaction it just asked for is worse than no affordance at all.
  *
- * Timings below are one 2.4s sweep x 4, so the settle starts at 9.6s. Change
- * one and change the others.
+ * How long it stays loud is the two variables below, and nothing else. The
+ * moment the hint goes quiet is derived from them rather than written out
+ * again, because writing it out again is how it drifts: the loop count was
+ * lowered once while the settle delay kept the old figure, and the hint spent
+ * the difference sitting motionless before it shrank.
+ *
+ * `hint_settles_at` is also when premium hotspots fade in — the viewer reports
+ * the end of the settle animation as `hint:settled`, so retuning here moves
+ * them with it. See _wait_for_orbit_hint in the 3D premium add-on.
  */
+$mkl_pc_hint_sweep_duration: 2.4s;
+$mkl_pc_hint_sweep_loops: 2;
+$mkl_pc_hint_settles_at: $mkl_pc_hint_sweep_duration * $mkl_pc_hint_sweep_loops;
 @keyframes mkl_pc_3d_hint_in {
 	from {
 		opacity: 0;
@@ -316,7 +326,7 @@
 	-webkit-backdrop-filter: blur(7px) saturate(1.1);
 	animation:
 		mkl_pc_3d_hint_in 0.45s 0.1s ease both,
-		mkl_pc_3d_hint_settle 0.6s 9.6s ease forwards;
+		mkl_pc_3d_hint_settle 0.6s $mkl_pc_hint_settles_at ease forwards;
 }
 
 // Both icon wrappers are sized to their file's viewBox aspect — ring 42x22,
@@ -341,7 +351,7 @@
 	height: 21px;
 	// Centring lives in the margin so the sweep owns `transform` outright.
 	margin-left: -10.5px;
-	animation: mkl_pc_3d_hint_sweep 2.4s ease-in-out 3 both;
+	animation: mkl_pc_3d_hint_sweep $mkl_pc_hint_sweep_duration ease-in-out $mkl_pc_hint_sweep_loops both;
 }
 
 .mkl_pc_3d_hint__orbit svg,
@@ -369,7 +379,7 @@
 	text-align: center;
 	animation:
 		mkl_pc_3d_hint_in 0.45s 0.2s ease both,
-		mkl_pc_3d_hint_label_out 0.5s 9.6s ease forwards;
+		mkl_pc_3d_hint_label_out 0.5s $mkl_pc_hint_settles_at ease forwards;
 }
 
 // Without a blurred backdrop the translucent fills lose most of their contrast.
