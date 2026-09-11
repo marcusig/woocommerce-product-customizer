@@ -316,7 +316,6 @@ $mkl_pc_hint_settles_at: $mkl_pc_hint_sweep_duration * $mkl_pc_hint_sweep_loops;
 	box-sizing: border-box;
 	width: 78px;
 	height: 78px;
-	border: 1px solid rgba(255, 255, 255, 0.24);
 	border-radius: 50%;
 	// Dark enough to hold a white glyph over a white studio backdrop; the
 	// hairline border is what keeps it from disappearing into a dark one.
@@ -387,6 +386,45 @@ $mkl_pc_hint_settles_at: $mkl_pc_hint_sweep_duration * $mkl_pc_hint_sweep_loops;
 	.mkl_pc_3d_hint__puck,
 	.mkl_pc_3d_hint__label {
 		background: rgba(18, 18, 20, 0.68);
+	}
+}
+
+/*
+ * Full-bleed viewer: keep what the customer reads with the product.
+ *
+ * With extend_under_toolbar the canvas stretches under the toolbar, but the
+ * camera goes on framing the product in the clear area beside it — that is what
+ * apply_camera_view_offset does with these same four custom properties. Any
+ * overlay centred on the raw canvas therefore drifts away from the product it
+ * belongs to; on Float's desktop layout it lands half behind the menu.
+ *
+ * Reading the same properties keeps the two in step by construction, and CSS
+ * resolves their percentages against the same axes parse_css_length does —
+ * left/right against width, top/bottom against height — so a themed % inset
+ * means the same thing to the overlay as it does to the camera.
+ */
+.mkl_pc_viewer--extend-under-toolbar {
+	.mkl_pc_3d_hint {
+		inset:
+			var(--mkl_pc_viewer_focus_inset_top, 0)
+			var(--mkl_pc_viewer_focus_inset_right, 0)
+			var(--mkl_pc_viewer_focus_inset_bottom, 0)
+			var(--mkl_pc_viewer_focus_inset_left, 0);
+	}
+
+	// Only the content moves. The loader's scrim and poster sit on the root and
+	// still have to cover the whole canvas — inset those and the stretched strip
+	// beside them shows the page through it.
+	.mkl_pc_3d_loader__content {
+		position: absolute;
+		inset:
+			var(--mkl_pc_viewer_focus_inset_top, 0)
+			var(--mkl_pc_viewer_focus_inset_right, 0)
+			var(--mkl_pc_viewer_focus_inset_bottom, 0)
+			var(--mkl_pc_viewer_focus_inset_left, 0);
+		// The root's padding no longer contains an absolutely positioned child.
+		box-sizing: border-box;
+		padding: 1.5em;
 	}
 }
 
