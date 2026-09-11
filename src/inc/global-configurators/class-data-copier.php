@@ -19,6 +19,32 @@ defined( 'ABSPATH' ) || exit;
 final class Data_Copier {
 
 	/**
+	 * Single-meta configurator values that hold a structured (array) value.
+	 *
+	 * Separate from the scalars because these have to be decoded and re-encoded on copy rather
+	 * than moved as stored bytes - see {@see self::is_structured_meta_key()}. A structured key
+	 * added here is handled correctly by every path; one added only to the filter below is not.
+	 *
+	 * @return string[]
+	 */
+	public static function get_structured_single_meta_keys() {
+		return apply_filters(
+			'mkl_pc/global_configurators/copy/structured_single_meta_keys',
+			array(
+				'_mkl_product_configurator_angles',
+				'_mkl_product_configurator_conditions',
+				// 3D data belongs to the configurator rather than to the product that happens to
+				// show it: DB::get()/DB::set() already resolve both components through
+				// Owner_Resolver, so a linked product reads and writes them on the global post
+				// already. Layers also reference entries in `objects3d` by id (object_3d_id /
+				// target_object_id), so the object list has to live wherever the layers live.
+				'_mkl_product_configurator_settings_3d',
+				'_mkl_product_configurator_objects3d',
+			)
+		);
+	}
+
+	/**
 	 * Configurator meta keys (non-chunked) that travel with the configurator.
 	 * Does NOT include legacy blobs, which are handled separately based on the caller's intent.
 	 *
@@ -27,12 +53,13 @@ final class Data_Copier {
 	public static function get_single_meta_keys() {
 		return apply_filters(
 			'mkl_pc/global_configurators/copy/single_meta_keys',
-			array(
-				'_mkl_product_configurator_angles',
-				'_mkl_product_configurator_conditions',
-				'_mkl_product_configurator_last_updated',
-				'_mkl_product_configurator_storage_format_version',
-				'_mkl_product_configurator_integrity_cache',
+			array_merge(
+				self::get_structured_single_meta_keys(),
+				array(
+					'_mkl_product_configurator_last_updated',
+					'_mkl_product_configurator_storage_format_version',
+					'_mkl_product_configurator_integrity_cache',
+				)
 			)
 		);
 	}
@@ -257,7 +284,7 @@ final class Data_Copier {
 		if ( self::get_layers_index_key() === $key ) {
 			return true;
 		}
-		if ( in_array( $key, array( '_mkl_product_configurator_angles', '_mkl_product_configurator_conditions' ), true ) ) {
+		if ( in_array( $key, self::get_structured_single_meta_keys(), true ) ) {
 			return true;
 		}
 		foreach ( self::get_chunked_prefixes() as $prefix ) {

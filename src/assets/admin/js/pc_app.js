@@ -1448,7 +1448,29 @@ PC.toJSON = function( item ) {
 			if ( PC.views.conditional ) {
 				components.push( 'conditions' );
 			}
+			// Only loaded for a 3D configurator (see DB::get_init_data), so presence is the gate:
+			// componentHasData() drops them again for anything else.
+			components.push( 'settings_3d', 'objects3d' );
 			return wp.hooks.applyFilters( 'PC.admin.transferable_components', components );
+		},
+		/**
+		 * Whether a component holds anything worth sending.
+		 *
+		 * Most components are Backbone collections, but settings_3d is a plain object with no
+		 * `length` - testing that alone reports it as empty and drops it from the copy.
+		 *
+		 * @param {string} key
+		 * @return {boolean}
+		 */
+		componentHasData: function( key ) {
+			var collection = this.get_collection( key );
+			if ( ! collection ) {
+				return false;
+			}
+			if ( collection instanceof Backbone.Collection || collection instanceof Array || typeof collection.length === 'number' ) {
+				return collection.length > 0;
+			}
+			return 'object' === typeof collection && Object.keys( collection ).length > 0;
 		},
 		/**
 		 * Send the configuration currently loaded in the editor to a different owner post.
@@ -1485,8 +1507,7 @@ PC.toJSON = function( item ) {
 				app.is_modified[ key ] = false;
 			} );
 			components.forEach( function( key ) {
-				var collection = app.get_collection( key );
-				if ( collection && collection.length ) {
+				if ( app.componentHasData( key ) ) {
 					app.is_modified[ key ] = true;
 					has_data = true;
 				}

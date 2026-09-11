@@ -2295,6 +2295,18 @@ class DB {
 			'configurator_source' => Global_Configurator_Schema::SOURCE_GLOBAL,
 			'global_configurator' => $global_config_block,
 		);
+
+		// Same 3D data a product editor loads. The configurator type is stored on this post, and
+		// its layers reference entries in `objects3d` by id, so both components are read from
+		// here rather than from whichever product happens to be linked to it.
+		if ( '3d' === mkl_pc_get_configurator_type( $cpt_id ) ) {
+			$stored                   = $this->get( 'settings_3d', $cpt_id );
+			$defaults                 = self::get_default_settings_3d();
+			$init_data['settings_3d'] = is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults;
+			$stored_objects           = $this->get( 'objects3d', $cpt_id );
+			$init_data['objects3d']   = is_array( $stored_objects ) ? $stored_objects : array();
+		}
+
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $post );
 	}
 
