@@ -60,7 +60,7 @@ var PC = PC || {};
 		nav_layers: { svg: 'svg/layers' },
 		nav_angles: { dashicon: 'dashicons-visibility' },
 		nav_content: { dashicon: 'dashicons-list-view' },
-		nav_image_order: { svg: 'svg/order' },
+		nav_image_order: { svg: 'svg/sort' },
 		nav_conditional_placeholder: { dashicon: 'dashicons-randomize' },
 		nav_import: { dashicon: 'dashicons-migrate' },
 		nav_conditional: { dashicon: 'dashicons-randomize' },
