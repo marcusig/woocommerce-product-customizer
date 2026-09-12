@@ -424,10 +424,17 @@ class Global_Layers {
 	}
 
 	/**
-	 * Whether a choice carries an image for at least one view.
+	 * Whether a choice paints something in a 2D configurator's preview.
 	 *
-	 * An `images` entry exists per view and can legitimately hold no picture, so the entry's own
-	 * presence proves nothing - only a non-empty `image` inside it does.
+	 * An image for at least one view is the only signal. An `images` entry exists per view and can
+	 * legitimately hold no picture, so the entry's own presence proves nothing - only a non-empty
+	 * `image` inside it does.
+	 *
+	 * The choice's `color` deliberately does NOT count. It stands in for the thumbnail in the
+	 * *menu*, not for anything in the preview (a preview effect needs custom development), so a 3D
+	 * layer may well set it just to colour its menu swatches. Counting it here would report such a
+	 * layer as `2d` and let it import into a 2D configurator unflagged, where it paints nothing.
+	 * Menu chrome is orthogonal to both modes.
 	 *
 	 * @param mixed $choice
 	 * @return bool

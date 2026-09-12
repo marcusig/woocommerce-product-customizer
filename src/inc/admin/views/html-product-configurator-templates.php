@@ -1227,18 +1227,21 @@ IMPORT / EXPORT
 				<# if ( data.type ) { #>
 					<span class="layer-type"><?php esc_html_e( 'Type:', 'product-configurator-for-woocommerce' ); ?> {{data.type}}</span>
 				<# } #>
-				<span class="layer-capabilities">
-					<# if ( data.capability_labels && data.capability_labels.length ) { #>
+				<#
+				// A layer with no capabilities gets no tag: it imports cleanly anywhere, and a
+				// label saying so would read as a defect on the quietest rows. Absence carries it.
+				var has_capability_tags = ( data.capability_labels && data.capability_labels.length ) || data.import_warning;
+				#>
+				<# if ( has_capability_tags ) { #>
+					<span class="layer-capabilities">
 						<# _.each( data.capabilities, function ( capability, index ) { #>
 							<span class="mkl-pc-capability-tag mkl-pc-capability-tag--{{capability}}">{{data.capability_labels[ index ]}}</span>
 						<# } ); #>
-					<# } else { #>
-						<span class="mkl-pc-capability-tag mkl-pc-capability-tag--none"><?php esc_html_e( 'Nothing', 'product-configurator-for-woocommerce' ); ?></span>
-					<# } #>
-					<# if ( data.import_warning ) { #>
-						<span class="mkl-pc-capability-tag mkl-pc-capability-tag--mismatch" title="{{data.import_warning}}"><?php esc_html_e( 'Will not show here', 'product-configurator-for-woocommerce' ); ?></span>
-					<# } #>
-				</span>
+						<# if ( data.import_warning ) { #>
+							<span class="mkl-pc-capability-tag mkl-pc-capability-tag--mismatch" title="{{data.import_warning}}"><?php esc_html_e( 'Will not show here', 'product-configurator-for-woocommerce' ); ?></span>
+						<# } #>
+					</span>
+				<# } #>
 			</div>
 		</label>
 	</div>
