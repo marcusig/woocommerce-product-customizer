@@ -238,20 +238,37 @@
 		updatePickerLayout();
 	}
 
+	/**
+	 * Hand both apply fields to WooCommerce's select2 initialiser, and mirror the product
+	 * selection into its single hidden input.
+	 *
+	 * The product select carries no name attribute: a `name[]` multi-select posts one variable per
+	 * option and PHP drops everything past max_input_vars (1000 by default), which would read as a
+	 * mass deselection on a configurator with more linked products than that. One comma-separated
+	 * value is immune to that regardless of how many products are selected.
+	 *
+	 * The hidden input is rendered already holding the current selection, so if this never runs the
+	 * form posts an unchanged list and the save does nothing.
+	 */
 	function bindApplySettings() {
 		var $apply = $('.mkl-pc-apply-settings');
 		if (!$apply.length) {
 			return;
 		}
-		function syncApplyMode() {
-			var mode = $apply.find('input[name="_mkl_pc_apply_mode"]:checked').val();
-			$apply.find('[data-show-when-apply-mode]').each(function () {
-				var want = $(this).attr('data-show-when-apply-mode');
-				$(this).toggle(want === mode);
-			});
+
+		var $search = $apply.find('.mkl-pc-apply-product-search');
+		if ($search.length) {
+			var $value = $('#' + ($search.data('value-field') || ''));
+			if ($value.length) {
+				var sync = function () {
+					$value.val(($search.val() || []).join(','));
+				};
+				$search.on('change', sync);
+				// Last word before the request leaves, in case a change event was missed.
+				$search.closest('form').on('submit', sync);
+			}
 		}
-		$apply.on('change', 'input[name="_mkl_pc_apply_mode"]', syncApplyMode);
-		syncApplyMode();
+
 		$(document.body).trigger('wc-enhanced-select-init');
 	}
 

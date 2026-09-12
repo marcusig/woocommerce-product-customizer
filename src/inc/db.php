@@ -2113,14 +2113,11 @@ class DB {
 		if ( ! $post || Global_Configurator_Schema::CPT_SLUG !== $post->post_type ) {
 			return array();
 		}
-		$consumers           = Global_Configurator_Owner_Resolver::get_consumer_product_ids( $cpt_id );
 		$global_config_block = array(
 			'id'                => (int) $cpt_id,
 			'title'             => get_the_title( $cpt_id ),
 			'is_editing_global' => true,
 			'edit_url'          => '',
-			'consumer_ids'      => $consumers,
-			'consumer_count'    => count( $consumers ),
 		);
 		$init_data = array(
 			'layers'              => $this->get( 'layers', $cpt_id ),
@@ -2170,19 +2167,20 @@ class DB {
 				'title'             => '',
 				'is_editing_global' => false,
 				'edit_url'          => '',
-				'consumer_ids'      => array(),
-				'consumer_count'    => 0,
 			);
 		}
-		$consumers = Global_Configurator_Owner_Resolver::get_consumer_product_ids( $cpt_id );
 		$edit_url = get_edit_post_link( $cpt_id, 'raw' );
+		// Only what the editor's "you are viewing a shared configurator" banner reads. This array
+		// travels in the product's configurator payload, which is public and is written into the
+		// cached config files, so anything about the OTHER products sharing the configurator would
+		// be published to every visitor - and a category rule covering a large category makes that
+		// list enormous. The screens that do show a consumer count each work it out for themselves,
+		// on request, from Owner_Resolver::count_consumer_products().
 		return array(
 			'id'                => (int) $cpt_id,
 			'title'             => get_the_title( $cpt_id ),
 			'is_editing_global' => false,
 			'edit_url'          => is_string( $edit_url ) ? $edit_url : '',
-			'consumer_ids'      => $consumers,
-			'consumer_count'    => count( $consumers ),
 		);
 	}
 

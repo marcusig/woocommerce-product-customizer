@@ -10,13 +10,20 @@ namespace MKL\PC\Global_Configurators;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Resolves which products a global configurator applies to when it is not using
- * per-product (selected) linking.
+ * Resolves which products a global configurator applies to through its category rule.
  *
- * Explicit product settings always win: a product with Configurable enabled keeps
- * its local or chosen global configurator, even if it also sits in a matching category.
+ * Category targeting is only one of two additive rules. The other is the explicit per-product
+ * link (`Schema::META_SOURCE` / `Schema::META_GLOBAL_ID`), which the Apply meta box now edits
+ * from the configurator's side as well as the product's. Explicit links always win: a product
+ * with its own configurator, or one pointing at another global, keeps it even when it also sits
+ * in a matching category.
  */
 final class Assignment {
+
+	/**
+	 * Run-once flag for {@see self::maybe_migrate_apply_mode()}.
+	 */
+	const MIGRATED_APPLY_MODE_OPTION = 'mkl_pc_gconf_apply_mode_migrated';
 
 	/** @var bool */
 	private static $did_init = false;
@@ -37,6 +44,62 @@ final class Assignment {
 		add_action( 'untrashed_post', array( __CLASS__, 'maybe_invalidate_on_cpt_status' ) );
 		add_action( 'before_delete_post', array( __CLASS__, 'maybe_invalidate_on_cpt_status' ) );
 		add_action( 'set_object_terms', array( __CLASS__, 'maybe_invalidate_on_product_categories' ), 10, 4 );
+		add_action( 'admin_init', array( __CLASS__, 'maybe_migrate_apply_mode' ) );
+	}
+
+	/**
+	 * One-time cleanup of the retired apply-mode meta.
+	 *
+	 * The category rule used to be gated on `META_APPLY_MODE === 'category'`, and saving in the
+	 * other mode wiped the stored term ids. Now that a non-empty category list is what activates
+	 * the rule, any post left holding term ids alongside a non-category mode would come live on
+	 * upgrade - so those lists are dropped before the gate disappears, and the mode meta with them.
+	 *
+	 * Guarded by its own option rather than the plugin version list: the feature and the radio
+	 * shipped inside the same unreleased cycle, so an install can already be recorded at the
+	 * version whose upgrade step would otherwise carry this.
+	 *
+	 * @return void
+	 */
+	public static function maybe_migrate_apply_mode() {
+		if ( get_option( self::MIGRATED_APPLY_MODE_OPTION ) ) {
+			return;
+		}
+
+		$query = new \WP_Query(
+			array(
+				'post_type'              => Schema::CPT_SLUG,
+				'post_status'            => 'any',
+				'posts_per_page'         => -1,
+				'fields'                 => 'ids',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => true,
+				'update_post_term_cache' => false,
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_meta_query -- One-time cleanup over a small admin-only CPT.
+					array(
+						'key'     => Schema::META_APPLY_MODE,
+						'compare' => 'EXISTS',
+					),
+				),
+			)
+		);
+
+		if ( ! empty( $query->posts ) && is_array( $query->posts ) ) {
+			foreach ( $query->posts as $global_id ) {
+				$global_id = (int) $global_id;
+				if ( $global_id <= 0 ) {
+					continue;
+				}
+				if ( Schema::APPLY_MODE_CATEGORY !== get_post_meta( $global_id, Schema::META_APPLY_MODE, true ) ) {
+					delete_post_meta( $global_id, Schema::META_APPLY_CATEGORY_IDS );
+				}
+				delete_post_meta( $global_id, Schema::META_APPLY_MODE );
+			}
+			self::invalidate_category_index();
+			delete_transient( 'mkl_get_configurable_products' );
+		}
+
+		update_option( self::MIGRATED_APPLY_MODE_OPTION, 1, false );
 	}
 
 	/**
@@ -73,24 +136,6 @@ final class Assignment {
 	}
 
 	/**
-	 * Apply mode stored on a global configurator CPT.
-	 *
-	 * @param int $global_id
-	 * @return string Schema::APPLY_MODE_*
-	 */
-	public static function get_apply_mode( $global_id ) {
-		$global_id = (int) $global_id;
-		if ( $global_id <= 0 ) {
-			return Schema::APPLY_MODE_SELECTED;
-		}
-		$mode = get_post_meta( $global_id, Schema::META_APPLY_MODE, true );
-		if ( Schema::APPLY_MODE_CATEGORY === $mode ) {
-			return Schema::APPLY_MODE_CATEGORY;
-		}
-		return Schema::APPLY_MODE_SELECTED;
-	}
-
-	/**
 	 * Product category term ids selected on a global configurator.
 	 *
 	 * @param int $global_id
@@ -116,23 +161,22 @@ final class Assignment {
 	}
 
 	/**
-	 * Persist apply settings on a global configurator CPT.
+	 * Persist the category rule on a global configurator CPT.
 	 *
-	 * @param int    $global_id
-	 * @param string $mode
-	 * @param int[]  $category_ids
+	 * An empty list simply means no category rule, which is how the rule is turned off now that
+	 * there is no mode flag to switch away from.
+	 *
+	 * @param int   $global_id
+	 * @param int[] $category_ids
 	 * @return void
 	 */
-	public static function save_apply_settings( $global_id, $mode, $category_ids ) {
+	public static function save_apply_categories( $global_id, $category_ids ) {
 		$global_id = (int) $global_id;
 		if ( $global_id <= 0 ) {
 			return;
 		}
-		if ( Schema::APPLY_MODE_CATEGORY !== $mode ) {
-			$mode = Schema::APPLY_MODE_SELECTED;
-		}
 		$clean_ids = array();
-		if ( Schema::APPLY_MODE_CATEGORY === $mode && is_array( $category_ids ) ) {
+		if ( is_array( $category_ids ) ) {
 			foreach ( $category_ids as $term_id ) {
 				$term_id = (int) $term_id;
 				if ( $term_id <= 0 ) {
@@ -145,7 +189,6 @@ final class Assignment {
 			}
 			$clean_ids = array_values( array_unique( $clean_ids ) );
 		}
-		update_post_meta( $global_id, Schema::META_APPLY_MODE, $mode );
 		update_post_meta( $global_id, Schema::META_APPLY_CATEGORY_IDS, $clean_ids );
 		self::invalidate_category_index();
 		Owner_Resolver::invalidate_consumers_cache( $global_id );
@@ -220,45 +263,95 @@ final class Assignment {
 	}
 
 	/**
-	 * Product ids in the categories assigned to a global configurator (including subcategories).
+	 * Shared WP_Query args for "products in this configurator's assigned categories".
 	 *
-	 * Does not filter out explicit local/other-global products; callers should.
+	 * @param int[] $category_ids Already expanded with descendants.
+	 * @return array<string, mixed>
+	 */
+	private static function category_query_args( $category_ids ) {
+		return array(
+			'post_type'              => 'product',
+			'post_status'            => array( 'publish', 'private', 'draft', 'pending', 'future' ),
+			'fields'                 => 'ids',
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'tax_query'              => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_tax_query -- Category targeting is defined in terms of product_cat; there is no other way to resolve it.
+				array(
+					'taxonomy'         => 'product_cat',
+					'field'            => 'term_id',
+					'terms'            => $category_ids,
+					'operator'         => 'IN',
+					'include_children' => false,
+				),
+			),
+			// Products that own their configurator, or that point at a global explicitly, keep it.
+			// Excluding them in SQL rather than in PHP is what keeps a catalogue-wide category rule
+			// from having to be walked product by product.
+			'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_meta_query -- See above: the alternative is loading every matched product's meta.
+				'relation' => 'AND',
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => MKL_PC_PREFIX . '_is_configurable',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => MKL_PC_PREFIX . '_is_configurable',
+						'value'   => 'yes',
+						'compare' => '!=',
+					),
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => Schema::META_SOURCE,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => Schema::META_SOURCE,
+						'value'   => Schema::SOURCE_GLOBAL,
+						'compare' => '!=',
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Expanded category ids for a global configurator, or an empty array when it has no rule.
 	 *
 	 * @param int $global_id
 	 * @return int[]
 	 */
-	public static function get_products_in_assigned_categories( $global_id ) {
+	private static function assigned_category_ids( $global_id ) {
 		$global_id = (int) $global_id;
 		if ( $global_id <= 0 ) {
 			return array();
 		}
-		if ( Schema::APPLY_MODE_CATEGORY !== self::get_apply_mode( $global_id ) ) {
-			return array();
-		}
-		$category_ids = self::expand_category_ids( self::get_apply_category_ids( $global_id ), $global_id );
+		return self::expand_category_ids( self::get_apply_category_ids( $global_id ), $global_id );
+	}
+
+	/**
+	 * Product ids in the categories assigned to a global configurator (including subcategories).
+	 *
+	 * Products that already keep their own configurator are excluded by the query itself; the
+	 * remaining eligibility rules are applied by {@see Owner_Resolver::get_category_matched_product_ids()}.
+	 *
+	 * @param int $global_id
+	 * @param int $limit     Maximum ids to return; 0 for all. Use a limit whenever the result is
+	 *                       only being displayed - a category rule can match a whole catalogue.
+	 * @return int[]
+	 */
+	public static function get_products_in_assigned_categories( $global_id, $limit = 0 ) {
+		$category_ids = self::assigned_category_ids( $global_id );
 		if ( empty( $category_ids ) ) {
 			return array();
 		}
-		$query = new \WP_Query(
-			array(
-				'post_type'              => 'product',
-				'post_status'            => array( 'publish', 'private', 'draft', 'pending', 'future' ),
-				'posts_per_page'         => -1,
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-				'tax_query'              => array(
-					array(
-						'taxonomy'         => 'product_cat',
-						'field'            => 'term_id',
-						'terms'            => $category_ids,
-						'operator'         => 'IN',
-						'include_children' => false,
-					),
-				),
-			)
-		);
+		$args                   = self::category_query_args( $category_ids );
+		$args['posts_per_page'] = ( (int) $limit > 0 ) ? (int) $limit : -1;
+		$args['no_found_rows']  = true;
+
+		$query = new \WP_Query( $args );
 		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {
 			return array();
 		}
@@ -273,7 +366,32 @@ final class Assignment {
 	}
 
 	/**
-	 * Cached map of product_cat term id → global configurator ids in category-apply mode.
+	 * How many products the category rule matches, without building the list.
+	 *
+	 * An upper bound on the eventual consumer count: the type-eligibility and oldest-wins rules
+	 * are applied per product afterwards. Used to decide whether enumerating is affordable.
+	 *
+	 * @param int $global_id
+	 * @return int
+	 */
+	public static function count_products_in_assigned_categories( $global_id ) {
+		$category_ids = self::assigned_category_ids( $global_id );
+		if ( empty( $category_ids ) ) {
+			return 0;
+		}
+		$args                   = self::category_query_args( $category_ids );
+		$args['posts_per_page'] = 1;
+		$args['no_found_rows']  = false;
+
+		$query = new \WP_Query( $args );
+		return (int) $query->found_posts;
+	}
+
+	/**
+	 * Cached map of product_cat term id → global configurator ids with a category rule.
+	 *
+	 * The query matches every CPT that has the category-ids meta at all; posts whose list is
+	 * empty fall out below, when expand_category_ids() returns nothing.
 	 *
 	 * Child categories are flattened into the map so product term lookups stay O(terms).
 	 *
@@ -297,8 +415,12 @@ final class Assignment {
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => true,
 				'update_post_term_cache' => false,
-				'meta_key'               => Schema::META_APPLY_MODE,
-				'meta_value'             => Schema::APPLY_MODE_CATEGORY,
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_meta_query -- Admin-only CPT, and the built index is cached in Schema::CACHE_GROUP.
+					array(
+						'key'     => Schema::META_APPLY_CATEGORY_IDS,
+						'compare' => 'EXISTS',
+					),
+				),
 			)
 		);
 		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {

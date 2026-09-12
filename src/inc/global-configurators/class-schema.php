@@ -36,17 +36,30 @@ final class Schema {
 	const SOURCE_GLOBAL = 'global';
 
 	/**
-	 * CPT meta: how this global configurator is applied to products.
-	 * `selected` = products opt in from their own Configurator tab (default).
-	 * `category` = products in the selected product categories use it automatically.
+	 * CPT meta that used to hold an exclusive apply mode (`selected` / `category`).
+	 *
+	 * The two targeting rules were never exclusive - an explicit per-product link resolves
+	 * before the category rule and was never gated by this meta - so the radio it backed only
+	 * managed to hide the category field and, worse, wipe the category ids on every switch.
+	 * Products and categories are now independent, additive fields and nothing reads this key
+	 * except the one-time cleanup in {@see Assignment::maybe_migrate_apply_mode()}.
+	 *
+	 * @deprecated Kept for that cleanup only. Never write it.
 	 */
 	const META_APPLY_MODE = '_mkl_pc_apply_mode';
 
 	/**
-	 * CPT meta: product_cat term ids when META_APPLY_MODE === APPLY_MODE_CATEGORY.
+	 * CPT meta: product_cat term ids this global configurator applies to.
+	 *
+	 * A non-empty list is what activates the category rule; there is no separate mode flag.
 	 */
 	const META_APPLY_CATEGORY_IDS = '_mkl_pc_apply_category_ids';
 
+	/**
+	 * Legacy values of META_APPLY_MODE.
+	 *
+	 * @deprecated Used only by the cleanup that removes the meta.
+	 */
 	const APPLY_MODE_SELECTED  = 'selected';
 	const APPLY_MODE_CATEGORY  = 'category';
 

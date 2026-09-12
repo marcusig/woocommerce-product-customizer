@@ -99,10 +99,13 @@ input#mkl_pc_global_picker_search {
 .mkl-pc-category-assignment-notice p { margin: 0.35em 0; }
 
 .mkl-pc-apply-settings { padding-top: 12px; }
-.mkl-pc-apply-settings .mkl-pc-apply-mode p { margin: 0 0 12px; }
-.mkl-pc-apply-settings .mkl-pc-apply-mode label { font-weight: 600; display: inline-block; margin-right: 8px; }
-.mkl-pc-apply-settings .mkl-pc-apply-mode .description { display: block; font-weight: 400; margin: 4px 0 0 22px; color: #646970; }
-.mkl-pc-apply-category-field { margin-top: 8px; }
-.mkl-pc-apply-category-label { display: block; font-weight: 600; margin-bottom: 6px; }
-.mkl-pc-apply-category-field .select2-container { width: 100% !important; max-width: 520px; }
+.mkl-pc-apply-settings .mkl-pc-apply-intro { margin: 0 0 16px; }
+.mkl-pc-apply-field { margin-bottom: 20px; }
+.mkl-pc-apply-label { display: block; font-weight: 600; margin-bottom: 6px; }
+.mkl-pc-apply-field .select2-container { width: 100% !important; max-width: 520px; }
+.mkl-pc-apply-field .description { margin-top: 6px; color: #646970; }
+.mkl-pc-apply-usage h4 { margin: 14px 0 4px; }
+.mkl-pc-apply-usage-total { margin: 12px 0 0; }
+.mkl-pc-apply-usage .consumer-products { max-height: 220px; overflow-y: auto; }
+.mkl-pc-apply-usage .consumer-products div { padding: 2px 0; }
 

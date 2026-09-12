@@ -35,6 +35,7 @@ final class Admin_Ui {
 
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_apply_meta_box' ) );
 		add_action( 'save_post_' . Schema::CPT_SLUG, array( __CLASS__, 'save_apply_settings' ), 10, 2 );
+		add_action( 'admin_notices', array( __CLASS__, 'render_apply_notices' ) );
 
 		add_action( 'wp_ajax_mkl_pc_search_global_configurators', array( __CLASS__, 'ajax_search_global_configurators' ) );
 		add_action( 'wp_ajax_mkl_pc_create_global_from_product', array( __CLASS__, 'ajax_create_global_from_product' ) );
@@ -206,7 +207,7 @@ final class Admin_Ui {
 		}
 
 		if ( Schema::is_global_configurator_id( $post_id ) ) {
-			$consumer_count = count( Owner_Resolver::get_consumer_product_ids( $post_id ) );
+			$consumer_count = Owner_Resolver::count_consumer_products( $post_id );
 			?>
 			<div class="notice notice-info mkl-pc-global-editor-notice mkl-home-section">
 				<p><strong><?php esc_html_e( 'You are editing a global configurator.', 'product-configurator-for-woocommerce' ); ?></strong></p>
@@ -357,7 +358,7 @@ final class Admin_Ui {
 				$items[] = array(
 					'id'             => $pid,
 					'title'          => self::decode_post_title( get_the_title( $pid ) ),
-					'consumer_count' => count( Owner_Resolver::get_consumer_product_ids( $pid ) ),
+					'consumer_count' => Owner_Resolver::count_consumer_products( $pid ),
 					'edit_url'       => get_edit_post_link( $pid, 'raw' ),
 				);
 			}
@@ -473,7 +474,7 @@ final class Admin_Ui {
 		if ( ! Schema::is_global_configurator_id( $global_id ) || ! current_user_can( 'delete_post', $global_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Not allowed.', 'product-configurator-for-woocommerce' ) ), 403 );
 		}
-		if ( ! empty( Owner_Resolver::get_consumer_product_ids( $global_id ) ) ) {
+		if ( Owner_Resolver::count_consumer_products( $global_id ) > 0 ) {
 			wp_send_json_error( array( 'message' => __( 'This global configurator is in use and was not deleted.', 'product-configurator-for-woocommerce' ) ), 400 );
 		}
 		wp_delete_post( $global_id, true );
@@ -622,6 +623,15 @@ final class Admin_Ui {
 	}
 
 	/**
+	 * Two independent targeting rules plus a read-only account of who is using this configurator.
+	 *
+	 * There used to be a radio here presenting "Selected products" and "Products in category" as
+	 * exclusive. They never were: an explicit per-product link resolves before the category rule
+	 * and was never gated by the mode, so the radio's only real effects were hiding the category
+	 * field and wiping the stored term ids on every switch. Both rules are now plain additive
+	 * fields, and the product field edits the same per-product meta the product edit screen does -
+	 * it is a second view of one value, not a second place to store it.
+	 *
 	 * @param \WP_Post $post
 	 * @return void
 	 */
@@ -629,32 +639,26 @@ final class Admin_Ui {
 		if ( ! $post || ! isset( $post->ID ) ) {
 			return;
 		}
-		$global_id    = (int) $post->ID;
-		$apply_mode   = Assignment::get_apply_mode( $global_id );
+		$global_id = (int) $post->ID;
+
+		if ( 'auto-draft' === ( isset( $post->post_status ) ? $post->post_status : '' ) ) {
+			echo '<p>' . esc_html__( 'Save this global configurator once before choosing which products use it.', 'product-configurator-for-woocommerce' ) . '</p>';
+			return;
+		}
+
 		$category_ids = Assignment::get_apply_category_ids( $global_id );
+		$linked_ids   = Owner_Resolver::get_explicitly_linked_product_ids( $global_id );
 		wp_nonce_field( 'mkl_pc_global_apply_settings_' . $global_id, 'mkl_pc_apply_settings_nonce' );
 		?>
 		<div class="mkl-pc-apply-settings">
-			<fieldset class="mkl-pc-apply-mode">
-				<legend class="screen-reader-text"><?php esc_html_e( 'Apply configurator to', 'product-configurator-for-woocommerce' ); ?></legend>
-				<p>
-					<label>
-						<input type="radio" name="<?php echo esc_attr( Schema::META_APPLY_MODE ); ?>" value="<?php echo esc_attr( Schema::APPLY_MODE_SELECTED ); ?>" <?php checked( $apply_mode, Schema::APPLY_MODE_SELECTED ); ?>>
-						<?php esc_html_e( 'Selected products', 'product-configurator-for-woocommerce' ); ?>
-					</label>
-					<span class="description">
-						<?php esc_html_e( 'Products that have Configurable enabled and this global configurator chosen on their own product edit screen.', 'product-configurator-for-woocommerce' ); ?>
-					</span>
-				</p>
-				<p>
-					<label>
-						<input type="radio" name="<?php echo esc_attr( Schema::META_APPLY_MODE ); ?>" value="<?php echo esc_attr( Schema::APPLY_MODE_CATEGORY ); ?>" <?php checked( $apply_mode, Schema::APPLY_MODE_CATEGORY ); ?>>
-						<?php esc_html_e( 'Products in category', 'product-configurator-for-woocommerce' ); ?>
-					</label>
-				</p>
-			</fieldset>
-			<div class="mkl-pc-apply-category-field" data-show-when-apply-mode="<?php echo esc_attr( Schema::APPLY_MODE_CATEGORY ); ?>"<?php echo Schema::APPLY_MODE_CATEGORY === $apply_mode ? '' : ' style="display:none"'; ?>>
-				<label for="mkl_pc_apply_category_ids" class="mkl-pc-apply-category-label"><?php esc_html_e( 'Categories', 'product-configurator-for-woocommerce' ); ?></label>
+			<p class="description mkl-pc-apply-intro">
+				<?php esc_html_e( 'A product uses this configurator when you pick it below, or when it sits in one of the selected categories. The two rules are independent - you can use either, or both.', 'product-configurator-for-woocommerce' ); ?>
+			</p>
+
+			<?php self::render_products_field( $linked_ids ); ?>
+
+			<div class="mkl-pc-apply-field mkl-pc-apply-category-field">
+				<label for="mkl_pc_apply_category_ids" class="mkl-pc-apply-label"><?php esc_html_e( 'Categories', 'product-configurator-for-woocommerce' ); ?></label>
 				<select id="mkl_pc_apply_category_ids"
 					class="wc-category-search"
 					name="<?php echo esc_attr( Schema::META_APPLY_CATEGORY_IDS ); ?>[]"
@@ -678,8 +682,209 @@ final class Admin_Ui {
 					<?php esc_html_e( 'Matching products become configurable automatically, including products added to these categories later. Subcategories are included. Products that already have Configurable enabled keep their own configurator. If several global configurators match the same product, the oldest one is used.', 'product-configurator-for-woocommerce' ); ?>
 				</p>
 			</div>
+
+			<?php self::render_usage_summary( $global_id, $linked_ids ); ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Maximum number of linked products the editable selector will render.
+	 *
+	 * Past this the field becomes read-only. A select2 holding thousands of options is unusable in
+	 * the browser, and - more importantly - a list that large belongs to bulk tooling, not to a
+	 * control where one mis-click unlinks a product.
+	 */
+	const PRODUCT_FIELD_LIMIT = 300;
+
+	/**
+	 * The Products field, or a read-only summary when the selection is too large to edit here.
+	 *
+	 * The selection is submitted as ONE comma-separated hidden value rather than as a
+	 * `name[]` multi-select. A multi-select posts one variable per option, and PHP silently
+	 * discards everything past `max_input_vars` (1000 by default) keeping only the leading
+	 * variables - so a configurator with more linked products than that would have had its tail
+	 * read as "deselected" and unlinked on every save.
+	 *
+	 * The hidden input is pre-filled with the current selection and only rewritten by JS, so if
+	 * the script does not run the form posts the list unchanged and the save is a no-op. The
+	 * baseline field alongside it records what was on screen, which is what lets the save apply a
+	 * difference instead of an absolute set - two editors saving the same configurator then do not
+	 * silently undo each other's additions.
+	 *
+	 * @param int[] $linked_ids
+	 * @return void
+	 */
+	private static function render_products_field( $linked_ids ) {
+		$value = implode( ',', array_map( 'absint', $linked_ids ) );
+		?>
+		<div class="mkl-pc-apply-field mkl-pc-apply-products-field">
+			<label for="mkl_pc_apply_product_ids" class="mkl-pc-apply-label"><?php esc_html_e( 'Products', 'product-configurator-for-woocommerce' ); ?></label>
+			<?php if ( count( $linked_ids ) > self::PRODUCT_FIELD_LIMIT ) : ?>
+				<p>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: 1: number of linked products, 2: the maximum this field will edit. */
+							__( 'This global configurator is selected on %1$d products - more than the %2$d this field will edit at once. The list is shown below. Add or remove products from their own Configurator tab; saving here leaves the selection untouched.', 'product-configurator-for-woocommerce' ),
+							count( $linked_ids ),
+							self::PRODUCT_FIELD_LIMIT
+						)
+					);
+					?>
+				</p>
+			<?php else : ?>
+				<select id="mkl_pc_apply_product_ids"
+					class="wc-product-search mkl-pc-apply-product-search"
+					multiple="multiple"
+					style="width: 100%;"
+					data-placeholder="<?php esc_attr_e( 'Search for a product&hellip;', 'product-configurator-for-woocommerce' ); ?>"
+					data-action="woocommerce_json_search_products"
+					data-allow_clear="true"
+					data-minimum_input_length="1"
+					data-value-field="mkl_pc_apply_product_ids_value">
+					<?php
+					foreach ( $linked_ids as $product_id ) {
+						$product = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : null;
+						if ( ! $product ) {
+							continue;
+						}
+						echo '<option value="' . esc_attr( (string) $product_id ) . '" selected="selected">' . esc_html( wp_strip_all_tags( $product->get_formatted_name() ) ) . '</option>';
+					}
+					?>
+				</select>
+				<input type="hidden" id="mkl_pc_apply_product_ids_value" name="mkl_pc_apply_product_ids" value="<?php echo esc_attr( $value ); ?>">
+				<input type="hidden" name="mkl_pc_apply_products_baseline" value="<?php echo esc_attr( $value ); ?>">
+				<p class="description">
+					<?php esc_html_e( 'Picking a product here is the same as choosing this global configurator on the product\'s own Configurator tab - either screen edits the same setting. Removing a product returns it to its own configurator. Variable products need "Variations share the same configuration" set on them; a product that cannot be linked is reported after saving.', 'product-configurator-for-woocommerce' ); ?>
+				</p>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Who is using this configurator, grouped by which rule brought them in.
+	 *
+	 * Grouped rather than pooled because the two groups are not equally editable: the selected
+	 * products are the field above, while the category matches follow from the products' own
+	 * terms and can only be changed by editing those.
+	 *
+	 * @param int   $global_id
+	 * @param int[] $linked_ids Explicitly linked product ids, already resolved by the caller.
+	 * @return void
+	 */
+	private static function render_usage_summary( $global_id, $linked_ids ) {
+		$global_id = (int) $global_id;
+
+		// Ask how far the category rule reaches before enumerating it. A rule on a top-level
+		// category can match the whole catalogue, and this screen only needs a number and a
+		// sample - never every id.
+		$category_total = Assignment::count_products_in_assigned_categories( $global_id );
+		$exact          = $category_total <= self::USAGE_COUNT_EXACT_LIMIT;
+		$category_ids   = $category_total > 0
+			? Owner_Resolver::get_category_matched_product_ids( $global_id, $exact ? 0 : self::USAGE_LIST_LIMIT )
+			: array();
+		if ( $exact ) {
+			$category_total = count( $category_ids );
+		}
+		$total = count( $linked_ids ) + $category_total;
+		?>
+		<hr>
+		<div class="mkl-pc-apply-usage">
+			<p class="mkl-pc-apply-usage-total">
+				<strong>
+					<?php
+					if ( $exact ) {
+						echo esc_html(
+							sprintf(
+								/* translators: %d: number of products currently using this configurator. */
+								_n( '%d product currently uses this configurator.', '%d products currently use this configurator.', $total, 'product-configurator-for-woocommerce' ),
+								$total
+							)
+						);
+					} else {
+						echo esc_html(
+							sprintf(
+								/* translators: %d: approximate number of products using this configurator. */
+								__( 'About %d products currently use this configurator.', 'product-configurator-for-woocommerce' ),
+								$total
+							)
+						);
+					}
+					?>
+				</strong>
+			</p>
+			<?php
+			if ( ! $exact ) {
+				echo '<p class="description">' . esc_html__( 'The category rule matches too many products to check one by one, so the total is the number in those categories that do not keep their own configurator.', 'product-configurator-for-woocommerce' ) . '</p>';
+			}
+			if ( ! empty( $linked_ids ) ) {
+				echo '<h4>' . esc_html__( 'Selected directly', 'product-configurator-for-woocommerce' ) . '</h4>';
+				self::render_product_links( $linked_ids, count( $linked_ids ) );
+			}
+			if ( ! empty( $category_ids ) ) {
+				echo '<h4>' . esc_html__( 'Matched by category', 'product-configurator-for-woocommerce' ) . '</h4>';
+				self::render_product_links( $category_ids, $category_total );
+			}
+			?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * How many products each group in the usage summary lists before it stops naming them.
+	 *
+	 * A category rule can reach the whole catalogue, and a meta box is not a product list table.
+	 */
+	const USAGE_LIST_LIMIT = 50;
+
+	/**
+	 * Above this many category matches the summary reports a count from the database instead of
+	 * verifying each product, so the edit screen's cost does not scale with the catalogue.
+	 */
+	const USAGE_COUNT_EXACT_LIMIT = 500;
+
+	/**
+	 * @param int[] $product_ids Ids to name; may be a sample rather than the whole group.
+	 * @param int   $total       Size of the whole group, when it is larger than the sample.
+	 * @return void
+	 */
+	private static function render_product_links( $product_ids, $total = 0 ) {
+		$product_ids = array_values( $product_ids );
+		$total       = max( (int) $total, count( $product_ids ) );
+		$shown       = array_slice( $product_ids, 0, self::USAGE_LIST_LIMIT );
+
+		// Bounded by USAGE_LIST_LIMIT, so priming here is a fixed cost rather than one that grows
+		// with the rule - and it turns three queries per named product into a handful in total.
+		if ( ! empty( $shown ) ) {
+			_prime_post_caches( $shown, false, true );
+		}
+
+		echo '<div class="consumer-products">';
+		foreach ( $shown as $product_id ) {
+			$product = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : null;
+			if ( ! $product ) {
+				continue;
+			}
+			$edit_url = get_edit_post_link( $product_id );
+			$name     = wp_strip_all_tags( $product->get_formatted_name() );
+			if ( $edit_url ) {
+				echo '<div><a href="' . esc_url( $edit_url ) . '" target="_blank">' . esc_html( $name ) . '</a></div>';
+			} else {
+				echo '<div>' . esc_html( $name ) . '</div>';
+			}
+		}
+		if ( $total > count( $shown ) ) {
+			echo '<div class="description">' . esc_html(
+				sprintf(
+					/* translators: %d: number of further products not listed individually. */
+					_n( '… and %d more.', '… and %d more.', $total - count( $shown ), 'product-configurator-for-woocommerce' ),
+					$total - count( $shown )
+				)
+			) . '</div>';
+		}
+		echo '</div>';
 	}
 
 	/**
@@ -707,12 +912,233 @@ final class Admin_Ui {
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
-		$mode = isset( $_POST[ Schema::META_APPLY_MODE ] ) ? sanitize_key( wp_unslash( $_POST[ Schema::META_APPLY_MODE ] ) ) : Schema::APPLY_MODE_SELECTED;
+
 		$category_ids = array();
 		if ( isset( $_POST[ Schema::META_APPLY_CATEGORY_IDS ] ) && is_array( $_POST[ Schema::META_APPLY_CATEGORY_IDS ] ) ) {
 			$category_ids = array_map( 'absint', wp_unslash( $_POST[ Schema::META_APPLY_CATEGORY_IDS ] ) );
 		}
-		Assignment::save_apply_settings( $post_id, $mode, $category_ids );
+		Assignment::save_apply_categories( $post_id, $category_ids );
+
+		// No baseline means the Products field was not editable on this screen (too many linked
+		// products), so this save has nothing to say about the selection. Treating a missing field
+		// as "nothing selected" would unlink every product on it.
+		if ( ! isset( $_POST['mkl_pc_apply_products_baseline'] ) ) {
+			return;
+		}
+		$baseline = self::parse_id_list( wp_unslash( $_POST['mkl_pc_apply_products_baseline'] ) );
+		$posted   = isset( $_POST['mkl_pc_apply_product_ids'] )
+			? self::parse_id_list( wp_unslash( $_POST['mkl_pc_apply_product_ids'] ) )
+			: $baseline;
+
+		self::sync_selected_products( $post_id, $posted, $baseline );
+	}
+
+	/**
+	 * Parse a comma-separated id list into unique positive ints.
+	 *
+	 * @param mixed $raw
+	 * @return int[]
+	 */
+	private static function parse_id_list( $raw ) {
+		if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
+			return array();
+		}
+		$ids = array();
+		foreach ( explode( ',', $raw ) as $part ) {
+			$id = absint( trim( $part ) );
+			if ( $id > 0 ) {
+				$ids[] = $id;
+			}
+		}
+		return array_values( array_unique( $ids ) );
+	}
+
+	/**
+	 * Apply the change the editor made to the Products field.
+	 *
+	 * Deliberately a difference against the baseline that was on screen rather than "make the links
+	 * equal the posted list". Two consequences, both wanted:
+	 *
+	 * - A product linked by someone else since this form was rendered is in neither list, so it is
+	 *   left alone instead of being unlinked by a stale form.
+	 * - Only genuine changes are written, so re-saving a configurator with three hundred linked
+	 *   products touches no product meta at all.
+	 *
+	 * The meta written is exactly what the product edit screen writes, which is what keeps the two
+	 * screens from drifting - and why nothing is stored on the CPT itself.
+	 *
+	 * @param int   $global_id
+	 * @param int[] $posted_ids   The selection as submitted.
+	 * @param int[] $baseline_ids The selection as rendered.
+	 * @return void
+	 */
+	private static function sync_selected_products( $global_id, $posted_ids, $baseline_ids ) {
+		$global_id = (int) $global_id;
+		if ( $global_id <= 0 ) {
+			return;
+		}
+
+		$current = Owner_Resolver::get_explicitly_linked_product_ids( $global_id );
+
+		// Only link what the editor actually added, and only unlink what they actually removed and
+		// that is still linked.
+		$added   = array_values( array_diff( $posted_ids, $baseline_ids, $current ) );
+		$removed = array_values( array_intersect( array_diff( $baseline_ids, $posted_ids ), $current ) );
+
+		$skipped = array();
+		foreach ( $added as $product_id ) {
+			$error = self::link_selected_product( $product_id, $global_id );
+			if ( '' !== $error ) {
+				$skipped[] = $error;
+			}
+		}
+		foreach ( $removed as $product_id ) {
+			self::unlink_selected_product( $product_id, $global_id );
+		}
+
+		if ( ! empty( $added ) || ! empty( $removed ) ) {
+			// A product that changed hands also changes what the category rule reaches, since
+			// category matching skips anything explicitly linked - and the configurator that
+			// matched it by category has no idea this save happened. The index invalidation
+			// busts every category-rule consumer cache, which is the cheap way to cover that.
+			Assignment::invalidate_category_index();
+			delete_transient( 'mkl_get_configurable_products' );
+		}
+
+		if ( ! empty( $skipped ) ) {
+			set_transient( 'mkl_pc_apply_notice_' . get_current_user_id() . '_' . $global_id, $skipped, 60 );
+		}
+	}
+
+	/**
+	 * Point one product at this global configurator.
+	 *
+	 * @param int $product_id
+	 * @param int $global_id
+	 * @return string Empty on success, otherwise a message naming why the product was skipped.
+	 */
+	private static function link_selected_product( $product_id, $global_id ) {
+		$product_id = (int) $product_id;
+		if ( $product_id <= 0 || 'product' !== get_post_type( $product_id ) ) {
+			return '';
+		}
+		$name = get_the_title( $product_id );
+
+		if ( ! current_user_can( 'edit_post', $product_id ) ) {
+			/* translators: %s: product name. */
+			return sprintf( __( '%s: you are not allowed to edit this product.', 'product-configurator-for-woocommerce' ), $name );
+		}
+
+		// Never take a product away from another global configurator on the strength of a search
+		// result - that is a change to make on the product, where the current link is visible.
+		$other_id = (int) get_post_meta( $product_id, Schema::META_GLOBAL_ID, true );
+		if ( Schema::SOURCE_GLOBAL === get_post_meta( $product_id, Schema::META_SOURCE, true ) && $other_id > 0 && $other_id !== $global_id ) {
+			return sprintf(
+				/* translators: 1: product name, 2: title of the global configurator it is already linked to. */
+				__( '%1$s: already linked to "%2$s". Unlink it there first.', 'product-configurator-for-woocommerce' ),
+				$name,
+				self::decode_post_title( get_the_title( $other_id ) )
+			);
+		}
+
+		$linked = Data_Copier::link_product_to_global( $product_id, $global_id, false );
+		if ( is_wp_error( $linked ) ) {
+			/* translators: 1: product name, 2: reason the link was refused. */
+			return sprintf( __( '%1$s: %2$s', 'product-configurator-for-woocommerce' ), $name, $linked->get_error_message() );
+		}
+
+		// The product keeps its own configurator rows; they are simply unreachable while linked,
+		// exactly as they are after a conversion from the product screen.
+		update_post_meta( $product_id, MKL_PC_PREFIX . '_is_configurable', 'yes' );
+		self::flush_product_meta_cache( $product_id );
+		return '';
+	}
+
+	/**
+	 * Return one product to its own configurator.
+	 *
+	 * Not Data_Copier::unlink_product_from_global(): that sets Configurable to 'yes' because it
+	 * is used when copying the shared configuration back onto the product. Nothing is copied
+	 * back here, so a product with no configurator of its own has to stop being configurable
+	 * rather than be left offering an empty configurator.
+	 *
+	 * @param int $product_id
+	 * @param int $global_id
+	 * @return void
+	 */
+	private static function unlink_selected_product( $product_id, $global_id ) {
+		$product_id = (int) $product_id;
+		if ( $product_id <= 0 || ! current_user_can( 'edit_post', $product_id ) ) {
+			return;
+		}
+
+		delete_post_meta( $product_id, Schema::META_GLOBAL_ID );
+		update_post_meta( $product_id, Schema::META_SOURCE, Schema::SOURCE_LOCAL );
+
+		// Only clear the Configurable flag when we can positively establish the product has no
+		// configurator of its own to fall back on. An owner we cannot even resolve is not evidence
+		// of an empty product, and guessing wrong here turns a working product off.
+		$owner = Storage_Owner::for_post( $product_id );
+		if ( $owner && ! Data_Copier::has_local_configurator_data( $owner ) ) {
+			update_post_meta( $product_id, MKL_PC_PREFIX . '_is_configurable', 'no' );
+		}
+		self::flush_product_meta_cache( $product_id );
+
+		Owner_Resolver::invalidate_consumers_cache( $global_id );
+
+		do_action( 'mkl_pc/global_configurators/unlinked', $product_id, (int) $global_id, false );
+	}
+
+	/**
+	 * Drop WooCommerce's cached meta blob for one product.
+	 *
+	 * `Utils::is_configurable()` reads the Configurable flag through `WC_Product::get_meta()`,
+	 * which serves a whole-object meta cache keyed by an `object_<id>` prefix. update_post_meta()
+	 * writes past that cache, so on a store with a persistent object cache an unlinked product
+	 * would keep reporting itself configurable - offering a configurator it no longer has - until
+	 * the prefix happened to roll over.
+	 *
+	 * @param int $product_id
+	 * @return void
+	 */
+	private static function flush_product_meta_cache( $product_id ) {
+		$product_id = (int) $product_id;
+		if ( $product_id <= 0 ) {
+			return;
+		}
+		if ( class_exists( '\WC_Cache_Helper' ) ) {
+			\WC_Cache_Helper::invalidate_cache_group( 'object_' . $product_id );
+		}
+		if ( function_exists( 'wc_delete_product_transients' ) ) {
+			wc_delete_product_transients( $product_id );
+		}
+	}
+
+	/**
+	 * Report products the save could not link, once, on the redirect back to the edit screen.
+	 *
+	 * @return void
+	 */
+	public static function render_apply_notices() {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( ! $screen || Schema::CPT_SLUG !== $screen->post_type || 'post' !== $screen->base ) {
+			return;
+		}
+		$global_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Reading the post being edited to key a display-only transient.
+		if ( $global_id <= 0 ) {
+			return;
+		}
+		$key      = 'mkl_pc_apply_notice_' . get_current_user_id() . '_' . $global_id;
+		$messages = get_transient( $key );
+		if ( empty( $messages ) || ! is_array( $messages ) ) {
+			return;
+		}
+		delete_transient( $key );
+		echo '<div class="notice notice-warning"><p><strong>' . esc_html__( 'Some products were not added to this global configurator:', 'product-configurator-for-woocommerce' ) . '</strong></p><ul style="margin-left:20px;list-style:disc;">';
+		foreach ( $messages as $message ) {
+			echo '<li>' . esc_html( $message ) . '</li>';
+		}
+		echo '</ul></div>';
 	}
 
 	/**
@@ -728,6 +1154,12 @@ final class Admin_Ui {
 		$product_id = (int) $post->ID;
 		$global_id  = Assignment::get_category_assigned_global_id( $product_id );
 		if ( $global_id <= 0 ) {
+			return;
+		}
+		// A product the resolver will not hand a global configurator to is not using one, so
+		// telling the editor it is would send them looking in the wrong place. The "not available
+		// on variable products unless..." warning above already explains why.
+		if ( ! Owner_Resolver::can_use_global( $product_id ) ) {
 			return;
 		}
 		$title    = self::decode_post_title( get_the_title( $global_id ) );

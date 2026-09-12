@@ -126,8 +126,13 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 				}
 			}
 
-			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Assignment' ) ) {
-				return \MKL\PC\Global_Configurators\Assignment::get_category_assigned_global_id( (int) $product_id ) > 0;
+			// Any product reading from a global configurator is configurable, however it got
+			// there - an explicit link or the category rule. Asking the resolver rather than the
+			// category index also means an explicit link survives a product save that did not
+			// post the Configurable checkbox, which would otherwise reset the meta above to 'no'
+			// and quietly drop the product out of a configurator it is still listed under.
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+				return \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( (int) $product_id ) > 0;
 			}
 
 			return false;

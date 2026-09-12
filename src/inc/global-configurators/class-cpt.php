@@ -112,30 +112,39 @@ final class Cpt {
 	 */
 	public static function render_column( $column_key, $post_id ) {
 		if ( 'mkl_pc_apply_mode' === $column_key ) {
-			$mode = Assignment::get_apply_mode( (int) $post_id );
-			if ( Schema::APPLY_MODE_CATEGORY === $mode ) {
-				$names = array();
-				foreach ( Assignment::get_apply_category_ids( (int) $post_id ) as $term_id ) {
-					$term = get_term( $term_id, 'product_cat' );
-					if ( $term && ! is_wp_error( $term ) ) {
-						$names[] = $term->name;
-					}
+			// Both rules can be in play at once, so this lists whichever are set rather than
+			// naming one mode.
+			$parts        = array();
+			$selected     = count( Owner_Resolver::get_explicitly_linked_product_ids( (int) $post_id ) );
+			if ( $selected > 0 ) {
+				$parts[] = sprintf(
+					/* translators: %d: number of products picked individually. */
+					_n( '%d selected product', '%d selected products', $selected, 'product-configurator-for-woocommerce' ),
+					$selected
+				);
+			}
+			$names = array();
+			foreach ( Assignment::get_apply_category_ids( (int) $post_id ) as $term_id ) {
+				$term = get_term( $term_id, 'product_cat' );
+				if ( $term && ! is_wp_error( $term ) ) {
+					$names[] = $term->name;
 				}
-				if ( empty( $names ) ) {
-					esc_html_e( 'Categories (none selected)', 'product-configurator-for-woocommerce' );
-					return;
-				}
-				echo esc_html( implode( ', ', $names ) );
+			}
+			if ( ! empty( $names ) ) {
+				/* translators: %s: comma-separated category names. */
+				$parts[] = sprintf( __( 'Categories: %s', 'product-configurator-for-woocommerce' ), implode( ', ', $names ) );
+			}
+			if ( empty( $parts ) ) {
+				echo '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">' . esc_html__( 'Not applied to any product yet', 'product-configurator-for-woocommerce' ) . '</span>';
 				return;
 			}
-			esc_html_e( 'Selected products', 'product-configurator-for-woocommerce' );
+			echo esc_html( implode( ' · ', $parts ) );
 			return;
 		}
 		if ( 'mkl_pc_consumer_count' !== $column_key ) {
 			return;
 		}
-		$consumers = Owner_Resolver::get_consumer_product_ids( (int) $post_id );
-		$count     = count( $consumers );
+		$count = Owner_Resolver::count_consumer_products( (int) $post_id );
 		if ( 0 === $count ) {
 			echo esc_html_x( '0', 'Zero consumer products column', 'product-configurator-for-woocommerce' );
 			return;
