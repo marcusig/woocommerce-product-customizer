@@ -902,10 +902,21 @@ class Frontend_Woocommerce {
 		$img_size_mobile =  mkl_pc( 'settings' )->get( 'preview_image_size_mobile', 'inherit' );
 		$img_size_large =  mkl_pc( 'settings' )->get( 'preview_image_size_large', 'inherit' );
 		$thumbnail_size = mkl_pc( 'settings' )->get( 'thumbnail_size', 'medium' );
+
+		// Resolve which of the referenced attachments still exist, once, before the loop below.
+		//
+		// wp_get_attachment_image_url() costs two get_post() calls, and WP_Post::get_instance()
+		// does not cache a lookup that found nothing - so an id whose media has since been deleted
+		// is re-queried on every single call, and a configurator that references a few hundred dead
+		// ids turns one payload build into thousands of queries. Priming does not help: it only
+		// caches rows that exist. Skipping the ids that are known to be gone does, and the value
+		// was never going to be anything but false for them anyway.
+		$known_attachments = self::filter_existing_attachment_ids( self::collect_attachment_ids( $data['content'] ) );
+
 		foreach( $data['content'] as $lin => $layer ) {
 			foreach( $layer['choices'] as $cin => $choice ) {
 				foreach( $choice['images'] as $imin => $image ) {
-					if ( $image['image']['id'] ) {
+					if ( $image['image']['id'] && isset( $known_attachments[ (int) $image['image']['id'] ] ) ) {
 						if ( $new_image_url = wp_get_attachment_image_url( $image['image']['id'], $img_size ) ) {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url'] = $new_image_url;
 						}
@@ -916,7 +927,7 @@ class Frontend_Woocommerce {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url_large'] = $large_image_url;
 						}
 					}
-					if ( $image['thumbnail']['id'] ) {
+					if ( $image['thumbnail']['id'] && isset( $known_attachments[ (int) $image['thumbnail']['id'] ] ) ) {
 						if ( $new_thumbnail_url = wp_get_attachment_image_url( $image['thumbnail']['id'], $thumbnail_size ) ) {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['thumbnail']['url'] = $new_thumbnail_url;
 						}
@@ -925,6 +936,56 @@ class Frontend_Woocommerce {
 			}
 		}
 		return $data;
+	}
+
+	/**
+	 * Every attachment id referenced by the images of a configurator's choices.
+	 *
+	 * @param array $content
+	 * @return int[]
+	 */
+	private static function collect_attachment_ids( $content ) {
+		$ids = array();
+		foreach ( (array) $content as $layer ) {
+			if ( empty( $layer['choices'] ) || ! is_array( $layer['choices'] ) ) continue;
+			foreach ( $layer['choices'] as $choice ) {
+				if ( empty( $choice['images'] ) || ! is_array( $choice['images'] ) ) continue;
+				foreach ( $choice['images'] as $image ) {
+					if ( ! empty( $image['image']['id'] ) ) $ids[] = (int) $image['image']['id'];
+					if ( ! empty( $image['thumbnail']['id'] ) ) $ids[] = (int) $image['thumbnail']['id'];
+				}
+			}
+		}
+		return array_values( array_unique( array_filter( $ids ) ) );
+	}
+
+	/**
+	 * Which of the given attachment ids actually exist, as a lookup keyed by id.
+	 *
+	 * One query for the whole payload, and the rows it finds are primed for the callers that are
+	 * about to read them. Anything unexpected - no ids, or a query that fails - reports every id as
+	 * present, so a problem here can only cost the old behaviour, never a missing image.
+	 *
+	 * @param int[] $ids
+	 * @return array<int, true>
+	 */
+	private static function filter_existing_attachment_ids( $ids ) {
+		if ( empty( $ids ) ) return array();
+
+		global $wpdb;
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$found = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE ID IN ( $placeholders )", $ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Placeholders are generated from the id count and the ids are bound; the result primes the loop below.
+
+		if ( null === $found || ! is_array( $found ) ) {
+			return array_fill_keys( $ids, true );
+		}
+
+		$known = array();
+		foreach ( $found as $id ) $known[ (int) $id ] = true;
+
+		if ( ! empty( $known ) ) _prime_post_caches( array_keys( $known ), false, true );
+
+		return $known;
 	}
 
 	public function add_sku_to_meta_cart( $meta, $layer, $product ) {
