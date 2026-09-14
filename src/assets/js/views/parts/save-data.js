@@ -214,7 +214,7 @@ PC.fe.save_data = {
 						} );
 					}
 
-					var img_id = choice.get_image( 'image', 'id' );
+					var img_id = choice.get_image( 'image', 'id', angle_id );
 					var choice_data = {
 						is_choice: true,
 						layer_id: model.id,
@@ -241,7 +241,7 @@ PC.fe.save_data = {
 				var is_active = choice.get( 'active' );
 				if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) && 'form' != model.get( 'type' ) ) ) {
 					if ( false === choice.get( 'cshow' ) ) return;
-					var img_id = choice.get_image('image', 'id'); 
+					var img_id = choice.get_image( 'image', 'id', angle_id ); 
 					const choice_data = {
 						is_choice: true,
 						layer_id: model.id, 
@@ -276,7 +276,7 @@ PC.fe.save_data = {
 		} else {
 			// Not a choice
 			var choice = choices.first();
-			var img_id = choice.get_image('image', 'id');
+			var img_id = choice.get_image( 'image', 'id', angle_id );
 			if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
 				wp.hooks.applyFilters(
 					'PC.fe.save_data.parse_choices.added_choice',
