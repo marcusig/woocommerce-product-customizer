@@ -68,7 +68,8 @@ final class Plugin {
 		}
 		$storage      = $db->get_pc_storage_state_for_editor( $parent_id, $variation_id, false );
 
-		$pending_migration = ! empty( $storage['needs_batch_migration'] ) || ! empty( $storage['needs_format_finalize'] );
+		// Not needs_format_finalize: a new product needs that too, only to be stamped, and has nothing to migrate.
+		$pending_migration = ! empty( $storage['needs_migration_banner'] );
 		$legacy_still      = (int) $storage['storage_format_version'] === DB::STORAGE_FORMAT_CHUNKED_VERIFIED
 			&& Legacy_Blob_Storage::has_legacy_blobs( $parent_id, $variation_id );
 

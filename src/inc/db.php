@@ -483,19 +483,34 @@ class DB {
 		if ( ! is_array( $index ) || empty( $index ) ) {
 			return false;
 		}
-		$layers = array();
+		// One unreadable chunk used to fail the whole read, so the editor and the frontend showed no
+		// layers at all while every other chunk was intact. A missing layer is now taken from the
+		// legacy blob when that still holds it (the same rule verify_chunked_storage_integrity()
+		// applies), and otherwise skipped: its id drops out of the index on the next layers save.
+		$legacy_layers = null;
+		$layers        = array();
 		foreach ( $index as $layer_id ) {
 			$chunk = $product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
 			$chunk = maybe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
 				$chunk = $this->decode_stored_json( $chunk );
 			}
-			if ( empty( $chunk ) || ! is_array( $chunk ) ) {
-				return false;
+			if ( ! empty( $chunk ) && is_array( $chunk ) ) {
+				$layers[] = $chunk;
+				continue;
 			}
-			$layers[] = $chunk;
+			if ( null === $legacy_layers ) {
+				$legacy_layers = $this->get_legacy_layers_blob_array( $product );
+			}
+			foreach ( $legacy_layers as $legacy_layer ) {
+				if ( is_array( $legacy_layer ) && isset( $legacy_layer['_id'] ) && (int) $legacy_layer['_id'] === (int) $layer_id ) {
+					$layers[] = $legacy_layer;
+					break;
+				}
+			}
 		}
-		return $layers;
+		// Nothing readable at all: let get() fall back to the legacy blob, as before.
+		return empty( $layers ) ? false : $layers;
 	}
 
 	/**
@@ -624,20 +639,7 @@ class DB {
 			return true;
 		}
 
-		$targets = array(
-			array( $parent, '_mkl_product_configurator_layers_index' ),
-			array( $parent, '_mkl_product_configurator_angles' ),
-			array( $parent, '_mkl_product_configurator_conditions' ),
-		);
-		$content_owner = $content_product ? $content_product : $parent;
-		foreach ( $index as $layer_id ) {
-			$layer_id = (int) $layer_id;
-			if ( ! $layer_id ) {
-				continue;
-			}
-			$targets[] = array( $parent, '_mkl_product_configurator_layer_' . $layer_id );
-			$targets[] = array( $content_owner, '_mkl_product_configurator_content_' . $layer_id );
-		}
+		$targets = $this->get_structured_meta_targets( $parent, $content_product, $index );
 
 		$dirty_owners = array();
 		foreach ( $targets as $target ) {
@@ -663,6 +665,65 @@ class DB {
 		do_action( 'wpml_sync_custom_field', $parent->get_id(), self::META_STORAGE_ENCODING );
 
 		return true;
+	}
+
+	/**
+	 * Every chunk meta the JSON conversion covers, paired with the owner it lives on.
+	 *
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner      $parent
+	 * @param \WC_Product|\MKL\PC\Global_Configurators\Storage_Owner|null $content_product
+	 * @param int[] $index Layer ids.
+	 * @return array<int, array{0: object, 1: string}>
+	 */
+	private function get_structured_meta_targets( $parent, $content_product, $index ) {
+		$targets = array(
+			array( $parent, '_mkl_product_configurator_layers_index' ),
+			array( $parent, '_mkl_product_configurator_angles' ),
+			array( $parent, '_mkl_product_configurator_conditions' ),
+		);
+		$content_owner = $content_product ? $content_product : $parent;
+		foreach ( $index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) {
+				continue;
+			}
+			$targets[] = array( $parent, '_mkl_product_configurator_layer_' . $layer_id );
+			$targets[] = array( $content_owner, '_mkl_product_configurator_content_' . $layer_id );
+		}
+		return $targets;
+	}
+
+	/**
+	 * Whether any chunk is still PHP-serialized, i.e. whether finalizing would actually convert data.
+	 *
+	 * A product without the encoding stamp is not necessarily serialized: one created since the JSON
+	 * switch has JSON chunks and only misses the stamp until its first finalize.
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return bool
+	 */
+	private function has_serialized_structured_meta( $parent_id, $variation_id = 0 ) {
+		$owner_parent_id = $this->resolve_storage_owner_id( (int) $parent_id, 0, 'layers' );
+		$parent          = $this->get_owner( $owner_parent_id );
+		if ( ! $parent || $this->storage_encoding_is_json( $parent ) ) {
+			return false;
+		}
+		$content_product_id = $this->get_product_id_for_content( (int) $parent_id, (int) $variation_id );
+		$content_owner_id   = $this->resolve_storage_owner_id( $content_product_id, (int) $variation_id, 'content' );
+		$content_product    = ( $content_owner_id && $content_owner_id !== $owner_parent_id )
+			? $this->get_owner( $content_owner_id )
+			: $parent;
+
+		$targets = $this->get_structured_meta_targets( $parent, $content_product, $this->read_layers_index_array( $parent ) );
+		foreach ( $targets as $target ) {
+			list( $owner, $meta_key ) = $target;
+			$raw = maybe_unserialize( $owner->get_meta( $meta_key, true ) );
+			if ( is_array( $raw ) && ! empty( $raw ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1265,7 +1326,9 @@ class DB {
 		// may need this while never having been "migrated" from legacy — do not show a migration warning for that.
 		$has_legacy_or_mixed = in_array( $verify['layers_status'], array( 'legacy', 'mixed' ), true )
 			|| in_array( $verify['content_status'], array( 'legacy', 'mixed' ), true );
-		$needs_migration_banner = $needs_batch || ( $needs_finalize && $has_legacy_or_mixed );
+		// Chunks that are still serialized do get converted by that finalize, so they keep the banner.
+		$needs_migration_banner = $needs_batch
+			|| ( $needs_finalize && ( $has_legacy_or_mixed || $this->has_serialized_structured_meta( $parent_id, $variation_id ) ) );
 
 		return array(
 			'layers'                    => $verify['layers_status'],
@@ -1552,9 +1615,14 @@ class DB {
 			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
 
+		// New layer ids are max + 1, so deleting the last layer and adding one reuses its id: the
+		// same id is then both in the index and in `deleted`. Deleting it here would remove the
+		// chunk just written, and one missing chunk makes every layer read as absent. Chunks that
+		// really left the index are removed by purge_orphan_chunks_for_structure() below anyway.
+		$kept_ids = array_flip( array_map( 'intval', $layer_ids ) );
 		foreach ( $deleted as $layer_id ) {
 			$layer_id = (int) $layer_id;
-			if ( $layer_id ) {
+			if ( $layer_id && ! isset( $kept_ids[ $layer_id ] ) ) {
 				$product->delete_meta_data( '_mkl_product_configurator_layer_' . $layer_id );
 				$product->delete_meta_data( '_mkl_product_configurator_content_' . $layer_id );
 			}

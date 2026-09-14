@@ -1186,7 +1186,12 @@ PC.toJSON = function( item ) {
 		 */
 		build_layers_delta_batches: function( layers_collection, layers_index, ordered_modified_layer_ids, deleted_layer_ids ) {
 			var max_layers_per_batch = this.get_layer_save_batch_max();
-			var deleted_ids_copy = deleted_layer_ids && deleted_layer_ids.length ? deleted_layer_ids.slice() : [];
+			// A deleted id can come back: new ids are max + 1, so removing the last layer and adding
+			// one reuses it. Anything still in the index is not deleted, whatever the list says.
+			var index_lookup = _.object( _.map( layers_index, String ), [] );
+			var deleted_ids_copy = _.filter( deleted_layer_ids || [], function( deleted_id ) {
+				return ! _.has( index_lookup, String( deleted_id ) );
+			} );
 			var layer_save_batches = [];
 			var chunk_offset;
 			var chunk_index;
@@ -1686,7 +1691,11 @@ PC.toJSON = function( item ) {
 
 				var app = this;
 				var pc_storage = this.admin_data && this.admin_data.get( 'pc_storage' );
-				var run_finalize = this._pending_chunk_storage_finalize || ( pc_storage && pc_storage.needs_format_finalize );
+				// pc_storage is only refreshed by finalize itself. A product that opened with no data still
+				// says "nothing to finalize" after its first chunks land, so finalize it anyway - unless
+				// the save went to another post (save_target), which says nothing about this one.
+				var opened_empty = pc_storage && 'empty' === pc_storage.layers && 'empty' === pc_storage.content && ! this.save_target;
+				var run_finalize = this._pending_chunk_storage_finalize || ( pc_storage && ( pc_storage.needs_format_finalize || opened_empty ) );
 				this._pending_chunk_storage_finalize = false;
 				var overlay_ui = this._chunk_storage_migration_ui;
 				var finish_save_all_ui = function() {
