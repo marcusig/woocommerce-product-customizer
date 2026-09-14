@@ -28,8 +28,6 @@ class DB {
 	private $layers = array();
 	private $changed_items_count = 0;
 	private $context = 'admin';
-	/** @var Data_Sanitizer|null */
-	private $data_sanitizer = null;
 
 	/**
 	 * Initialize the class
@@ -44,10 +42,11 @@ class DB {
 	 * @return Data_Sanitizer
 	 */
 	private function data_sanitizer() {
-		if ( ! $this->data_sanitizer ) {
-			$this->data_sanitizer = new Data_Sanitizer();
+		static $sanitizer = null;
+		if ( ! $sanitizer ) {
+			$sanitizer = new Data_Sanitizer();
 		}
-		return $this->data_sanitizer;
+		return $sanitizer;
 	}
 
 	/**
