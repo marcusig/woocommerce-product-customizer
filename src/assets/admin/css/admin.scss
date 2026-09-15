@@ -675,10 +675,9 @@ html .mkl-pc-admin-ui.pc-modal {
 				min-width: 0;
 				display: flex;
 				flex-direction: column;
-				@media ( max-width: 900px ) {
-					&.home {
-						overflow: auto;
-					}
+				&.home {
+					overflow: auto;
+					-webkit-overflow-scrolling: touch;
 				}
 			}
 		}
@@ -1732,14 +1731,21 @@ html .pc-modal-container {
 		color: #41B841;
 	}
 	.state.home {
+		.mkl-pc-admin-ui__content {
+			flex: 1 0 auto;
+			min-height: 100%;
+			height: auto;
+			overflow: visible;
+		}
 		.tab_content {
-			height: 100%;
+			min-height: 100%;
+			height: auto;
 			padding: 0;
 			@media ( min-width: 800px ) {
 				display: flex;
 			}
 			.instructions {
-				overflow: auto;
+				overflow: visible;
 				padding: 30px;
 				flex: 1;
 				.instructions-header {
