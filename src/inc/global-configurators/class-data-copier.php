@@ -268,11 +268,9 @@ final class Data_Copier {
 	 * Meta keys holding a structured (array) configurator value rather than a scalar.
 	 *
 	 * These are copied by value - decoded on read, re-encoded by the DB service on write - never
-	 * byte-for-byte. How many levels of backslash escaping a JSON string carries in the column
-	 * depends on which owner wrote it: a product goes through `WC_Data_Store_WP`, which slashes the
-	 * value again before `update_metadata()` unslashes it, while a global configurator CPT goes
-	 * straight to `update_post_meta()`. Copying the raw string between the two adds or removes a
-	 * level every hop, and after one round trip the JSON no longer parses.
+	 * byte-for-byte. Product rows written before the slashing fix still carry one extra level of
+	 * backslash escaping, while CPT rows and newer product rows carry none. Copying the raw string
+	 * would carry that extra level onto the target, so decoding first normalises both shapes.
 	 *
 	 * @param string $key
 	 * @return bool
@@ -337,7 +335,7 @@ final class Data_Copier {
 	 */
 	private static function copy_meta_value( $target, $key, $value ) {
 		if ( ! self::is_structured_meta_key( $key ) ) {
-			$target->update_meta( $key, is_string( $value ) ? wp_slash( $value ) : $value );
+			$target->update_meta( $key, $value );
 			return true;
 		}
 
@@ -360,11 +358,9 @@ final class Data_Copier {
 	/**
 	 * Read the layers index as an array of ids, whether it is stored as JSON or PHP-serialized.
 	 *
-	 * A product stores the JSON index slashed - `DB::encode_meta_batch()` pre-slashes it to survive
-	 * the `wp_unslash()` in `update_metadata()`, and WooCommerce re-slashes on top of that for a new
-	 * meta row, so one level of escapes stays in the column. A global configurator CPT is written
-	 * through `update_post_meta()` and keeps none. Both shapes have to decode here, or the caller
-	 * reads a configurator with layers as "no layers" - see the null contract below.
+	 * A product index written before the slashing fix keeps one level of escapes in the column;
+	 * CPT indexes and newer product indexes keep none. Both shapes have to decode here, or the
+	 * caller reads a configurator with layers as "no layers" - see the null contract below.
 	 *
 	 * @param Storage_Owner $owner
 	 * @return int[]|null Ids, or null when a value is stored but could not be decoded.

@@ -70,8 +70,10 @@ class DB {
 	/**
 	 * Decode stored JSON without corrupting valid escaped strings.
 	 *
-	 * Some legacy meta was saved with slashes, but current JSON should be decoded as-is
-	 * so values like `Wheel 8\"` keep their required JSON escape.
+	 * Current JSON is decoded as-is so values like `Wheel 8\"` keep their required JSON escape.
+	 * Product rows written before the slashing fix carry one extra level of escapes (WooCommerce
+	 * slashed a value that was already slashed). Those never parse as-is, and stripslashes() is the
+	 * exact inverse of that extra wp_slash(), so the fallback recovers them without loss.
 	 *
 	 * @internal Used by Global_Layer\Linker when reading raw layer/content chunks.
 	 *
@@ -146,9 +148,10 @@ class DB {
 			if ( null === $json ) {
 				return false;
 			}
-			// update_metadata() runs wp_unslash() on the value, which would strip the JSON's own
-			// escapes and leave unparseable text in the row. Pre-slash so it survives that.
-			$encoded[ $meta_key ] = wp_slash( $json );
+			// Raw, not slashed: every owner takes an unslashed value. WC_Data_Store_WP slashes before
+			// add_metadata() and update_metadata_by_mid() never unslashes, and Storage_Owner slashes
+			// for its own update_post_meta(). Pre-slashing here left one level of escapes in product rows.
+			$encoded[ $meta_key ] = $json;
 		}
 		return $encoded;
 	}
@@ -1584,6 +1587,8 @@ class DB {
 		if ( empty( $layer_ids ) ) {
 			return false;
 		}
+		// The editor sends ids as strings. Store ints, like set_layers() and the copier do.
+		$layer_ids = array_map( 'intval', $layer_ids );
 
 		$meta_writes = array( '_mkl_product_configurator_layers_index' => $layer_ids );
 		foreach ( $layers as $layer_id => $layer ) {

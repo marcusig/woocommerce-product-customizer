@@ -116,8 +116,11 @@ final class Storage_Owner {
 	/**
 	 * Write a single meta value.
 	 *
+	 * Takes the raw value on both branches, as WC_Product::update_meta_data() does. The CPT branch
+	 * slashes it itself because update_post_meta() unslashes, which would strip JSON escapes.
+	 *
 	 * @param string $key
-	 * @param mixed  $value
+	 * @param mixed  $value Unslashed value.
 	 * @return void
 	 */
 	public function update_meta( $key, $value ) {
@@ -126,7 +129,7 @@ final class Storage_Owner {
 			$this->dirty = true;
 			return;
 		}
-		update_post_meta( $this->post_id, $key, $value );
+		update_post_meta( $this->post_id, $key, wp_slash( $value ) );
 	}
 
 	/**
