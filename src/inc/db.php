@@ -1536,17 +1536,19 @@ class DB {
 		$encoded_index = $encoded['_mkl_product_configurator_layers_index'];
 		unset( $encoded['_mkl_product_configurator_layers_index'] );
 
-		$product->update_meta_data( '_mkl_product_configurator_layers_index', $encoded_index );
-		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
-		$product->save();
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
-
 		foreach ( $encoded as $meta_key => $meta_value ) {
 			$product->update_meta_data( $meta_key, $meta_value );
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
+
+		// After the chunks, so a request that dies part way never leaves the index listing a layer
+		// whose chunk was not written.
+		$product->update_meta_data( '_mkl_product_configurator_layers_index', $encoded_index );
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 
 		$this->delete_layer_chunk_metas( $product, $layer_ids, $old_index );
 		$product->delete_meta_data( '_mkl_product_configurator_layers' );
@@ -1590,7 +1592,7 @@ class DB {
 		// The editor sends ids as strings. Store ints, like set_layers() and the copier do.
 		$layer_ids = array_map( 'intval', $layer_ids );
 
-		$meta_writes = array( '_mkl_product_configurator_layers_index' => $layer_ids );
+		$meta_writes = array();
 		foreach ( $layers as $layer_id => $layer ) {
 			$layer_id = (int) $layer_id;
 			if ( ! $layer_id ) continue;
@@ -1601,6 +1603,21 @@ class DB {
 			$stripped = Global_Layer_Linker::strip_layers_to_references( array( $layer ) );
 			$meta_writes[ '_mkl_product_configurator_layer_' . $layer_id ] = isset( $stripped[0] ) ? $stripped[0] : $layer;
 		}
+
+		// The editor sends the full index with every batch, including new layers whose chunks only
+		// come in a later batch. Storing it as sent - or storing it before the chunks, when the request
+		// dies part way - leaves ids without a chunk, and those layers silently drop out of the
+		// configurator. So a new id only enters the index with its chunk, and the index is written
+		// last. Ids already in the index keep their place whatever state their chunk is in.
+		$stored_ids = array_flip( $this->read_layers_index_array( $product ) );
+		$index_ids  = array();
+		foreach ( $layer_ids as $layer_id ) {
+			if ( isset( $stored_ids[ $layer_id ] ) || isset( $meta_writes[ '_mkl_product_configurator_layer_' . $layer_id ] ) ) {
+				$index_ids[] = $layer_id;
+			}
+		}
+		$meta_writes['_mkl_product_configurator_layers_index'] = $index_ids;
+
 		$encoded = $this->encode_meta_batch( $meta_writes );
 		if ( false === $encoded ) {
 			return false;
@@ -1608,17 +1625,21 @@ class DB {
 		$encoded_index = $encoded['_mkl_product_configurator_layers_index'];
 		unset( $encoded['_mkl_product_configurator_layers_index'] );
 
-		$product->update_meta_data( '_mkl_product_configurator_layers_index', $encoded_index );
-		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
-		$product->save();
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
-		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
-
 		foreach ( $encoded as $meta_key => $meta_value ) {
 			$product->update_meta_data( $meta_key, $meta_value );
 			$product->save();
 			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
 		}
+
+		// Nothing stored and no chunk in this batch (a deletions-only batch on an empty structure):
+		// leave the index alone rather than blank it.
+		if ( ! empty( $index_ids ) ) {
+			$product->update_meta_data( '_mkl_product_configurator_layers_index', $encoded_index );
+		}
+		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+		$product->save();
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_layers_index' );
+		do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
 
 		// New layer ids are max + 1, so deleting the last layer and adding one reuses its id: the
 		// same id is then both in the index and in `deleted`. Deleting it here would remove the
