@@ -1272,6 +1272,82 @@ PC.toJSON = function( item ) {
 			return content_save_batches;
 		},
 		/**
+		 * Send one pc_set_data request with the configurator's revision check.
+		 *
+		 * Every save carries a new token and the one this editor last knew. The server refuses it
+		 * (409, mkl_pc_edit_conflict) when someone saved since - another user, another tab, or another
+		 * product using the same global configurator. The user may overwrite, which resends it with
+		 * force_save; otherwise the request fails like any other.
+		 *
+		 * @param {Object} ajax_options wp.ajax.send options. success / error are honoured.
+		 * @return {jQuery.Promise}
+		 */
+		send_save_request: function( ajax_options ) {
+			var app = this;
+			var success_callback = ajax_options.success;
+			var error_callback = ajax_options.error;
+			var request_context = ajax_options.context || this;
+			var result = $.Deferred();
+			if ( success_callback ) {
+				result.done( function() { success_callback.apply( request_context, arguments ); } );
+			}
+			if ( error_callback ) {
+				result.fail( function() { error_callback.apply( request_context, arguments ); } );
+			}
+
+			var attempt = function( force_save ) {
+				var edit_token = app.generate_edit_token();
+				var request_options = _.extend( {}, ajax_options, {
+					data: _.extend( {}, ajax_options.data, {
+						edit_token: edit_token,
+						expected_edit_token: ( app.admin_data && app.admin_data.get( 'edit_token' ) ) || '',
+						attempted_edit_token: app.attempted_edit_token || '',
+					} ),
+				} );
+				if ( force_save ) {
+					request_options.data.force_save = 1;
+				}
+				delete request_options.success;
+				delete request_options.error;
+				// Kept until a response arrives: a save that lands but whose response is lost (a timeout)
+				// must not read as a conflict when it is retried.
+				app.attempted_edit_token = edit_token;
+				wp.ajax.send( request_options ).done( function() {
+					if ( app.admin_data ) {
+						app.admin_data.set( 'edit_token', edit_token, { silent: true } );
+					}
+					app.attempted_edit_token = '';
+					result.resolveWith( request_context, arguments );
+				} ).fail( function( jq_xhr ) {
+					if ( ! force_save && app.is_edit_conflict( jq_xhr ) && window.confirm( ( window.PC_lang && PC_lang.edit_conflict_confirm ) || 'This configuration was saved from somewhere else since you opened it. Save anyway and overwrite those changes?' ) ) {
+						attempt( true );
+						return;
+					}
+					result.rejectWith( request_context, arguments );
+				} );
+			};
+			attempt( false );
+			return result.promise();
+		},
+		/**
+		 * Whether a failed save was refused by the revision check.
+		 *
+		 * @param {Object} jq_xhr
+		 * @return {boolean}
+		 */
+		is_edit_conflict: function( jq_xhr ) {
+			return !! ( jq_xhr && 409 === jq_xhr.status && jq_xhr.responseJSON && jq_xhr.responseJSON.data && 'mkl_pc_edit_conflict' === jq_xhr.responseJSON.data.code );
+		},
+		/**
+		 * @return {string} A token identifying one save request.
+		 */
+		generate_edit_token: function() {
+			if ( window.crypto && typeof window.crypto.randomUUID === 'function' ) {
+				return window.crypto.randomUUID();
+			}
+			return 'pc-' + Date.now().toString( 36 ) + '-' + Math.random().toString( 36 ).slice( 2 );
+		},
+		/**
 		 * Sequential pc_set_data requests for multiple payloads of the same component.
 		 *
 		 * @param {string} collection_key
@@ -1280,6 +1356,7 @@ PC.toJSON = function( item ) {
 		 * @return {jQuery.Promise}
 		 */
 		send_configurator_save_batches: function( collection_key, request_batches, ajax_options ) {
+			var app = this;
 			var success_callback = ajax_options.success;
 			var error_callback = ajax_options.error;
 			var request_context = ajax_options.context || this;
@@ -1299,7 +1376,7 @@ PC.toJSON = function( item ) {
 					}
 					delete batch_ajax_options.success;
 					delete batch_ajax_options.error;
-					return wp.ajax.send( batch_ajax_options ).done( function( response_body ) {
+					return app.send_save_request( batch_ajax_options ).done( function( response_body ) {
 						last_success_response = response_body;
 					} );
 				} );
@@ -1862,7 +1939,7 @@ PC.toJSON = function( item ) {
 			// 	}, this );
 			// }
 
-			return wp.ajax.send( options );
+			return this.send_save_request( options );
 		},
 
 		get_new_id: function( collection ){
