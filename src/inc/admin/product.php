@@ -34,7 +34,6 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_product_data_tab' ), 99 );
 			add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
 			add_filter( 'product_type_options', array( $this, 'add_product_type_option_is_configurable' ) );
-			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 100, 1 );
 			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 100, 1 );
 			add_action( 'wp_ajax_mkl_pc_hide_addon_setting', array( $this, 'hide_addon_setting' ) );
 			// woocommerce_ajax_save_product_variations

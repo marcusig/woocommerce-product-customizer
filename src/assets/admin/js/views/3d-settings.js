@@ -330,6 +330,8 @@ PC.views = window.PC.views || {};
 			PC.app.save( this.collectionName, this.col, {
 				success: () => { if ( state && state.state_saved ) state.state_saved(); },
 				error: ( r, s ) => { if ( state && state.error_saving ) state.error_saving( r, s ); },
+				// A save on its own: its last request rebuilds the frontend config file.
+				data: { saveCache: true },
 			} );
 		},
 		render: function () {

@@ -1286,12 +1286,17 @@ PC.toJSON = function( item ) {
 			var shared_request_data = _.extend( {}, ajax_options.data );
 			var request_chain = $.when();
 			var last_success_response;
-			request_batches.forEach( function( batch_payload ) {
+			request_batches.forEach( function( batch_payload, batch_index ) {
 				request_chain = request_chain.then( function() {
 					var batch_ajax_options = _.extend( {}, ajax_options, {
 						data: _.extend( {}, shared_request_data ),
 					} );
 					batch_ajax_options.data[ collection_key ] = JSON.stringify( batch_payload );
+					// The server rebuilds the frontend config file on the request carrying saveCache,
+					// so only the last batch may send it.
+					if ( batch_index < request_batches.length - 1 ) {
+						delete batch_ajax_options.data.saveCache;
+					}
 					delete batch_ajax_options.success;
 					delete batch_ajax_options.error;
 					return wp.ajax.send( batch_ajax_options ).done( function( response_body ) {

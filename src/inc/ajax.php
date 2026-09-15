@@ -460,7 +460,35 @@ class Ajax {
 			delete_transient( 'mkl_pc_data_init_' . $ref_id );
 		}
 
+		// The editor flags the last request of a save. Rebuilding on every request was wasted work:
+		// the invalidation above deleted the file again straight after.
+		if ( isset( $_REQUEST['saveCache'] ) && wp_validate_boolean( sanitize_text_field( wp_unslash( $_REQUEST['saveCache'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified above.
+			$this->rebuild_config_files( array( $ref_id, $id ) );
+		}
+
 		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Rebuild the static frontend config files once a save is complete.
+	 *
+	 * Saving invalidates them (see Cache_Invalidator), and otherwise they only come back through
+	 * Cache::check_and_regenerate_js_file() or an uncached page render. A host that does not route
+	 * a missing upload to WordPress never runs the former, so in the async data mode every shopper
+	 * would go through admin-ajax until the file is rebuilt here.
+	 *
+	 * @param int[] $product_ids Products whose configuration was saved. Anything not configurable is skipped.
+	 * @return void
+	 */
+	private function rebuild_config_files( $product_ids ) {
+		if ( mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
+			return;
+		}
+		foreach ( array_unique( array_map( 'absint', $product_ids ) ) as $product_id ) {
+			if ( $product_id && mkl_pc_is_configurable( $product_id ) ) {
+				Plugin::instance()->cache->save_config_file( $product_id );
+			}
+		}
 	}
 
 	/**
@@ -482,6 +510,9 @@ class Ajax {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ), 403 );
 		}
 		$result = $this->db->maybe_finalize_chunked_storage( $parent_id, $variation_id );
+		// Runs after the editor's last save request and invalidates the caches again, so the file
+		// that request rebuilt is gone.
+		$this->rebuild_config_files( array( $parent_id ) );
 		wp_send_json_success( $result );
 	}
 

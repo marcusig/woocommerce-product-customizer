@@ -421,6 +421,8 @@ PC.views = PC.views || {};
 				// success: 'successfuil'
 				success: _.bind(this.state_saved, this),
 				error: _.bind(this.error_saving, this),
+				// A save on its own: its last request rebuilds the frontend config file.
+				data: { saveCache: true },
 			} );
 			// this.layers.save();
 		},
