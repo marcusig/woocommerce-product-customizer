@@ -144,7 +144,11 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		/**
 		 * Move 3D screenshot from cart temp folder to final order folder.
 		 *
-		 * @param string $temp_relative Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png)
+		 * A cart item restored by "Order again" carries the original order's screenshot
+		 * (orders/...) instead of a temp file. That file still belongs to the original order, so it
+		 * is copied; only cart-temp files are moved.
+		 *
+		 * @param string $temp_relative Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png or orders/order-123-abc.png)
 		 * @param \WC_Order $order
 		 * @param string $cart_item_key
 		 * @return string|false Final relative path (e.g. orders/order-123-abc.png) or false on failure
@@ -153,9 +157,14 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			if ( strpos( $temp_relative, '..' ) !== false ) {
 				return false;
 			}
+			$source_relative = trim( $temp_relative, '/' );
+			$is_temp         = 0 === strpos( $source_relative, 'cart-temp/' );
+			if ( ! $is_temp && 0 !== strpos( $source_relative, 'orders/' ) ) {
+				return false;
+			}
 			$wp_upload_dir = wp_upload_dir();
 			$base_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images';
-			$temp_path     = $base_dir . '/' . trim( $temp_relative, '/' );
+			$temp_path     = $base_dir . '/' . $source_relative;
 			if ( ! file_exists( $temp_path ) || ! is_file( $temp_path ) ) {
 				return false;
 			}
@@ -167,7 +176,8 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$safe_key   = sanitize_file_name( substr( $cart_item_key, 0, 32 ) );
 			$final_name = 'order-' . $order_id . '-' . $safe_key . '.png';
 			$final_path = $orders_dir . '/' . $final_name;
-			if ( \MKL\PC\Utils::fs_move( $temp_path, $final_path, true ) ) {
+			$stored = $is_temp ? \MKL\PC\Utils::fs_move( $temp_path, $final_path, true ) : \MKL\PC\Utils::fs_copy( $temp_path, $final_path, true );
+			if ( $stored ) {
 				return 'orders/' . $final_name;
 			}
 			return false;

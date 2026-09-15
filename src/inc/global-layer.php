@@ -468,6 +468,11 @@ class Global_Layers {
 			'post_title'  => isset( $layer['name'] ) ? sanitize_text_field( $layer['name'] ) : 'Global Layer',
 		);
 		if ( $global_id ) {
+			// wp_update_post() applies the post_type above, so any other post would be turned into
+			// a global layer.
+			if ( ! self::is_global_layer_id( $global_id ) ) {
+				return new \WP_Error( 'mkl_pc_not_a_global_layer', __( 'This is not a global layer.', 'product-configurator-for-woocommerce' ) );
+			}
 			$postarr['ID'] = intval( $global_id );
 			$global_id     = wp_update_post( $postarr, true );
 		} else {

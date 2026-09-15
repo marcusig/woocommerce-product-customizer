@@ -874,6 +874,10 @@ class Ajax {
 			wp_send_json_error( 'Invalid global_id' );
 		}
 
+		if ( ! Global_Layers::is_global_layer_id( $global_id ) ) {
+			wp_send_json_error( 'Global layer not found' );
+		}
+
 		$data = Global_Layers::get( $global_id );
 		
 		if ( false === $data['layer'] && false === $data['content'] ) {
@@ -903,6 +907,24 @@ class Ajax {
 
 		$global_id = absint( wp_unslash( $_REQUEST['global_id'] ) );
 		
+		// The nonce is shared by every global layer and handed to anyone with edit_posts, so the
+		// capability has to be checked against the post itself - as pc_set_data does for products.
+		if ( $global_id > 0 ) {
+			// Global_Layers::save() would otherwise turn any post id it is given into a global layer.
+			if ( ! Global_Layers::is_global_layer_id( $global_id ) ) {
+				wp_send_json_error( 'Global layer not found', 404 );
+			}
+			if ( ! current_user_can( 'edit_post', $global_id ) ) {
+				wp_send_json_error( 'Insufficient permissions', 403 );
+			}
+		} else {
+			// New global layers are published straight away.
+			$post_type_object = get_post_type_object( \MKL\PC\Global_Layer\Schema::CPT_SLUG );
+			if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) || ! current_user_can( $post_type_object->cap->publish_posts ) ) {
+				wp_send_json_error( 'Insufficient permissions', 403 );
+			}
+		}
+
 		// Parse layer data
 		$layer = null;
 		if ( isset( $_REQUEST['layer'] ) && ! empty( $_REQUEST['layer'] ) ) {

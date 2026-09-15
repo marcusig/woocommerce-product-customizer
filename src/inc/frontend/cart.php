@@ -254,7 +254,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( $raw === false ) {
 				return false;
 			}
-			$filename = '3d-' . wp_unique_id( 'cart' ) . '.png';
+			// Not wp_unique_id(): it counts per request, so every add-to-cart got the same name and
+			// customers overwrote each other's screenshots. The name is also a public URL, so it
+			// must not be guessable either.
+			$filename = '3d-' . wp_generate_uuid4() . '.png';
 			$filepath = $temp_dir . '/' . $filename;
 			if ( file_put_contents( $filepath, $raw ) === false ) {
 				return false;
