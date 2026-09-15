@@ -760,6 +760,7 @@ PC.views = window.PC.views || {};
 		},
 		import_cameras_from_gltf: function ( e ) {
 			e.preventDefault();
+			this.$( '.pc-3d-import-cameras-status' ).prop( 'hidden', true );
 			// Collect cameras from the loaded models. There is no single "main" glTF
 			// any more — the preview mounts every objects3d entry under model_root —
 			// so this walks what is actually in the scene.
@@ -774,26 +775,58 @@ PC.views = window.PC.views || {};
 			}
 			const angles = this.admin && this.admin.angles;
 			if ( !angles ) return;
+			// Cameras are often nested under transformed nodes, and model_root itself
+			// can be offset, so read world-space values — that is the space the preview
+			// camera and orbit controls live in.
+			const pos = new THREE.Vector3();
+			const quat = new THREE.Quaternion();
 			const dir = new THREE.Vector3();
-			const nextOrder = angles.nextOrder ? angles.nextOrder() : ( angles.length ? ( angles.last().get( 'order' ) || angles.length ) + 1 : 1 );
+			const box = new THREE.Box3().setFromObject( root );
+			const center = box.isEmpty() ? null : box.getCenter( new THREE.Vector3() );
+			const imported = [];
 			cameras.forEach( ( cam, i ) => {
-				cam.updateMatrixWorld( true );
-				dir.set( 0, 0, -1 ).applyQuaternion( cam.quaternion );
-				const pos = cam.position;
-				const dist = 1;
-				const target = { x: pos.x + dir.x * dist, y: pos.y + dir.y * dist, z: pos.z + dir.z * dist };
+				cam.updateWorldMatrix( true, false );
+				cam.getWorldPosition( pos );
+				cam.getWorldQuaternion( quat );
+				dir.set( 0, 0, -1 ).applyQuaternion( quat );
+				// The target becomes the orbit pivot, so place it level with the model
+				// along the camera's line of sight rather than a fixed unit ahead.
+				let dist = center ? dir.dot( center.clone().sub( pos ) ) : 0;
+				if ( !( dist > 0.01 ) ) dist = 1;
 				const name = ( cam.name && cam.name.trim() ) || ( 'Camera ' + ( i + 1 ) );
+				// Each mounted model scene is tagged with its objects3d id; the nearest
+				// tagged ancestor is the model this camera came from.
+				let source = cam;
+				while ( source && ( !source.userData || source.userData.object_id == null ) ) source = source.parent;
+				// Angles share the layer model (idAttribute `_id`, default 0): without an
+				// explicit id every imported camera collides on 0 and can't be told apart.
 				const attrs = {
+					_id: PC.app.get_new_id( angles ),
 					name: name,
-					order: nextOrder + i,
+					order: angles.nextOrder(),
+					image_order: angles.nextOrder(),
+					active: true,
 					camera_position: { x: pos.x, y: pos.y, z: pos.z },
-					camera_target: target,
+					camera_target: { x: pos.x + dir.x * dist, y: pos.y + dir.y * dist, z: pos.z + dir.z * dist },
 					image: { url: '', id: '' }
 				};
-				angles.add( attrs );
+				if ( source ) attrs.camera_target_model = String( source.userData.object_id );
+				if ( !angles.length ) attrs.has_thumbnails = true;
+				imported.push( angles.add( attrs ) );
 			} );
 			this.mark_dirty( 'angles' );
 			this.populate_angle_select();
+			this.$( '.pc-3d-angle-select' ).val( imported[ 0 ].id );
+			this.on_angle_select_change();
+			// Report next to the button rather than as a corner toast: the eye is on
+			// the Camera positions panel, and the toast went unnoticed there.
+			const lang = typeof PC_lang !== 'undefined' ? PC_lang : {};
+			const msg = imported.length === 1
+				? ( lang.camera_imported_from_gltf || '1 camera imported as a new view.' )
+				: ( lang.cameras_imported_from_gltf || '%d cameras imported as new views.' ).replace( '%d', imported.length );
+			const $status = this.$( '.pc-3d-import-cameras-status' );
+			$status.empty().append( '<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>', document.createTextNode( ' ' + msg ) );
+			$status[ 0 ].hidden = false;
 		},
 	} ) );
 

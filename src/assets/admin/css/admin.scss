@@ -4863,6 +4863,16 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 			min-width: 2.5em;
 			margin-left: 0.25em;
 		}
+		.pc-3d-import-cameras-status {
+			margin: -0.25em 0 1em;
+			padding: 0.5em 0.75em;
+			background: #edfaef;
+			border-left: 4px solid #00a32a;
+			.dashicons {
+				color: #00a32a;
+				vertical-align: text-bottom;
+			}
+		}
 		.pc-3d-lights-list {
 			margin-top: 0.5em;
 		}

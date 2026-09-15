@@ -513,6 +513,10 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
 					'fe_3d_ktx2_transcoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/basis/',
 					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
+					'no_cameras_in_gltf' => esc_html__( 'No cameras found in the loaded 3D models.', 'product-configurator-for-woocommerce' ),
+					'camera_imported_from_gltf' => esc_html__( '1 camera imported as a new view.', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of imported cameras */
+					'cameras_imported_from_gltf' => esc_html__( '%d cameras imported as new views.', 'product-configurator-for-woocommerce' ),
 					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
 					'gltf_load_failed' => esc_html__( 'Failed to load the 3D model.', 'product-configurator-for-woocommerce' ),
 					/* translators: 1: 3D file name, 2: error details */

@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<button type="button" class="button pc-3d-import-gltf-cameras"><?php esc_html_e( 'Import cameras from GLTF', 'product-configurator-for-woocommerce' ); ?></button>
 		<span class="description"><?php esc_html_e( 'Add new angles from cameras defined in the main 3D file.', 'product-configurator-for-woocommerce' ); ?></span>
 	</p>
+	<p class="pc-3d-import-cameras-status" role="status" aria-live="polite" hidden></p>
 </div>
 <div class="pc-3d-setting-group">
 	<h4><?php esc_html_e( 'Rotation limits', 'product-configurator-for-woocommerce' ); ?></h4>
