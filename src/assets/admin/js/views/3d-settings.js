@@ -340,10 +340,13 @@ PC.views = window.PC.views || {};
 			// Every section panel is rebuilt from the static template, which always
 			// marks the first one active — preserve whichever section the user had
 			// open (e.g. re-rendering after a media-library selection on a later tab).
-			const active_section_id = this.$( '.pc-3d-section-panel.active' ).data( 'section-id' );
+			// A fresh view (leaving 3D settings and coming back) has no panels yet, but the
+			// sidebar tabs survive the round trip — fall back to whichever tab is still active.
+			const active_section_id = this.$( '.pc-3d-section-panel.active' ).data( 'section-id' )
+				|| this.get_sidebar_sections().find( '.pc-3d-section-tab.active' ).data( 'section-tab' );
 			this.$el.empty();
 			this.$el.append( this.template( s ) );
-			if ( active_section_id ) {
+			if ( active_section_id && this.$( '#pc-3d-section-panel-' + active_section_id ).length ) {
 				this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
 				this.$( '#pc-3d-section-panel-' + active_section_id ).addClass( 'active' ).removeAttr( 'hidden' );
 			}
@@ -458,10 +461,7 @@ PC.views = window.PC.views || {};
 			e.preventDefault();
 			const tab = $( e.currentTarget ).data( 'section-tab' );
 			if ( !tab ) return;
-			const main_view = this.options && this.options.main_view;
-			const $sidebar_sections = main_view && main_view.$el
-				? main_view.$el.find( '.mkl-pc-admin-ui__sidebar-3d-sections' )
-				: $( '.pc-modal.mkl-pc-admin-ui' ).find( '.mkl-pc-admin-ui__sidebar-3d-sections' );
+			const $sidebar_sections = this.get_sidebar_sections();
 			$sidebar_sections.find( '.pc-3d-section-tab' ).removeClass( 'active' ).attr( 'aria-selected', 'false' );
 			$sidebar_sections.find( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
 			this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
@@ -697,11 +697,30 @@ PC.views = window.PC.views || {};
 			const disabled = !this._three || !this._three.controls;
 			this.$( '.pc-3d-set-min-zoom, .pc-3d-set-max-zoom' ).prop( 'disabled', disabled );
 		},
+		get_sidebar_sections: function () {
+			const main_view = this.options && this.options.main_view;
+			return main_view && main_view.$el
+				? main_view.$el.find( '.mkl-pc-admin-ui__sidebar-3d-sections' )
+				: $( '.pc-modal.mkl-pc-admin-ui' ).find( '.mkl-pc-admin-ui__sidebar-3d-sections' );
+		},
+		/**
+		 * The angles collection, created from the loaded data if no state has built it yet.
+		 * Only the Views state used to create it, so until it was visited the import,
+		 * angle select and preview camera all saw nothing. Mirrors views/layers.js.
+		 */
+		get_angles: function () {
+			if ( !this.admin ) return null;
+			if ( !this.admin.angles ) {
+				const loaded_data = this.admin.model.get( 'angles' );
+				this.admin.angles = loaded_data != false ? new PC.angles( loaded_data ) : new PC.angles();
+			}
+			return this.admin.angles;
+		},
 		populate_angle_select: function () {
 			const $sel = this.$( '.pc-3d-angle-select' );
 			if ( !$sel.length ) return;
 			$sel.empty().append( '<option value="">— ' + ( ( typeof PC_lang !== 'undefined' && PC_lang.select_angle ) ? PC_lang.select_angle : 'Select angle' ) + ' —</option>' );
-			const angles = this.admin && this.admin.angles;
+			const angles = this.get_angles();
 			if ( angles && angles.length ) {
 				angles.each( function ( m ) {
 					const name = m.get( 'name' ) || ( 'View ' + ( m.get( '_id' ) || m.id || m.cid ) );
@@ -724,7 +743,7 @@ PC.views = window.PC.views || {};
 		on_angle_select_change: function () {
 			if ( !this._three || !this._three.camera || !this._three.controls ) return;
 			const angleId = this.$( '.pc-3d-angle-select' ).val();
-			const angles = this.admin && this.admin.angles;
+			const angles = this.get_angles();
 			if ( !angles || !angles.length ) return;
 			const angle = angleId ? angles.get( angleId ) : angles.first();
 			if ( !angle ) return;
@@ -746,7 +765,7 @@ PC.views = window.PC.views || {};
 			if ( !this._three || !this._three.controls || !this._three.camera ) return;
 			const angleId = this.$( '.pc-3d-angle-select' ).val();
 			if ( !angleId ) return;
-			const angles = this.admin && this.admin.angles;
+			const angles = this.get_angles();
 			if ( !angles ) return;
 			const angle = angles.get( angleId );
 			if ( !angle ) return;
@@ -773,7 +792,7 @@ PC.views = window.PC.views || {};
 				alert( ( typeof PC_lang !== 'undefined' && PC_lang.no_cameras_in_gltf ) ? PC_lang.no_cameras_in_gltf : 'No cameras found in the main GLTF file.' );
 				return;
 			}
-			const angles = this.admin && this.admin.angles;
+			const angles = this.get_angles();
 			if ( !angles ) return;
 			// Cameras are often nested under transformed nodes, and model_root itself
 			// can be offset, so read world-space values — that is the space the preview

@@ -739,7 +739,7 @@ export const settings_3d_preview_mixin = {
 				if ( !box.isEmpty() ) {
 					var size = box.getSize( new THREE.Vector3() ).length();
 					var center = box.getCenter( new THREE.Vector3() );
-					var angles = viewRef.admin && viewRef.admin.angles;
+					var angles = viewRef.get_angles();
 					var selectedId = viewRef.$( '.pc-3d-angle-select' ).val();
 					var angle = ( selectedId && angles ) ? angles.get( selectedId ) : null;
 					if ( !angle && angles && angles.length ) angle = angles.first();
