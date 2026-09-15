@@ -53,11 +53,20 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * Check configuration on add to cart
 		 */
 		public function validate_add_to_cart( $passed, $product_id, $quantity, $variation_id = 0, $variation = array(), $cart_item_data = array() ) {
+			$parent_id = $product_id;
 			if ( $variation_id ) {
 				$product_id = $variation_id;
 			}
 
 			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce add-to-cart nonce; JSON is decoded then sanitized via db->sanitize().
+
+			// A payload that is present but does not decode - cut short by post_max_size or a proxy, or
+			// tampered with - used to pass, and the item went into the cart with no configuration.
+			// The parent is checked too: wc_cart_add_item_data() reads the payload for it.
+			if ( $passed && '' !== $raw_configurator_data && ( mkl_pc_is_configurable( $parent_id ) || mkl_pc_is_configurable( $product_id ) ) && null === $this->decode_configurator_payload( $raw_configurator_data ) ) {
+				wc_add_notice( esc_html_x( 'The configuration data could not be read, the product could not be added to the cart.', 'Error message when configuration data is invalid on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
+				return false;
+			}
 
 			if ( $passed && mkl_pc_is_configurable( $product_id ) && ! $this->has_configuration_data( $raw_configurator_data, $cart_item_data ) && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
@@ -142,13 +151,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				return $quote_item_data;
 			}
 
-			$data = json_decode( $raw_configurator_data );
-			if ( ! $data ) {
-				$data = json_decode( stripcslashes( $raw_configurator_data ) );
-			}
-			if ( $data ) {
+			$data = $this->decode_configurator_payload( $raw_configurator_data );
+			if ( ! empty( $data ) ) {
 				$data = Plugin::instance()->db->sanitize( $data );
-				$configuration = new Configuration( 
+				$configuration = new Configuration(
 					null,
 					[
 						'product_id' => $product_id, 
@@ -170,12 +176,34 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return $quote_item_data;
 		}
 		
+		/**
+		 * Decode a configurator payload posted with add to cart or a quote request.
+		 *
+		 * @param mixed $raw_configurator_data Unslashed payload.
+		 * @return array|null The list of choices (possibly empty), or null when the payload is not a JSON array.
+		 */
+		public function decode_configurator_payload( $raw_configurator_data ) {
+			if ( ! is_string( $raw_configurator_data ) || '' === $raw_configurator_data ) {
+				return null;
+			}
+			$data = json_decode( $raw_configurator_data );
+			// A payload carrying one level of slashes too many only decodes once they are stripped.
+			if ( ! is_array( $data ) ) {
+				$data = json_decode( stripcslashes( $raw_configurator_data ) );
+			}
+			return is_array( $data ) ? $data : null;
+		}
+
 		// Filter data that's saved in the cart, and add the configurator data
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
 
 				$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce add-to-cart nonce; JSON is decoded then sanitized via db->sanitize().
-				if ( is_string( $raw_configurator_data ) && '' !== $raw_configurator_data ) { 
+				$data = $this->decode_configurator_payload( $raw_configurator_data );
+
+				// A payload that does not decode is refused in validate_add_to_cart(). Code adding to the
+				// cart without validation must not lose the item being edited over it either.
+				if ( null !== $data ) {
 
 					/**
 					 * Editing the cart: Delete and replace the item from the cart
@@ -188,32 +216,26 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						}
 					}
 
-
-					$data = json_decode( $raw_configurator_data );
-					if ( ! $data ) {
-						$data = json_decode( stripcslashes( $raw_configurator_data ) );
-					}
-					if ( $data ) {
+					if ( ! empty( $data ) ) {
 						$data = Plugin::instance()->db->sanitize( $data );
+					}
+					if ( ! empty( $data ) && is_array( $data ) ) {
 						$item_weight = 0;
-						$layers = array();
-						if ( is_array( $data ) ) { 
-							$configuration = new Configuration( null, [
-								'content' => $data, 
-								'product_id' => $product_id, 
-								'variation_id'=> $variation_id 
-							] );
-							$layers = $configuration->get_layers();
+						$configuration = new Configuration( null, [
+							'content' => $data,
+							'product_id' => $product_id,
+							'variation_id'=> $variation_id
+						] );
+						$layers = $configuration->get_layers();
 
-							foreach( $configuration->get_layers() as $layer ) {
-								if ( $weight = $layer->get_choice( 'weight' ) ) {
-									$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
-								}
+						foreach( $layers as $layer ) {
+							if ( $weight = $layer->get_choice( 'weight' ) ) {
+								$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
 							}
 						}
 
 						if ( $item_weight ) {
-							$cart_item_data['configuration_weight'] = $item_weight; 
+							$cart_item_data['configuration_weight'] = $item_weight;
 						}
 						$cart_item_data['configurator_data'] = $layers;
 						$cart_item_data['configurator_data_raw'] = $configuration->content;
