@@ -536,6 +536,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 				);
 
+				$pc_lang['global_layer_edit_conflict_confirm'] = __( 'This global layer was saved from somewhere else since you opened it: another window, another user, or another product using it.', 'product-configurator-for-woocommerce' ) . "\n\n" . __( 'Save anyway and overwrite those changes? Cancel keeps them; leave the layer without saving to load the latest version.', 'product-configurator-for-woocommerce' );
 				$pc_lang['edit_conflict_confirm'] = __( 'This configuration was saved from somewhere else since you opened it: another window, another user, or another product using the same global configurator.', 'product-configurator-for-woocommerce' ) . "\n\n" . __( 'Save anyway and overwrite those changes? Cancel keeps them; reload the editor to see the latest version.', 'product-configurator-for-woocommerce' );
 				if ( current_user_can( 'edit_post', $this->ID ) ) {
 					$pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );

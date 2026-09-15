@@ -162,6 +162,7 @@ var PC = PC || {};
 						layer: response.layer,
 						content: processed_content || null
 					} );
+					model.set( 'edit_token', response.edit_token || '', { silent: true } );
 					if ( options.success ) options.success( model, response );
 				}
 			}.bind( this ) ).fail( function( error ) {
@@ -178,9 +179,9 @@ var PC = PC || {};
 		 */
 		save_global_layer: function( global_id, layer_data, content_data, options ) {
 			options = options || {};
+			var collection = this;
 			var model = this.get_or_create( global_id );
-			
-			return wp.ajax.post( {
+			var request_data = {
 				action: 'mkl_pc_save_global_layer',
 				global_id: global_id,
 				layer: layer_data ? JSON.stringify( layer_data ) : null,
@@ -188,7 +189,19 @@ var PC = PC || {};
 				angles: this.get_angles_snapshot(),
 				configurator_type: this.get_type_snapshot(),
 				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
-			} ).done( function( response ) {
+			};
+			var send = function( token_data ) {
+				return wp.ajax.post( _.extend( {}, request_data, token_data ) );
+			};
+			// Updating a layer goes through the revision check; a new one has nothing to conflict with.
+			var request = ( global_id && PC.app && PC.app.send_with_revision_check )
+				? PC.app.send_with_revision_check( this.get_edit_token_state( model ), send )
+				: send( {} );
+
+			return request.done( function( response ) {
+				if ( response && response.global_id && response.edit_token ) {
+					collection.get_or_create( response.global_id ).set( 'edit_token', response.edit_token, { silent: true } );
+				}
 				// Update local model with saved data
 				if ( layer_data ) {
 					model.set( 'layer', layer_data );
@@ -202,6 +215,47 @@ var PC = PC || {};
 			}.bind( this ) ).fail( function( error ) {
 				if ( options.error ) options.error( model, error );
 			}.bind( this ) );
+		},
+
+		/**
+		 * Token state for one global layer post. See PC.app.send_with_revision_check().
+		 *
+		 * The baseline is the token from the last fetch or save of the layer. Before either, it is the
+		 * one that came with the editor data: for a product, the tokens of the global layers it shows;
+		 * in the standalone editor, the layer post's own token.
+		 *
+		 * @param {Backbone.Model} model Global layer entry.
+		 * @return {Object}
+		 */
+		get_edit_token_state: function( model ) {
+			var collection = this;
+			return {
+				confirm_message: ( window.PC_lang && PC_lang.global_layer_edit_conflict_confirm ) || '',
+				get_expected: function() {
+					var token = model.get( 'edit_token' );
+					if ( 'string' === typeof token ) {
+						return token;
+					}
+					var admin_data = PC.app && PC.app.admin_data;
+					if ( ! admin_data ) {
+						return '';
+					}
+					if ( collection.is_standalone() ) {
+						return admin_data.get( 'edit_token' ) || '';
+					}
+					var tokens = admin_data.get( 'global_layer_edit_tokens' ) || {};
+					return tokens[ model.id ] || '';
+				},
+				get_attempted: function() {
+					return model.get( 'attempted_edit_token' ) || '';
+				},
+				set_attempted: function( token ) {
+					model.set( 'attempted_edit_token', token, { silent: true } );
+				},
+				set_confirmed: function( token ) {
+					model.set( 'edit_token', token, { silent: true } );
+				},
+			};
 		},
 
 		/**

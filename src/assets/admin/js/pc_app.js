@@ -1274,60 +1274,97 @@ PC.toJSON = function( item ) {
 		/**
 		 * Send one pc_set_data request with the configurator's revision check.
 		 *
-		 * Every save carries a new token and the one this editor last knew. The server refuses it
-		 * (409, mkl_pc_edit_conflict) when someone saved since - another user, another tab, or another
-		 * product using the same global configurator. The user may overwrite, which resends it with
-		 * force_save; otherwise the request fails like any other.
-		 *
 		 * @param {Object} ajax_options wp.ajax.send options. success / error are honoured.
 		 * @return {jQuery.Promise}
 		 */
 		send_save_request: function( ajax_options ) {
-			var app = this;
 			var success_callback = ajax_options.success;
 			var error_callback = ajax_options.error;
 			var request_context = ajax_options.context || this;
-			var result = $.Deferred();
+			var result = this.send_with_revision_check( this.get_product_edit_token_state(), function( token_data ) {
+				var request_options = _.extend( {}, ajax_options, {
+					data: _.extend( {}, ajax_options.data, token_data ),
+				} );
+				delete request_options.success;
+				delete request_options.error;
+				return wp.ajax.send( request_options );
+			} );
 			if ( success_callback ) {
 				result.done( function() { success_callback.apply( request_context, arguments ); } );
 			}
 			if ( error_callback ) {
 				result.fail( function() { error_callback.apply( request_context, arguments ); } );
 			}
-
+			return result;
+		},
+		/**
+		 * Run a save with the revision check.
+		 *
+		 * Every save carries a new token and the one the editor last knew for that post. The server
+		 * refuses it (409, mkl_pc_edit_conflict) when someone saved since - another user, another tab,
+		 * or another product using the same global configurator or layer. The user may overwrite,
+		 * which runs the save again with force_save; otherwise it fails like any other request.
+		 *
+		 * @param {Object}   token_state get_expected(), get_attempted(), set_attempted( token ),
+		 *                               set_confirmed( token ), and optionally confirm_message.
+		 * @param {Function} send        Receives the token fields to add to the request; returns a jQuery promise.
+		 * @return {jQuery.Promise} Settles like the last request sent.
+		 */
+		send_with_revision_check: function( token_state, send ) {
+			var app = this;
+			var result = $.Deferred();
 			var attempt = function( force_save ) {
 				var edit_token = app.generate_edit_token();
-				var request_options = _.extend( {}, ajax_options, {
-					data: _.extend( {}, ajax_options.data, {
-						edit_token: edit_token,
-						expected_edit_token: ( app.admin_data && app.admin_data.get( 'edit_token' ) ) || '',
-						attempted_edit_token: app.attempted_edit_token || '',
-					} ),
-				} );
+				var token_data = {
+					edit_token: edit_token,
+					expected_edit_token: token_state.get_expected() || '',
+					attempted_edit_token: token_state.get_attempted() || '',
+				};
 				if ( force_save ) {
-					request_options.data.force_save = 1;
+					token_data.force_save = 1;
 				}
-				delete request_options.success;
-				delete request_options.error;
 				// Kept until a response arrives: a save that lands but whose response is lost (a timeout)
 				// must not read as a conflict when it is retried.
-				app.attempted_edit_token = edit_token;
-				wp.ajax.send( request_options ).done( function() {
-					if ( app.admin_data ) {
-						app.admin_data.set( 'edit_token', edit_token, { silent: true } );
-					}
-					app.attempted_edit_token = '';
-					result.resolveWith( request_context, arguments );
+				token_state.set_attempted( edit_token );
+				send( token_data ).done( function() {
+					token_state.set_attempted( '' );
+					token_state.set_confirmed( edit_token );
+					result.resolveWith( this, arguments );
 				} ).fail( function( jq_xhr ) {
-					if ( ! force_save && app.is_edit_conflict( jq_xhr ) && window.confirm( ( window.PC_lang && PC_lang.edit_conflict_confirm ) || 'This configuration was saved from somewhere else since you opened it. Save anyway and overwrite those changes?' ) ) {
+					var message = token_state.confirm_message || ( window.PC_lang && PC_lang.edit_conflict_confirm ) || 'This configuration was saved from somewhere else since you opened it. Save anyway and overwrite those changes?';
+					if ( ! force_save && app.is_edit_conflict( jq_xhr ) && window.confirm( message ) ) {
 						attempt( true );
 						return;
 					}
-					result.rejectWith( request_context, arguments );
+					result.rejectWith( this, arguments );
 				} );
 			};
 			attempt( false );
 			return result.promise();
+		},
+		/**
+		 * Token state for the configurator being edited (a product or a global configurator).
+		 *
+		 * @return {Object} See send_with_revision_check().
+		 */
+		get_product_edit_token_state: function() {
+			var app = this;
+			return {
+				get_expected: function() {
+					return ( app.admin_data && app.admin_data.get( 'edit_token' ) ) || '';
+				},
+				get_attempted: function() {
+					return app.attempted_edit_token || '';
+				},
+				set_attempted: function( token ) {
+					app.attempted_edit_token = token;
+				},
+				set_confirmed: function( token ) {
+					if ( app.admin_data ) {
+						app.admin_data.set( 'edit_token', token, { silent: true } );
+					}
+				},
+			};
 		},
 		/**
 		 * Whether a failed save was refused by the revision check.

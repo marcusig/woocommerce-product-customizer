@@ -160,6 +160,16 @@ class Ajax {
 					if ( is_array( $data ) ) {
 						$data['edit_token'] = (string) get_post_meta( $this->get_edit_token_owner_id( $id ), self::EDIT_TOKEN_META, true );
 					}
+					// Saving a global layer goes to the layer post, which has a token of its own. See save_global_layer().
+					if ( is_array( $data ) && ! empty( $data['layers'] ) && is_array( $data['layers'] ) ) {
+						$global_layer_edit_tokens = array();
+						foreach ( $data['layers'] as $layer ) {
+							if ( is_array( $layer ) && ! empty( $layer['global_id'] ) ) {
+								$global_layer_edit_tokens[ (int) $layer['global_id'] ] = (string) get_post_meta( (int) $layer['global_id'], self::EDIT_TOKEN_META, true );
+							}
+						}
+						$data['global_layer_edit_tokens'] = (object) $global_layer_edit_tokens;
+					}
 				}
 				break;
 			case 'menu' :
@@ -389,20 +399,9 @@ class Ajax {
 			wp_send_json_error( [ 'message' => __( 'You are not allowed to edit the linked global configurator.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
 
-		// Revision check. The editor sends the token of the last save it knows about. Anyone saving since -
-		// another user, another tab, or another product using the same global configurator - replaced it,
-		// and this save would silently overwrite their work. Requests without a token (other callers) are
-		// not refused, but still replace the token below, so open editors notice them.
+		// Revision check: do not overwrite a save made elsewhere since this editor loaded its data.
 		$edit_token_owner_id = $this->get_edit_token_owner_id( $ref_id );
-		$new_edit_token      = $this->read_edit_token_param( 'edit_token' );
-		if ( '' !== $new_edit_token && empty( $_REQUEST['force_save'] ) ) {
-			$stored_edit_token = (string) get_post_meta( $edit_token_owner_id, self::EDIT_TOKEN_META, true );
-			// The attempted token covers a save that landed but whose response never arrived.
-			$known_edit_tokens = array_filter( array( $this->read_edit_token_param( 'expected_edit_token' ), $this->read_edit_token_param( 'attempted_edit_token' ) ) );
-			if ( '' !== $stored_edit_token && ! in_array( $stored_edit_token, $known_edit_tokens, true ) ) {
-				wp_send_json_error( [ 'code' => 'mkl_pc_edit_conflict', 'message' => __( 'This configuration was saved from somewhere else since you opened it, so nothing was saved.', 'product-configurator-for-woocommerce' ) ], 409 );
-			}
-		}
+		$this->refuse_save_on_edit_conflict( $edit_token_owner_id, __( 'This configuration was saved from somewhere else since you opened it, so nothing was saved.', 'product-configurator-for-woocommerce' ) );
 
 		if ( !isset( $_REQUEST['data'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Expecting a data type', 'product-configurator-for-woocommerce' ) ], 400 );
@@ -465,7 +464,7 @@ class Ajax {
 			wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The data could not be stored, so nothing was changed. Please try again.', 'product-configurator-for-woocommerce' ) ], 500 );
 		}
 
-		update_post_meta( $edit_token_owner_id, self::EDIT_TOKEN_META, '' !== $new_edit_token ? $new_edit_token : wp_generate_uuid4() );
+		$this->store_edit_token( $edit_token_owner_id );
 
 		/**
 		 * Action mkl_pc_saved_configurator_data, triggered when an item is saved
@@ -512,10 +511,50 @@ class Ajax {
 	 * @return string Letters, digits and dashes only; empty when absent.
 	 */
 	private function read_edit_token_param( $key ) {
-		if ( ! isset( $_REQUEST[ $key ] ) || ! is_string( $_REQUEST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only called after the nonce check in set_configurator_data().
+		if ( ! isset( $_REQUEST[ $key ] ) || ! is_string( $_REQUEST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only called after a nonce check.
 			return '';
 		}
 		return substr( preg_replace( '/[^A-Za-z0-9\-]/', '', wp_unslash( $_REQUEST[ $key ] ) ), 0, 64 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reduced to a token charset here.
+	}
+
+	/**
+	 * Refuse a save that would overwrite one made elsewhere since the editor loaded its data.
+	 *
+	 * The editor sends the token of the last save it knows about, and of its last unconfirmed attempt
+	 * (a save that landed but whose response was lost). Anyone saving since - another user, another
+	 * tab, another product using the same global configurator or layer - replaced it. Requests
+	 * without a token (other callers) are not refused, and force_save skips the check once the user
+	 * chose to overwrite.
+	 *
+	 * @param int    $owner_id Post holding the token.
+	 * @param string $message  Error shown when the save is refused.
+	 * @return void Sends a 409 and exits on a conflict.
+	 */
+	private function refuse_save_on_edit_conflict( $owner_id, $message ) {
+		if ( '' === $this->read_edit_token_param( 'edit_token' ) || ! empty( $_REQUEST['force_save'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only called after a nonce check.
+			return;
+		}
+		$stored_edit_token = (string) get_post_meta( $owner_id, self::EDIT_TOKEN_META, true );
+		$known_edit_tokens = array_filter( array( $this->read_edit_token_param( 'expected_edit_token' ), $this->read_edit_token_param( 'attempted_edit_token' ) ) );
+		if ( '' !== $stored_edit_token && ! in_array( $stored_edit_token, $known_edit_tokens, true ) ) {
+			wp_send_json_error( [ 'code' => 'mkl_pc_edit_conflict', 'message' => $message ], 409 );
+		}
+	}
+
+	/**
+	 * Record a successful save: the editor's token, or a new one for callers that send none, so that
+	 * open editors notice the change.
+	 *
+	 * @param int $owner_id Post holding the token.
+	 * @return string The stored token.
+	 */
+	private function store_edit_token( $owner_id ) {
+		$token = $this->read_edit_token_param( 'edit_token' );
+		if ( '' === $token ) {
+			$token = wp_generate_uuid4();
+		}
+		update_post_meta( $owner_id, self::EDIT_TOKEN_META, $token );
+		return $token;
 	}
 
 	/**
@@ -967,6 +1006,7 @@ class Ajax {
 		// Sanitize/escape the data
 		$data['layer'] = $this->db->escape( $data['layer'] );
 		$data['content'] = $this->db->escape( $data['content'] );
+		$data['edit_token'] = (string) get_post_meta( $global_id, self::EDIT_TOKEN_META, true );
 
 		wp_send_json_success( $data );
 	}
@@ -997,6 +1037,7 @@ class Ajax {
 			if ( ! current_user_can( 'edit_post', $global_id ) ) {
 				wp_send_json_error( 'Insufficient permissions', 403 );
 			}
+			$this->refuse_save_on_edit_conflict( $global_id, __( 'This global layer was saved from somewhere else since you opened it, so nothing was saved.', 'product-configurator-for-woocommerce' ) );
 		} else {
 			// New global layers are published straight away.
 			$post_type_object = get_post_type_object( \MKL\PC\Global_Layer\Schema::CPT_SLUG );
@@ -1082,6 +1123,8 @@ class Ajax {
 			wp_send_json_error( $result->get_error_message() );
 		}
 
+		$edit_token = $this->store_edit_token( (int) $result );
+
 		/**
 		 * Action mkl_pc_saved_global_layer, triggered when a global layer is saved
 		 *
@@ -1097,6 +1140,7 @@ class Ajax {
 			'global_id' => $result,
 			'layer' => $layer,
 			'content' => $content,
+			'edit_token' => $edit_token,
 		) );
 	}
 
