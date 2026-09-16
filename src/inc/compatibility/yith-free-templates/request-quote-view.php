@@ -59,7 +59,10 @@ if ( count( $raq_content ) === 0 ) :
 
 					<td class="product-thumbnail">
 						<?php
-						$thumbnail = $_product->get_image();
+						// Same filter YITH's own templates apply, so the configured image - a merged preview,
+						// or the 3D viewer's screenshot - replaces the product thumbnail here too. Without it
+						// this override silently dropped Compat_Yith_Raq::item_image().
+						$thumbnail = apply_filters( 'ywraq_product_image', $_product->get_image(), $raq, $_product );
 
 						if ( ! $_product->is_visible() ) {
 							echo $thumbnail; //phpcs:ignore
