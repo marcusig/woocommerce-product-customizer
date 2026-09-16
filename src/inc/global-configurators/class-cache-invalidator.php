@@ -53,11 +53,24 @@ final class Cache_Invalidator {
 
 		self::invalidate_caches_for_post( $owner_id );
 
-		if ( Schema::is_global_configurator_id( $owner_id ) ) {
-			Owner_Resolver::invalidate_consumers_cache( $owner_id );
-			foreach ( Owner_Resolver::get_consumer_product_ids( $owner_id ) as $consumer_id ) {
-				self::invalidate_caches_for_post( $consumer_id );
+		// A product in global mode stores its configuration on the configurator it uses, so a save
+		// there leaves every other product using that configurator serving stale data. The saved
+		// actions carry the product id rather than the owner's, so resolve it here: fanning out only
+		// when the id is itself a global configurator missed every product-side save.
+		$global_id = Schema::is_global_configurator_id( $owner_id ) ? $owner_id : (int) Owner_Resolver::get_global_id( $owner_id );
+		if ( $global_id <= 0 ) {
+			return;
+		}
+		if ( $global_id !== $owner_id ) {
+			self::invalidate_caches_for_post( $global_id );
+		}
+
+		Owner_Resolver::invalidate_consumers_cache( $global_id );
+		foreach ( Owner_Resolver::get_consumer_product_ids( $global_id ) as $consumer_id ) {
+			if ( (int) $consumer_id === $owner_id ) {
+				continue;
 			}
+			self::invalidate_caches_for_post( (int) $consumer_id );
 		}
 	}
 
@@ -99,7 +112,10 @@ final class Cache_Invalidator {
 	 * @return void
 	 */
 	public static function on_saved_configurator_data( $id, $ref_id, $component, $data, $modified_choices ) {
-		self::invalidate_owner_and_consumers( (int) $id );
+		// DB::set() fires mkl_pc_saved_product_configuration for $id before this runs, so $id and the
+		// configurator it uses have just been invalidated. Doing it again here repeated every delete
+		// and every consumer fan-out on each save request. Only the referring product is left, which
+		// is the parent when a variation's content was saved.
 		if ( (int) $ref_id !== (int) $id ) {
 			self::invalidate_owner_and_consumers( (int) $ref_id );
 		}
