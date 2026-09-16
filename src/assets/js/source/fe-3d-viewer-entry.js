@@ -90,6 +90,45 @@ const Viewer3DWrapper = Backbone.View.extend( {
 		return this.$el;
 	},
 
+	/**
+	 * Capture contract (see PC.fe.capture_viewer_image): this wrapper only holds the place of the
+	 * real viewer while the Three.js chunk loads, so it has to forward the capture calls. Without
+	 * this a 3D product produces no picture at all - no cart image, no Save your design preview,
+	 * no PDF - because the capture helper only ever sees the wrapper.
+	 *
+	 * The helper tries capture() before captureScreenshot(), so this one cannot simply return null
+	 * when the real viewer implements the legacy form: that would hide it.
+	 *
+	 * @param {Object} [options] { width, height, maxDimension }.
+	 * @return {Promise<Blob|null>|Blob|null}
+	 */
+	capture( options ) {
+		const real = this._realView;
+		if ( ! real ) return null;
+		if ( typeof real.capture === 'function' ) {
+			return real.capture( options );
+		}
+		if ( typeof real.captureScreenshot === 'function' ) {
+			const data_url = real.captureScreenshot( options );
+			if ( ! data_url ) return null;
+			return fetch( data_url ).then( ( res ) => res.blob() );
+		}
+		return null;
+	},
+
+	/**
+	 * Legacy synchronous form, for callers that ask the viewer for a data URL directly.
+	 *
+	 * @param {Object} [options] { width, height, maxDimension }.
+	 * @return {string|null}
+	 */
+	captureScreenshot( options ) {
+		const real = this._realView;
+		return ( real && typeof real.captureScreenshot === 'function' )
+			? real.captureScreenshot( options )
+			: null;
+	},
+
 	remove() {
 		if ( this._realView ) {
 			// Shared el with the wrapper: clean up Three.js without removing the DOM node twice.
