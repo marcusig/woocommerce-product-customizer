@@ -337,6 +337,22 @@ PC.fe.views.form = Backbone.View.extend({
 			return;
 		}
 
+		// Quote plugins post the product form themselves, so the picture of the configuration has
+		// to travel as a form field - there is no request body of ours to append it to.
+		if ( PC.fe.config.show_image_in_cart && PC.fe.currentProductData && PC.fe.currentProductData.product_info && PC.fe.currentProductData.product_info.configurator_type === '3d' ) {
+			var size = PC.fe.config.cart_screenshot_size || { width: 800, height: 800 };
+			var blob = await PC.fe.capture_viewer_image( { view: 'current', width: size.width, height: size.height } );
+			if ( blob ) {
+				var dataUrl = await new Promise( function( resolve ) {
+					var reader = new FileReader();
+					reader.onloadend = function() { resolve( reader.result ); };
+					reader.onerror = function() { resolve( null ); };
+					reader.readAsDataURL( blob );
+				} );
+				if ( dataUrl ) this.set_quote_screenshot_field( dataUrl );
+			}
+		}
+
 		// Woocommerce Add To Quote plugin
 		if ( $( '.afrfqbt_single_page' ).length ) {
 			$( '.afrfqbt_single_page' ).trigger( 'click' );
@@ -350,6 +366,22 @@ PC.fe.views.form = Backbone.View.extend({
 				if ( 'button' === PC.fe.trigger_el[0].type ) $( PC.fe.trigger_el[0] ).remove();
 			}
 		}
+	},
+	/**
+	 * Carry the viewer's picture in the product form, for quote plugins that serialize it.
+	 *
+	 * The field is only added once there is something to send, so a form without a
+	 * configuration never posts an empty one.
+	 *
+	 * @param {string} data_url PNG data URL.
+	 */
+	set_quote_screenshot_field: function( data_url ) {
+		if ( ! this.$cart || ! this.$cart.length ) return;
+		var $field = this.$cart.find( 'input[name=pc_3d_screenshot]' );
+		if ( ! $field.length ) {
+			$field = $( '<input type="hidden" name="pc_3d_screenshot">' ).appendTo( this.$cart );
+		}
+		$field.val( data_url );
 	},
 	/**
 	 * Kept for third-party code that calls it directly. The input itself is

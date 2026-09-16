@@ -15,6 +15,19 @@ class Compat_Yith_Raq {
 		add_filter( 'woocommerce_locate_template', [ $this, 'locate_yith_template' ], 20, 4 );
 		add_action( 'yith_raq_updated', [ $this, 'yith_raq_updated' ] );
 		add_filter( 'ywraq_ajax_add_item_is_valid', [ $this, 'validate_add_to_quote' ], 20, 2 );
+		// Promote on the request email, the one step every mode reaches: YITH Premium fires
+		// ywraq_process only when it also creates an order, so an email-only shop never gets there.
+		// Free sends through send_raq_mail, Premium through send_raq_customer_mail. Priority 1 puts
+		// this before WC_Emails composes the message, so the attachment and the image URL carry the
+		// promoted path, and while the list still exists - it is cleared once the mail is away.
+		add_action( 'send_raq_mail', [ $this, 'promote_quote_screenshots' ], 1, 1 );
+		add_action( 'send_raq_customer_mail', [ $this, 'promote_quote_screenshots' ], 1, 1 );
+		// Order mode: after Premium's create_order() on the same hook (priority 10). Anything it turned
+		// into an order has already had its picture moved to orders/, so this is a no-op for those.
+		add_action( 'ywraq_process', [ $this, 'promote_quote_screenshots' ], 20, 1 );
+		add_filter( 'woocommerce_email_attachments', [ $this, 'attach_quote_images' ], 20, 4 );
+		// Registered from here, so the settings appear only on a shop that actually has YITH.
+		add_action( 'mkl_pc/register_settings', [ $this, 'register_settings' ], 20, 1 );
 		add_filter( 'ywraq_request_quote_view_item_data', [ $this, 'view_item_data' ], 20, 3 );
 		add_filter( 'ywraq_item_data', [ $this, 'item_data' ], 20, 3 );
 		add_filter( 'ywraq_product_image', [ $this, 'item_image' ], 20, 2 );
@@ -133,6 +146,17 @@ class Compat_Yith_Raq {
 				// Stored normalized, so every later reader (reopening the configurator, the order
 				// copy) decodes plain JSON rather than whatever encoding the browser posted.
 				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = wp_json_encode( $data );
+
+				// A 3D configuration has no layer images to merge, so the quote shows the picture the
+				// viewer took, as the cart does. Stored under the key the order code reads, so accepting
+				// the quote carries it over. Not sanitize_text_field()ed: that strips the percent-encoded
+				// octets Premium posts; save_3d_screenshot_to_temp() validates the data URL itself.
+				if ( mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- YITH verifies its own add-to-quote nonce before this action.
+					$screenshot_path = mkl_pc( 'frontend' )->cart->save_3d_screenshot_to_temp( wp_unslash( $_POST['pc_3d_screenshot'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as a PNG data URL there.
+					if ( $screenshot_path ) {
+						$rq->raq_content[ $item_id ][ 'configurator_3d_screenshot_path' ] = $screenshot_path;
+					}
+				}
 				$layers = array();
 				$product_id = $raq['product_id'];
 				$variation_id = isset( $raq['variation_id'] ) ? $raq['variation_id'] : 0;
@@ -242,8 +266,154 @@ class Compat_Yith_Raq {
 	 * @param array $raq
 	 * @return string
 	 */
+	/**
+	 * Settings that only mean anything with a quote plugin installed.
+	 *
+	 * @param \MKL\PC\Admin_Settings $settings_page Page registering the fields.
+	 * @return void
+	 */
+	public function register_settings( $settings_page ) {
+		if ( ! $settings_page || ! is_callable( array( $settings_page, 'callback_select' ) ) ) {
+			return;
+		}
+
+		add_settings_field(
+			'quote_image_retention',
+			__( 'Keep 3D quote images for', 'product-configurator-for-woocommerce' ),
+			array( $settings_page, 'callback_select' ),
+			'mlk_pc_settings',
+			'general_settings',
+			array(
+				'options' => array(
+					'7'     => __( '7 days', 'product-configurator-for-woocommerce' ),
+					'30'    => __( '30 days', 'product-configurator-for-woocommerce' ),
+					'90'    => __( '90 days', 'product-configurator-for-woocommerce' ),
+					'365'   => __( 'One year', 'product-configurator-for-woocommerce' ),
+					'never' => __( 'Forever', 'product-configurator-for-woocommerce' ),
+				),
+				'default' => '30',
+				'setting_name' => 'quote_image_retention',
+				'description' => __( 'A quote sent by email keeps the 3D configuration image for this long. Images for carts and quotes still being put together follow the WooCommerce session lifetime instead.', 'product-configurator-for-woocommerce' ),
+			)
+		);
+
+		add_settings_field(
+			'attach_config_image_to_quote_email',
+			__( 'Attach the configuration image to quote request emails', 'product-configurator-for-woocommerce' ),
+			array( $settings_page, 'callback_checkbox' ),
+			'mlk_pc_settings',
+			'general_settings',
+			array(
+				'setting_name' => 'attach_config_image_to_quote_email',
+				'description' => __( 'The image travels with the email, so it stays readable however long the request takes to answer. 3D configurators only: a 2D configuration has no image file to attach.', 'product-configurator-for-woocommerce' ),
+			)
+		);
+	}
+
+	/**
+	 * Keep the picture of a sent quote alive past the session that made it.
+	 *
+	 * Hooked to the request email (and to ywraq_process for order mode), so it runs whichever way the
+	 * shop is set up, while the list is still there. Safe to run more than once: a picture already
+	 * moved - to orders/ by Frontend_Order::save_data(), or to quotes/ by an earlier call - has no
+	 * cart-temp source left, and move_3d_screenshot_to_quotes() returns false for it.
+	 *
+	 * @param array $args Quote request arguments, including raq_content.
+	 * @return void
+	 */
+	public function promote_quote_screenshots( $args ) {
+		unset( $args );
+		$rq = YITH_Request_Quote();
+		if ( ! $rq || empty( $rq->raq_content ) || ! is_array( $rq->raq_content ) ) {
+			return;
+		}
+
+		$raq_content = $rq->raq_content;
+		$moved       = false;
+		foreach ( $raq_content as $item_key => $item ) {
+			if ( ! is_array( $item ) || empty( $item['configurator_3d_screenshot_path'] ) ) {
+				continue;
+			}
+			$new_path = mkl_pc( 'frontend' )->cart->move_3d_screenshot_to_quotes( $item['configurator_3d_screenshot_path'], $item_key );
+			if ( $new_path ) {
+				$raq_content[ $item_key ]['configurator_3d_screenshot_path'] = $new_path;
+				$moved = true;
+			}
+		}
+
+		if ( $moved ) {
+			// The email re-reads the live list, so both the object and the session have to know.
+			$rq->raq_content = $raq_content;
+			$rq->set_session( $raq_content );
+		}
+	}
+
+	/**
+	 * Attach the configuration pictures to the request email, when the shop asks for it.
+	 *
+	 * The list is cleared once the mail is sent, so an attachment is what the merchant keeps -
+	 * it survives whatever the quote retention setting later sweeps.
+	 *
+	 * @param array    $attachments Absolute file paths.
+	 * @param string   $email_id    Email being sent.
+	 * @param mixed    $object      Email object (unused: YITH keeps the quote on the email itself).
+	 * @param WC_Email $email       Email instance.
+	 * @return array
+	 */
+	public function attach_quote_images( $attachments, $email_id, $object = null, $email = null ) {
+		unset( $object );
+		if ( ! in_array( $email_id, array( 'ywraq_email', 'ywraq_email_customer' ), true ) ) {
+			return $attachments;
+		}
+		if ( ! mkl_pc( 'settings' )->get( 'attach_config_image_to_quote_email' ) ) {
+			return $attachments;
+		}
+		// The email holds a snapshot of the list taken before this request's hooks ran, so its paths
+		// can already be stale: promote_quote_screenshots() moves the file into quotes/ moments
+		// earlier, and YITH Premium's trigger() keeps that snapshot instead of re-reading the list.
+		// Prefer the live list, which has the promoted paths; fall back to the snapshot.
+		$items = array();
+		if ( function_exists( 'YITH_Request_Quote' ) ) {
+			$rq = YITH_Request_Quote();
+			if ( $rq && ! empty( $rq->raq_content ) && is_array( $rq->raq_content ) ) {
+				$items = $rq->raq_content;
+			}
+		}
+		if ( empty( $items ) && $email && ! empty( $email->raq['raq_content'] ) && is_array( $email->raq['raq_content'] ) ) {
+			$items = $email->raq['raq_content'];
+		}
+		if ( empty( $items ) ) {
+			return $attachments;
+		}
+
+		$base_dir = wp_upload_dir()['basedir'] . '/mkl-pc-config-images';
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) || empty( $item['configurator_3d_screenshot_path'] ) ) {
+				continue;
+			}
+			$relative = trim( (string) $item['configurator_3d_screenshot_path'], '/' );
+			if ( false !== strpos( $relative, '..' ) ) {
+				continue;
+			}
+			$path = $base_dir . '/' . $relative;
+			if ( is_file( $path ) && ! in_array( $path, $attachments, true ) ) {
+				$attachments[] = $path;
+			}
+		}
+
+		return $attachments;
+	}
+
 	public function item_image( $item_image, $raq ) {
 		if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $item_image;
+
+		// Prefer the viewer's picture: a 3D configuration has no layer images to merge below.
+		if ( ! empty( $raq['configurator_3d_screenshot_path'] ) && is_string( $raq['configurator_3d_screenshot_path'] ) ) {
+			$screenshot_url = mkl_pc( 'frontend' )->cart->get_3d_screenshot_url( $raq['configurator_3d_screenshot_path'] );
+			if ( $screenshot_url ) {
+				return '<img src="' . esc_url( $screenshot_url ) . '" alt="" class="attachment-woocommerce_thumbnail" />';
+			}
+		}
 		if ( isset( $raq['pc_layers'] ) ) {
 			$configurator_data = $raq['pc_layers'];
 			$choices = array(); 

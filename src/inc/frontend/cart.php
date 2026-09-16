@@ -264,7 +264,16 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @param string $data_url Data URL (e.g. data:image/png;base64,...)
 		 * @return string|false Relative path (e.g. cart-temp/3d-xxx.png) under mkl-pc-config-images, or false on failure
 		 */
-		private function save_3d_screenshot_to_temp( $data_url ) {
+		public function save_3d_screenshot_to_temp( $data_url ) {
+			if ( ! is_string( $data_url ) ) {
+				return false;
+			}
+			// YITH Request a Quote Premium posts every field through encodeURIComponent().
+			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
+				$data_url = urldecode( $data_url );
+			}
+			// The prefix and the base64 decode below are what make this safe to write: never
+			// sanitize_text_field() this value first, it strips percent-encoded octets.
 			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
 				return false;
 			}
@@ -293,21 +302,61 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		/**
-		 * Cron callback: delete 3D screenshots in cart-temp older than 48 hours.
+		 * Cron callback: delete 3D screenshots nothing can reach any more.
 		 * Called by scheduled event mkl_pc_cleanup_3d_cart_screenshots.
+		 *
+		 * Two folders, two lifetimes. cart-temp holds the picture for a cart or a quote list that is
+		 * still being put together, so it follows WooCommerce's own session lifetime. quotes/ holds the
+		 * picture for a request that was sent by email, which a merchant may act on weeks later.
+		 *
+		 * A persistent cart (logged in) never expires, so its picture can still be swept from under it.
+		 * That degrades to a missing thumbnail: the configuration itself is untouched.
 		 */
 		public function cleanup_old_3d_screenshots() {
-			$wp_upload_dir = wp_upload_dir();
-			$temp_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images/cart-temp';
-			if ( ! is_dir( $temp_dir ) ) {
+			$base_dir = wp_upload_dir()['basedir'] . '/mkl-pc-config-images';
+			$this->delete_screenshots_older_than( $base_dir . '/cart-temp', $this->get_cart_screenshot_max_age() );
+			$this->delete_screenshots_older_than( $base_dir . '/quotes', $this->get_quote_screenshot_max_age() );
+		}
+
+		/**
+		 * How long a cart screenshot is kept: as long as the cart it belongs to can come back.
+		 *
+		 * WooCommerce keeps a session for 2 days (guests) or 7 (logged in), and a site can filter that,
+		 * so follow whatever it is rather than a number of our own, plus a day of grace.
+		 *
+		 * @return int Seconds.
+		 */
+		public function get_cart_screenshot_max_age() {
+			$session_lifetime = (int) apply_filters( 'wc_session_expiration', WEEK_IN_SECONDS );
+			$default_max_age  = max( 2 * DAY_IN_SECONDS, $session_lifetime ) + DAY_IN_SECONDS;
+			return (int) apply_filters( 'mkl_pc_3d_screenshot_temp_max_age', $default_max_age );
+		}
+
+		/**
+		 * How long the picture of a quote that was sent by email is kept.
+		 *
+		 * @return int Seconds, or 0 to keep it for good.
+		 */
+		public function get_quote_screenshot_max_age() {
+			$setting = mkl_pc( 'settings' )->get( 'quote_image_retention', '30' );
+			$days    = ( 'never' === $setting ) ? 0 : absint( $setting );
+			return (int) apply_filters( 'mkl_pc_3d_screenshot_quote_max_age', $days * DAY_IN_SECONDS );
+		}
+
+		/**
+		 * @param string $dir             Absolute folder.
+		 * @param int    $max_age_seconds 0 keeps everything.
+		 * @return void
+		 */
+		private function delete_screenshots_older_than( $dir, $max_age_seconds ) {
+			if ( $max_age_seconds <= 0 || ! is_dir( $dir ) ) {
 				return;
 			}
-			$max_age_seconds = apply_filters( 'mkl_pc_3d_screenshot_temp_max_age', 48 * HOUR_IN_SECONDS );
-			$now             = time();
-			$files           = glob( $temp_dir . '/*.png' );
+			$files = glob( $dir . '/*.png' );
 			if ( ! is_array( $files ) ) {
 				return;
 			}
+			$now = time();
 			foreach ( $files as $file ) {
 				if ( ! is_file( $file ) ) {
 					continue;
@@ -319,12 +368,46 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		/**
+		 * Move a cart screenshot into the quotes folder, where it outlives the session.
+		 *
+		 * Used when a quote is sent without an order being created: the list is cleared right after,
+		 * so nothing would hold on to a cart-temp file any more.
+		 *
+		 * @param string $relative_path A cart-temp/... path.
+		 * @param string $item_key      Quote item key, for a recognisable file name.
+		 * @return string|false New relative path, or false when there is nothing to move.
+		 */
+		public function move_3d_screenshot_to_quotes( $relative_path, $item_key ) {
+			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
+				return false;
+			}
+			$relative_path = trim( $relative_path, '/' );
+			if ( 0 !== strpos( $relative_path, 'cart-temp/' ) ) {
+				return false;
+			}
+			$base_dir    = wp_upload_dir()['basedir'] . '/mkl-pc-config-images';
+			$source_path = $base_dir . '/' . $relative_path;
+			if ( ! file_exists( $source_path ) || ! is_file( $source_path ) ) {
+				return false;
+			}
+			$quotes_dir = $base_dir . '/quotes';
+			if ( ! file_exists( $quotes_dir ) ) {
+				wp_mkdir_p( $quotes_dir );
+			}
+			$file_name = 'quote-' . sanitize_file_name( substr( (string) $item_key, 0, 32 ) ) . '-' . wp_generate_uuid4() . '.png';
+			if ( ! Utils::fs_move( $source_path, $quotes_dir . '/' . $file_name, true ) ) {
+				return false;
+			}
+			return 'quotes/' . $file_name;
+		}
+
+		/**
 		 * Get the public URL for a 3D screenshot path (temp or final).
 		 *
 		 * @param string $relative_path Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png)
 		 * @return string|null URL or null if path invalid
 		 */
-		private function get_3d_screenshot_url( $relative_path ) {
+		public function get_3d_screenshot_url( $relative_path ) {
 			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
 				return null;
 			}
