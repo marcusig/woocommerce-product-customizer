@@ -191,6 +191,11 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( ! is_array( $data ) ) {
 				$data = json_decode( stripcslashes( $raw_configurator_data ) );
 			}
+			// YITH Request a Quote Premium posts the form through FormData with encodeURIComponent()
+			// on every field, so its payload arrives still URL-encoded.
+			if ( ! is_array( $data ) ) {
+				$data = json_decode( urldecode( $raw_configurator_data ) );
+			}
 			return is_array( $data ) ? $data : null;
 		}
 

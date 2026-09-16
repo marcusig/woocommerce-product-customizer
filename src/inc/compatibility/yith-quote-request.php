@@ -14,6 +14,7 @@ class Compat_Yith_Raq {
 
 		add_filter( 'woocommerce_locate_template', [ $this, 'locate_yith_template' ], 20, 4 );
 		add_action( 'yith_raq_updated', [ $this, 'yith_raq_updated' ] );
+		add_filter( 'ywraq_ajax_add_item_is_valid', [ $this, 'validate_add_to_quote' ], 20, 2 );
 		add_filter( 'ywraq_request_quote_view_item_data', [ $this, 'view_item_data' ], 20, 3 );
 		add_filter( 'ywraq_item_data', [ $this, 'item_data' ], 20, 3 );
 		add_filter( 'ywraq_product_image', [ $this, 'item_image' ], 20, 2 );
@@ -125,22 +126,25 @@ class Compat_Yith_Raq {
 				return;
 			}
 
-			$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = $raw_configurator_data;
-
-			$data = json_decode( $raw_configurator_data );
-			if ( ! $data ) {
-				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = urldecode( $raw_configurator_data );
-				$data = json_decode( $rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] );
-			}
-			if ( $data ) {
+			// Same decoding as the cart, including the URL-encoded payloads YITH Premium posts.
+			$data = mkl_pc( 'frontend' )->cart->decode_configurator_payload( $raw_configurator_data );
+			if ( null !== $data ) {
 				$data = mkl_pc( 'db' )->sanitize( $data );
+				// Stored normalized, so every later reader (reopening the configurator, the order
+				// copy) decodes plain JSON rather than whatever encoding the browser posted.
+				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = wp_json_encode( $data );
 				$layers = array();
 				$product_id = $raq['product_id'];
 				$variation_id = isset( $raq['variation_id'] ) ? $raq['variation_id'] : 0;
 				$ep = 0;
 				if ( is_array( $data ) ) { 
 					foreach( $data as $layer_data ) {
-						$choice = new \MKL\PC\Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $layer_data->angle_id, $layer_data );
+						// A payload is only an array of choices by convention; anything else in it is not one.
+						if ( ! is_object( $layer_data ) || ! isset( $layer_data->layer_id, $layer_data->choice_id ) ) {
+							continue;
+						}
+						$angle_id = isset( $layer_data->angle_id ) ? $layer_data->angle_id : 0;
+						$choice = new \MKL\PC\Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $angle_id, $layer_data );
 						if ( $item_price = $choice->get_choice( 'extra_price' ) ) {
 							$ep += $item_price;
 						}
@@ -187,6 +191,34 @@ class Compat_Yith_Raq {
 			}
 			// $rq->update_item( $item_id, 'pc_configurator_data', $_POST['pc_configurator_data'] );
 		}
+	}
+
+	/**
+	 * Refuse an add to quote whose configuration is missing or unreadable, the rule the cart uses.
+	 *
+	 * Both YITH versions run this filter before adding the item. yith_raq_updated() only fires
+	 * afterwards, where the item can no longer be refused, so a broken payload used to leave an
+	 * unconfigured item in the quote with no error.
+	 *
+	 * @param bool $is_valid   Whether YITH may add the item.
+	 * @param int  $product_id Product being added.
+	 * @return bool
+	 */
+	public function validate_add_to_quote( $is_valid, $product_id ) {
+		if ( ! $is_valid ) {
+			return $is_valid;
+		}
+		$variation_id = isset( $_POST['variation_id'] ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- YITH verifies its own add-to-quote nonce before this filter.
+		if ( ! mkl_pc_is_configurable( $product_id ) && ! ( $variation_id && mkl_pc_is_configurable( $variation_id ) ) ) {
+			return $is_valid;
+		}
+
+		$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Same YITH nonce; JSON is decoded then sanitized in yith_raq_updated().
+		if ( ! is_string( $raw_configurator_data ) || '' === $raw_configurator_data ) {
+			return (bool) mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' );
+		}
+
+		return null !== mkl_pc( 'frontend' )->cart->decode_configurator_payload( $raw_configurator_data );
 	}
 
 	public function view_item_data( $item_data, $raq, $_product ) {
