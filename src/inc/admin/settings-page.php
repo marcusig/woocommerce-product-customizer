@@ -700,10 +700,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'setting_name' => 'save_images',
 					'options' => [
 						'save_to_disk' => __( 'Save images to disk', 'product-configurator-for-woocommerce' ),
+						'add_to_library' => __( 'Save images to disk and add them to the media library', 'product-configurator-for-woocommerce' ),
 						'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
 					],
 					'help' => [
 						'save_to_disk' => __( '(each configuration is generated once and kept as a file - not added to the media library)', 'product-configurator-for-woocommerce' ),
+						'add_to_library' => __( '(one media library entry per configuration - use it if another plugin needs the images in the library, such as a media offload or CDN plugin)', 'product-configurator-for-woocommerce' ),
 						'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
 					],
 				]

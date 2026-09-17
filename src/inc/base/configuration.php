@@ -609,14 +609,18 @@ class Configuration {
 			return wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
 		}
 
-		// Already generated for this size.
-		$existing = $this->get_image_file_path( $size );
-		if ( $existing && is_file( $existing ) ) {
-			return $this->get_image_file_url( $size );
+		$mode = mkl_pc( 'settings' )->get( 'save_images' );
+
+		// Already generated for this size. Not in the library mode, which serves every size
+		// from the attachment: a file left from another mode would bypass registering it.
+		if ( 'add_to_library' !== $mode ) {
+			$existing = $this->get_image_file_path( $size );
+			if ( $existing && is_file( $existing ) ) {
+				return $this->get_image_file_url( $size );
+			}
 		}
 
-		$mode = mkl_pc( 'settings' )->get( 'save_images' );
-		if ( 'save_to_disk' === $mode ) {
+		if ( 'save_to_disk' === $mode || 'add_to_library' === $mode ) {
 			if ( $lazy ) {
 				$tempfile = $this->get_configuration_image_name( $size ) . '-temp-' . wp_create_nonce( 'generate-image-from-temp-file' );
 				Utils::fs_put_contents( trailingslashit( $this->upload_dir_path ) . $tempfile, wp_json_encode( $this->content ) );
@@ -625,8 +629,7 @@ class Configuration {
 					'url'  => apply_filters( 'mkl_pc_get_image_url_default_empty_image', includes_url( 'images/blank.gif' ) ),
 				];
 			} else {
-				$file = $this->get_image_file( $size );
-				return $file ? $this->get_image_file_url( $size ) : '';
+				return $this->generate_image_url( $size );
 			}
 
 		} else { // on_the_fly
@@ -810,6 +813,33 @@ class Configuration {
 
 		// A stack of one is an attachment of its own: there is nothing to merge.
 		if ( $attachment_id = $this->get_attachment_id() ) {
+			$url = wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
+			return $url ? $url : '';
+		}
+
+		return $this->generate_image_url( $size );
+	}
+
+	/**
+	 * Generate the image for a size, the way the image mode asks for, and return its URL
+	 *
+	 * - save_to_disk: a file merged at that size.
+	 * - add_to_library: the full size merged once and registered as an attachment, so
+	 *   WordPress generates the sizes and the image shows in the media library - the
+	 *   behaviour before images were kept as plain files, for shops that rely on it (an
+	 *   offload or CDN plugin, for instance, only sees library attachments).
+	 *
+	 * @param string|array|null $size
+	 * @return string
+	 */
+	private function generate_image_url( $size ) {
+		if ( 'add_to_library' === mkl_pc( 'settings' )->get( 'save_images' ) ) {
+			$file = $this->get_image_file();
+			if ( ! $file ) return '';
+
+			$attachment_id = $this->save_attachment( $file, 0 );
+			if ( ! $attachment_id ) return '';
+
 			$url = wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
 			return $url ? $url : '';
 		}

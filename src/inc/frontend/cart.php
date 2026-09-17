@@ -759,7 +759,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
 
-					if ( 'save_to_disk' === mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ) ) {
+					if ( in_array( mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ), array( 'save_to_disk', 'add_to_library' ), true ) ) {
 						$attachment_id = Utils::get_image_id( $img_url );
 
 						// If we have an attachment ID, set the ID and move to the next item

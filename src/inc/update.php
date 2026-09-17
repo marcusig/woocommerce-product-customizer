@@ -22,7 +22,7 @@ class Update {
 			'1.2.41' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.3.00' => [ [ $this, 'set_default_setting_value_v1_3_00' ] ],
 			'1.5.10' => [ [ $this, 'set_default_setting_value_v1_5_10' ] ],
-			'2.0.0' => [ [ $this, 'set_default_setting_value_v2_0_0' ] ],
+			'2.0.0' => [ [ $this, 'set_default_setting_value_v2_0_0' ], [ $this, 'migrate_image_mode_v2_0_0' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -144,6 +144,36 @@ class Update {
 		}
 		$options['fe_3d_use_draco_loader'] = true;
 		$options['purge_with_page_cache']  = 'on';
+		update_option( 'mkl_pc__settings', $options );
+	}
+
+	/**
+	 * Keep adding configuration images to the media library for stores that saw them there
+	 *
+	 * Before 2.0, "save to disk" also registered every generated image as an attachment. 2.0
+	 * keeps them as plain files, and the library behaviour became its own mode. A store that
+	 * had the images visible in its library keeps that; one that had hidden them gets the
+	 * plain files, which is what hiding them was asking for.
+	 *
+	 * Both keys can be absent from the stored option: the image mode then defaults to
+	 * save_to_disk, and `show_config_images_in_the_library` reads as true at runtime - it is
+	 * also erased by every settings form save, since it lives on the Tools tab.
+	 *
+	 * @return void
+	 */
+	private function migrate_image_mode_v2_0_0() {
+		$options = get_option( 'mkl_pc__settings' );
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+
+		$mode = isset( $options['save_images'] ) ? $options['save_images'] : 'save_to_disk';
+		if ( 'save_to_disk' !== $mode ) return;
+
+		$shown_in_library = ! array_key_exists( 'show_config_images_in_the_library', $options ) || ! empty( $options['show_config_images_in_the_library'] );
+		if ( ! $shown_in_library ) return;
+
+		$options['save_images'] = 'add_to_library';
 		update_option( 'mkl_pc__settings', $options );
 	}
 

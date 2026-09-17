@@ -712,8 +712,14 @@ class Ajax {
 		// characters rather than the suffix, and can eat into the extension.
 		$image_name = sanitize_file_name( substr( $data_param, 0, $temp_offset ) );
 
+		// The name carries the product, so the image names are derived exactly as they were
+		// when the placeholder was written. Pinning `image_name` instead would force every file
+		// this request writes under that one name - in the library mode, the full size image
+		// would be saved and registered under the placeholder's sized name.
 		$config = new Configuration();
-		$config->image_name = $image_name;
+		if ( preg_match( '/^product_(\d+)-conf/', $image_name, $product_match ) ) {
+			$config->product_id = (int) $product_match[1];
+		}
 
 		// The name carries the size it was requested at, so the file that gets written is
 		// the one the placeholder is waiting for.
