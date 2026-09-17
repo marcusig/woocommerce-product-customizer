@@ -286,23 +286,201 @@ class Configuration {
 		return false;
 	}
 
-	public function get_configuration_image_name() {
+	/**
+	 * The file name a configuration's merged image is stored under
+	 *
+	 * The name is built from the layer images, so the same configuration always resolves
+	 * to the same file and is only ever merged once. A requested size is part of the name:
+	 * each display size is its own cached file, which is what replaces the intermediate
+	 * sizes the media library used to generate.
+	 *
+	 * The full size keeps the historical name, so images generated before this - and the
+	 * attachments pointing at them - are still found.
+	 *
+	 * @param string|array|null $size Image size name, { width, height }, or null for full size.
+	 * @return string
+	 */
+	public function get_configuration_image_name( $size = null ) {
 		if ( $this->image_name != '' ) {
 			return $this->image_name;
 		}
 
-		$image_file_name = 'product_'. $this->product_id . '-conf';
-		
 		if ( empty( $this->content ) ) return '';
+
+		$image_file_name = 'product_'. $this->product_id . '-conf';
 
 		foreach ( $this->content as $layer ) {
 			if ( ! $layer->image ) continue;
 			$image_file_name .= '-'.$layer->image;
 		}
-		$image_file_name .= '.png'; 
 
-		$this->image_name = $image_file_name;
+		if ( $dimensions = $this->resolve_size( $size ) ) {
+			$image_file_name .= '-' . $dimensions['width'] . 'x' . $dimensions['height'];
+		}
+
+		$image_file_name .= '.png';
+
 		return $image_file_name;
+	}
+
+	/**
+	 * Resolve a requested image size to pixel dimensions
+	 *
+	 * @param string|array|null $size Image size name, { width, height }, or [ width, height ].
+	 * @return array|null { width, height }, or null for the full merged size.
+	 */
+	public function resolve_size( $size ) {
+		if ( empty( $size ) || 'full' === $size ) return null;
+
+		if ( is_string( $size ) ) {
+			$size = $this->get_dimensions_from_size_name( $size );
+		}
+
+		if ( ! is_array( $size ) ) return null;
+
+		$width  = isset( $size['width'] ) ? absint( $size['width'] ) : ( isset( $size[0] ) ? absint( $size[0] ) : 0 );
+		$height = isset( $size['height'] ) ? absint( $size['height'] ) : ( isset( $size[1] ) ? absint( $size[1] ) : 0 );
+
+		// A size that resolves to nothing - an unregistered name, or the 0x0 a theme
+		// sometimes registers - means the full merged image.
+		if ( ! $width || ! $height ) return null;
+
+		return array( 'width' => $width, 'height' => $height );
+	}
+
+	/**
+	 * Translate a size for WordPress' own attachment functions
+	 *
+	 * They take a registered size name or a positional [ width, height ] pair. The
+	 * { width, height } form used throughout the configurator makes them read keys 0 and 1
+	 * of an array that has neither, and silently fall back to the thumbnail.
+	 *
+	 * @param string|array|null $size
+	 * @return string|array
+	 */
+	private function size_for_attachment( $size ) {
+		if ( is_array( $size ) ) {
+			$dimensions = $this->resolve_size( $size );
+			return $dimensions ? array( $dimensions['width'], $dimensions['height'] ) : 'full';
+		}
+
+		return $size ? $size : 'full';
+	}
+
+	/**
+	 * Absolute path of the stored image for a size, whether or not it exists yet
+	 *
+	 * @param string|array|null $size
+	 * @return string
+	 */
+	public function get_image_file_path( $size = null ) {
+		$name = $this->get_configuration_image_name( $size );
+		if ( ! $name ) return '';
+		return trailingslashit( $this->upload_dir_path ) . $name;
+	}
+
+	/**
+	 * Public URL of the stored image for a size, whether or not it exists yet
+	 *
+	 * @param string|array|null $size
+	 * @return string
+	 */
+	public function get_image_file_url( $size = null ) {
+		$name = $this->get_configuration_image_name( $size );
+		if ( ! $name ) return '';
+		return $this->upload_dir_url . '/' . $name;
+	}
+
+	/**
+	 * The merged image for this configuration, generating it if it is not on disk yet
+	 *
+	 * This is the single place a configuration image is produced. It returns a plain file:
+	 * nothing is added to the media library, which is what keeps a shop's library free of
+	 * one entry per configuration.
+	 *
+	 * A configuration whose stack is a single image has nothing to merge - the caller shows
+	 * that attachment directly - and one with no images at all has nothing to show.
+	 *
+	 * @param string|array|null $size
+	 * @return string|false Absolute path, or false when there is nothing to generate.
+	 */
+	public function get_image_file( $size = null ) {
+		$name = $this->get_configuration_image_name( $size );
+		if ( ! $name ) return false;
+
+		$path = trailingslashit( $this->upload_dir_path ) . $name;
+		if ( is_file( $path ) ) return $path;
+
+		if ( ! Utils::check_image_requirements() ) return false;
+
+		$images = $this->collect_layer_images();
+		if ( count( $images ) < 2 ) return false;
+
+		$image_manager = $this->_get_image_manager();
+		if ( ! $image_manager ) return false;
+
+		$file = $image_manager->merge( $images, 'file', $this->upload_dir_path, $name, $this->resolve_size( $size ) );
+
+		return ( is_string( $file ) && is_file( $file ) ) ? $file : false;
+	}
+
+	/**
+	 * The layer images to composite, keyed by attachment id
+	 *
+	 * @return array
+	 */
+	private function collect_layer_images() {
+		$images = array();
+
+		if ( empty( $this->content ) || ! is_array( $this->content ) ) return $images;
+
+		foreach ( $this->content as $layer ) {
+			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
+			if ( $image ) {
+				$images[ $layer->image ] = $image;
+			}
+		}
+
+		return $images;
+	}
+
+	/**
+	 * The media library entry for this configuration, when it has one
+	 *
+	 * Configurations generated before the images became plain files were registered as
+	 * attachments. Those are still served from the library, so existing orders and saved
+	 * designs keep the exact image - and the intermediate sizes - they have always had.
+	 *
+	 * The lookup only runs when the full-size file is on disk, which is the only way an
+	 * attachment can exist for it: a shop with none never pays for the query.
+	 *
+	 * @return int Attachment ID, or 0.
+	 */
+	public function get_legacy_attachment_id() {
+		static $cache = array();
+
+		$name = $this->get_configuration_image_name();
+		if ( ! $name ) return 0;
+
+		if ( ! file_exists( trailingslashit( $this->upload_dir_path ) . $name ) ) return 0;
+
+		if ( ! isset( $cache[ $name ] ) ) {
+			$cache[ $name ] = (int) Utils::get_image_id( $this->upload_dir_url . '/' . $name );
+		}
+
+		return $cache[ $name ];
+	}
+
+	/**
+	 * The attachment to show for this configuration, if any
+	 *
+	 * @return int Attachment ID, or 0.
+	 */
+	public function get_attachment_id() {
+		if ( $single_image = $this->content_has_single_image( 'id' ) ) {
+			return (int) $single_image;
+		}
+		return $this->get_legacy_attachment_id();
 	}
 
 	/**
@@ -313,11 +491,11 @@ class Configuration {
 	 */
 	public function get_image( $size = 'woocommerce_thumbnail', $attr = array(), $lazy = true ) {
 		if ( $this->get_the_post() && $attachment = get_post_thumbnail_id( $this->get_the_post() ) ) {
-			return wp_get_attachment_image( $attachment, $size, false, $attr );
+			return wp_get_attachment_image( $attachment, $this->size_for_attachment( $size ), false, $attr );
 		}
 
-		if ( $single_image = $this->content_has_single_image( 'id' ) ) {
-			return wp_get_attachment_image( $single_image, $size, false, $attr );
+		if ( $attachment_id = $this->get_attachment_id() ) {
+			return wp_get_attachment_image( $attachment_id, $this->size_for_attachment( $size ), false, $attr );
 		}
 
 		$url = $this->get_image_url( $lazy, $size );
@@ -386,30 +564,34 @@ class Configuration {
 	 * @return array|string
 	 */
 	public function get_image_url( $lazy = false, $size = 'woocommerce_thumbnail' ) {
-		
-		if ( $this->configuration_image_exists() ) {
 
-			if ( $single_image = $this->content_has_single_image( 'id' ) ) {
-				return wp_get_attachment_image_url( $single_image, $size );
-			}
-			if ( ! $this->get_configuration_image_name() ) return '';
-			return $this->upload_dir_url . '/' . $this->get_configuration_image_name();
+		// A single-image stack is the layer's own attachment, and a configuration that
+		// pre-dates the plain files is still in the media library: both are served from
+		// there, at the requested size.
+		if ( $attachment_id = $this->get_attachment_id() ) {
+			return wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
+		}
+
+		// Already generated for this size.
+		$existing = $this->get_image_file_path( $size );
+		if ( $existing && is_file( $existing ) ) {
+			return $this->get_image_file_url( $size );
 		}
 
 		$mode = mkl_pc( 'settings' )->get( 'save_images' );
 		if ( 'save_to_disk' === $mode ) {
 			if ( $lazy ) {
-				$tempfile = $this->get_configuration_image_name() . '-temp-' . wp_create_nonce( 'generate-image-from-temp-file' );
+				$tempfile = $this->get_configuration_image_name( $size ) . '-temp-' . wp_create_nonce( 'generate-image-from-temp-file' );
 				Utils::fs_put_contents( trailingslashit( $this->upload_dir_path ) . $tempfile, wp_json_encode( $this->content ) );
 				return [
 					'lazy' => $tempfile,
 					'url'  => apply_filters( 'mkl_pc_get_image_url_default_empty_image', includes_url( 'images/blank.gif' ) ),
 				];
 			} else {
-				$image_id = $this->save_image( $this->content );
-				return $image_id ? wp_get_attachment_image_url( $image_id, $size ) : '';
+				$file = $this->get_image_file( $size );
+				return $file ? $this->get_image_file_url( $size ) : '';
 			}
-				
+
 		} else { // on_the_fly
 			
 			$images = array();
@@ -464,27 +646,25 @@ class Configuration {
 	 */
 	public function save_image( $content = null, $config_id = null ) {
 		if ( is_string( $content ) ) {
-			$content = sanitize_file_name( $content );
-			$tempfile = trailingslashit( $this->upload_dir_path ) . $content;
-			$real_path = realpath( $tempfile );
-			if ( ( false === $real_path ) || ( false === strpos( $real_path, $this->upload_dir_path ) ) ) return 0;
-			if ( ! file_exists( $tempfile ) ) return 0;
-			$content = Utils::fs_get_contents( $tempfile );
-			if ( $content ) {
-				$content = json_decode( $content );
-				$this->content = $content;
-			}
-
-			Utils::fs_delete( $tempfile, false, 'f' );
+			$content = $this->load_content_from_temp_file( $content );
+			if ( false === $content ) return 0;
 		}
 
 		// The image already exists
 		if ( $content && is_null( $config_id ) && $this->configuration_exists() ) {
-			$attach_id = $this->content_has_single_image( 'id' );
-			if ( ! $attach_id ) {
-				$attach_id = Utils::get_image_id( $this->upload_dir_url . '/' . $this->get_configuration_image_name() );
+			$attach_id = $this->get_attachment_id();
+
+			// The file can be on disk without a media library entry, now that a cart or
+			// order picture is kept as a plain file. A stored configuration still needs an
+			// attachment to carry its thumbnail, so the existing file is registered rather
+			// than merged again.
+			if ( ! $attach_id && $this->ID ) {
+				$attach_id = $this->save_attachment( $this->get_image_file(), $this->ID );
 			}
-			if ( $attach_id && $this->ID ) set_post_thumbnail( $this->ID, $attach_id );
+
+			if ( ! $attach_id ) return false;
+
+			if ( $this->ID ) set_post_thumbnail( $this->ID, $attach_id );
 			return $attach_id;
 		} else {
 			// if is async and config has not been saved
@@ -534,8 +714,7 @@ class Configuration {
 				}
 
 				if ( count( $images ) > 1 && $image_file_name && Utils::check_image_requirements() ) {
-					$image_manager = $this->_get_image_manager();
-					$fimage = $image_manager->merge( $images, 'file', $this->upload_dir_path, $image_file_name );
+					$fimage = $this->get_image_file();
 					return $this->save_attachment( $fimage, $this->ID );
 				} elseif ( 1 == count( $images ) ) {
 					return array_keys( $images )[0];
@@ -547,8 +726,56 @@ class Configuration {
 	}
 
 	/**
+	 * Read a lazy-generation temp file into this configuration's content, and delete it
+	 *
+	 * The temp file holds the configuration a visitor's browser asked to have rendered;
+	 * it is written inside the images folder and its name is checked against that folder
+	 * before anything is read.
+	 *
+	 * @param string $file_name Name of the temp file, as handed back by get_image_url().
+	 * @return array|null|false The decoded content, or false when the file cannot be used.
+	 */
+	private function load_content_from_temp_file( $file_name ) {
+		$file_name = sanitize_file_name( $file_name );
+		$tempfile  = trailingslashit( $this->upload_dir_path ) . $file_name;
+		$real_path = realpath( $tempfile );
+
+		if ( ( false === $real_path ) || ( false === strpos( $real_path, $this->upload_dir_path ) ) ) return false;
+		if ( ! file_exists( $tempfile ) ) return false;
+
+		$content = Utils::fs_get_contents( $tempfile );
+		if ( $content ) {
+			$content = json_decode( $content );
+			$this->content = $content;
+		}
+
+		Utils::fs_delete( $tempfile, false, 'f' );
+
+		return $content;
+	}
+
+	/**
+	 * Generate the image a lazy placeholder asked for
+	 *
+	 * @param string            $file_name Name of the temp file written by get_image_url().
+	 * @param string|array|null $size
+	 * @return string The image URL, or an empty string when it could not be generated.
+	 */
+	public function generate_image_from_temp_file( $file_name, $size = null ) {
+		if ( false === $this->load_content_from_temp_file( $file_name ) ) return '';
+
+		// A stack of one is an attachment of its own: there is nothing to merge.
+		if ( $attachment_id = $this->get_attachment_id() ) {
+			$url = wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
+			return $url ? $url : '';
+		}
+
+		return $this->get_image_file( $size ) ? $this->get_image_file_url( $size ) : '';
+	}
+
+	/**
 	 * Get the path of an image, checking the set merge Size
-	 * 
+	 *
 	 * @param int $attachment_id
 	 * @return string - the path
 	 */

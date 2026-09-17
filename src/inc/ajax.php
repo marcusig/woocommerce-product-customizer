@@ -708,13 +708,22 @@ class Ajax {
 		// Exit if the file name doesn't contain a valid nonce
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'generate-image-from-temp-file' ) ) wp_send_json_error( [ 'message' => __( 'Unauthorized action', 'product-configurator-for-woocommerce' ) ], 403 );
 		
+		// The name before the suffix is the image to generate. `rtrim()` would strip
+		// characters rather than the suffix, and can eat into the extension.
+		$image_name = sanitize_file_name( substr( $data_param, 0, $temp_offset ) );
+
 		$config = new Configuration();
-		$config->image_name = sanitize_file_name( rtrim( $data_param, '-temp-' . $nonce ) );
-		$image_id = $config->save_image( $data_param );
-		if ( $image_id ) {
-			$image = wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' );
-			if ( $image ) wp_send_json_success( [ 'url' => $image ] );
+		$config->image_name = $image_name;
+
+		// The name carries the size it was requested at, so the file that gets written is
+		// the one the placeholder is waiting for.
+		$size = null;
+		if ( preg_match( '/-(\d+)x(\d+)\.[a-z]+$/i', $image_name, $matches ) ) {
+			$size = array( 'width' => (int) $matches[1], 'height' => (int) $matches[2] );
 		}
+
+		$image = $config->generate_image_from_temp_file( $data_param, $size );
+		if ( $image ) wp_send_json_success( [ 'url' => $image ] );
 		if ( isset( $_REQUEST['product_id'] ) ) {
 			$product = wc_get_product( absint( wp_unslash( $_REQUEST['product_id'] ) ) );
 			if ( $product ) {

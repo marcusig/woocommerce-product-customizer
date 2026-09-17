@@ -699,11 +699,11 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				[ 
 					'setting_name' => 'save_images',
 					'options' => [
-						'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
+						'save_to_disk' => __( 'Save images to disk', 'product-configurator-for-woocommerce' ),
 						'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
 					],
 					'help' => [
-						'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
+						'save_to_disk' => __( '(each configuration is generated once and kept as a file - not added to the media library)', 'product-configurator-for-woocommerce' ),
 						'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
 					],
 				]
