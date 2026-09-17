@@ -9,15 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Configuration {
 
-	/**
-	 * Post meta holding the file name of a stored configuration's generated image.
-	 *
-	 * A saved design or a preset used to carry its preview as a post thumbnail, which meant
-	 * a media library entry per stored configuration. The file name is kept here instead;
-	 * configurations saved before that still have their thumbnail, and are read from it.
-	 */
-	const IMAGE_NAME_META = '_mkl_pc_configuration_image';
-
 	public $ID                 = 0;
 
 	// public $post                        = null;
@@ -338,11 +329,11 @@ class Configuration {
 	 * @param string|array|null $size Image size name, { width, height }, or [ width, height ].
 	 * @return array|null { width, height }, or null for the full merged size.
 	 */
-	public static function resolve_size( $size ) {
+	public function resolve_size( $size ) {
 		if ( empty( $size ) || 'full' === $size ) return null;
 
 		if ( is_string( $size ) ) {
-			$size = self::get_dimensions_from_size_name( $size );
+			$size = $this->get_dimensions_from_size_name( $size );
 		}
 
 		if ( ! is_array( $size ) ) return null;
@@ -367,9 +358,9 @@ class Configuration {
 	 * @param string|array|null $size
 	 * @return string|array
 	 */
-	private static function size_for_attachment( $size ) {
+	private function size_for_attachment( $size ) {
 		if ( is_array( $size ) ) {
-			$dimensions = self::resolve_size( $size );
+			$dimensions = $this->resolve_size( $size );
 			return $dimensions ? array( $dimensions['width'], $dimensions['height'] ) : 'full';
 		}
 
@@ -471,169 +462,6 @@ class Configuration {
 	}
 
 	/**
-	 * The file name a stored configuration's image was generated under
-	 *
-	 * @return string Empty when there is none, or the file is gone.
-	 */
-	public function get_stored_image_name() {
-		if ( ! $this->ID ) return '';
-
-		$name = get_post_meta( $this->ID, self::IMAGE_NAME_META, true );
-		if ( ! is_string( $name ) || '' === $name ) return '';
-
-		$name = basename( $name );
-
-		return is_file( trailingslashit( $this->upload_dir_path ) . $name ) ? $name : '';
-	}
-
-	/**
-	 * Remember which file holds this stored configuration's image
-	 *
-	 * @param string $file Absolute path of the generated file.
-	 * @return bool
-	 */
-	public function store_image_name( $file ) {
-		if ( ! $this->ID || ! is_string( $file ) || '' === $file ) return false;
-
-		update_post_meta( $this->ID, self::IMAGE_NAME_META, basename( $file ) );
-
-		return true;
-	}
-
-	/**
-	 * The name a stored image takes at a given size
-	 *
-	 * @param string            $name Full size file name.
-	 * @param string|array|null $size
-	 * @return string
-	 */
-	public static function sized_image_name( $name, $size ) {
-		$dimensions = self::resolve_size( $size );
-		if ( ! $dimensions ) return $name;
-
-		return preg_replace( '/\.png$/i', '', $name ) . '-' . $dimensions['width'] . 'x' . $dimensions['height'] . '.png';
-	}
-
-	/**
-	 * The preview of a stored configuration - a saved design, a preset - as a URL
-	 *
-	 * Static, because the lists that show these render a row per configuration and only need
-	 * a URL: building a Configuration for each would parse and sanitise every stored
-	 * content just to find a picture.
-	 *
-	 * Nothing is generated here. The sizes a list asks for are written when the
-	 * configuration is saved, and a size that was never generated falls back to the full
-	 * one rather than merging during a page render.
-	 *
-	 * @param int               $post_id Configuration post.
-	 * @param string|array|null $size
-	 * @return string Empty when the configuration has no picture.
-	 */
-	public static function thumbnail_url_for_post( $post_id, $size = 'thumbnail' ) {
-		$post_id = absint( $post_id );
-		if ( ! $post_id ) return '';
-
-		$name = get_post_meta( $post_id, self::IMAGE_NAME_META, true );
-
-		if ( is_string( $name ) && '' !== $name ) {
-			$name          = basename( $name );
-			$wp_upload_dir = wp_upload_dir();
-			$dir           = trailingslashit( $wp_upload_dir['basedir'] . '/mkl-pc-config-images' );
-			$url           = $wp_upload_dir['baseurl'] . '/mkl-pc-config-images/';
-
-			$sized = self::sized_image_name( $name, $size );
-			if ( $sized !== $name && is_file( $dir . $sized ) ) {
-				return $url . $sized;
-			}
-			if ( is_file( $dir . $name ) ) {
-				return $url . $name;
-			}
-		}
-
-		// Saved before the images became plain files.
-		$thumbnail_id = get_post_thumbnail_id( $post_id );
-		if ( $thumbnail_id ) {
-			$legacy = wp_get_attachment_image_url( $thumbnail_id, self::size_for_attachment( $size ) );
-			if ( $legacy ) return $legacy;
-		}
-
-		return '';
-	}
-
-	/**
-	 * The preview of this stored configuration, as a URL
-	 *
-	 * @param string|array|null $size
-	 * @return string
-	 */
-	public function get_thumbnail_url( $size = 'thumbnail' ) {
-		if ( ! $this->ID ) return '';
-
-		return self::thumbnail_url_for_post( $this->ID, $size );
-	}
-
-	/**
-	 * The preview of this stored configuration, as markup
-	 *
-	 * @param string|array|null $size
-	 * @param array             $attr
-	 * @return string
-	 */
-	public function get_thumbnail_html( $size = 'thumbnail', $attr = array() ) {
-		if ( ! $this->ID ) return '';
-
-		// Existing data keeps the markup it has always had, srcset included.
-		if ( ! $this->get_stored_image_name() && $this->get_the_post() ) {
-			$thumbnail_id = get_post_thumbnail_id( $this->get_the_post() );
-			if ( $thumbnail_id ) {
-				return wp_get_attachment_image( $thumbnail_id, self::size_for_attachment( $size ), false, $attr );
-			}
-		}
-
-		$url = $this->get_thumbnail_url( $size );
-		if ( ! $url ) return '';
-
-		return $this->build_image_html( $url, $size, $attr );
-	}
-
-	/**
-	 * An img tag for a generated file, which has no attachment to build one from
-	 *
-	 * @param string            $url
-	 * @param string|array|null $size
-	 * @param array             $attr
-	 * @return string
-	 */
-	private function build_image_html( $url, $size, $attr = array() ) {
-		$size_class = is_array( $size ) ? join( 'x', self::resolve_size( $size ) ? self::resolve_size( $size ) : array() ) : $size;
-
-		$default_attr = array(
-			'src'   => $url,
-			'class' => "attachment-$size_class size-$size_class configuration-image",
-			'alt'   => '',
-		);
-
-		if ( function_exists( 'wp_lazy_loading_enabled' ) && wp_lazy_loading_enabled( 'img', 'wp_get_attachment_image' ) ) {
-			$default_attr['loading'] = 'lazy';
-		}
-
-		$attr = wp_parse_args( $attr, $default_attr );
-
-		if ( array_key_exists( 'loading', $attr ) && ! $attr['loading'] ) {
-			unset( $attr['loading'] );
-		}
-
-		$attr = array_map( 'esc_attr', $attr );
-		$html = '<img';
-
-		foreach ( $attr as $name => $value ) {
-			$html .= " $name=" . '"' . $value . '"';
-		}
-
-		return $html . ' />';
-	}
-
-	/**
 	 * The layer images to composite, keyed by attachment id
 	 *
 	 * @return array
@@ -699,15 +527,12 @@ class Configuration {
 	 * @param array  $attr - The image attributes
 	 */
 	public function get_image( $size = 'woocommerce_thumbnail', $attr = array(), $lazy = true ) {
-		// A stored configuration - a saved design, a preset - shows the picture it was saved
-		// with, whether that is a file of its own or the thumbnail it has always had.
-		if ( $this->ID ) {
-			$stored = $this->get_thumbnail_html( $size, $attr );
-			if ( $stored ) return $stored;
+		if ( $this->get_the_post() && $attachment = get_post_thumbnail_id( $this->get_the_post() ) ) {
+			return wp_get_attachment_image( $attachment, $this->size_for_attachment( $size ), false, $attr );
 		}
 
 		if ( $attachment_id = $this->get_attachment_id() ) {
-			return wp_get_attachment_image( $attachment_id, self::size_for_attachment( $size ), false, $attr );
+			return wp_get_attachment_image( $attachment_id, $this->size_for_attachment( $size ), false, $attr );
 		}
 
 		$url = $this->get_image_url( $lazy, $size );
@@ -781,7 +606,7 @@ class Configuration {
 		// pre-dates the plain files is still in the media library: both are served from
 		// there, at the requested size.
 		if ( $attachment_id = $this->get_attachment_id() ) {
-			return wp_get_attachment_image_url( $attachment_id, self::size_for_attachment( $size ) );
+			return wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
 		}
 
 		// Already generated for this size.
@@ -844,7 +669,7 @@ class Configuration {
 		}
 	}
 
-	public static function get_dimensions_from_size_name( $size ) {
+	public function get_dimensions_from_size_name( $size ) {
 		global $_wp_additional_image_sizes;
 		$dimensions = [];
 		if ( in_array( $size, array( 'thumbnail', 'medium', 'medium_large', 'large' ) ) ) {
@@ -871,15 +696,20 @@ class Configuration {
 
 		// The image already exists
 		if ( $content && is_null( $config_id ) && $this->configuration_exists() ) {
-			// A stack of a single image is that layer's own attachment: nothing is generated
-			// for it, so it stays the configuration's thumbnail.
-			$single_image = $this->content_has_single_image( 'id' );
-			if ( $single_image ) {
-				if ( $this->ID ) set_post_thumbnail( $this->ID, $single_image );
-				return $single_image;
+			$attach_id = $this->get_attachment_id();
+
+			// The file can be on disk without a media library entry, now that a cart or
+			// order picture is kept as a plain file. A stored configuration still needs an
+			// attachment to carry its thumbnail, so the existing file is registered rather
+			// than merged again.
+			if ( ! $attach_id && $this->ID ) {
+				$attach_id = $this->save_attachment( $this->get_image_file(), $this->ID );
 			}
 
-			return $this->remember_generated_image();
+			if ( ! $attach_id ) return false;
+
+			if ( $this->ID ) set_post_thumbnail( $this->ID, $attach_id );
+			return $attach_id;
 		} else {
 			// if is async and config has not been saved
 			if ( $this->save_image_async && is_null( $config_id ) ) {
@@ -928,7 +758,8 @@ class Configuration {
 				}
 
 				if ( count( $images ) > 1 && $image_file_name && Utils::check_image_requirements() ) {
-					return $this->remember_generated_image();
+					$fimage = $this->get_image_file();
+					return $this->save_attachment( $fimage, $this->ID );
 				} elseif ( 1 == count( $images ) ) {
 					return array_keys( $images )[0];
 				} else {
@@ -936,36 +767,6 @@ class Configuration {
 				}
 			}
 		}
-	}
-
-	/**
-	 * Generate this configuration's image and remember the file on the post
-	 *
-	 * The sizes the lists ask for are written here rather than during a page render, so
-	 * showing a shelf of saved designs never merges anything.
-	 *
-	 * @return string|false The absolute path of the full size image.
-	 */
-	private function remember_generated_image() {
-		$file = $this->get_image_file();
-		if ( ! $file ) return false;
-
-		if ( $this->ID ) {
-			$this->store_image_name( $file );
-
-			/**
-			 * Sizes generated when a configuration is stored.
-			 *
-			 * @param array $sizes
-			 * @param Configuration $configuration
-			 */
-			$sizes = apply_filters( 'mkl_pc_stored_configuration_image_sizes', array( 'thumbnail' ), $this );
-			foreach ( (array) $sizes as $size ) {
-				$this->get_image_file( $size );
-			}
-		}
-
-		return $file;
 	}
 
 	/**
@@ -1009,7 +810,7 @@ class Configuration {
 
 		// A stack of one is an attachment of its own: there is nothing to merge.
 		if ( $attachment_id = $this->get_attachment_id() ) {
-			$url = wp_get_attachment_image_url( $attachment_id, self::size_for_attachment( $size ) );
+			$url = wp_get_attachment_image_url( $attachment_id, $this->size_for_attachment( $size ) );
 			return $url ? $url : '';
 		}
 
