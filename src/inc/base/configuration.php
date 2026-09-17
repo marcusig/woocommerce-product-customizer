@@ -404,14 +404,17 @@ class Configuration {
 	 * @param string|array|null $size
 	 * @return string|false Absolute path, or false when there is nothing to generate.
 	 */
-	public function get_image_file( $size = null ) {
+	public function get_image_file( $size = null, $dir = null ) {
 		$name = $this->get_configuration_image_name( $size );
 		if ( ! $name ) return false;
 
-		$path = trailingslashit( $this->upload_dir_path ) . $name;
+		$dir  = untrailingslashit( $dir ? $dir : $this->upload_dir_path );
+		$path = trailingslashit( $dir ) . $name;
+
 		if ( is_file( $path ) ) return $path;
 
 		if ( ! Utils::check_image_requirements() ) return false;
+		if ( ! is_dir( $dir ) ) return false;
 
 		$images = $this->collect_layer_images();
 		if ( count( $images ) < 2 ) return false;
@@ -419,9 +422,43 @@ class Configuration {
 		$image_manager = $this->_get_image_manager();
 		if ( ! $image_manager ) return false;
 
-		$file = $image_manager->merge( $images, 'file', $this->upload_dir_path, $name, $this->resolve_size( $size ) );
+		$file = $image_manager->merge( $images, 'file', $dir, $name, $this->resolve_size( $size ) );
 
 		return ( is_string( $file ) && is_file( $file ) ) ? $file : false;
+	}
+
+	/**
+	 * The folder the "generate on the fly" merges are cached in
+	 *
+	 * That mode trades disk space for server time, so its images are a cache rather than
+	 * the stored image: they live apart from the configurations kept on disk, and are swept
+	 * on a timer. Serving one costs no merge at all.
+	 *
+	 * @param bool $create Create the folder when it is missing.
+	 * @return string
+	 */
+	public function get_cache_dir_path( $create = false ) {
+		$dir = $this->upload_dir_path . '/cache';
+
+		if ( $create && ! is_dir( $dir ) ) {
+			Utils::fs_mkdir( $dir );
+			if ( ! is_dir( $dir ) ) {
+				wp_mkdir_p( $dir );
+			}
+			// Same protection against directory listing as the folder above it.
+			if ( is_dir( $dir ) && ! file_exists( $dir . '/index.html' ) ) {
+				Utils::fs_put_contents( trailingslashit( $dir ) . 'index.html', '' );
+			}
+		}
+
+		return $dir;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_cache_dir_url() {
+		return $this->upload_dir_url . '/cache';
 	}
 
 	/**
@@ -593,10 +630,17 @@ class Configuration {
 			}
 
 		} else { // on_the_fly
-			
+
 			$images = array();
 
 			if ( empty( $this->content ) ) return '';
+
+			// A merge that has already been served is still in the cache: point straight at
+			// it, so the shop stops paying for the endpoint after the first visitor.
+			$cached_name = $this->get_configuration_image_name( $size );
+			if ( $cached_name && is_file( trailingslashit( $this->get_cache_dir_path() ) . $cached_name ) ) {
+				return $this->get_cache_dir_url() . '/' . $cached_name;
+			}
 
 			// collect images
 			foreach ( $this->content as $layer ) {
@@ -799,7 +843,31 @@ class Configuration {
 
 	}
 
-	public function serve_image() {
+	/**
+	 * Stream the merged image, keeping a copy so it is only ever merged once
+	 *
+	 * @param string|array|null $size
+	 * @return void
+	 */
+	public function serve_image( $size = null ) {
+		$file = $this->get_image_file( $size, $this->get_cache_dir_path( true ) );
+
+		if ( $file ) {
+			$contents = Utils::fs_get_contents( $file );
+			if ( false !== $contents ) {
+				$max_age = (int) apply_filters( 'mkl_pc_merged_image_browser_max_age', WEEK_IN_SECONDS );
+
+				header( 'Content-Type: image/png' );
+				header( 'Content-Length: ' . strlen( $contents ) );
+				header( 'Cache-Control: public, max-age=' . $max_age );
+
+				echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary image response
+				exit;
+			}
+		}
+
+		// Nothing could be written: a stack of a single image, or a folder that cannot be
+		// written to. Merge in memory, as before.
 		$images = array();
 		// collect images
 		foreach ($this->content as $layer) {
@@ -808,7 +876,7 @@ class Configuration {
 		}
 
 		if ( count( $images ) && $image_manager = $this->_get_image_manager() ) {
-			$image_manager->merge( $images, 'print' );
+			$image_manager->merge( $images, 'print', '', '', $this->resolve_size( $size ) );
 		}
 	}
 

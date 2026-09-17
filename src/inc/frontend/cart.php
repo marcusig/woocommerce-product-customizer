@@ -314,8 +314,36 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 */
 		public function cleanup_old_3d_screenshots() {
 			$base_dir = wp_upload_dir()['basedir'] . '/mkl-pc-config-images';
-			$this->delete_screenshots_older_than( $base_dir . '/cart-temp', $this->get_cart_screenshot_max_age() );
-			$this->delete_screenshots_older_than( $base_dir . '/quotes', $this->get_quote_screenshot_max_age() );
+			$this->delete_files_older_than( $base_dir . '/cart-temp', $this->get_cart_screenshot_max_age() );
+			$this->delete_files_older_than( $base_dir . '/quotes', $this->get_quote_screenshot_max_age() );
+
+			// Placeholders waiting to be generated. Configuration::get_image_url() writes one
+			// per lazy render and only the browser's ajax call consumes it, so every render
+			// without JavaScript - a crawler, an email client, a feed - leaves one behind for
+			// good. They are worthless within minutes of being written.
+			$this->delete_files_older_than( $base_dir, $this->get_image_placeholder_max_age(), '*-temp-*' );
+
+			// Merges kept for the "generate images on the fly" mode. That mode is a promise to
+			// spend server time instead of disk, so its cache expires rather than accumulating.
+			$this->delete_files_older_than( $base_dir . '/cache', $this->get_merge_cache_max_age() );
+		}
+
+		/**
+		 * How long a placeholder waiting to be generated is kept.
+		 *
+		 * @return int Seconds.
+		 */
+		public function get_image_placeholder_max_age() {
+			return (int) apply_filters( 'mkl_pc_image_placeholder_max_age', DAY_IN_SECONDS );
+		}
+
+		/**
+		 * How long a merge generated on the fly is cached.
+		 *
+		 * @return int Seconds, or 0 to keep it for good.
+		 */
+		public function get_merge_cache_max_age() {
+			return (int) apply_filters( 'mkl_pc_merge_cache_max_age', MONTH_IN_SECONDS );
 		}
 
 		/**
@@ -348,11 +376,11 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @param int    $max_age_seconds 0 keeps everything.
 		 * @return void
 		 */
-		private function delete_screenshots_older_than( $dir, $max_age_seconds ) {
+		private function delete_files_older_than( $dir, $max_age_seconds, $pattern = '*.png' ) {
 			if ( $max_age_seconds <= 0 || ! is_dir( $dir ) ) {
 				return;
 			}
-			$files = glob( $dir . '/*.png' );
+			$files = glob( $dir . '/' . $pattern );
 			if ( ! is_array( $files ) ) {
 				return;
 			}

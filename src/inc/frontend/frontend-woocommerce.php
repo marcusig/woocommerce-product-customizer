@@ -123,7 +123,18 @@ class Frontend_Woocommerce {
 			$content[] = [ 'image' => $image ];
 		}
 		$configuration = new Configuration( NULL, array( 'product_id' => $product_id, 'content' => json_encode( $content ) ) );
-		$configuration->serve_image();
+
+		// The size travels in the query string. Passing it on names the cached file for the
+		// size it holds, so the next render can link to it directly.
+		$size = null;
+		if ( isset( $_REQUEST['width'] ) || isset( $_REQUEST['height'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional dimensions of a public image request.
+			$size = array(
+				'width'  => isset( $_REQUEST['width'] ) ? absint( wp_unslash( $_REQUEST['width'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional dimensions of a public image request.
+				'height' => isset( $_REQUEST['height'] ) ? absint( wp_unslash( $_REQUEST['height'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional dimensions of a public image request.
+			);
+		}
+
+		$configuration->serve_image( $size );
 	}
 
 	/**
