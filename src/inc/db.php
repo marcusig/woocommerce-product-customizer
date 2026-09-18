@@ -76,21 +76,10 @@ class DB {
 		if ( ! $product || ! is_a( $product, 'WC_Product' ) ) return false;
 
 		$data = $product->get_meta( '_mkl_product_configurator_' . $that );
+		$data = $this->decode_stored_value( $data );
 
-		$data = maybe_unserialize( $data );
-
-		if ( is_string( $data ) ) {
-			$decoded_data = json_decode( $data, true );
-		
-			if ( JSON_ERROR_NONE !== json_last_error() ) {
-				$decoded_data = json_decode( stripslashes( $data ), true );
-			}
-		
-			$data = $decoded_data;
-		}
-
-		if ( '' == $data || false == $data ) {
-			return false; 
+		if ( ! is_array( $data ) || '' == $data ) {
+			return false;
 		} else {
 			/**
 			 * Filters the data fetched using the Get method
@@ -103,6 +92,48 @@ class DB {
 			wp_cache_set( $cache_key, $data, 'mkl_pc', 3600 );
 			return $data; 
 		}
+	}
+
+	/**
+	 * Decode a stored configurator meta value to an array.
+	 *
+	 * WooCommerce already unserializes PHP arrays. A leftover string is treated as JSON first.
+	 * Serialized objects are never instantiated.
+	 *
+	 * @param mixed $data
+	 * @return array|false
+	 */
+	private function decode_stored_value( $data ) {
+		if ( is_array( $data ) ) {
+			return $data;
+		}
+
+		if ( ! is_string( $data ) || '' === $data ) {
+			return false;
+		}
+
+		$decoded_data = json_decode( $data, true );
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
+			$decoded_data = json_decode( stripslashes( $data ), true );
+		}
+
+		if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_data ) ) {
+			return $decoded_data;
+		}
+
+		if ( is_serialized( $data ) ) {
+			$trimmed = trim( $data );
+			// Object / class / enum payloads must not be instantiated.
+			if ( isset( $trimmed[0] ) && in_array( $trimmed[0], array( 'O', 'C', 'E' ), true ) ) {
+				return false;
+			}
+			$unserialized = @unserialize( $trimmed, array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged -- Legacy PHP-serialized arrays only; objects are rejected above.
+			if ( is_array( $unserialized ) ) {
+				return $unserialized;
+			}
+		}
+
+		return false;
 	}
 
 	public function get_indexed( $type, $key, $product_id ) {
@@ -137,20 +168,26 @@ class DB {
 	 * @param integer $id        - The product ID 
 	 * @param integer $ref_id    - The referring ID
 	 * @param string  $component - Which component to save (Layers, angles, content)
-	 * @param array   $raw_data  - The data
-	 * @return array
+	 * @param array   $raw_data  - The data (or the 'empty' sentinel)
+	 * @return array|false False when the write is refused.
 	 */
 	public function set( $id, $ref_id, $component, $raw_data, $modified_choices = false ) {
 		if( ! $this->is_product( $id ) ) return false;
 
 		if( $ref_id !== $id && !$this->is_product( $ref_id ) ) return false;
 
+		// Only an array, or the explicit 'empty' sentinel, may be stored. A raw string would be
+		// wrapped by the meta API and unserialized on read.
+		if ( 'empty' !== $raw_data && ! is_array( $raw_data ) ) {
+			return false;
+		}
+
 		do_action( 'mkl_pc_before_save_product_configuration_'.$component, $id, $raw_data );
 		do_action( 'mkl_pc_before_save_product_configuration', $id, $raw_data );
 
 		if ( 'empty' === $raw_data ) {
 			$data = array();
-		} elseif ( is_array( $raw_data ) ) {
+		} else {
 			// Remove active state. Defaults to first item
 			foreach ($raw_data as $key => $value) {
 				if( isset( $value['active'] ) ) {
@@ -165,11 +202,12 @@ class DB {
 				}
 			}
 			$data = $raw_data;
-		} else {
-			$data = $raw_data;
 		}
 
 		$data = apply_filters( 'mkl_product_configurator/data/set/' . $component, $data, $id );
+		if ( ! is_array( $data ) ) {
+			return false;
+		}
 		$product = wc_get_product( $id );
 		$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
 		$product->update_meta_data( '_mkl_product_configurator_' . $component , $data );

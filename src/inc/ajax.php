@@ -303,18 +303,31 @@ class Ajax {
 			wp_send_json_error( [ 'message' => __( 'No data was received', 'product-configurator-for-woocommerce' ) ], 400 );
 		}
 
-		$raw_component_data = wp_unslash( $_REQUEST[ $component ] );
+		$raw_component_data = wp_unslash( $_REQUEST[ $component ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is decoded then sanitized via db->sanitize(); nonce was verified above.
 
-		if ( apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
-			$data = json_decode( $raw_component_data, true );
-		}
-
-		if ( empty( $data ) ) {
+		/**
+		 * Decode the payload. A value that does not decode to an array must never be stored: a
+		 * non-JSON string would be kept as-is, wrapped by the meta API, then unserialized on read.
+		 *
+		 * 'empty' is the explicit "the user removed everything" sentinel sent by the admin app.
+		 */
+		if ( is_array( $raw_component_data ) ) {
+			// Form-encoded structure rather than a JSON string: PHP already decoded it.
 			$data = $raw_component_data;
+		} elseif ( ! is_string( $raw_component_data ) ) {
+			wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Unexpected data was received, so nothing was saved.', 'product-configurator-for-woocommerce' ) ], 400 );
+		} elseif ( 'empty' === $raw_component_data ) {
+			$data = 'empty';
+		} else {
+			$data = json_decode( $raw_component_data, true );
+
+			if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $data ) ) {
+				wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The data received was incomplete or malformed, so nothing was saved. Please try again.', 'product-configurator-for-woocommerce' ) ], 400 );
+			}
 		}
 
-		// Sanitize the incoming data
-		if ( apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
+		// Sanitize the incoming data. The filter only controls sanitization: decoding above always runs.
+		if ( 'empty' !== $data && apply_filters( 'mkl_set_configurator_data_sanitize', true ) ) {
 			$data = $this->db->sanitize( $data );
 		}
 
@@ -324,7 +337,14 @@ class Ajax {
 		}
 
 		$result = $this->db->set( $id, $ref_id, $component, $data, $modified_choices );
-		
+
+		// DB::set() returns false when it refuses the write (unknown product, or data it will not
+		// trust). Report that as an error so the admin app keeps the component marked as modified
+		// instead of treating an unwritten save as successful.
+		if ( false === $result ) {
+			wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The data could not be stored, so nothing was changed. Please try again.', 'product-configurator-for-woocommerce' ) ], 500 );
+		}
+
 		/**
 		 * Action mkl_pc_saved_configurator_data, triggered when an item is saved
 		 *
