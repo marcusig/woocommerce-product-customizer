@@ -19,6 +19,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		private function _hooks() {
 			add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'save_data' ), 20, 4 );
 			add_filter( 'woocommerce_order_item_get_formatted_meta_data', array( $this, 'maybe_override_formatted_meta_data' ), 30, 2 );
+			add_filter( 'woocommerce_order_item_display_meta_value', array( $this, 'maybe_display_in_current_language' ), 20, 3 );
 			add_filter( 'woocommerce_hidden_order_itemmeta', array( $this, 'hide_configuration_order_item_meta' ), 10, 1 );
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
@@ -421,6 +422,47 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				}
 			}
 			return $formatted_meta;
+		}
+
+		/**
+		 * Display the configuration in the current language, when the order was placed in another one.
+		 *
+		 * The configuration meta is stored at checkout, in the language the customer ordered in. It
+		 * is rebuilt when displayed in another language: the admin's order page, and the emails
+		 * TranslatePress sends in the admin's language (the New order email is sent during the
+		 * customer's checkout, so this cannot be limited to wp-admin).
+		 *
+		 * @param string         $display_value
+		 * @param object         $meta
+		 * @param \WC_Order_Item $order_item
+		 * @return string
+		 */
+		public function maybe_display_in_current_language( $display_value, $meta, $order_item ) {
+			if ( ! is_object( $meta ) || ! isset( $meta->value ) || ! is_string( $meta->value ) ) return $display_value;
+			if ( ! strpos( $meta->value, 'order-configuration' ) || strpos( $meta->value, 'order-configuration-details' ) ) return $display_value;
+			if ( ! is_callable( [ $order_item, 'get_meta' ] ) ) return $display_value;
+
+			$configurator_data = $order_item->get_meta( '_configurator_data' );
+			if ( ! $this->saved_in_other_language( $configurator_data ) ) return $display_value;
+
+			$rebuilt = $this->get_formatted_configurator_data( $configurator_data, $order_item );
+			return $rebuilt ? $rebuilt : $display_value;
+		}
+
+		/**
+		 * Whether a stored configuration was saved in another language than the one being displayed
+		 *
+		 * @param array $configurator_data - The order item's `_configurator_data`
+		 * @return bool
+		 */
+		public function saved_in_other_language( $configurator_data ) {
+			if ( ! is_array( $configurator_data ) ) return false;
+			foreach ( $configurator_data as $choice ) {
+				if ( ! is_object( $choice ) || ! is_callable( [ $choice, 'saved_in_current_language' ] ) ) continue;
+				// Every choice of a configuration is saved in the same language: the first one is enough.
+				return $choice->is_stored() && ! $choice->saved_in_current_language();
+			}
+			return false;
 		}
 
 		public function set_order_item_meta( $layer, $product ) {

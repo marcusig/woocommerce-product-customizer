@@ -32,13 +32,6 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 			
 			if ( ! is_string( $meta->value ) || ! strpos( $meta->value, 'order-configuration' ) ) return $display_value;
 
-			// The configuration is stored as it was displayed at checkout, in the customer's language.
-			// Rebuild it when the order was placed in another language than the one displayed here.
-			if ( ! strpos( $meta->value, 'order-configuration-details' ) && $this->saved_in_other_language( $configurator_data ) ) {
-				$rebuilt = mkl_pc( 'frontend' )->order->get_formatted_configurator_data( $configurator_data, $order_item );
-				if ( $rebuilt ) $display_value = $rebuilt;
-			}
-
 			// Automatically override items with 'order-configuration-details'
 			if ( is_string( $meta->value ) && apply_filters( 'mkl/order/override_saved_meta', strpos( $meta->value, 'order-configuration-details' ) ) ) {
 			
@@ -70,22 +63,6 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 			$view_link = $order_item->get_meta( '_configurator_data_raw' ) ? get_permalink( $order_item->get_product_id() ) : false;
 			
 			return $display_value . ( $view_link ? '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>' : '' );
-		}
-
-		/**
-		 * Whether a stored configuration was saved in another language than the one being displayed
-		 *
-		 * @param array $configurator_data - The order item's `_configurator_data`
-		 * @return bool
-		 */
-		private function saved_in_other_language( $configurator_data ) {
-			if ( ! is_array( $configurator_data ) ) return false;
-			foreach ( $configurator_data as $choice ) {
-				if ( ! is_object( $choice ) || ! is_callable( [ $choice, 'saved_in_current_language' ] ) ) continue;
-				// Every choice of a configuration is saved in the same language: the first one is enough.
-				return $choice->is_stored() && ! $choice->saved_in_current_language();
-			}
-			return false;
 		}
 
 		public function wc_admin_order_item_display_configurator_data( $item_id, $item, $_product ) {
