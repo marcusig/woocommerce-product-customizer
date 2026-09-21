@@ -20,6 +20,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'save_data' ), 20, 4 );
 			add_filter( 'woocommerce_order_item_get_formatted_meta_data', array( $this, 'maybe_override_formatted_meta_data' ), 30, 2 );
 			add_filter( 'woocommerce_order_item_display_meta_value', array( $this, 'maybe_display_in_current_language' ), 20, 3 );
+			add_filter( 'woocommerce_order_item_get_formatted_meta_data', array( $this, 'maybe_display_individual_meta_in_current_language' ), 20, 2 );
 			add_filter( 'woocommerce_hidden_order_itemmeta', array( $this, 'hide_configuration_order_item_meta' ), 10, 1 );
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
@@ -268,7 +269,33 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		 * @return void
 		 */
 		protected function add_individual_layer_meta( $item, $choices ) {
-			if ( empty( $choices ) || ! is_array( $choices ) ) return;
+			$pairs = $this->get_individual_layer_meta( $item, $choices );
+			if ( empty( $pairs ) ) return;
+
+			$map = [];
+			foreach ( $pairs as $pair ) {
+				$item->add_meta_data( $pair['key'], $pair['value'], false );
+				$map[] = [
+					'key'       => $pair['key'],
+					'value'     => $pair['value'],
+					'layer_id'  => $pair['layer_id'],
+					'choice_id' => $pair['choice_id'],
+				];
+			}
+			// Which layer each meta was made from, so it can be displayed in another language.
+			$item->add_meta_data( '_configurator_individual_meta', $map, true );
+		}
+
+		/**
+		 * Build the individual layer metas: one key / value pair per layer, as plain text.
+		 *
+		 * @param \WC_Order_Item $item
+		 * @param array          $choices Output of {@see prepare_configuration_choices()}
+		 * @return array - [ 'key', 'value', 'layer_id', 'choice_id' ] per meta
+		 */
+		protected function get_individual_layer_meta( $item, $choices ) {
+			$pairs = [];
+			if ( empty( $choices ) || ! is_array( $choices ) ) return $pairs;
 
 			foreach ( $choices as $choice ) {
 				if ( empty( $choice ) || ! is_array( $choice ) ) continue;
@@ -322,8 +349,63 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				// nothing to gain from storing them.
 				if ( ! is_scalar( $value ) || '' === (string) $value ) continue;
 
-				$item->add_meta_data( (string) $key, (string) $value, false );
+				$pairs[] = [
+					'key'       => (string) $key,
+					'value'     => (string) $value,
+					'layer_id'  => $layer && isset( $layer->layer_id ) ? $layer->layer_id : null,
+					'choice_id' => $layer && isset( $layer->choice_id ) ? $layer->choice_id : null,
+				];
 			}
+			return $pairs;
+		}
+
+		/**
+		 * Display the individual layer metas in the current language, when the order was placed in another one.
+		 *
+		 * Like the combined configuration, they are stored at checkout in the customer's language.
+		 * Each one is matched to its layer through `_configurator_individual_meta`, and replaced by
+		 * the same meta built in the current language. Orders placed before that map existed are
+		 * left as they are.
+		 *
+		 * @param array          $formatted_meta
+		 * @param \WC_Order_Item $order_item
+		 * @return array
+		 */
+		public function maybe_display_individual_meta_in_current_language( $formatted_meta, $order_item ) {
+			if ( empty( $formatted_meta ) || ! is_callable( [ $order_item, 'get_meta' ] ) ) return $formatted_meta;
+
+			$map = $order_item->get_meta( '_configurator_individual_meta' );
+			if ( empty( $map ) || ! is_array( $map ) ) return $formatted_meta;
+
+			$configurator_data = $order_item->get_meta( '_configurator_data' );
+			if ( ! $this->saved_in_other_language( $configurator_data ) ) return $formatted_meta;
+
+			// Index the metas in the current language by layer and choice. A layer can hold
+			// several metas (eg. multiple choices), so keep them in order.
+			$current = [];
+			foreach ( $this->get_individual_layer_meta( $order_item, $this->prepare_configuration_choices( $configurator_data, $order_item ) ) as $pair ) {
+				$current[ $pair['layer_id'] . ':' . $pair['choice_id'] ][] = $pair;
+			}
+
+			// Pair each stored meta with the map entry it was written from, in the same order.
+			$seen = [];
+			foreach ( $formatted_meta as $id => $meta ) {
+				foreach ( $map as $index => $entry ) {
+					if ( isset( $seen[ $index ] ) || ! is_array( $entry ) ) continue;
+					if ( ! isset( $entry['key'], $entry['value'] ) || (string) $entry['key'] !== (string) $meta->key || (string) $entry['value'] !== (string) $meta->value ) continue;
+					$seen[ $index ] = true;
+
+					$layer_key = ( isset( $entry['layer_id'] ) ? $entry['layer_id'] : '' ) . ':' . ( isset( $entry['choice_id'] ) ? $entry['choice_id'] : '' );
+					if ( empty( $current[ $layer_key ] ) ) break;
+					$pair = array_shift( $current[ $layer_key ] );
+
+					$formatted_meta[ $id ]->display_key   = apply_filters( 'woocommerce_order_item_display_meta_key', $pair['key'], $meta, $order_item );
+					$formatted_meta[ $id ]->display_value = wpautop( make_clickable( apply_filters( 'woocommerce_order_item_display_meta_value', $pair['value'], $meta, $order_item ) ) );
+					break;
+				}
+			}
+
+			return $formatted_meta;
 		}
 
 		/**
