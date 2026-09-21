@@ -357,6 +357,9 @@ PC.fe.views.form = Backbone.View.extend({
 		if ( $button.hasClass( 'adding-to-quote' ) ) return;
 		$button.addClass( 'adding-to-quote' ).prop( 'disabled', true );
 
+		if ( ! PC.fe.add_to_cart_modal ) PC.fe.add_to_cart_modal = new PC.fe.views.add_to_cart_modal();
+		PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atq-adding' );
+
 		var request_body = this.$cart && this.$cart.length ? new FormData( this.$cart[0] ) : new FormData();
 		// Nothing here is an add to cart.
 		request_body.delete( 'add-to-cart' );
@@ -420,15 +423,42 @@ PC.fe.views.form = Backbone.View.extend({
 			if ( $widgets.length ) $widgets.ywraq_refresh_widget();
 		}
 
+		if ( PC_config.config.ywraq_hide_add_to_cart && PC.fe.trigger_el && PC.fe.trigger_el[0] && 'button' === PC.fe.trigger_el[0].type ) {
+			$( PC.fe.trigger_el[0] ).remove();
+		}
+
 		if ( response.redirect && response.list_url ) {
+			PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atq-redirect', response );
 			window.location.href = response.list_url;
 			return;
 		}
 
-		if ( ! PC.fe.inline ) PC.fe.modal.close();
-		if ( PC_config.config.ywraq_hide_add_to_cart && PC.fe.trigger_el && PC.fe.trigger_el[0] && 'button' === PC.fe.trigger_el[0].type ) {
-			$( PC.fe.trigger_el[0] ).remove();
+		this.show_quote_count( $button, response.count );
+
+		// The configurator stays open: the confirmation offers to keep configuring or to go to the list.
+		PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atq-added', response );
+	},
+
+	/**
+	 * Show how many items the quote request holds, on the quote button.
+	 *
+	 * @param {jQuery} $button The quote button.
+	 * @param {number} count   Items in the list.
+	 */
+	show_quote_count: function( $button, count ) {
+		count = parseInt( count, 10 );
+		var $badge = $button.find( '.pc-quote-count' );
+		if ( ! count ) {
+			$badge.remove();
+			return;
 		}
+		if ( ! $badge.length ) {
+			$badge = $( '<span class="pc-quote-count"></span>' ).appendTo( $button );
+		}
+		var labels = PC_config.config.ywraq_count_label || {};
+		var label = ( ( 1 === count ? labels.one : labels.other ) || '%s' ).replace( '%s', count );
+		$badge.text( count ).attr( 'title', label );
+		$button.addClass( 'has-quote-items' ).attr( 'aria-description', label );
 	},
 
 	/**
@@ -438,8 +468,7 @@ PC.fe.views.form = Backbone.View.extend({
 	 */
 	show_quote_error: function( message ) {
 		if ( ! PC.fe.add_to_cart_modal ) PC.fe.add_to_cart_modal = new PC.fe.views.add_to_cart_modal();
-		$( document.body ).addClass( 'show-add-to-cart-modal' );
-		PC.fe.add_to_cart_modal.show_message( 'not-added', message || PC_config.config.ywraq_error_message || '' );
+		PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atc-not-added', { messages: message || PC_config.config.ywraq_error_message || '' } );
 	},
 
 	/**

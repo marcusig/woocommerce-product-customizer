@@ -36,6 +36,7 @@ class Compat_Yith_Raq {
 		add_action( 'wp_ajax_pc_add_to_quote', [ $this, 'ajax_add_to_quote' ] );
 		add_action( 'wp_ajax_nopriv_pc_add_to_quote', [ $this, 'ajax_add_to_quote' ] );
 		add_filter( 'ywraq_force_start_session', [ $this, 'start_session_for_add_to_quote' ] );
+		add_action( 'mkl_pc_frontend_templates_after', [ $this, 'print_quote_templates' ] );
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		// add_filter( 'yith_ywraq_product_subtotal_html', [ $this, 'apply_extra_price' ], 20, 3 );
 		add_action( 'ywraq_quote_adjust_price', [ $this, 'apply_extra_price' ], 20, 2 );
@@ -51,6 +52,13 @@ class Compat_Yith_Raq {
 		$config['ywraq_hide_price']       = 'yes' === get_option( 'ywraq_hide_price' );
 		// Shown when the quote request itself fails (network, bad response).
 		$config['ywraq_error_message']    = $this->ajax_error_message();
+		// The count is only known in the browser, so both forms go there.
+		$config['ywraq_count_label']      = array(
+			/* translators: %s: number of items (1) in the quote request */
+			'one'   => __( '%s item in your quote request', 'product-configurator-for-woocommerce' ),
+			/* translators: %s: number of items (2 or more) in the quote request */
+			'other' => __( '%s items in your quote request', 'product-configurator-for-woocommerce' ),
+		);
 		return $config;
 	}
 
@@ -245,7 +253,7 @@ class Compat_Yith_Raq {
 		}
 
 		if ( 'true' === $result ) {
-			$message = ywraq_get_label( 'product_added' );
+			$message = $this->get_yith_label( 'product_added', __( 'Product added to the list!', 'yith-woocommerce-request-a-quote' ) );
 		} else {
 			$message = mkl_pc( 'settings' )->get_label( 'quote_item_updated', __( 'This product was already in your quote request: its configuration has been updated.', 'product-configurator-for-woocommerce' ) );
 		}
@@ -254,12 +262,14 @@ class Compat_Yith_Raq {
 			apply_filters(
 				'mkl_pc/yith-raq/add_to_quote_response',
 				array(
-					'result'   => 'true' === $result ? 'added' : 'updated',
-					'message'  => $message,
-					'item_key' => $item_key,
-					'list_url' => $rq->get_raq_page_url(),
-					'count'    => count( $rq->raq_content ),
-					'redirect' => 'yes' === get_option( 'ywraq_after_click_action', 'no' ),
+					'result'       => 'true' === $result ? 'added' : 'updated',
+					'message'      => $message,
+					'item_key'     => $item_key,
+					'product_name' => $product->get_name(),
+					'image_url'    => $this->get_item_image_url( $item_key ),
+					'list_url'     => $rq->get_raq_page_url(),
+					'count'        => count( $rq->raq_content ),
+					'redirect'     => 'yes' === get_option( 'ywraq_after_click_action', 'no' ),
 				),
 				$item_key,
 				$rq->raq_content
@@ -280,6 +290,97 @@ class Compat_Yith_Raq {
 	public function start_session_for_add_to_quote( $force ) {
 		if ( $force || ! wp_doing_ajax() ) return $force;
 		return isset( $_REQUEST['action'] ) && 'pc_add_to_quote' === $_REQUEST['action']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides whether a session starts.
+	}
+
+	/**
+	 * The picture stored on a quote item, for the confirmation in the configurator.
+	 *
+	 * Only the 3D capture: a 2D image would have to be merged on the spot, which is too slow for an
+	 * answer the shopper is waiting on.
+	 *
+	 * @param string $item_key Quote item key.
+	 * @return string URL, or ''.
+	 */
+	private function get_item_image_url( $item_key ) {
+		$content = YITH_Request_Quote()->raq_content;
+		if ( empty( $content[ $item_key ]['configurator_3d_screenshot_path'] ) ) return '';
+		$url = mkl_pc( 'frontend' )->cart->get_3d_screenshot_url( $content[ $item_key ]['configurator_3d_screenshot_path'] );
+		return $url ? $url : '';
+	}
+
+	/**
+	 * A YITH label, with a fallback.
+	 *
+	 * Premium reads `get_option( 'ywraq_show_<key>' ) ?? default`, and get_option() returns false,
+	 * not null, for an option never saved - so an untouched label comes back empty.
+	 *
+	 * @param string $key      Label key.
+	 * @param string $fallback Text when YITH has none.
+	 * @return string
+	 */
+	private function get_yith_label( $key, $fallback ) {
+		$label = function_exists( 'ywraq_get_label' ) ? ywraq_get_label( $key ) : '';
+		return ( is_string( $label ) && '' !== trim( $label ) ) ? $label : $fallback;
+	}
+
+	/**
+	 * Templates for the quote confirmation, shown in the configurator's add to cart modal.
+	 *
+	 * @return void
+	 */
+	public function print_quote_templates() {
+		$settings = mkl_pc( 'settings' );
+		?>
+		<script type="text/html" id="tmpl-mkl-pc-atq-adding" data-wg-notranslate>
+			<div class="adding-to-cart--adding adding-to-quote--adding">
+				<div class="header"><?php echo esc_html( $settings->get_label( 'adding_to_quote', __( 'Adding to your quote request', 'product-configurator-for-woocommerce' ) ) ); ?></div>
+				<div class="spinner"></div>
+			</div>
+		</script>
+
+		<script type="text/html" id="tmpl-mkl-pc-atq-added" data-wg-notranslate>
+			<div class="adding-to-cart--added adding-to-quote--added has-box" role="status">
+				<div class="header">
+					<svg viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="116.61"/><polyline points="73.61 150 129.81 206.19 223.76 112.24"/></svg>
+					<div class="title">
+						<# if ( 'updated' === data.result ) { #>
+							<?php echo esc_html( $settings->get_label( 'quote_updated_title', __( 'Quote request updated', 'product-configurator-for-woocommerce' ) ) ); ?>
+						<# } else { #>
+							<?php echo esc_html( $settings->get_label( 'quote_added_title', __( 'Added to your quote request', 'product-configurator-for-woocommerce' ) ) ); ?>
+						<# } #>
+					</div>
+				</div>
+				<div class="adding-to-quote--item">
+					<# if ( data.image_url ) { #>
+						<img class="adding-to-quote--image" src="{{ data.image_url }}" alt="">
+					<# } #>
+					<div class="adding-to-quote--details">
+						<# if ( data.product_name ) { #><div class="adding-to-quote--name">{{ data.product_name }}</div><# } #>
+						<# if ( 'updated' === data.result ) { #>
+							<?php // "Added" is already the title; the update is the case that needs explaining. ?>
+							<div class="messages">{{{ data.message }}}</div>
+						<# } #>
+					</div>
+				</div>
+				<div class="adding-to-cart--adding-cta">
+					<button type="button" class="button continue-shopping keep-configuring"><?php echo esc_html( $settings->get_label( 'keep_configuring', __( 'Keep configuring', 'product-configurator-for-woocommerce' ) ) ); ?></button>
+					<# if ( data.list_url ) { #>
+						<span class="or"><?php esc_html_e( 'or', 'product-configurator-for-woocommerce' ); ?></span>
+						<a href="{{ data.list_url }}" class="button view-quote-list"><?php echo esc_html( $this->get_yith_label( 'browse_list', __( 'Browse the list', 'yith-woocommerce-request-a-quote' ) ) ); ?><# if ( data.count ) { #> ({{ data.count }})<# } #></a>
+					<# } #>
+				</div>
+				<?php do_action( 'tmpl-mkl-pc-atq-added' ); ?>
+			</div>
+		</script>
+
+		<script type="text/html" id="tmpl-mkl-pc-atq-redirect" data-wg-notranslate>
+			<div class="adding-to-cart--added-with-redirection adding-to-quote--redirect has-box" role="status">
+				<div class="header"><?php echo esc_html_x( 'Done!', 'Part of message displayed when the product is successfully added to the quote request', 'product-configurator-for-woocommerce' ); ?></div>
+				<p>{{{ data.message }}}</p>
+				<div class="spinner"></div>
+			</div>
+		</script>
+		<?php
 	}
 
 	/**

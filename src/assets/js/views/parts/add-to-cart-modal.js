@@ -55,5 +55,17 @@ PC.fe.views.add_to_cart_modal = Backbone.View.extend({
 	 */
 	show_message: function( type, messages ) {
 		this.$el.empty().append( wp.template( 'mkl-pc-atc-' + type )( { messages: messages || '' } ) );
+	},
+	/**
+	 * Open the modal on a given template, for flows other than the cart (the quote request).
+	 *
+	 * @param {string} template_id wp.template id, without the `tmpl-` prefix.
+	 * @param {Object} data        Template data.
+	 */
+	show_template: function( template_id, data ) {
+		$( document.body ).addClass( 'show-add-to-cart-modal' );
+		this.$el.empty().append( wp.template( template_id )( data || {} ) );
+		// The first action takes the focus, so a keyboard user lands on the choices it offers.
+		this.$( 'button, a.button' ).first().trigger( 'focus' );
 	}
 } )
