@@ -4200,26 +4200,42 @@ a.mkl-pc-link--external::before {
 		}
 	}
 	
+	min-width: 0;
+
+	// Reorder arrows | fields | remove. Fields stack in the middle column so a row
+	// with several visible fields (e.g. Choice > Actions) never outgrows the sidebar.
 	.field-repeater--option {
-		display: flex;
-		align-items: center;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: start;
 		padding: 8px;
 		border-bottom: 1px solid #e0e0e0;
-		gap: 4px;
+		gap: 6px 4px;
+
+		> *:not(.order):not(.remove-option) {
+			grid-column: 2;
+			min-width: 0;
+		}
 
 		label {
-			flex: 1;
-			margin-right: 5px;
+			display: block;
 			input {
 				float: none;
 			}
-			input[type="text"], input[type="number"] {
+			input[type="text"], input[type="number"], select {
 				display: block;
+				box-sizing: border-box;
 				width: 100%;
+				max-width: 100%;
 			}
-			
+		}
+		.pc-attachment-link {
+			display: block;
+			overflow-wrap: anywhere;
 		}
 		.remove-option {
+			grid-column: 3;
+			grid-row: 1;
 			border: none;
 			i.dashicons {
 				line-height: 1;
@@ -4230,6 +4246,8 @@ a.mkl-pc-link--external::before {
 			} 
 		}		
 		.order {
+			grid-column: 1;
+			grid-row: 1;
 			display: flex;
 			flex-direction: column;
 			margin-right: 3px;
