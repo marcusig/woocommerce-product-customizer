@@ -33,6 +33,9 @@ class Compat_Yith_Raq {
 		add_filter( 'ywraq_product_image', [ $this, 'item_image' ], 20, 2 );
 		add_filter( 'mkl_pc_js_config', [ $this, 'config' ] );
 		add_action( 'mkl_pc_frontend_configurator_after_add_to_cart', [ $this, 'add_add_to_quote_button' ], 15 );
+		add_action( 'wp_ajax_pc_add_to_quote', [ $this, 'ajax_add_to_quote' ] );
+		add_action( 'wp_ajax_nopriv_pc_add_to_quote', [ $this, 'ajax_add_to_quote' ] );
+		add_filter( 'ywraq_force_start_session', [ $this, 'start_session_for_add_to_quote' ] );
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		// add_filter( 'yith_ywraq_product_subtotal_html', [ $this, 'apply_extra_price' ], 20, 3 );
 		add_action( 'ywraq_quote_adjust_price', [ $this, 'apply_extra_price' ], 20, 2 );
@@ -46,6 +49,8 @@ class Compat_Yith_Raq {
 	public function config( $config ) {
 		$config['ywraq_hide_add_to_cart'] = 'yes' === get_option( 'ywraq_hide_add_to_cart' );
 		$config['ywraq_hide_price']       = 'yes' === get_option( 'ywraq_hide_price' );
+		// Shown when the quote request itself fails (network, bad response).
+		$config['ywraq_error_message']    = $this->ajax_error_message();
 		return $config;
 	}
 
@@ -108,7 +113,11 @@ class Compat_Yith_Raq {
 	}
 
 	/**
-	 * Main action used to add the configuration to the quote
+	 * Attach the configuration to a quote item added by YITH's own button.
+	 *
+	 * The path the configurator used before it had its own request (ajax_add_to_quote()): the product
+	 * form is filled in and YITH's button clicked, so YITH posts the form and this runs once the item is
+	 * in the list. Still reached when the shopper uses YITH's button on the product page directly.
 	 *
 	 * @return void
 	 */
@@ -117,104 +126,338 @@ class Compat_Yith_Raq {
 		$ywraq_action = isset( $_POST['ywraq_action'] ) ? sanitize_key( wp_unslash( $_POST['ywraq_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same YITH quote nonce as above.
 		$is_adding_configured_item = ( 'yith_ywraq_action' === $action ) && ( 'add_item' === $ywraq_action ) && isset( $_POST['pc_configurator_data'] );
 		if ( ! $is_adding_configured_item ) return;
+		// attach_configuration() saves the session, which fires this hook again.
 		static $added = false;
 		if ( $added ) return;
 		$rq = YITH_Request_Quote();
-		$item_id = false;
-	
+
 		$product_id   = isset( $_REQUEST['product_id'] ) ? absint( wp_unslash( $_REQUEST['product_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same YITH quote nonce as yith_raq_updated().
 		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( wp_unslash( $_REQUEST['variation_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same YITH quote nonce as yith_raq_updated().
 
+		$item_id = $variation_id ? md5( $product_id . $variation_id ) : md5( $product_id );
+		if ( ! isset( $rq->raq_content[ $item_id ] ) ) return;
+
+		$raw_configurator_data = wp_unslash( $_POST['pc_configurator_data'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- YITH quote nonce; JSON is decoded then sanitized in attach_configuration().
+		// Not sanitize_text_field()ed: that strips the percent-encoded octets Premium posts;
+		// save_3d_screenshot_to_temp() validates the data URL itself.
+		$screenshot = isset( $_POST['pc_3d_screenshot'] ) ? wp_unslash( $_POST['pc_3d_screenshot'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as a PNG data URL in save_3d_screenshot_to_temp().
+
+		$added = true;
+		if ( ! $this->attach_configuration( $item_id, $raw_configurator_data, $screenshot ) ) {
+			$added = false;
+		}
+	}
+
+	/**
+	 * Add a configured product to the quote list, without YITH's markup on the page.
+	 *
+	 * The configurator's own request, the quote counterpart of pc_add_to_cart: the item goes in through
+	 * YITH_Request_Quote::add_item(), which both Free and Premium expose, so it works wherever the
+	 * configurator is (a shortcode on any page) and the answer comes back to the configurator instead of
+	 * to YITH's button. No nonce, like pc_add_to_cart: the quote list lives in the visitor's own session,
+	 * and a cached page would carry a stale one.
+	 *
+	 * Responds with `result` - `added`, `updated` (the product was already in the list, and its
+	 * configuration was replaced by this one) or `error` - plus `message`, `list_url`, `count` and
+	 * `redirect` (YITH's "go to the list after adding" setting).
+	 *
+	 * @return void
+	 */
+	public function ajax_add_to_quote() {
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- See the docblock: same model as pc_add_to_cart.
+		$requested_id = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0;
+		$product      = $requested_id ? wc_get_product( $requested_id ) : false;
+		$raw_data     = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON, decoded then sanitized in attach_configuration().
+		$screenshot   = isset( $_POST['pc_3d_screenshot'] ) ? wp_unslash( $_POST['pc_3d_screenshot'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as a PNG data URL in save_3d_screenshot_to_temp().
+		$raw_quantity = isset( $_POST['quantity'] ) ? sanitize_text_field( wp_unslash( $_POST['quantity'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		$error = $this->ajax_error_message();
+		if ( ! $product || 'publish' !== get_post_status( $product->get_id() ) || ! is_string( $raw_data ) ) {
+			wp_send_json( array( 'result' => 'error', 'message' => $error ) );
+		}
+
+		$variation_id = 0;
+		$product_id   = $product->get_id();
+		$variation    = array();
+		if ( $product->is_type( 'variation' ) ) {
+			$variation_id = $product_id;
+			$product_id   = $product->get_parent_id();
+			$variation    = $product->get_variation_attributes();
+			// An "any" attribute is empty on the variation; the shopper's choice is in the product form.
+			foreach ( $variation as $name => $value ) {
+				if ( '' === $value && isset( $_POST[ $name ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same as above.
+					$variation[ $name ] = sanitize_text_field( wp_unslash( $_POST[ $name ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same as above.
+				}
+			}
+		}
+
+		$parent = $variation_id ? wc_get_product( $product_id ) : $product;
+		if ( ! $parent || ! $this->can_quote_product( $parent ) ) {
+			wp_send_json( array( 'result' => 'error', 'message' => $error ) );
+		}
+
+		$configurable = mkl_pc_is_configurable( $product_id ) || ( $variation_id && mkl_pc_is_configurable( $variation_id ) );
+		if ( $configurable && ! $this->is_valid_payload( $raw_data ) ) {
+			wp_send_json( array( 'result' => 'error', 'message' => $error ) );
+		}
+
+		// YITH's own checks (Free refuses products a guest cannot see), and anyone else's.
+		// validate_add_to_quote() runs here too and checks the payload once more.
+		if ( ! apply_filters( 'ywraq_ajax_add_item_is_valid', true, $product_id ) ) {
+			wp_send_json( array( 'result' => 'error', 'message' => $error ) );
+		}
+
+		$quantity = ( '' === $raw_quantity || '0' === $raw_quantity ) ? 1 : wc_stock_amount( $raw_quantity );
+		$item     = array_merge(
+			array(
+				'product_id' => $product_id,
+				'quantity'   => max( 1, $quantity ),
+			),
+			$variation
+		);
+		// Both versions tell a simple product from a variation by the key being there at all.
 		if ( $variation_id ) {
-			// single product.
-			$item_id = md5( $product_id . $variation_id );
+			$item['variation_id'] = $variation_id;
+		}
+
+		$rq          = YITH_Request_Quote();
+		$keys_before = is_array( $rq->raq_content ) ? array_keys( $rq->raq_content ) : array();
+		$result      = $rq->add_item( $item );
+		$item_key    = $this->find_item_key( $product_id, $variation_id, $keys_before );
+
+		if ( ( 'true' !== $result && 'exists' !== $result ) || ! $item_key ) {
+			wp_send_json( array( 'result' => 'error', 'message' => $error ) );
+		}
+
+		if ( $configurable && ! $this->attach_configuration( $item_key, $raw_data, $screenshot ) ) {
+			// Only an item this request put in; one that was already there keeps what it had.
+			if ( 'true' === $result ) {
+				$rq->remove_item( $item_key );
+			}
+			wp_send_json( array( 'result' => 'error', 'message' => $error ) );
+		}
+
+		// As YITH's own add does: marks the visitor as having something in progress, so page caches
+		// stop serving them the anonymous page.
+		if ( ! isset( $_COOKIE['woocommerce_items_in_cart'] ) ) {
+			do_action( 'woocommerce_set_cart_cookies', true );
+		}
+
+		if ( 'true' === $result ) {
+			$message = ywraq_get_label( 'product_added' );
 		} else {
-			$item_id = md5( $product_id );
+			$message = mkl_pc( 'settings' )->get_label( 'quote_item_updated', __( 'This product was already in your quote request: its configuration has been updated.', 'product-configurator-for-woocommerce' ) );
 		}
 
-		if ( isset( $rq->raq_content[ $item_id ] ) ) {
-			$raq = $rq->raq_content[ $item_id ];
-			$raw_configurator_data = wp_unslash( $_POST['pc_configurator_data'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- YITH quote nonce; JSON is decoded then sanitized via db->sanitize().
-			if ( ! is_string( $raw_configurator_data ) ) {
-				return;
-			}
+		wp_send_json(
+			apply_filters(
+				'mkl_pc/yith-raq/add_to_quote_response',
+				array(
+					'result'   => 'true' === $result ? 'added' : 'updated',
+					'message'  => $message,
+					'item_key' => $item_key,
+					'list_url' => $rq->get_raq_page_url(),
+					'count'    => count( $rq->raq_content ),
+					'redirect' => 'yes' === get_option( 'ywraq_after_click_action', 'no' ),
+				),
+				$item_key,
+				$rq->raq_content
+			)
+		);
+	}
 
-			// Same decoding as the cart, including the URL-encoded payloads YITH Premium posts.
-			$data = mkl_pc( 'frontend' )->cart->decode_configurator_payload( $raw_configurator_data );
-			if ( null !== $data ) {
-				$data = mkl_pc( 'db' )->sanitize( $data );
-				// Stored normalized, so every later reader (reopening the configurator, the order
-				// copy) decodes plain JSON rather than whatever encoding the browser posted.
-				$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = wp_json_encode( $data );
+	/**
+	 * Give a guest a quote session on the configurator's add to quote.
+	 *
+	 * Premium starts its session only when the request carries its own `ywraq_action=add_item`
+	 * (or the visitor already has a list), so without this a first add from pc_add_to_quote went
+	 * into a list that was never saved. Free always starts one.
+	 *
+	 * @param bool $force Whether YITH should start the session.
+	 * @return bool
+	 */
+	public function start_session_for_add_to_quote( $force ) {
+		if ( $force || ! wp_doing_ajax() ) return $force;
+		return isset( $_REQUEST['action'] ) && 'pc_add_to_quote' === $_REQUEST['action']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only decides whether a session starts.
+	}
 
-				// A 3D configuration has no layer images to merge, so the quote shows the picture the
-				// viewer took, as the cart does. Stored under the key the order code reads, so accepting
-				// the quote carries it over. Not sanitize_text_field()ed: that strips the percent-encoded
-				// octets Premium posts; save_3d_screenshot_to_temp() validates the data URL itself.
-				if ( mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- YITH verifies its own add-to-quote nonce before this action.
-					$screenshot_path = mkl_pc( 'frontend' )->cart->save_3d_screenshot_to_temp( wp_unslash( $_POST['pc_3d_screenshot'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as a PNG data URL there.
-					if ( $screenshot_path ) {
-						$rq->raq_content[ $item_id ][ 'configurator_3d_screenshot_path' ] = $screenshot_path;
-					}
-				}
-				$layers = array();
-				$product_id = $raq['product_id'];
-				$variation_id = isset( $raq['variation_id'] ) ? $raq['variation_id'] : 0;
-				$ep = 0;
-				if ( is_array( $data ) ) { 
-					foreach( $data as $layer_data ) {
-						// A payload is only an array of choices by convention; anything else in it is not one.
-						if ( ! is_object( $layer_data ) || ! isset( $layer_data->layer_id, $layer_data->choice_id ) ) {
-							continue;
-						}
-						$angle_id = isset( $layer_data->angle_id ) ? $layer_data->angle_id : 0;
-						$choice = new \MKL\PC\Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $angle_id, $layer_data );
-						if ( $item_price = $choice->get_choice( 'extra_price' ) ) {
-							$ep += $item_price;
-						}
-						$layers[] = $choice;
-						do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$data ) );
-					}
-				}
-				$temp_item_data = [];
-				if ( $variation_id ) {
-					$_product = wc_get_product( $variation_id );
-				} else {
-					$_product = wc_get_product( $product_id );
-				}
-				$temp_item_data['configurator_data'] = $layers;
-				$temp_item_data = array_merge(
-					$temp_item_data,
-					array(
-						'key'          => $item_id,
-						'context'      => 'configuration_to_yithraq',
-						'product_id'   => $product_id,
-						'variation_id' => $variation_id,
-						'variation'    => false,
-						'quantity'     => 1,
-						'data'         => $_product,
-						'data_hash'    => '',
-					)
-				);
-				$d = apply_filters( 'woocommerce_get_item_data', [], $temp_item_data );
-				$rq->raq_content[ $item_id ][ 'pc_configurator_data' ] = $d;
-				$rq->raq_content[ $item_id ][ 'pc_layers' ] = $layers;
-				$rq->raq_content[ $item_id ][ 'configurator_data' ] = $layers;
-				$rq->raq_content[ $item_id ][ 'configurator_data_raw' ] = $data;
-				$rq->raq_content[ $item_id ][ 'pc_extra_price' ] = $ep;
-				// YITH Free HTML email only outputs item meta when `variations` is set.
-				// Simple products have no variation attributes; use an empty array as a flag only.
-				// Do not copy configurator display data into `variations` — variable products already
-				// use that array for WC attributes, and duplicating config there causes double output.
-				if ( empty( $variation_id ) && ! isset( $rq->raq_content[ $item_id ]['variations'] ) ) {
-					$rq->raq_content[ $item_id ]['variations'] = array();
-				}
-				$added = true;
-				do_action_ref_array( 'mkl_pc/yith-raq/added_product', array( &$rq->raq_content, $item_id, $layers ) );
-				$rq->set_session( $rq->raq_content );
-			}
-			// $rq->update_item( $item_id, 'pc_configurator_data', $_POST['pc_configurator_data'] );
+	/**
+	 * The quote item a product went into, whichever key YITH gave it.
+	 *
+	 * Premium lets the key be filtered (ywraq_quote_item_id), so it is not always md5 of the ids: a
+	 * new item is the key that was not there before, and one already in the list is found by its ids.
+	 *
+	 * @param int   $product_id   Parent product.
+	 * @param int   $variation_id Variation, or 0.
+	 * @param array $keys_before  List keys before the add.
+	 * @return string|false
+	 */
+	private function find_item_key( $product_id, $variation_id, $keys_before ) {
+		$content = YITH_Request_Quote()->raq_content;
+		if ( ! is_array( $content ) ) return false;
+
+		$new_keys = array_diff( array_keys( $content ), $keys_before );
+		if ( 1 === count( $new_keys ) ) {
+			return reset( $new_keys );
 		}
+
+		foreach ( $content as $key => $item ) {
+			if ( ! is_array( $item ) || ! isset( $item['product_id'] ) || (int) $item['product_id'] !== (int) $product_id ) continue;
+			$item_variation = isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0;
+			if ( $item_variation === (int) $variation_id ) return $key;
+		}
+		return false;
+	}
+
+	/**
+	 * Whether YITH would show its quote button for this product on its own page.
+	 *
+	 * Both versions decide from filters that read the global product: the "show on single page"
+	 * option and exclusion list, and in Premium the user roles and the out-of-stock rules. Asking them
+	 * keeps the configurator's button in step with YITH's without YITH's button being on the page.
+	 *
+	 * @param \WC_Product $quote_product Parent product.
+	 * @return bool
+	 */
+	public function can_quote_product( $quote_product ) {
+		if ( ! $quote_product || ! is_a( $quote_product, 'WC_Product' ) ) return false;
+
+		global $product;
+		$previous = $product;
+		$product  = $quote_product; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- YITH's filters read the global product.
+
+		$show = apply_filters( 'yith_ywraq-show_btn_single_page', 'yes' ); // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- YITH's hook name.
+		$show = ( true === $show || 'yes' === $show || '1' === $show || 1 === $show );
+		if ( $show ) {
+			$show = (bool) apply_filters( 'yith_ywraq_before_print_button', true, $quote_product );
+		}
+
+		$product = $previous; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restoring what was borrowed above.
+
+		/**
+		 * Filter whether the configurator offers "Add to quote" for a product.
+		 *
+		 * @param bool        $show    Whether the button shows.
+		 * @param \WC_Product $product Product.
+		 */
+		return (bool) apply_filters( 'mkl_pc/yith-raq/can_quote_product', $show, $quote_product );
+	}
+
+	/**
+	 * Whether a posted configuration can be read, the rule the cart uses.
+	 *
+	 * @param string $raw_configurator_data Posted payload.
+	 * @return bool
+	 */
+	private function is_valid_payload( $raw_configurator_data ) {
+		if ( ! is_string( $raw_configurator_data ) || '' === $raw_configurator_data ) {
+			return (bool) mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' );
+		}
+		return null !== mkl_pc( 'frontend' )->cart->decode_configurator_payload( $raw_configurator_data );
+	}
+
+	/**
+	 * YITH's generic "could not add" message.
+	 *
+	 * @return string
+	 */
+	private function ajax_error_message() {
+		return apply_filters( 'yith_ywraq_error_adding_to_list_message', __( 'Error occurred while adding product to Request a Quote list.', 'yith-woocommerce-request-a-quote' ) );
+	}
+
+	/**
+	 * Store a configuration on a quote item: the raw payload, the layers, the display data, the
+	 * extra price and, for 3D, the viewer's picture.
+	 *
+	 * Replaces whatever configuration the item had.
+	 *
+	 * @param string $item_id               Quote item key.
+	 * @param string $raw_configurator_data Posted payload, JSON or URL-encoded JSON.
+	 * @param string $screenshot            PNG data URL from the viewer, or ''.
+	 * @return bool False when the item is missing or the payload cannot be read.
+	 */
+	public function attach_configuration( $item_id, $raw_configurator_data, $screenshot = '' ) {
+		$rq = YITH_Request_Quote();
+		if ( ! isset( $rq->raq_content[ $item_id ] ) || ! is_string( $raw_configurator_data ) ) {
+			return false;
+		}
+		$raq = $rq->raq_content[ $item_id ];
+
+		// Same decoding as the cart, including the URL-encoded payloads YITH Premium posts.
+		$data = mkl_pc( 'frontend' )->cart->decode_configurator_payload( $raw_configurator_data );
+		if ( null === $data ) {
+			return false;
+		}
+		$data = mkl_pc( 'db' )->sanitize( $data );
+		// Stored normalized, so every later reader (reopening the configurator, the order
+		// copy) decodes plain JSON rather than whatever encoding the browser posted.
+		$rq->raq_content[ $item_id ][ 'pc_configurator_data_raw' ] = wp_json_encode( $data );
+
+		// A 3D configuration has no layer images to merge, so the quote shows the picture the
+		// viewer took, as the cart does. Stored under the key the order code reads, so accepting
+		// the quote carries it over.
+		if ( mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && is_string( $screenshot ) && '' !== $screenshot ) {
+			$screenshot_path = mkl_pc( 'frontend' )->cart->save_3d_screenshot_to_temp( $screenshot );
+			if ( $screenshot_path ) {
+				$rq->raq_content[ $item_id ][ 'configurator_3d_screenshot_path' ] = $screenshot_path;
+			}
+		}
+		$layers = array();
+		$product_id = $raq['product_id'];
+		$variation_id = isset( $raq['variation_id'] ) ? $raq['variation_id'] : 0;
+		$ep = 0;
+		if ( is_array( $data ) ) { 
+			foreach( $data as $layer_data ) {
+				// A payload is only an array of choices by convention; anything else in it is not one.
+				if ( ! is_object( $layer_data ) || ! isset( $layer_data->layer_id, $layer_data->choice_id ) ) {
+					continue;
+				}
+				$angle_id = isset( $layer_data->angle_id ) ? $layer_data->angle_id : 0;
+				$choice = new \MKL\PC\Choice( $product_id, $variation_id, $layer_data->layer_id, $layer_data->choice_id, $angle_id, $layer_data );
+				if ( $item_price = $choice->get_choice( 'extra_price' ) ) {
+					$ep += $item_price;
+				}
+				$layers[] = $choice;
+				do_action_ref_array( 'mkl_pc/wc_cart_add_item_data/adding_choice', array( $choice, &$data ) );
+			}
+		}
+		$temp_item_data = [];
+		if ( $variation_id ) {
+			$_product = wc_get_product( $variation_id );
+		} else {
+			$_product = wc_get_product( $product_id );
+		}
+		$temp_item_data['configurator_data'] = $layers;
+		$temp_item_data = array_merge(
+			$temp_item_data,
+			array(
+				'key'          => $item_id,
+				'context'      => 'configuration_to_yithraq',
+				'product_id'   => $product_id,
+				'variation_id' => $variation_id,
+				'variation'    => false,
+				'quantity'     => 1,
+				'data'         => $_product,
+				'data_hash'    => '',
+			)
+		);
+		$d = apply_filters( 'woocommerce_get_item_data', [], $temp_item_data );
+		$rq->raq_content[ $item_id ][ 'pc_configurator_data' ] = $d;
+		$rq->raq_content[ $item_id ][ 'pc_layers' ] = $layers;
+		$rq->raq_content[ $item_id ][ 'configurator_data' ] = $layers;
+		$rq->raq_content[ $item_id ][ 'configurator_data_raw' ] = $data;
+		$rq->raq_content[ $item_id ][ 'pc_extra_price' ] = $ep;
+		// YITH Free HTML email only outputs item meta when `variations` is set.
+		// Simple products have no variation attributes; use an empty array as a flag only.
+		// Do not copy configurator display data into `variations` — variable products already
+		// use that array for WC attributes, and duplicating config there causes double output.
+		if ( empty( $variation_id ) && ! isset( $rq->raq_content[ $item_id ]['variations'] ) ) {
+			$rq->raq_content[ $item_id ]['variations'] = array();
+		}
+		do_action_ref_array( 'mkl_pc/yith-raq/added_product', array( &$rq->raq_content, $item_id, $layers ) );
+		$rq->set_session( $rq->raq_content );
+		return true;
 	}
 
 	/**
@@ -447,6 +690,19 @@ class Compat_Yith_Raq {
 	 */
 	public function add_add_to_quote_button() {
 		if ( ! function_exists( 'ywraq_get_label' ) ) return;
+
+		// The same product configurator_form() prints the form for, a shortcode's included.
+		global $product, $mkl_product;
+		$quote_product = $product;
+		if ( ! is_a( $quote_product, 'WC_Product' ) && is_a( $mkl_product, 'WC_Product' ) ) {
+			$quote_product = $mkl_product;
+		}
+		if ( ! is_a( $quote_product, 'WC_Product' ) ) {
+			$quote_product = wc_get_product();
+		}
+		// With no product to ask about, the button stays: ajax_add_to_quote() checks again anyway.
+		if ( is_a( $quote_product, 'WC_Product' ) && ! $this->can_quote_product( $quote_product ) ) return;
+
 		$frontend = mkl_pc( 'frontend' )->product;
 		?>
 		<button type="button" class="<?php echo esc_attr( $frontend->button_class ); ?> yith-raq add-to-quote">
