@@ -8,6 +8,13 @@ PC.fe.save_data = {
 		if ( false !== reset_errors ) this.reset_errors();
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
+		// The saved names are in the language the customer configured in. Record it, so the
+		// order can be displayed in another language (eg. the admin's) from the product data.
+		if ( PC.fe.lang ) {
+			_.each( this.choices, function( choice ) {
+				if ( choice && 'object' === typeof choice && ! choice.lang ) choice.lang = PC.fe.lang;
+			} );
+		}
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
 		return JSON.stringify( this.choices );
 	},

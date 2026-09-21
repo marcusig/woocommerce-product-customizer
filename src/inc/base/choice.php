@@ -198,12 +198,23 @@ class Choice {
 		'sku'  => 'sku',
 	];
 
+	/**
+	 * The saved fields that are in the language the configuration was saved in.
+	 *
+	 * @var array
+	 */
+	private static $translatable_fields = [ 'name' ];
+
 	public function get_layer( $item ) {
 		$this->maybe_set_things_up();
 
 		if ( isset( self::$saved_layer_fields[ $item ] ) && $this->is_stored() ) {
 			$saved = $this->get_saved( self::$saved_layer_fields[ $item ] );
-			if ( null !== $saved ) return $saved;
+			if ( null !== $saved ) {
+				if ( ! in_array( $item, self::$translatable_fields, true ) || $this->saved_in_current_language() ) return $saved;
+				// Saved in another language: use the product's data, unless the layer is gone.
+				return isset( $this->layer[ $item ] ) ? $this->layer[ $item ] : $saved;
+			}
 		}
 
 		return isset( $this->layer[ $item ] ) ? $this->layer[ $item ] : null;
@@ -212,12 +223,52 @@ class Choice {
 	public function get_choice( $item ) {
 		$this->maybe_set_things_up();
 
+		$live = property_exists( $this, 'choice' ) && isset( $this->choice[ $item ] ) ? $this->choice[ $item ] : null;
+
 		if ( isset( self::$saved_choice_fields[ $item ] ) && $this->is_stored() ) {
 			$saved = $this->get_saved( self::$saved_choice_fields[ $item ] );
-			if ( null !== $saved ) return $saved;
+			if ( null !== $saved ) {
+				if ( ! in_array( $item, self::$translatable_fields, true ) || $this->saved_in_current_language() ) return $saved;
+				// Saved in another language: use the product's data, unless the choice is gone.
+				return null !== $live ? $live : $saved;
+			}
 		}
 
-		return property_exists( $this, 'choice' ) && isset( $this->choice[ $item ] ) ? $this->choice[ $item ] : null;
+		return $live;
+	}
+
+	/**
+	 * Whether the names saved with the configuration are in the language being displayed.
+	 *
+	 * The configurator saves the names the customer saw, which on a multilingual site are the
+	 * `name_{lang}` translations. Read back in another language - typically the admin viewing
+	 * the order in the site's default language - they have to come from the product instead,
+	 * where the default name and every translation live. Configurations saved without a
+	 * language (single-language sites) are always in the right one.
+	 *
+	 * @return bool
+	 */
+	public function saved_in_current_language() {
+		$saved_language = $this->get_saved( 'lang' );
+		if ( ! is_string( $saved_language ) || '' === $saved_language ) return true;
+
+		$current_language = mkl_pc( 'languages' )->get_current_language();
+		// Not multilingual (any more): nothing to compare against.
+		if ( ! $current_language ) return true;
+
+		$matches = str_replace( '-', '_', $saved_language ) === str_replace( '-', '_', $current_language );
+
+		/**
+		 * mkl_pc/choice/saved_in_current_language - Filters whether the names saved with a
+		 * configuration are displayed as they were saved
+		 *
+		 * @param bool   $matches
+		 * @param string $saved_language   - The language the configuration was saved in
+		 * @param string $current_language - The language being displayed
+		 * @param Choice $choice
+		 * @return bool
+		 */
+		return (bool) apply_filters( 'mkl_pc/choice/saved_in_current_language', $matches, $saved_language, $current_language, $this );
 	}
 
 	/**
