@@ -888,12 +888,15 @@ PC.views = window.PC.views || {};
 		event.preventDefault();
 		const $link = $( event.currentTarget );
 		const setting = $link.data( 'setting' ) || 'ar_placeholder';
-		const section = $link.data( 'section' ) || 'ar';
+		const section = $link.data( 'section' );
 		wp.ajax.post( {
 			action: 'mkl_pc_hide_addon_setting',
 			setting,
 			security: PC_lang.user_preferences_nonce,
 		} ).done( function() {
+			if ( ! section ) {
+				return;
+			}
 			$( '.pc-3d-section-panel[data-section-id="' + section + '"]' ).remove();
 			$( '.pc-3d-section-tab[data-section-tab="' + section + '"]' ).remove();
 		} );

@@ -20,7 +20,8 @@ PC.views = PC.views || {};
 			var parent = PC.views.layers.prototype.events || {};
 			return _.extend( {}, parent, {
 				'click .pc-3d-add-toggle': 'toggle_add_menu',
-				'click .pc-3d-add-tile': 'create_from_tile',
+				'click .pc-3d-add-tile:not(.pc-3d-add-tile--teaser)': 'create_from_tile',
+				'click .pc-3d-premium-objects-notice .hide-addon-placeholder': 'hide_premium_objects_notice',
 			} );
 		} )(),
 		single_view: function() { return PC.views.object3d_item; },
@@ -31,6 +32,18 @@ PC.views = PC.views || {};
 				order: this.col.nextOrder(),
 				active: true,
 			};
+		},
+		hide_premium_objects_notice: function( event ) {
+			event.preventDefault();
+			event.stopPropagation();
+			var setting_name = 'objects3d_premium_placeholder';
+			$( event.currentTarget ).closest( '.pc-3d-premium-objects-notice' ).remove();
+			localStorage.setItem( 'mkl_pc_settings_hide__' + setting_name, true );
+			wp.ajax.post( {
+				action: 'mkl_pc_hide_addon_setting',
+				setting: setting_name,
+				security: PC_lang.user_preferences_nonce,
+			} );
 		},
 		toggle_add_menu: function( event ) {
 			event.preventDefault();

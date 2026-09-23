@@ -3164,6 +3164,28 @@ ul.layers > li.mkl-list-item--filtered-out {
 		text-align: center;
 		white-space: normal;
 	}
+	.pc-3d-premium-objects-notice {
+		.addon-setting-info {
+			padding: 8px 10px;
+		}
+		.pc-3d-add-grid {
+			margin: 8px 0 4px;
+		}
+	}
+	.pc-3d-add-tile--teaser {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		min-height: 60px;
+		padding: 10px 8px;
+		box-sizing: border-box;
+		color: #1d2327;
+		background: #f6f7f7;
+		border-radius: 2px;
+		cursor: default;
+	}
 }
 
 .structure-toolbar {

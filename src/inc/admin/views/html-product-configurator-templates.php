@@ -300,6 +300,45 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 							</div>
 						</div>
 						<?php do_action( 'mkl_pc_admin_objects3d_add_tiles' ); ?>
+						<?php
+						if ( \MKL\PC\Admin_Product_3D::should_show_objects3d_premium_notice() ) :
+							$objects3d_premium_name = __( '3D Premium Features', 'product-configurator-for-woocommerce' );
+							$objects3d_premium_url  = apply_filters( 'mkl_pc_3d_premium_addon_url', 'https://wc-product-configurator.com/' );
+							?>
+						<# if ( ! localStorage.getItem( "mkl_pc_settings_hide__objects3d_premium_placeholder" ) ) { #>
+						<div class="pc-3d-premium-objects-notice add-on-placeholder">
+							<div class="addon-setting-info">
+								<p>
+									<?php
+									echo wp_kses_post(
+										sprintf(
+											/* translators: 1: add-on name, 2: opening link tag, 3: closing link tag */
+											_x( '%1$s is available as %2$san add-on%3$s.', 'First placeholder is the add-on name, second and third are the link tags to the add-on', 'product-configurator-for-woocommerce' ),
+											esc_html( $objects3d_premium_name ),
+											'<a href="' . esc_url( $objects3d_premium_url ) . '" target="_blank" rel="noopener noreferrer" class="mkl-pc-link--external">',
+											'</a>'
+										)
+									);
+									?>
+								</p>
+								<p><?php esc_html_e( 'Add hotspots and animation controllers to the 3D scene.', 'product-configurator-for-woocommerce' ); ?></p>
+								<div class="pc-3d-add-grid">
+									<span class="pc-3d-add-tile pc-3d-add-tile--teaser">
+										<?php echo mkl_pc_include_svg_icon( '3d/mesh_cube' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?>
+										<span class="pc-3d-add-tile-label"><?php esc_html_e( 'Hotspot', 'product-configurator-for-woocommerce' ); ?></span>
+									</span>
+									<span class="pc-3d-add-tile pc-3d-add-tile--teaser">
+										<?php echo mkl_pc_include_svg_icon( '3d/play' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG from plugin assets, sanitized by wp_kses. ?>
+										<span class="pc-3d-add-tile-label"><?php esc_html_e( 'Animation controller', 'product-configurator-for-woocommerce' ); ?></span>
+									</span>
+								</div>
+								<p><a href="#" class="hide-addon-placeholder" data-setting="objects3d_premium_placeholder"><?php esc_html_e( 'Hide this notice', 'product-configurator-for-woocommerce' ); ?></a></p>
+							</div>
+						</div>
+						<# } #>
+							<?php
+						endif;
+						?>
 					</div>
 				</div>
 				<# } else { #>

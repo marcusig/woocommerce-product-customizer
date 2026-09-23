@@ -88,6 +88,16 @@ class Admin_Product_3D {
 	}
 
 	/**
+	 * Whether the 3D object menu should tease hotspots and animation controllers.
+	 *
+	 * @return bool
+	 */
+	public static function should_show_objects3d_premium_notice() {
+		return ! class_exists( 'MKL_PC_3D_Premium' )
+			&& ! get_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__objects3d_premium_placeholder', true );
+	}
+
+	/**
 	 * Register an AR settings tab that promotes the 3D Premium add-on when it is inactive.
 	 *
 	 * @param array $sections 3D settings sections.
