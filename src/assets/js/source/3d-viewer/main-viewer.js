@@ -42,7 +42,7 @@ import {
 	orbit_hint_done,
 } from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 
 const Backbone = window.Backbone;
@@ -53,7 +53,7 @@ const wp = window.wp;
  * Bumped when something an add-on can observe changes; add-ons that need a
  * newer member should feature-detect it rather than compare numbers.
  */
-const RUNTIME_API_VERSION = 2;
+const RUNTIME_API_VERSION = 3;
 
 /**
  * How long the orbit hint will wait on a `PC.fe.viewer.intro` promise.
@@ -246,11 +246,28 @@ export default Backbone.View.extend({
 				if ( object3dId == null ) return null;
 				return this._objectIdToScene[ String( object3dId ).trim() ] || null;
 			},
+			// Every mounted copy of a model. A model is mounted once today, so
+			// this is the scene above in a one-item list; it is here so add-ons
+			// are written for a model placed several times (one leg file on each
+			// of a table's anchors) and can act on all copies or pick one.
+			// Absent on hosts older than API version 3.
+			getScenesForObject3dId: ( object3dId ) => {
+				if ( object3dId == null ) return [];
+				const scene = this._objectIdToScene[ String( object3dId ).trim() ];
+				return scene ? [ scene ] : [];
+			},
 			ensureObject3dLoaded: ( object3dId ) => this._ensureObjects3dSceneLoadedById( object3dId ),
 			findObjectByCompositeId: ( compositeId ) => {
 				const t = this._three;
 				if ( ! t || ! t.model_root ) return null;
 				return findObjectByCompositeId( t.model_root, compositeId );
+			},
+			// Plural of the above: one match per copy of the model. Absent on
+			// hosts older than API version 3.
+			findObjectsByCompositeId: ( compositeId ) => {
+				const t = this._three;
+				if ( ! t || ! t.model_root ) return [];
+				return findObjectsByCompositeId( t.model_root, compositeId );
 			},
 			findObjectById: ( id ) => this._findObjectById( id ),
 			getActiveAngle: () => {
@@ -1997,10 +2014,6 @@ export default Backbone.View.extend({
 			this._choice_views.forEach( ( view ) => view.remove() );
 			this._choice_views = [];
 		}
-		if ( this.angles_selector ) {
-			this.angles_selector.remove();
-			this.angles_selector = null;
-		}
 		this._layer_scenes = [];
 		// Keep shared GLTFLoader module cache; drop the instance ref only.
 		this._gltfLoader = null;
@@ -2047,6 +2060,10 @@ export default Backbone.View.extend({
 
 	remove() {
 		this.maybe_cleanup();
+		if ( this.angles_selector ) {
+			this.angles_selector.remove();
+			this.angles_selector = null;
+		}
 		Backbone.View.prototype.remove.apply( this, arguments );
 		return this;
 	},

@@ -14,6 +14,7 @@ import {
 	getHdrUrlFromEnv,
 	getDefaultHdrPresetFilename,
 	findObjectByCompositeId,
+	findObjectsByCompositeId,
 	findObject,
 	getPixelRatio,
 	MAX_PIXEL_RATIO,
@@ -226,6 +227,62 @@ describe( 'findObject / findObjectByCompositeId', () => {
 		// No separator: first match anywhere wins.
 		expect( findObjectByCompositeId( root, 'Seat' ) ).toBe( seatA );
 		expect( findObjectByCompositeId( root, 'Legs' ).name ).toBe( 'Legs' );
+	} );
+} );
+
+describe( 'findObjectsByCompositeId', () => {
+	const node = ( name, children = [], extra = {} ) => ( {
+		name,
+		uuid: 'uuid-' + name,
+		children,
+		userData: {},
+		...extra,
+	} );
+
+	it( 'returns the one copy a model has today, as a list', () => {
+		const seat = node( 'Seat' );
+		const root = node( 'root', [ node( 'chair', [ seat ], { userData: { object_id: '10' } } ) ] );
+		expect( findObjectsByCompositeId( root, '10:Seat' ) ).toEqual( [ seat ] );
+	} );
+
+	it( 'returns one match per copy when a model is mounted more than once', () => {
+		// What anchor placement will produce: the same leg model under several roots.
+		const feet = [ node( 'Foot' ), node( 'Foot' ), node( 'Foot' ) ];
+		const legs = feet.map( ( foot ) => node( 'leg', [ foot ], { userData: { object_id: '12', attachment_id: 80 } } ) );
+		const other = node( 'top', [ node( 'Foot' ) ], { userData: { object_id: '3' } } );
+		const root = node( 'root', [ legs[ 0 ], other, legs[ 1 ], legs[ 2 ] ] );
+
+		expect( findObjectsByCompositeId( root, '12:Foot' ) ).toEqual( feet );
+		expect( findObjectsByCompositeId( root, '80:Foot' ) ).toEqual( feet );
+		// The singular lookup keeps its contract: the first copy.
+		expect( findObjectByCompositeId( root, '12:Foot' ) ).toBe( feet[ 0 ] );
+	} );
+
+	it( 'skips a copy that lacks the part instead of stopping', () => {
+		const foot = node( 'Foot' );
+		const root = node( 'root', [
+			node( 'leg', [], { userData: { object_id: '12' } } ),
+			node( 'leg', [ foot ], { userData: { object_id: '12' } } ),
+		] );
+		expect( findObjectsByCompositeId( root, '12:Foot' ) ).toEqual( [ foot ] );
+	} );
+
+	it( 'returns an empty list for bad input, an unknown source or a reserved qualifier', () => {
+		const root = node( 'root', [ node( 'leg', [ node( 'Foot' ) ], { userData: { object_id: '12' } } ) ] );
+		expect( findObjectsByCompositeId( null, '12:Foot' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '12:' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '999:Foot' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '12@leg_socket_2:Foot' ) ).toEqual( [] );
+	} );
+
+	it( 'keeps a bare id to the legacy first match', () => {
+		const first = node( 'Foot' );
+		const root = node( 'root', [
+			node( 'leg', [ first ], { userData: { object_id: '12' } } ),
+			node( 'leg', [ node( 'Foot' ) ], { userData: { object_id: '12' } } ),
+		] );
+		expect( findObjectsByCompositeId( root, 'Foot' ) ).toEqual( [ first ] );
 	} );
 } );
 

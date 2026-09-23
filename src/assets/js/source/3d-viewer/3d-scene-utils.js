@@ -1368,6 +1368,10 @@ export function findObject( root, objectId ) {
 	return null;
 }
 
+// The source half is always an integer id, which leaves room to qualify it
+// later without touching ids already saved: a planned form names one copy of a
+// model placed several times (e.g. "12@leg_socket_2:Foot"). Nothing parses a
+// qualifier yet — such an id simply finds nothing.
 const COMPOSITE_ID_SEP = ':';
 
 /**
@@ -1403,6 +1407,49 @@ export function findObjectByCompositeId( modelRoot, compositeId ) {
 		}
 	}
 	return null;
+}
+
+/**
+ * Every copy of an object addressed by composite id "sourceId:objectName".
+ *
+ * A model is mounted once today, so this returns at most one object. It exists
+ * so callers are written for a model placed several times — the same leg file
+ * mounted on each of a table's anchors — where "legs:Foot" means every foot,
+ * one per copy, in mount order. Code that wants a single copy picks from this
+ * list; the singular lookup keeps returning the first.
+ *
+ * A bare id (no separator) is not scoped to a model, so it keeps the legacy
+ * first-match-anywhere behaviour and yields at most one object.
+ *
+ * @param {THREE.Object3D} modelRoot - Full scene root (main + layer scenes as children)
+ * @param {string} compositeId - "sourceId:objectName" or legacy "name"/"uuid"
+ * @returns {THREE.Object3D[]}
+ */
+export function findObjectsByCompositeId( modelRoot, compositeId ) {
+	if ( ! modelRoot || ! compositeId ) return [];
+	const id = String( compositeId ).trim();
+	const sepIdx = id.indexOf( COMPOSITE_ID_SEP );
+	if ( sepIdx === -1 ) {
+		const obj = findObject( modelRoot, id );
+		return obj ? [ obj ] : [];
+	}
+	const sourceId = id.slice( 0, sepIdx );
+	const objectName = id.slice( sepIdx + 1 );
+	if ( ! objectName ) return [];
+	const roots = [ modelRoot ].concat( modelRoot.children ? Array.from( modelRoot.children ) : [] );
+	const found = [];
+
+	for ( let i = 0; i < roots.length; i++ ) {
+		const r = roots[ i ];
+		if ( ! r || ! r.userData ) continue;
+		const attId = r.userData.attachment_id;
+		const objId = r.userData.object_id;
+		const match = ( attId != null && String( attId ) === sourceId ) || ( objId != null && String( objId ) === sourceId );
+		if ( ! match ) continue;
+		const obj = findObject( r, objectName );
+		if ( obj ) found.push( obj );
+	}
+	return found;
 }
 
 /**
