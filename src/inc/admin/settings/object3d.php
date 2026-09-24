@@ -344,7 +344,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 		 * @return array
 		 */
 		public function get_sections() {
-			return array(
+			return \apply_filters( 'mkl_pc_object3d_settings_sections', array(
 				'_object3d' => array(
 					'id'          => 'object3d',
 					'label'       => \__( '3D Object', 'product-configurator-for-woocommerce' ),
@@ -365,7 +365,7 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'collapsible' => true,
 					'fields'      => array(),
 				),
-			);
+			) );
 		}
 
 

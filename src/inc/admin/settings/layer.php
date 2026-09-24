@@ -305,14 +305,6 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
 						. '</div>',
 				);
-				$settings['object_3d_anchor_ids'] = array(
-					'label'    => __( 'Position on anchors', 'product-configurator-for-woocommerce' ),
-					'type'     => 'html',
-					'section'  => 'threed',
-					'priority' => 14,
-					'help'     => __( "Where the layer's object (or the whole model, if no object is set) sits by default: on an anchor, usually an empty in another model. Pick several anchors to place a copy on each. Leave empty to keep it where it was modelled.", 'product-configurator-for-woocommerce' ),
-					'html'     => Abstract_Settings::get_3d_anchor_placement_html(),
-				);
 			}
 
 			if ( mkl_pc( 'themes' )->current_theme_supports( 'columns' ) ) {

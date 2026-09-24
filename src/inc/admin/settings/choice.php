@@ -190,15 +190,6 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
 						. '</div>',
 				);
-				$fields['object_3d_anchor_ids'] = array(
-					'label'     => __( 'Position on anchors', 'product-configurator-for-woocommerce' ),
-					'type'      => 'html',
-					'section'   => 'threed',
-					'priority'  => 14,
-					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
-					'help'      => __( "While this choice is selected, moves its object (or model) onto an anchor. To move other objects when this choice is selected, use the \"Attach to anchor\" action.", 'product-configurator-for-woocommerce' ),
-					'html'      => Abstract_Settings::get_3d_anchor_placement_html(),
-				);
 				$fields['actions_3d'] = array(
 					'label'    => __( 'Actions', 'product-configurator-for-woocommerce' ),
 					'type'     => 'repeater',
@@ -216,7 +207,6 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 								array( 'label' => __( 'Change material color (from registry)', 'product-configurator-for-woocommerce' ), 'value' => 'material_color_registry' ),
 								array( 'label' => __( 'Change material property', 'product-configurator-for-woocommerce' ), 'value' => 'material_property' ),
 								array( 'label' => __( 'Apply material', 'product-configurator-for-woocommerce' ), 'value' => 'apply_material' ),
-								array( 'label' => __( 'Attach to anchor', 'product-configurator-for-woocommerce' ), 'value' => 'attach_to_anchor' ),
 							),
 							'default' => 'toggle_visibility',
 						),
@@ -278,31 +268,6 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'type'      => 'text',
 							'default'   => '',
 							'show_when' => 'material_property',
-						),
-						'anchor_target_id' => array(
-							'label'       => __( 'Object to move', 'product-configurator-for-woocommerce' ),
-							'type'        => 'object_select',
-							'default'     => '',
-							'placeholder' => __( "This choice's object", 'product-configurator-for-woocommerce' ),
-							'show_when'   => 'attach_to_anchor',
-						),
-						'anchor_ids' => array(
-							'label'     => __( 'Anchors', 'product-configurator-for-woocommerce' ),
-							'type'      => 'anchor_select',
-							'default'   => array(),
-							'show_when' => 'attach_to_anchor',
-						),
-						'anchor_follow_rotation' => array(
-							'label'     => __( 'Follow the anchor rotation', 'product-configurator-for-woocommerce' ),
-							'type'      => 'checkbox',
-							'default'   => true,
-							'show_when' => 'attach_to_anchor',
-						),
-						'anchor_follow_scale' => array(
-							'label'     => __( 'Follow the anchor scale', 'product-configurator-for-woocommerce' ),
-							'type'      => 'checkbox',
-							'default'   => false,
-							'show_when' => 'attach_to_anchor',
 						),
 					),
 				);

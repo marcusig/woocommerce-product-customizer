@@ -579,11 +579,16 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['threed_inherit_from_layer'] = esc_html__( 'Inherit from layer: %s', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_none']               = esc_html__( 'None', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_whole_model']        = esc_html__( 'Whole model', 'product-configurator-for-woocommerce' );
-				/* translators: %s: object name, e.g. "Suzanne (Chair model)" */
-				$pc_lang['threed_anchor_moves_object'] = esc_html__( 'Moves: %s', 'product-configurator-for-woocommerce' );
-				/* translators: %s: 3D model name */
-				$pc_lang['threed_anchor_moves_model']  = esc_html__( 'Moves: the whole model, %s', 'product-configurator-for-woocommerce' );
-				$pc_lang['threed_anchor_moves_nothing'] = esc_html__( 'Set a 3D model first: there is nothing to move yet.', 'product-configurator-for-woocommerce' );
+				/* translators: %s: model name */
+				$pc_lang['threed_whole_model_of']     = esc_html__( 'Whole model: %s', 'product-configurator-for-woocommerce' );
+				/* translators: %s: object or model, e.g. "Suzanne (Chair model)" */
+				$pc_lang['threed_this_choice_object'] = esc_html__( "This choice's object: %s", 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_no_anchor']          = esc_html__( 'No anchor selected', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_show_all_objects']   = esc_html__( 'Show all objects, not only empties', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_select_layout']      = esc_html__( '— Select a layout —', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_select_variant']     = esc_html__( '— Select a variant —', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_no_layouts']         = esc_html__( 'No layouts yet. Add one in 3D Objects.', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_new_variant']        = esc_html__( 'Variant', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_no_model_for_choice'] = esc_html__( 'No 3D model is set on this choice or its layer.', 'product-configurator-for-woocommerce' );
 				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu( (int) $this->ID );
 

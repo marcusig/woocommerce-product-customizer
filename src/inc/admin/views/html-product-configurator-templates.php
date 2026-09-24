@@ -1315,7 +1315,13 @@ IMPORT / EXPORT
 		<# const isMaterialSelect = field.type === 'material_select'; #>
 		<# const isObjectSelect = field.type === 'object_select'; #>
 		<# const isAnchorSelect = field.type === 'anchor_select'; #>
+		<# const isLayoutSelect = field.type === 'layout_select'; #>
+		<# const isLayoutVariantSelect = field.type === 'layout_variant_select'; #>
 		<# const showWhen = field.show_when || null; #>
+		<# if ( field.type === 'hidden' ) { #>
+			<input name="{{key}}" type="hidden" value="{{data[key] || ''}}">
+			<# return; #>
+		<# } #>
 		<div class="field-repeater-field <# if ( showWhen ) { #>pc-action-value<# } #>" <# if ( showWhen ) { #>data-show-when="{{showWhen}}"<# } #>>
 		<label>
 			{{field.label}}
@@ -1339,14 +1345,19 @@ IMPORT / EXPORT
 			<# } else if ( isMaterialSelect ) { #>
 				<span class="pc-material-select-placeholder" data-material-field="{{key}}" data-material-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></span>
 			<# } else if ( isObjectSelect ) { #>
-				<input name="{{key}}" type="text" value="{{data[key] || ''}}" placeholder="{{field.placeholder || ''}}">
-				<button type="button" class="button pc-select-3d-object" data-target="{{key}}"><?php esc_html_e( 'Select from list', 'product-configurator-for-woocommerce' ); ?></button>
+				<span class="pc-object-choice" data-object-field="{{key}}" data-model-key="{{field.model_key || ''}}" data-placeholder="{{field.placeholder || ''}}">{{data[key] || field.placeholder || ''}}</span>
+				<button type="button" class="button pc-select-3d-object" data-target="{{key}}" data-model-key="{{field.model_key || ''}}" data-with-models="{{field.with_models ? '1' : ''}}"><?php esc_html_e( 'Select from list', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button pc-clear-3d-object" data-target="{{key}}" data-model-key="{{field.model_key || ''}}"><?php esc_html_e( 'Clear', 'product-configurator-for-woocommerce' ); ?></button>
 			<# } else if ( isAnchorSelect ) { #>
-				<# const anchorIds = Array.isArray( data[key] ) ? data[key] : []; #>
+				<# const anchorIds = Array.isArray( data[key] ) ? data[key] : ( data[key] ? [ data[key] ] : [] ); #>
 				<span class="pc-anchor-list" data-anchor-field="{{key}}">
-					<# if ( anchorIds.length ) { #>{{ anchorIds.join( ', ' ) }}<# } else { #><em><?php esc_html_e( 'None selected', 'product-configurator-for-woocommerce' ); ?></em><# } #>
+					<# if ( anchorIds.length ) { #>{{ anchorIds.join( ', ' ) }}<# } else { #><em><?php esc_html_e( 'No anchor selected', 'product-configurator-for-woocommerce' ); ?></em><# } #>
 				</span>
-				<button type="button" class="button pc-select-3d-anchors" data-target="{{key}}"><?php esc_html_e( 'Select from list', 'product-configurator-for-woocommerce' ); ?></button>
+				<button type="button" class="button pc-select-3d-anchors" data-target="{{key}}" data-multiple="{{field.multiple === false ? '' : '1'}}"><?php esc_html_e( 'Select from list', 'product-configurator-for-woocommerce' ); ?></button>
+			<# } else if ( isLayoutSelect ) { #>
+				<select name="{{key}}" class="pc-layout-select" data-value="{{data[key] || ''}}"></select>
+			<# } else if ( isLayoutVariantSelect ) { #>
+				<select name="{{key}}" class="pc-layout-variant-select" data-value="{{data[key] || ''}}"></select>
 			<# } else { #>
 				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}" <# if ( field.type === 'checkbox' && ( data[key] === true || data[key] === 1 || data[key] === "1" || data[key] === "true" ) ) { #>checked<# } #>>
 			<# } #>

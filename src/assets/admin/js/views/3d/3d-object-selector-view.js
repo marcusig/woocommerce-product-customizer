@@ -1,12 +1,244 @@
 /**
- * Admin 3D object selector modal view and PC.actions.select_3d_object.
- * Depends on PC.threeD.store, PC.threeD.getGltfLoader, PC.threeD.resolveChoiceModelUrl.
+ * Admin 3D object selector modal views and the actions that open them.
+ * Depends on PC.threeD.store, PC.threeD.getObjects3DModelSources, PC.threeD.resolveModelUrl.
+ *
+ * Two views share one way of listing objects:
+ * - ObjectSelector3DView picks one object;
+ * - ObjectSelector3DMultiView picks several.
+ *
+ * Either lists one model (a URL resolved from the setting's context) or every
+ * model of the product, grouped by model, with composite ids "sourceId:name".
+ * Options that change the list:
+ * - anchors: list empties only — those with "anchor" in their name first —
+ *   with a toggle to show every object;
+ * - withModels: start each model's group with a "Whole model" entry;
+ * - idPrefix: qualify the ids of a single-model list with its model.
  */
 const $ = window.jQuery;
 const Backbone = window.Backbone;
 const wp = window.wp;
 
-const ObjectSelector3DView = Backbone.View.extend( {
+const ANCHOR_NAME = /anchor/i;
+const EMPTY_TYPE = 'Object3D';
+const WHOLE_MODEL_PREFIX = 'model:';
+
+function lang( key, fallback ) {
+	return window.PC_lang && window.PC_lang[ key ] ? window.PC_lang[ key ] : fallback;
+}
+
+/**
+ * Load every model of the product and return its objects, grouped by model.
+ *
+ * @param {function(string|null, Array<{ sourceId: string, label: string, nodes: Object[] }>)} callback
+ *   error message (or null) and the groups, in 3D Objects order
+ */
+function load_model_groups( callback ) {
+	const threeD = window.PC && window.PC.threeD;
+	if ( ! threeD || ! threeD.store || typeof threeD.store.get !== 'function' || typeof threeD.getObjects3DModelSources !== 'function' ) {
+		callback( '3D store not ready. Please try again.', [] );
+		return;
+	}
+	threeD.getObjects3DModelSources( ( err, sources ) => {
+		if ( err || ! sources || ! sources.length ) {
+			callback( 'No 3D objects. Add models in 3D Objects.', [] );
+			return;
+		}
+		const groups = new Array( sources.length );
+		let pending = sources.length;
+		let first_error = null;
+		sources.forEach( ( src, idx ) => {
+			threeD.store.get( src.url, ( load_err, data ) => {
+				if ( ! load_err && data && data.objectTree && data.objectTree.length ) {
+					const source_id = src.sourceId != null ? String( src.sourceId ) : '';
+					groups[ idx ] = {
+						sourceId: source_id,
+						label: src.sourceLabel || source_id,
+						nodes: data.objectTree.map( ( node ) => {
+							const name = node.name || node.id || '';
+							return {
+								id: source_id ? source_id + ':' + name : name,
+								name,
+								type: node.type || '',
+								depth: node.depth != null ? node.depth : 0,
+							};
+						} ),
+					};
+				} else if ( ! first_error && load_err && load_err.message ) {
+					first_error = load_err.message;
+				}
+				pending--;
+				if ( pending > 0 ) return;
+				const out = groups.filter( Boolean );
+				callback( out.length ? null : ( first_error || 'No objects to list.' ), out );
+			} );
+		} );
+	} );
+}
+
+/**
+ * Nodes to list for one group, in display order.
+ *
+ * @param {Object[]} nodes
+ * @param {{ anchors?: boolean, showAll?: boolean }} mode
+ * @returns {Object[]}
+ */
+function order_nodes( nodes, mode ) {
+	if ( ! mode.anchors || mode.showAll ) return nodes;
+	const empties = nodes.filter( ( n ) => n.type === EMPTY_TYPE );
+	const named = empties.filter( ( n ) => ANCHOR_NAME.test( n.name ) );
+	const others = empties.filter( ( n ) => ! ANCHOR_NAME.test( n.name ) );
+	// Sorted, not a tree any more: indentation would mislead.
+	return named.concat( others ).map( ( n ) => Object.assign( {}, n, { depth: 0 } ) );
+}
+
+/**
+ * Flat render list: a subheader per group (when there are several), an
+ * optional "Whole model" entry, then the group's nodes, filtered.
+ */
+function build_rows( groups, mode, filter ) {
+	const rows = [];
+	const needle = ( filter || '' ).toLowerCase();
+	const matches = ( row ) => ! needle
+		|| ( row.name && row.name.toLowerCase().indexOf( needle ) !== -1 )
+		|| ( row.id && String( row.id ).toLowerCase().indexOf( needle ) !== -1 );
+	groups.forEach( ( group ) => {
+		const group_rows = [];
+		if ( mode.withModels && group.sourceId ) {
+			const whole = {
+				id: WHOLE_MODEL_PREFIX + group.sourceId,
+				name: lang( 'threed_whole_model_of', 'Whole model: %s' ).replace( '%s', group.label ),
+				type: '',
+				depth: 0,
+				whole_model: group.sourceId,
+			};
+			if ( matches( whole ) || ( needle && group.label.toLowerCase().indexOf( needle ) !== -1 ) ) group_rows.push( whole );
+		}
+		order_nodes( group.nodes, mode ).forEach( ( node ) => {
+			if ( matches( node ) ) group_rows.push( node );
+		} );
+		if ( ! group_rows.length ) return;
+		if ( groups.length > 1 || mode.withModels ) rows.push( { subheader: group.label } );
+		rows.push( ...group_rows );
+	} );
+	return rows;
+}
+
+function escape_attr( value ) {
+	return String( value == null ? '' : value ).replace( /&/g, '&amp;' ).replace( /"/g, '&quot;' );
+}
+
+/** Shared behaviour of the single and multi selector views. */
+const selector_base = {
+	initialize( options ) {
+		this.options = options || {};
+		this.originals = { target: this.options.target, context: this.options.context };
+		this.modelUrl = this.options.modelUrl || null;
+		this.attachmentId = this.options.attachmentId != null ? this.options.attachmentId : null;
+		this.setting = this.options.setting || null;
+		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
+		this.groups = [];
+		this.mode = {
+			anchors: this.options.anchors === true,
+			withModels: this.options.withModels === true,
+			showAll: false,
+		};
+		this.loadAllSceneModels = this.options.allModels === true || this.mode.anchors || this.mode.withModels || this.defaultAllModels();
+	},
+	defaultAllModels() {
+		return false;
+	},
+	render() {
+		this.$el.html( this.template( {} ) );
+		this.$tree = this.$( '.mkl-pc-3d-object-selector--tree' );
+		this.$filterInput = this.$( '.mkl-pc-3d-object-selector--filter-input' );
+		this.$selectBtn = this.$( '.button.select' );
+		if ( this.options.title ) this.$( 'h3' ).first().text( this.options.title );
+		if ( this.mode.anchors ) {
+			const $toggle = $( '<p class="mkl-pc-3d-object-selector--show-all"><label><input type="checkbox" class="mkl-pc-3d-object-selector--show-all-input"> </label></p>' );
+			$toggle.find( 'label' ).append( document.createTextNode( lang( 'threed_show_all_objects', 'Show all objects, not only empties' ) ) );
+			this.$( '.mkl-pc-3d-object-selector--filter' ).after( $toggle );
+		}
+		this.resolveAndLoad();
+		return this;
+	},
+	resolveAndLoad() {
+		if ( this.loadAllSceneModels ) {
+			load_model_groups( ( err, groups ) => {
+				if ( err && ! groups.length ) {
+					this.showError( err );
+					return;
+				}
+				this.groups = groups;
+				this.renderRows();
+			} );
+			return;
+		}
+		const load_url = ( url, missing ) => {
+			if ( url ) this.loadModel( url );
+			else this.showError( missing );
+		};
+		if ( this.modelUrl ) {
+			this.loadModel( this.modelUrl );
+			return;
+		}
+		if ( this.attachmentId ) {
+			const attachment = wp.media.attachment( this.attachmentId );
+			attachment.fetch().done( () => {
+				const att = attachment.toJSON();
+				load_url( att.gltf_url || att.url, 'Could not get model URL from attachment.' );
+			} ).fail( () => this.showError( 'Failed to load attachment.' ) );
+			return;
+		}
+		if ( typeof this.options.resolveUrl === 'function' ) {
+			this.options.resolveUrl( ( url ) => load_url( url, this.options.noModelMessage || 'No 3D file for this source. Use a 3D object or uploaded model.' ) );
+			return;
+		}
+		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
+			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( url ) => load_url( url, 'No 3D file for this source. Use a 3D object or uploaded model.' ) );
+			return;
+		}
+		this.showError( 'No 3D file to browse. Pass modelUrl or use a 3D object/uploaded model.' );
+	},
+	loadModel( url ) {
+		if ( ! window.PC.threeD || ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' ) {
+			this.showError( '3D store not ready. Please try again.' );
+			return;
+		}
+		const prefix = this.options.idPrefix != null && String( this.options.idPrefix ) !== '' ? String( this.options.idPrefix ) : '';
+		window.PC.threeD.store.get( url, ( err, data ) => {
+			if ( err || ! data ) {
+				this.showError( ( err && err.message ) ? err.message : 'Failed to load the 3D model.' );
+				return;
+			}
+			this.groups = [ {
+				sourceId: prefix,
+				label: '',
+				nodes: ( data.objectTree || [] ).map( ( node ) => {
+					const name = node.name || node.id || '';
+					return { id: prefix ? prefix + ':' + name : ( node.id || name ), name, type: node.type || '', depth: node.depth || 0 };
+				} ),
+			} ];
+			this.renderRows();
+		} );
+	},
+	showError( message ) {
+		const $container = this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' );
+		$container.empty();
+		$container.append( $( '<p class="description"></p>' ).text( message || 'No objects to list.' ) );
+	},
+	on_filter_input() {
+		this.renderRows();
+	},
+	on_show_all_change( event ) {
+		this.mode.showAll = $( event.currentTarget ).is( ':checked' );
+		this.renderRows();
+	},
+	close() {
+		this.remove();
+	},
+};
+
+const ObjectSelector3DView = Backbone.View.extend( Object.assign( {}, selector_base, {
 	tagName: 'div',
 	className: 'mkl-pc-3d-object-selector--container',
 	template: wp.template( 'mkl-pc-3d-object-selector' ),
@@ -14,179 +246,63 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		'click .button.select': 'select',
 		'click .button.cancel': 'close',
 		'input .mkl-pc-3d-object-selector--filter-input': 'on_filter_input',
+		'change .mkl-pc-3d-object-selector--show-all-input': 'on_show_all_change',
 		'click .mkl-pc-3d-object-selector--tree [data-object-id]': 'on_tree_item_click',
 	},
 	initialize( options ) {
-		this.options = options || {};
-		this.originals = { target: this.options.target, context: this.options.context };
-		this.modelUrl = this.options.modelUrl || null;
-		this.attachmentId = this.options.attachmentId != null ? this.options.attachmentId : null;
-		this.treeNodes = [];
-		this.selectedId = null;
-		this.selectedName = null;
-		this.setting = this.options.setting || null;
-		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
-		// Some selectors (e.g. light target) don't have a "model source" field to resolve a single model URL.
-		// In that case, list objects from all models in objects3d and store composite ids "sourceId:objectName".
-		this.loadAllSceneModels = this.options.allModels === true || this.setting === 'light_target_object_id';
+		selector_base.initialize.call( this, options );
+		this.selected = null;
 	},
-	render() {
-		this.$el.html( this.template( {} ) );
-		this.$tree = this.$( '.mkl-pc-3d-object-selector--tree' );
-		this.$filterInput = this.$( '.mkl-pc-3d-object-selector--filter-input' );
-		this.$selectBtn = this.$( '.button.select' );
-		this.resolveAndLoad();
-		return this;
+	// A light's target has no model of its own to browse.
+	defaultAllModels() {
+		return this.setting === 'light_target_object_id';
 	},
-	resolveAndLoad() {
-		if ( this.loadAllSceneModels && window.PC?.threeD && typeof window.PC.threeD.getObjects3DModelSources === 'function' ) {
-			this.loadAllSceneModelsAndRender( window.PC.threeD.getObjects3DModelSources );
-			return;
-		}
-		let url = this.modelUrl;
-		if ( url ) {
-			this.loadModel( url );
-			return;
-		}
-		if ( this.attachmentId ) {
-			const attachment = wp.media.attachment( this.attachmentId );
-			attachment.fetch().done( () => {
-				const att = attachment.toJSON();
-				url = att.gltf_url || att.url;
-				if ( url ) this.loadModel( url );
-				else this.showError( 'Could not get model URL from attachment.' );
-			} ).fail( () => this.showError( 'Failed to load attachment.' ) );
-			return;
-		}
-		if ( typeof this.options.resolveUrl === 'function' ) {
-			this.options.resolveUrl( ( resolvedUrl ) => {
-				if ( resolvedUrl ) this.loadModel( resolvedUrl );
-				else this.showError( this.options.noModelMessage || 'No 3D file for this source. Use a 3D object or uploaded model.' );
-			} );
-			return;
-		}
-		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
-			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( resolvedUrl ) => {
-				if ( resolvedUrl ) this.loadModel( resolvedUrl );
-				else this.showError( 'No 3D file for this source. Use a 3D object or uploaded model.' );
-			} );
-			return;
-		}
-		this.showError( 'No 3D file to browse. Pass modelUrl or use a 3D object/uploaded model.' );
-	},
-	loadAllSceneModelsAndRender( getSources ) {
-		const view = this;
-		if ( ! window.PC?.threeD?.store || typeof window.PC.threeD.store.get !== 'function' ) {
-			view.showError( '3D store not ready. Please try again.' );
-			return;
-		}
-		const getter = typeof getSources === 'function' ? getSources : null;
-		if ( ! getter ) {
-			view.showError( 'No 3D objects. Add models in 3D Objects.' );
-			return;
-		}
-		getter( ( err, sources ) => {
-			if ( err || ! sources || ! sources.length ) {
-				view.showError( 'No 3D objects. Add models in 3D Objects.' );
-				return;
-			}
-			const results = new Array( sources.length );
-			let pending = sources.length;
-			let first_load_error = null;
-			sources.forEach( ( src, idx ) => {
-				window.PC.threeD.store.get( src.url, ( loadErr, data ) => {
-					if ( ! loadErr && data && data.objectTree && data.objectTree.length ) {
-						results[ idx ] = { sourceLabel: src.sourceLabel, sourceId: src.sourceId, objectTree: data.objectTree };
-					} else {
-						results[ idx ] = null;
-						if ( ! first_load_error && loadErr && loadErr.message ) {
-							first_load_error = loadErr.message;
-						}
-					}
-					pending--;
-					if ( pending <= 0 ) {
-						const combined = [];
-						results.forEach( ( r ) => {
-							if ( ! r ) return;
-							const sourceId = r.sourceId != null ? String( r.sourceId ) : null;
-							r.objectTree.forEach( ( node ) => {
-								const objectName = node.name || node.id || '';
-								if ( ! objectName ) return;
-								const id = sourceId ? sourceId + ':' + objectName : objectName;
-								combined.push( {
-									id,
-									name: ( r.sourceLabel ? ( r.sourceLabel + ' / ' ) : '' ) + objectName,
-									type: node.type || '',
-									depth: node.depth != null ? node.depth : 0,
-								} );
-							} );
-						} );
-						if ( ! combined.length && first_load_error ) {
-							view.showError( first_load_error );
-							return;
-						}
-						view.treeNodes = combined;
-						view.renderTree( combined );
-					}
-				} );
-			} );
-		} );
-	},
-	showError( message ) {
-		const $container = this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' );
-		$container.empty();
-		const $p = $( '<p class="description"></p>' );
-		$p.text( message || 'No objects to list.' );
-		$container.append( $p );
-	},
-	loadModel( url ) {
-		const view = this;
-		window.PC.threeD.store.get( url, ( err, data ) => {
-			if ( err || ! data ) {
-				const reason = ( err && err.message ) ? err.message : 'Failed to load the 3D model.';
-				view.showError( reason );
-				return;
-			}
-			view.treeNodes = data.objectTree || [];
-			view.renderTree( view.treeNodes );
-		} );
-	},
-	renderTree( nodes ) {
-		const filter = ( this.$filterInput && this.$filterInput.val() ) ? this.$filterInput.val().toLowerCase() : '';
-		const filtered = filter ? nodes.filter( ( n ) => ( n.name && n.name.toLowerCase().indexOf( filter ) !== -1 ) || ( n.id && String( n.id ).toLowerCase().indexOf( filter ) !== -1 ) ) : nodes;
+	renderRows() {
+		const rows = build_rows( this.groups, this.mode, this.$filterInput ? this.$filterInput.val() : '' );
+		this.rowsById = {};
 		this.$tree.empty();
-		filtered.forEach( ( node ) => {
-			const indent = ( node.depth || 0 ) * 16;
-			const display = ( node.name || node.id || '' ) + ' [' + ( node.type || '' ) + ']';
-			const $li = $( '<li class="mkl-pc-3d-object-selector--item" data-object-id="' + ( node.id || '' ).replace( /"/g, '&quot;' ) + '" data-object-name="' + ( node.name || '' ).replace( /"/g, '&quot;' ) + '" style="padding-left:' + indent + 'px;">' ).text( display );
+		rows.forEach( ( row ) => {
+			if ( row.subheader ) {
+				this.$tree.append( $( '<li class="mkl-pc-3d-object-selector--subheader">' ).text( row.subheader ) );
+				return;
+			}
+			this.rowsById[ row.id ] = row;
+			const display = row.whole_model ? row.name : ( row.name || row.id ) + ( row.type ? ' [' + row.type + ']' : '' );
+			const $li = $( '<li class="mkl-pc-3d-object-selector--item" data-object-id="' + escape_attr( row.id ) + '" style="padding-left:' + ( ( row.depth || 0 ) * 16 ) + 'px;">' ).text( display );
+			if ( row.whole_model ) $li.addClass( 'mkl-pc-3d-object-selector--item-model' );
+			if ( this.selected && this.selected.id === row.id ) $li.addClass( 'selected' );
 			this.$tree.append( $li );
 		} );
-	},
-	on_filter_input() {
-		this.renderTree( this.treeNodes );
+		if ( ! rows.length ) this.$tree.append( $( '<li class="description">' ).text( 'No objects to list.' ) );
 	},
 	on_tree_item_click( e ) {
 		const $item = $( e.currentTarget );
-		this.selectedId = $item.data( 'object-id' );
-		this.selectedName = $item.data( 'object-name' ) || this.selectedId;
+		const row = this.rowsById && this.rowsById[ $item.attr( 'data-object-id' ) ];
+		if ( ! row ) return;
+		this.selected = row;
 		this.$( '.mkl-pc-3d-object-selector--item' ).removeClass( 'selected' );
 		$item.addClass( 'selected' );
 		this.$selectBtn.prop( 'disabled', false );
 	},
 	select() {
-		if ( this.selectedId != null ) {
-			const payload = { id: this.selectedId, name: this.selectedName, setting: this.setting };
+		const row = this.selected;
+		if ( row ) {
+			const payload = row.whole_model
+				? { id: '', model_id: row.whole_model, whole_model: true, name: row.name, setting: this.setting }
+				: { id: row.id, model_id: this.sourceIdOf( row.id ), whole_model: false, name: row.name, setting: this.setting };
 			if ( this.applySelection ) this.applySelection( payload );
 			else if ( this.originals.context && this.originals.context.$el ) this.originals.context.$el.trigger( 'object_selected', payload );
 		}
 		this.close();
 	},
-	close() {
-		this.remove();
+	sourceIdOf( id ) {
+		const s = String( id || '' );
+		const sep = s.indexOf( ':' );
+		return sep === -1 ? '' : s.slice( 0, sep );
 	},
-} );
+} ) );
 
-const ObjectSelector3DMultiView = Backbone.View.extend( {
+const ObjectSelector3DMultiView = Backbone.View.extend( Object.assign( {}, selector_base, {
 	tagName: 'div',
 	className: 'mkl-pc-3d-object-selector--container',
 	template: wp.template( 'mkl-pc-3d-object-selector-multi' ),
@@ -194,198 +310,47 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		'click .button.select': 'select',
 		'click .button.cancel': 'close',
 		'input .mkl-pc-3d-object-selector--filter-input': 'on_filter_input',
+		'change .mkl-pc-3d-object-selector--show-all-input': 'on_show_all_change',
+		'change .mkl-pc-3d-object-selector--checkbox': 'on_check',
 	},
 	initialize( options ) {
-		this.options = options || {};
-		this.originals = { target: this.options.target, context: this.options.context };
-		this.modelUrl = this.options.modelUrl || null;
-		this.attachmentId = this.options.attachmentId != null ? this.options.attachmentId : null;
-		this.treeNodes = [];
-		this.initialSelectedIds = Array.isArray( this.options.initialSelectedIds ) ? this.options.initialSelectedIds : [];
+		selector_base.initialize.call( this, options );
 		this.setting = this.options.setting || 'camera_focus_object_ids';
-		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
-		this.loadAllSceneModels = this.options.allModels === true || ( this.setting === 'camera_focus_object_ids' && this.originals.context && this.originals.context.collectionName === 'angles' );
+		// Kept across filtering and the show-all toggle, which re-render the list.
+		this.checked = new Set( ( Array.isArray( this.options.initialSelectedIds ) ? this.options.initialSelectedIds : [] ).map( String ) );
 	},
-	render() {
-		this.$el.html( this.template( {} ) );
-		this.$tree = this.$( '.mkl-pc-3d-object-selector--tree' );
-		this.$filterInput = this.$( '.mkl-pc-3d-object-selector--filter-input' );
-		this.resolveAndLoad();
-		return this;
+	defaultAllModels() {
+		return this.setting === 'camera_focus_object_ids' && this.originals.context && this.originals.context.collectionName === 'angles';
 	},
-	resolveAndLoad() {
-		if ( this.loadAllSceneModels && window.PC.threeD && typeof window.PC.threeD.getObjects3DModelSources === 'function' ) {
-			this.loadAllSceneModelsAndRender( window.PC.threeD.getObjects3DModelSources );
-			return;
-		}
-		let url = this.modelUrl;
-		if ( url ) {
-			this.loadModel( url );
-			return;
-		}
-		if ( this.attachmentId ) {
-			const attachment = wp.media.attachment( this.attachmentId );
-			attachment.fetch().done( () => {
-				const att = attachment.toJSON();
-				url = att.gltf_url || att.url;
-				if ( url ) this.loadModel( url );
-				else this.showError( 'Could not get model URL from attachment.' );
-			} ).fail( () => this.showError( 'Failed to load attachment.' ) );
-			return;
-		}
-		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
-			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( resolvedUrl ) => {
-				if ( resolvedUrl ) this.loadModel( resolvedUrl );
-				else this.showError( 'No 3D file for this source. Use a 3D object or uploaded model.' );
-			} );
-			return;
-		}
-		this.showError( 'No 3D file to browse. Pass modelUrl or use a 3D object/uploaded model.' );
-	},
-	loadAllSceneModelsAndRender( getSources ) {
-		const view = this;
-		if ( ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' ) {
-			view.showError( '3D store not ready. Please try again.' );
-			return;
-		}
-		const getter = typeof getSources === 'function' ? getSources : null;
-		if ( ! getter ) {
-			view.showError( 'No 3D objects. Add models in 3D Objects.' );
-			return;
-		}
-		getter( ( err, sources ) => {
-			if ( err || ! sources || ! sources.length ) {
-				view.showError( 'No 3D objects. Add models in 3D Objects.' );
-				return;
-			}
-			const results = new Array( sources.length );
-			let pending = sources.length;
-			let first_load_error = null;
-			sources.forEach( ( src, idx ) => {
-				window.PC.threeD.store.get( src.url, ( loadErr, data ) => {
-					if ( ! loadErr && data && data.objectTree && data.objectTree.length ) {
-						results[ idx ] = { sourceLabel: src.sourceLabel, objectTree: data.objectTree };
-					} else {
-						results[ idx ] = null;
-						if ( ! first_load_error && loadErr && loadErr.message ) {
-							first_load_error = loadErr.message;
-						}
-					}
-					pending--;
-					if ( pending <= 0 ) {
-						const combined = [];
-						results.forEach( ( r, idx ) => {
-							if ( ! r ) return;
-							const src = sources[ idx ];
-							const sourceId = src && src.sourceId ? String( src.sourceId ) : null;
-							combined.push( { subheader: r.sourceLabel } );
-							r.objectTree.forEach( ( node ) => {
-								const objectName = node.name || node.id || '';
-								const id = sourceId ? sourceId + ':' + objectName : objectName;
-								combined.push( {
-									id,
-									name: objectName,
-									type: node.type || '',
-									depth: node.depth != null ? node.depth : 0,
-									subheader: null,
-								} );
-							} );
-						} );
-						if ( ! combined.length && first_load_error ) {
-							view.showError( first_load_error );
-							return;
-						}
-						view.treeNodes = combined;
-						view.renderTree( combined );
-					}
-				} );
-			} );
-		} );
-	},
-	showError( message ) {
-		const $container = this.$tree.closest( '.mkl-pc-3d-object-selector--tree-container' );
-		$container.empty();
-		const $p = $( '<p class="description"></p>' );
-		$p.text( message || 'No objects to list.' );
-		$container.append( $p );
-	},
-	loadModel( url ) {
-		const view = this;
-		if ( ! window.PC.threeD || ! window.PC.threeD.store || typeof window.PC.threeD.store.get !== 'function' ) {
-			view.showError( '3D store not ready. Please try again.' );
-			return;
-		}
-		window.PC.threeD.store.get( url, ( err, data ) => {
-			if ( err || ! data ) {
-				const reason = ( err && err.message ) ? err.message : 'Failed to load the 3D model.';
-				view.showError( reason );
-				return;
-			}
-			// Full object tree from the model (same as single-select; hierarchy with depth)
-			view.treeNodes = data.objectTree || [];
-			view.renderTree( view.treeNodes );
-		} );
-	},
-	renderTree( nodes ) {
-		const filter = ( this.$filterInput && this.$filterInput.val() ) ? this.$filterInput.val().toLowerCase() : '';
-		let filtered;
-		if ( ! filter ) {
-			filtered = nodes;
-		} else {
-			filtered = [];
-			let lastSubheader = null;
-			const matches = ( n ) => ( n.name && n.name.toLowerCase().indexOf( filter ) !== -1 ) || ( n.id && String( n.id ).toLowerCase().indexOf( filter ) !== -1 );
-			nodes.forEach( ( node ) => {
-				if ( node.subheader ) {
-					lastSubheader = node;
-					return;
-				}
-				if ( matches( node ) ) {
-					if ( lastSubheader ) {
-						filtered.push( lastSubheader );
-						lastSubheader = null;
-					}
-					filtered.push( node );
-				}
-			} );
-		}
-		const selectedSet = new Set( this.initialSelectedIds.map( ( id ) => String( id ) ) );
+	renderRows() {
+		const rows = build_rows( this.groups, this.mode, this.$filterInput ? this.$filterInput.val() : '' );
 		this.$tree.empty();
-		filtered.forEach( ( node ) => {
-			if ( node.subheader ) {
-				const $li = $( '<li class="mkl-pc-3d-object-selector--subheader">' ).text( node.subheader );
-				this.$tree.append( $li );
+		rows.forEach( ( row ) => {
+			if ( row.subheader ) {
+				this.$tree.append( $( '<li class="mkl-pc-3d-object-selector--subheader">' ).text( row.subheader ) );
 				return;
 			}
-			const id = node.id || '';
-			const name = node.name || node.id || '';
-			const indent = ( node.depth || 0 ) * 16;
-			const display = ( name || id ) + ' [' + ( node.type || '' ) + ']';
-			const checked = selectedSet.has( String( id ) ) ? ' checked' : '';
-			const $li = $( '<li class="mkl-pc-3d-object-selector--item mkl-pc-3d-object-selector--item-multi" style="padding-left:' + indent + 'px;">' );
-			$li.append( $( '<input type="checkbox" class="mkl-pc-3d-object-selector--checkbox" data-object-id="' + ( id || '' ).replace( /"/g, '&quot;' ) + '"' + checked + '>' ) );
-			$li.append( $( '<label></label>' ).text( display ) );
+			const checked = this.checked.has( String( row.id ) ) ? ' checked' : '';
+			const $li = $( '<li class="mkl-pc-3d-object-selector--item mkl-pc-3d-object-selector--item-multi" style="padding-left:' + ( ( row.depth || 0 ) * 16 ) + 'px;">' );
+			$li.append( $( '<input type="checkbox" class="mkl-pc-3d-object-selector--checkbox" data-object-id="' + escape_attr( row.id ) + '"' + checked + '>' ) );
+			$li.append( $( '<label></label>' ).text( ( row.name || row.id ) + ( row.type ? ' [' + row.type + ']' : '' ) ) );
 			this.$tree.append( $li );
 		} );
+		if ( ! rows.length ) this.$tree.append( $( '<li class="description">' ).text( 'No objects to list.' ) );
 	},
-	on_filter_input() {
-		this.renderTree( this.treeNodes );
+	on_check( e ) {
+		const $box = $( e.currentTarget );
+		const id = String( $box.attr( 'data-object-id' ) );
+		if ( $box.is( ':checked' ) ) this.checked.add( id );
+		else this.checked.delete( id );
 	},
 	select() {
-		const ids = [];
-		this.$( '.mkl-pc-3d-object-selector--checkbox:checked' ).each( function() {
-			const id = $( this ).data( 'object-id' );
-			if ( id != null && id !== '' ) ids.push( id );
-		} );
-		const payload = { ids, setting: this.setting };
+		const payload = { ids: Array.from( this.checked ), setting: this.setting };
 		if ( this.applySelection ) this.applySelection( payload );
 		else if ( this.originals.context && this.originals.context.$el ) this.originals.context.$el.trigger( 'objects_selected', payload );
 		this.close();
 	},
-	close() {
-		this.remove();
-	},
-} );
+} ) );
 
 /**
  * Set a value at a path (array of keys) in an object; mutates and returns the object.
@@ -408,6 +373,11 @@ function setValueByPath( obj, path, value ) {
 	return obj;
 }
 
+function admin_layer( layer_id ) {
+	const admin = window.PC.app && window.PC.app.admin;
+	return layer_id != null && admin && admin.layers ? admin.layers.get( layer_id ) : null;
+}
+
 function select_3d_object( $el, context ) {
 	const opts = { target: $el, context };
 	if ( $el && $el.data( 'model-url' ) ) opts.modelUrl = $el.data( 'model-url' );
@@ -417,19 +387,25 @@ function select_3d_object( $el, context ) {
 	opts.resolveOptions = isSceneObjectSelector
 		? { sourceKey: 'camera_target_model', uploadKey: null }
 		: { sourceKey: 'object_selection_3d', uploadKey: 'model_upload_3d' };
-	// A choice lists the objects of its own model, or the layer's when it
-	// inherits it — the same fallback the viewer uses.
-	const choice_layer_id = ! isSceneObjectSelector && context && context.model && typeof context.model.get === 'function'
-		? context.model.get( 'layerId' )
-		: null;
-	if ( choice_layer_id && typeof window.PC.threeD.resolveChoiceModelUrl === 'function' ) {
-		const layer = window.PC.app && window.PC.app.admin && window.PC.app.admin.layers ? window.PC.app.admin.layers.get( choice_layer_id ) : null;
-		opts.resolveUrl = ( callback ) => window.PC.threeD.resolveChoiceModelUrl( context.model, layer, callback );
-		opts.noModelMessage = ( window.PC_lang && window.PC_lang.threed_no_model_for_choice ) || 'No 3D model is set on this choice or its layer.';
+	const model = context && context.model && typeof context.model.get === 'function' ? context.model : null;
+	if ( ! isSceneObjectSelector && model && opts.setting === 'target_object_id' ) {
+		// A choice lists the objects of its own model, or the layer's when it
+		// inherits it — the same fallback the viewer uses. Ids are saved with
+		// their model ("2:Suzanne"), so two models sharing a name stay apart.
+		const choice_layer_id = model.get( 'layerId' );
+		const layer = choice_layer_id != null ? admin_layer( choice_layer_id ) : null;
+		const own = model.get( 'object_3d_id' );
+		const inherited = layer ? layer.get( 'object_3d_id' ) : null;
+		const source = own != null && own !== '' ? own : inherited;
+		if ( source != null && source !== '' ) opts.idPrefix = String( source );
+		if ( choice_layer_id != null && typeof window.PC.threeD.resolveChoiceModelUrl === 'function' ) {
+			opts.resolveUrl = ( callback ) => window.PC.threeD.resolveChoiceModelUrl( model, layer, callback );
+			opts.noModelMessage = lang( 'threed_no_model_for_choice', 'No 3D model is set on this choice or its layer.' );
+		}
 	}
 	opts.applySelection = function( selection ) {
 		const id = selection?.id;
-		if ( id == null ) return;
+		if ( ! id ) return;
 		if ( context && context.model && typeof context.model.set === 'function' ) {
 			const setting = opts.setting;
 			if ( setting.indexOf( '.' ) !== -1 ) {
@@ -480,74 +456,86 @@ function select_3d_objects( $el, context ) {
 }
 
 /**
- * Pick one object from any model in the collection.
+ * Pick one object from any model of the product.
  *
- * @param {function({ id: string, name: string })} apply
+ * @param {function({ id: string, model_id: string, whole_model: boolean, name: string })} apply
+ * @param {{ withModels?: boolean }} [options] - withModels: offer "Whole model" entries
  */
-function open_object_picker( apply ) {
-	const view = new ObjectSelector3DView( { allModels: true, applySelection: apply } );
-	view.$el.appendTo( 'body' );
-	view.render();
-}
-
-/**
- * Pick anchors — any objects from any model in the collection.
- *
- * @param {string[]} initial - Composite ids already selected
- * @param {function(string[])} apply
- */
-function open_anchor_picker( initial, apply ) {
-	const view = new ObjectSelector3DMultiView( {
+function open_object_picker( apply, options = {} ) {
+	const view = new ObjectSelector3DView( {
 		allModels: true,
-		setting: 'anchor_ids',
-		initialSelectedIds: Array.isArray( initial ) ? initial : [],
-		applySelection: ( payload ) => apply( payload && Array.isArray( payload.ids ) ? payload.ids : [] ),
+		withModels: options.withModels === true,
+		title: options.title,
+		applySelection: apply,
 	} );
 	view.$el.appendTo( 'body' );
 	view.render();
 }
 
 /**
- * Text for an anchor list: the object names, or "None" when empty.
+ * Pick anchors: empties of any model, "anchor" ones first.
  *
- * @param {string[]} ids
+ * @param {string[]} initial - Composite ids already selected
+ * @param {function(string[])} apply - receives the selected ids (one at most when not multiple)
+ * @param {{ multiple?: boolean }} [options]
+ */
+function open_anchor_picker( initial, apply, options = {} ) {
+	const multiple = options.multiple !== false;
+	const title = multiple ? lang( 'threed_select_anchors', 'Select anchors' ) : lang( 'threed_select_anchor', 'Select an anchor' );
+	const view = multiple
+		? new ObjectSelector3DMultiView( {
+			anchors: true,
+			title,
+			setting: 'anchor_ids',
+			initialSelectedIds: Array.isArray( initial ) ? initial : [],
+			applySelection: ( payload ) => apply( payload && Array.isArray( payload.ids ) ? payload.ids : [] ),
+		} )
+		: new ObjectSelector3DView( {
+			anchors: true,
+			title,
+			applySelection: ( payload ) => apply( payload && payload.id ? [ payload.id ] : [] ),
+		} );
+	view.$el.appendTo( 'body' );
+	view.render();
+}
+
+/**
+ * Content for an anchor list: readable names, or "No anchor selected".
+ *
+ * @param {string[]|string} ids
  * @returns {jQuery}
  */
 function anchor_list_content( ids ) {
-	if ( ! Array.isArray( ids ) || ! ids.length ) {
-		return $( '<em></em>' ).text( window.PC_lang && window.PC_lang.anchors_none ? window.PC_lang.anchors_none : 'No anchor selected' );
-	}
+	const list = Array.isArray( ids ) ? ids : ( ids ? [ ids ] : [] );
+	if ( ! list.length ) return $( '<em></em>' ).text( lang( 'threed_no_anchor', 'No anchor selected' ) );
 	const describe = window.PC.threeD && typeof window.PC.threeD.describeObjectId === 'function' ? window.PC.threeD.describeObjectId : String;
-	return $( '<span></span>' ).text( ids.map( describe ).join( ', ' ) );
+	return $( '<span></span>' ).text( list.map( describe ).join( ', ' ) );
 }
 
-function refresh_anchor_list( context, setting ) {
+function refresh_anchor_field( context, setting ) {
 	if ( ! context || ! context.$el ) return;
-	const $list = context.$el.find( '.mkl-pc--anchor-list[data-setting="' + setting + '"]' );
-	const ids = context.model.get( setting );
-	if ( $list.length ) $list.empty().append( anchor_list_content( ids ) );
-	// Clear and the follow options show only while an anchor is selected.
-	context.$el.find( '[data-anchor-when-set="' + setting + '"]' ).prop( 'hidden', ! ( Array.isArray( ids ) && ids.length ) );
+	const value = context.model.get( setting );
+	const has = Array.isArray( value ) ? value.length > 0 : !! value;
+	context.$el.find( '.mkl-pc--anchor-list[data-setting="' + setting + '"]' ).empty().append( anchor_list_content( value ) );
+	context.$el.find( '[data-anchor-when-set="' + setting + '"]' ).prop( 'hidden', ! has );
 }
 
-/**
- * Layer/choice "Position on anchors": pick the anchors for the model it displays.
- */
-function select_3d_anchors( $el, context ) {
+/** Model position "On an anchor": pick the one anchor. */
+function select_3d_anchor( $el, context ) {
 	if ( ! context || ! context.model ) return;
-	const setting = ( $el && $el.data( 'setting' ) ) || 'object_3d_anchor_ids';
+	const setting = ( $el && $el.data( 'setting' ) ) || 'placement_anchor_id';
 	const current = context.model.get( setting );
-	open_anchor_picker( Array.isArray( current ) ? current : [], ( ids ) => {
-		context.model.set( setting, ids );
-		refresh_anchor_list( context, setting );
-	} );
+	open_anchor_picker( current ? [ current ] : [], ( ids ) => {
+		context.model.set( setting, ids[ 0 ] || '' );
+		refresh_anchor_field( context, setting );
+	}, { multiple: false } );
 }
 
-function clear_3d_anchors( $el, context ) {
+function clear_3d_anchor( $el, context ) {
 	if ( ! context || ! context.model ) return;
-	const setting = ( $el && $el.data( 'setting' ) ) || 'object_3d_anchor_ids';
-	context.model.set( setting, [] );
-	refresh_anchor_list( context, setting );
+	const setting = ( $el && $el.data( 'setting' ) ) || 'placement_anchor_id';
+	context.model.set( setting, '' );
+	refresh_anchor_field( context, setting );
 }
 
 window.PC = window.PC || {};
@@ -555,11 +543,12 @@ window.PC.threeD = window.PC.threeD || {};
 window.PC.threeD.openObjectPicker = open_object_picker;
 window.PC.threeD.openAnchorPicker = open_anchor_picker;
 window.PC.threeD.anchorListContent = anchor_list_content;
+window.PC.threeD.refreshAnchorField = refresh_anchor_field;
 window.PC.views = window.PC.views || {};
 window.PC.views.object_selector_3d = ObjectSelector3DView;
 window.PC.views.object_selector_3d_multi = ObjectSelector3DMultiView;
 window.PC.actions = window.PC.actions || {};
 window.PC.actions.select_3d_object = select_3d_object;
 window.PC.actions.select_3d_objects = select_3d_objects;
-window.PC.actions.select_3d_anchors = select_3d_anchors;
-window.PC.actions.clear_3d_anchors = clear_3d_anchors;
+window.PC.actions.select_3d_anchor = select_3d_anchor;
+window.PC.actions.clear_3d_anchor = clear_3d_anchor;

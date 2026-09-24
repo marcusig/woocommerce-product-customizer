@@ -8,6 +8,8 @@ import { create_render_quality } from '../../../../js/source/3d-viewer/3d-render
 import { create_base_composer } from '../../../../js/source/3d-viewer/3d-base-composer.js';
 import { setKtx2Renderer } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
 import { format_gltf_load_notice, normalize_gltf_load_error } from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
+import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from '../../../../js/source/3d-viewer/3d-anchor-placement.js';
+import { findObjectByCompositeId as find_by_composite_id } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 const $ = window.jQuery;
 
@@ -292,9 +294,60 @@ export const settings_3d_preview_mixin = {
 	 * could ever fire: composers were attached to disposed renderers and models
 	 * finished loading into a scene that was already gone.
 	 */
+	/**
+	 * Give add-ons that place models (3D Premium) a placement manager for the
+	 * preview, and let them file their requests: the same engine as the product
+	 * page. Choices are not applied here: the preview shows the product as it
+	 * starts. Add-ons call `refresh` from the payload when their settings change.
+	 */
+	apply_model_positions: function () {
+		const t = this._three;
+		const THREE = get_three();
+		if ( ! t || ! t.model_root || ! THREE ) return;
+		if ( ! window.wp || ! window.wp.hooks || ! window.wp.hooks.hasAction( 'PC.admin.3d_preview.placement' ) ) return;
+		const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
+		if ( ! col ) return;
+		if ( t.placement ) t.placement.reset();
+		const root = t.model_root;
+		if ( ! t.parking_group ) {
+			t.parking_group = new THREE.Group();
+			t.parking_group.name = '__pc_parked';
+			t.parking_group.visible = false;
+			root.add( t.parking_group );
+		}
+		const by_id = {};
+		const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
+		const customHidden = ( this.admin && this.admin.settings_3d && this.admin.settings_3d.hidden_object_names ) || '';
+		const deps = get_three_deps();
+		const hidden_names = deps && typeof deps.getHiddenObjectNamesList === 'function' ? deps.getHiddenObjectNamesList( defaultHidden, customHidden ) : [];
+		root.children.forEach( ( c ) => {
+			if ( ! c.userData || c.userData.object_id == null ) return;
+			by_id[ String( c.userData.object_id ) ] = c;
+			// Same attachment point as the product page: the single top-level object's origin.
+			if ( c.userData.pc_attach_point === undefined ) c.userData.pc_attach_point = model_attachment_point( c, hidden_names );
+		} );
+		t.placement = create_anchor_placement( {
+			resolve_object: ( id ) => find_by_composite_id( root, id ),
+			resolve_model: ( oid ) => by_id[ String( oid ) ] || null,
+			get_parking_parent: () => t.parking_group,
+			warn: () => {},
+		} );
+		window.wp.hooks.doAction( 'PC.admin.3d_preview.placement', {
+			placement: t.placement,
+			objects3d: col.toJSON(),
+			model_root: root,
+			utils: { compare_priority, normalize_anchor_ids, read_follow_flag },
+			refresh: () => {
+				if ( this._three && this._three.model_root ) this.apply_model_positions();
+			},
+		} );
+		this.request_preview_render();
+	},
+
 	maybe_cleanup: function () {
 		const t = this._three;
 		if ( ! t ) return;
+		if ( t.placement ) t.placement.reset();
 		this._three = null;
 		if ( this.$el ) this.$el.off( '.pc3drender' );
 
@@ -657,6 +710,8 @@ export const settings_3d_preview_mixin = {
 				const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
 				const customHidden = ( viewRef.admin && viewRef.admin.settings_3d && viewRef.admin.settings_3d.hidden_object_names ) || '';
 				hideObjectsByName( rootGroup, getHiddenObjectNamesList( defaultHidden, customHidden ) );
+				// Before bounds, lights and framing are measured.
+				viewRef.apply_model_positions();
 				viewRef._three.fake_shadow = new FakeShadow( viewRef._three.scene );
 				viewRef.render_tree( viewRef._three.scene_roots );
 				var s = PC.app.admin.settings_3d;

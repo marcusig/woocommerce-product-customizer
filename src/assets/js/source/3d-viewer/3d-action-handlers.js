@@ -3,7 +3,6 @@
  * Registry of action_type → apply function for actions_3d.
  */
 import * as THREE from 'three';
-import { normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 
 /**
  * Allowlisted Three.js material properties for material_property actions.
@@ -437,51 +436,6 @@ function apply_material( context, action ) {
 }
 
 /**
- * Placement request key for one attach action: unique per choice and row.
- */
-function anchor_request_key( context, index ) {
-	return ( context.placement_key || 'choice' ) + ':action:' + ( index || 0 );
-}
-
-/**
- * Move an object onto one or more anchors while the choice is active.
- *
- * The object is the action's own target when set, otherwise the choice's
- * target object, otherwise the model the choice displays. The placement
- * manager decides between competing requests by priority and undoes the move
- * when this request is released.
- */
-function apply_attach_to_anchor( context, action, index ) {
-	const { placement } = context;
-	if ( ! placement ) return;
-	const anchor_ids = normalize_anchor_ids( action.anchor_ids );
-	const key = anchor_request_key( context, index );
-	if ( ! anchor_ids.length ) {
-		placement.release( key );
-		return;
-	}
-	const spec = {
-		anchor_ids,
-		follow_rotation: read_follow_flag( action.anchor_follow_rotation, true ),
-		follow_scale: read_follow_flag( action.anchor_follow_scale, false ),
-		priority: ( context.placement_priority || [ 1 ] ).concat( [ index || 0 ] ),
-	};
-	const target_id = action.anchor_target_id ? String( action.anchor_target_id ).trim() : '';
-	if ( target_id ) {
-		spec.target_id = target_id;
-	} else {
-		const target = context.target_object || context.target_scene;
-		if ( ! target ) return;
-		spec.target_object = target;
-	}
-	placement.request( key, spec );
-}
-
-function restore_attach_to_anchor( context, action, index ) {
-	if ( context.placement ) context.placement.release( anchor_request_key( context, index ) );
-}
-
-/**
  * action_type → handler. toggle_visibility is applied outside the registry.
  */
 export const ACTION_HANDLERS = {
@@ -490,7 +444,6 @@ export const ACTION_HANDLERS = {
 	material_color_registry: apply_material_color_registry,
 	material_property: apply_material_property,
 	apply_material: apply_material,
-	attach_to_anchor: apply_attach_to_anchor,
 };
 
 /**
@@ -502,8 +455,35 @@ export const RESTORE_HANDLERS = {
 	material_color_registry: restore_material_color_registry,
 	material_property: restore_material_property,
 	apply_material: restore_material,
-	attach_to_anchor: restore_attach_to_anchor,
 };
+
+/**
+ * Choice actions added by add-ons, as { action_type: { apply, restore } }.
+ *
+ * Read through a filter at call time, so an add-on script can register at
+ * any point before the configurator opens. Handlers get the same context and
+ * arguments as the built-in ones — ( context, action, index ) — and the same
+ * guarantees: apply while the choice is selected and visible, restore when it
+ * stops being so. The context carries the placement manager and the request
+ * key and priority for this choice, for actions that move objects.
+ *
+ * Built-in types cannot be overridden.
+ *
+ * @returns {Object}
+ */
+function addon_handlers() {
+	const hooks = typeof window !== 'undefined' && window.wp && window.wp.hooks;
+	if ( ! hooks || typeof hooks.applyFilters !== 'function' ) return {};
+	const extra = hooks.applyFilters( 'PC.fe.viewer.choice_action_handlers', {} );
+	return extra && typeof extra === 'object' ? extra : {};
+}
+
+function handler_for( type, phase, extra ) {
+	const builtin = phase === 'apply' ? ACTION_HANDLERS[ type ] : RESTORE_HANDLERS[ type ];
+	if ( builtin ) return builtin;
+	const entry = extra[ type ];
+	return entry && typeof entry[ phase ] === 'function' ? entry[ phase ] : null;
+}
 
 /**
  * Run all non-visibility actions_3d entries against the current choice context.
@@ -515,17 +495,19 @@ export const RESTORE_HANDLERS = {
  * @param {THREE.Object3D} [context.target_scene]
  * @param {function()} [context.request_render] - called when an async action lands
  * @param {function(Object)} [context.notify] - called after each material mutation
- * @param {Object} [context.placement] - anchor placement manager, for attach_to_anchor
+ * @param {Object} [context.placement] - anchor placement manager, for add-on actions that move objects
+ * @param {Object} [context.viewer] - the viewer, so add-on actions can find their own per-viewer state
  * @param {string} [context.placement_key] - request key prefix, unique per choice
  * @param {number[]} [context.placement_priority] - priority prefix for this choice's actions
  * @param {Object[]} actions
  */
 export function apply_choice_actions( context, actions ) {
 	if ( ! Array.isArray( actions ) || ! actions.length ) return;
+	const extra = addon_handlers();
 	actions.forEach( ( action, index ) => {
 		const type = action && action.action_type;
 		if ( ! type || type === 'toggle_visibility' ) return;
-		const handler = ACTION_HANDLERS[ type ];
+		const handler = handler_for( type, 'apply', extra );
 		if ( typeof handler === 'function' ) {
 			handler( context, action, index );
 		}
@@ -546,11 +528,12 @@ export function apply_choice_actions( context, actions ) {
  */
 export function restore_choice_actions( context, actions ) {
 	if ( ! Array.isArray( actions ) || ! actions.length ) return;
+	const extra = addon_handlers();
 	for ( let i = actions.length - 1; i >= 0; i-- ) {
 		const action = actions[ i ];
 		const type = action && action.action_type;
 		if ( ! type || type === 'toggle_visibility' ) continue;
-		const handler = RESTORE_HANDLERS[ type ];
+		const handler = handler_for( type, 'restore', extra );
 		if ( typeof handler === 'function' ) {
 			handler( context, action, i );
 		}

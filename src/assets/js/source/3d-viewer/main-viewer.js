@@ -44,7 +44,8 @@ import {
 import { start_animation_loop } from './3d-animation-loop.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
-import { create_anchor_placement, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
+import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
+import { clone as cloneWithSkeletons } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -54,7 +55,7 @@ const wp = window.wp;
  * Bumped when something an add-on can observe changes; add-ons that need a
  * newer member should feature-detect it rather than compare numbers.
  */
-const RUNTIME_API_VERSION = 3;
+const RUNTIME_API_VERSION = 4;
 
 /**
  * How long the orbit hint will wait on a `PC.fe.viewer.intro` promise.
@@ -252,6 +253,19 @@ export default Backbone.View.extend({
 			// are written for a model placed several times (one leg file on each
 			// of a table's anchors) and can act on all copies or pick one.
 			// Absent on hosts older than API version 3.
+			/**
+			 * The placement manager: moves objects onto anchors, with priorities
+			 * and undo. Used by the 3D Premium add-on for model positions,
+			 * layouts and "Move to anchor". Absent before API version 4.
+			 */
+			placement: {
+				request: ( key, spec ) => this._placement && this._placement.request( key, spec ),
+				release: ( key ) => this._placement && this._placement.release( key ),
+				refresh: () => this._placement && this._placement.refresh(),
+				getAnchors: ( target ) => ( this._placement ? this._placement.get_anchors( target ) : [] ),
+				isParked: ( target ) => !! ( this._placement && this._placement.is_parked( target ) ),
+				utils: { compare_priority, normalize_anchor_ids, read_follow_flag },
+			},
 			getScenesForObject3dId: ( object3dId ) => {
 				if ( object3dId == null ) return [];
 				const scene = this._objectIdToScene[ String( object3dId ).trim() ];
@@ -978,8 +992,22 @@ export default Backbone.View.extend({
 		this._objects3dByAttachmentId = new Map();
 		this._scene_models.reset();
 		this._objectIdToScene = {};
+		// Files used by more than one model entry ("Crate front" and "Crate
+		// rear"): loaded once, and every entry mounts its own copy.
+		this._sharedGltfUrls = new Set();
+		this._gltfByUrl = new Map();
 
 		if ( ! Array.isArray( objects3d ) ) return;
+
+		const url_counts = new Map();
+		objects3d.forEach( ( item ) => {
+			if ( ! item || item.object_type !== 'gltf' ) return;
+			const url = this._getUrlForObject3dId( item._id != null ? item._id : item.id );
+			if ( url ) url_counts.set( url, ( url_counts.get( url ) || 0 ) + 1 );
+		} );
+		url_counts.forEach( ( count, url ) => {
+			if ( count > 1 ) this._sharedGltfUrls.add( url );
+		} );
 
 		objects3d.forEach( ( item ) => {
 			if ( ! item || item.object_type !== 'gltf' ) return;
@@ -1013,6 +1041,7 @@ export default Backbone.View.extend({
 	 */
 	_createPlacement() {
 		return create_anchor_placement( {
+			get_parking_parent: () => this._getParkingGroup(),
 			resolve_object: ( id ) => this._findObjectById( id ),
 			resolve_model: ( object3dId ) => this._objectIdToScene[ String( object3dId ).trim() ] || null,
 			// A missing anchor only counts as missing once its model has loaded
@@ -1044,38 +1073,22 @@ export default Backbone.View.extend({
 	},
 
 	/**
-	 * Register each layer's default "Position on anchors". It moves the layer's
-	 * object (its Object ID) or, with none set, the model the layer displays.
-	 * A choice's own "Position on anchors" only applies while the choice is
-	 * selected, so it is filed by the choice view, not here.
+	 * Hidden group inside model_root that holds parked objects: models on a
+	 * layout whose current variant gives them nowhere to go. Inside model_root
+	 * so lookups still reach them; hidden so they never render or count
+	 * towards bounds that respect visibility.
 	 *
-	 * Priority [0, layer]: below every choice, later layers winning.
-	 *
-	 * @param {Backbone.Collection} layers
+	 * @returns {THREE.Group}
 	 */
-	_registerDefaultPlacements( layers ) {
-		const placement = this._placement;
-		if ( ! placement || ! layers ) return;
-		layers.each( ( layer_model, layer_index ) => {
-			const anchor_ids = normalize_anchor_ids( layer_model.get( 'object_3d_anchor_ids' ) );
-			if ( ! anchor_ids.length ) return;
-			const spec = {
-				anchor_ids,
-				follow_rotation: read_follow_flag( layer_model.get( 'object_3d_anchor_follow_rotation' ), true ),
-				follow_scale: read_follow_flag( layer_model.get( 'object_3d_anchor_follow_scale' ), false ),
-				priority: [ 0, layer_index ],
-			};
-			const target_id = layer_model.get( 'target_object_id' );
-			const object3d_id = layer_model.get( 'object_3d_id' );
-			if ( target_id && String( target_id ).trim() ) {
-				spec.target_id = String( target_id ).trim();
-			} else if ( object3d_id != null && String( object3d_id ).trim() !== '' ) {
-				spec.target_object3d_id = String( object3d_id ).trim();
-			} else {
-				return;
-			}
-			placement.request( 'default:layer:' + layer_model.id, spec );
-		} );
+	_getParkingGroup() {
+		const t = this._three;
+		if ( ! this._parkingGroup ) {
+			this._parkingGroup = new THREE.Group();
+			this._parkingGroup.name = '__pc_parked';
+			this._parkingGroup.visible = false;
+		}
+		if ( t && t.model_root && this._parkingGroup.parent !== t.model_root ) t.model_root.add( this._parkingGroup );
+		return this._parkingGroup;
 	},
 
 	_syncLayerSceneForObjectId( objectId, scene ) {
@@ -1296,7 +1309,10 @@ export default Backbone.View.extend({
 		// Defaults are registered before anything loads; each model load
 		// refreshes, so placements land as soon as both ends are in the scene.
 		this._placement = this._createPlacement();
-		this._registerDefaultPlacements( layers );
+		// Before any model loads: add-ons that place models (3D Premium) file
+		// their requests here, so models land in place as they arrive, before
+		// the first framing, and before choices apply their actions.
+		this._emitRuntimeAction( 'PC.fe.viewer.placement.ready', [ this, this._createRuntimeApi() ] );
 		this._layer_scenes = [];
 		// Resolve the hidden-object list before any model is mounted, so eager and
 		// lazy loads are both hidden through the same path in the load callback.
@@ -1634,6 +1650,45 @@ export default Backbone.View.extend({
 		} );
 	},
 
+	/**
+	 * Load a glTF for one model entry. A file used by several entries is
+	 * downloaded and parsed once; every entry waits on the same promise.
+	 *
+	 * @param {string} url
+	 * @param {function(Object)} onSuccess
+	 * @param {function(Error)} onError
+	 */
+	_loadGltfForEntry( url, onSuccess, onError ) {
+		if ( ! this._sharedGltfUrls || ! this._sharedGltfUrls.has( url ) ) {
+			this._loadGltf( url, onSuccess, onError );
+			return;
+		}
+		if ( ! this._gltfByUrl ) this._gltfByUrl = new Map();
+		if ( ! this._gltfByUrl.has( url ) ) {
+			this._gltfByUrl.set( url, new Promise( ( resolve, reject ) => this._loadGltf( url, resolve, reject ) ) );
+		}
+		this._gltfByUrl.get( url ).then( onSuccess, onError );
+	},
+
+	/**
+	 * A mountable copy of a shared file's scene. The loaded scene is kept
+	 * untouched as the template, so every entry starts from the file as
+	 * authored — not from another entry that has since been moved or had a
+	 * material applied. Geometry and materials are shared; skinned meshes are
+	 * rebound to their own skeleton; variant tables are copied the way the
+	 * variants extension expects.
+	 *
+	 * @param {Object} gltf
+	 * @returns {THREE.Object3D}
+	 */
+	_instantiateSharedScene( gltf ) {
+		const copy = cloneWithSkeletons( gltf.scene );
+		if ( gltf.functions && typeof gltf.functions.copyVariantMaterials === 'function' ) {
+			gltf.functions.copyVariantMaterials( copy, gltf.scene );
+		}
+		return copy;
+	},
+
 	_ensureObjects3dSceneLoadedById( object3dId ) {
 		const t = this._three;
 		if ( ! t || ! t.model_root || object3dId == null || String( object3dId ).trim() === '' ) return Promise.resolve( null );
@@ -1652,7 +1707,7 @@ export default Backbone.View.extend({
 		}
 
 		const loadPromise = new Promise( ( resolve ) => {
-			this._loadGltf(
+			this._loadGltfForEntry(
 				url,
 				( gltf ) => {
 					const scene = gltf && gltf.scene ? gltf.scene : null;
@@ -1662,7 +1717,9 @@ export default Backbone.View.extend({
 						return;
 					}
 					removeLightsFromScene( scene );
-					const sceneToAdd = scene.parent != null ? scene.clone( true ) : scene;
+					const sceneToAdd = this._sharedGltfUrls && this._sharedGltfUrls.has( url )
+						? this._instantiateSharedScene( gltf )
+						: ( scene.parent != null ? scene.clone( true ) : scene );
 					sceneToAdd.userData = sceneToAdd.userData || {};
 					sceneToAdd.userData.object_id = idStr;
 					sceneToAdd.userData.gltf_functions = gltf && gltf.functions ? gltf.functions : null;
@@ -1681,6 +1738,9 @@ export default Backbone.View.extend({
 					// after that ran, and its bounding-box helper would otherwise show
 					// up and inflate the shadow and ground plane fitted to it.
 					hideObjectsByName( sceneToAdd, this._hiddenObjectNames );
+					// Where the model attaches when it is placed on an anchor or a
+					// layout: its single top-level object's origin, not the file's.
+					sceneToAdd.userData.pc_attach_point = model_attachment_point( sceneToAdd, this._hiddenObjectNames );
 					this._applyShadowFlagsToObject( sceneToAdd, this._shadowsEnabled );
 					if ( ! sceneToAdd.parent ) t.model_root.add( sceneToAdd );
 					// Bounds just grew, so the shadow cameras need refitting.
@@ -2077,7 +2137,7 @@ export default Backbone.View.extend({
 			const choices = window.PC.fe.getLayerContent && window.PC.fe.getLayerContent( layer_model.id );
 			if ( ! choices ) return;
 			choices.each( ( choice_model ) => {
-				const has_3d = choice_model.get( 'target_object_id' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' ) || normalize_anchor_ids( choice_model.get( 'object_3d_anchor_ids' ) ).length;
+				const has_3d = choice_model.get( 'target_object_id' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' );
 				if ( ! has_3d ) return;
 				const view = new viewer_3d_choice( {
 					model: choice_model,
@@ -2099,6 +2159,8 @@ export default Backbone.View.extend({
 			this._placement.reset();
 			this._placement = null;
 		}
+		this._parkingGroup = null;
+		this._gltfByUrl = new Map();
 		this._layer_scenes = [];
 		// Keep shared GLTFLoader module cache; drop the instance ref only.
 		this._gltfLoader = null;

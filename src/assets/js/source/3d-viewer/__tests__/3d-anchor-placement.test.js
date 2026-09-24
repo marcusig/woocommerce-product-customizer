@@ -11,6 +11,7 @@ import {
 	compare_priority,
 	read_follow_flag,
 	normalize_anchor_ids,
+	model_attachment_point,
 } from '../3d-anchor-placement.js';
 import { findObjectByCompositeId, findObjectsByCompositeId } from '../3d-scene-utils.js';
 
@@ -346,5 +347,138 @@ describe( 'lookups once things have moved', () => {
 		expect( world_quaternion( grip ).angleTo( new THREE.Quaternion() ) ).toBeLessThan( EPS );
 		expect( findObjectByCompositeId( root, '2:grip' ) ).toBe( grip );
 		expect( anchor_l.children ).toHaveLength( 1 );
+	} );
+} );
+
+describe( 'models on a layout (hidden when there is nowhere to go)', () => {
+	function with_parking() {
+		const ctx = build();
+		const parking = group( '__pc_parked' );
+		parking.visible = false;
+		ctx.root.add( parking );
+		const placement = create_anchor_placement( {
+			resolve_object: ( id ) => findObjectByCompositeId( ctx.root, id ),
+			resolve_model: ( oid ) => ( { 1: ctx.frame, 2: ctx.handles } )[ oid ] || null,
+			get_parking_parent: () => parking,
+			warn: () => {},
+		} );
+		return Object.assign( ctx, { placement, parking } );
+	}
+
+	it( 'parks the model when the variant has no anchors, and it stays findable', () => {
+		const { placement, handles, parking, root, grip } = with_parking();
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [], hide_if_unplaced: true, priority: [ 0 ] } );
+		expect( handles.parent ).toBe( parking );
+		expect( placement.is_parked( handles ) ).toBe( true );
+		expect( findObjectByCompositeId( root, '2:grip' ) ).toBe( grip );
+		// Its own visibility is untouched, so a choice can still show or hide it.
+		expect( handles.visible ).toBe( true );
+	} );
+
+	it( 'parks instead of falling back when every anchor is missing', () => {
+		const { placement, handles, parking } = with_parking();
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [ '1:gone' ], hide_if_unplaced: true, priority: [ 0 ] } );
+		expect( handles.parent ).toBe( parking );
+	} );
+
+	it( 'comes out of parking when the variant gains anchors, with a copy per anchor', () => {
+		const { placement, handles, anchor_s, anchor_l } = with_parking();
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [], hide_if_unplaced: true, priority: [ 0 ] } );
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [ '1:anchor_handles_s', '1:anchor_handles_l' ], hide_if_unplaced: true, priority: [ 0 ] } );
+		expect( handles.parent ).toBe( anchor_s );
+		expect( anchor_l.children ).toHaveLength( 1 );
+		expect( placement.is_parked( handles ) ).toBe( false );
+	} );
+
+	it( 'lets a choice move it off the layout, and returns it to the layout afterwards', () => {
+		const { placement, handles, anchor_s, anchor_l } = with_parking();
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [ '1:anchor_handles_s', '1:anchor_handles_l' ], hide_if_unplaced: true, priority: [ 0 ] } );
+		placement.request( 'move', { target_object3d_id: '2', anchor_ids: [ '1:anchor_handles_l' ], priority: [ 1, 0, 0, 0 ] } );
+		expect( handles.parent ).toBe( anchor_l );
+		expect( anchor_l.children ).toEqual( [ handles ] );
+		placement.release( 'move' );
+		expect( handles.parent ).toBe( anchor_s );
+		expect( anchor_l.children ).toHaveLength( 1 );
+		expect( anchor_l.children[ 0 ] ).not.toBe( handles );
+	} );
+
+	it( 'returns to where it was modelled once the layout request is gone', () => {
+		const { placement, handles, root } = with_parking();
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [], hide_if_unplaced: true, priority: [ 0 ] } );
+		placement.release( 'model:2' );
+		expect( handles.parent ).toBe( root );
+	} );
+} );
+
+describe( 'copies stay in step with their source', () => {
+	it( 'drops a part from the copies when it moves out of the source, and restores it when it comes back', () => {
+		const { placement, handles, anchor_l, grip, bracket } = build();
+		// The frame's bracket gets an anchor of its own for the grip to go to.
+		const bracket_anchor = group( 'bracket_socket' );
+		bracket.add( bracket_anchor );
+		placement.request( 'legs', { target_object3d_id: '2', anchor_ids: [ '1:anchor_handles_s', '1:anchor_handles_l' ] } );
+		const names = () => anchor_l.children[ 0 ].children.map( ( c ) => c.name );
+		expect( names() ).toContain( 'grip' );
+
+		placement.request( 'grip', { target_id: '2:grip', anchor_ids: [ '1:bracket_socket' ], priority: [ 1 ] } );
+		expect( grip.parent ).toBe( bracket_anchor );
+		expect( names() ).not.toContain( 'grip' );
+		expect( handles.parent.name ).toBe( 'anchor_handles_s' );
+
+		placement.release( 'grip' );
+		expect( grip.parent ).toBe( handles );
+		expect( names() ).toContain( 'grip' );
+	} );
+} );
+
+describe( 'where a whole model attaches', () => {
+	// A leg exported on its own: one object, still at the height it had in the
+	// artist's scene (its origin at the top of the leg, 0.711 up).
+	function leg_file( id ) {
+		const root = group( 'Scene', { object_id: id } );
+		const leg = mesh( 'leg_steel' );
+		leg.position.set( -0.879, 0.711, 0.489 );
+		root.add( leg );
+		root.userData.pc_attach_point = model_attachment_point( root );
+		return { root, leg };
+	}
+
+	it( "uses the single top-level object's origin, ignoring hidden helpers", () => {
+		const { root } = leg_file( '2' );
+		expect( model_attachment_point( root ) ).toEqual( { x: -0.879, y: 0.711, z: 0.489 } );
+		root.add( mesh( 'product_bounding_box' ) );
+		expect( model_attachment_point( root ) ).toBeNull();
+		expect( model_attachment_point( root, [ 'product_bounding_box' ] ) ).toEqual( { x: -0.879, y: 0.711, z: 0.489 } );
+	} );
+
+	it( "puts the leg's origin on the anchor, not the file's", () => {
+		const scene = new THREE.Scene();
+		const models = group( 'model_root' );
+		const table = group( 'table', { object_id: '1' } );
+		const corner = group( 'anchor_leg' );
+		corner.position.set( 0.9, 0.713, -0.506 );
+		corner.rotation.set( 0, Math.PI / 2, 0 );
+		table.add( corner );
+		const { root, leg } = leg_file( '2' );
+		models.add( table, root );
+		scene.add( models );
+		const placement = create_anchor_placement( {
+			resolve_object: ( id ) => findObjectByCompositeId( models, id ),
+			resolve_model: ( oid ) => ( oid === '2' ? root : null ),
+			warn: () => {},
+		} );
+		placement.request( 'model:2', { target_object3d_id: '2', anchor_ids: [ '1:anchor_leg' ] } );
+		expect_vec( world_position( leg ), 0.9, 0.713, -0.506 );
+		// It turns with the anchor around its own origin, which stays put.
+		const expected = new THREE.Quaternion().setFromEuler( new THREE.Euler( 0, Math.PI / 2, 0 ) );
+		expect( world_quaternion( leg ).angleTo( expected ) ).toBeLessThan( EPS );
+	} );
+
+	it( 'keeps the file origin for a model with several top-level objects', () => {
+		const root = group( 'Scene', { object_id: '2' } );
+		const a = mesh( 'a' );
+		a.position.set( 0, 1, 0 );
+		root.add( a, mesh( 'b' ) );
+		expect( model_attachment_point( root ) ).toBeNull();
 	} );
 } );

@@ -125,7 +125,9 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 					'</div>';
 					break;
 				case 'repeater':
-					$field = '<div class="field-repeater" data-setting="' . esc_attr( $options['id'] ) . '" data-fields="' . esc_attr( json_encode( $options['fields'] ) ) . '"></div>';
+					$field = '<div class="field-repeater" data-setting="' . esc_attr( $options['id'] ) . '" data-fields="' . esc_attr( json_encode( $options['fields'] ) ) . '"'
+						. ( ! empty( $options['add_label'] ) ? ' data-add-label="' . esc_attr( $options['add_label'] ) . '"' : '' )
+						. '></div>';
 					break;
 				case 'textarea':
 					$field = '<textarea class="' . ( isset($options[ 'input_classes' ]) ? esc_attr( $options[ 'input_classes' ] ) : '' ) . '" type="'.esc_attr($options['type']).'" data-setting="'.esc_attr($options['id']).'"><# if( data.'.esc_attr($options['id']).') { #>{{data.'.esc_attr($options['id']).'}}<# } #></textarea>';
@@ -478,34 +480,37 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		 * @return array Field key => field config for merging into get_settings_list().
 		 */
 		/**
-		 * HTML for a layer/choice "Position on anchors" setting: the anchor list
-		 * with its picker, and the follow rotation / scale checkboxes.
+		 * HTML for a single anchor setting: the selected anchor (named by the admin
+		 * JS), a picker and a Clear button.
 		 *
-		 * @param string $prefix Setting key prefix; keys are {prefix}_ids, _follow_rotation, _follow_scale.
+		 * @param string $setting Setting key holding one composite id.
 		 * @return string Underscore template markup.
 		 */
-		public static function get_3d_anchor_placement_html( $prefix = 'object_3d_anchor' ) {
-			$ids      = $prefix . '_ids';
-			$rotation = $prefix . '_follow_rotation';
-			$scale    = $prefix . '_follow_scale';
-			// Follow rotation is on unless explicitly turned off, so an absent value renders checked.
+		public static function get_3d_anchor_field_html( $setting ) {
+			$when_set = 'data-anchor-when-set="' . esc_attr( $setting ) . '" <# if ( ! data.' . $setting . ' ) { #>hidden<# } #>';
+			return '<div class="mkl-pc-setting--container mkl-pc--anchor-placement">'
+				. '<div class="mkl-pc--anchor-list" data-setting="' . esc_attr( $setting ) . '">'
+				. '<# if ( data.' . $setting . ' ) { #>{{ data.' . $setting . ' }}<# } else { #><em>' . esc_html__( 'No anchor selected', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
+				. '</div>'
+				. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_anchor" data-setting="' . esc_attr( $setting ) . '">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+				. ' <button type="button" class="button mkl-pc--action" data-action="clear_3d_anchor" data-setting="' . esc_attr( $setting ) . '" ' . $when_set . '>' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
+				. '</div>';
+		}
+
+		/**
+		 * HTML for the "take the anchor's rotation / scale" checkboxes. Rotation is
+		 * on unless explicitly turned off, so an absent value renders checked.
+		 *
+		 * @param string $rotation Setting key for take-rotation.
+		 * @param string $scale    Setting key for take-scale.
+		 * @return string Underscore template markup.
+		 */
+		public static function get_3d_follow_checkboxes_html( $rotation, $scale ) {
 			$rotation_checked = '<# if ( false !== data.' . $rotation . ' && "false" !== data.' . $rotation . ' && "0" !== data.' . $rotation . ' && 0 !== data.' . $rotation . ' ) { #>checked="checked"<# } #>';
 			$scale_checked    = '<# if ( true === data.' . $scale . ' || "true" === data.' . $scale . ' || "1" === data.' . $scale . ' ) { #>checked="checked"<# } #>';
-			// Clear and the follow options only mean something once an anchor is picked.
-			// The pick/clear actions toggle these without re-rendering the form.
-			$when_set = 'data-anchor-when-set="' . esc_attr( $ids ) . '" <# if ( ! ( data.' . $ids . ' && data.' . $ids . '.length ) ) { #>hidden<# } #>';
 			return '<div class="mkl-pc-setting--container mkl-pc--anchor-placement">'
-				// Filled in by the admin JS: which object this setting moves, resolved through inheritance.
-				. '<p class="mkl-pc--anchor-subject description"></p>'
-				. '<div class="mkl-pc--anchor-list" data-setting="' . esc_attr( $ids ) . '">'
-				. '<# if ( data.' . $ids . ' && data.' . $ids . '.length ) { #>{{ data.' . $ids . '.join( ", " ) }}<# } else { #><em>' . esc_html__( 'No anchor selected', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
-				. '</div>'
-				. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_anchors" data-setting="' . esc_attr( $ids ) . '">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
-				. ' <button type="button" class="button mkl-pc--action" data-action="clear_3d_anchors" data-setting="' . esc_attr( $ids ) . '" ' . $when_set . '>' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
-				. '<div class="mkl-pc--anchor-follow-options" ' . $when_set . '>'
-				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $rotation ) . '" ' . $rotation_checked . '> ' . esc_html__( 'Follow the anchor rotation', 'product-configurator-for-woocommerce' ) . '</label>'
-				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $scale ) . '" ' . $scale_checked . '> ' . esc_html__( 'Follow the anchor scale', 'product-configurator-for-woocommerce' ) . '</label>'
-				. '</div>'
+				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $rotation ) . '" ' . $rotation_checked . '> ' . esc_html__( "Take the anchor's rotation", 'product-configurator-for-woocommerce' ) . '</label>'
+				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $scale ) . '" ' . $scale_checked . '> ' . esc_html__( "Take the anchor's scale", 'product-configurator-for-woocommerce' ) . '</label>'
 				. '</div>';
 		}
 

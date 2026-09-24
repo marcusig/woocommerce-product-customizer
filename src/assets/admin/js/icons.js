@@ -47,6 +47,7 @@ var PC = PC || {};
 		object3d_environment_hdri: { svg: 'svg/3d/world' },
 		object3d_environment_cubemap: { svg: 'svg/3d/world' },
 		object3d_animation: { svg: 'svg/3d/sequence' },
+		object3d_layout: { svg: 'svg/3d/layout' },
 		settings_3d_section_environment: { svg: 'svg/3d/world' },
 		settings_3d_section_background: { svg: 'svg/image' },
 		settings_3d_section_shadows: { dashicon: 'dashicons-image-filter' },

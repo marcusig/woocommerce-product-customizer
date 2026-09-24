@@ -77,6 +77,29 @@ export function normalize_anchor_ids( value ) {
 	return out;
 }
 
+/**
+ * Where a whole model attaches: the origin of its single top-level object.
+ *
+ * A part exported on its own keeps the location it had in the artist's scene
+ * — a table leg modelled at its corner is saved 0.7 up and off to the side.
+ * Placing the file's own origin on the anchor would add that offset, so the
+ * leg's object origin (at the top of the leg, where the artist put it) is
+ * what lands on the anchor instead. With several top-level objects there is
+ * no single "object origin", and the file's origin is used.
+ *
+ * @param {THREE.Object3D} root - A model's scene root
+ * @param {string[]} [ignore_names] - Objects to leave out (the hidden-objects list: bounding-box helpers)
+ * @returns {{ x: number, y: number, z: number }|null} Point in the root's local space, or null for its origin
+ */
+export function model_attachment_point( root, ignore_names ) {
+	if ( ! root || ! Array.isArray( root.children ) ) return null;
+	const ignore = new Set( Array.isArray( ignore_names ) ? ignore_names : [] );
+	const candidates = root.children.filter( ( c ) => c && ! c.isLight && ! c.isCamera && ! ignore.has( c.name ) );
+	if ( candidates.length !== 1 ) return null;
+	const p = candidates[ 0 ].position;
+	return { x: p.x, y: p.y, z: p.z };
+}
+
 const _identityQuat = new THREE.Quaternion();
 const _unitScale = new THREE.Vector3( 1, 1, 1 );
 
@@ -120,11 +143,13 @@ function is_usable_anchor( anchor ) {
 }
 
 /**
- * Parent `obj` to `anchor` with the local transform that puts it at the
- * anchor's position, plus the anchor's rotation and/or scale if followed, on
- * top of the object's authored orientation and scale.
+ * Parent `obj` to `anchor` with the local transform that puts its attachment
+ * point at the anchor's position, plus the anchor's rotation and/or scale if
+ * followed, on top of the object's authored orientation and scale.
+ *
+ * @param {THREE.Vector3|null} pivot - Attachment point in obj's local space; null for its origin
  */
-function place_under_anchor( obj, anchor, authored, follow_rotation, follow_scale ) {
+function place_under_anchor( obj, anchor, authored, follow_rotation, follow_scale, pivot ) {
 	anchor.updateWorldMatrix( true, false );
 	const A = anchor.matrixWorld;
 	const pA = new THREE.Vector3();
@@ -138,6 +163,11 @@ function place_under_anchor( obj, anchor, authored, follow_rotation, follow_scal
 	);
 	const P = authored.clone().setPosition( 0, 0, 0 );
 	const desired = A_follow.multiply( P );
+	if ( pivot ) {
+		// Shift so the pivot, not obj's origin, lands on the anchor.
+		const offset = pivot.clone().applyMatrix4( desired.clone().setPosition( 0, 0, 0 ) );
+		desired.setPosition( pA.clone().sub( offset ) );
+	}
 	const local = A.clone().invert().multiply( desired );
 	anchor.add( obj );
 	local.decompose( obj.position, obj.quaternion, obj.scale );
@@ -238,6 +268,8 @@ function is_inside( node, ancestor ) {
  * @param {function(string): Promise} [options.ensure_loaded] - load the model behind a composite id
  * @param {function(Object)} [options.on_change] - { target, anchors, copies } after each move or revert
  * @param {function()} [options.on_settled] - once per refresh that moved anything
+ * @param {function(): THREE.Object3D} [options.get_parking_parent] - hidden group that parked
+ *   objects are moved into; it should sit inside the searched scene so lookups still find them
  * @param {function(string)} [options.warn]
  */
 export function create_anchor_placement( options = {} ) {
@@ -247,6 +279,15 @@ export function create_anchor_placement( options = {} ) {
 	const ensure_loaded = options.ensure_loaded || null;
 	const on_change = options.on_change || null;
 	const on_settled = options.on_settled || null;
+	let fallback_parking = null;
+	const get_parking_parent = options.get_parking_parent || ( () => {
+		if ( ! fallback_parking ) {
+			fallback_parking = new THREE.Group();
+			fallback_parking.name = '__pc_parked';
+			fallback_parking.visible = false;
+		}
+		return fallback_parking;
+	} );
 	// eslint-disable-next-line no-console
 	const warn = options.warn || ( ( message ) => console.warn( message ) );
 
@@ -274,6 +315,7 @@ export function create_anchor_placement( options = {} ) {
 			follow_rotation: spec.follow_rotation !== false,
 			follow_scale: spec.follow_scale === true,
 			priority: Array.isArray( spec.priority ) ? spec.priority.slice() : [],
+			hide_if_unplaced: spec.hide_if_unplaced === true,
 		};
 	}
 
@@ -357,15 +399,21 @@ export function create_anchor_placement( options = {} ) {
 		return !! state;
 	}
 
+	function capture_original( target ) {
+		if ( originals.has( target ) ) return;
+		const point = isModelRoot( target ) && target.userData ? target.userData.pc_attach_point : null;
+		originals.set( target, {
+			parent: target.parent,
+			position: target.position.clone(),
+			quaternion: target.quaternion.clone(),
+			scale: target.scale.clone(),
+			// Measured before anything inside the model moves away.
+			pivot: point ? new THREE.Vector3( point.x, point.y, point.z ) : null,
+		} );
+	}
+
 	function apply( target, req, anchors ) {
-		if ( ! originals.has( target ) ) {
-			originals.set( target, {
-				parent: target.parent,
-				position: target.position.clone(),
-				quaternion: target.quaternion.clone(),
-				scale: target.scale.clone(),
-			} );
-		}
+		capture_original( target );
 		let use = anchors;
 		if ( use.length > 1 && has_skinned_mesh( target ) ) {
 			warn_once( req.key + '|skinned', 'skinned meshes cannot be copied onto several anchors; only the first anchor is used.' );
@@ -381,11 +429,12 @@ export function create_anchor_placement( options = {} ) {
 				return;
 			}
 			const obj = placed_anchors.length === 0 ? target : clone_for_anchor( target, counterparts );
-			place_under_anchor( obj, anchor, authored, req.follow_rotation, req.follow_scale );
+			place_under_anchor( obj, anchor, authored, req.follow_rotation, req.follow_scale, originals.get( target ).pivot );
 			placed_anchors.push( anchor );
 			if ( obj !== target ) copies.push( obj );
 		} );
 		if ( ! placed_anchors.length ) {
+			if ( req.hide_if_unplaced ) return park( target, req );
 			// Every anchor was unusable: leave the target where it was authored.
 			revert( target );
 			return false;
@@ -403,6 +452,29 @@ export function create_anchor_placement( options = {} ) {
 		return true;
 	}
 
+	/**
+	 * Hide a target that must not show where it was authored — a model on a
+	 * layout whose current variant has no usable anchor. It goes into a hidden
+	 * group rather than out of the scene, so lookups still find it and a later
+	 * variant can place it again. Its own `visible` is left alone: a choice
+	 * showing or hiding the model keeps working while it is parked.
+	 */
+	function park( target, req ) {
+		capture_original( target );
+		get_parking_parent().add( target );
+		setPlacedOrigin( target, origin_model_root_from_original( target ) );
+		applied.set( target, {
+			key: req.key,
+			anchors: [],
+			copies: [],
+			parked: true,
+			follow_rotation: req.follow_rotation,
+			follow_scale: req.follow_scale,
+		} );
+		if ( on_change ) on_change( { target, anchors: [], copies: [], parked: true } );
+		return true;
+	}
+
 	// The model a node was authored in, found through its original parent.
 	function origin_model_root_from_original( target ) {
 		const o = originals.get( target );
@@ -416,8 +488,28 @@ export function create_anchor_placement( options = {} ) {
 		return null;
 	}
 
+	/**
+	 * Placed targets with copies that contain `target` as authored. Their
+	 * copies were cloned from the source as it was then, so when a part moves
+	 * out of the source (or back in) they no longer match it.
+	 */
+	function copied_ancestors( target ) {
+		const out = [];
+		const o = originals.get( target );
+		let n = o ? o.parent : target.parent;
+		let guard = 0;
+		while ( n && guard++ < 1000 ) {
+			const state = applied.get( n );
+			if ( state && state.copies.length ) out.push( n );
+			const on = originals.get( n );
+			n = on ? on.parent : n.parent;
+		}
+		return out;
+	}
+
 	function run_refresh() {
 		let changed = false;
+		const moved = new Set();
 		// Group requests by the object they move.
 		const by_target = new Map();
 		requests.forEach( ( req ) => {
@@ -433,7 +525,10 @@ export function create_anchor_placement( options = {} ) {
 
 		// Targets placed earlier whose requests are all gone.
 		Array.from( applied.keys() ).forEach( ( target ) => {
-			if ( ! by_target.has( target ) ) changed = revert( target ) || changed;
+			if ( ! by_target.has( target ) && revert( target ) ) {
+				changed = true;
+				moved.add( target );
+			}
 		} );
 
 		by_target.forEach( ( list, target ) => {
@@ -452,16 +547,43 @@ export function create_anchor_placement( options = {} ) {
 					chosen_anchors = anchors;
 					break;
 				}
+				if ( list[ i ].hide_if_unplaced ) {
+					// Nothing to stand on, and not allowed to fall back to where
+					// it was modelled: this request wins by hiding the target.
+					chosen = list[ i ];
+					chosen_anchors = [];
+					break;
+				}
 			}
 			const state = applied.get( target );
 			if ( ! chosen ) {
-				if ( state ) changed = revert( target ) || changed;
+				if ( state && revert( target ) ) {
+					changed = true;
+					moved.add( target );
+				}
 				return;
 			}
 			if ( same_placement( state, chosen, chosen_anchors ) ) return;
 			if ( state ) revert( target );
-			apply( target, chosen, chosen_anchors );
+			if ( chosen_anchors.length ) apply( target, chosen, chosen_anchors );
+			else park( target, chosen );
 			changed = true;
+			moved.add( target );
+		} );
+
+		// Rebuild the copies of any placed model a moved part belongs to, so
+		// the copies match the source again (a part that left is gone from them
+		// too; a part that came back is in them again).
+		const rebuild = new Set();
+		moved.forEach( ( target ) => copied_ancestors( target ).forEach( ( a ) => rebuild.add( a ) ) );
+		rebuild.forEach( ( target ) => {
+			if ( moved.has( target ) ) return;
+			const state = applied.get( target );
+			const req = state && requests.get( state.key );
+			if ( ! state || ! req || ! state.copies.length ) return;
+			const anchors = state.anchors.slice();
+			revert( target );
+			apply( target, req, anchors );
 		} );
 		return changed;
 	}
@@ -499,11 +621,13 @@ export function create_anchor_placement( options = {} ) {
 		 * @param {boolean} [spec.follow_rotation=true]
 		 * @param {boolean} [spec.follow_scale=false]
 		 * @param {number[]} [spec.priority]
+		 * @param {boolean} [spec.hide_if_unplaced=false] - with no usable anchor, hide the
+		 *   target instead of letting a lower request or the authored position show
 		 */
 		request( key, spec ) {
 			if ( ! key || ! spec ) return;
 			const req = normalise( String( key ), spec );
-			if ( ! req.anchor_ids.length ) {
+			if ( ! req.anchor_ids.length && ! req.hide_if_unplaced ) {
 				this.release( key );
 				return;
 			}
@@ -525,6 +649,11 @@ export function create_anchor_placement( options = {} ) {
 		get_anchors( target ) {
 			const state = applied.get( target );
 			return state ? state.anchors.slice() : [];
+		},
+		/** @returns {boolean} Whether an object is currently parked (hidden for lack of anchors) */
+		is_parked( target ) {
+			const state = applied.get( target );
+			return !! ( state && state.parked );
 		},
 		/** @returns {boolean} */
 		has_requests() {

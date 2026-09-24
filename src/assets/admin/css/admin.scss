@@ -3971,6 +3971,27 @@ label.euler-axis {
 			}
 		}
 
+		// One heading per model when a picker lists every model.
+		.mkl-pc-3d-object-selector--subheader {
+			padding: 10px 8px 4px;
+			font-weight: 600;
+			text-transform: uppercase;
+			font-size: 11px;
+			color: #50575e;
+
+			&:first-child {
+				padding-top: 4px;
+			}
+		}
+
+		.mkl-pc-3d-object-selector--item-model {
+			font-style: italic;
+		}
+
+		.mkl-pc-3d-object-selector--show-all {
+			margin: 0 0 8px;
+		}
+
 		.mkl-pc-3d-object-selector--actions {
 			display: flex;
 			gap: 8px;
@@ -4255,10 +4276,15 @@ a.mkl-pc-link--external::before {
 			display: block;
 			overflow-wrap: anywhere;
 		}
-		.pc-anchor-list {
+		.pc-anchor-list,
+		.pc-object-choice {
 			display: block;
 			margin-bottom: 4px;
 			overflow-wrap: anywhere;
+		}
+		// .button sets its own display, which beats the attribute.
+		[hidden] {
+			display: none !important;
 		}
 		.remove-option {
 			grid-column: 3;

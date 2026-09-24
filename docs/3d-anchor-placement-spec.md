@@ -1,8 +1,26 @@
 # 3D anchor placement
 
-Status: **target design, agreed 2026-09-24, not built yet.** The first build (placement settings on
-layers and choices, the `attach_to_anchor` action) is being replaced. See
-[Changes from the current build](#changes-from-the-current-build).
+Status: **built 2026-09-24.** It replaces the first build (placement settings on layers and
+choices, the `attach_to_anchor` action); see
+[Changes from the first build](#changes-from-the-first-build). Checked in the browser on the dev
+test product: model on an anchor and on a layout, variant switching (2 → 3 copies), Move to
+anchor with the copies rebuilt, a shared file loaded once, the admin forms and pickers, and the
+admin preview. Findings are under [Notes from testing](#notes-from-testing).
+
+**Split between core and 3D Premium (2026-09-24).** Every setting and behaviour below is a
+**3D Premium** feature. Without the add-on, every model is shown as modelled.
+
+- **Core (`woocommerce-product-customizer`) keeps the infrastructure:**
+  - the placement engine (`3d-anchor-placement.js`), the lookups after a move, shared-file loading
+    and the attachment point;
+  - the pickers and repeater field types, and the admin preview's placement manager;
+  - the hooks: `api.placement` (runtime API v4), `PC.fe.viewer.placement.ready`,
+    `PC.fe.viewer.choice_action_handlers`, `PC.admin.3d_preview.placement`, and the
+    `mkl_pc_object3d_settings_sections` filter.
+- **3D Premium (`threed-premium`) has the rest:**
+  - the settings and the saved-field rules (`inc/class-placement.php`);
+  - the layout state and model position requests (`assets/placement-core.js`);
+  - the product page (`assets/fe-placement.js`) and the admin (`assets/admin-placement.js`).
 
 An **anchor** is a named object in a model, usually an empty, that a part is placed on. Anchors
 cover three needs, and each has its own tool:
@@ -120,7 +138,7 @@ All keys are optional. Missing keys mean what the configurator does today.
 | Key | Type | Meaning |
 |---|---|---|
 | `name` | string | |
-| `layout_variants` | `{ id, name, anchor_ids: string[] }[]` | First is the default. `id` is generated once and never changes, so renaming a variant does not break the choices that use it. |
+| `layout_variants` | `{ variant_id, name, anchor_ids: string[] }[]` | First is the default. `variant_id` is generated once and never changes, so renaming a variant does not break the choices that use it. (Not `id`: the data sanitizer treats every `id` key as an integer.) |
 
 ### Choice actions (rows in `actions_3d`)
 
@@ -184,6 +202,15 @@ has itself been moved does not count. Consequences:
 - An unrotated, unscaled empty leaves the part exactly as modelled. Only its origin moves.
 - With scale off, the part keeps its authored world scale, even under a scaled host.
 - With scale on, a negative anchor scale mirrors the part.
+
+**Attachment point of a whole model.** When the target is a model root (model position, or
+*Move to anchor* on a whole model), the point that lands on the anchor is the origin of the file's
+**single top-level object**, not the file's origin. A part exported on its own keeps the location
+it had in the artist's scene (a table leg saved 0.71 up at its corner). Using the file origin would
+add that offset. Objects in the hidden-objects list don't count. With several top-level objects,
+the file's origin is used. The point is measured when the model mounts
+(`userData.pc_attach_point`) and captured with the originals, so it doesn't change when parts move
+out of the model.
 
 The object is **parented to the anchor**, so it follows the anchor's visibility and animation.
 
@@ -250,14 +277,15 @@ elsewhere; nodes moved out of it are still found as its own.
 
 ## Authoring rules (for the docs)
 
-- A part's origin is its attachment point.
+- A part's origin is its attachment point. For a model file, that is the origin of its single
+  top-level object (or the file origin if it has several).
 - Rotate or tilt the empty, not the part. An unrotated empty changes nothing.
 - Don't scale empties to see them. Use the empty's display size.
 - Attach things to what they physically sit on (crates on racks, not the frame). Then only the base
   parts need to move.
 - Don't move an object that has its own animation. Move the group that contains it.
 
-## Changes from the current build
+## Changes from the first build
 
 Nothing here has been released, so there is no data to migrate. Settings saved on the dev test
 product under the old keys are simply ignored.
@@ -284,6 +312,29 @@ product under the old keys are simply ignored.
 - The picker improvements: "anchor" empties first, then other empties; *Whole model* entries; model-qualified ids.
 - The admin preview applying model positions.
 - A rewrite of the user docs page *Placing parts on anchors*.
+
+## Also built
+
+- **Copies stay in step with their source.** When a part moves out of a model that has copies (or
+  back in), those copies are rebuilt from the source, so they never keep a part the source no
+  longer has.
+- **A layout's variant ids are repaired** when the layout is opened in the admin (before the
+  variants editor renders), in case any are missing.
+- **Repeaters can name their add button** (`add_label`): the variants editor says "Add variant".
+
+## Notes from testing
+
+- **Display object hides the inherited model too.** When a choice with *Display object* and its
+  own *Object in the model* is deselected, the choice view hides the target object **and** the
+  model the choice resolves to (its own, else the layer's). With a layer model shared by several
+  choices, deselecting one hides the whole model until another *Display object* shows it again.
+  This comes from `choice-view.js`, not from placement; not changed here.
+- **Bare object ids and shared files.** An id saved without its model ("Sphere") matches the
+  first model containing that name. Once two 3D Objects share a file, that can be the wrong entry,
+  and a lazy entry may never load because its target seems found elsewhere. The pickers now save
+  model-qualified ids; older bare ids should be re-picked.
+- **The admin preview hides lazy models**, as before. Models placed on a layout that are lazy
+  therefore don't show there.
 
 ## Later
 

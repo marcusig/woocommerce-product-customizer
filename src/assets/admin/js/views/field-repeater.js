@@ -43,6 +43,11 @@ PC.views = PC.views || {};
 			// Generate the defaults object
 			const defaults = Object.keys( this.fields ).reduce( ( acc, slug ) => {
 				const field = this.fields[slug];
+				// Stable ids for rows other settings point at (layout variants).
+				if ( field.generate === 'uid' ) {
+					acc[slug] = 'v' + Date.now().toString( 36 ) + Math.random().toString( 36 ).slice( 2, 7 );
+					return acc;
+				}
 				acc[slug] = typeof field.default !== 'undefined' ? field.default : '';
 				return acc;
 			  }, {});
@@ -52,6 +57,11 @@ PC.views = PC.views || {};
 		},
 		render: function() {
 			this.$el.append( this.template() );
+			// A repeater can name its rows ("Add variant") instead of "Add option".
+			var add_label = this.$el.data( 'add-label' );
+			if ( add_label ) {
+				this.$el.children( '.add-option' ).empty().append( '<i class="dashicons dashicons-plus"></i> ' ).append( document.createTextNode( add_label ) );
+			}
 			this.options.each( this.add_one.bind( this ) );
 		},
 		add_option: function() {
@@ -103,6 +113,7 @@ PC.views = PC.views || {};
 			'change select': 'on_select_change',
 			'click .pc-select-attachment': 'select_attachment',
 			'click .pc-select-3d-object': 'select_3d_object',
+			'click .pc-clear-3d-object': 'clear_3d_object',
 			'click .pc-select-3d-anchors': 'select_3d_anchors',
 			'click .order button': 'reorder_item',
 		},
@@ -117,6 +128,8 @@ PC.views = PC.views || {};
 			this.$el.append( this.template( { ...this.model.attributes, fields: this.fields } ) );
 			this.toggle_action_visibility();
 			this.describe_anchor_lists();
+			this.describe_object_choices();
+			this.load_layout_selects();
 			if ( this.setting === 'actions_3d' && this.context ) {
 				if ( this.fields.material_variant_value ) {
 					this.load_variant_field();
@@ -234,6 +247,14 @@ PC.views = PC.views || {};
 			this.model.set( e.target.name, e.target.value );
 			if ( e.target.name === 'action_type' ) {
 				this.toggle_action_visibility();
+				this.describe_object_choices();
+				this.load_layout_selects();
+			}
+			if ( $( e.target ).is( '.pc-layout-select' ) ) {
+				// Variants belong to one layout: a new layout starts unselected.
+				var $variant = this.$( 'select.pc-layout-variant-select' );
+				if ( $variant.length ) this.model.set( $variant.attr( 'name' ), '' );
+				this.load_layout_variant_select();
 			}
 		},
 		toggle_action_visibility: function() {
@@ -300,35 +321,121 @@ PC.views = PC.views || {};
 		describe_anchor_lists: function() {
 			var view = this;
 			this.$( '.pc-anchor-list[data-anchor-field]' ).each( function() {
-				var ids = view.model.get( $( this ).data( 'anchor-field' ) );
-				if ( Array.isArray( ids ) && ids.length ) $( this ).text( view.describe_ids( ids ) );
+				var value = view.model.get( $( this ).data( 'anchor-field' ) );
+				var ids = Array.isArray( value ) ? value : ( value ? [ value ] : [] );
+				if ( ids.length ) $( this ).text( view.describe_ids( ids ) );
+			} );
+		},
+		/**
+		 * Object fields (Move to anchor's "Object to move"): the picked object,
+		 * the picked whole model, or — when empty — what the choice's own
+		 * object resolves to.
+		 */
+		describe_object_choices: function() {
+			var view = this;
+			this.$( '.pc-object-choice[data-object-field]' ).each( function() {
+				var $el = $( this );
+				var object_id = view.model.get( $el.data( 'object-field' ) );
+				var model_key = $el.data( 'model-key' );
+				var model_id = model_key ? view.model.get( model_key ) : '';
+				var threeD = PC.threeD || {};
+				var text;
+				if ( object_id ) {
+					text = threeD.describeObjectId ? threeD.describeObjectId( object_id ) : object_id;
+				} else if ( model_id !== '' && model_id != null ) {
+					var label = threeD.object3dLabel ? threeD.object3dLabel( model_id ) : '#' + model_id;
+					text = ( ( window.PC_lang && PC_lang.threed_whole_model_of ) || 'Whole model: %s' ).replace( '%s', label );
+				} else {
+					var resolved = view.context && threeD.describeChoiceTarget ? threeD.describeChoiceTarget( view.context.model ) : '';
+					text = resolved
+						? ( ( window.PC_lang && PC_lang.threed_this_choice_object ) || "This choice's object: %s" ).replace( '%s', resolved )
+						: ( $el.data( 'placeholder' ) || '' );
+				}
+				$el.text( text );
+				view.$( '.pc-clear-3d-object[data-target="' + $el.data( 'object-field' ) + '"]' ).prop( 'hidden', ! object_id && ( model_id === '' || model_id == null ) );
 			} );
 		},
 		select_3d_object: function( e ) {
-			var key = $( e.currentTarget ).data( 'target' );
+			var $btn = $( e.currentTarget );
+			var key = $btn.data( 'target' );
 			if ( ! key ) return;
+			var model_key = $btn.data( 'model-key' );
 			var view = this;
 			this.with_3d( function() {
 				PC.threeD.openObjectPicker( function( selection ) {
-					if ( ! selection || selection.id == null ) return;
-					view.model.set( key, String( selection.id ) );
-					view.$( 'input[name="' + key + '"]' ).val( selection.id );
-				} );
+					if ( ! selection ) return;
+					if ( selection.whole_model ) {
+						if ( ! model_key ) return;
+						view.model.set( key, '' );
+						view.model.set( model_key, String( selection.model_id ) );
+					} else {
+						if ( ! selection.id ) return;
+						view.model.set( key, String( selection.id ) );
+						if ( model_key ) view.model.set( model_key, String( selection.model_id || '' ) );
+					}
+					view.describe_object_choices();
+				}, { withModels: !! $btn.data( 'with-models' ) } );
 			} );
 		},
-		select_3d_anchors: function( e ) {
-			var key = $( e.currentTarget ).data( 'target' );
+		clear_3d_object: function( e ) {
+			var $btn = $( e.currentTarget );
+			var key = $btn.data( 'target' );
 			if ( ! key ) return;
+			this.model.set( key, '' );
+			if ( $btn.data( 'model-key' ) ) this.model.set( $btn.data( 'model-key' ), '' );
+			this.describe_object_choices();
+		},
+		select_3d_anchors: function( e ) {
+			var $btn = $( e.currentTarget );
+			var key = $btn.data( 'target' );
+			if ( ! key ) return;
+			var multiple = !! $btn.data( 'multiple' );
 			var view = this;
 			this.with_3d( function() {
 				var current = view.model.get( key );
-				PC.threeD.openAnchorPicker( Array.isArray( current ) ? current : [], function( ids ) {
-					view.model.set( key, ids );
+				var initial = Array.isArray( current ) ? current : ( current ? [ current ] : [] );
+				PC.threeD.openAnchorPicker( initial, function( ids ) {
+					view.model.set( key, multiple ? ids : ( ids[ 0 ] || '' ) );
 					view.$( '.pc-anchor-list[data-anchor-field="' + key + '"]' ).empty().append(
-						ids.length ? $( '<span></span>' ).text( view.describe_ids( ids ) ) : $( '<em></em>' ).text( ( window.PC_lang && PC_lang.none_selected ) || 'None selected' )
+						ids.length ? $( '<span></span>' ).text( view.describe_ids( ids ) ) : $( '<em></em>' ).text( ( window.PC_lang && PC_lang.threed_no_anchor ) || 'No anchor selected' )
 					);
-				} );
+				}, { multiple: multiple } );
 			} );
+		},
+		/** Layouts of the product, from the 3D Objects collection. */
+		get_layouts: function() {
+			var objects3d = PC.app && typeof PC.app.get_collection === 'function' ? PC.app.get_collection( 'objects3d' ) : null;
+			return objects3d ? objects3d.filter( function( o ) { return o.get( 'object_type' ) === 'layout'; } ) : [];
+		},
+		/** Fill Switch layout variant's selects: the layouts, then the chosen layout's variants. */
+		load_layout_selects: function() {
+			var $layout = this.$( 'select.pc-layout-select' );
+			if ( ! $layout.length ) return;
+			var lang = window.PC_lang || {};
+			var layouts = this.get_layouts();
+			var current = String( this.model.get( $layout.attr( 'name' ) ) || '' );
+			$layout.empty().append( $( '<option value="">' ).text( layouts.length ? ( lang.threed_select_layout || '— Select a layout —' ) : ( lang.threed_no_layouts || 'No layouts yet. Add one in 3D Objects.' ) ) );
+			layouts.forEach( function( layout ) {
+				var id = String( layout.get( '_id' ) != null ? layout.get( '_id' ) : layout.id );
+				$layout.append( $( '<option>' ).attr( 'value', id ).text( layout.get( 'name' ) || ( '#' + id ) ) );
+			} );
+			$layout.val( current );
+			this.load_layout_variant_select();
+		},
+		load_layout_variant_select: function() {
+			var $variant = this.$( 'select.pc-layout-variant-select' );
+			if ( ! $variant.length ) return;
+			var layout_key = this.$( 'select.pc-layout-select' ).attr( 'name' ) || 'layout_id';
+			var layout_id = String( this.model.get( layout_key ) || '' );
+			var layout = _.find( this.get_layouts(), function( l ) { return String( l.get( '_id' ) != null ? l.get( '_id' ) : l.id ) === layout_id; } );
+			var variants = layout && Array.isArray( layout.get( 'layout_variants' ) ) ? layout.get( 'layout_variants' ) : [];
+			var current = String( this.model.get( $variant.attr( 'name' ) ) || '' );
+			$variant.empty().append( $( '<option value="">' ).text( ( window.PC_lang && PC_lang.threed_select_variant ) || '— Select a variant —' ) );
+			variants.forEach( function( v, index ) {
+				if ( ! v || ! v.variant_id ) return;
+				$variant.append( $( '<option>' ).attr( 'value', v.variant_id ).text( v.name || ( '#' + ( index + 1 ) ) ) );
+			} );
+			$variant.val( _.some( variants, function( v ) { return v && v.variant_id === current; } ) ? current : '' );
 		},
 		reorder_item: function( e ) {
 			var moved = false;
