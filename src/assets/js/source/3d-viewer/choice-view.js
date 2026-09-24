@@ -1,7 +1,7 @@
 /**
  * 3D choice view – one Backbone view per choice that has 3D actions.
  * Listens to the choice model and applies visibility + 3D actions
- * (material variant, color, texture) for that choice only.
+ * (material variant, color, texture, anchor placement) for that choice only.
  * No DOM; just drives the Three.js scene for its object.
  */
 import { apply_choice_actions, restore_choice_actions } from './3d-action-handlers.js';
@@ -114,6 +114,25 @@ const viewer_3d_choice = Backbone.View.extend({
 	},
 
 	/**
+	 * What attach_to_anchor actions need to file their placement requests: the
+	 * viewer's manager, a key unique to this choice, and a priority that puts
+	 * actions above layer/choice defaults and later layers above earlier ones.
+	 *
+	 * @returns {Object}
+	 */
+	_placement_context() {
+		const layers = window.PC.fe && window.PC.fe.layers;
+		const layer_index = layers && typeof layers.indexOf === 'function' ? layers.indexOf( this.layer_model ) : 0;
+		const collection = this.model.collection;
+		const choice_index = collection && typeof collection.indexOf === 'function' ? collection.indexOf( this.model ) : 0;
+		return {
+			placement: this.parent_view._placement || null,
+			placement_key: 'choice:' + this.layer_model.id + ':' + this.model.id,
+			placement_priority: [ 1, layer_index, choice_index ],
+		};
+	},
+
+	/**
 	 * Put back the material state this choice's actions overwrote.
 	 * @param {Object[]} actions
 	 */
@@ -121,13 +140,13 @@ const viewer_3d_choice = Backbone.View.extend({
 		const t = this.parent_view._three;
 		if ( ! t || ! Array.isArray( actions ) || ! actions.length ) return;
 		restore_choice_actions(
-			{
+			Object.assign( {
 				three: t,
 				registry: t.material_registry,
 				target_object: this.target_object,
 				target_scene: this.target_scene,
 				notify: ( payload ) => this._notify_material( payload ),
-			},
+			}, this._placement_context() ),
 			actions
 		);
 		this._request_render();
@@ -173,7 +192,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		}
 
 		apply_choice_actions(
-			{
+			Object.assign( {
 				three: t,
 				registry: t.material_registry,
 				texture_loader: t.textureLoader || null,
@@ -183,7 +202,7 @@ const viewer_3d_choice = Backbone.View.extend({
 				// texture actions finish asynchronously.
 				request_render: () => this._request_render(),
 				notify: ( payload ) => this._notify_material( payload ),
-			},
+			}, this._placement_context() ),
 			actions
 		);
 		this._request_render();

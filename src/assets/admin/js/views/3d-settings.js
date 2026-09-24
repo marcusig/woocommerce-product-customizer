@@ -199,6 +199,14 @@ PC.views = window.PC.views || {};
 			} );
 		};
 	}
+	[ 'select_3d_anchors', 'clear_3d_anchors' ].forEach( function ( name ) {
+		if ( PC.actions[ name ] ) return;
+		PC.actions[ name ] = function ( el, context ) {
+			ensureThreeDepsLoaded().then( function () {
+				if ( PC.actions[ name ] ) PC.actions[ name ]( el, context );
+			} );
+		};
+	} );
 
 	/**
 	 * Opens a WP media frame restricted to GLB/GLTF/ZIP (same as 3D settings).

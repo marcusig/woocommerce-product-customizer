@@ -1374,9 +1374,204 @@ export function findObject( root, objectId ) {
 // qualifier yet — such an id simply finds nothing.
 const COMPOSITE_ID_SEP = ':';
 
+// -------------------------------------------------------------------------
+// Model identity once objects can be moved onto anchors
+//
+// A model root used to be a direct child of the viewer's model root. Anchor
+// placement can move a model root, or any node inside a model, under a node of
+// another model, and can mount copies of it. These registries let composite
+// lookups keep answering "which model does this node belong to" from where
+// things were authored, not from where they currently hang.
+// -------------------------------------------------------------------------
+
+// Moved node → the model root it was authored under. Whole-model roots are not
+// registered: they carry their own userData markers.
+const PLACED_ORIGIN = new WeakMap();
+// Model root → Set of nodes authored under it that now live elsewhere.
+const PLACED_BY_ORIGIN = new WeakMap();
+// Copied source root → { nodes, copies } registered for it, for unregistering.
+const COPY_REGISTRATIONS = new WeakMap();
+// Any node inside a copied subtree → its counterparts in each copy, in anchor order.
+const COPY_COUNTERPARTS = new WeakMap();
+// Copy roots. Never searched as part of the model they hang under.
+const COPY_ROOTS = new WeakSet();
+
+/**
+ * Whether a node is the root of a loaded model: the viewer tags those with the
+ * objects3d id and/or the glTF attachment id when it mounts them.
+ *
+ * @param {THREE.Object3D} node
+ * @returns {boolean}
+ */
+export function isModelRoot( node ) {
+	return !! ( node && node.userData && ( node.userData.object_id != null || node.userData.attachment_id != null ) );
+}
+
+/**
+ * Record that `node`, authored under `originRoot`, has been moved elsewhere.
+ *
+ * @param {THREE.Object3D} node
+ * @param {THREE.Object3D|null} originRoot - null unregisters
+ */
+export function setPlacedOrigin( node, originRoot ) {
+	if ( ! node ) return;
+	const previous = PLACED_ORIGIN.get( node );
+	if ( previous ) {
+		const set = PLACED_BY_ORIGIN.get( previous );
+		if ( set ) set.delete( node );
+		PLACED_ORIGIN.delete( node );
+	}
+	if ( ! originRoot || originRoot === node ) return;
+	PLACED_ORIGIN.set( node, originRoot );
+	let set = PLACED_BY_ORIGIN.get( originRoot );
+	if ( ! set ) {
+		set = new Set();
+		PLACED_BY_ORIGIN.set( originRoot, set );
+	}
+	set.add( node );
+}
+
+/**
+ * Register the anchor copies of `source`. An empty list unregisters.
+ *
+ * @param {THREE.Object3D} source
+ * @param {THREE.Object3D[]} copies - Copy roots, in anchor order
+ * @param {Map<THREE.Object3D, THREE.Object3D[]>} [counterparts] - Each copied
+ *   source node → its copy in each copy root, built while cloning. Copies skip
+ *   foreign subtrees, so the trees need not match node for node.
+ */
+export function setAnchorCopies( source, copies, counterparts ) {
+	if ( ! source ) return;
+	const previous = COPY_REGISTRATIONS.get( source );
+	if ( previous ) {
+		previous.nodes.forEach( ( n ) => COPY_COUNTERPARTS.delete( n ) );
+		previous.copies.forEach( ( c ) => COPY_ROOTS.delete( c ) );
+		COPY_REGISTRATIONS.delete( source );
+	}
+	if ( ! Array.isArray( copies ) || ! copies.length ) return;
+	const nodes = [];
+	if ( counterparts ) {
+		counterparts.forEach( ( list, node ) => {
+			COPY_COUNTERPARTS.set( node, list.slice() );
+			nodes.push( node );
+		} );
+	}
+	if ( ! COPY_COUNTERPARTS.has( source ) ) {
+		COPY_COUNTERPARTS.set( source, copies.slice() );
+		nodes.push( source );
+	}
+	copies.forEach( ( c ) => COPY_ROOTS.add( c ) );
+	COPY_REGISTRATIONS.set( source, { nodes, copies: copies.slice() } );
+}
+
+/**
+ * @param {THREE.Object3D} node - A source node
+ * @returns {THREE.Object3D[]} Its counterparts in each anchor copy (not including node)
+ */
+export function getAnchorCopies( node ) {
+	return ( node && COPY_COUNTERPARTS.get( node ) ) || [];
+}
+
+/**
+ * @param {THREE.Object3D} node
+ * @returns {boolean} Whether node is the root of an anchor copy
+ */
+export function isAnchorCopy( node ) {
+	return !! node && COPY_ROOTS.has( node );
+}
+
+/**
+ * @param {THREE.Object3D} node
+ * @returns {boolean} Whether node was moved away from the model it was authored in
+ */
+export function isPlacedNode( node ) {
+	return !! node && PLACED_ORIGIN.has( node );
+}
+
+/**
+ * Whether a node belongs to the model rooted at `root` when searching from
+ * `root`: stops at other models' roots, at anchor copies, and at nodes moved in
+ * from another model.
+ */
+function isForeignSubtree( node, root ) {
+	if ( node === root ) return false;
+	if ( isModelRoot( node ) ) return true;
+	if ( COPY_ROOTS.has( node ) ) return true;
+	const origin = PLACED_ORIGIN.get( node );
+	return !! origin && origin !== root;
+}
+
+/**
+ * findObject scoped to one model: the nodes authored under `root`, wherever
+ * they currently hang.
+ *
+ * @param {THREE.Object3D} root - A model root
+ * @param {string} objectId - Object name or uuid
+ * @returns {THREE.Object3D|null}
+ */
+function findObjectInModel( root, objectId ) {
+	const visit = ( start ) => {
+		const stack = [ start ];
+		while ( stack.length ) {
+			const obj = stack.pop();
+			if ( obj !== start && isForeignSubtree( obj, root ) ) continue;
+			if ( obj.name === objectId || ( obj.uuid && obj.uuid === objectId ) ) return obj;
+			const children = obj.children;
+			if ( children ) {
+				for ( let i = children.length - 1; i >= 0; i-- ) stack.push( children[ i ] );
+			}
+		}
+		return null;
+	};
+	const direct = visit( root );
+	if ( direct ) return direct;
+	// Parts of this model that were moved onto another model's anchors.
+	const moved = PLACED_BY_ORIGIN.get( root );
+	if ( moved ) {
+		for ( const node of moved ) {
+			const found = visit( node );
+			if ( found ) return found;
+		}
+	}
+	return null;
+}
+
+/**
+ * Model roots under `modelRoot` (itself included) whose objects3d id or
+ * attachment id is `sourceId`, in tree order. Copies are never model roots.
+ */
+function findModelRoots( modelRoot, sourceId ) {
+	const roots = [];
+	const stack = [ modelRoot ];
+	while ( stack.length ) {
+		const node = stack.pop();
+		if ( ! node ) continue;
+		if ( COPY_ROOTS.has( node ) ) continue;
+		const data = node.userData;
+		if ( data ) {
+			const attId = data.attachment_id;
+			const objId = data.object_id;
+			if ( ( attId != null && String( attId ) === sourceId ) || ( objId != null && String( objId ) === sourceId ) ) {
+				roots.push( node );
+			}
+		}
+		const children = node.children;
+		if ( children ) {
+			for ( let i = children.length - 1; i >= 0; i-- ) stack.push( children[ i ] );
+		}
+	}
+	return roots;
+}
+
 /**
  * Find an object by composite id "sourceId:objectName" (e.g. attachment_id:objectName).
- * modelRoot must be the full scene root; direct children (and modelRoot itself) can have userData.attachment_id set.
+ *
+ * The source half names a model: the node tagged with that objects3d id or
+ * attachment id, wherever anchor placement has put it. The name is then looked
+ * up among that model's own nodes — including any moved onto other models'
+ * anchors, and excluding other models or copies hanging off its own anchors.
+ * An anchor copy is never returned; see findObjectsByCompositeId.
+ *
  * Legacy: if id does not contain ':', looks up by name/uuid over the whole tree.
  * @param {THREE.Object3D} modelRoot - Full scene root (main + layer scenes as children)
  * @param {string} compositeId - "sourceId:objectName" or legacy "name"/"uuid"
@@ -1392,31 +1587,17 @@ export function findObjectByCompositeId( modelRoot, compositeId ) {
 	const sourceId = id.slice( 0, sepIdx );
 	const objectName = id.slice( sepIdx + 1 );
 	if ( ! objectName ) return null;
-	const roots = [ modelRoot ].concat( modelRoot.children ? Array.from( modelRoot.children ) : [] );
-
-	for ( let i = 0; i < roots.length; i++ ) {
-		const r = roots[ i ];
-		if ( ! r || ! r.userData ) continue;
-		const attId = r.userData.attachment_id;
-		const objId = r.userData.object_id;
-		const match = ( attId != null && String( attId ) === sourceId ) || ( objId != null && String( objId ) === sourceId );
-		if ( match ) {
-			const obj = findObject( r, objectName );
-			if ( obj ) return obj;
-			return null;
-		}
-	}
-	return null;
+	const roots = findModelRoots( modelRoot, sourceId );
+	if ( ! roots.length ) return null;
+	return findObjectInModel( roots[ 0 ], objectName );
 }
 
 /**
  * Every copy of an object addressed by composite id "sourceId:objectName".
  *
- * A model is mounted once today, so this returns at most one object. It exists
- * so callers are written for a model placed several times — the same leg file
- * mounted on each of a table's anchors — where "legs:Foot" means every foot,
- * one per copy, in mount order. Code that wants a single copy picks from this
- * list; the singular lookup keeps returning the first.
+ * "legs:Foot" on a leg model placed on four anchors means four feet: the
+ * source first, then its anchor copies in anchor order. Code that wants a
+ * single copy picks from this list; the singular lookup returns the source.
  *
  * A bare id (no separator) is not scoped to a model, so it keeps the legacy
  * first-match-anywhere behaviour and yields at most one object.
@@ -1436,19 +1617,13 @@ export function findObjectsByCompositeId( modelRoot, compositeId ) {
 	const sourceId = id.slice( 0, sepIdx );
 	const objectName = id.slice( sepIdx + 1 );
 	if ( ! objectName ) return [];
-	const roots = [ modelRoot ].concat( modelRoot.children ? Array.from( modelRoot.children ) : [] );
 	const found = [];
-
-	for ( let i = 0; i < roots.length; i++ ) {
-		const r = roots[ i ];
-		if ( ! r || ! r.userData ) continue;
-		const attId = r.userData.attachment_id;
-		const objId = r.userData.object_id;
-		const match = ( attId != null && String( attId ) === sourceId ) || ( objId != null && String( objId ) === sourceId );
-		if ( ! match ) continue;
-		const obj = findObject( r, objectName );
-		if ( obj ) found.push( obj );
-	}
+	findModelRoots( modelRoot, sourceId ).forEach( ( r ) => {
+		const obj = findObjectInModel( r, objectName );
+		if ( ! obj ) return;
+		found.push( obj );
+		found.push( ...getAnchorCopies( obj ) );
+	} );
 	return found;
 }
 

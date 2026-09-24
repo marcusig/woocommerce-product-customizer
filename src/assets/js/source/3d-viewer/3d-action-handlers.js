@@ -3,6 +3,7 @@
  * Registry of action_type → apply function for actions_3d.
  */
 import * as THREE from 'three';
+import { normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 
 /**
  * Allowlisted Three.js material properties for material_property actions.
@@ -436,6 +437,51 @@ function apply_material( context, action ) {
 }
 
 /**
+ * Placement request key for one attach action: unique per choice and row.
+ */
+function anchor_request_key( context, index ) {
+	return ( context.placement_key || 'choice' ) + ':action:' + ( index || 0 );
+}
+
+/**
+ * Move an object onto one or more anchors while the choice is active.
+ *
+ * The object is the action's own target when set, otherwise the choice's
+ * target object, otherwise the model the choice displays. The placement
+ * manager decides between competing requests by priority and undoes the move
+ * when this request is released.
+ */
+function apply_attach_to_anchor( context, action, index ) {
+	const { placement } = context;
+	if ( ! placement ) return;
+	const anchor_ids = normalize_anchor_ids( action.anchor_ids );
+	const key = anchor_request_key( context, index );
+	if ( ! anchor_ids.length ) {
+		placement.release( key );
+		return;
+	}
+	const spec = {
+		anchor_ids,
+		follow_rotation: read_follow_flag( action.anchor_follow_rotation, true ),
+		follow_scale: read_follow_flag( action.anchor_follow_scale, false ),
+		priority: ( context.placement_priority || [ 1 ] ).concat( [ index || 0 ] ),
+	};
+	const target_id = action.anchor_target_id ? String( action.anchor_target_id ).trim() : '';
+	if ( target_id ) {
+		spec.target_id = target_id;
+	} else {
+		const target = context.target_object || context.target_scene;
+		if ( ! target ) return;
+		spec.target_object = target;
+	}
+	placement.request( key, spec );
+}
+
+function restore_attach_to_anchor( context, action, index ) {
+	if ( context.placement ) context.placement.release( anchor_request_key( context, index ) );
+}
+
+/**
  * action_type → handler. toggle_visibility is applied outside the registry.
  */
 export const ACTION_HANDLERS = {
@@ -444,6 +490,7 @@ export const ACTION_HANDLERS = {
 	material_color_registry: apply_material_color_registry,
 	material_property: apply_material_property,
 	apply_material: apply_material,
+	attach_to_anchor: apply_attach_to_anchor,
 };
 
 /**
@@ -455,6 +502,7 @@ export const RESTORE_HANDLERS = {
 	material_color_registry: restore_material_color_registry,
 	material_property: restore_material_property,
 	apply_material: restore_material,
+	attach_to_anchor: restore_attach_to_anchor,
 };
 
 /**
@@ -467,16 +515,19 @@ export const RESTORE_HANDLERS = {
  * @param {THREE.Object3D} [context.target_scene]
  * @param {function()} [context.request_render] - called when an async action lands
  * @param {function(Object)} [context.notify] - called after each material mutation
+ * @param {Object} [context.placement] - anchor placement manager, for attach_to_anchor
+ * @param {string} [context.placement_key] - request key prefix, unique per choice
+ * @param {number[]} [context.placement_priority] - priority prefix for this choice's actions
  * @param {Object[]} actions
  */
 export function apply_choice_actions( context, actions ) {
 	if ( ! Array.isArray( actions ) || ! actions.length ) return;
-	actions.forEach( ( action ) => {
+	actions.forEach( ( action, index ) => {
 		const type = action && action.action_type;
 		if ( ! type || type === 'toggle_visibility' ) return;
 		const handler = ACTION_HANDLERS[ type ];
 		if ( typeof handler === 'function' ) {
-			handler( context, action );
+			handler( context, action, index );
 		}
 	} );
 }
@@ -501,7 +552,7 @@ export function restore_choice_actions( context, actions ) {
 		if ( ! type || type === 'toggle_visibility' ) continue;
 		const handler = RESTORE_HANDLERS[ type ];
 		if ( typeof handler === 'function' ) {
-			handler( context, action );
+			handler( context, action, i );
 		}
 	}
 }

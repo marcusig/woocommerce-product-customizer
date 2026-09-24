@@ -102,6 +102,8 @@ PC.views = PC.views || {};
 			'change input': 'update_value',
 			'change select': 'on_select_change',
 			'click .pc-select-attachment': 'select_attachment',
+			'click .pc-select-3d-object': 'select_3d_object',
+			'click .pc-select-3d-anchors': 'select_3d_anchors',
 			'click .order button': 'reorder_item',
 		},
 		initialize: function( options ) {
@@ -277,6 +279,43 @@ PC.views = PC.views || {};
 				}
 			}.bind( this ) );
 			frame.open();
+		},
+		/**
+		 * Run fn once the admin 3D modules (pickers, model store) are loaded;
+		 * they load on first use.
+		 */
+		with_3d: function( fn ) {
+			if ( PC.threeD && typeof PC.threeD.openAnchorPicker === 'function' ) {
+				fn();
+			} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+				PC.threeD.ensureReady().then( fn );
+			}
+		},
+		select_3d_object: function( e ) {
+			var key = $( e.currentTarget ).data( 'target' );
+			if ( ! key ) return;
+			var view = this;
+			this.with_3d( function() {
+				PC.threeD.openObjectPicker( function( selection ) {
+					if ( ! selection || selection.id == null ) return;
+					view.model.set( key, String( selection.id ) );
+					view.$( 'input[name="' + key + '"]' ).val( selection.id );
+				} );
+			} );
+		},
+		select_3d_anchors: function( e ) {
+			var key = $( e.currentTarget ).data( 'target' );
+			if ( ! key ) return;
+			var view = this;
+			this.with_3d( function() {
+				var current = view.model.get( key );
+				PC.threeD.openAnchorPicker( Array.isArray( current ) ? current : [], function( ids ) {
+					view.model.set( key, ids );
+					view.$( '.pc-anchor-list[data-anchor-field="' + key + '"]' ).empty().append(
+						ids.length ? $( '<span></span>' ).text( ids.join( ', ' ) ) : $( '<em></em>' ).text( ( window.PC_lang && PC_lang.none_selected ) || 'None selected' )
+					);
+				} );
+			} );
 		},
 		reorder_item: function( e ) {
 			var moved = false;

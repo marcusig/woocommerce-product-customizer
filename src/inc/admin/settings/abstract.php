@@ -477,6 +477,31 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 		 * }
 		 * @return array Field key => field config for merging into get_settings_list().
 		 */
+		/**
+		 * HTML for a layer/choice "Position on anchors" setting: the anchor list
+		 * with its picker, and the follow rotation / scale checkboxes.
+		 *
+		 * @param string $prefix Setting key prefix; keys are {prefix}_ids, _follow_rotation, _follow_scale.
+		 * @return string Underscore template markup.
+		 */
+		public static function get_3d_anchor_placement_html( $prefix = 'object_3d_anchor' ) {
+			$ids      = $prefix . '_ids';
+			$rotation = $prefix . '_follow_rotation';
+			$scale    = $prefix . '_follow_scale';
+			// Follow rotation is on unless explicitly turned off, so an absent value renders checked.
+			$rotation_checked = '<# if ( false !== data.' . $rotation . ' && "false" !== data.' . $rotation . ' && "0" !== data.' . $rotation . ' && 0 !== data.' . $rotation . ' ) { #>checked="checked"<# } #>';
+			$scale_checked    = '<# if ( true === data.' . $scale . ' || "true" === data.' . $scale . ' || "1" === data.' . $scale . ' ) { #>checked="checked"<# } #>';
+			return '<div class="mkl-pc-setting--container mkl-pc--anchor-placement">'
+				. '<div class="mkl-pc--anchor-list" data-setting="' . esc_attr( $ids ) . '">'
+				. '<# if ( data.' . $ids . ' && data.' . $ids . '.length ) { #>{{ data.' . $ids . '.join( ", " ) }}<# } else { #><em>' . esc_html__( 'None: the model stays where it was authored', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
+				. '</div>'
+				. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_anchors" data-setting="' . esc_attr( $ids ) . '">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+				. ' <button type="button" class="button mkl-pc--action" data-action="clear_3d_anchors" data-setting="' . esc_attr( $ids ) . '">' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
+				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $rotation ) . '" ' . $rotation_checked . '> ' . esc_html__( 'Follow the anchor rotation', 'product-configurator-for-woocommerce' ) . '</label>'
+				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $scale ) . '" ' . $scale_checked . '> ' . esc_html__( 'Follow the anchor scale', 'product-configurator-for-woocommerce' ) . '</label>'
+				. '</div>';
+		}
+
 		public static function get_3d_model_source_fields( $config ) {
 			$can_upload       = ! empty( $config['can_upload'] );
 			$setting_model    = isset( $config['setting_model'] ) ? $config['setting_model'] : 'object_selection_3d';

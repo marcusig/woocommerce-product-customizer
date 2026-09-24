@@ -259,6 +259,35 @@ class Data_Sanitizer {
 					'sanitize' => 'sanitize_text_field',
 					'escape' => 'esc_attr',
 				],
+				// Anchor placement: layer/choice default and the attach_to_anchor action.
+				'object_3d_anchor_ids' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_focus_object_ids' ],
+					'escape' => [ __CLASS__, 'escape_camera_focus_object_ids' ],
+				],
+				'anchor_ids' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_focus_object_ids' ],
+					'escape' => [ __CLASS__, 'escape_camera_focus_object_ids' ],
+				],
+				'anchor_target_id' => [
+					'sanitize' => 'sanitize_text_field',
+					'escape' => 'esc_attr',
+				],
+				'object_3d_anchor_follow_rotation' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'object_3d_anchor_follow_scale' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'anchor_follow_rotation' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
+				'anchor_follow_scale' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'attachment_id' => [
 					'sanitize' => [ $this, 'sanitize_nullable_int' ],
 					'escape' => [ $this, 'sanitize_nullable_int' ],

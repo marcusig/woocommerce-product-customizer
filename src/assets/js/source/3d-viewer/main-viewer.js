@@ -42,8 +42,9 @@ import {
 	orbit_hint_done,
 } from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
+import { create_anchor_placement, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -254,7 +255,7 @@ export default Backbone.View.extend({
 			getScenesForObject3dId: ( object3dId ) => {
 				if ( object3dId == null ) return [];
 				const scene = this._objectIdToScene[ String( object3dId ).trim() ];
-				return scene ? [ scene ] : [];
+				return scene ? [ scene ].concat( getAnchorCopies( scene ) ) : [];
 			},
 			ensureObject3dLoaded: ( object3dId ) => this._ensureObjects3dSceneLoadedById( object3dId ),
 			findObjectByCompositeId: ( compositeId ) => {
@@ -1005,6 +1006,77 @@ export default Backbone.View.extend({
 		} );
 	},
 
+	/**
+	 * Build the anchor placement manager for this scene.
+	 *
+	 * @returns {Object}
+	 */
+	_createPlacement() {
+		return create_anchor_placement( {
+			resolve_object: ( id ) => this._findObjectById( id ),
+			resolve_model: ( object3dId ) => this._objectIdToScene[ String( object3dId ).trim() ] || null,
+			// A missing anchor only counts as missing once its model has loaded
+			// (or failed); before that the placement waits for it.
+			is_source_settled: ( compositeId ) => {
+				const oid = this._resolveObject3dIdForCompositeId( compositeId );
+				if ( ! oid ) return true;
+				const sceneModel = this._scene_models && this._scene_models.get( oid );
+				if ( ! sceneModel ) return true;
+				const state = sceneModel.get( 'state' );
+				return state === 'loaded' || state === 'error';
+			},
+			ensure_loaded: ( compositeId ) => this._ensureObjects3dSceneLoadedForCompositeId( compositeId ),
+			on_change: ( { target, anchors, copies } ) => {
+				// Copies are new meshes: give them the scene's shadow flags.
+				copies.forEach( ( copy ) => this._applyShadowFlagsToObject( copy, this._shadowsEnabled ) );
+				this._emitRuntimeAction( 'PC.fe.viewer.placement.changed', [ this, target, anchors, copies, this._runtimeApi ] );
+				this._emitRuntimeEvent( 'placement:changed', { target, anchors, copies } );
+			},
+			on_settled: () => {
+				// Geometry moved: everything fitted to the scene's bounds is stale.
+				if ( this._shadowsEnabled ) this._refreshShadows();
+				this.invalidate_fake_shadow();
+				this._refreshPostprocessingSceneScale();
+				this._requestAngleReframe();
+				this._requestRender();
+			},
+		} );
+	},
+
+	/**
+	 * Register the default placement of every model a layer or choice displays
+	 * on anchors. A layer places the model it displays. A choice places only a
+	 * model of its own — one inherited from the layer is the layer's to place,
+	 * and a choice that wants to move it uses an "Attach to anchor" action.
+	 *
+	 * Priority [0, layer, choice]: below every action, later layers winning.
+	 *
+	 * @param {Backbone.Collection} layers
+	 */
+	_registerDefaultPlacements( layers ) {
+		const placement = this._placement;
+		if ( ! placement || ! layers ) return;
+		const register = ( key, model, object3dId, priority ) => {
+			const anchor_ids = normalize_anchor_ids( model.get( 'object_3d_anchor_ids' ) );
+			if ( object3dId == null || String( object3dId ).trim() === '' || ! anchor_ids.length ) return;
+			placement.request( key, {
+				target_object3d_id: String( object3dId ).trim(),
+				anchor_ids,
+				follow_rotation: read_follow_flag( model.get( 'object_3d_anchor_follow_rotation' ), true ),
+				follow_scale: read_follow_flag( model.get( 'object_3d_anchor_follow_scale' ), false ),
+				priority,
+			} );
+		};
+		layers.each( ( layer_model, layer_index ) => {
+			register( 'default:layer:' + layer_model.id, layer_model, layer_model.get( 'object_3d_id' ), [ 0, layer_index, -1 ] );
+			const choices = window.PC.fe.getLayerContent && window.PC.fe.getLayerContent( layer_model.id );
+			if ( ! choices ) return;
+			choices.each( ( choice_model, choice_index ) => {
+				register( 'default:choice:' + layer_model.id + ':' + choice_model.id, choice_model, choice_model.get( 'object_3d_id' ), [ 0, layer_index, choice_index ] );
+			} );
+		} );
+	},
+
 	_syncLayerSceneForObjectId( objectId, scene ) {
 		const layers = window.PC.fe && window.PC.fe.layers;
 		if ( !layers || ! scene ) return;
@@ -1219,6 +1291,11 @@ export default Backbone.View.extend({
 		const objects3d = productData && productData['objects3d'];
 		// Build runtime stores used by both eager and lazy-loaded 3D assets.
 		this._initSceneModelsStore( objects3d );
+		// Anchor placement moves models and parts onto anchors in other models.
+		// Defaults are registered before anything loads; each model load
+		// refreshes, so placements land as soon as both ends are in the scene.
+		this._placement = this._createPlacement();
+		this._registerDefaultPlacements( layers );
 		this._layer_scenes = [];
 		// Resolve the hidden-object list before any model is mounted, so eager and
 		// lazy loads are both hidden through the same path in the load callback.
@@ -1611,6 +1688,9 @@ export default Backbone.View.extend({
 					this._objectIdToScene[ idStr ] = sceneToAdd;
 					this._syncLayerSceneForObjectId( idStr, sceneToAdd );
 					this._apply_layer_cshow_visibility();
+					// Before object3d:loaded, so listeners see the model where it
+					// will stay, and placements waiting on it as a host resolve.
+					if ( this._placement ) this._placement.refresh();
 					this.invalidate_fake_shadow();
 					// AO radius and the SSR reflective-mesh list were sized against
 					// whatever was in the scene before this model existed.
@@ -2013,6 +2093,10 @@ export default Backbone.View.extend({
 		if ( this._choice_views && this._choice_views.length ) {
 			this._choice_views.forEach( ( view ) => view.remove() );
 			this._choice_views = [];
+		}
+		if ( this._placement ) {
+			this._placement.reset();
+			this._placement = null;
 		}
 		this._layer_scenes = [];
 		// Keep shared GLTFLoader module cache; drop the instance ref only.

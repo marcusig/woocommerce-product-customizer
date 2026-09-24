@@ -28,7 +28,7 @@ const ObjectSelector3DView = Backbone.View.extend( {
 		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
 		// Some selectors (e.g. light target) don't have a "model source" field to resolve a single model URL.
 		// In that case, list objects from all models in objects3d and store composite ids "sourceId:objectName".
-		this.loadAllSceneModels = this.setting === 'light_target_object_id';
+		this.loadAllSceneModels = this.options.allModels === true || this.setting === 'light_target_object_id';
 	},
 	render() {
 		this.$el.html( this.template( {} ) );
@@ -197,7 +197,7 @@ const ObjectSelector3DMultiView = Backbone.View.extend( {
 		this.initialSelectedIds = Array.isArray( this.options.initialSelectedIds ) ? this.options.initialSelectedIds : [];
 		this.setting = this.options.setting || 'camera_focus_object_ids';
 		this.applySelection = typeof this.options.applySelection === 'function' ? this.options.applySelection : null;
-		this.loadAllSceneModels = this.setting === 'camera_focus_object_ids' && this.originals.context && this.originals.context.collectionName === 'angles';
+		this.loadAllSceneModels = this.options.allModels === true || ( this.setting === 'camera_focus_object_ids' && this.originals.context && this.originals.context.collectionName === 'angles' );
 	},
 	render() {
 		this.$el.html( this.template( {} ) );
@@ -462,10 +462,83 @@ function select_3d_objects( $el, context ) {
 	view.render();
 }
 
+/**
+ * Pick one object from any model in the collection.
+ *
+ * @param {function({ id: string, name: string })} apply
+ */
+function open_object_picker( apply ) {
+	const view = new ObjectSelector3DView( { allModels: true, applySelection: apply } );
+	view.$el.appendTo( 'body' );
+	view.render();
+}
+
+/**
+ * Pick anchors — any objects from any model in the collection.
+ *
+ * @param {string[]} initial - Composite ids already selected
+ * @param {function(string[])} apply
+ */
+function open_anchor_picker( initial, apply ) {
+	const view = new ObjectSelector3DMultiView( {
+		allModels: true,
+		setting: 'anchor_ids',
+		initialSelectedIds: Array.isArray( initial ) ? initial : [],
+		applySelection: ( payload ) => apply( payload && Array.isArray( payload.ids ) ? payload.ids : [] ),
+	} );
+	view.$el.appendTo( 'body' );
+	view.render();
+}
+
+/**
+ * Text for an anchor list: the object names, or "None" when empty.
+ *
+ * @param {string[]} ids
+ * @returns {jQuery}
+ */
+function anchor_list_content( ids ) {
+	if ( ! Array.isArray( ids ) || ! ids.length ) {
+		return $( '<em></em>' ).text( window.PC_lang && window.PC_lang.anchors_none ? window.PC_lang.anchors_none : 'None: the model stays where it was authored' );
+	}
+	return $( '<span></span>' ).text( ids.join( ', ' ) );
+}
+
+function refresh_anchor_list( context, setting ) {
+	if ( ! context || ! context.$el ) return;
+	const $list = context.$el.find( '.mkl-pc--anchor-list[data-setting="' + setting + '"]' );
+	if ( $list.length ) $list.empty().append( anchor_list_content( context.model.get( setting ) ) );
+}
+
+/**
+ * Layer/choice "Position on anchors": pick the anchors for the model it displays.
+ */
+function select_3d_anchors( $el, context ) {
+	if ( ! context || ! context.model ) return;
+	const setting = ( $el && $el.data( 'setting' ) ) || 'object_3d_anchor_ids';
+	const current = context.model.get( setting );
+	open_anchor_picker( Array.isArray( current ) ? current : [], ( ids ) => {
+		context.model.set( setting, ids );
+		refresh_anchor_list( context, setting );
+	} );
+}
+
+function clear_3d_anchors( $el, context ) {
+	if ( ! context || ! context.model ) return;
+	const setting = ( $el && $el.data( 'setting' ) ) || 'object_3d_anchor_ids';
+	context.model.set( setting, [] );
+	refresh_anchor_list( context, setting );
+}
+
 window.PC = window.PC || {};
+window.PC.threeD = window.PC.threeD || {};
+window.PC.threeD.openObjectPicker = open_object_picker;
+window.PC.threeD.openAnchorPicker = open_anchor_picker;
+window.PC.threeD.anchorListContent = anchor_list_content;
 window.PC.views = window.PC.views || {};
 window.PC.views.object_selector_3d = ObjectSelector3DView;
 window.PC.views.object_selector_3d_multi = ObjectSelector3DMultiView;
 window.PC.actions = window.PC.actions || {};
 window.PC.actions.select_3d_object = select_3d_object;
 window.PC.actions.select_3d_objects = select_3d_objects;
+window.PC.actions.select_3d_anchors = select_3d_anchors;
+window.PC.actions.clear_3d_anchors = clear_3d_anchors;

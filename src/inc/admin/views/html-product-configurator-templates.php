@@ -1313,6 +1313,8 @@ IMPORT / EXPORT
 		<# const isAttachment = field.type === 'attachment'; #>
 		<# const isVariantSelect = field.type === 'variant_select'; #>
 		<# const isMaterialSelect = field.type === 'material_select'; #>
+		<# const isObjectSelect = field.type === 'object_select'; #>
+		<# const isAnchorSelect = field.type === 'anchor_select'; #>
 		<# const showWhen = field.show_when || null; #>
 		<div class="field-repeater-field <# if ( showWhen ) { #>pc-action-value<# } #>" <# if ( showWhen ) { #>data-show-when="{{showWhen}}"<# } #>>
 		<label>
@@ -1336,6 +1338,15 @@ IMPORT / EXPORT
 				<span class="pc-variant-select-placeholder" data-variant-field="{{key}}" data-variant-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading variants…', 'product-configurator-for-woocommerce' ); ?></span>
 			<# } else if ( isMaterialSelect ) { #>
 				<span class="pc-material-select-placeholder" data-material-field="{{key}}" data-material-value="{{data[key] || ''}}"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else if ( isObjectSelect ) { #>
+				<input name="{{key}}" type="text" value="{{data[key] || ''}}" placeholder="{{field.placeholder || ''}}">
+				<button type="button" class="button pc-select-3d-object" data-target="{{key}}"><?php esc_html_e( 'Select from list', 'product-configurator-for-woocommerce' ); ?></button>
+			<# } else if ( isAnchorSelect ) { #>
+				<# const anchorIds = Array.isArray( data[key] ) ? data[key] : []; #>
+				<span class="pc-anchor-list" data-anchor-field="{{key}}">
+					<# if ( anchorIds.length ) { #>{{ anchorIds.join( ', ' ) }}<# } else { #><em><?php esc_html_e( 'None selected', 'product-configurator-for-woocommerce' ); ?></em><# } #>
+				</span>
+				<button type="button" class="button pc-select-3d-anchors" data-target="{{key}}"><?php esc_html_e( 'Select from list', 'product-configurator-for-woocommerce' ); ?></button>
 			<# } else { #>
 				<input name="{{key}}" type="{{field.type || 'text'}}" value="{{data[key]}}" placeholder="{{field.placeholder || ''}}" <# if ( field.type === 'checkbox' && ( data[key] === true || data[key] === 1 || data[key] === "1" || data[key] === "true" ) ) { #>checked<# } #>>
 			<# } #>
