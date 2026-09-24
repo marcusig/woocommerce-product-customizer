@@ -294,6 +294,16 @@ describe( 'copies on several anchors', () => {
 		expect( findObjectsByCompositeId( root, '2:grip' ) ).toEqual( [ grip, copy_grip ] );
 	} );
 
+	it( 'resolves a bare name to the source even when a copy comes first in the tree', () => {
+		// The source goes on the first listed anchor (L); the copy lands on S,
+		// which is earlier among the frame's children.
+		const { placement, root, grip, anchor_s } = build();
+		placement.request( 'legs', { target_object3d_id: '2', anchor_ids: [ '1:anchor_handles_l', '1:anchor_handles_s' ] } );
+		const copy_grip = anchor_s.children[ 0 ].children.find( ( c ) => c.name === 'grip' );
+		expect( findObjectByCompositeId( root, 'grip' ) ).toBe( grip );
+		expect( findObjectsByCompositeId( root, 'grip' ) ).toEqual( [ grip, copy_grip ] );
+	} );
+
 	it( 'removes the copies when the placement changes', () => {
 		const { placement, anchor_l, root, grip } = build();
 		placement.request( 'legs', { target_object3d_id: '2', anchor_ids: [ '1:anchor_handles_s', '1:anchor_handles_l' ] } );

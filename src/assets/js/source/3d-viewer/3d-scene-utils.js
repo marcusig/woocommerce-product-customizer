@@ -1537,6 +1537,25 @@ function findObjectInModel( root, objectId ) {
 }
 
 /**
+ * findObject for a bare id (name or uuid, no model): first match anywhere,
+ * but never inside an anchor copy — a copy can sit earlier in the tree than
+ * its source, and the source is what a bare id has always meant.
+ */
+function findObjectSkippingCopies( root, objectId ) {
+	const stack = [ root ];
+	while ( stack.length ) {
+		const obj = stack.pop();
+		if ( COPY_ROOTS.has( obj ) ) continue;
+		if ( obj.name === objectId || ( obj.uuid && obj.uuid === objectId ) ) return obj;
+		const children = obj.children;
+		if ( children ) {
+			for ( let i = children.length - 1; i >= 0; i-- ) stack.push( children[ i ] );
+		}
+	}
+	return null;
+}
+
+/**
  * Model roots under `modelRoot` (itself included) whose objects3d id or
  * attachment id is `sourceId`, in tree order. Copies are never model roots.
  */
@@ -1582,7 +1601,7 @@ export function findObjectByCompositeId( modelRoot, compositeId ) {
 	const id = String( compositeId ).trim();
 	const sepIdx = id.indexOf( COMPOSITE_ID_SEP );
 	if ( sepIdx === -1 ) {
-		return findObject( modelRoot, id );
+		return findObjectSkippingCopies( modelRoot, id );
 	}
 	const sourceId = id.slice( 0, sepIdx );
 	const objectName = id.slice( sepIdx + 1 );
@@ -1611,8 +1630,8 @@ export function findObjectsByCompositeId( modelRoot, compositeId ) {
 	const id = String( compositeId ).trim();
 	const sepIdx = id.indexOf( COMPOSITE_ID_SEP );
 	if ( sepIdx === -1 ) {
-		const obj = findObject( modelRoot, id );
-		return obj ? [ obj ] : [];
+		const obj = findObjectSkippingCopies( modelRoot, id );
+		return obj ? [ obj ].concat( getAnchorCopies( obj ) ) : [];
 	}
 	const sourceId = id.slice( 0, sepIdx );
 	const objectName = id.slice( sepIdx + 1 );

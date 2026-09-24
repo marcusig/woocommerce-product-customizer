@@ -575,6 +575,16 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['editor_config_paste_not_allowed'] = esc_html__( 'The configuration cannot be pasted here, unlock the global layer to paste it.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_load_failed']        = esc_html__( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
 				$pc_lang['editor_close_after_load_error'] = esc_html__( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
+				/* translators: %s: name of the 3D model or object set on the layer */
+				$pc_lang['threed_inherit_from_layer'] = esc_html__( 'Inherit from layer: %s', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_none']               = esc_html__( 'None', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_whole_model']        = esc_html__( 'Whole model', 'product-configurator-for-woocommerce' );
+				/* translators: %s: object name, e.g. "Suzanne (Chair model)" */
+				$pc_lang['threed_anchor_moves_object'] = esc_html__( 'Moves: %s', 'product-configurator-for-woocommerce' );
+				/* translators: %s: 3D model name */
+				$pc_lang['threed_anchor_moves_model']  = esc_html__( 'Moves: the whole model, %s', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_anchor_moves_nothing'] = esc_html__( 'Set a 3D model first: there is nothing to move yet.', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_no_model_for_choice'] = esc_html__( 'No 3D model is set on this choice or its layer.', 'product-configurator-for-woocommerce' );
 				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu( (int) $this->ID );
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );

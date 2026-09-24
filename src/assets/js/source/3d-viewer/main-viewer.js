@@ -1044,36 +1044,37 @@ export default Backbone.View.extend({
 	},
 
 	/**
-	 * Register the default placement of every model a layer or choice displays
-	 * on anchors. A layer places the model it displays. A choice places only a
-	 * model of its own — one inherited from the layer is the layer's to place,
-	 * and a choice that wants to move it uses an "Attach to anchor" action.
+	 * Register each layer's default "Position on anchors". It moves the layer's
+	 * object (its Object ID) or, with none set, the model the layer displays.
+	 * A choice's own "Position on anchors" only applies while the choice is
+	 * selected, so it is filed by the choice view, not here.
 	 *
-	 * Priority [0, layer, choice]: below every action, later layers winning.
+	 * Priority [0, layer]: below every choice, later layers winning.
 	 *
 	 * @param {Backbone.Collection} layers
 	 */
 	_registerDefaultPlacements( layers ) {
 		const placement = this._placement;
 		if ( ! placement || ! layers ) return;
-		const register = ( key, model, object3dId, priority ) => {
-			const anchor_ids = normalize_anchor_ids( model.get( 'object_3d_anchor_ids' ) );
-			if ( object3dId == null || String( object3dId ).trim() === '' || ! anchor_ids.length ) return;
-			placement.request( key, {
-				target_object3d_id: String( object3dId ).trim(),
-				anchor_ids,
-				follow_rotation: read_follow_flag( model.get( 'object_3d_anchor_follow_rotation' ), true ),
-				follow_scale: read_follow_flag( model.get( 'object_3d_anchor_follow_scale' ), false ),
-				priority,
-			} );
-		};
 		layers.each( ( layer_model, layer_index ) => {
-			register( 'default:layer:' + layer_model.id, layer_model, layer_model.get( 'object_3d_id' ), [ 0, layer_index, -1 ] );
-			const choices = window.PC.fe.getLayerContent && window.PC.fe.getLayerContent( layer_model.id );
-			if ( ! choices ) return;
-			choices.each( ( choice_model, choice_index ) => {
-				register( 'default:choice:' + layer_model.id + ':' + choice_model.id, choice_model, choice_model.get( 'object_3d_id' ), [ 0, layer_index, choice_index ] );
-			} );
+			const anchor_ids = normalize_anchor_ids( layer_model.get( 'object_3d_anchor_ids' ) );
+			if ( ! anchor_ids.length ) return;
+			const spec = {
+				anchor_ids,
+				follow_rotation: read_follow_flag( layer_model.get( 'object_3d_anchor_follow_rotation' ), true ),
+				follow_scale: read_follow_flag( layer_model.get( 'object_3d_anchor_follow_scale' ), false ),
+				priority: [ 0, layer_index ],
+			};
+			const target_id = layer_model.get( 'target_object_id' );
+			const object3d_id = layer_model.get( 'object_3d_id' );
+			if ( target_id && String( target_id ).trim() ) {
+				spec.target_id = String( target_id ).trim();
+			} else if ( object3d_id != null && String( object3d_id ).trim() !== '' ) {
+				spec.target_object3d_id = String( object3d_id ).trim();
+			} else {
+				return;
+			}
+			placement.request( 'default:layer:' + layer_model.id, spec );
 		} );
 	},
 
@@ -2076,7 +2077,7 @@ export default Backbone.View.extend({
 			const choices = window.PC.fe.getLayerContent && window.PC.fe.getLayerContent( layer_model.id );
 			if ( ! choices ) return;
 			choices.each( ( choice_model ) => {
-				const has_3d = choice_model.get( 'target_object_id' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' );
+				const has_3d = choice_model.get( 'target_object_id' ) || ( Array.isArray( choice_model.get( 'actions_3d' ) ) && choice_model.get( 'actions_3d' ).length ) || choice_model.get( 'object_3d_id' ) || normalize_anchor_ids( choice_model.get( 'object_3d_anchor_ids' ) ).length;
 				if ( ! has_3d ) return;
 				const view = new viewer_3d_choice( {
 					model: choice_model,

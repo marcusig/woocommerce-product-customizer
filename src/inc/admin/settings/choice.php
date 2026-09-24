@@ -175,16 +175,18 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'html'      => Abstract_Settings::get_objects3d_select_html( array(
 						'setting'     => 'object_3d_id',
 						'placeholder' => __( '— None / Inherit —', 'product-configurator-for-woocommerce' ),
+						'description' => __( "Leave on the first option to use the layer's model.", 'product-configurator-for-woocommerce' ),
 					) ),
 				);
 				$fields['target_object_id'] = array(
-					'label'     => __( 'Object ID (scene)', 'product-configurator-for-woocommerce' ),
+					'label'     => __( 'Object in the model', 'product-configurator-for-woocommerce' ),
+					'help'      => __( "Optional. The object this choice acts on. Leave empty to use the layer's object, or the whole model.", 'product-configurator-for-woocommerce' ),
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 12,
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 					'html'      => '<div class="mkl-pc-setting--container">'
-						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Object ID or name', 'product-configurator-for-woocommerce' ) . '"> '
+						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Whole model', 'product-configurator-for-woocommerce' ) . '"> '
 						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
 						. '</div>',
 				);
@@ -194,7 +196,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'section'   => 'threed',
 					'priority'  => 14,
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
-					'help'      => __( "Applies to this choice's own 3D model. To move a model or object only while this choice is selected, use the \"Attach to anchor\" action instead.", 'product-configurator-for-woocommerce' ),
+					'help'      => __( "While this choice is selected, moves its object (or model) onto an anchor. To move other objects when this choice is selected, use the \"Attach to anchor\" action.", 'product-configurator-for-woocommerce' ),
 					'html'      => Abstract_Settings::get_3d_anchor_placement_html(),
 				);
 				$fields['actions_3d'] = array(
@@ -281,7 +283,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 							'label'       => __( 'Object to move', 'product-configurator-for-woocommerce' ),
 							'type'        => 'object_select',
 							'default'     => '',
-							'placeholder' => __( "Empty: this choice's object or model", 'product-configurator-for-woocommerce' ),
+							'placeholder' => __( "This choice's object", 'product-configurator-for-woocommerce' ),
 							'show_when'   => 'attach_to_anchor',
 						),
 						'anchor_ids' => array(

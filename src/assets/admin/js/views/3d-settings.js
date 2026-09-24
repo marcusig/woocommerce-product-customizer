@@ -208,6 +208,110 @@ PC.views = window.PC.views || {};
 		};
 	} );
 
+	// -------------------------------------------------------------------------
+	// 3D inheritance hints for layer and choice forms
+	//
+	// A choice inherits its layer's 3D model and object, and the anchor settings
+	// move whichever object that resolves to. None of that was visible in the
+	// form: the choice's model select read "None / Inherit" whatever the layer
+	// had. These fill in what is actually inherited and what will move.
+	// -------------------------------------------------------------------------
+
+	function lang( key, fallback ) {
+		return ( window.PC_lang && PC_lang[ key ] ) ? PC_lang[ key ] : fallback;
+	}
+
+	function find_object3d( source_id ) {
+		const objects3d = PC.app && typeof PC.app.get_collection === 'function' ? PC.app.get_collection( 'objects3d' ) : null;
+		if ( ! objects3d || source_id == null || source_id === '' ) return null;
+		const s = String( source_id );
+		return objects3d.find( function ( o ) {
+			const gltf = o.get( 'gltf' );
+			return String( o.get( '_id' ) != null ? o.get( '_id' ) : o.id ) === s
+				|| ( gltf && gltf.attachment_id != null && String( gltf.attachment_id ) === s );
+		} ) || null;
+	}
+
+	function object3d_label( source_id ) {
+		const o = find_object3d( source_id );
+		return o ? ( o.get( 'name' ) || o.get( 'filename' ) || ( '#' + source_id ) ) : ( '#' + source_id );
+	}
+
+	/**
+	 * "2:Suzanne" → "Suzanne (Chair model)"; a bare name is returned as is.
+	 *
+	 * @param {string} id
+	 * @returns {string}
+	 */
+	function describe_object_id( id ) {
+		const s = String( id == null ? '' : id );
+		const sep = s.indexOf( ':' );
+		if ( sep === -1 ) return s;
+		const name = s.slice( sep + 1 );
+		return find_object3d( s.slice( 0, sep ) ) ? name + ' (' + object3d_label( s.slice( 0, sep ) ) + ')' : name;
+	}
+
+	function update_3d_hints( view, is_choice ) {
+		const model = view.model;
+		if ( ! model || ! view.$ ) return;
+		const layer_id = is_choice ? model.get( 'layerId' ) : null;
+		const layer = ( layer_id && PC.app && PC.app.admin && PC.app.admin.layers ) ? PC.app.admin.layers.get( layer_id ) : null;
+		const layer_model_id = layer ? layer.get( 'object_3d_id' ) : null;
+		const layer_target = layer ? layer.get( 'target_object_id' ) : null;
+
+		if ( is_choice ) {
+			view.$( 'select[data-setting="object_3d_id"] option[value=""]' ).text(
+				layer_model_id ? lang( 'threed_inherit_from_layer', 'Inherit from layer: %s' ).replace( '%s', object3d_label( layer_model_id ) ) : lang( 'threed_none', 'None' )
+			);
+			view.$( 'input[data-setting="target_object_id"]' ).attr( 'placeholder',
+				layer_target ? lang( 'threed_inherit_from_layer', 'Inherit from layer: %s' ).replace( '%s', describe_object_id( layer_target ) ) : lang( 'threed_whole_model', 'Whole model' )
+			);
+		}
+
+		const target = model.get( 'target_object_id' ) || layer_target;
+		const model_id = model.get( 'object_3d_id' ) || layer_model_id;
+		let subject;
+		if ( target ) {
+			subject = lang( 'threed_anchor_moves_object', 'Moves: %s' ).replace( '%s', describe_object_id( target ) );
+		} else if ( model_id ) {
+			subject = lang( 'threed_anchor_moves_model', 'Moves: the whole model, %s' ).replace( '%s', object3d_label( model_id ) );
+		} else {
+			subject = lang( 'threed_anchor_moves_nothing', 'Set a 3D model first: there is nothing to move yet.' );
+		}
+		view.$( '.mkl-pc--anchor-subject' ).text( subject );
+
+		view.$( '.mkl-pc--anchor-list[data-setting]' ).each( function () {
+			const ids = model.get( $( this ).data( 'setting' ) );
+			if ( Array.isArray( ids ) && ids.length ) $( this ).text( ids.map( describe_object_id ).join( ', ' ) );
+		} );
+	}
+
+	function bind_3d_hints( view, is_choice ) {
+		if ( ! view || ! view.model ) return;
+		update_3d_hints( view, is_choice );
+		if ( view._pc3dHintsBound ) return;
+		view._pc3dHintsBound = true;
+		view.listenTo( view.model, 'change:object_3d_id change:target_object_id change:object_3d_anchor_ids', function () {
+			update_3d_hints( view, is_choice );
+		} );
+	}
+
+	PC.threeD.describeObjectId = describe_object_id;
+	PC.threeD.updateHints = update_3d_hints;
+	window.wp.hooks.addAction( 'PC.admin.layer_form.render', 'MKL/PC/3D/hints', function ( view ) {
+		bind_3d_hints( view, false );
+	} );
+	window.wp.hooks.addAction( 'PC.admin.choiceDetails.render', 'MKL/PC/3D/hints', function ( view ) {
+		bind_3d_hints( view, true );
+		// The model select is filled after render, sometimes once the 3D modules
+		// load; the placeholder option survives that, but set it again to be safe.
+		if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+			PC.threeD.ensureReady().then( function () {
+				update_3d_hints( view, true );
+			} );
+		}
+	} );
+
 	/**
 	 * Opens a WP media frame restricted to GLB/GLTF/ZIP (same as 3D settings).
 	 *

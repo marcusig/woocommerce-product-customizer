@@ -491,14 +491,21 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			// Follow rotation is on unless explicitly turned off, so an absent value renders checked.
 			$rotation_checked = '<# if ( false !== data.' . $rotation . ' && "false" !== data.' . $rotation . ' && "0" !== data.' . $rotation . ' && 0 !== data.' . $rotation . ' ) { #>checked="checked"<# } #>';
 			$scale_checked    = '<# if ( true === data.' . $scale . ' || "true" === data.' . $scale . ' || "1" === data.' . $scale . ' ) { #>checked="checked"<# } #>';
+			// Clear and the follow options only mean something once an anchor is picked.
+			// The pick/clear actions toggle these without re-rendering the form.
+			$when_set = 'data-anchor-when-set="' . esc_attr( $ids ) . '" <# if ( ! ( data.' . $ids . ' && data.' . $ids . '.length ) ) { #>hidden<# } #>';
 			return '<div class="mkl-pc-setting--container mkl-pc--anchor-placement">'
+				// Filled in by the admin JS: which object this setting moves, resolved through inheritance.
+				. '<p class="mkl-pc--anchor-subject description"></p>'
 				. '<div class="mkl-pc--anchor-list" data-setting="' . esc_attr( $ids ) . '">'
-				. '<# if ( data.' . $ids . ' && data.' . $ids . '.length ) { #>{{ data.' . $ids . '.join( ", " ) }}<# } else { #><em>' . esc_html__( 'None: the model stays where it was authored', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
+				. '<# if ( data.' . $ids . ' && data.' . $ids . '.length ) { #>{{ data.' . $ids . '.join( ", " ) }}<# } else { #><em>' . esc_html__( 'No anchor selected', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
 				. '</div>'
 				. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_anchors" data-setting="' . esc_attr( $ids ) . '">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
-				. ' <button type="button" class="button mkl-pc--action" data-action="clear_3d_anchors" data-setting="' . esc_attr( $ids ) . '">' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
+				. ' <button type="button" class="button mkl-pc--action" data-action="clear_3d_anchors" data-setting="' . esc_attr( $ids ) . '" ' . $when_set . '>' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
+				. '<div class="mkl-pc--anchor-follow-options" ' . $when_set . '>'
 				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $rotation ) . '" ' . $rotation_checked . '> ' . esc_html__( 'Follow the anchor rotation', 'product-configurator-for-woocommerce' ) . '</label>'
 				. '<label class="mkl-pc--anchor-follow"><input type="checkbox" data-setting="' . esc_attr( $scale ) . '" ' . $scale_checked . '> ' . esc_html__( 'Follow the anchor scale', 'product-configurator-for-woocommerce' ) . '</label>'
+				. '</div>'
 				. '</div>';
 		}
 

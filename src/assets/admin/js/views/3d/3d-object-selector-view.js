@@ -58,6 +58,13 @@ const ObjectSelector3DView = Backbone.View.extend( {
 			} ).fail( () => this.showError( 'Failed to load attachment.' ) );
 			return;
 		}
+		if ( typeof this.options.resolveUrl === 'function' ) {
+			this.options.resolveUrl( ( resolvedUrl ) => {
+				if ( resolvedUrl ) this.loadModel( resolvedUrl );
+				else this.showError( this.options.noModelMessage || 'No 3D file for this source. Use a 3D object or uploaded model.' );
+			} );
+			return;
+		}
 		if ( this.originals.context && this.originals.context.model && this.options.resolveOptions && typeof window.PC.threeD.resolveModelUrl === 'function' ) {
 			window.PC.threeD.resolveModelUrl( this.originals.context.model, this.options.resolveOptions, ( resolvedUrl ) => {
 				if ( resolvedUrl ) this.loadModel( resolvedUrl );
@@ -410,6 +417,16 @@ function select_3d_object( $el, context ) {
 	opts.resolveOptions = isSceneObjectSelector
 		? { sourceKey: 'camera_target_model', uploadKey: null }
 		: { sourceKey: 'object_selection_3d', uploadKey: 'model_upload_3d' };
+	// A choice lists the objects of its own model, or the layer's when it
+	// inherits it — the same fallback the viewer uses.
+	const choice_layer_id = ! isSceneObjectSelector && context && context.model && typeof context.model.get === 'function'
+		? context.model.get( 'layerId' )
+		: null;
+	if ( choice_layer_id && typeof window.PC.threeD.resolveChoiceModelUrl === 'function' ) {
+		const layer = window.PC.app && window.PC.app.admin && window.PC.app.admin.layers ? window.PC.app.admin.layers.get( choice_layer_id ) : null;
+		opts.resolveUrl = ( callback ) => window.PC.threeD.resolveChoiceModelUrl( context.model, layer, callback );
+		opts.noModelMessage = ( window.PC_lang && window.PC_lang.threed_no_model_for_choice ) || 'No 3D model is set on this choice or its layer.';
+	}
 	opts.applySelection = function( selection ) {
 		const id = selection?.id;
 		if ( id == null ) return;
@@ -498,15 +515,19 @@ function open_anchor_picker( initial, apply ) {
  */
 function anchor_list_content( ids ) {
 	if ( ! Array.isArray( ids ) || ! ids.length ) {
-		return $( '<em></em>' ).text( window.PC_lang && window.PC_lang.anchors_none ? window.PC_lang.anchors_none : 'None: the model stays where it was authored' );
+		return $( '<em></em>' ).text( window.PC_lang && window.PC_lang.anchors_none ? window.PC_lang.anchors_none : 'No anchor selected' );
 	}
-	return $( '<span></span>' ).text( ids.join( ', ' ) );
+	const describe = window.PC.threeD && typeof window.PC.threeD.describeObjectId === 'function' ? window.PC.threeD.describeObjectId : String;
+	return $( '<span></span>' ).text( ids.map( describe ).join( ', ' ) );
 }
 
 function refresh_anchor_list( context, setting ) {
 	if ( ! context || ! context.$el ) return;
 	const $list = context.$el.find( '.mkl-pc--anchor-list[data-setting="' + setting + '"]' );
-	if ( $list.length ) $list.empty().append( anchor_list_content( context.model.get( setting ) ) );
+	const ids = context.model.get( setting );
+	if ( $list.length ) $list.empty().append( anchor_list_content( ids ) );
+	// Clear and the follow options show only while an anchor is selected.
+	context.$el.find( '[data-anchor-when-set="' + setting + '"]' ).prop( 'hidden', ! ( Array.isArray( ids ) && ids.length ) );
 }
 
 /**

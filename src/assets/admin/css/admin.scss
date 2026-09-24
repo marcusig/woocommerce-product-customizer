@@ -5041,6 +5041,10 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 
 // Layer/choice "Position on anchors"
 .mkl-pc--anchor-placement {
+	// .button and the follow labels set their own display, which beats the attribute.
+	[hidden] {
+		display: none !important;
+	}
 	.mkl-pc--anchor-list {
 		margin-bottom: 6px;
 		overflow-wrap: anywhere;

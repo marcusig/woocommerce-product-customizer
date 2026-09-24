@@ -5,6 +5,7 @@
  * No DOM; just drives the Three.js scene for its object.
  */
 import { apply_choice_actions, restore_choice_actions } from './3d-action-handlers.js';
+import { normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 
 const Backbone = window.Backbone;
 
@@ -97,6 +98,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			this.target_object = target_object;
 			this.target_scene = target_scene;
 			this._restore_actions( actions );
+			this._release_position();
 		}
 	},
 
@@ -130,6 +132,48 @@ const viewer_3d_choice = Backbone.View.extend({
 			placement_key: 'choice:' + this.layer_model.id + ':' + this.model.id,
 			placement_priority: [ 1, layer_index, choice_index ],
 		};
+	},
+
+	_position_key() {
+		return 'choice:' + this.layer_model.id + ':' + this.model.id + ':position';
+	},
+
+	/**
+	 * The choice's own "Position on anchors": while the choice is selected, move
+	 * its object — the choice's Object ID, else the layer's, else the model it
+	 * displays — onto the anchors. Filed by id rather than by object, so a
+	 * target in a model that has not loaded yet is placed when it arrives.
+	 * Priority sits just below this choice's own actions.
+	 */
+	_apply_position() {
+		const placement = this.parent_view && this.parent_view._placement;
+		if ( ! placement ) return;
+		const key = this._position_key();
+		const anchor_ids = normalize_anchor_ids( this.model.get( 'object_3d_anchor_ids' ) );
+		if ( ! anchor_ids.length ) {
+			placement.release( key );
+			return;
+		}
+		const spec = {
+			anchor_ids,
+			follow_rotation: read_follow_flag( this.model.get( 'object_3d_anchor_follow_rotation' ), true ),
+			follow_scale: read_follow_flag( this.model.get( 'object_3d_anchor_follow_scale' ), false ),
+			priority: this._placement_context().placement_priority.concat( [ -1 ] ),
+		};
+		const target_id = this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' );
+		if ( target_id && String( target_id ).trim() ) {
+			spec.target_id = String( target_id ).trim();
+		} else {
+			const object3d_id = this._resolve_object3d_id();
+			if ( ! object3d_id ) return;
+			spec.target_object3d_id = object3d_id;
+		}
+		placement.request( key, spec );
+	},
+
+	_release_position() {
+		const placement = this.parent_view && this.parent_view._placement;
+		if ( placement ) placement.release( this._position_key() );
 	},
 
 	/**
@@ -205,6 +249,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			}, this._placement_context() ),
 			actions
 		);
+		this._apply_position();
 		this._request_render();
 
 		if ( has_toggle_visibility ) {
@@ -232,6 +277,7 @@ const viewer_3d_choice = Backbone.View.extend({
 			// so this is only observable for a deselected choice in a "multiple"
 			// layer, a "none" option, or a choice hidden by conditional logic.
 			this._restore_actions( actions );
+			this._release_position();
 			if ( has_toggle_visibility ) {
 				this._invalidate_fake_shadow();
 				this._request_angle_reframe();

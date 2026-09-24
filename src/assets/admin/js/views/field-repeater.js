@@ -116,6 +116,7 @@ PC.views = PC.views || {};
 		render: function() {
 			this.$el.append( this.template( { ...this.model.attributes, fields: this.fields } ) );
 			this.toggle_action_visibility();
+			this.describe_anchor_lists();
 			if ( this.setting === 'actions_3d' && this.context ) {
 				if ( this.fields.material_variant_value ) {
 					this.load_variant_field();
@@ -291,6 +292,18 @@ PC.views = PC.views || {};
 				PC.threeD.ensureReady().then( fn );
 			}
 		},
+		/** Readable anchor names: "instance_01 (Frame)" instead of "1:instance_01". */
+		describe_ids: function( ids ) {
+			var describe = PC.threeD && typeof PC.threeD.describeObjectId === 'function' ? PC.threeD.describeObjectId : String;
+			return ids.map( describe ).join( ', ' );
+		},
+		describe_anchor_lists: function() {
+			var view = this;
+			this.$( '.pc-anchor-list[data-anchor-field]' ).each( function() {
+				var ids = view.model.get( $( this ).data( 'anchor-field' ) );
+				if ( Array.isArray( ids ) && ids.length ) $( this ).text( view.describe_ids( ids ) );
+			} );
+		},
 		select_3d_object: function( e ) {
 			var key = $( e.currentTarget ).data( 'target' );
 			if ( ! key ) return;
@@ -312,7 +325,7 @@ PC.views = PC.views || {};
 				PC.threeD.openAnchorPicker( Array.isArray( current ) ? current : [], function( ids ) {
 					view.model.set( key, ids );
 					view.$( '.pc-anchor-list[data-anchor-field="' + key + '"]' ).empty().append(
-						ids.length ? $( '<span></span>' ).text( ids.join( ', ' ) ) : $( '<em></em>' ).text( ( window.PC_lang && PC_lang.none_selected ) || 'None selected' )
+						ids.length ? $( '<span></span>' ).text( view.describe_ids( ids ) ) : $( '<em></em>' ).text( ( window.PC_lang && PC_lang.none_selected ) || 'None selected' )
 					);
 				} );
 			} );
