@@ -79,7 +79,7 @@ class Cache {
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id, $format );
 		$default_url = $this->get_default_config_url( $product_id, $format );
-		if ( current_user_can( 'edit_posts' ) || mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
+		if ( $this->should_serve_live_data( $product_id ) ) {
 			return $default_url;
 		}
 		if ( file_exists( trailingslashit( $location['path'] ) . $file_name ) ) {
@@ -104,8 +104,12 @@ class Cache {
 	 * unconditionally keeps the markup stable; a request that arrives before the file
 	 * exists is rescued by check_and_regenerate_js_file().
 	 *
-	 * Logged-in editors and sites with caching disabled still get the direct endpoint:
-	 * those responses are not shared through a page cache.
+	 * The cases in should_serve_live_data() still get the direct endpoint.
+	 *
+	 * The URL carries the configuration's last-saved time. The JSON file is fetched with
+	 * no other version, so without it a browser could keep answering a reload from its
+	 * own cache after a save. Older cached markup still pointing at a previous version
+	 * gets the current file anyway: the static server ignores the query string.
 	 *
 	 * @param int    $product_id
 	 * @param string $format 'js' or 'json'. See get_config_file().
@@ -113,11 +117,66 @@ class Cache {
 	 */
 	public function get_config_file_url( $product_id, $format = 'js' ) {
 		$format = in_array( $format, array( 'js', 'json' ), true ) ? $format : 'js';
-		if ( current_user_can( 'edit_posts' ) || mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
+		if ( $this->should_serve_live_data( $product_id ) ) {
 			return $this->get_default_config_url( $product_id, $format );
 		}
 		$location = $this->get_cache_location();
-		return trailingslashit( $location['url'] ) . $this->get_config_file_name( $product_id, $format );
+		$url      = trailingslashit( $location['url'] ) . $this->get_config_file_name( $product_id, $format );
+		$product  = wc_get_product( $product_id );
+		$version  = $product ? $product->get_meta( '_mkl_product_configurator_last_updated' ) : '';
+		return $version ? add_query_arg( 'ver', rawurlencode( (string) $version ), $url ) : $url;
+	}
+
+	/**
+	 * Whether this request should load the configuration from the database rather than
+	 * from the static file.
+	 *
+	 * Editors get the static file like everyone else. Saving deletes it (see
+	 * Cache_Invalidator), so it is never older than the last save, and seeing the file
+	 * customers see is what lets an editor reproduce a stale-cache report. Live data is
+	 * only for what the file cannot serve:
+	 *
+	 * - caching is disabled;
+	 * - the product is not published, so no file is ever written for it (see
+	 *   can_regenerate_config_file()) and the endpoint needs the editor's nonce;
+	 * - an editor asks for it with ?pc-no-cache=1. Only editors can ask: otherwise
+	 *   anyone could make every request rebuild the payload.
+	 *
+	 * @param int $product_id
+	 * @return bool
+	 */
+	public function should_serve_live_data( $product_id ) {
+		$live = false;
+		if ( mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
+			$live = true;
+		} else {
+			$product = wc_get_product( $product_id );
+			if ( ! $product || 'publish' !== $product->get_status() ) {
+				$live = true;
+			} elseif ( $this->live_data_requested() ) {
+				$live = true;
+			}
+		}
+
+		/**
+		 * Filter whether the configuration is loaded from the database instead of the static file.
+		 *
+		 * Return true to bring back the old behaviour of always loading live data for editors:
+		 * add_filter( 'mkl_pc_bypass_config_cache', function( $live ) { return $live || current_user_can( 'edit_posts' ); } );
+		 *
+		 * @param bool $live       Whether to load live data.
+		 * @param int  $product_id The product ID.
+		 */
+		return (bool) apply_filters( 'mkl_pc_bypass_config_cache', $live, $product_id );
+	}
+
+	/**
+	 * Whether an editor added ?pc-no-cache=1 to the page they are viewing.
+	 *
+	 * @return bool
+	 */
+	protected function live_data_requested() {
+		return isset( $_GET['pc-no-cache'] ) && current_user_can( 'edit_posts' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only debug flag, capability-checked.
 	}
 
 	/**
@@ -133,6 +192,10 @@ class Cache {
 		$product = wc_get_product( $product_id );
 		if ( $product && 'publish' !== $product->get_status() && current_user_can( 'edit_post', $product_id ) ) {
 			$default_url = add_query_arg( 'nonce', wp_create_nonce( 'update-pc-post_' . $product_id ), $default_url );
+		}
+		// Asking for live data should skip the editors' transient too, or it can be up to ten minutes old.
+		if ( $this->live_data_requested() ) {
+			$default_url = add_query_arg( 'pc-no-transient', '1', $default_url );
 		}
 		return $default_url;
 	}
@@ -176,7 +239,7 @@ class Cache {
 		/**
 		 * Filter the product's configuration JavaScript object which will be used in the frontend
 		 */
-		apply_filters( 'mkl_pc_get_configurator_data_js_output', $data, $product_id, $config_data );
+		$data = apply_filters( 'mkl_pc_get_configurator_data_js_output', $data, $product_id, $config_data );
 
 		$location = $this->get_cache_location();
 		$dir = untrailingslashit( $location['path'] );

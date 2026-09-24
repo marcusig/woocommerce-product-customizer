@@ -746,7 +746,7 @@ class Frontend_Woocommerce {
 
 		} elseif ( $prod && mkl_pc( 'settings' )->get( 'async_data' ) ) {
 			// Only preload when this resolves to the actual cached static file, not the
-			// admin-ajax.php fallback (edit_posts users / disable_caching) - that endpoint
+			// admin-ajax.php fallback (see Cache::should_serve_live_data()) - that endpoint
 			// isn't cacheable, so preloading it would force a full postmeta rebuild on
 			// every single page view instead of only when the shopper opens the configurator.
 			//
