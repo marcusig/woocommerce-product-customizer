@@ -27,6 +27,9 @@ class Frontend_Woocommerce {
 	/** @var int Product whose eager 3D models should be preloaded, set in load_scripts(). */
 	public $preload_product_id = 0;
 
+	/** @var array<int, true> 3D products an inline [mkl_configurator] has rendered so far. */
+	private $inline_3d_products = array();
+
 	/** @var string URL of the product's cached async-mode JSON config file to preload, set in load_scripts(). */
 	public $async_config_preload_url = '';
 
@@ -288,6 +291,9 @@ class Frontend_Woocommerce {
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
 
 		$this->enqueue_3d_viewer( $product );
+		// Inline: it opens by itself, so its models are worth preloading from <head>
+		// when this runs first, as it does in a block theme.
+		$this->inline_3d_products[ $product->get_parent_id() ? $product->get_parent_id() : $product->get_id() ] = true;
 
 		$date_modified = $product->get_date_modified();
 
@@ -390,25 +396,18 @@ class Frontend_Woocommerce {
 	}
 
 	/**
-	 * Start the eager 3D model downloads from <head>.
-	 *
-	 * The poster and loading overlay appear immediately, but the glTF request
-	 * cannot start until the viewer chunk has parsed and its pipeline reaches
-	 * phase 3. Preloading overlaps the model download — the largest asset on
-	 * the page, often several MB — with that JS, which is otherwise dead time.
+	 * The eager glTF models of a 3D product: the ones worth fetching before the viewer asks.
 	 *
 	 * Only eager models are listed: lazy ones are deliberately deferred until a
 	 * choice needs them, and preloading those would undo the setting.
+	 *
+	 * @param int $product_id Parent product ID.
+	 * @return string[]
 	 */
-	public function print_3d_preload_links() {
-		$product_id = (int) $this->preload_product_id;
-		if ( ! $product_id ) {
-			return;
-		}
-
+	public function get_3d_preload_urls( $product_id ) {
 		$objects = mkl_pc( 'db' )->get( 'objects3d', $product_id );
 		if ( ! is_array( $objects ) ) {
-			return;
+			return array();
 		}
 
 		$urls = array();
@@ -434,13 +433,47 @@ class Frontend_Woocommerce {
 			}
 		}
 
-		$urls = apply_filters( 'mkl_pc_3d_preload_urls', array_keys( $urls ), $product_id );
-		foreach ( $urls as $url ) {
+		return array_values( (array) apply_filters( 'mkl_pc_3d_preload_urls', array_keys( $urls ), $product_id ) );
+	}
+
+	/**
+	 * Start the eager 3D model downloads from <head>, when the configurator opens by itself.
+	 *
+	 * The poster and loading overlay appear immediately, but the glTF request
+	 * cannot start until the viewer chunk has parsed and its pipeline reaches
+	 * phase 3. Preloading overlaps the model download — the largest asset on
+	 * the page, often several MB — with that JS, which is otherwise dead time.
+	 *
+	 * Only when the viewer is going to open without being asked: an inline
+	 * configurator already rendered (a block theme renders its template before
+	 * wp_head), or a request to open it. A configurator behind a button is warmed
+	 * up on the shopper's intent instead (see fe-3d-viewer-entry.js), so a visitor
+	 * who never opens it does not download the model.
+	 */
+	public function print_3d_preload_links() {
+		$product_id = (int) $this->preload_product_id;
+		if ( ! $product_id ) {
+			return;
+		}
+
+		$opens_by_itself = isset( $this->inline_3d_products[ $product_id ] ) || isset( $_REQUEST['open_configurator'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display flag.
+		/**
+		 * Whether the eager 3D models are preloaded from <head>, before any intent to configure.
+		 *
+		 * @param bool $preload    True when the configurator opens without being asked.
+		 * @param int  $product_id Parent product ID.
+		 */
+		if ( ! apply_filters( 'mkl_pc_3d_preload_in_head', $opens_by_itself, $product_id ) ) {
+			return;
+		}
+
+		foreach ( $this->get_3d_preload_urls( $product_id ) as $url ) {
 			$extension = strtolower( pathinfo( wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
 			$mime      = 'gltf' === $extension ? 'model/gltf+json' : 'model/gltf-binary';
 			// as="fetch" with crossorigin="anonymous" matches the request three's
 			// FileLoader makes (fetch, credentials: 'same-origin'). A mismatch
 			// here would not fail — it would quietly download the file twice.
+			// fe-3d-viewer-entry.js adds the same link on intent.
 			printf(
 				'<link rel="preload" href="%s" as="fetch" type="%s" crossorigin="anonymous">' . "\n",
 				esc_url( $url ),
@@ -806,6 +839,12 @@ class Frontend_Woocommerce {
 		}
 		$done[ $product_id ] = true;
 		wp_enqueue_script( 'mkl_pc/fe_3d_viewer' );
+		// What fe-3d-viewer-entry.js fetches when the shopper reaches for this configurator.
+		wp_add_inline_script(
+			'mkl_pc/fe_3d_viewer',
+			sprintf( '( window.mkl_pc_3d_warmup = window.mkl_pc_3d_warmup || {} )[ %d ] = %s;', $product_id, wp_json_encode( $this->get_3d_preload_urls( $product_id ) ) ),
+			'before'
+		);
 
 		/**
 		 * Fires when the 3D viewer is enqueued for a product: on its product page, or for a

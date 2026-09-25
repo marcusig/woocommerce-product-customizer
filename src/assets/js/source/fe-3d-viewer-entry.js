@@ -10,6 +10,7 @@ import {
 	get_poster_url,
 	hide_loading_overlay,
 } from './3d-viewer/loading-overlay.js';
+import { create_warmup } from './3d-viewer/warmup.js';
 
 const Backbone = window.Backbone;
 const wp = window.wp;
@@ -155,3 +156,11 @@ window.PC.fe.views.viewer_3d = Viewer3DWrapper;
 if ( wp && wp.hooks && wp.hooks.doAction ) {
 	wp.hooks.doAction( 'PC.fe.viewer_3d.registered', Viewer3DWrapper );
 }
+
+// Fetch the viewer and the models once the shopper reaches for a configurator,
+// not on every page view (see warmup.js). Same chunk name as render() above.
+create_warmup( {
+	doc: document,
+	get_urls_by_product: () => window.mkl_pc_3d_warmup,
+	import_viewer: () => import( /* webpackChunkName: "fe-3d-viewer" */ './3d-viewer/main-viewer.js' ),
+} ).bind();
