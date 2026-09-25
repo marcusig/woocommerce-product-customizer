@@ -299,6 +299,13 @@ const viewer_3d_choice = Backbone.View.extend({
 		if ( has_choice_model && this.parent_view._ensureObjects3dSceneLoadedById ) {
 			this.parent_view._ensureObjects3dSceneLoadedById( object3d_id ).then( ( scene ) => {
 				if ( ! scene || ! t || ! t.model_root ) return;
+				// Deselected, or hidden by conditional logic, while the model loaded.
+				// Its actions must not land on top of the choice that replaced it;
+				// the hidden branch now also reaches the model it could not see before.
+				if ( ! this._effective_visible() ) {
+					this.apply_actions();
+					return;
+				}
 				this.target_scene = scene;
 				if ( ! this.target_object ) this.target_object = this.get_target_object() || scene;
 				this._apply_visibility_and_actions();
