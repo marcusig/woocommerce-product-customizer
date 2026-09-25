@@ -297,6 +297,14 @@ class Admin_Product_3D {
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 
+		// unzip_file() refuses to run until the filesystem API is set up, and nothing in
+		// an upload request does that. It only worked when something else had already
+		// called WP_Filesystem() earlier in the request.
+		global $wp_filesystem;
+		if ( empty( $wp_filesystem ) ) {
+			WP_Filesystem();
+		}
+
 		$result = unzip_file( $file, $target_dir );
 		if ( is_wp_error( $result ) ) {
 			if ( function_exists( 'wc_get_logger' ) ) {
