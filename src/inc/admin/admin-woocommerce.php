@@ -59,7 +59,7 @@ class Admin_Woocommerce {
 		include( MKL_PC_INCLUDE_PATH . 'admin/product.php' );
 		require_once MKL_PC_INCLUDE_PATH . 'admin/data-migration/bootstrap.php';
 		include( MKL_PC_INCLUDE_PATH . 'admin/product-variable.php' );
-		include( MKL_PC_INCLUDE_PATH . 'admin/product-3d.php' );
+		include_once MKL_PC_INCLUDE_PATH . 'admin/product-3d.php';
 		include( MKL_PC_INCLUDE_PATH . 'admin/order.php' );
 	}
 

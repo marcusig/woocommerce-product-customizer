@@ -99,6 +99,8 @@ class Plugin {
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
+		// Always loaded: its attachment cleanup must run wherever media is deleted.
+		include_once MKL_PC_INCLUDE_PATH . 'admin/product-3d.php';
 		include_once MKL_PC_INCLUDE_PATH . 'compatibility/compatibility-general.php';
 		
 		if( is_admin() ) {
@@ -176,6 +178,7 @@ class Plugin {
 		$this->frontend_security = new Frontend_Security();
 
 		add_action( 'mkl_pc_cleanup_3d_cart_screenshots', array( $this->frontend->cart, 'cleanup_old_3d_screenshots' ) );
+		add_action( 'delete_attachment', array( Admin_Product_3D::class, 'delete_extracted_zip' ) );
 		add_action( 'init', array( $this, 'schedule_3d_screenshot_cleanup' ), 20 );
 
 		do_action( 'mkl_pc_is_loaded' );

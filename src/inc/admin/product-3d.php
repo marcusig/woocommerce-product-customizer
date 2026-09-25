@@ -291,7 +291,7 @@ class Admin_Product_3D {
 		$target_dir = trailingslashit( $upload_dir['basedir'] ) . 'configurator_assets/zips/' . $attachment_id . '/';
 		$target_dir = trailingslashit( wp_normalize_path( $target_dir ) );
 
-		$this->delete_directory( $target_dir );
+		self::delete_directory( $target_dir );
 		wp_mkdir_p( $target_dir );
 		$this->protect_assets_directory( trailingslashit( $upload_dir['basedir'] ) . 'configurator_assets/' );
 
@@ -305,7 +305,7 @@ class Admin_Product_3D {
 					array( 'source' => 'mkl-pc-3d' )
 				);
 			}
-			$this->delete_directory( $target_dir );
+			self::delete_directory( $target_dir );
 			return;
 		}
 
@@ -317,7 +317,7 @@ class Admin_Product_3D {
 					array( 'source' => 'mkl-pc-3d' )
 				);
 			}
-			$this->delete_directory( $target_dir );
+			self::delete_directory( $target_dir );
 			delete_post_meta( $attachment_id, '_configurator_entry_file' );
 			return;
 		}
@@ -329,6 +329,27 @@ class Admin_Product_3D {
 		} else {
 			delete_post_meta( $attachment_id, '_configurator_entry_file' );
 			delete_post_meta( $attachment_id, '_mkl_pc_is_configurator_zip' );
+		}
+	}
+
+	/**
+	 * Delete the folder a configurator ZIP was extracted to, with its attachment.
+	 *
+	 * Hooked for every request (see Plugin::init()), not only in the admin: media is
+	 * deleted through the REST API and WP-CLI too, and an archive can be up to
+	 * 200 MB extracted, in a web-served folder.
+	 *
+	 * @param int $attachment_id
+	 */
+	public static function delete_extracted_zip( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return;
+		}
+		$upload_dir = wp_upload_dir();
+		$target_dir = trailingslashit( wp_normalize_path( trailingslashit( $upload_dir['basedir'] ) . 'configurator_assets/zips/' . $attachment_id ) );
+		if ( is_dir( $target_dir ) ) {
+			self::delete_directory( $target_dir );
 		}
 	}
 
@@ -804,7 +825,7 @@ class Admin_Product_3D {
 	 *
 	 * @param string $directory
 	 */
-	private function delete_directory( $directory ) {
+	private static function delete_directory( $directory ) {
 		if ( ! $directory || ! file_exists( $directory ) ) {
 			return;
 		}
