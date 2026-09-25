@@ -79,6 +79,21 @@ function disposeUnusedPasses( passes ) {
 	} );
 }
 
+/**
+ * Thrown out of a load pipeline that was overtaken: the view was cleaned up or
+ * removed (a product or variation switch remounts the viewer), or a context-loss
+ * rebuild started another pipeline. Swallowed by the callers, which must not
+ * touch the loading overlay or report an error: both belong to whatever
+ * replaced this pipeline, if anything did.
+ *
+ * @returns {Error}
+ */
+function stalePipelineError() {
+	const err = new Error( '3D viewer: load pipeline superseded' );
+	err.isStalePipeline = true;
+	return err;
+}
+
 export default Backbone.View.extend({
 	tagName: 'div',
 	className: 'mkl_pc_viewer mkl_pc_viewer--3d',
@@ -98,6 +113,9 @@ export default Backbone.View.extend({
 	_container: null,
 	_contextLost: false,
 	_rebuilding: false,
+	// Identity of the load pipeline allowed to touch the scene. maybe_cleanup()
+	// clears it, and each pipeline checks it after every await.
+	_pipelineToken: null,
 	_onContextLost: null,
 	_onContextRestored: null,
 	_orbitHint: null,
@@ -502,6 +520,7 @@ export default Backbone.View.extend({
 				this._afterViewerVisible();
 			} )
 			.catch( ( err ) => {
+				if ( err && err.isStalePipeline ) return;
 				this._hideLoadingOverlay();
 				this._handlePipelineError( err );
 			} );
@@ -637,6 +656,7 @@ export default Backbone.View.extend({
 			} )
 			.catch( ( err ) => {
 				this._rebuilding = false;
+				if ( err && err.isStalePipeline ) return;
 				this._hideLoadingOverlay();
 				this._handlePipelineError( err );
 			} );
@@ -873,12 +893,21 @@ export default Backbone.View.extend({
 	 * @returns {Promise<void>}
 	 */
 	async _runViewerPipeline( container, s ) {
+		const token = {};
+		this._pipelineToken = token;
 		this._setLoadingStep( get_loading_string( 'loading_viewer_preparing', 'Preparing 3D…' ) );
 		const modules = await this._loadModules( s );
+		if ( this._pipelineToken !== token ) throw stalePipelineError();
 		this._setLoadingStep( get_loading_string( 'loading_model', 'Loading 3D model…' ) );
 		const assets = await this._loadAssets( s, modules );
+		if ( this._pipelineToken !== token ) {
+			// _setupScene starts with maybe_cleanup(), which would tear down
+			// whatever replaced this pipeline.
+			if ( assets.hdrTexture && typeof assets.hdrTexture.dispose === 'function' ) assets.hdrTexture.dispose();
+			throw stalePipelineError();
+		}
 		this._setLoadingStep( get_loading_string( 'loading_viewer_setup', 'Setting up scene…' ) );
-		await this._setupScene( container, s, modules, assets );
+		await this._setupScene( container, s, modules, assets, token );
 	},
 
 	/**
@@ -1272,10 +1301,12 @@ export default Backbone.View.extend({
 	 * @param {Object} modules - from _loadModules
 	 * @param {Object} assets - from _loadAssets
 	 */
-	async _setupScene( container, s, modules, assets ) {
+	async _setupScene( container, s, modules, assets, token ) {
 		const { eagerObjectIds, hdrTexture, hdrUrl } = assets;
 		// Start from a clean viewer state before creating a fresh scene graph.
 		this.maybe_cleanup();
+		// maybe_cleanup() cancels any running pipeline, this one included: claim it back.
+		this._pipelineToken = token;
 		this._gltfLoader = modules.gltfLoader;
 		// Create core Three.js objects (scene, camera, renderer, controls, etc.).
 		this._three = initScene( container, s );
@@ -1321,6 +1352,12 @@ export default Backbone.View.extend({
 		// Initial pass: load all eager objects through the same store path as lazy loads.
 		if ( Array.isArray( eagerObjectIds ) && eagerObjectIds.length ) {
 			await Promise.all( eagerObjectIds.map( ( oid ) => this._ensureObjects3dSceneLoadedById( oid ) ) );
+			// Removed while the models downloaded: `t` has been disposed, and going on
+			// would announce runtime.ready for a viewer that no longer exists.
+			if ( this._pipelineToken !== token ) {
+				if ( hdrTexture && typeof hdrTexture.dispose === 'function' ) hdrTexture.dispose();
+				throw stalePipelineError();
+			}
 		}
 		// Map layer models to full scene assets (`object_3d_id`) when available.
 		if ( layers ) {
@@ -1497,6 +1534,12 @@ export default Backbone.View.extend({
 			// The composer could not be built at all — a failed chunk, or a layer
 			// that declined. Either way the passes are going nowhere.
 			if ( ! layer && extraPasses.length ) disposeUnusedPasses( extraPasses );
+			// Superseded while the chain was built: the scene it was built for is
+			// gone, so is everything maybe_cleanup() already released.
+			if ( this._pipelineToken !== token ) {
+				if ( layer && typeof layer.dispose === 'function' ) layer.dispose();
+				throw stalePipelineError();
+			}
 			if ( layer && t.container && t.resize_listeners ) {
 				t.postprocessingLayer = layer;
 				t.resize_listeners.push( ( width, height ) => {
@@ -1710,6 +1753,11 @@ export default Backbone.View.extend({
 			this._loadGltfForEntry(
 				url,
 				( gltf ) => {
+					// The scene this load was started for was torn down while it downloaded.
+					if ( this._three !== t ) {
+						resolve( null );
+						return;
+					}
 					const scene = gltf && gltf.scene ? gltf.scene : null;
 					if ( ! scene ) {
 						sceneModel.set( { state: 'error', loadPromise: null } );
@@ -2151,6 +2199,8 @@ export default Backbone.View.extend({
 	},
 
 	maybe_cleanup() {
+		// Any pipeline still loading stops at its next await.
+		this._pipelineToken = null;
 		if ( this._choice_views && this._choice_views.length ) {
 			this._choice_views.forEach( ( view ) => view.remove() );
 			this._choice_views = [];
