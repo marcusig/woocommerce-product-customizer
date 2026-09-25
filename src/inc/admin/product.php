@@ -519,6 +519,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'cameras_imported_from_gltf' => esc_html__( '%d cameras imported as new views.', 'product-configurator-for-woocommerce' ),
 					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
 					'gltf_load_failed' => esc_html__( 'Failed to load the 3D model.', 'product-configurator-for-woocommerce' ),
+					// Shown in an alert(), so not HTML-escaped.
+					'zip_without_model' => __( 'No 3D model could be used from this ZIP.', 'product-configurator-for-woocommerce' ),
 					/* translators: 1: 3D file name, 2: error details */
 					'gltf_load_failed_for' => esc_html__( 'Could not load “%1$s”: %2$s', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_invalid' => esc_html__( 'This file is not a valid glTF / GLB model.', 'product-configurator-for-woocommerce' ),

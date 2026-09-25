@@ -270,6 +270,7 @@ class Admin_Product_3D {
 					array( 'source' => 'mkl-pc-3d' )
 				);
 			}
+			$this->record_zip_error( $attachment_id, 'mkl_pc_zip_archive_too_large' );
 			return;
 		}
 
@@ -284,6 +285,7 @@ class Admin_Product_3D {
 					array( 'source' => 'mkl-pc-3d' )
 				);
 			}
+			$this->record_zip_error( $attachment_id, $precheck->get_error_code() );
 			return;
 		}
 
@@ -314,6 +316,7 @@ class Admin_Product_3D {
 				);
 			}
 			self::delete_directory( $target_dir );
+			$this->record_zip_error( $attachment_id, 'mkl_pc_zip_unzip_failed' );
 			return;
 		}
 
@@ -327,6 +330,7 @@ class Admin_Product_3D {
 			}
 			self::delete_directory( $target_dir );
 			delete_post_meta( $attachment_id, '_configurator_entry_file' );
+			$this->record_zip_error( $attachment_id, $postcheck->get_error_code() );
 			return;
 		}
 
@@ -334,9 +338,52 @@ class Admin_Product_3D {
 		if ( $main_file ) {
 			update_post_meta( $attachment_id, '_configurator_entry_file', $main_file );
 			update_post_meta( $attachment_id, '_mkl_pc_is_configurator_zip', 1 );
+			delete_post_meta( $attachment_id, '_mkl_pc_zip_error' );
 		} else {
 			delete_post_meta( $attachment_id, '_configurator_entry_file' );
 			delete_post_meta( $attachment_id, '_mkl_pc_is_configurator_zip' );
+			$this->record_zip_error( $attachment_id, 'mkl_pc_zip_no_entry' );
+		}
+	}
+
+	/**
+	 * Remember why a ZIP gave no model, so the media modal can say so.
+	 *
+	 * Without it the merchant only saw the failure later, as "not a valid glTF",
+	 * once the .zip itself had been saved as the model URL.
+	 *
+	 * @param int    $attachment_id
+	 * @param string $code WP_Error code.
+	 */
+	private function record_zip_error( $attachment_id, $code ) {
+		update_post_meta( $attachment_id, '_mkl_pc_zip_error', sanitize_key( $code ) );
+	}
+
+	/**
+	 * Why a ZIP attachment has no model, in words for the merchant.
+	 *
+	 * @param int $attachment_id
+	 * @return string
+	 */
+	private function get_zip_error_message( $attachment_id ) {
+		switch ( get_post_meta( $attachment_id, '_mkl_pc_zip_error', true ) ) {
+			case '':
+				// Never extracted: uploaded somewhere else than a 3D file field.
+				return __( 'This ZIP was not uploaded for a 3D model. Upload it again from this window to use it.', 'product-configurator-for-woocommerce' );
+			case 'mkl_pc_zip_no_entry':
+				return __( 'No .glb or .gltf file was found in this ZIP.', 'product-configurator-for-woocommerce' );
+			case 'mkl_pc_zip_archive_too_large':
+			case 'mkl_pc_zip_too_large':
+				return __( 'This ZIP is too large to be used as a 3D model.', 'product-configurator-for-woocommerce' );
+			case 'mkl_pc_zip_too_many_files':
+				return __( 'This ZIP contains too many files to be used as a 3D model.', 'product-configurator-for-woocommerce' );
+			case 'mkl_pc_zip_executable_entry':
+				return __( 'This ZIP contains a file type a 3D model cannot use, such as a script, so it was not extracted.', 'product-configurator-for-woocommerce' );
+			case 'mkl_pc_zip_path_traversal':
+			case 'mkl_pc_zip_path_escape':
+				return __( 'This ZIP contains unsafe file paths, so it was not extracted.', 'product-configurator-for-woocommerce' );
+			default:
+				return __( 'This ZIP could not be extracted.', 'product-configurator-for-woocommerce' );
 		}
 	}
 
@@ -378,6 +425,8 @@ class Admin_Product_3D {
 		if ( $gltf_file ) {
 			$response['gltf_filename'] = basename( $gltf_file );
 			$response['gltf_url']      = $gltf_file;
+		} else {
+			$response['gltf_error'] = $this->get_zip_error_message( $attachment->ID );
 		}
 
 		return $response;
@@ -573,6 +622,14 @@ class Admin_Product_3D {
 				);
 			}
 
+			// macOS "Compress" metadata: ._* AppleDouble files under __MACOSX keep the
+			// extension of the file they describe, so ._scene.gltf would pass as an asset
+			// below, and could even be picked as the model.
+			if ( $this->is_archiver_metadata( substr( wp_normalize_path( $path ), strlen( $target_dir ) ) ) ) {
+				$to_remove[] = $path;
+				continue;
+			}
+
 			// Everything else that is not a usable 3D asset is simply dropped.
 			// This is mostly archiver noise — __MACOSX resource forks, .DS_Store,
 			// readme files — which should not fail an otherwise valid upload, but
@@ -598,12 +655,29 @@ class Admin_Product_3D {
 				wp_delete_file( $path );
 			}
 		}
+		if ( is_dir( $target_dir . '__MACOSX' ) ) {
+			self::delete_directory( $target_dir . '__MACOSX/' );
+		}
 
 		return true;
 	}
 
 	/**
-	 * Find the first GLB/GLTF under the extract dir and return a safe relative path.
+	 * Whether a path inside an extracted archive is archiver metadata, not content.
+	 *
+	 * @param string $relative Path relative to the extract dir.
+	 * @return bool
+	 */
+	private function is_archiver_metadata( $relative ) {
+		$relative = '/' . ltrim( str_replace( '\\', '/', (string) $relative ), '/' );
+		return false !== strpos( $relative, '/__MACOSX/' ) || 0 === strpos( basename( $relative ), '._' );
+	}
+
+	/**
+	 * Find the GLB/GLTF under the extract dir and return a safe relative path.
+	 *
+	 * The shallowest one wins, then the first by name: directory order depends on
+	 * the server's filesystem, so "the first one found" differed between hosts.
 	 *
 	 * @param string $target_dir
 	 * @return string Empty string when not found.
@@ -619,6 +693,7 @@ class Admin_Product_3D {
 			return '';
 		}
 
+		$candidates = array();
 		foreach ( $iterator as $item ) {
 			if ( ! $item->isFile() ) {
 				continue;
@@ -636,11 +711,18 @@ class Admin_Product_3D {
 			$relative = ltrim( substr( $full, strlen( $target_dir ) ), '/' );
 			$relative = $this->sanitize_relative_entry_path( $relative );
 			if ( $relative ) {
-				return $relative;
+				$candidates[] = $relative;
 			}
 		}
 
-		return '';
+		usort(
+			$candidates,
+			function ( $a, $b ) {
+				$depth = substr_count( $a, '/' ) - substr_count( $b, '/' );
+				return 0 !== $depth ? $depth : strcmp( $a, $b );
+			}
+		);
+		return $candidates ? $candidates[0] : '';
 	}
 
 	/**

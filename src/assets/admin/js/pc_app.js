@@ -120,6 +120,21 @@ if ( ! PC.actions.pc_file_remove ) {
 	};
 }
 
+/**
+ * Refuse a ZIP picked as a 3D model when no model came out of it, saying why.
+ *
+ * Its own URL would otherwise be saved as the model, and the merchant would only
+ * find out later, from a preview reporting "not a valid glTF".
+ *
+ * @param {Object} attachment - attachment.toJSON() from the media frame
+ * @returns {boolean} True when the attachment was refused.
+ */
+PC.threeD.refuse_unusable_zip = function ( attachment ) {
+	if ( ! attachment || attachment.gltf_url || attachment.subtype !== 'zip' ) return false;
+	window.alert( attachment.gltf_error || ( typeof PC_lang !== 'undefined' && PC_lang.zip_without_model ) || 'No 3D model could be used from this ZIP.' );
+	return true;
+};
+
 // Provide the 3D model media frame even if 3D settings haven't been opened yet.
 if ( ! PC.threeD.openModelMediaFrame ) {
 	PC.threeD.openModelMediaFrame = function ( opts = {} ) {
@@ -156,6 +171,7 @@ if ( ! PC.threeD.openModelMediaFrame ) {
 		if ( onSelect ) {
 			frame.on( 'select', () => {
 				const attachment = frame.state().get( 'selection' ).first().toJSON();
+				if ( PC.threeD.refuse_unusable_zip( attachment ) ) return;
 				onSelect( attachment );
 			} );
 		}

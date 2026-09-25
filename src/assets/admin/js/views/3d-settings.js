@@ -374,6 +374,7 @@ PC.views = window.PC.views || {};
 		if ( onSelect ) {
 			frame.on( 'select', () => {
 				const attachment = frame.state().get( 'selection' ).first().toJSON();
+				if ( PC.threeD.refuse_unusable_zip && PC.threeD.refuse_unusable_zip( attachment ) ) return;
 				onSelect( attachment );
 			} );
 		}
