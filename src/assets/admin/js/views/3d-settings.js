@@ -61,7 +61,10 @@ function ensureThreeDepsLoaded() {
 			fakeShadowModule,
 			sceneUtilsModule,
 			applySettingsModule,
-			rectAreaLightHelperModule
+			rectAreaLightHelperModule,
+			baseComposerModule,
+			loaderFactoryModule,
+			anchorPlacementModule,
 		] = await Promise.all( [
 			import( 'three' ),
 			import( 'three/addons/controls/OrbitControls.js' ),
@@ -69,6 +72,12 @@ function ensureThreeDepsLoaded() {
 			import( '../../../js/source/3d-viewer/3d-scene-utils.js' ),
 			import( '../../../js/source/3d-viewer/3d-apply-preview-settings.js' ),
 			import( 'three/addons/helpers/RectAreaLightHelper.js' ),
+			// Everything that imports three stays behind this import(), including what
+			// the preview view uses: one static import of these from 3d-preview-view.js
+			// is enough to pull three and every loader into this eager entry.
+			import( '../../../js/source/3d-viewer/3d-base-composer.js' ),
+			import( '../../../js/source/3d-viewer/3d-loader-factory.js' ),
+			import( '../../../js/source/3d-viewer/3d-anchor-placement.js' ),
 		] );
 
 		// Side-effect modules: loader/store/lights/object selector (attach to PC.threeD)
@@ -137,6 +146,9 @@ function ensureThreeDepsLoaded() {
 				RectAreaLightHelper,
 				resolveShadowMode,
 				SHADOW_MODES,
+				create_base_composer: baseComposerModule.create_base_composer,
+				setKtx2Renderer: loaderFactoryModule.setKtx2Renderer,
+				anchorPlacement: anchorPlacementModule,
 			};
 		};
 		if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {

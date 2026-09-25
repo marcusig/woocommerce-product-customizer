@@ -5,11 +5,7 @@
 
 import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
 import { create_render_quality } from '../../../../js/source/3d-viewer/3d-render-quality.js';
-import { create_base_composer } from '../../../../js/source/3d-viewer/3d-base-composer.js';
-import { setKtx2Renderer } from '../../../../js/source/3d-viewer/3d-loader-factory.js';
 import { format_gltf_load_notice, normalize_gltf_load_error } from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
-import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from '../../../../js/source/3d-viewer/3d-anchor-placement.js';
-import { findObjectByCompositeId as find_by_composite_id } from '../../../../js/source/3d-viewer/3d-scene-utils.js';
 
 const $ = window.jQuery;
 
@@ -319,15 +315,17 @@ export const settings_3d_preview_mixin = {
 		const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
 		const customHidden = ( this.admin && this.admin.settings_3d && this.admin.settings_3d.hidden_object_names ) || '';
 		const deps = get_three_deps();
-		const hidden_names = deps && typeof deps.getHiddenObjectNamesList === 'function' ? deps.getHiddenObjectNamesList( defaultHidden, customHidden ) : [];
+		const placement = deps && deps.anchorPlacement;
+		if ( ! placement ) return;
+		const hidden_names = typeof deps.getHiddenObjectNamesList === 'function' ? deps.getHiddenObjectNamesList( defaultHidden, customHidden ) : [];
 		root.children.forEach( ( c ) => {
 			if ( ! c.userData || c.userData.object_id == null ) return;
 			by_id[ String( c.userData.object_id ) ] = c;
 			// Same attachment point as the product page: the single top-level object's origin.
-			if ( c.userData.pc_attach_point === undefined ) c.userData.pc_attach_point = model_attachment_point( c, hidden_names );
+			if ( c.userData.pc_attach_point === undefined ) c.userData.pc_attach_point = placement.model_attachment_point( c, hidden_names );
 		} );
-		t.placement = create_anchor_placement( {
-			resolve_object: ( id ) => find_by_composite_id( root, id ),
+		t.placement = placement.create_anchor_placement( {
+			resolve_object: ( id ) => deps.findObjectByCompositeId( root, id ),
 			resolve_model: ( oid ) => by_id[ String( oid ) ] || null,
 			get_parking_parent: () => t.parking_group,
 			warn: () => {},
@@ -336,7 +334,11 @@ export const settings_3d_preview_mixin = {
 			placement: t.placement,
 			objects3d: col.toJSON(),
 			model_root: root,
-			utils: { compare_priority, normalize_anchor_ids, read_follow_flag },
+			utils: {
+				compare_priority: placement.compare_priority,
+				normalize_anchor_ids: placement.normalize_anchor_ids,
+				read_follow_flag: placement.read_follow_flag,
+			},
 			refresh: () => {
 				if ( this._three && this._three.model_root ) this.apply_model_positions();
 			},
@@ -571,7 +573,7 @@ export const settings_3d_preview_mixin = {
 
 			// The preview shares the frontend's GLTFLoader, so KTX2 needs this
 			// renderer probed before the first model is pulled from the store.
-			setKtx2Renderer( renderer );
+			deps.setKtx2Renderer( renderer );
 
 			const scene = new THREE.Scene();
 			const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
@@ -613,7 +615,7 @@ export const settings_3d_preview_mixin = {
 			// _three object is stable while the preview lives, and its camera is
 			// reassigned in place, so reading through it stays live.
 			const three = this._three;
-			this._three.base_composer = create_base_composer( {
+			this._three.base_composer = deps.create_base_composer( {
 				renderer: three.renderer,
 				scene: three.scene,
 				get camera() {
