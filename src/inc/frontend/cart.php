@@ -248,8 +248,8 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				}
 
 				// Save 3D viewer screenshot to temp folder when show_image_in_cart is on (not saved as attachment).
-				if ( mkl_pc_is_configurable( $product_id ) && mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce add-to-cart nonce; screenshot is sanitized below.
-					$saved = $this->save_3d_screenshot_to_temp( sanitize_text_field( wp_unslash( $_POST['pc_3d_screenshot'] ) ) );
+				if ( ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) && $this->accepts_3d_screenshot( $product_id ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce add-to-cart nonce.
+					$saved = $this->save_3d_screenshot_to_temp( wp_unslash( $_POST['pc_3d_screenshot'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as a PNG in save_3d_screenshot_to_temp().
 					if ( $saved ) {
 						$cart_item_data['configurator_3d_screenshot_path'] = $saved;
 					}
@@ -259,7 +259,63 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		/**
+		 * Whether a screenshot posted along with this product should be kept.
+		 *
+		 * Only a 3D configuration has no layer images to merge, so only a 3D product takes the
+		 * viewer's picture. A 2D product's cart and order image stays the one the server merges:
+		 * accepting a posted picture there would let the browser replace it with anything.
+		 *
+		 * @param int $product_id Parent product ID.
+		 * @return bool
+		 */
+		public function accepts_3d_screenshot( $product_id ) {
+			return mkl_pc( 'settings' )->get( 'show_image_in_cart' )
+				&& mkl_pc_is_configurable( $product_id )
+				&& '3d' === mkl_pc_get_configurator_type( $product_id );
+		}
+
+		/**
+		 * Width and height of the 3D cart screenshot (from the merge_size setting).
+		 *
+		 * The viewer captures at exactly this size, and save_3d_screenshot_to_temp() refuses
+		 * anything larger, so the one filter moves both.
+		 *
+		 * @return array{width: int, height: int}
+		 */
+		public function get_3d_screenshot_dimensions() {
+			$size = mkl_pc( 'settings' )->get( 'merge_size', 'full' );
+			$w    = 800;
+			$h    = 800;
+			if ( 'full' !== $size ) {
+				global $_wp_additional_image_sizes;
+				if ( in_array( $size, array( 'thumbnail', 'medium', 'medium_large', 'large' ), true ) ) {
+					$w = (int) get_option( $size . '_size_w' );
+					$h = (int) get_option( $size . '_size_h' );
+				} elseif ( ! empty( $_wp_additional_image_sizes[ $size ] ) ) {
+					$w = (int) $_wp_additional_image_sizes[ $size ]['width'];
+					$h = (int) $_wp_additional_image_sizes[ $size ]['height'];
+				}
+				if ( $w <= 0 ) { $w = 800; }
+				if ( $h <= 0 ) { $h = 800; }
+			}
+
+			/**
+			 * Filter the size of the 3D cart screenshot, which is also the largest one accepted.
+			 *
+			 * @param array{width: int, height: int} $dimensions
+			 */
+			$dimensions = apply_filters( 'mkl_pc_3d_screenshot_dimensions', array( 'width' => $w, 'height' => $h ) );
+			return array(
+				'width'  => max( 1, (int) $dimensions['width'] ),
+				'height' => max( 1, (int) $dimensions['height'] ),
+			);
+		}
+
+		/**
 		 * Save 3D screenshot data URL to temp file. No attachment is created.
+		 *
+		 * Anyone can post this with an add to cart, and the file lands in a public folder, so
+		 * nothing is written unless it is a PNG no larger than the screenshot size.
 		 *
 		 * @param string $data_url Data URL (e.g. data:image/png;base64,...)
 		 * @return string|false Relative path (e.g. cart-temp/3d-xxx.png) under mkl-pc-config-images, or false on failure
@@ -272,9 +328,12 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
 				$data_url = urldecode( $data_url );
 			}
-			// The prefix and the base64 decode below are what make this safe to write: never
-			// sanitize_text_field() this value first, it strips percent-encoded octets.
+			// Never sanitize_text_field() this value first: it strips percent-encoded octets.
 			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
+				return false;
+			}
+			$raw = $this->decode_3d_screenshot( substr( $data_url, strlen( 'data:image/png;base64,' ) ) );
+			if ( false === $raw ) {
 				return false;
 			}
 			$wp_upload_dir = wp_upload_dir();
@@ -286,10 +345,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			if ( ! file_exists( $temp_dir ) ) {
 				wp_mkdir_p( $temp_dir );
 			}
-			$raw = base64_decode( substr( $data_url, strlen( 'data:image/png;base64,' ) ), true );
-			if ( $raw === false ) {
-				return false;
-			}
 			// Not wp_unique_id(): it counts per request, so every add-to-cart got the same name and
 			// customers overwrote each other's screenshots. The name is also a public URL, so it
 			// must not be guessable either.
@@ -299,6 +354,36 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				return false;
 			}
 			return 'cart-temp/' . $filename;
+		}
+
+		/**
+		 * Decode a posted screenshot, or refuse it.
+		 *
+		 * @param string $base64 The data URL without its prefix.
+		 * @return string|false PNG bytes, or false when it is not a PNG of at most the screenshot size.
+		 */
+		private function decode_3d_screenshot( $base64 ) {
+			$max = $this->get_3d_screenshot_dimensions();
+			// A PNG is never much larger than its raw pixels: four bytes each, a filter byte per
+			// row, and a few chunk headers. Checked before decoding, which copies the whole string.
+			$max_bytes = $max['width'] * $max['height'] * 4 + $max['height'] + 65536;
+			if ( strlen( $base64 ) > ceil( $max_bytes / 3 ) * 4 ) {
+				return false;
+			}
+			$raw = base64_decode( $base64, true );
+			if ( false === $raw ) {
+				return false;
+			}
+			$info = @getimagesizefromstring( $raw ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Warns on a truncated image; false is the answer we need.
+			if ( ! $info || IMAGETYPE_PNG !== $info[2] || $info[0] > $max['width'] || $info[1] > $max['height'] ) {
+				return false;
+			}
+			// A PNG ends with its IEND chunk. Anything appended after a valid image would otherwise
+			// be published under the shop's domain along with it.
+			if ( "\x00\x00\x00\x00IEND\xAE\x42\x60\x82" !== substr( $raw, -12 ) ) {
+				return false;
+			}
+			return $raw;
 		}
 
 		/**

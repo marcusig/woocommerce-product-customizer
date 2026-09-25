@@ -498,7 +498,7 @@ class Compat_Yith_Raq {
 		// A 3D configuration has no layer images to merge, so the quote shows the picture the
 		// viewer took, as the cart does. Stored under the key the order code reads, so accepting
 		// the quote carries it over.
-		if ( mkl_pc( 'settings' )->get( 'show_image_in_cart' ) && is_string( $screenshot ) && '' !== $screenshot ) {
+		if ( is_string( $screenshot ) && '' !== $screenshot && mkl_pc( 'frontend' )->cart->accepts_3d_screenshot( $raq['product_id'] ) ) {
 			$screenshot_path = mkl_pc( 'frontend' )->cart->save_3d_screenshot_to_temp( $screenshot );
 			if ( $screenshot_path ) {
 				$rq->raq_content[ $item_id ][ 'configurator_3d_screenshot_path' ] = $screenshot_path;

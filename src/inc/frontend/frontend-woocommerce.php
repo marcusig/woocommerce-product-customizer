@@ -711,7 +711,7 @@ class Frontend_Woocommerce {
 				'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
 				'fe_3d_ktx2_transcoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/basis/',
 				'show_image_in_cart' => ( bool ) mkl_pc( 'settings' )->get( 'show_image_in_cart' ),
-				'cart_screenshot_size' => $this->get_cart_screenshot_dimensions(),
+				'cart_screenshot_size' => $this->cart->get_3d_screenshot_dimensions(),
 			) ),
 		);
 
@@ -801,31 +801,6 @@ class Frontend_Woocommerce {
 		}
 
 		return $tag;
-	}
-
-	/**
-	 * Width and height for 3D cart screenshot (from merge_size setting).
-	 * Used when show_image_in_cart is enabled and product is 3D.
-	 *
-	 * @return array{width: int, height: int}
-	 */
-	private function get_cart_screenshot_dimensions() {
-		$size = mkl_pc( 'settings' )->get( 'merge_size', 'full' );
-		if ( 'full' === $size ) {
-			return array( 'width' => 800, 'height' => 800 );
-		}
-		global $_wp_additional_image_sizes;
-		$w = $h = 800;
-		if ( in_array( $size, array( 'thumbnail', 'medium', 'medium_large', 'large' ), true ) ) {
-			$w = (int) get_option( $size . '_size_w' );
-			$h = (int) get_option( $size . '_size_h' );
-		} elseif ( ! empty( $_wp_additional_image_sizes[ $size ] ) ) {
-			$w = (int) $_wp_additional_image_sizes[ $size ]['width'];
-			$h = (int) $_wp_additional_image_sizes[ $size ]['height'];
-		}
-		if ( $w <= 0 ) { $w = 800; }
-		if ( $h <= 0 ) { $h = 800; }
-		return array( 'width' => $w, 'height' => $h );
 	}
 
 	/**
