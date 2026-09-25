@@ -58,6 +58,16 @@ export function is_allowed_material_property( property_name ) {
 const DEFAULTS_KEY = '__pc_defaults';
 
 /**
+ * userData key holding the texture request allowed to land on a material.
+ *
+ * Texture actions finish asynchronously, in whatever order the files arrive.
+ * Without this, picking A then B before A's (larger) file is in ends with A's
+ * texture on the material while B is selected, and a restore could not cancel
+ * a download already under way.
+ */
+const TEXTURE_REQUEST_KEY = '__pc_texture_request';
+
+/**
  * Record a value the first time an action overwrites it. Later writes do not
  * update the record, so the stored value is always the model's own.
  *
@@ -263,8 +273,16 @@ function apply_material_texture( context, action ) {
 	const mat = registry.get( name );
 	if ( ! mat ) return;
 	remember_default( mat, 'map', mat.map || null );
+	const request = {};
+	mat.userData[ TEXTURE_REQUEST_KEY ] = request;
 	const loader = texture_loader || new THREE.TextureLoader();
 	loader.load( texture_url, ( texture ) => {
+		// Overtaken by a later texture action, or restored, while it downloaded.
+		if ( mat.userData[ TEXTURE_REQUEST_KEY ] !== request ) {
+			texture.dispose();
+			return;
+		}
+		delete mat.userData[ TEXTURE_REQUEST_KEY ];
 		texture.colorSpace = THREE.SRGBColorSpace;
 		dispose_if_ours( mat );
 		mat.map = texture;
@@ -302,6 +320,8 @@ function restore_material_texture( context, action ) {
 	const name = action.material_texture_material_name || action.material_name;
 	if ( ! name ) return;
 	const mat = registry.get( name );
+	// A texture still downloading for this material must not land after the restore.
+	if ( mat && mat.userData ) delete mat.userData[ TEXTURE_REQUEST_KEY ];
 	const original = mat && recalled_default( mat, 'map' );
 	if ( ! original ) return;
 	dispose_if_ours( mat );
