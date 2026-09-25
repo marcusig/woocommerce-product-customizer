@@ -462,13 +462,23 @@ PC.fe.capture_viewer_image = function( options ) {
 
 	if ( ! viewer ) return Promise.resolve( null );
 
+	// A capture that fails asynchronously must resolve null as well: callers await
+	// this before the add to cart, and a rejection there stops the request itself.
+	// fetch() of a data URL, for one, is refused under a CSP whose connect-src
+	// does not allow data:.
+	var on_failure = function( method ) {
+		return function( err ) {
+			console.log( 'Product configurator: viewer ' + method + ' failed.', err );
+			return null;
+		};
+	};
+
 	// Preferred: the viewer knows how to draw itself.
 	if ( 'function' === typeof viewer.capture ) {
 		try {
-			return Promise.resolve( viewer.capture( options ) );
+			return Promise.resolve( viewer.capture( options ) ).catch( on_failure( 'capture()' ) );
 		} catch ( err ) {
-			console.log( 'Product configurator: viewer capture() failed.', err );
-			return Promise.resolve( null );
+			return Promise.resolve( on_failure( 'capture()' )( err ) );
 		}
 	}
 
@@ -477,10 +487,9 @@ PC.fe.capture_viewer_image = function( options ) {
 		try {
 			var data_url = viewer.captureScreenshot( options );
 			if ( ! data_url ) return Promise.resolve( null );
-			return fetch( data_url ).then( function( res ) { return res.blob(); } );
+			return fetch( data_url ).then( function( res ) { return res.blob(); } ).catch( on_failure( 'captureScreenshot()' ) );
 		} catch ( err ) {
-			console.log( 'Product configurator: viewer captureScreenshot() failed.', err );
-			return Promise.resolve( null );
+			return Promise.resolve( on_failure( 'captureScreenshot()' )( err ) );
 		}
 	}
 
