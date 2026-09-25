@@ -131,6 +131,35 @@ describe( 'viewer load pipeline', () => {
 		expect( announced ).not.toContain( 'PC.fe.viewer.runtime.ready' );
 	} );
 
+	it( 'gives up on the scene when not one model could be loaded', async () => {
+		initScene.mockReturnValue( {
+			scene: new THREE.Scene(),
+			renderer: { domElement: document.createElement( 'canvas' ), shadowMap: {} },
+			resize_listeners: [],
+		} );
+		const view = makeView( {
+			// A failed load resolves null rather than rejecting.
+			_ensureObjects3dSceneLoadedById: jest.fn( async () => null ),
+		} );
+
+		await expect(
+			view._setupScene( document.createElement( 'div' ), {}, {}, { eagerObjectIds: [ '1', '2' ] }, {} )
+		).rejects.toMatchObject( { isModelLoadFailed: true } );
+		expect( view._three ).toBeNull();
+		expect( doAction.mock.calls.map( ( call ) => call[ 0 ] ) ).not.toContain( 'PC.fe.viewer.runtime.ready' );
+	} );
+
+	it( 'shows the poster, with a reason, when no model could be loaded', () => {
+		const view = makeView( { _showPosterFallback: jest.fn(), _showError: jest.fn() } );
+		const err = new Error( 'no model' );
+		err.isModelLoadFailed = true;
+
+		view._handlePipelineError( err );
+
+		expect( view._showPosterFallback ).toHaveBeenCalledWith( 'The 3D model could not be loaded.' );
+		expect( view._showError ).not.toHaveBeenCalled();
+	} );
+
 	it( 'does not mount a model that arrives after the scene was torn down', async () => {
 		const attrs = { url: 'model.glb', state: 'unloaded' };
 		const sceneModel = {

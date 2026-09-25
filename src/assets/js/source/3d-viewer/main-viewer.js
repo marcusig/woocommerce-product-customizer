@@ -531,9 +531,10 @@ export default Backbone.View.extend({
 	/**
 	 * Decide what the customer sees when the viewer cannot start.
 	 *
-	 * A browser with no WebGL is not an error the shopper can act on, so show
-	 * the product poster instead — a still image of the product sells better
-	 * than a failure message. Everything else keeps the explicit error.
+	 * A browser with no WebGL, or a model that could not be downloaded, is not
+	 * an error the shopper can act on, so show the product poster instead — a
+	 * still image of the product sells better than a failure message. Everything
+	 * else keeps the explicit error.
 	 *
 	 * @param {Error} err
 	 */
@@ -543,32 +544,36 @@ export default Backbone.View.extend({
 			this._emitRuntimeAction( 'PC.fe.viewer.webgl.unavailable', [ this, err ] );
 			return;
 		}
+		if ( err && err.isModelLoadFailed ) {
+			this._showPosterFallback( get_loading_string( 'model_load_failed', 'The 3D model could not be loaded.' ) );
+			return;
+		}
 		this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
 	},
 
 	/**
 	 * Replace the viewer with the configured poster image, or an explanatory
 	 * line when the product has no poster set.
+	 *
+	 * @param {string} [message] Why there is no 3D view: the poster's accessible
+	 *                           name, or the line shown without one.
 	 */
-	_showPosterFallback() {
+	_showPosterFallback( message ) {
 		const container = this._container;
 		if ( ! container ) return;
+		if ( ! message ) {
+			message = get_loading_string( 'webgl_unavailable', '3D view is not supported by this browser.' );
+		}
 		const poster_url = get_poster_url( getSettings() );
 		if ( ! poster_url ) {
-			this._showError( get_loading_string(
-				'webgl_unavailable',
-				'3D view is not supported by this browser.'
-			) );
+			this._showError( message );
 			return;
 		}
 		const poster = document.createElement( 'div' );
 		poster.className = 'mkl_pc_3d_poster_fallback';
 		poster.style.backgroundImage = 'url(' + JSON.stringify( poster_url ) + ')';
 		poster.setAttribute( 'role', 'img' );
-		poster.setAttribute( 'aria-label', get_loading_string(
-			'webgl_unavailable',
-			'3D view is not supported by this browser.'
-		) );
+		poster.setAttribute( 'aria-label', message );
 		container.after( poster );
 		this.$el.addClass( 'mkl_pc_viewer--poster-fallback' );
 	},
@@ -1351,12 +1356,22 @@ export default Backbone.View.extend({
 		this._hiddenObjectNames = getHiddenObjectNamesList( defaultHidden, ( s && s.hidden_object_names ) || '' );
 		// Initial pass: load all eager objects through the same store path as lazy loads.
 		if ( Array.isArray( eagerObjectIds ) && eagerObjectIds.length ) {
-			await Promise.all( eagerObjectIds.map( ( oid ) => this._ensureObjects3dSceneLoadedById( oid ) ) );
+			const loaded = await Promise.all( eagerObjectIds.map( ( oid ) => this._ensureObjects3dSceneLoadedById( oid ) ) );
 			// Removed while the models downloaded: `t` has been disposed, and going on
 			// would announce runtime.ready for a viewer that no longer exists.
 			if ( this._pipelineToken !== token ) {
 				if ( hdrTexture && typeof hdrTexture.dispose === 'function' ) hdrTexture.dispose();
 				throw stalePipelineError();
+			}
+			// Not one model made it (a moved site, a deleted file): an empty scene with
+			// an invitation to rotate it is worse than the poster. The reason for each
+			// failure is already in the console.
+			if ( loaded.every( ( scene ) => ! scene ) ) {
+				if ( hdrTexture && typeof hdrTexture.dispose === 'function' ) hdrTexture.dispose();
+				this.maybe_cleanup();
+				const err = new Error( '3D viewer: no model could be loaded' );
+				err.isModelLoadFailed = true;
+				throw err;
 			}
 		}
 		// Map layer models to full scene assets (`object_3d_id`) when available.
