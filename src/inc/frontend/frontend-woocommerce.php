@@ -769,7 +769,9 @@ class Frontend_Woocommerce {
 	}
 
 	/**
-	 * Register the 3D viewer entry and the optional decoders it depends on.
+	 * Register the 3D viewer entry. The Draco, Meshopt and KTX2 decoders are not
+	 * scripts of their own: the viewer's loader factory imports them when the
+	 * settings ask for them.
 	 *
 	 * @return bool False when the viewer bundle has not been built.
 	 */
@@ -781,22 +783,7 @@ class Frontend_Woocommerce {
 		if ( ! file_exists( $fe_3d_viewer_path ) ) {
 			return false;
 		}
-		$fe_3d_deps = array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' );
-		if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
-			$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
-			if ( file_exists( $draco_path ) ) {
-				wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
-				$fe_3d_deps[] = 'mkl_pc/fe_3d_draco_loader';
-			}
-		}
-		if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
-			$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
-			if ( file_exists( $meshopt_path ) ) {
-				wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
-				$fe_3d_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
-			}
-		}
-		wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', $fe_3d_deps, filemtime( $fe_3d_viewer_path ), true );
+		wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' ), filemtime( $fe_3d_viewer_path ), true );
 		return true;
 	}
 

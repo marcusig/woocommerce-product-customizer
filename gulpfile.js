@@ -253,8 +253,13 @@ gulp.task('watch-webpack', (done) => {
 	done();
 });
 
+// Decoders only: the viewer never encodes, so draco_encoder.js (~1 MB) is not shipped.
+// draco_decoder.js stays, as DRACOLoader's fallback for a browser without WebAssembly.
 gulp.task('copy-draco-libs', (done) => {
-	gulp.src('node_modules/three/examples/jsm/libs/draco/gltf/*')
+	gulp.src([
+		'node_modules/three/examples/jsm/libs/draco/gltf/*',
+		'!node_modules/three/examples/jsm/libs/draco/gltf/draco_encoder.js',
+	])
 		.pipe(gulp.dest('src/assets/js/vendor/draco/gltf'))
 		.on('end', done);
 });
@@ -316,9 +321,6 @@ gulp.task('build',
 		'concat_product_configurator',
 		'concat_js_views',
 		'build-webpack',
-		// 'build-fe-3d-draco-loader',
-		// 'build-fe-3d-meshopt-loader',
-		// 'merge-fe-3d-builds'
 	)
 );
 
