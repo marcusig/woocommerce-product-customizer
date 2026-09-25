@@ -499,7 +499,7 @@ export default Backbone.View.extend({
 		
 		const s = getSettings();
 		if ( ! s ) {
-			this.$layers.append( '<p class="mkl_pc_3d_error">No 3D model configured.</p>' );
+			this.$layers.append( create_error_element( get_loading_string( 'no_3d_model_configured', 'No 3D model configured.' ) ) );
 			wp.hooks.doAction( 'PC.fe.viewer.render', this );
 			return this.$el;
 		}
@@ -548,7 +548,13 @@ export default Backbone.View.extend({
 			this._showPosterFallback( get_loading_string( 'model_load_failed', 'The 3D model could not be loaded.' ) );
 			return;
 		}
-		this._showError( err && err.message ? err.message : 'Failed to load 3D model.' );
+		// Anything else is a bug or a broken asset: the detail is for the console. A
+		// TypeError, or a chunk URL, means nothing to a shopper.
+		if ( ! ( err && err.shopperMessage ) ) {
+			// eslint-disable-next-line no-console
+			console.error( '3D viewer: could not start.', err );
+		}
+		this._showError( err && err.shopperMessage ? err.shopperMessage : '' );
 	},
 
 	/**
@@ -882,7 +888,7 @@ export default Backbone.View.extend({
 		const container = this.$layers.find( '.mkl_pc_3d_canvas_container' )[ 0 ];
 		if ( ! container ) return;
 		if ( container.nextElementSibling && container.nextElementSibling.classList.contains( 'mkl_pc_3d_error' ) ) return;
-		const element = create_error_element( msg || 'Failed to load 3D model.' );
+		const element = create_error_element( msg || get_loading_string( 'viewer_load_failed', 'The 3D view could not be started.' ) );
 		container.parentNode.insertBefore( element, container.nextSibling );
 	},
 
@@ -1282,7 +1288,9 @@ export default Backbone.View.extend({
 		// Only error if there are no glTF entries at all.
 		const hasAnyGltf = Array.isArray( objects3d ) && objects3d.some( ( o ) => o && o.object_type === 'gltf' && ( ( o.gltf && o.gltf.url ) || o.url ) );
 		if ( eagerObjectIds.length === 0 && ! hasAnyGltf ) {
-			throw new Error( typeof PC_lang !== 'undefined' && PC_lang.no_3d_model_configured ? PC_lang.no_3d_model_configured : 'No 3D model configured.' );
+			const err = new Error( '3D viewer: no glTF model in objects3d' );
+			err.shopperMessage = get_loading_string( 'no_3d_model_configured', 'No 3D model configured.' );
+			throw err;
 		}
 
 		const env = s.environment || {};

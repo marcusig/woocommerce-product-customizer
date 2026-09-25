@@ -160,6 +160,39 @@ describe( 'viewer load pipeline', () => {
 		expect( view._showError ).not.toHaveBeenCalled();
 	} );
 
+	describe( 'the message a shopper sees when the viewer cannot start', () => {
+		function viewWithContainer() {
+			const parent = document.createElement( 'div' );
+			const container = document.createElement( 'div' );
+			container.className = 'mkl_pc_3d_canvas_container';
+			parent.appendChild( container );
+			return { parent, view: makeView( { $layers: { find: () => [ container ] } } ) };
+		}
+
+		it( 'is generic for an exception, which goes to the console', () => {
+			const { parent, view } = viewWithContainer();
+			const consoleError = jest.spyOn( console, 'error' ).mockImplementation( () => {} );
+
+			view._handlePipelineError( new TypeError( "Cannot read properties of undefined (reading 'x')" ) );
+
+			expect( parent.textContent ).toBe( 'The 3D view could not be started.' );
+			expect( consoleError ).toHaveBeenCalled();
+			consoleError.mockRestore();
+		} );
+
+		it( 'is the translated reason when there is one', () => {
+			const { parent, view } = viewWithContainer();
+			window.PC_config = { lang: { no_3d_model_configured: 'Aucun modèle 3D.' } };
+			const err = new Error( 'no model' );
+			err.shopperMessage = require( '../loading-overlay.js' ).get_loading_string( 'no_3d_model_configured', 'No 3D model configured.' );
+
+			view._handlePipelineError( err );
+
+			expect( parent.textContent ).toBe( 'Aucun modèle 3D.' );
+			delete window.PC_config;
+		} );
+	} );
+
 	it( 'does not mount a model that arrives after the scene was torn down', async () => {
 		const attrs = { url: 'model.glb', state: 'unloaded' };
 		const sceneModel = {

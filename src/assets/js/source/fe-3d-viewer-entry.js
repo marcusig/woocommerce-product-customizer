@@ -46,7 +46,7 @@ const Viewer3DWrapper = Backbone.View.extend( {
 
 		const s = getSettings();
 		if ( ! s ) {
-			this.$layers.append( create_error_element( 'No 3D model configured.' ) );
+			this.$layers.append( create_error_element( get_loading_string( 'no_3d_model_configured', 'No 3D model configured.' ) ) );
 			if ( wp && wp.hooks && wp.hooks.doAction ) {
 				wp.hooks.doAction( 'PC.fe.viewer.render', this );
 			}
@@ -80,7 +80,10 @@ const Viewer3DWrapper = Backbone.View.extend( {
 			} )
 			.catch( ( err ) => {
 				hide_loading_overlay( overlay );
-				const msg = ( err && err.message ) ? err.message : 'Failed to load 3D viewer.';
+				// A chunk that failed to load: its message names the URL, which is for the console.
+				// eslint-disable-next-line no-console
+				console.error( '3D viewer: could not load the viewer.', err );
+				const msg = get_loading_string( 'viewer_load_failed', 'The 3D view could not be started.' );
 				const canvas = this.$layers.find( '.mkl_pc_3d_canvas_container' ).get( 0 );
 				if ( canvas && canvas.parentNode ) {
 					canvas.parentNode.insertBefore( create_error_element( msg ), canvas.nextSibling );
