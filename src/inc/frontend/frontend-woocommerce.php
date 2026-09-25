@@ -163,8 +163,10 @@ class Frontend_Woocommerce {
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
 
+		$this->enqueue_3d_viewer( $product );
+
 		$date_modified = $product->get_date_modified();
-		
+
 		if ( ! mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
@@ -285,8 +287,10 @@ class Frontend_Woocommerce {
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
 
+		$this->enqueue_3d_viewer( $product );
+
 		$date_modified = $product->get_date_modified();
-		
+
 		if ( ! mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
@@ -585,27 +589,7 @@ class Frontend_Woocommerce {
 			// passed over. 2 still lands ahead of styles (8) and scripts (9).
 			add_action( 'wp_head', array( $this, 'print_3d_preload_links' ), 2 );
 		}
-		$fe_3d_viewer_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-viewer-entry.js';
-		if ( $is_3d_configurator && file_exists( $fe_3d_viewer_path ) ) {
-			$fe_3d_deps = array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' );
-			if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
-				$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
-				if ( file_exists( $draco_path ) ) {
-					wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
-					wp_enqueue_script( 'mkl_pc/fe_3d_draco_loader' );
-					$fe_3d_deps[] = 'mkl_pc/fe_3d_draco_loader';
-				}
-			}
-			if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
-				$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
-				if ( file_exists( $meshopt_path ) ) {
-					wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
-					wp_enqueue_script( 'mkl_pc/fe_3d_meshopt_loader' );
-					$fe_3d_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
-				}
-			}
-			wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', $fe_3d_deps, filemtime( $fe_3d_viewer_path ), true );
-			wp_enqueue_script( 'mkl_pc/fe_3d_viewer' );
+		if ( $is_3d_configurator && $this->register_3d_viewer_script() ) {
 			$configurator_deps[] = 'mkl_pc/fe_3d_viewer';
 		}
 
@@ -770,8 +754,76 @@ class Frontend_Woocommerce {
 			wp_enqueue_style( 'mlk_pc/css' );
 		}
 
+		if ( $is_3d_configurator ) {
+			$this->enqueue_3d_viewer( $prod );
+		}
+
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );
+	}
+
+	/**
+	 * Register the 3D viewer entry and the optional decoders it depends on.
+	 *
+	 * @return bool False when the viewer bundle has not been built.
+	 */
+	private function register_3d_viewer_script() {
+		if ( wp_script_is( 'mkl_pc/fe_3d_viewer', 'registered' ) ) {
+			return true;
+		}
+		$fe_3d_viewer_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-viewer-entry.js';
+		if ( ! file_exists( $fe_3d_viewer_path ) ) {
+			return false;
+		}
+		$fe_3d_deps = array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' );
+		if ( mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ) ) {
+			$draco_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-draco-loader.js';
+			if ( file_exists( $draco_path ) ) {
+				wp_register_script( 'mkl_pc/fe_3d_draco_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-draco-loader.js', array( 'jquery' ), filemtime( $draco_path ), true );
+				$fe_3d_deps[] = 'mkl_pc/fe_3d_draco_loader';
+			}
+		}
+		if ( mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ) ) {
+			$meshopt_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-meshopt-loader.js';
+			if ( file_exists( $meshopt_path ) ) {
+				wp_register_script( 'mkl_pc/fe_3d_meshopt_loader', MKL_PC_ASSETS_URL . 'build/fe-3d-meshopt-loader.js', array( 'jquery' ), filemtime( $meshopt_path ), true );
+				$fe_3d_deps[] = 'mkl_pc/fe_3d_meshopt_loader';
+			}
+		}
+		wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', $fe_3d_deps, filemtime( $fe_3d_viewer_path ), true );
+		return true;
+	}
+
+	/**
+	 * Put the 3D viewer on the page for a 3D product.
+	 *
+	 * Called for the product page, and by the shortcodes, which can show a 3D product on any page:
+	 * the global post is then not the product, so nothing in load_scripts() knows it is 3D. The
+	 * configurator itself only picks the 3D viewer at mount time, so a script enqueued from a
+	 * shortcode, and printed in the footer after it, still arrives in time.
+	 *
+	 * @param \WC_Product $product Product or variation.
+	 * @return void
+	 */
+	public function enqueue_3d_viewer( $product ) {
+		static $done = array();
+		$product_id = $product->get_parent_id() ? $product->get_parent_id() : $product->get_id();
+		if ( isset( $done[ $product_id ] ) || '3d' !== mkl_pc_get_configurator_type( $product_id ) || ! $this->register_3d_viewer_script() ) {
+			return;
+		}
+		$done[ $product_id ] = true;
+		wp_enqueue_script( 'mkl_pc/fe_3d_viewer' );
+
+		/**
+		 * Fires when the 3D viewer is enqueued for a product: on its product page, or for a
+		 * shortcode showing it on any other page. Once per product and request.
+		 *
+		 * Add-ons enqueue their 3D scripts here, for the product given, rather than reading
+		 * the global post, which is not the product on a shortcode page.
+		 *
+		 * @param int $product_id Parent product ID.
+		 */
+		do_action( 'mkl_pc_3d_viewer_enqueued', $product_id );
 	}
 
 	/**
