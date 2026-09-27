@@ -278,6 +278,48 @@ export const settings_3d_preview_mixin = {
 			return this.setup_preview_postprocessing();
 		}
 	},
+	/**
+	 * Set the lens shift of a fitted angle and re-apply the view offset it rides on.
+	 *
+	 * @param {{x: number, y: number}|null} shift - Tangent units; null for none
+	 */
+	_setPreviewFramingShift: function ( shift ) {
+		const t = this._three;
+		if ( ! t || ! t.framing_shift ) return;
+		t.framing_shift.x = shift ? shift.x : 0;
+		t.framing_shift.y = shift ? shift.y : 0;
+		this._applyPreviewViewOffset();
+		if ( t.quality ) t.quality.invalidate();
+	},
+
+	/**
+	 * Apply the camera view offset: the framing lens shift plus optional
+	 * accumulation jitter. One call for both, because setViewOffset replaces
+	 * rather than adds - the same constraint as the frontend's
+	 * apply_camera_view_offset.
+	 *
+	 * @param {{x: number, y: number}} [jitter] - In CSS pixels
+	 */
+	_applyPreviewViewOffset: function ( jitter ) {
+		const t = this._three;
+		if ( ! t || ! t.camera || ! t.container ) return;
+		const cam = t.camera;
+		const w = Math.max( 1, t.container.clientWidth );
+		const h = Math.max( 1, t.container.clientHeight );
+		const deps = get_three_deps();
+		const shift = deps && deps.cameraFit
+			? deps.cameraFit.framing_shift_to_pixels( t.framing_shift, cam.fov, w, h )
+			: { x: 0, y: 0 };
+		const x = shift.x + ( jitter ? jitter.x : 0 );
+		const y = shift.y + ( jitter ? jitter.y : 0 );
+		if ( x === 0 && y === 0 ) {
+			cam.clearViewOffset();
+		} else {
+			cam.setViewOffset( w, h, x, y, w, h );
+		}
+		cam.updateProjectionMatrix();
+	},
+
 	on_window_resize: function () {
 
 	},
@@ -579,7 +621,9 @@ export const settings_3d_preview_mixin = {
 			const camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 0.1, 1000 );
 			camera.position.set( 0, 1, 3 );
 
-			this._three = { scene, camera, renderer, controls: null, animation_id: null, on_resize: null, fake_shadow: null, shadow_catcher: null, shadow_light: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null, material_registry: new Map() };
+			this._three = { scene, camera, renderer, container, controls: null, animation_id: null, on_resize: null, fake_shadow: null, shadow_catcher: null, shadow_light: null, model_root: null, scene_roots: [], current_env_url: null, postprocessingLayer: null, composer: null, material_registry: new Map(), framing_shift: { x: 0, y: 0 } };
+			this._previewAngle = null;
+			this._previewFramingTouched = false;
 			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
 				window.wp.hooks.doAction( 'PC.admin.3d_settings.viewer_ready', this, this._three, THREE );
 			}
@@ -631,21 +675,16 @@ export const settings_3d_preview_mixin = {
 				getControls: () => this._three && this._three.controls,
 				getPixelRatio: deps.getPixelRatio,
 				orbitScale: deps.ORBIT_PIXEL_RATIO_SCALE,
-				// No toolbar framing here, so the view offset carries nothing but jitter.
-				applyJitter: ( offset ) => {
-					if ( ! this._three || ! this._three.camera ) return;
-					const cam = this._three.camera;
-					const w = Math.max( 1, container.clientWidth );
-					const h = Math.max( 1, container.clientHeight );
-					if ( ! offset || ( offset.x === 0 && offset.y === 0 ) ) {
-						cam.clearViewOffset();
-					} else {
-						cam.setViewOffset( w, h, offset.x, offset.y, w, h );
-					}
-					cam.updateProjectionMatrix();
-				},
+				// No toolbar framing here, so the view offset carries the jitter and
+				// the lens shift of a fitted angle.
+				applyJitter: ( offset ) => this._applyPreviewViewOffset( offset ),
 			} );
 			this._three.quality.attach( controls );
+			// Orbiting or zooming hands the camera to the merchant: a resize stops
+			// refitting the angle, so a view being lined up is not thrown away.
+			controls.addEventListener( 'start', () => {
+				this._previewFramingTouched = true;
+			} );
 
 			// Catch-all for anything in the panel that mutates the scene without
 			// routing through one of the apply points above. Namespaced so cleanup
@@ -662,6 +701,9 @@ export const settings_3d_preview_mixin = {
 				const pr = deps.getPixelRatio();
 				camera.aspect = w / h;
 				camera.updateProjectionMatrix();
+				this._refitPreviewAngle();
+				// The offset is in pixels of the old size until re-applied.
+				this._applyPreviewViewOffset();
 				renderer.setSize( w, h );
 				renderer.setPixelRatio( pr );
 				if ( this._three.postprocessingLayer ) {
@@ -800,25 +842,15 @@ export const settings_3d_preview_mixin = {
 					var selectedId = viewRef.$( '.pc-3d-angle-select' ).val();
 					var angle = ( selectedId && angles ) ? angles.get( selectedId ) : null;
 					if ( !angle && angles && angles.length ) angle = angles.first();
-					var pos = angle && angle.get( 'camera_position' );
-					var tgt = angle && angle.get( 'camera_target' );
-					var targetFromObject = angle && rootGroup ? viewRef._resolveAngleTarget( angle, rootGroup ) : null;
-					var orbitTarget = center.clone();
-					if ( targetFromObject ) {
-						orbitTarget.copy( targetFromObject );
-						tgt = { x: targetFromObject.x, y: targetFromObject.y, z: targetFromObject.z };
-					} else if ( tgt && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
-						orbitTarget.set( tgt.x, tgt.y, tgt.z );
-					}
-					controls.target.copy( orbitTarget );
-					if ( pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
-						camera.position.set( pos.x, pos.y, pos.z );
-						camera.lookAt( orbitTarget.x, orbitTarget.y, orbitTarget.z );
+					var fallbackPosition = center.clone().add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
+					if ( angle ) {
+						viewRef._applyAngleToPreview( angle, { target: center, position: fallbackPosition } );
 					} else {
-						camera.position.copy( center ).add( new THREE.Vector3( size / 2, size / 2, size / 2 ) );
-						camera.lookAt( orbitTarget.x, orbitTarget.y, orbitTarget.z );
+						controls.target.copy( center );
+						camera.position.copy( fallbackPosition );
+						camera.lookAt( center );
+						controls.update();
 					}
-					controls.update();
 				}
 				on_resize();
 				viewRef.apply_preview_settings();

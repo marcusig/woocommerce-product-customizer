@@ -42,6 +42,7 @@ import {
 	orbit_hint_done,
 } from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
+import { angle_fits_target, fit_angle_camera, framing_shift_to_pixels } from './3d-camera-fit.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
@@ -109,6 +110,9 @@ export default Backbone.View.extend({
 	_lastActiveAngleId: null,
 	_hiddenObjectNames: null,
 	_angleReframeFrame: null,
+	// True once the customer has orbited or zoomed since the angle was applied.
+	// Until then a fitted angle is refitted on resize; after, the camera is theirs.
+	_framingTouched: false,
 	_sceneReady: false,
 	_container: null,
 	_contextLost: false,
@@ -137,6 +141,7 @@ export default Backbone.View.extend({
 		this._lastActiveAngleId = null;
 		this._hiddenObjectNames = [];
 		this._angleReframeFrame = null;
+		this._framingTouched = false;
 		this._sceneReady = false;
 		this._container = null;
 		this._contextLost = false;
@@ -395,6 +400,7 @@ export default Backbone.View.extend({
 		if ( immediate || duration === 0 ) {
 			if ( position ) camera.position.copy( position );
 			if ( target ) controls.target.copy( target );
+			if ( opts.shift ) this._setFramingShift( opts.shift.x, opts.shift.y );
 			controls.update();
 			this._requestRender();
 			return;
@@ -404,6 +410,8 @@ export default Backbone.View.extend({
 		const startTarget = controls.target.clone();
 		const endPos = position ? position.clone() : startPos.clone();
 		const endTarget = target ? target.clone() : startTarget.clone();
+		const startShift = { x: t.framing_shift.x, y: t.framing_shift.y };
+		const endShift = opts.shift || startShift;
 		const startTs = performance.now();
 		const easeInOutCubic = ( x ) => ( x < 0.5 ? 4 * x * x * x : 1 - Math.pow( -2 * x + 2, 3 ) / 2 );
 
@@ -413,6 +421,12 @@ export default Backbone.View.extend({
 			const k = easeInOutCubic( ratio );
 			camera.position.lerpVectors( startPos, endPos, k );
 			controls.target.lerpVectors( startTarget, endTarget, k );
+			if ( opts.shift ) {
+				this._setFramingShift(
+					startShift.x + ( endShift.x - startShift.x ) * k,
+					startShift.y + ( endShift.y - startShift.y ) * k
+				);
+			}
 			controls.update();
 			this._requestRender();
 			if ( ratio < 1 ) {
@@ -422,6 +436,115 @@ export default Backbone.View.extend({
 			}
 		};
 		t._cameraAnimId = requestAnimationFrame( step );
+	},
+
+	/**
+	 * Fitted pose of an angle for an output of the given aspect; see fit_angle_camera.
+	 *
+	 * @param {Backbone.Model} angle
+	 * @param {THREE.Vector3|null} authoredPos - The angle's camera position, if set
+	 * @param {THREE.Vector3} target - Resolved orbit target
+	 * @param {number} aspect
+	 */
+	_fitAngle( angle, authoredPos, target, aspect ) {
+		const t = this._three;
+		if ( ! t ) return null;
+		return fit_angle_camera( { angle, root: t.model_root, camera: t.camera, from: authoredPos, target, aspect } );
+	},
+
+	/**
+	 * Set the framing lens shift and re-apply the view offset it rides on.
+	 *
+	 * Mutates the shared object in place: the resize handler and the jitter
+	 * callback hold the same reference.
+	 */
+	_setFramingShift( x, y ) {
+		const t = this._three;
+		if ( ! t || ! t.framing_shift ) return;
+		t.framing_shift.x = x;
+		t.framing_shift.y = y;
+		apply_camera_view_offset( t.camera, t.container, t.extend_under_toolbar, null, t.framing_shift );
+		if ( this._quality ) this._quality.invalidate();
+	},
+
+	/**
+	 * Refit the active angle to a new canvas shape, until the customer has taken
+	 * the camera over. Their orbit or zoom is never undone by a resize.
+	 */
+	_refitAngleOnResize() {
+		if ( ! this._sceneReady || this._framingTouched ) return;
+		const angles = window.PC.fe && window.PC.fe.angles;
+		const active = angles && angles.findWhere( { active: true } );
+		if ( ! active || ! angle_fits_target( active ) ) return;
+		this._applyAngleCamera( { immediate: true, reframe: true } );
+	},
+
+	/**
+	 * Watch for the customer taking over the camera.
+	 *
+	 * 'start' covers pointer, touch and wheel; the arrow keys orbit through
+	 * bind_keyboard_orbit, which does not emit it, so they are caught on the
+	 * canvas. Not 'change': the viewer's own camera moves fire that too.
+	 */
+	_bindFramingInteraction( controls, canvas ) {
+		const touched = () => { this._framingTouched = true; };
+		if ( controls ) controls.addEventListener( 'start', touched );
+		if ( canvas ) {
+			canvas.addEventListener( 'keydown', ( event ) => {
+				if ( /^Arrow/.test( event.key ) ) touched();
+			} );
+		}
+	},
+
+	/**
+	 * An angle's camera position as set, and its orbit target resolved against
+	 * the scene: the centre of its visible focus objects, else of its target
+	 * object, else the stored target point.
+	 *
+	 * @param {Backbone.Model} angle
+	 * @returns {{ position: THREE.Vector3|null, target: THREE.Vector3|null }}
+	 */
+	_resolveAngleView( angle ) {
+		const t = this._three;
+		const pos = angle.get( 'camera_position' );
+		let tgt = angle.get( 'camera_target' );
+		const focusIds = angle.get( 'camera_focus_object_ids' );
+		const useFocusIds = Array.isArray( focusIds ) && focusIds.length > 0 && t.model_root;
+		if ( useFocusIds ) {
+			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds, { visibleOnly: true } );
+			if ( result ) {
+				tgt = { x: result.center.x, y: result.center.y, z: result.center.z };
+			}
+		}
+		if ( ! useFocusIds || ! tgt ) {
+			const targetObjectId = angle.get( 'camera_target_object_id' );
+			if ( targetObjectId && t.model_root ) {
+				const obj = findObject( t.model_root, String( targetObjectId ).trim() );
+				if ( obj ) {
+					const targetPos = getObjectTargetPosition( obj, new THREE.Vector3() );
+					tgt = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
+				}
+			}
+		}
+		const isVec = ( v ) => v && typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number';
+		return {
+			position: isVec( pos ) ? new THREE.Vector3( pos.x, pos.y, pos.z ) : null,
+			target: isVec( tgt ) ? new THREE.Vector3( tgt.x, tgt.y, tgt.z ) : null,
+		};
+	},
+
+	/**
+	 * Fitted pose of the active angle for an output of the given aspect, or null
+	 * when there is no active angle or it does not fit its target.
+	 *
+	 * @param {number} aspect
+	 */
+	_fitActiveAngle( aspect ) {
+		const angles = window.PC.fe && window.PC.fe.angles;
+		const active = angles && angles.findWhere( { active: true } );
+		if ( ! active || ! this._three ) return null;
+		const view = this._resolveAngleView( active );
+		return view.target ? this._fitAngle( active, view.position, view.target, aspect ) : null;
 	},
 
 	_applyAngleCamera( opts = {} ) {
@@ -434,34 +557,14 @@ export default Backbone.View.extend({
 		if ( ! angles ) return;
 		const active = angles.findWhere( { active: true } );
 		if ( ! active ) return;
-		const pos = active.get( 'camera_position' );
-		let tgt = active.get( 'camera_target' );
-		const focusIds = active.get( 'camera_focus_object_ids' );
-		const useFocusIds = Array.isArray( focusIds ) && focusIds.length > 0 && t.model_root;
-		if ( useFocusIds ) {
-			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds, { visibleOnly: true } );
-			if ( result ) {
-				tgt = { x: result.center.x, y: result.center.y, z: result.center.z };
-			}
-		}
-		if ( ! useFocusIds || ! tgt ) {
-			const targetObjectId = active.get( 'camera_target_object_id' );
-			if ( targetObjectId && t.model_root ) {
-				const obj = findObject( t.model_root, String( targetObjectId ).trim() );
-				if ( obj ) {
-					const targetPos = getObjectTargetPosition( obj, new THREE.Vector3() );
-					tgt = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
-				}
-			}
-		}
-		const nextPos = ( pos && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' )
-			? new THREE.Vector3( pos.x, pos.y, pos.z )
-			: null;
-		const nextTarget = ( tgt && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' )
-			? new THREE.Vector3( tgt.x, tgt.y, tgt.z )
-			: null;
+		const { position: nextPos, target: nextTarget } = this._resolveAngleView( active );
+		// A new angle hands the camera back to the merchant's framing.
+		if ( ! reframe ) this._framingTouched = false;
+		const fit = nextTarget ? this._fitAngle( active, nextPos, nextTarget, t.camera.aspect ) : null;
 		let finalPos = nextPos;
-		if ( reframe && nextTarget ) {
+		if ( fit && ! this._framingTouched ) {
+			finalPos = fit.position;
+		} else if ( reframe && nextTarget ) {
 			const offsetPos = nextTarget.clone().add( currentOffset );
 			if ( finalPos ) {
 				finalPos = finalPos.clone().lerp( offsetPos, reframeBlend );
@@ -470,7 +573,9 @@ export default Backbone.View.extend({
 			}
 		}
 		if ( !finalPos && !nextTarget ) return;
-		this._moveCameraTo( finalPos, nextTarget, opts );
+		// An angle without a fit drops the previous angle's shift.
+		const shift = fit ? fit.shift : { x: 0, y: 0 };
+		this._moveCameraTo( finalPos, nextTarget, Object.assign( {}, opts, { shift } ) );
 		const activeId = String( active.id != null ? active.id : active.get( '_id' ) || '' );
 		if ( activeId && this._lastActiveAngleId !== activeId ) {
 			const previous = this._lastActiveAngleId ? ( angles.get( this._lastActiveAngleId ) || null ) : null;
@@ -1333,6 +1438,8 @@ export default Backbone.View.extend({
 		// Registered here rather than alongside the postprocessing layer, which is
 		// the only other resize listener and is not always present.
 		t.resize_listeners.push( () => this._requestRender() );
+		// A fitted angle's distance depends on the canvas shape.
+		t.resize_listeners.push( () => this._refitAngleOnResize() );
 		const layers = window.PC.fe && window.PC.fe.layers;
 		// Enable or disable shadows globally, then mirror the setting to the renderer.
 		this._shadowMode = resolveShadowMode( s );
@@ -1502,7 +1609,8 @@ export default Backbone.View.extend({
 				this._three.camera,
 				this._three.container,
 				this._three.extend_under_toolbar,
-				offset
+				offset,
+				this._three.framing_shift
 			),
 		} );
 		this._quality.attach( t.controls );
@@ -1511,6 +1619,7 @@ export default Backbone.View.extend({
 		// mid-load is never shown it. The class drives the grab cursor, which is
 		// the half of the affordance that outlives the once-per-session hint.
 		this._bindOrbitHintDismissal( t.controls, t.renderer.domElement );
+		this._bindFramingInteraction( t.controls, t.renderer.domElement );
 		this.$el.toggleClass( 'mkl_pc_viewer--orbitable', this._canOrbit() );
 
 		// Create postprocessing pipeline and keep it in sync with container resize events.
@@ -1605,6 +1714,7 @@ export default Backbone.View.extend({
 		// uses configured angle camera instead of fallback bbox framing.
 		t.initial_camera_position = t.camera.position.clone();
 		t.initial_controls_target = t.controls.target.clone();
+		t.initial_framing_shift = { x: t.framing_shift.x, y: t.framing_shift.y };
 		this._create_choice_views();
 		this._createRuntimeApi();
 		this._emitRuntimeAction( 'PC.fe.viewer.runtime.ready', [ this, t, this._runtimeApi ] );
@@ -1989,7 +2099,8 @@ export default Backbone.View.extend({
 	 *
 	 * @param {Object} [options]
 	 * @param {'current'|'initial'|'gltf'} [options.view='current']
-	 *        - 'current': use the live OrbitControls camera
+	 *        - 'current': use the live OrbitControls camera; while it is still on an
+	 *          angle that fits its target, that angle refitted to the output's shape
 	 *        - 'initial': use the framed camera stored after initial load (if available)
 	 *        - 'gltf': use the first camera found in the loaded glTF (if any)
 	 * @param {number} [options.width] - output width (default: canvas width)
@@ -2029,6 +2140,39 @@ export default Backbone.View.extend({
 		let height = options.height != null ? Math.max( 1, Math.floor( options.height ) ) : canvas.height;
 		if ( ! width || ! height ) return null;
 
+		// The lens shift that centres a fitted angle belongs in the picture too;
+		// only a camera authored into the model goes without.
+		let shotShift = null;
+		if ( mode === 'initial' ) shotShift = t.initial_framing_shift || null;
+		else if ( mode === 'current' ) shotShift = t.framing_shift;
+		// Until the customer takes the camera over, 'current' is the angle's own
+		// framing, so refit it for the output's shape: a square cart image of a
+		// wide canvas then shows the whole product instead of cropping it.
+		if ( mode === 'current' && ! this._framingTouched ) {
+			const fitted = this._fitActiveAngle( width / height );
+			if ( fitted ) {
+				const cam = baseCamera.clone();
+				cam.position.copy( fitted.position );
+				cam.lookAt( fitted.target );
+				cameraForShot = cam;
+				shotShift = fitted.shift;
+			}
+		}
+		const shiftPx = baseCamera.isPerspectiveCamera
+			? framing_shift_to_pixels( shotShift, baseCamera.fov, width, height )
+			: { x: 0, y: 0 };
+		// Offsets expressed against the output size: shift plus optional jitter.
+		const setShotOffset = ( camera, jitter ) => {
+			const x = shiftPx.x + ( jitter ? jitter.x : 0 );
+			const y = shiftPx.y + ( jitter ? jitter.y : 0 );
+			if ( x === 0 && y === 0 ) {
+				camera.clearViewOffset();
+			} else {
+				camera.setViewOffset( width, height, x, y, width, height );
+			}
+			camera.updateProjectionMatrix();
+		};
+
 		// Capture through the effect chain when one is active, so the image saved to
 		// the cart or order matches what the customer was looking at. The composer is
 		// bound to the live camera, so other view modes pose that camera and restore
@@ -2063,6 +2207,15 @@ export default Backbone.View.extend({
 			baseCamera.updateProjectionMatrix();
 		}
 
+		// Without the effect chain the shot camera renders directly. A clone of the
+		// live camera carries the canvas aspect and offset with it, so it is set to
+		// the output here; a camera from the model is left as authored.
+		const shotIsOurs = cameraForShot === baseCamera || mode !== 'gltf';
+		if ( ! usePostprocessing && shotIsOurs && cameraForShot.isPerspectiveCamera ) {
+			if ( cameraForShot !== baseCamera ) cameraForShot.aspect = width / height;
+			setShotOffset( cameraForShot );
+		}
+
 		// Jitter for the capture is expressed against the output size rather than the
 		// container: the toolbar offset has just been cleared and the aspect reset to
 		// the requested dimensions, so half a unit here is half an output pixel.
@@ -2070,12 +2223,7 @@ export default Backbone.View.extend({
 			// Ratio 1: the composer renders at exactly the size the view offset is
 			// expressed against here, so a sub-pixel offset is already in its units.
 			const offset = layer.getSampleOffset ? layer.getSampleOffset( index, 1 ) : { x: 0, y: 0 };
-			if ( offset.x === 0 && offset.y === 0 ) {
-				baseCamera.clearViewOffset();
-			} else {
-				baseCamera.setViewOffset( width, height, offset.x, offset.y, width, height );
-			}
-			baseCamera.updateProjectionMatrix();
+			setShotOffset( baseCamera, offset );
 		};
 
 		// Averaging a big export is the same work per sample as averaging a small
@@ -2097,7 +2245,8 @@ export default Backbone.View.extend({
 
 		// The jitter rides on the same view offset the toolbar framing uses, so it
 		// has to come off whether or not there was framing to restore afterwards.
-		if ( usePostprocessing ) baseCamera.clearViewOffset();
+		// The framing shift stays for the fallback renders below.
+		if ( usePostprocessing ) setShotOffset( baseCamera );
 
 		// The base chain renders the same way the canvas does, tone mapping included.
 		// The plain render below does not: three switches tone mapping off whenever
@@ -2143,7 +2292,8 @@ export default Backbone.View.extend({
 			baseCamera.aspect = savedAspect;
 			baseCamera.updateProjectionMatrix();
 		}
-		if ( had_view_offset && typeof t.on_resize === 'function' ) {
+		const base_offset_touched = cameraForShot === baseCamera || usePostprocessing;
+		if ( ( had_view_offset || ( base_offset_touched && ( shiftPx.x || shiftPx.y ) ) ) && typeof t.on_resize === 'function' ) {
 			t.on_resize();
 		}
 

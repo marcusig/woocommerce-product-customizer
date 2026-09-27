@@ -83,6 +83,38 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 						. ' <button type="button" class="button mkl-pc--action mkl-pc--action-clear-framing" data-action="clear_framing_objects" data-setting="camera_focus_object_ids">' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
 						. '</div>',
 				);
+				// Stored empty until changed, which the viewer reads as "fit": the first
+				// choice is what the select shows for an angle that never set it.
+				$settings['camera_framing'] = array(
+					'label'    => __( 'Framing', 'product-configurator-for-woocommerce' ),
+					'type'     => 'select',
+					'section'  => 'threed',
+					'priority' => 20,
+					'choices'  => array(
+						array(
+							'label' => __( 'Fit the target in view', 'product-configurator-for-woocommerce' ),
+							'value' => 'fit',
+						),
+						array(
+							'label' => __( 'Use the camera position as set', 'product-configurator-for-woocommerce' ),
+							'value' => 'fixed',
+						),
+					),
+					'help'     => __( 'Fit keeps the viewing direction you set and adjusts the distance so the whole target is visible, and centred, on any screen size. The camera still orbits around the target.', 'product-configurator-for-woocommerce' ),
+				);
+				$settings['camera_fit_margin'] = array(
+					'label'      => __( 'Margin around the target (%)', 'product-configurator-for-woocommerce' ),
+					'type'       => 'number',
+					'section'    => 'threed',
+					'priority'   => 21,
+					'condition'  => '"fixed" != data.camera_framing',
+					'attributes' => array(
+						'min'         => 0,
+						'max'         => 45,
+						'step'        => 1,
+						'placeholder' => 5,
+					),
+				);
 			}
 
 			return apply_filters('mkl_pc_angle_default_settings', $settings );

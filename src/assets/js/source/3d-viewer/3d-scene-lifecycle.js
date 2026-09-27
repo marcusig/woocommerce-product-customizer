@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { getToneMapping, getOutputColorSpace, getOrbitLimitsFromEnv, getPixelRatio } from './3d-scene-config.js';
 import { disposeScene as disposeSceneUtil, setSceneEnvironment } from './3d-scene-utils.js';
 import { setKtx2Renderer } from './3d-loader-factory.js';
+import { framing_shift_to_pixels } from './3d-camera-fit.js';
 
 /**
  * Parse a CSS length (px, %, or unitless) against an axis size in pixels.
@@ -50,22 +51,26 @@ function read_focus_insets( element, full_width, full_height ) {
  * Shift the optical center into the clear area by half the net inset and keep the
  * full view size so FOV / product scale match the non-offset framing.
  *
- * Accumulation jitter rides on the same offset rather than getting its own call:
- * setViewOffset is not additive, so a second one would silently drop the toolbar
- * framing. Both shifts are in the same units, so they simply sum.
+ * Accumulation jitter and the framing lens shift ride on the same offset rather
+ * than getting their own call: setViewOffset is not additive, so a second one
+ * would silently drop the toolbar framing. All three are in the same units once
+ * converted, so they simply sum.
  *
  * @param {THREE.PerspectiveCamera} camera
  * @param {HTMLElement} container
  * @param {boolean} enabled
  * @param {{x: number, y: number}} [jitter] - Sub-pixel offset, in CSS pixels
+ * @param {{x: number, y: number}} [framing_shift] - Lens shift that centres a fitted
+ *        angle, in tangent units (see 3d-camera-fit.js)
  */
-export function apply_camera_view_offset( camera, container, enabled, jitter ) {
+export function apply_camera_view_offset( camera, container, enabled, jitter, framing_shift ) {
 	const full_width = Math.max( 1, container.clientWidth );
 	const full_height = Math.max( 1, container.clientHeight );
 	camera.aspect = full_width / full_height;
 
-	let offset_x = jitter ? jitter.x : 0;
-	let offset_y = jitter ? jitter.y : 0;
+	const shift = framing_shift_to_pixels( framing_shift, camera.fov, full_width, full_height );
+	let offset_x = shift.x + ( jitter ? jitter.x : 0 );
+	let offset_y = shift.y + ( jitter ? jitter.y : 0 );
 
 	if ( enabled ) {
 		const inset_element = ( container.closest && container.closest( '.mkl_pc_viewer' ) ) || container;
@@ -214,7 +219,7 @@ function create_renderer( r ) {
  * Create renderer, scene, camera, controls, default light and the _three bag.
  * @param {HTMLElement} container
  * @param {Object} s - settings_3d (renderer, lighting, environment)
- * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, on_window_resize, apply_pending_resize, cancel_pending_resize, resize_listeners, fake_shadow, model_root, current_env_url, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar }
+ * @returns {Object} _three bag: { scene, camera, renderer, controls, animation_id, on_resize, on_window_resize, apply_pending_resize, cancel_pending_resize, resize_listeners, fake_shadow, model_root, current_env_url, container, initial_camera_position, initial_controls_target, material_registry, textureLoader, extend_under_toolbar, framing_shift }
  */
 export function initScene( container, s ) {
 	const r = s.renderer || {};
@@ -267,8 +272,12 @@ export function initScene( container, s ) {
 	// composer, for one) registers here rather than replacing the window listener.
 	const resize_listeners = [];
 
+	// Lens shift of a fitted angle. The viewer updates it in place, never replaces
+	// it: this closure and the jitter callback both hold this one object.
+	const framing_shift = { x: 0, y: 0 };
+
 	const onResize = () => {
-		apply_camera_view_offset( camera, container, extend_under_toolbar );
+		apply_camera_view_offset( camera, container, extend_under_toolbar, null, framing_shift );
 		const width = container.clientWidth;
 		const height = container.clientHeight;
 		const ratio = getPixelRatio();
@@ -352,6 +361,7 @@ export function initScene( container, s ) {
 		material_registry: new Map(),
 		textureLoader: new THREE.TextureLoader(),
 		extend_under_toolbar,
+		framing_shift,
 	};
 }
 

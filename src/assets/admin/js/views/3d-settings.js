@@ -34,6 +34,7 @@ let applySettingsToScene;
 let resolveShadowMode;
 let SHADOW_MODES;
 let RectAreaLightHelper = null;
+let cameraFit = null;
 
 let threeDepsPromise = null;
 
@@ -65,6 +66,7 @@ function ensureThreeDepsLoaded() {
 			baseComposerModule,
 			loaderFactoryModule,
 			anchorPlacementModule,
+			cameraFitModule,
 		] = await Promise.all( [
 			import( 'three' ),
 			import( 'three/addons/controls/OrbitControls.js' ),
@@ -78,6 +80,7 @@ function ensureThreeDepsLoaded() {
 			import( '../../../js/source/3d-viewer/3d-base-composer.js' ),
 			import( '../../../js/source/3d-viewer/3d-loader-factory.js' ),
 			import( '../../../js/source/3d-viewer/3d-anchor-placement.js' ),
+			import( '../../../js/source/3d-viewer/3d-camera-fit.js' ),
 		] );
 
 		// Side-effect modules: loader/store/lights/object selector (attach to PC.threeD)
@@ -99,6 +102,7 @@ function ensureThreeDepsLoaded() {
 		applySettingsToScene = applySettingsModule.applySettingsToScene;
 		createPostprocessingLayer = resolve_create_postprocessing_layer();
 		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
+		cameraFit = cameraFitModule;
 
 		( {
 			hideObjectsByName,
@@ -149,6 +153,7 @@ function ensureThreeDepsLoaded() {
 				create_base_composer: baseComposerModule.create_base_composer,
 				setKtx2Renderer: loaderFactoryModule.setKtx2Renderer,
 				anchorPlacement: anchorPlacementModule,
+				cameraFit: cameraFitModule,
 			};
 		};
 		if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
@@ -877,18 +882,74 @@ PC.views = window.PC.views || {};
 			if ( !angles || !angles.length ) return;
 			const angle = angleId ? angles.get( angleId ) : angles.first();
 			if ( !angle ) return;
+			this._applyAngleToPreview( angle );
+		},
+		/**
+		 * Point the preview camera the way an angle does on the frontend.
+		 *
+		 * Goes through the frontend's fit_angle_camera, so an angle that fits its
+		 * target is shown at the distance and centring the customer will get,
+		 * rather than at the distance its camera position happens to be saved at.
+		 *
+		 * @param {Backbone.Model} angle
+		 * @param {Object} [fallback]
+		 * @param {THREE.Vector3} [fallback.target]   - Orbit target when the angle resolves none (origin by default)
+		 * @param {THREE.Vector3} [fallback.position] - Camera position when the angle has none and does not fit
+		 *        (the camera stays where it is by default)
+		 */
+		_applyAngleToPreview: function ( angle, fallback ) {
+			const t = this._three;
+			if ( !t || !t.camera || !t.controls || !angle || !THREE ) return;
+			fallback = fallback || {};
+			const isVec = ( v ) => v && typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number';
 			const pos = angle.get( 'camera_position' );
 			let tgt = angle.get( 'camera_target' );
-			const targetFromObject = this._resolveAngleTarget( angle, this._three.model_root );
-			if ( targetFromObject ) {
-				tgt = { x: targetFromObject.x, y: targetFromObject.y, z: targetFromObject.z };
+			const targetFromObject = this._resolveAngleTarget( angle, t.model_root );
+			if ( targetFromObject ) tgt = targetFromObject;
+			const target = isVec( tgt )
+				? new THREE.Vector3( tgt.x, tgt.y, tgt.z )
+				: ( fallback.target ? fallback.target.clone() : new THREE.Vector3() );
+			const from = isVec( pos ) && isVec( tgt ) ? new THREE.Vector3( pos.x, pos.y, pos.z ) : null;
+
+			// Editing how the angle frames re-frames the preview straight away.
+			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_focus_object_ids change:camera_target_object_id';
+			if ( this._previewAngle !== angle ) {
+				if ( this._previewAngle ) this.stopListening( this._previewAngle, framingEvents );
+				this.listenTo( angle, framingEvents, () => {
+					if ( this._previewAngle === angle ) this._applyAngleToPreview( angle );
+				} );
 			}
-			this._three.controls.target.set( tgt && typeof tgt.x === 'number' ? tgt.x : 0, tgt && typeof tgt.y === 'number' ? tgt.y : 0, tgt && typeof tgt.z === 'number' ? tgt.z : 0 );
-			if ( pos && tgt && typeof pos.x === 'number' && typeof pos.y === 'number' && typeof pos.z === 'number' && typeof tgt.x === 'number' && typeof tgt.y === 'number' && typeof tgt.z === 'number' ) {
-				this._three.camera.position.set( pos.x, pos.y, pos.z );
-				this._three.camera.lookAt( this._three.controls.target );
+			this._previewAngle = angle;
+			this._previewFramingTouched = false;
+			const fit = cameraFit.fit_angle_camera( {
+				angle,
+				root: t.model_root,
+				camera: t.camera,
+				from: from || fallback.position || null,
+				target,
+				aspect: t.camera.aspect,
+			} );
+			t.controls.target.copy( target );
+			if ( fit ) {
+				t.camera.position.copy( fit.position );
+			} else if ( from ) {
+				t.camera.position.copy( from );
+			} else if ( fallback.position ) {
+				t.camera.position.copy( fallback.position );
 			}
-			this._three.controls.update();
+			t.camera.lookAt( target );
+			this._setPreviewFramingShift( fit ? fit.shift : null );
+			t.controls.update();
+		},
+		/**
+		 * Refit the previewed angle to a new canvas shape, unless the camera has
+		 * been moved since the angle was applied: the merchant may be lining up a
+		 * new view, and a resize must not throw that away.
+		 */
+		_refitPreviewAngle: function () {
+			if ( this._previewFramingTouched || !this._previewAngle || !cameraFit ) return;
+			if ( !cameraFit.angle_fits_target( this._previewAngle ) ) return;
+			this._applyAngleToPreview( this._previewAngle );
 		},
 		set_current_view_to_angle: function ( e ) {
 			e.preventDefault();
@@ -906,6 +967,10 @@ PC.views = window.PC.views || {};
 				camera_target: { x: target.x, y: target.y, z: target.z }
 			} );
 			this.mark_dirty( 'angles' );
+			// A fitted angle keeps only the direction just set: show the distance and
+			// centring the frontend will use, rather than leave the merchant believing
+			// their zoom was saved.
+			if ( cameraFit && cameraFit.angle_fits_target( angle ) ) this._applyAngleToPreview( angle );
 		},
 		import_cameras_from_gltf: function ( e ) {
 			e.preventDefault();

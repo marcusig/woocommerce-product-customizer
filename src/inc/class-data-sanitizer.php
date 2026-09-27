@@ -210,6 +210,14 @@ class Data_Sanitizer {
 					'sanitize' => [ __CLASS__, 'sanitize_camera_focus_object_ids' ],
 					'escape' => [ __CLASS__, 'escape_camera_focus_object_ids' ],
 				],
+				'camera_framing' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
+				'camera_fit_margin' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_fit_margin' ],
+					'escape' => [ __CLASS__, 'sanitize_camera_fit_margin' ],
+				],
 				'bg_image' => [
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
@@ -565,6 +573,22 @@ class Data_Sanitizer {
 		}
 		$out = array_map( 'sanitize_text_field', $data );
 		return array_values( array_filter( $out ) );
+	}
+
+	/**
+	 * Sanitize an angle's fit margin, a percentage.
+	 *
+	 * Empty stays empty rather than becoming 0: the viewer reads empty as its
+	 * default margin, and 0 is a real choice (no margin at all).
+	 *
+	 * @param mixed $data
+	 * @return float|string Percentage between 0 and 45, or ''.
+	 */
+	public static function sanitize_camera_fit_margin( $data ) {
+		if ( null === $data || '' === $data || ! is_numeric( $data ) ) {
+			return '';
+		}
+		return max( 0, min( 45, (float) $data ) );
 	}
 
 	/**
