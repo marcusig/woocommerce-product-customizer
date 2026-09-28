@@ -115,6 +115,27 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 						'placeholder' => 5,
 					),
 				);
+				$settings['camera_turn'] = array(
+					'label'    => __( 'Camera turn when arriving', 'product-configurator-for-woocommerce' ),
+					'type'     => 'select',
+					'section'  => 'threed',
+					'priority' => 22,
+					'choices'  => array(
+						array(
+							'label' => __( 'Shortest way', 'product-configurator-for-woocommerce' ),
+							'value' => 'shortest',
+						),
+						array(
+							'label' => __( 'Clockwise, seen from above', 'product-configurator-for-woocommerce' ),
+							'value' => 'cw',
+						),
+						array(
+							'label' => __( 'Counter-clockwise, seen from above', 'product-configurator-for-woocommerce' ),
+							'value' => 'ccw',
+						),
+					),
+					'help'     => __( 'Which way the camera goes around the product when switching to this view. Ignored when the orbit is limited horizontally: the camera then takes the only way the limits allow.', 'product-configurator-for-woocommerce' ),
+				);
 			}
 
 			return apply_filters('mkl_pc_angle_default_settings', $settings );

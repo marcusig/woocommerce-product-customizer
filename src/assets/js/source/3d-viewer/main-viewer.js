@@ -43,6 +43,7 @@ import {
 } from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
 import { angle_fits_target, fit_angle_camera, framing_shift_to_pixels } from './3d-camera-fit.js';
+import { angle_turn_direction, plan_orbit_move } from './3d-camera-move.js';
 import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
@@ -66,6 +67,13 @@ const RUNTIME_API_VERSION = 4;
  * customer the affordance entirely, silently and only on some products.
  */
 const INTRO_MAX_WAIT = 8000;
+
+/**
+ * Milliseconds for the camera to travel to another angle. Longer than the
+ * 850 ms reframe: an orbit around the product covers more ground than the
+ * nudge a choice change makes.
+ */
+const ANGLE_MOVE_DURATION = 1100;
 
 /**
  * Release passes that never made it into a composer. A pass holds render
@@ -382,6 +390,18 @@ export default Backbone.View.extend({
 		return this._runtimeApi;
 	},
 
+	/**
+	 * Move the camera to a view, orbiting around the pivot rather than in a
+	 * straight line (see 3d-camera-move.js).
+	 *
+	 * @param {THREE.Vector3|null} position
+	 * @param {THREE.Vector3|null} target
+	 * @param {Object} [opts]
+	 * @param {boolean} [opts.immediate]
+	 * @param {number} [opts.duration=850] - Milliseconds
+	 * @param {'cw'|'ccw'|'shortest'} [opts.turn] - Which way round, seen from above
+	 * @param {{x: number, y: number}} [opts.shift] - Framing lens shift to ease into
+	 */
 	_moveCameraTo( position, target, opts = {} ) {
 		const t = this._three;
 		if ( ! t || ! t.camera || ! t.controls ) return;
@@ -406,10 +426,11 @@ export default Backbone.View.extend({
 			return;
 		}
 
-		const startPos = camera.position.clone();
-		const startTarget = controls.target.clone();
-		const endPos = position ? position.clone() : startPos.clone();
-		const endTarget = target ? target.clone() : startTarget.clone();
+		const move = plan_orbit_move(
+			{ position: camera.position, target: controls.target },
+			{ position: position || camera.position, target: target || controls.target },
+			{ turn: opts.turn, minAzimuth: controls.minAzimuthAngle, maxAzimuth: controls.maxAzimuthAngle }
+		);
 		const startShift = { x: t.framing_shift.x, y: t.framing_shift.y };
 		const endShift = opts.shift || startShift;
 		const startTs = performance.now();
@@ -419,8 +440,7 @@ export default Backbone.View.extend({
 			const elapsed = now - startTs;
 			const ratio = Math.min( 1, elapsed / duration );
 			const k = easeInOutCubic( ratio );
-			camera.position.lerpVectors( startPos, endPos, k );
-			controls.target.lerpVectors( startTarget, endTarget, k );
+			move( ratio < 1 ? k : 1, camera.position, controls.target );
 			if ( opts.shift ) {
 				this._setFramingShift(
 					startShift.x + ( endShift.x - startShift.x ) * k,
@@ -575,7 +595,14 @@ export default Backbone.View.extend({
 		if ( !finalPos && !nextTarget ) return;
 		// An angle without a fit drops the previous angle's shift.
 		const shift = fit ? fit.shift : { x: 0, y: 0 };
-		this._moveCameraTo( finalPos, nextTarget, Object.assign( {}, opts, { shift } ) );
+		const move = Object.assign( {}, opts, { shift } );
+		if ( ! reframe ) {
+			// Going to another angle is a longer trip than a reframe, and the
+			// destination decides which way round the camera goes.
+			if ( typeof move.duration !== 'number' ) move.duration = ANGLE_MOVE_DURATION;
+			move.turn = angle_turn_direction( active );
+		}
+		this._moveCameraTo( finalPos, nextTarget, move );
 		const activeId = String( active.id != null ? active.id : active.get( '_id' ) || '' );
 		if ( activeId && this._lastActiveAngleId !== activeId ) {
 			const previous = this._lastActiveAngleId ? ( angles.get( this._lastActiveAngleId ) || null ) : null;

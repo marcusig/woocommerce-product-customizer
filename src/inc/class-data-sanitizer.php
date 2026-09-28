@@ -214,6 +214,10 @@ class Data_Sanitizer {
 					'sanitize' => 'sanitize_key',
 					'escape' => 'esc_attr',
 				],
+				'camera_turn' => [
+					'sanitize' => 'sanitize_key',
+					'escape' => 'esc_attr',
+				],
 				'camera_fit_margin' => [
 					'sanitize' => [ __CLASS__, 'sanitize_camera_fit_margin' ],
 					'escape' => [ __CLASS__, 'sanitize_camera_fit_margin' ],
