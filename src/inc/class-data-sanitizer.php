@@ -222,6 +222,14 @@ class Data_Sanitizer {
 					'sanitize' => [ __CLASS__, 'sanitize_camera_fit_margin' ],
 					'escape' => [ __CLASS__, 'sanitize_camera_fit_margin' ],
 				],
+				'camera_fit_max_width' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_fit_max_size' ],
+					'escape' => [ __CLASS__, 'sanitize_camera_fit_max_size' ],
+				],
+				'camera_fit_max_height' => [
+					'sanitize' => [ __CLASS__, 'sanitize_camera_fit_max_size' ],
+					'escape' => [ __CLASS__, 'sanitize_camera_fit_max_size' ],
+				],
 				'bg_image' => [
 					'sanitize' => [ $this, 'sanitize_image' ],
 					'escape' => [ $this, 'esc_image' ],
@@ -593,6 +601,21 @@ class Data_Sanitizer {
 			return '';
 		}
 		return max( 0, min( 45, (float) $data ) );
+	}
+
+	/**
+	 * Sanitize an angle's maximum fitted width or height, in CSS pixels.
+	 *
+	 * Empty, zero or invalid all mean "no limit", stored as empty.
+	 *
+	 * @param mixed $data
+	 * @return float|string Positive number of pixels, or ''.
+	 */
+	public static function sanitize_camera_fit_max_size( $data ) {
+		if ( null === $data || '' === $data || ! is_numeric( $data ) || (float) $data <= 0 ) {
+			return '';
+		}
+		return (float) $data;
 	}
 
 	/**

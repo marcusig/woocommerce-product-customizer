@@ -58,6 +58,25 @@ export function angle_fit_margin( angle ) {
 }
 
 /**
+ * The largest the angle's target may be drawn, in CSS pixels; 0 for no cap.
+ *
+ * The margin is relative to the canvas, so on a large screen it alone would
+ * blow the product up to fill it. The caps stop the fit growing the product
+ * past this size; the canvas then just shows more space around it.
+ *
+ * @param {Backbone.Model|Object} angle
+ * @returns {{ width: number, height: number }}
+ */
+export function angle_fit_max_size( angle ) {
+	const read = ( key ) => {
+		const raw = angle && ( typeof angle.get === 'function' ? angle.get( key ) : angle[ key ] );
+		const px = parseFloat( raw );
+		return isFinite( px ) && px > 0 ? px : 0;
+	};
+	return { width: read( 'camera_fit_max_width' ), height: read( 'camera_fit_max_height' ) };
+}
+
+/**
  * The objects an angle frames: its focus objects, else its camera target
  * object, else the whole model.
  *
@@ -100,14 +119,20 @@ export function angle_fit_objects( root, angle ) {
  * @param {THREE.Vector3|null} args.from          - The angle's camera position; the camera's own when unset
  * @param {THREE.Vector3} args.target             - Resolved orbit target
  * @param {number} args.aspect
+ * @param {{width: number, height: number}} [args.size] - Output size in CSS pixels, which the
+ *        angle's maximum size is measured against. Left out, the maximum does not apply: a
+ *        capture fills its own image rather than copying the on-screen cap.
+ * @param {{min: number, max: number}} [args.distanceLimits] - The orbit's zoom limits, which
+ *        win over the fit
  * @returns {{ position: THREE.Vector3, target: THREE.Vector3, shift: {x: number, y: number} }|null}
  *          null when the angle does not fit, or there is nothing to fit
  */
-export function fit_angle_camera( { angle, root, camera, from, target, aspect } ) {
+export function fit_angle_camera( { angle, root, camera, from, target, aspect, size, distanceLimits } ) {
 	if ( ! root || ! camera || ! camera.isPerspectiveCamera || ! target || ! angle_fits_target( angle ) ) return null;
 	const direction = target.clone().sub( from || camera.position );
 	if ( direction.lengthSq() < 1e-12 ) return null;
 	direction.normalize();
+	const max = angle_fit_max_size( angle );
 	const fit = fit_points_in_view( collect_fit_points( angle_fit_objects( root, angle ) ), {
 		pivot: target,
 		direction,
@@ -115,9 +140,12 @@ export function fit_angle_camera( { angle, root, camera, from, target, aspect } 
 		fov: camera.fov,
 		aspect,
 		margin: angle_fit_margin( angle ),
+		maxWidth: max.width && size && size.width > 0 ? max.width / size.width : null,
+		maxHeight: max.height && size && size.height > 0 ? max.height / size.height : null,
+		minDistance: distanceLimits ? distanceLimits.min : 0,
+		maxDistance: distanceLimits ? distanceLimits.max : Infinity,
 	} );
 	if ( ! fit ) return null;
-	// Zoom limits still win: OrbitControls clamps to them on update.
 	return {
 		position: target.clone().addScaledVector( direction, -fit.distance ),
 		target: target.clone(),
@@ -205,6 +233,11 @@ export function collect_fit_points( roots, budget = FIT_POINT_BUDGET ) {
  * @param {number} view.fov              - Vertical field of view, in degrees
  * @param {number} view.aspect           - Width / height of the output
  * @param {number} [view.margin]         - Fraction of the half-frame kept clear on each side
+ * @param {number} [view.maxWidth]       - Widest the outline may be, as a fraction of the
+ *        frame width. Applies only where it is tighter than the margin.
+ * @param {number} [view.maxHeight]      - Same, for the height
+ * @param {number} [view.minDistance]    - Zoom limits the distance is clamped to
+ * @param {number} [view.maxDistance]
  * @returns {{ distance: number, shift: { x: number, y: number } }|null}
  *          shift is in tangent units along the camera's right and up axes
  *          (see framing_shift_to_pixels); null when there is nothing to fit.
@@ -244,8 +277,11 @@ export function fit_points_in_view( points, view ) {
 	}
 	if ( ! ( extent > 0 ) ) return null;
 
-	const tanV = Math.tan( ( fov * Math.PI ) / 360 ) * ( 1 - margin );
-	const tanH = Math.tan( ( fov * Math.PI ) / 360 ) * aspect * ( 1 - margin );
+	// Share of the frame the outline may fill on each axis: the margin, or the
+	// maximum size where that is tighter.
+	const share = ( max ) => ( max > 0 ? Math.min( 1 - margin, max ) : 1 - margin );
+	const tanV = Math.tan( ( fov * Math.PI ) / 360 ) * share( view.maxHeight );
+	const tanH = Math.tan( ( fov * Math.PI ) / 360 ) * aspect * share( view.maxWidth );
 
 	// Outline of the points, in tangent units, with the camera `d` from the pivot.
 	const outline = ( d ) => {
@@ -277,6 +313,14 @@ export function fit_points_in_view( points, view ) {
 		if ( fits( mid ) ) hi = mid;
 		else lo = mid;
 	}
+
+	// Zoom limits win over the fit. Clamping here rather than leaving it to
+	// OrbitControls keeps the centring shift true to where the camera ends up.
+	const minDistance = view.minDistance > 0 ? view.minDistance : 0;
+	const maxDistance = view.maxDistance > 0 ? view.maxDistance : Infinity;
+	hi = Math.min( Math.max( hi, minDistance, lo ), maxDistance );
+	// A limit that puts the camera inside the target leaves nothing to centre.
+	if ( hi <= nearest ) return null;
 
 	const o = outline( hi );
 	return {

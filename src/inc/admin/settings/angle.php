@@ -115,6 +115,31 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 						'placeholder' => 5,
 					),
 				);
+				// Empty means no cap. On a large screen the margin alone would blow the
+				// product up to fill the canvas; these stop the fit growing it further.
+				$settings['camera_fit_max_width'] = array(
+					'label'      => __( 'Maximum width (px)', 'product-configurator-for-woocommerce' ),
+					'type'       => 'number',
+					'section'    => 'threed',
+					'priority'   => 21.1,
+					'condition'  => '"fixed" != data.camera_framing',
+					'attributes' => array(
+						'min'  => 0,
+						'step' => 10,
+					),
+				);
+				$settings['camera_fit_max_height'] = array(
+					'label'      => __( 'Maximum height (px)', 'product-configurator-for-woocommerce' ),
+					'type'       => 'number',
+					'section'    => 'threed',
+					'priority'   => 21.2,
+					'condition'  => '"fixed" != data.camera_framing',
+					'attributes' => array(
+						'min'  => 0,
+						'step' => 10,
+					),
+					'help'       => __( 'Limits how large the target is drawn on big screens, on top of the margin. Leave empty for no limit. Cart and saved-design images are not limited.', 'product-configurator-for-woocommerce' ),
+				);
 				$settings['camera_turn'] = array(
 					'label'    => __( 'Camera turn when arriving', 'product-configurator-for-woocommerce' ),
 					'type'     => 'select',

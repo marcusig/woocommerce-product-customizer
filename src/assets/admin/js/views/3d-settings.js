@@ -912,7 +912,7 @@ PC.views = window.PC.views || {};
 			const from = isVec( pos ) && isVec( tgt ) ? new THREE.Vector3( pos.x, pos.y, pos.z ) : null;
 
 			// Editing how the angle frames re-frames the preview straight away.
-			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_focus_object_ids change:camera_target_object_id';
+			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_fit_max_width change:camera_fit_max_height change:camera_focus_object_ids change:camera_target_object_id';
 			if ( this._previewAngle !== angle ) {
 				if ( this._previewAngle ) this.stopListening( this._previewAngle, framingEvents );
 				this.listenTo( angle, framingEvents, () => {
@@ -928,6 +928,8 @@ PC.views = window.PC.views || {};
 				from: from || fallback.position || null,
 				target,
 				aspect: t.camera.aspect,
+				size: t.container ? { width: t.container.clientWidth, height: t.container.clientHeight } : null,
+				distanceLimits: { min: t.controls.minDistance, max: t.controls.maxDistance },
 			} );
 			t.controls.target.copy( target );
 			if ( fit ) {

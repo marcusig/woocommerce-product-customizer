@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import {
 	angle_fits_target,
 	angle_fit_margin,
+	angle_fit_max_size,
 	collect_fit_points,
 	fit_points_in_view,
 	framing_shift_to_pixels,
@@ -75,6 +76,38 @@ describe( 'fit_points_in_view', () => {
 		expect( Math.max( o.x1, o.y1 ) ).toBeCloseTo( limit, 4 );
 		expect( o.x1 ).toBeLessThanOrEqual( limit + 1e-6 );
 		expect( o.y1 ).toBeLessThanOrEqual( limit + 1e-6 );
+	} );
+
+	it( 'stops at the maximum width on a wide frame, still centred', () => {
+		// A 2000 px wide frame with a 600 px cap: the outline may fill 30% of it.
+		const fit = fit_points_in_view( points, { pivot, direction, fov: 45, aspect: 2, margin: 0.05, maxWidth: 0.3 } );
+		const o = projected_outline( points, { pivot, direction, fov: 45, aspect: 2, fit } );
+		expect( o.x1 - o.x0 ).toBeCloseTo( 2 * 0.3, 4 );
+		expect( o.x0 + o.x1 ).toBeCloseTo( 0, 4 );
+		expect( o.y0 + o.y1 ).toBeCloseTo( 0, 4 );
+	} );
+
+	it( 'stops at the maximum height when that is the tighter one', () => {
+		const fit = fit_points_in_view( points, { pivot, direction, fov: 45, aspect: 1.5, margin: 0.05, maxHeight: 0.1 } );
+		const o = projected_outline( points, { pivot, direction, fov: 45, aspect: 1.5, fit } );
+		expect( o.y1 - o.y0 ).toBeCloseTo( 2 * 0.1, 4 );
+		expect( o.x1 - o.x0 ).toBeLessThan( 2 * 0.95 );
+	} );
+
+	it( 'stops at the zoom limit and centres the outline where the camera really is', () => {
+		const free = fit_points_in_view( points, { pivot, direction, fov: 45, aspect: 2, maxWidth: 0.1 } );
+		const limit = free.distance * 0.6;
+		const fit = fit_points_in_view( points, { pivot, direction, fov: 45, aspect: 2, maxWidth: 0.1, maxDistance: limit } );
+		expect( fit.distance ).toBeCloseTo( limit, 9 );
+		const o = projected_outline( points, { pivot, direction, fov: 45, aspect: 2, fit } );
+		expect( o.x0 + o.x1 ).toBeCloseTo( 0, 4 );
+		expect( o.y0 + o.y1 ).toBeCloseTo( 0, 4 );
+	} );
+
+	it( 'lets the margin win where it is tighter than the maximum', () => {
+		const capped = fit_points_in_view( points, { pivot, direction, fov: 45, aspect: 0.77, margin: 0.05, maxWidth: 0.99, maxHeight: 0.99 } );
+		const plain = fit_points_in_view( points, { pivot, direction, fov: 45, aspect: 0.77, margin: 0.05 } );
+		expect( capped.distance ).toBeCloseTo( plain.distance, 6 );
 	} );
 
 	it( 'backs further away for a narrower output', () => {
@@ -150,6 +183,12 @@ describe( 'angle settings', () => {
 		expect( angle_fits_target( { camera_framing: '' } ) ).toBe( true );
 		expect( angle_fits_target( { camera_framing: 'fixed' } ) ).toBe( false );
 		expect( angle_fits_target( { get: ( key ) => ( { camera_framing: 'fixed' } )[ key ] } ) ).toBe( false );
+	} );
+
+	it( 'reads the maximum size in pixels, empty or invalid meaning no cap', () => {
+		expect( angle_fit_max_size( {} ) ).toEqual( { width: 0, height: 0 } );
+		expect( angle_fit_max_size( { camera_fit_max_width: '', camera_fit_max_height: 'abc' } ) ).toEqual( { width: 0, height: 0 } );
+		expect( angle_fit_max_size( { camera_fit_max_width: '900', camera_fit_max_height: -5 } ) ).toEqual( { width: 900, height: 0 } );
 	} );
 
 	it( 'reads the margin as a percentage, keeping 0 and defaulting empty', () => {

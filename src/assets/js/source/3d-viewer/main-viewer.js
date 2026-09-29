@@ -465,11 +465,13 @@ export default Backbone.View.extend({
 	 * @param {THREE.Vector3|null} authoredPos - The angle's camera position, if set
 	 * @param {THREE.Vector3} target - Resolved orbit target
 	 * @param {number} aspect
+	 * @param {{width: number, height: number}} [size] - CSS pixels, for the angle's maximum size
 	 */
-	_fitAngle( angle, authoredPos, target, aspect ) {
+	_fitAngle( angle, authoredPos, target, aspect, size ) {
 		const t = this._three;
 		if ( ! t ) return null;
-		return fit_angle_camera( { angle, root: t.model_root, camera: t.camera, from: authoredPos, target, aspect } );
+		const distanceLimits = t.controls ? { min: t.controls.minDistance, max: t.controls.maxDistance } : null;
+		return fit_angle_camera( { angle, root: t.model_root, camera: t.camera, from: authoredPos, target, aspect, size, distanceLimits } );
 	},
 
 	/**
@@ -580,7 +582,8 @@ export default Backbone.View.extend({
 		const { position: nextPos, target: nextTarget } = this._resolveAngleView( active );
 		// A new angle hands the camera back to the merchant's framing.
 		if ( ! reframe ) this._framingTouched = false;
-		const fit = nextTarget ? this._fitAngle( active, nextPos, nextTarget, t.camera.aspect ) : null;
+		const size = t.container ? { width: t.container.clientWidth, height: t.container.clientHeight } : null;
+		const fit = nextTarget ? this._fitAngle( active, nextPos, nextTarget, t.camera.aspect, size ) : null;
 		let finalPos = nextPos;
 		if ( fit && ! this._framingTouched ) {
 			finalPos = fit.position;
