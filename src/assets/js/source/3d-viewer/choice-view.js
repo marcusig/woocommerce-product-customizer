@@ -71,6 +71,35 @@ const viewer_3d_choice = Backbone.View.extend({
 		return this.model.get( 'active' ) && false !== this.model.get( 'cshow' ) && false !== this.layer_model.get( 'cshow' );
 	},
 
+	/**
+	 * What toggle_visibility shows and hides: the object picked on the choice or
+	 * its layer, or the choice's model as a whole when no object is picked.
+	 *
+	 * The model a choice inherits from its layer is where a picked object comes
+	 * from, not something the choice owns. Every layer of a single-model product
+	 * points at that one model, so toggling it alongside the object hid the whole
+	 * product whenever an inactive choice ran last.
+	 *
+	 * @returns {THREE.Object3D|null}
+	 */
+	get_visibility_target() {
+		const target_object = this.get_target_object();
+		if ( target_object ) return target_object;
+		// Picked but not in the scene (renamed, removed, or its model still
+		// loading): there is nothing to toggle, least of all the model it is in.
+		if ( this.model.get( 'target_object_id' ) || this.layer_model.get( 'target_object_id' ) ) return null;
+		return this.get_target_scene() || this.target_scene || null;
+	},
+
+	/**
+	 * Show or hide this choice's visibility target.
+	 * @param {boolean} visible
+	 */
+	_apply_target_visibility( visible ) {
+		const target = this.get_visibility_target();
+		if ( target ) target.visible = visible;
+	},
+
 	/** Only update visibility (for cshow changes). Does not run material/variant/color/texture actions. */
 	_apply_cshow_visibility_only() {
 		const t = this.parent_view._three;
@@ -81,9 +110,8 @@ const viewer_3d_choice = Backbone.View.extend({
 
 		const target_object = this.get_target_object();
 		const target_scene = this.get_target_scene() || this.target_scene;
-		if ( target_object && has_toggle_visibility ) target_object.visible = visible;
-		if ( target_scene && has_toggle_visibility ) target_scene.visible = visible;
 		if ( has_toggle_visibility ) {
+			this._apply_target_visibility( visible );
 			this._invalidate_fake_shadow();
 			this._request_angle_reframe();
 		}
@@ -188,10 +216,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 		const visible = this._effective_visible();
 
-		if ( this.target_object && has_toggle_visibility ) this.target_object.visible = visible;
-		if ( this.target_scene && has_toggle_visibility && this.target_scene !== this.target_object ) {
-			this.target_scene.visible = visible;
-		}
+		if ( has_toggle_visibility ) this._apply_target_visibility( visible );
 
 		apply_choice_actions(
 			Object.assign( {
@@ -227,8 +252,7 @@ const viewer_3d_choice = Backbone.View.extend({
 		const has_toggle_visibility = actions.some( ( a ) => a.action_type === 'toggle_visibility' );
 
 		if ( ! visible ) {
-			if ( this.target_object && has_toggle_visibility ) this.target_object.visible = false;
-			if ( this.target_scene && has_toggle_visibility ) this.target_scene.visible = false;
+			if ( has_toggle_visibility ) this._apply_target_visibility( false );
 			// Undo any material state this choice wrote. In a single-select layer
 			// the incoming choice overwrites the same properties immediately after,
 			// so this is only observable for a deselected choice in a "multiple"
