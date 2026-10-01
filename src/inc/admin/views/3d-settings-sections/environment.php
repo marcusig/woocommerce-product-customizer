@@ -29,3 +29,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</p>
 	<p class="description"><?php esc_html_e( 'Softens the lighting and the reflections together. Useful when a detailed environment casts distracting shapes across glossy surfaces. Rotation has less and less effect as this goes up, since it is the sharp reflections that show it.', 'product-configurator-for-woocommerce' ); ?></p>
 </div>
+<div class="pc-3d-setting-group pc-3d-lights-group">
+	<h4><?php esc_html_e( 'Lights', 'product-configurator-for-woocommerce' ); ?></h4>
+	<p class="description"><?php esc_html_e( 'Select a light here or click it in the preview, then drag its handles to place it. Lights are added and removed in 3D Objects.', 'product-configurator-for-woocommerce' ); ?></p>
+	<?php // Filled by the preview once the scene has loaded: see _render_lights_panel. ?>
+	<div class="pc-3d-lights-panel"></div>
+</div>

@@ -6,6 +6,7 @@
 import { start_animation_loop } from '../../../../js/source/3d-viewer/3d-animation-loop.js';
 import { create_render_quality } from '../../../../js/source/3d-viewer/3d-render-quality.js';
 import { format_gltf_load_notice, normalize_gltf_load_error } from '../../../../js/source/3d-viewer/3d-gltf-load-error.js';
+import { create_light_editor, helper_size_for, modes_for, vector_to_setting, euler_to_setting } from './3d-light-editor.js';
 
 const $ = window.jQuery;
 
@@ -388,6 +389,402 @@ export const settings_3d_preview_mixin = {
 		this.request_preview_render();
 	},
 
+	/**
+	 * Helpers for every light, and the gizmo that moves them.
+	 *
+	 * @param {Object} THREE
+	 * @param {Object} deps - getThreeDeps()
+	 * @param {number} diagonal - Model bounding-box diagonal, 0 when unknown
+	 * @returns {Object} light editor
+	 */
+	_create_light_editor: function ( THREE, deps, diagonal ) {
+		const t = this._three;
+		return create_light_editor( {
+			THREE,
+			TransformControls: deps.TransformControls,
+			RectAreaLightHelper: deps.RectAreaLightHelper,
+			scene: t.scene,
+			camera: t.camera,
+			dom: t.renderer.domElement,
+			orbit: t.controls,
+			size: helper_size_for( diagonal ),
+			request_render: () => this.request_preview_render(),
+			on_change: ( entry ) => {
+				this._on_light_changed();
+				this._sync_light_position_fields( entry );
+			},
+			on_commit: ( entry, handle ) => this._commit_light_edit( entry, handle ),
+			on_select: () => {
+				this._render_light_edit_ui();
+				this._render_lights_panel();
+			},
+			on_hover: ( entry ) => this._sync_light_row_hover( entry ),
+		} );
+	},
+
+	/** The lighting changed: a still being refined, and baked shadows, are out of date. */
+	_on_light_changed: function () {
+		const t = this._three;
+		if ( ! t ) return;
+		if ( t.quality ) t.quality.invalidate();
+		if ( typeof PC.threeD.invalidateBakedShadows === 'function' ) {
+			PC.threeD.invalidateBakedShadows( t.renderer );
+		}
+	},
+
+	/** Lights are placed from the Environment section, and only there. */
+	_light_editing_active: function () {
+		return this.$( '.pc-3d-section-panel.active' ).data( 'section-id' ) === 'environment';
+	},
+
+	/**
+	 * Show the helpers and allow editing when the Environment section is open,
+	 * hide them everywhere else. Leaving the section drops the selection.
+	 */
+	_sync_light_editing: function () {
+		const editor = this._three && this._three.light_editor;
+		if ( editor ) editor.set_enabled( this._light_editing_active() );
+		this._render_light_edit_ui();
+		this._render_lights_panel();
+	},
+
+	/**
+	 * Write a dragged light back to its objects3d model.
+	 *
+	 * @param {Object} entry - Light editor entry
+	 * @param {string} handle - 'light' or 'target'
+	 */
+	_commit_light_edit: function ( entry, handle ) {
+		if ( ! entry || ! entry.model ) return;
+		const light = entry.light;
+		if ( handle === 'target' ) {
+			entry.model.set( 'light_target', vector_to_setting( light.target.position ) );
+		} else if ( this._three && this._three.light_editor && this._three.light_editor.mode === 'rotate' ) {
+			entry.model.set( 'rect_rotation', euler_to_setting( light.rotation ) );
+		} else {
+			entry.model.set( 'light_position', vector_to_setting( light.position ) );
+		}
+		this.mark_dirty( 'objects3d' );
+		// Shadow cameras are fitted along the light's direction, which just changed.
+		this.apply_shadow_settings();
+	},
+
+	/**
+	 * The panel over the canvas: a hint while nothing is selected, the selected
+	 * light's name and modes while something is.
+	 */
+	_render_light_edit_ui: function () {
+		const t = this._three;
+		const container = t && t.container;
+		if ( ! container ) return;
+		let panel = container.querySelector( '.pc-3d-light-edit' );
+		const editor = t.light_editor;
+		if ( ! editor || ! editor.entries.length || ! editor.enabled ) {
+			if ( panel ) panel.remove();
+			return;
+		}
+		if ( ! panel ) {
+			panel = document.createElement( 'div' );
+			panel.className = 'pc-3d-light-edit';
+			container.appendChild( panel );
+		}
+		const lang = ( key, fallback ) => ( typeof PC_lang !== 'undefined' && PC_lang[ key ] ) ? PC_lang[ key ] : fallback;
+		panel.textContent = '';
+		const entry = editor.selected;
+		panel.classList.toggle( 'is-active', !! entry );
+		if ( ! entry ) {
+			panel.textContent = lang( 'light_edit_hint', 'Click a light to move it' );
+			return;
+		}
+
+		const handle = editor.selected_handle;
+		const name = entry.light.name || 'Light';
+		const title = document.createElement( 'strong' );
+		title.className = 'pc-3d-light-edit__name';
+		title.textContent = handle === 'target' ? lang( 'light_edit_target_of', 'Target of %s' ).replace( '%s', name ) : name;
+		panel.appendChild( title );
+
+		const modes = modes_for( entry.light, handle );
+		if ( modes.length > 1 ) {
+			const group = document.createElement( 'span' );
+			group.className = 'pc-3d-light-edit__modes';
+			modes.forEach( ( mode ) => {
+				const button = document.createElement( 'button' );
+				button.type = 'button';
+				button.className = 'button button-small' + ( editor.mode === mode ? ' is-pressed' : '' );
+				button.setAttribute( 'aria-pressed', editor.mode === mode ? 'true' : 'false' );
+				button.textContent = mode === 'rotate' ? lang( 'light_edit_rotate', 'Rotate' ) : lang( 'light_edit_move', 'Move' );
+				button.addEventListener( 'click', () => {
+					editor.set_mode( mode );
+					this._render_light_edit_ui();
+				} );
+				group.appendChild( button );
+			} );
+			panel.appendChild( group );
+		}
+
+		const done = document.createElement( 'button' );
+		done.type = 'button';
+		done.className = 'button button-small pc-3d-light-edit__done';
+		done.textContent = lang( 'light_edit_done', 'Done' );
+		done.addEventListener( 'click', () => editor.deselect() );
+		panel.appendChild( done );
+
+		if ( entry.light.isAmbientLight ) {
+			const note = document.createElement( 'span' );
+			note.className = 'pc-3d-light-edit__note';
+			note.textContent = lang( 'light_edit_ambient_note', 'An ambient light lights everything evenly: its position has no effect.' );
+			panel.appendChild( note );
+		}
+	},
+
+	/**
+	 * The Lights group in the Environment section: every light, and the common
+	 * settings of the selected one. Everything else about a light stays in
+	 * 3D Objects, which the "All settings" link opens.
+	 */
+	_render_lights_panel: function () {
+		const $panel = this.$( '.pc-3d-lights-panel' );
+		if ( ! $panel.length ) return;
+		const lang = ( key, fallback ) => ( typeof PC_lang !== 'undefined' && PC_lang[ key ] ) ? PC_lang[ key ] : fallback;
+		const editor = this._three && this._three.light_editor;
+		$panel.empty();
+
+		const open_objects = () => $( '<button type="button" class="button-link pc-3d-light-open-objects"></button>' )
+			.text( lang( 'light_edit_open_objects', 'Open 3D Objects' ) );
+
+		if ( ! editor ) {
+			// Before the scene has loaded there is nothing to list yet; without a
+			// model there is no preview to place anything in.
+			if ( ! this.get_model_entries().length ) {
+				$panel.append( $( '<p class="description"></p>' ).text( lang( 'light_edit_no_model', 'Add a 3D model in 3D Objects to preview and place the lights.' ) ).append( ' ', open_objects() ) );
+			}
+			return;
+		}
+		if ( ! editor.entries.length ) {
+			$panel.append( $( '<p class="description"></p>' ).text( lang( 'light_edit_no_lights', 'This product has no lights yet.' ) ).append( ' ', open_objects() ) );
+			return;
+		}
+
+		const type_labels = ( typeof PC_lang !== 'undefined' && PC_lang.light_type_labels ) || {};
+		const $list = $( '<ul class="pc-3d-lights-list"></ul>' );
+		editor.entries.forEach( ( entry, index ) => {
+			const is_selected = entry === editor.selected;
+			const $item = $( '<button type="button" class="pc-3d-lights-list__item"></button>' )
+				.attr( 'data-index', index )
+				.attr( 'aria-pressed', is_selected ? 'true' : 'false' )
+				.toggleClass( 'is-selected', is_selected )
+				.toggleClass( 'is-hovered', entry === editor.highlighted );
+			$item.append( $( '<span class="pc-3d-lights-list__swatch" aria-hidden="true"></span>' ).css( 'background-color', '#' + entry.light.color.getHexString() ) );
+			$item.append( $( '<span class="pc-3d-lights-list__name"></span>' ).text( entry.light.name || 'Light' ) );
+			$item.append( $( '<span class="pc-3d-lights-list__type"></span>' ).text( type_labels[ entry.light.type ] || entry.light.type ) );
+			$list.append( $( '<li></li>' ).append( $item ) );
+		} );
+		$panel.append( $list );
+
+		const entry = editor.selected;
+		if ( entry ) $panel.append( this._build_light_settings( entry, lang ) );
+	},
+
+	/**
+	 * @param {Object} entry - Light editor entry
+	 * @param {function(string, string): string} lang
+	 * @returns {jQuery}
+	 */
+	_build_light_settings: function ( entry, lang ) {
+		const light = entry.light;
+		const $box = $( '<div class="pc-3d-light-settings"></div>' );
+		const row = ( label_text, id ) => {
+			const $row = $( '<p class="field-row"></p>' );
+			$row.append( $( '<label></label>' ).attr( 'for', id ).text( label_text ) );
+			return $row;
+		};
+
+		// The field has no upper bound - a point light in physical units can need
+		// hundreds - so the slider's range follows the value it opens on.
+		const intensity = light.userData.baseIntensity != null ? light.userData.baseIntensity : light.intensity;
+		const $intensity = row( lang( 'light_edit_intensity', 'Intensity' ), 'pc-3d-light-intensity' );
+		$intensity.append(
+			$( '<input type="range" class="pc-3d-light-field" data-light-field="intensity" min="0" step="any">' )
+				.attr( 'id', 'pc-3d-light-intensity' )
+				.attr( 'max', Math.max( 10, Math.ceil( intensity * 3 ) ) )
+				.val( intensity ),
+			$( '<input type="number" class="small-text pc-3d-light-field" data-light-field="intensity" min="0" step="any">' ).val( intensity )
+		);
+		$box.append( $intensity );
+
+		const $color = row( lang( 'light_edit_color', 'Color' ), 'pc-3d-light-color' );
+		$color.append(
+			$( '<input type="color" class="pc-3d-light-field" data-light-field="color">' )
+				.attr( 'id', 'pc-3d-light-color' )
+				.val( '#' + light.color.getHexString() )
+		);
+		$box.append( $color );
+
+		if ( light.isDirectionalLight || light.isSpotLight || light.isPointLight ) {
+			const $label = $( '<label></label>' ).append(
+				$( '<input type="checkbox" class="pc-3d-light-field" data-light-field="cast_shadows">' ).prop( 'checked', light.userData.cast_shadows === true ),
+				' ',
+				document.createTextNode( lang( 'light_edit_cast_shadows', 'Cast shadows' ) )
+			);
+			$box.append( $( '<p class="field-row"></p>' ).append( $label ) );
+		}
+
+		if ( ! light.isAmbientLight ) {
+			const $position = row( lang( 'light_edit_position', 'Position' ), 'pc-3d-light-position-x' );
+			const $inputs = $( '<span class="pc-3d-light-position"></span>' );
+			[ 'x', 'y', 'z' ].forEach( ( axis ) => {
+				$inputs.append( $( '<input type="number" class="small-text pc-3d-light-field" data-light-field="position" step="any">' )
+					.attr( 'id', 'pc-3d-light-position-' + axis )
+					.attr( 'data-component', axis )
+					.attr( 'aria-label', axis.toUpperCase() )
+					.val( vector_to_setting( light.position )[ axis ] ) );
+			} );
+			$position.append( $inputs );
+			$box.append( $position );
+		}
+
+		$box.append(
+			$( '<p class="pc-3d-light-settings__more"></p>' ).append(
+				$( '<button type="button" class="button-link pc-3d-light-open-objects"></button>' )
+					.attr( 'data-index', this._three.light_editor.entries.indexOf( entry ) )
+					.text( lang( 'light_edit_all_settings', 'All settings' ) )
+			)
+		);
+		return $box;
+	},
+
+	/** Delegated once per view: the panel is rebuilt, the handlers are not. */
+	_bind_lights_panel: function () {
+		const entry_at = ( el ) => {
+			const editor = this._three && this._three.light_editor;
+			const index = parseInt( $( el ).attr( 'data-index' ), 10 );
+			return editor && ! isNaN( index ) ? editor.entries[ index ] || null : null;
+		};
+		this.$el.off( '.pc3dlights' )
+			.on( 'click.pc3dlights', '.pc-3d-lights-list__item', ( e ) => {
+				const entry = entry_at( e.currentTarget );
+				if ( entry ) this._three.light_editor.select( entry, 'light' );
+			} )
+			// Hovering or focusing a row shows which light it is in the preview.
+			.on( 'mouseenter.pc3dlights focusin.pc3dlights', '.pc-3d-lights-list__item', ( e ) => {
+				const entry = entry_at( e.currentTarget );
+				if ( entry ) this._three.light_editor.highlight( entry );
+			} )
+			.on( 'mouseleave.pc3dlights focusout.pc3dlights', '.pc-3d-lights-list__item', ( e ) => {
+				const editor = this._three && this._three.light_editor;
+				if ( editor && editor.highlighted === entry_at( e.currentTarget ) ) editor.highlight( null );
+			} )
+			.on( 'click.pc3dlights', '.pc-3d-light-open-objects', ( e ) => {
+				e.preventDefault();
+				const entry = entry_at( e.currentTarget );
+				this._open_objects3d( entry ? entry.model : null );
+			} )
+			.on( 'input.pc3dlights change.pc3dlights', '.pc-3d-light-field', ( e ) => {
+				const editor = this._three && this._three.light_editor;
+				if ( editor && editor.selected ) this._apply_light_field( editor.selected, e.currentTarget, e.type );
+			} );
+	},
+
+	/**
+	 * A setting typed into the Lights panel: onto the live light, then the model.
+	 *
+	 * @param {Object} entry
+	 * @param {HTMLInputElement} input
+	 * @param {string} event_type - 'input' while typing or dragging, 'change' when done
+	 */
+	_apply_light_field: function ( entry, input, event_type ) {
+		const light = entry.light;
+		const model = entry.model;
+		const $box = $( input ).closest( '.pc-3d-light-settings' );
+		const field = input.getAttribute( 'data-light-field' );
+
+		if ( field === 'intensity' ) {
+			const value = parseFloat( input.value );
+			if ( isNaN( value ) || value < 0 ) return;
+			// applySettingsToScene re-derives every intensity from this on each
+			// settings pass, so setting only light.intensity would not stick.
+			light.userData.baseIntensity = value;
+			light.intensity = value;
+			$box.find( '[data-light-field="intensity"]' ).not( input ).each( function () {
+				if ( this.type === 'range' && value > parseFloat( this.max ) ) this.max = Math.ceil( value * 2 );
+				this.value = value;
+			} );
+			if ( model ) model.set( 'light_intensity', value );
+		} else if ( field === 'color' ) {
+			light.color.set( input.value );
+			if ( model ) model.set( 'light_color', input.value );
+			const index = this._three.light_editor.entries.indexOf( entry );
+			this.$( '.pc-3d-lights-list__item[data-index="' + index + '"] .pc-3d-lights-list__swatch' ).css( 'background-color', input.value );
+		} else if ( field === 'cast_shadows' ) {
+			if ( event_type !== 'change' ) return;
+			light.userData.cast_shadows = input.checked;
+			if ( model ) model.set( 'cast_shadows', input.checked );
+			this.apply_shadow_settings();
+		} else if ( field === 'position' ) {
+			const next = light.position.clone();
+			$box.find( '[data-light-field="position"]' ).each( function () {
+				const v = parseFloat( this.value );
+				if ( ! isNaN( v ) ) next[ this.getAttribute( 'data-component' ) ] = v;
+			} );
+			light.position.copy( next );
+			if ( model ) model.set( 'light_position', vector_to_setting( next ) );
+			// Refitting shadow cameras on every keystroke is wasted work.
+			if ( event_type === 'change' ) this.apply_shadow_settings();
+		} else {
+			return;
+		}
+
+		this._three.light_editor.sync( entry );
+		this._on_light_changed();
+		this.mark_dirty( 'objects3d' );
+	},
+
+	/**
+	 * Mark the row of the highlighted light, whichever side the hover came from.
+	 *
+	 * @param {Object|null} entry
+	 */
+	_sync_light_row_hover: function ( entry ) {
+		const editor = this._three && this._three.light_editor;
+		const index = editor && entry ? editor.entries.indexOf( entry ) : -1;
+		this.$( '.pc-3d-lights-list__item' ).each( function () {
+			$( this ).toggleClass( 'is-hovered', String( index ) === this.getAttribute( 'data-index' ) );
+		} );
+	},
+
+	/**
+	 * Keep the typed position in step with the gizmo while it is dragged.
+	 * A field being typed in is left alone.
+	 *
+	 * @param {Object} entry
+	 */
+	_sync_light_position_fields: function ( entry ) {
+		const editor = this._three && this._three.light_editor;
+		if ( ! editor || entry !== editor.selected || editor.selected_handle !== 'light' ) return;
+		const value = vector_to_setting( entry.light.position );
+		this.$( '.pc-3d-light-settings [data-light-field="position"]' ).each( function () {
+			if ( this !== document.activeElement ) this.value = value[ this.getAttribute( 'data-component' ) ];
+		} );
+	},
+
+	/**
+	 * Go to 3D Objects, opening a light's form when one is given.
+	 *
+	 * @param {Backbone.Model|null} model
+	 */
+	_open_objects3d: function ( model ) {
+		const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
+		if ( model && col ) {
+			// The list opens the form of whichever item is active when it renders.
+			col.each( ( m ) => {
+				if ( m !== model && m.get( 'active' ) ) m.set( 'active', false );
+			} );
+			model.set( 'active', true );
+		}
+		$( '.pc-modal.mkl-pc-admin-ui .mkl-pc-admin-ui__nav-item[data-menu-id="objects3d"]' ).first().trigger( 'click' );
+	},
+
 	maybe_cleanup: function () {
 		const t = this._three;
 		if ( ! t ) return;
@@ -406,12 +803,9 @@ export const settings_3d_preview_mixin = {
 			t.fake_shadow.dispose();
 			t.fake_shadow = null;
 		}
-		if ( t.light_helpers && t.light_helpers.length ) {
-			t.light_helpers.forEach( function ( h ) {
-				if ( h.parent ) h.parent.remove( h );
-				if ( h.dispose ) h.dispose();
-			} );
-			t.light_helpers = [];
+		if ( t.light_editor ) {
+			t.light_editor.dispose();
+			t.light_editor = null;
 		}
 		if ( t.postprocessingLayer ) {
 			t.postprocessingLayer.dispose();
@@ -590,7 +984,6 @@ export const settings_3d_preview_mixin = {
 				getObjectTargetPosition,
 				removeLightsFromScene,
 				registerSceneMaterials,
-				RectAreaLightHelper,
 			} = deps;
 
 			const s = PC.app.admin.settings_3d;
@@ -761,10 +1154,14 @@ export const settings_3d_preview_mixin = {
 				var s = PC.app.admin.settings_3d;
 				var gi = 1;
 				var objects3dCol = PC.app.get_collection( 'objects3d' );
-				viewRef._three.light_helpers = viewRef._three.light_helpers || [];
 				// Measured once: the model does not change while the light loop runs,
 				// and setFromObject walks the whole tree.
 				var lightBounds = rootGroup ? new THREE.Box3().setFromObject( rootGroup ) : null;
+				viewRef._three.light_editor = viewRef._create_light_editor(
+					THREE,
+					deps,
+					lightBounds && ! lightBounds.isEmpty() ? lightBounds.getSize( new THREE.Vector3() ).length() : 0
+				);
 				if ( objects3dCol && typeof PC.threeD.createLightFromSettings === 'function' ) {
 					objects3dCol.each( function ( obj ) {
 						if ( obj.get( 'object_type' ) !== 'light' ) return;
@@ -812,27 +1209,14 @@ export const settings_3d_preview_mixin = {
 						if ( cookie && cookie.url && typeof PC.threeD.applyLightCookie === 'function' ) {
 							PC.threeD.applyLightCookie( light, cookie );
 						}
-						var helper = null;
-						if ( THREE.PointLightHelper && light.isPointLight ) {
-							helper = new THREE.PointLightHelper( light, 0.5 );
-						} else if ( THREE.DirectionalLightHelper && light.isDirectionalLight ) {
-							helper = new THREE.DirectionalLightHelper( light, 1 );
-						} else if ( THREE.SpotLightHelper && light.isSpotLight ) {
-							helper = new THREE.SpotLightHelper( light );
-						} else if ( RectAreaLightHelper && light.isRectAreaLight ) {
-							helper = new RectAreaLightHelper( light );
-						}
-
-						if ( helper ) {
-							if ( light.isRectAreaLight ) {
-								light.add( helper );
-							} else {
-								viewRef._three.scene.add( helper );
-							}
-							viewRef._three.light_helpers.push( helper );
-						}
+						viewRef._three.light_editor.add( light, {
+							model: obj,
+							// A target that follows an object is not the merchant's to drag.
+							target_locked: !! targetId,
+						} );
 					} );
 				}
+				viewRef._sync_light_editing();
 
 				var box = new THREE.Box3().setFromObject( rootGroup );
 				if ( !box.isEmpty() ) {
@@ -915,16 +1299,16 @@ export const settings_3d_preview_mixin = {
 				// but guard rather than rely on the ordering.
 				if ( ! this._three ) return;
 				this._three.quality.frame( () => {
-					if ( this._three.light_helpers && this._three.light_helpers.length ) {
-						this._three.light_helpers.forEach( function ( h ) {
-							if ( h.update ) h.update();
-						} );
-					}
-					const g = PC.app.admin.settings_3d.ground || {};
+					const editor = this._three.light_editor;
+					if ( editor ) editor.update();
 					// No mode check: update() has already told the instance whether it
 					// is the active shadow, and render() is a no-op when it is not.
 					if ( this._three.fake_shadow ) {
+						// The shadow pass renders the whole scene, so it would print the
+						// helpers and the gizmo into the shadow.
+						const restore = editor ? editor.hide_temporarily() : null;
 						this._three.fake_shadow.render( renderer, scene );
+						if ( restore ) restore();
 					}
 					if ( this._three.postprocessingLayer ) {
 						this._three.postprocessingLayer.render();

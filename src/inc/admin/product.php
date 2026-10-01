@@ -513,6 +513,30 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'gltf_load_failed_http' => esc_html__( 'The model file could not be downloaded (HTTP %s).', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_no_scene' => esc_html__( 'The model loaded but did not contain a scene.', 'product-configurator-for-woocommerce' ),
 					'gltf_load_failed_missing_url' => esc_html__( 'No 3D file is assigned to this object.', 'product-configurator-for-woocommerce' ),
+					// 3D preview: moving lights with the gizmo. Set with textContent, so not HTML-escaped.
+					'light_edit_hint' => __( 'Click a light to move it', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: light name */
+					'light_edit_target_of' => __( 'Target of %s', 'product-configurator-for-woocommerce' ),
+					'light_edit_move' => __( 'Move', 'product-configurator-for-woocommerce' ),
+					'light_edit_rotate' => __( 'Rotate', 'product-configurator-for-woocommerce' ),
+					'light_edit_done' => __( 'Done', 'product-configurator-for-woocommerce' ),
+					'light_edit_ambient_note' => __( 'An ambient light lights everything evenly: its position has no effect.', 'product-configurator-for-woocommerce' ),
+					'light_edit_no_lights' => __( 'This product has no lights yet.', 'product-configurator-for-woocommerce' ),
+					'light_edit_no_model' => __( 'Add a 3D model in 3D Objects to preview and place the lights.', 'product-configurator-for-woocommerce' ),
+					'light_edit_open_objects' => __( 'Open 3D Objects', 'product-configurator-for-woocommerce' ),
+					'light_edit_all_settings' => __( 'All settings', 'product-configurator-for-woocommerce' ),
+					'light_edit_intensity' => __( 'Intensity', 'product-configurator-for-woocommerce' ),
+					'light_edit_color' => __( 'Color', 'product-configurator-for-woocommerce' ),
+					'light_edit_cast_shadows' => __( 'Cast shadows', 'product-configurator-for-woocommerce' ),
+					'light_edit_position' => __( 'Position', 'product-configurator-for-woocommerce' ),
+					'light_type_labels' => array(
+						'AmbientLight'     => __( 'Ambient', 'product-configurator-for-woocommerce' ),
+						'DirectionalLight' => __( 'Directional', 'product-configurator-for-woocommerce' ),
+						'PointLight'       => __( 'Point', 'product-configurator-for-woocommerce' ),
+						'SpotLight'        => __( 'Spot', 'product-configurator-for-woocommerce' ),
+						'RectAreaLight'    => __( 'Rect Area', 'product-configurator-for-woocommerce' ),
+						'HemisphereLight'  => __( 'Hemisphere', 'product-configurator-for-woocommerce' ),
+					),
 
 				);
 

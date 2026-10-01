@@ -34,6 +34,7 @@ let applySettingsToScene;
 let resolveShadowMode;
 let SHADOW_MODES;
 let RectAreaLightHelper = null;
+let TransformControls = null;
 let cameraFit = null;
 
 let threeDepsPromise = null;
@@ -63,6 +64,7 @@ function ensureThreeDepsLoaded() {
 			sceneUtilsModule,
 			applySettingsModule,
 			rectAreaLightHelperModule,
+			transformControlsModule,
 			baseComposerModule,
 			loaderFactoryModule,
 			anchorPlacementModule,
@@ -74,6 +76,8 @@ function ensureThreeDepsLoaded() {
 			import( '../../../js/source/3d-viewer/3d-scene-utils.js' ),
 			import( '../../../js/source/3d-viewer/3d-apply-preview-settings.js' ),
 			import( 'three/addons/helpers/RectAreaLightHelper.js' ),
+			// The preview's light gizmo.
+			import( 'three/addons/controls/TransformControls.js' ),
 			// Everything that imports three stays behind this import(), including what
 			// the preview view uses: one static import of these from 3d-preview-view.js
 			// is enough to pull three and every loader into this eager entry.
@@ -102,6 +106,7 @@ function ensureThreeDepsLoaded() {
 		applySettingsToScene = applySettingsModule.applySettingsToScene;
 		createPostprocessingLayer = resolve_create_postprocessing_layer();
 		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
+		TransformControls = transformControlsModule.TransformControls;
 		cameraFit = cameraFitModule;
 
 		( {
@@ -148,6 +153,7 @@ function ensureThreeDepsLoaded() {
 				disposeScene,
 				applySettingsToScene,
 				RectAreaLightHelper,
+				TransformControls,
 				resolveShadowMode,
 				SHADOW_MODES,
 				create_base_composer: baseComposerModule.create_base_composer,
@@ -504,6 +510,10 @@ PC.views = window.PC.views || {};
 			} else {
 				this._three = this._three || {};
 			}
+			// After the preview call, which drops the old scene: the list is filled
+			// again once the new one has loaded.
+			this._bind_lights_panel();
+			this._render_lights_panel();
 			if ( PC.app && PC.app.syncSidebarFocusChrome ) {
 				PC.app.syncSidebarFocusChrome( this.options && this.options.main_view );
 			}
@@ -601,6 +611,8 @@ PC.views = window.PC.views || {};
 			$sidebar_sections.find( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
 			this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
 			this.$( '#pc-3d-section-panel-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
+			// Light helpers and the gizmo belong to the Environment section only.
+			this._sync_light_editing();
 		},
 		/**
 		 * Show only the settings that belong to the selected shadow type.

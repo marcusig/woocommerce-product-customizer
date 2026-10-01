@@ -4869,6 +4869,84 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 				font-size: 0.95em;
 			}
 		}
+		// Environment > Lights: filled by _render_lights_panel in 3d-preview-view.js.
+		.pc-3d-lights-list {
+			margin: 0 0 1em;
+			padding: 0;
+			list-style: none;
+			border: 1px solid #dcdcde;
+			border-radius: 4px;
+			li {
+				margin: 0;
+				& + li {
+					border-top: 1px solid #f0f0f1;
+				}
+			}
+		}
+		.pc-3d-lights-list__item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			width: 100%;
+			padding: 6px 10px;
+			border: 0;
+			background: transparent;
+			color: #1d2327;
+			font: inherit;
+			text-align: left;
+			cursor: pointer;
+			// .is-hovered also comes from hovering the light in the preview.
+			&:hover,
+			&.is-hovered {
+				background: #f6f7f7;
+			}
+			&:focus-visible {
+				outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+				outline-offset: -2px;
+			}
+			&.is-selected {
+				background: #f0f6fc;
+				box-shadow: inset 3px 0 0 var(--wp-admin-theme-color, #2271b1);
+				font-weight: 600;
+			}
+		}
+		.pc-3d-lights-list__swatch {
+			flex: none;
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+		}
+		.pc-3d-lights-list__name {
+			flex: 1;
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		.pc-3d-lights-list__type {
+			flex: none;
+			color: #646970;
+			font-size: 0.9em;
+			font-weight: 400;
+		}
+		.pc-3d-light-settings {
+			padding-left: 12px;
+			border-left: 2px solid #dcdcde;
+			input[type="range"] {
+				vertical-align: middle;
+			}
+		}
+		.pc-3d-light-position {
+			display: inline-flex;
+			gap: 4px;
+			input {
+				width: 5.5em;
+			}
+		}
+		.pc-3d-light-settings__more {
+			margin-top: 0.5em;
+		}
 		// Disclosure groups: a feature toggle plus the settings it owns.
 		// Behaviour lives in assets/admin/js/views/3d/3d-field-groups.js.
 		.pc-3d-field-group {
@@ -5038,6 +5116,45 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 		.pc-3d-preview-error__list {
 			margin: 0;
 			padding-left: 1.2em;
+		}
+	}
+	// Light gizmo: a hint while nothing is selected, the selection's controls while something is.
+	.pc-3d-light-edit {
+		position: absolute;
+		left: 12px;
+		bottom: 12px;
+		z-index: 5;
+		max-width: calc(100% - 24px);
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 8px;
+		padding: 4px 10px;
+		background: rgba(255, 255, 255, 0.85);
+		border-radius: 4px;
+		color: #50575e;
+		font-size: 12px;
+		line-height: 1.5;
+		pointer-events: none;
+		&.is-active {
+			padding: 6px 8px 6px 10px;
+			background: rgba(255, 255, 255, 0.95);
+			box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+			color: #1d2327;
+			pointer-events: auto;
+		}
+		.pc-3d-light-edit__modes {
+			display: inline-flex;
+			gap: 2px;
+		}
+		.button.is-pressed {
+			background: #1d2327;
+			border-color: #1d2327;
+			color: #fff;
+		}
+		.pc-3d-light-edit__note {
+			flex-basis: 100%;
+			color: #50575e;
 		}
 	}
 }
