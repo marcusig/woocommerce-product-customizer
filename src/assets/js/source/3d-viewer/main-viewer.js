@@ -6,10 +6,13 @@
  * Pipeline: 1) Get settings → 2) Async load conditional modules → 3) Load assets → 4) Setup scene.
  */
 import * as THREE from 'three';
+import { apply_shader_fixes } from './3d-shader-fixes.js';
 
 if ( typeof window !== 'undefined' ) {
 	window.THREE = THREE;
 }
+
+apply_shader_fixes( THREE.ShaderChunk );
 
 import viewer_3d_choice from './choice-view.js';
 import { getSettings, getHdrBaseUrl, getPostprocessingSettings, isPostprocessingEnabled, getCustomPassFactories, isMobileViewport, getHdrUrlFromEnv, getPixelRatio, prefersReducedMotion, ORBIT_PIXEL_RATIO_SCALE } from './3d-scene-config.js';

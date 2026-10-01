@@ -2,6 +2,8 @@
 
 import { settings_3d_preview_mixin } from './3d/3d-preview-view.js';
 import { initFieldGroups, syncFieldGroups } from './3d/3d-field-groups.js';
+// Imports nothing from three, so it can load eagerly without pulling three into this entry.
+import { apply_shader_fixes } from '../../../js/source/3d-viewer/3d-shader-fixes.js';
 
 // Ensure dynamic imports (async chunks) are loaded from the plugin's admin build URL,
 // not from wp-includes or TinyMCE paths inferred at runtime.
@@ -96,6 +98,7 @@ function ensureThreeDepsLoaded() {
 		] );
 
 		THREE = threeModule;
+		apply_shader_fixes( THREE.ShaderChunk );
 		if ( typeof window !== 'undefined' ) {
 			window.THREE = threeModule;
 		}
