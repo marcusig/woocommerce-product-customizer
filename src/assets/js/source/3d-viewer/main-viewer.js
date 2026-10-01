@@ -2069,8 +2069,15 @@ export default Backbone.View.extend({
 	_apply_layer_cshow_visibility() {
 		const cshow = ( model ) => false !== model.get( 'cshow' );
 		if ( this._layer_scenes && this._layer_scenes.length ) {
+			// Layers share a model when they pick their objects from it — every
+			// layer of a single-model product does — so a model stays shown while
+			// any layer using it is; one hidden layer must not take the product along.
+			const shown = new Set();
 			this._layer_scenes.forEach( ( { layer_model, scene } ) => {
-				if ( scene ) scene.visible = cshow( layer_model );
+				if ( scene && cshow( layer_model ) ) shown.add( scene );
+			} );
+			this._layer_scenes.forEach( ( { scene } ) => {
+				if ( scene ) scene.visible = shown.has( scene );
 			} );
 		}
 		this.invalidate_fake_shadow();
