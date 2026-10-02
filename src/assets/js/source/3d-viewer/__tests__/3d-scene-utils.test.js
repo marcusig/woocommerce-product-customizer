@@ -18,6 +18,8 @@ import {
 	findObject,
 	getPixelRatio,
 	MAX_PIXEL_RATIO,
+	applyTextureAnisotropy,
+	registerSceneMaterials,
 } from '../3d-scene-utils.js';
 
 const DEG = Math.PI / 180;
@@ -324,5 +326,55 @@ describe( 'getPixelRatio', () => {
 		expect( getPixelRatio() ).toBe( 1 );
 		setDpr( 3 );
 		expect( getPixelRatio( 1.5 ) ).toBe( 1.5 );
+	} );
+} );
+
+describe( 'texture anisotropy', () => {
+	const renderer = ( max ) => ( { capabilities: { getMaxAnisotropy: () => max } } );
+	const texture = () => ( { isTexture: true, anisotropy: 1, needsUpdate: false } );
+	const sceneWith = ( material ) => ( {
+		traverse( fn ) {
+			fn( { material } );
+		},
+	} );
+
+	it( 'raises a texture to the renderer maximum and flags it for upload', () => {
+		const t = texture();
+		applyTextureAnisotropy( renderer( 16 ), t );
+		expect( t.anisotropy ).toBe( 16 );
+		expect( t.needsUpdate ).toBe( true );
+	} );
+
+	it( 'does not re-upload a texture that already has the maximum', () => {
+		const t = Object.assign( texture(), { anisotropy: 16 } );
+		applyTextureAnisotropy( renderer( 16 ), t );
+		expect( t.needsUpdate ).toBe( false );
+	} );
+
+	it( 'leaves textures alone without a renderer or anisotropy support', () => {
+		const a = texture();
+		const b = texture();
+		applyTextureAnisotropy( null, a );
+		applyTextureAnisotropy( renderer( 1 ), b );
+		expect( [ a.anisotropy, b.anisotropy ] ).toEqual( [ 1, 1 ] );
+		expect( a.needsUpdate || b.needsUpdate ).toBe( false );
+	} );
+
+	it( 'covers every texture slot of a loaded material except the environment', () => {
+		const material = {
+			name: 'Strap',
+			userData: {},
+			map: texture(),
+			normalMap: texture(),
+			clearcoatRoughnessMap: texture(),
+			envMap: texture(),
+			color: { isColor: true },
+		};
+		const ctx = { renderer: renderer( 8 ), material_registry: new Map() };
+		registerSceneMaterials( ctx, sceneWith( material ) );
+		expect( material.map.anisotropy ).toBe( 8 );
+		expect( material.normalMap.anisotropy ).toBe( 8 );
+		expect( material.clearcoatRoughnessMap.anisotropy ).toBe( 8 );
+		expect( material.envMap.anisotropy ).toBe( 1 );
 	} );
 } );

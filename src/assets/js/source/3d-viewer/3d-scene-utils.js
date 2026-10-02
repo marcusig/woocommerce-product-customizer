@@ -1718,6 +1718,53 @@ function ensureUnlitTransparency( mat ) {
 }
 
 /**
+ * Turn on the renderer's maximum anisotropic filtering for one texture.
+ *
+ * Without it the GPU chooses a mip level from the most squashed screen axis, so
+ * at a grazing angle it drops to a tiny mip even though the texture still spans
+ * plenty of pixels the other way. On cutout textures (stitching, perforations)
+ * the thread and its transparent surround then average into one faint smear and
+ * the quad's rectangle shows. Anisotropic filtering samples along the squashed
+ * axis instead; leather grain and brushed metal sharpen at an angle too.
+ *
+ * Three reads the value only when it uploads the texture, so a texture that may
+ * already be on the GPU (a model cloned again in the admin preview) is flagged for
+ * re-upload — but only when the value actually changes, never on every call.
+ *
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.Texture} texture
+ */
+export function applyTextureAnisotropy( renderer, texture ) {
+	if ( ! texture || ! texture.isTexture ) return;
+	const capabilities = renderer && renderer.capabilities;
+	if ( ! capabilities || typeof capabilities.getMaxAnisotropy !== 'function' ) return;
+	const max = capabilities.getMaxAnisotropy();
+	if ( ! ( max > 1 ) || texture.anisotropy === max ) return;
+	texture.anisotropy = max;
+	texture.needsUpdate = true;
+}
+
+/**
+ * Apply anisotropic filtering to every texture a material samples.
+ *
+ * Walks the material's own properties rather than a list of map slots, so the
+ * extension maps (clearcoat, sheen, iridescence, transmission, anisotropy...) are
+ * covered without being named. envMap is skipped: it is the shared environment,
+ * sampled by direction, not a surface texture.
+ *
+ * @param {THREE.WebGLRenderer} renderer
+ * @param {THREE.Material} mat
+ */
+function applyMaterialAnisotropy( renderer, mat ) {
+	if ( ! mat || ! renderer ) return;
+	Object.keys( mat ).forEach( ( key ) => {
+		if ( key === 'envMap' ) return;
+		const value = mat[ key ];
+		if ( value && value.isTexture ) applyTextureAnisotropy( renderer, value );
+	} );
+}
+
+/**
  * Apply default AO intensity for materials that have an AO map.
  * @param {THREE.Material} mat
  * @param {number} intensity
@@ -1733,7 +1780,8 @@ function setDefaultAo( mat, intensity ) {
  * If a material with the same name already exists (different instance),
  * replace the mesh material with the registry one.
  *
- * Also normalizes unlit alpha handling and AO defaults.
+ * Also normalizes unlit alpha handling and AO defaults, and turns on anisotropic
+ * filtering for the material's textures.
  *
  * NOTE ON SHARING: the key is the material's *name*, across every loaded model.
  * That is what lets a material_color_registry or material_property action target
@@ -1768,6 +1816,7 @@ export function registerSceneMaterials( threeCtx, sceneRoot, opts = {} ) {
 			if ( ! mat ) continue;
 			ensureUnlitTransparency( mat );
 			setDefaultAo( mat, aoIntensity );
+			applyMaterialAnisotropy( threeCtx.renderer, mat );
 
 			const name = ( mat.name && String( mat.name ).trim() ) || mat.uuid;
 			const existing = registry.get( name );

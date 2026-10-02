@@ -3,6 +3,7 @@
  * Registry of action_type → apply function for actions_3d.
  */
 import * as THREE from 'three';
+import { applyTextureAnisotropy } from './3d-scene-utils.js';
 
 /**
  * Allowlisted Three.js material properties for material_property actions.
@@ -265,7 +266,7 @@ function restore_material_variant( context, action ) {
 }
 
 function apply_material_texture( context, action ) {
-	const { registry, texture_loader, request_render } = context;
+	const { registry, texture_loader, request_render, three } = context;
 	if ( ! registry ) return;
 	const name = action.material_texture_material_name || action.material_name;
 	const texture_url = action.material_texture_url || action.material_texture_value;
@@ -284,6 +285,8 @@ function apply_material_texture( context, action ) {
 		}
 		delete mat.userData[ TEXTURE_REQUEST_KEY ];
 		texture.colorSpace = THREE.SRGBColorSpace;
+		// Same filtering the model's own textures got in registerSceneMaterials.
+		applyTextureAnisotropy( three && three.renderer, texture );
 		dispose_if_ours( mat );
 		mat.map = texture;
 		mat.needsUpdate = true;
@@ -510,6 +513,7 @@ function handler_for( type, phase, extra ) {
  *
  * @param {Object} context
  * @param {Map} context.registry - material registry
+ * @param {Object} [context.three] - the viewer's three state; its renderer sets texture filtering
  * @param {THREE.TextureLoader} [context.texture_loader]
  * @param {THREE.Object3D} [context.target_object]
  * @param {THREE.Object3D} [context.target_scene]

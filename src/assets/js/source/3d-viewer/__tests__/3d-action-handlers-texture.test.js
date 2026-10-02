@@ -57,4 +57,14 @@ describe( 'material_texture actions', () => {
 
 		expect( material.map.name ).toBe( 'A' );
 	} );
+
+	it( 'gives the loaded texture the renderer’s anisotropic filtering', () => {
+		const { material, pending, context, texture, action } = setup();
+		context.three = { renderer: { capabilities: { getMaxAnisotropy: () => 16 } } };
+
+		apply_choice_actions( context, action( 'a.jpg' ) );
+		pending[ 'a.jpg' ]( Object.assign( texture( 'A' ), { isTexture: true, anisotropy: 1 } ) );
+
+		expect( material.map.anisotropy ).toBe( 16 );
+	} );
 } );
