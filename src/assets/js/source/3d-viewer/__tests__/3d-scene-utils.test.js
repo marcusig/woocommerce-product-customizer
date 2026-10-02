@@ -60,12 +60,29 @@ describe( 'getOrbitLimitsFromEnv', () => {
 		expect( limits.maxAzimuthAngle ).toBeCloseTo( 90 * DEG );
 	} );
 
-	it( 'defaults to a top hemisphere and a full turn', () => {
+	it( 'defaults to a top hemisphere and an unlimited turn', () => {
 		const limits = getOrbitLimitsFromEnv( {} );
 		expect( limits.minPolarAngle ).toBe( 0 );
 		expect( limits.maxPolarAngle ).toBeCloseTo( 90 * DEG );
+		expect( limits.minAzimuthAngle ).toBe( -Infinity );
+		expect( limits.maxAzimuthAngle ).toBe( Infinity );
+		expect( getOrbitLimitsFromEnv( null ) ).toMatchObject( { minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity } );
+	} );
+
+	// At ±PI OrbitControls clamps theta, so the camera stops at the back seam
+	// instead of carrying on round.
+	it( 'treats a range of a full turn as no azimuth limit', () => {
+		expect( getOrbitLimitsFromEnv( { orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180 } ) )
+			.toMatchObject( { minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity } );
+		// Slider values can arrive as strings.
+		expect( getOrbitLimitsFromEnv( { orbit_min_azimuth_angle: '-180', orbit_max_azimuth_angle: '180' } ) )
+			.toMatchObject( { minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity } );
+	} );
+
+	it( 'keeps a range one degree short of a full turn', () => {
+		const limits = getOrbitLimitsFromEnv( { orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 179 } );
 		expect( limits.minAzimuthAngle ).toBeCloseTo( -180 * DEG );
-		expect( limits.maxAzimuthAngle ).toBeCloseTo( 180 * DEG );
+		expect( limits.maxAzimuthAngle ).toBeCloseTo( 179 * DEG );
 	} );
 
 	it( 'applies zoom limits unless the toggle is explicitly false', () => {

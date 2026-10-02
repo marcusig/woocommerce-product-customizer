@@ -334,6 +334,55 @@ export const settings_3d_preview_mixin = {
 	 * finished loading into a scene that was already gone.
 	 */
 	/**
+	 * Hide the objects named in Display > Hidden objects, and show again any the
+	 * previous list hid.
+	 *
+	 * Only what this hid is shown again. An object can be hidden for other
+	 * reasons - a lazy model, a box unticked in the scene tree - and those are
+	 * not this list's to undo. The list used to be read once, when the scene
+	 * loaded, so a change only showed after leaving 3D settings and coming back.
+	 *
+	 * @param {Object} [options]
+	 * @param {boolean} [options.refresh=true] - Sync the tree and the shadows. Off
+	 *        while the scene is still being assembled, before either exists.
+	 */
+	apply_preview_hidden_objects: function ( options = {} ) {
+		const t = this._three;
+		const deps = get_three_deps();
+		if ( ! t || ! t.model_root || ! deps || typeof deps.getHiddenObjectNamesList !== 'function' ) return;
+		const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
+		const customHidden = ( this.admin && this.admin.settings_3d && this.admin.settings_3d.hidden_object_names ) || '';
+		const names = new Set( deps.getHiddenObjectNamesList( defaultHidden, customHidden ) );
+
+		const previous = t.hidden_by_name || new Set();
+		const now = new Set();
+		t.model_root.traverse( ( obj ) => {
+			if ( ! obj.name || ! names.has( obj.name ) ) return;
+			// Hidden by the list before and still on it: still ours.
+			if ( previous.has( obj ) ) {
+				now.add( obj );
+			} else if ( obj.visible ) {
+				obj.visible = false;
+				now.add( obj );
+			}
+		} );
+		previous.forEach( ( obj ) => {
+			if ( ! now.has( obj ) ) obj.visible = true;
+		} );
+		t.hidden_by_name = now;
+
+		if ( options.refresh === false ) return;
+		this.$( '.pc-3d-tree-item' ).each( function () {
+			const obj = $( this ).data( 'object3d' );
+			if ( obj ) $( this ).children( '.pc-3d-tree-visible' ).prop( 'checked', obj.visible !== false );
+		} );
+		if ( t.fake_shadow && typeof t.fake_shadow.invalidate === 'function' ) t.fake_shadow.invalidate();
+		// Real-time shadow cameras are fitted to what is visible.
+		this.apply_shadow_settings();
+		if ( t.quality ) t.quality.invalidate();
+	},
+
+	/**
 	 * Give add-ons that place models (3D Premium) a placement manager for the
 	 * preview, and let them file their requests: the same engine as the product
 	 * page. Choices are not applied here: the preview shows the product as it
@@ -978,8 +1027,6 @@ export const settings_3d_preview_mixin = {
 			const {
 				OrbitControls,
 				FakeShadow,
-				hideObjectsByName,
-				getHiddenObjectNamesList,
 				findObjectByCompositeId,
 				getObjectTargetPosition,
 				removeLightsFromScene,
@@ -1144,9 +1191,8 @@ export const settings_3d_preview_mixin = {
 						obj.receiveShadow = shadowsEnabled;
 					}
 				} );
-				const defaultHidden = ( typeof PC_lang !== 'undefined' && PC_lang.default_hidden_object_names ) ? PC_lang.default_hidden_object_names : null;
-				const customHidden = ( viewRef.admin && viewRef.admin.settings_3d && viewRef.admin.settings_3d.hidden_object_names ) || '';
-				hideObjectsByName( rootGroup, getHiddenObjectNamesList( defaultHidden, customHidden ) );
+				// The tree and the shadows are built below, from visibility as it now is.
+				viewRef.apply_preview_hidden_objects( { refresh: false } );
 				// Before bounds, lights and framing are measured.
 				viewRef.apply_model_positions();
 				viewRef._three.fake_shadow = new FakeShadow( viewRef._three.scene );

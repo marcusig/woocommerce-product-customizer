@@ -223,6 +223,11 @@ export function getOutputColorSpace() {
  * Zoom limits apply unless `env.orbit_zoom_limits_enabled` is explicitly false;
  * angle limits always apply.
  *
+ * An azimuth range spanning the full turn (-180 to 180, the default) means no
+ * limit at all, and comes back as -Infinity / Infinity. Passed through as ±PI,
+ * OrbitControls clamps theta to it: the camera turns all the way round, then
+ * stops dead at the back seam and has to be dragged back the other way.
+ *
  * @param {Object} env - environment settings (orbit_* in degrees / distance; orbit_zoom_limits_enabled)
  * @returns {{ minPolarAngle: number, maxPolarAngle: number, minAzimuthAngle: number, maxAzimuthAngle: number, minDistance: number, maxDistance: number }}
  */
@@ -231,24 +236,25 @@ export function getOrbitLimitsFromEnv( env ) {
 		return {
 			minPolarAngle: 0,
 			maxPolarAngle: ( 90 * Math.PI ) / 180,
-			minAzimuthAngle: ( -180 * Math.PI ) / 180,
-			maxAzimuthAngle: ( 180 * Math.PI ) / 180,
+			minAzimuthAngle: -Infinity,
+			maxAzimuthAngle: Infinity,
 			minDistance: 0,
 			maxDistance: Infinity,
 		};
 	}
 	const minPolar = ( env.orbit_min_polar_angle != null ) ? env.orbit_min_polar_angle : 0;
 	const maxPolar = ( env.orbit_max_polar_angle != null ) ? env.orbit_max_polar_angle : 90;
-	const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? env.orbit_min_azimuth_angle : -180;
-	const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? env.orbit_max_azimuth_angle : 180;
+	const minAzimuth = ( env.orbit_min_azimuth_angle != null ) ? Number( env.orbit_min_azimuth_angle ) : -180;
+	const maxAzimuth = ( env.orbit_max_azimuth_angle != null ) ? Number( env.orbit_max_azimuth_angle ) : 180;
+	const fullTurn = maxAzimuth - minAzimuth >= 360;
 	const zoomLimitsEnabled = env.orbit_zoom_limits_enabled !== false;
 	const minDist = zoomLimitsEnabled && ( typeof env.orbit_min_distance === 'number' && env.orbit_min_distance > 0 ) ? env.orbit_min_distance : 0;
 	const maxDist = zoomLimitsEnabled && ( typeof env.orbit_max_distance === 'number' && env.orbit_max_distance > 0 ) ? env.orbit_max_distance : Infinity;
 	return {
 		minPolarAngle: ( minPolar * Math.PI ) / 180,
 		maxPolarAngle: ( maxPolar * Math.PI ) / 180,
-		minAzimuthAngle: ( minAzimuth * Math.PI ) / 180,
-		maxAzimuthAngle: ( maxAzimuth * Math.PI ) / 180,
+		minAzimuthAngle: fullTurn ? -Infinity : ( minAzimuth * Math.PI ) / 180,
+		maxAzimuthAngle: fullTurn ? Infinity : ( maxAzimuth * Math.PI ) / 180,
 		minDistance: minDist,
 		maxDistance: maxDist,
 	};

@@ -418,6 +418,7 @@ PC.views = window.PC.views || {};
 			'change .pc-3d-shadow-light': 'on_shadow_light_change',
 			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-extend-under-toolbar, .pc-3d-orbit-hint': 'on_setting_change',
 			'change .pc-3d-hidden-object-names': 'on_setting_change',
+			'input .pc-3d-hidden-object-names': 'on_hidden_names_input',
 			'change .pc-3d-postprocess': 'on_setting_change',
 			// Postprocessing effects are contributed by add-ons, so bind their sliders
 			// generically rather than enumerating fields the host does not own.
@@ -432,6 +433,7 @@ PC.views = window.PC.views || {};
 			if ( PC.app && PC.app.exitSettings3dSidebarFocus ) {
 				PC.app.exitSettings3dSidebarFocus( this.options && this.options.main_view );
 			}
+			clearTimeout( this._hidden_names_timer );
 			this.maybe_cleanup();
 		},
 		collectionName: 'settings_3d',
@@ -819,7 +821,24 @@ PC.views = window.PC.views || {};
 				this.set_nested( PC.app.admin.settings_3d, key, val );
 				this.mark_dirty( 'settings_3d' );
 			}
+			if ( key === 'hidden_object_names' ) {
+				clearTimeout( this._hidden_names_timer );
+				this.apply_preview_hidden_objects();
+			}
 			this.apply_preview_settings();
+		},
+		/**
+		 * Apply the hidden-objects list while it is typed, once typing pauses:
+		 * names match exactly, so a half-typed one hides nothing, and a pass per
+		 * keystroke would walk the whole model for no visible change.
+		 */
+		on_hidden_names_input: function ( e ) {
+			clearTimeout( this._hidden_names_timer );
+			const el = e.currentTarget;
+			this._hidden_names_timer = setTimeout( () => {
+				if ( ! this._three ) return;
+				this.on_setting_change( { currentTarget: el } );
+			}, 300 );
 		},
 		set_min_zoom_from_view: function ( e ) {
 			e.preventDefault();
