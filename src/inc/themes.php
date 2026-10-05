@@ -67,6 +67,7 @@ class Themes {
 				'dark-mode' => MKL_PC_INCLUDE_PATH . 'themes/dark-mode',
 				'h' => MKL_PC_INCLUDE_PATH . 'themes/h',
 				'old-default' => MKL_PC_INCLUDE_PATH . 'themes/old-default',
+				'ev' => MKL_PC_INCLUDE_PATH . 'themes/ev',
 			];
 		}
 		return apply_filters( 'mkl_pc_installed_themes', $this->themes );
