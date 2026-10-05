@@ -174,7 +174,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Changelog ==
 
-= 1.7.6 - 18/Sep/2026 =
+= 1.7.6 - 5/Oct/2026 =
 
 * SECURITY: Prevent PHP object injection via configurator data — reject non-JSON saves and do not unserialize objects on read
 
