@@ -1,0 +1,380 @@
+/**
+ * Tests for the pure helpers in 3d-scene-utils.
+ *
+ * These are the functions with no Three.js scene, no DOM and no WordPress
+ * behind them — data in, data out — and they are also the ones that have
+ * actually drifted in practice. The admin preview once carried its own copy of
+ * the environment resolution and treated a cubemap with a missing face as
+ * valid, because the emptiness check compared against null while a missing face
+ * reads as undefined. That is the class of bug these cover.
+ */
+import {
+	getHiddenObjectNamesList,
+	getOrbitLimitsFromEnv,
+	getHdrUrlFromEnv,
+	getDefaultHdrPresetFilename,
+	findObjectByCompositeId,
+	findObjectsByCompositeId,
+	findObject,
+	getPixelRatio,
+	MAX_PIXEL_RATIO,
+	applyTextureAnisotropy,
+	registerSceneMaterials,
+} from '../3d-scene-utils.js';
+
+const DEG = Math.PI / 180;
+
+describe( 'getHiddenObjectNamesList', () => {
+	it( 'merges PHP defaults with the merchant textarea', () => {
+		expect( getHiddenObjectNamesList( [ 'product_bounding_box' ], 'bolt\nnut' ) )
+			.toEqual( [ 'product_bounding_box', 'bolt', 'nut' ] );
+	} );
+
+	it( 'trims, drops blanks and de-duplicates against the defaults', () => {
+		expect( getHiddenObjectNamesList(
+			[ 'product_bounding_box' ],
+			'  bolt  \n\n\n product_bounding_box \n'
+		) ).toEqual( [ 'product_bounding_box', 'bolt' ] );
+	} );
+
+	it( 'copes with either side being absent', () => {
+		expect( getHiddenObjectNamesList( null, '' ) ).toEqual( [] );
+		expect( getHiddenObjectNamesList( undefined, 'solo' ) ).toEqual( [ 'solo' ] );
+		expect( getHiddenObjectNamesList( [ 'only' ], undefined ) ).toEqual( [ 'only' ] );
+	} );
+
+	it( 'splits on CR, LF and CRLF alike', () => {
+		expect( getHiddenObjectNamesList( [], 'a\r\nb\rc\nd' ) ).toEqual( [ 'a', 'b', 'c', 'd' ] );
+	} );
+} );
+
+describe( 'getOrbitLimitsFromEnv', () => {
+	it( 'converts degrees to radians', () => {
+		const limits = getOrbitLimitsFromEnv( {
+			orbit_min_polar_angle: 30,
+			orbit_max_polar_angle: 60,
+			orbit_min_azimuth_angle: -90,
+			orbit_max_azimuth_angle: 90,
+		} );
+		expect( limits.minPolarAngle ).toBeCloseTo( 30 * DEG );
+		expect( limits.maxPolarAngle ).toBeCloseTo( 60 * DEG );
+		expect( limits.minAzimuthAngle ).toBeCloseTo( -90 * DEG );
+		expect( limits.maxAzimuthAngle ).toBeCloseTo( 90 * DEG );
+	} );
+
+	it( 'defaults to a top hemisphere and an unlimited turn', () => {
+		const limits = getOrbitLimitsFromEnv( {} );
+		expect( limits.minPolarAngle ).toBe( 0 );
+		expect( limits.maxPolarAngle ).toBeCloseTo( 90 * DEG );
+		expect( limits.minAzimuthAngle ).toBe( -Infinity );
+		expect( limits.maxAzimuthAngle ).toBe( Infinity );
+		expect( getOrbitLimitsFromEnv( null ) ).toMatchObject( { minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity } );
+	} );
+
+	// At ±PI OrbitControls clamps theta, so the camera stops at the back seam
+	// instead of carrying on round.
+	it( 'treats a range of a full turn as no azimuth limit', () => {
+		expect( getOrbitLimitsFromEnv( { orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180 } ) )
+			.toMatchObject( { minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity } );
+		// Slider values can arrive as strings.
+		expect( getOrbitLimitsFromEnv( { orbit_min_azimuth_angle: '-180', orbit_max_azimuth_angle: '180' } ) )
+			.toMatchObject( { minAzimuthAngle: -Infinity, maxAzimuthAngle: Infinity } );
+	} );
+
+	it( 'keeps a range one degree short of a full turn', () => {
+		const limits = getOrbitLimitsFromEnv( { orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 179 } );
+		expect( limits.minAzimuthAngle ).toBeCloseTo( -180 * DEG );
+		expect( limits.maxAzimuthAngle ).toBeCloseTo( 179 * DEG );
+	} );
+
+	it( 'applies zoom limits unless the toggle is explicitly false', () => {
+		const env = { orbit_min_distance: 2, orbit_max_distance: 8 };
+		expect( getOrbitLimitsFromEnv( env ) ).toMatchObject( { minDistance: 2, maxDistance: 8 } );
+		expect( getOrbitLimitsFromEnv( { ...env, orbit_zoom_limits_enabled: true } ) )
+			.toMatchObject( { minDistance: 2, maxDistance: 8 } );
+		expect( getOrbitLimitsFromEnv( { ...env, orbit_zoom_limits_enabled: false } ) )
+			.toMatchObject( { minDistance: 0, maxDistance: Infinity } );
+	} );
+
+	it( 'ignores non-positive or non-numeric distances', () => {
+		expect( getOrbitLimitsFromEnv( { orbit_min_distance: 0, orbit_max_distance: -5 } ) )
+			.toMatchObject( { minDistance: 0, maxDistance: Infinity } );
+		expect( getOrbitLimitsFromEnv( { orbit_min_distance: '2', orbit_max_distance: '8' } ) )
+			.toMatchObject( { minDistance: 0, maxDistance: Infinity } );
+	} );
+
+	it( 'survives a null env', () => {
+		expect( getOrbitLimitsFromEnv( null ) ).toMatchObject( { minDistance: 0, maxDistance: Infinity } );
+	} );
+} );
+
+describe( 'getHdrUrlFromEnv', () => {
+	const BASE = 'https://example.test/hdr/';
+	const outdoor = BASE + getDefaultHdrPresetFilename( 'outdoor' );
+	const studio = BASE + getDefaultHdrPresetFilename( 'studio' );
+
+	it( 'returns nothing for mode "none" — an unlit or fully baked scene', () => {
+		expect( getHdrUrlFromEnv( { mode: 'none' }, BASE ) ).toBeNull();
+	} );
+
+	it( 'resolves the built-in presets', () => {
+		expect( getHdrUrlFromEnv( { preset: 'studio' }, BASE ) ).toBe( studio );
+		expect( getHdrUrlFromEnv( { preset: 'outdoor' }, BASE ) ).toBe( outdoor );
+		expect( getHdrUrlFromEnv( { preset: 'STUDIO' }, BASE ) ).toBe( studio );
+		expect( getHdrUrlFromEnv( { preset: 'nonsense' }, BASE ) ).toBe( outdoor );
+		expect( getHdrUrlFromEnv( null, BASE ) ).toBe( outdoor );
+	} );
+
+	it( 'uses a custom URL only in custom mode', () => {
+		expect( getHdrUrlFromEnv( { mode: 'custom', custom_hdr_url: 'x.hdr' }, BASE ) ).toBe( 'x.hdr' );
+		// Set but not selected: the preset still wins.
+		expect( getHdrUrlFromEnv( { mode: 'preset', custom_hdr_url: 'x.hdr' }, BASE ) ).toBe( outdoor );
+		// Selected but empty: fall back rather than return an empty URL.
+		expect( getHdrUrlFromEnv( { mode: 'custom', custom_hdr_url: '' }, BASE ) ).toBe( outdoor );
+	} );
+
+	it( 'resolves an HDRi environment object', () => {
+		const objects3d = [ {
+			_id: 7,
+			object_type: 'environment',
+			env_type: 'hdri',
+			env_hdri_file: { url: 'studio.hdr' },
+		} ];
+		expect( getHdrUrlFromEnv( { mode: 'object', object_id: 7 }, BASE, objects3d ) ).toBe( 'studio.hdr' );
+		expect( getHdrUrlFromEnv( { mode: 'object', object_id: '7' }, BASE, objects3d ) ).toBe( 'studio.hdr' );
+	} );
+
+	it( 'returns all six faces of a complete cubemap, in order', () => {
+		const objects3d = [ {
+			_id: 3,
+			object_type: 'environment',
+			env_type: 'cubemap',
+			env_cubemap_px: { url: 'px.png' },
+			env_cubemap_nx: { url: 'nx.png' },
+			env_cubemap_py: { url: 'py.png' },
+			env_cubemap_ny: { url: 'ny.png' },
+			env_cubemap_pz: { url: 'pz.png' },
+			env_cubemap_nz: { url: 'nz.png' },
+		} ];
+		expect( getHdrUrlFromEnv( { mode: 'object', object_id: 3 }, BASE, objects3d ) )
+			.toEqual( [ 'px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png' ] );
+	} );
+
+	it( 'refuses a cubemap with a missing face instead of returning a broken array', () => {
+		// The regression that shipped in the admin preview: a missing face is
+		// undefined, not null, so a "remove the empties" filter kept the hole and
+		// CubeTextureLoader was handed an incomplete list.
+		const objects3d = [ {
+			_id: 3,
+			object_type: 'environment',
+			env_type: 'cubemap',
+			env_cubemap_px: { url: 'px.png' },
+			env_cubemap_nx: { url: 'nx.png' },
+			env_cubemap_py: { url: 'py.png' },
+			env_cubemap_ny: { url: 'ny.png' },
+			env_cubemap_pz: { url: 'pz.png' },
+			// nz absent
+		} ];
+		const result = getHdrUrlFromEnv( { mode: 'object', object_id: 3 }, BASE, objects3d );
+		expect( Array.isArray( result ) ).toBe( false );
+		expect( result ).toBe( outdoor );
+	} );
+
+	it( 'falls back to the preset when the object is missing or the wrong type', () => {
+		expect( getHdrUrlFromEnv( { mode: 'object', object_id: 99 }, BASE, [] ) ).toBe( outdoor );
+		expect( getHdrUrlFromEnv(
+			{ mode: 'object', object_id: 1 },
+			BASE,
+			[ { _id: 1, object_type: 'gltf' } ]
+		) ).toBe( outdoor );
+	} );
+
+	it( 'treats an empty object_id as no selection', () => {
+		expect( getHdrUrlFromEnv( { mode: 'object', object_id: '  ' }, BASE, [] ) ).toBe( outdoor );
+	} );
+} );
+
+describe( 'findObject / findObjectByCompositeId', () => {
+	// Minimal Object3D-shaped stubs: these functions only walk name/uuid/children.
+	const node = ( name, children = [], extra = {} ) => ( {
+		name,
+		uuid: 'uuid-' + name,
+		children,
+		userData: {},
+		...extra,
+	} );
+
+	const buildScene = () => {
+		const seatA = node( 'Seat' );
+		const seatB = node( 'Seat' );
+		const chair = node( 'chair', [ node( 'Legs' ), seatA ], { userData: { object_id: '10' } } );
+		const table = node( 'table', [ seatB ], { userData: { attachment_id: 55 } } );
+		return { root: node( 'root', [ chair, table ] ), chair, table, seatA, seatB };
+	};
+
+	it( 'finds by name and by uuid, and returns null when absent', () => {
+		const { root, seatA } = buildScene();
+		expect( findObject( root, 'Legs' ).name ).toBe( 'Legs' );
+		expect( findObject( root, seatA.uuid ) ).toBe( seatA );
+		expect( findObject( root, 'nope' ) ).toBeNull();
+		expect( findObject( null, 'Legs' ) ).toBeNull();
+		expect( findObject( root, '' ) ).toBeNull();
+	} );
+
+	it( 'disambiguates a duplicated name by its owning model', () => {
+		// Both models contain a "Seat"; the composite id is what tells them apart.
+		const { root, seatA, seatB } = buildScene();
+		expect( findObjectByCompositeId( root, '10:Seat' ) ).toBe( seatA );
+		expect( findObjectByCompositeId( root, '55:Seat' ) ).toBe( seatB );
+	} );
+
+	it( 'matches the source half against either object_id or attachment_id', () => {
+		const { root } = buildScene();
+		expect( findObjectByCompositeId( root, '10:Legs' ).name ).toBe( 'Legs' );
+		expect( findObjectByCompositeId( root, '55:Seat' ).name ).toBe( 'Seat' );
+	} );
+
+	it( 'returns null for an unknown source, an unknown name, or an empty name', () => {
+		const { root } = buildScene();
+		expect( findObjectByCompositeId( root, '999:Seat' ) ).toBeNull();
+		expect( findObjectByCompositeId( root, '10:Missing' ) ).toBeNull();
+		expect( findObjectByCompositeId( root, '10:' ) ).toBeNull();
+	} );
+
+	it( 'falls back to a whole-tree search for a bare id', () => {
+		const { root, seatA } = buildScene();
+		// No separator: first match anywhere wins.
+		expect( findObjectByCompositeId( root, 'Seat' ) ).toBe( seatA );
+		expect( findObjectByCompositeId( root, 'Legs' ).name ).toBe( 'Legs' );
+	} );
+} );
+
+describe( 'findObjectsByCompositeId', () => {
+	const node = ( name, children = [], extra = {} ) => ( {
+		name,
+		uuid: 'uuid-' + name,
+		children,
+		userData: {},
+		...extra,
+	} );
+
+	it( 'returns the one copy a model has today, as a list', () => {
+		const seat = node( 'Seat' );
+		const root = node( 'root', [ node( 'chair', [ seat ], { userData: { object_id: '10' } } ) ] );
+		expect( findObjectsByCompositeId( root, '10:Seat' ) ).toEqual( [ seat ] );
+	} );
+
+	it( 'returns one match per copy when a model is mounted more than once', () => {
+		// What anchor placement will produce: the same leg model under several roots.
+		const feet = [ node( 'Foot' ), node( 'Foot' ), node( 'Foot' ) ];
+		const legs = feet.map( ( foot ) => node( 'leg', [ foot ], { userData: { object_id: '12', attachment_id: 80 } } ) );
+		const other = node( 'top', [ node( 'Foot' ) ], { userData: { object_id: '3' } } );
+		const root = node( 'root', [ legs[ 0 ], other, legs[ 1 ], legs[ 2 ] ] );
+
+		expect( findObjectsByCompositeId( root, '12:Foot' ) ).toEqual( feet );
+		expect( findObjectsByCompositeId( root, '80:Foot' ) ).toEqual( feet );
+		// The singular lookup keeps its contract: the first copy.
+		expect( findObjectByCompositeId( root, '12:Foot' ) ).toBe( feet[ 0 ] );
+	} );
+
+	it( 'skips a copy that lacks the part instead of stopping', () => {
+		const foot = node( 'Foot' );
+		const root = node( 'root', [
+			node( 'leg', [], { userData: { object_id: '12' } } ),
+			node( 'leg', [ foot ], { userData: { object_id: '12' } } ),
+		] );
+		expect( findObjectsByCompositeId( root, '12:Foot' ) ).toEqual( [ foot ] );
+	} );
+
+	it( 'returns an empty list for bad input, an unknown source or a reserved qualifier', () => {
+		const root = node( 'root', [ node( 'leg', [ node( 'Foot' ) ], { userData: { object_id: '12' } } ) ] );
+		expect( findObjectsByCompositeId( null, '12:Foot' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '12:' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '999:Foot' ) ).toEqual( [] );
+		expect( findObjectsByCompositeId( root, '12@leg_socket_2:Foot' ) ).toEqual( [] );
+	} );
+
+	it( 'keeps a bare id to the legacy first match', () => {
+		const first = node( 'Foot' );
+		const root = node( 'root', [
+			node( 'leg', [ first ], { userData: { object_id: '12' } } ),
+			node( 'leg', [ node( 'Foot' ) ], { userData: { object_id: '12' } } ),
+		] );
+		expect( findObjectsByCompositeId( root, 'Foot' ) ).toEqual( [ first ] );
+	} );
+} );
+
+describe( 'getPixelRatio', () => {
+	const original = window.devicePixelRatio;
+	const setDpr = ( value ) =>
+		Object.defineProperty( window, 'devicePixelRatio', { value, configurable: true } );
+	afterEach( () => setDpr( original ) );
+
+	it( 'caps a phone-class ratio', () => {
+		setDpr( 3 );
+		expect( getPixelRatio() ).toBe( MAX_PIXEL_RATIO );
+	} );
+
+	it( 'passes through anything under the cap', () => {
+		setDpr( 1.5 );
+		expect( getPixelRatio() ).toBe( 1.5 );
+	} );
+
+	it( 'never drops below 1, and honours an explicit cap', () => {
+		setDpr( 0.5 );
+		expect( getPixelRatio() ).toBe( 1 );
+		setDpr( 3 );
+		expect( getPixelRatio( 1.5 ) ).toBe( 1.5 );
+	} );
+} );
+
+describe( 'texture anisotropy', () => {
+	const renderer = ( max ) => ( { capabilities: { getMaxAnisotropy: () => max } } );
+	const texture = () => ( { isTexture: true, anisotropy: 1, needsUpdate: false } );
+	const sceneWith = ( material ) => ( {
+		traverse( fn ) {
+			fn( { material } );
+		},
+	} );
+
+	it( 'raises a texture to the renderer maximum and flags it for upload', () => {
+		const t = texture();
+		applyTextureAnisotropy( renderer( 16 ), t );
+		expect( t.anisotropy ).toBe( 16 );
+		expect( t.needsUpdate ).toBe( true );
+	} );
+
+	it( 'does not re-upload a texture that already has the maximum', () => {
+		const t = Object.assign( texture(), { anisotropy: 16 } );
+		applyTextureAnisotropy( renderer( 16 ), t );
+		expect( t.needsUpdate ).toBe( false );
+	} );
+
+	it( 'leaves textures alone without a renderer or anisotropy support', () => {
+		const a = texture();
+		const b = texture();
+		applyTextureAnisotropy( null, a );
+		applyTextureAnisotropy( renderer( 1 ), b );
+		expect( [ a.anisotropy, b.anisotropy ] ).toEqual( [ 1, 1 ] );
+		expect( a.needsUpdate || b.needsUpdate ).toBe( false );
+	} );
+
+	it( 'covers every texture slot of a loaded material except the environment', () => {
+		const material = {
+			name: 'Strap',
+			userData: {},
+			map: texture(),
+			normalMap: texture(),
+			clearcoatRoughnessMap: texture(),
+			envMap: texture(),
+			color: { isColor: true },
+		};
+		const ctx = { renderer: renderer( 8 ), material_registry: new Map() };
+		registerSceneMaterials( ctx, sceneWith( material ) );
+		expect( material.map.anisotropy ).toBe( 8 );
+		expect( material.normalMap.anisotropy ).toBe( 8 );
+		expect( material.clearcoatRoughnessMap.anisotropy ).toBe( 8 );
+		expect( material.envMap.anisotropy ).toBe( 1 );
+	} );
+} );

@@ -103,6 +103,20 @@ The core plugin is fully functional. Extend it with these premium modules:
 
 💬 For custom development or tailored integrations, [contact me here](https://wc-product-configurator.com/contact/).
 
+=== Credits ===
+
+The product configurator plugin uses other Open Source libraries:
+* PixiJS
+* Three.js
+* tippy and popper.js
+* html2canvas.js
+* download.js by dandavis
+* Intervention/Image
+
+Open Source SVG icons: 
+* Blender.org UI icons
+* WordPress Gutenberg icons
+
 == Installation ==
 
 There are 3 different ways to install this plugin, as with any other wordpress.org plugin.
@@ -173,6 +187,23 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 
 == Changelog ==
+
+= 2.0.0 - unreleased =
+
+* SECURITY: The 1.7.6 object-injection hardening now covers every configurator data read, including chunked layer storage, global layers and global configurators
+* FEATURE: Added a "Configuration meta data" setting, to store the configuration as one meta per layer instead of a single meta holding every choice. Individual metas are plain text, so exports, invoices and ERP integrations can read them without parsing markup
+* TWEAK: The classic cart and checkout list one row per layer when the configuration is stored individually, to match the cart and checkout blocks
+* DEV: Added `mkl_pc_get_configuration_meta_mode()` and the filter `mkl_pc/configuration_meta_mode`, to set the mode per product
+* DEV: Added the filters `mkl_pc/order_created/individual_meta/key`, `mkl_pc/order_created/individual_meta/value` and `mkl_pc/order_created/individual_meta/keep_html`
+* FIX: Cart items, orders and quotes now render the configuration image that was saved with them, instead of resolving it against the product's current configurator data. Editing a configurator no longer changes or breaks the image of configurations placed before the edit - including edits that renumber layer or choice IDs, such as turning a layer into a global one. The current data is still used as the fallback, for configurations saved without an image and for images that have since been deleted
+* DEV: Added `MKL\PC\Choice::$source`, `set_source()` and `is_stored()`, to tell a configuration restored from a cart item, an order or a quote from one being configured right now
+* FIX: Cart items, orders and quotes keep the layer and choice names they were saved with, instead of re-reading them from the product. Renaming a layer or a choice no longer rewrites configurations placed before the rename, and layers whose IDs changed no longer render as blank rows
+* FIX: On multilingual sites, the saved layer and choice names are only used in the language the customer configured in. The admin now sees an order placed in another language with the product's own names, instead of the customer's translation: the order's Configuration is rebuilt in the admin's language - on the order page and in the admin emails TranslatePress sends in the admin's language, such as New order - while the customer's order pages and emails keep the one saved at checkout
+* FIX: The same applies to the individual layer metas: they are displayed in the admin's language on the order page and in admin emails. Orders keep a hidden `_configurator_individual_meta` map of which layer each meta was made from
+* DEV: The configurator saves the language with each choice (`lang`), and added `MKL\PC\Choice::saved_in_current_language()` and the filter `mkl_pc/choice/saved_in_current_language`
+* FIX: Configurations now save the order their layers are composited in, so the stacking of the configuration image survives the product's layers being reordered. Configurations saved before this update keep the order the configurator saved them in, rather than having their layers scattered through the stack
+* DEV: Added `MKL\PC\Choice::get_saved_image_id()`, `get_saved()` and `get_image_order()`, and the filters `mkl_pc/choice/image_id`, `mkl_pc/choice/source`, `mkl_pc/choice/saved_value` and `mkl_pc/choice/verify_saved_image`
+* DEV: Added `MKL\PC\Utils::sort_layers_for_merging()`, replacing the three copies of the private `_order_images()` comparator, and the JS filter `PC.fe.save_data.parse_choices.image_order`
 
 = 1.7.6 - 5/Oct/2026 =
 

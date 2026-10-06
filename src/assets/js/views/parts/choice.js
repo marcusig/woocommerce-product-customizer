@@ -196,11 +196,14 @@ PC.fe.views.choice = Backbone.View.extend({
 
 
 		PC.fe.last_clicked = this;
-		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this )
+		// Third argument: who made the selection. See PC.fe.select_choice.
+		wp.hooks.doAction( 'PC.fe.choice.set_choice', this.model, this, { origin: 'user' } )
 	},
 	preload_image: function() {
 		// console.log('preload image');
-		this.model.trigger( 'preload-image' );
+		// Pass the model: a listener bound to the collection (the viewer's image
+		// pool) gets the arguments as given, with no model of its own to work from.
+		this.model.trigger( 'preload-image', this.model );
 		// var src = this.model.get_image();
 		// if ( ! src ) return;
 		// var img = new Image();
@@ -261,6 +264,12 @@ PC.fe.views.choice = Backbone.View.extend({
 			var next_view = $next.closest( 'li.choice' ).data( 'view' );
 			if ( next_view && next_view.model ) {
 				next_view.model.collection.selectChoice( next_view.model.id, true );
+				// Choosing with the arrow keys is a person choosing, exactly as a
+				// click is. Announce it so conditional logic (and anything else on
+				// this hook) sees it; without this, keyboard users could change the
+				// selection without the conditions that depend on it re-evaluating.
+				PC.fe.last_clicked = next_view;
+				wp.hooks.doAction( 'PC.fe.choice.set_choice', next_view.model, next_view, { origin: 'user' } );
 			}
 		}
 	}

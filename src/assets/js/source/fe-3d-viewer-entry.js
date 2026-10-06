@@ -1,0 +1,166 @@
+/**
+ * Frontend 3D viewer entry.
+ * Registers a lightweight wrapper so the loading message can show immediately.
+ * The full viewer (Three.js + main-viewer) is loaded asynchronously when the 3D viewer is first rendered.
+ */
+import {
+	create_error_element,
+	create_loading_overlay,
+	get_loading_string,
+	get_poster_url,
+	hide_loading_overlay,
+} from './3d-viewer/loading-overlay.js';
+import { create_warmup } from './3d-viewer/warmup.js';
+
+const Backbone = window.Backbone;
+const wp = window.wp;
+
+function getSettings() {
+	const data = window.PC && window.PC.fe && window.PC.fe.currentProductData;
+	return ( data && data.settings_3d ) ? data.settings_3d : null;
+}
+
+const Viewer3DWrapper = Backbone.View.extend( {
+	tagName: 'div',
+	// Same root class as the 2D viewer so theme layout (width, sticky, etc.) applies
+	// while the heavy Three.js view loads asynchronously into this element.
+	className: 'mkl_pc_viewer mkl_pc_viewer--3d',
+	template: wp && wp.template ? wp.template( 'mkl-pc-configurator-viewer' ) : function () { return ''; },
+	_realView: null,
+
+	initialize( options ) {
+		this.options = options || {};
+		return this;
+	},
+
+	render() {
+		if ( wp && wp.hooks && wp.hooks.doAction ) {
+			wp.hooks.doAction( 'PC.fe.viewer.render.before', this );
+		}
+		this.$el.append( this.template() );
+		this.$layers = this.$el.find( '.mkl_pc_layers' );
+		this.$layers.empty();
+
+		const container = document.createElement( 'div' );
+		container.className = 'mkl_pc_3d_canvas_container';
+		this.$layers.append( container );
+
+		const s = getSettings();
+		if ( ! s ) {
+			this.$layers.append( create_error_element( get_loading_string( 'no_3d_model_configured', 'No 3D model configured.' ) ) );
+			if ( wp && wp.hooks && wp.hooks.doAction ) {
+				wp.hooks.doAction( 'PC.fe.viewer.render', this );
+			}
+			return this.$el;
+		}
+
+		if ( s.extend_under_toolbar ) {
+			this.$el.addClass( 'mkl_pc_viewer--extend-under-toolbar' );
+		}
+
+		const overlay = create_loading_overlay( {
+			text: get_loading_string( 'loading_viewer', 'Loading…' ),
+			poster_url: get_poster_url( s ),
+		} );
+		container.after( overlay );
+
+		import( /* webpackChunkName: "fe-3d-viewer" */ './3d-viewer/main-viewer.js' )
+			.then( ( module ) => {
+				// Abort if this wrapper was removed before the chunk arrived.
+				if ( ! this.el || ! this.el.isConnected ) return;
+				const RealView = module.default;
+				// Reuse this root element so theme CSS targeting .mkl_pc_viewer keeps working
+				// (no nested .mkl_pc_viewer inside a separate wrapper).
+				this.$el.empty();
+				const real = new RealView( Object.assign( {}, this.options, { el: this.el } ) );
+				real.render();
+				this._realView = real;
+				if ( wp && wp.hooks && wp.hooks.doAction ) {
+					wp.hooks.doAction( 'PC.fe.viewer.render', this );
+				}
+			} )
+			.catch( ( err ) => {
+				hide_loading_overlay( overlay );
+				// A chunk that failed to load: its message names the URL, which is for the console.
+				// eslint-disable-next-line no-console
+				console.error( '3D viewer: could not load the viewer.', err );
+				const msg = get_loading_string( 'viewer_load_failed', 'The 3D view could not be started.' );
+				const canvas = this.$layers.find( '.mkl_pc_3d_canvas_container' ).get( 0 );
+				if ( canvas && canvas.parentNode ) {
+					canvas.parentNode.insertBefore( create_error_element( msg ), canvas.nextSibling );
+				}
+			} );
+
+		return this.$el;
+	},
+
+	/**
+	 * Capture contract (see PC.fe.capture_viewer_image): this wrapper only holds the place of the
+	 * real viewer while the Three.js chunk loads, so it has to forward the capture calls. Without
+	 * this a 3D product produces no picture at all - no cart image, no Save your design preview,
+	 * no PDF - because the capture helper only ever sees the wrapper.
+	 *
+	 * The helper tries capture() before captureScreenshot(), so this one cannot simply return null
+	 * when the real viewer implements the legacy form: that would hide it.
+	 *
+	 * @param {Object} [options] { width, height, maxDimension }.
+	 * @return {Promise<Blob|null>|Blob|null}
+	 */
+	capture( options ) {
+		const real = this._realView;
+		if ( ! real ) return null;
+		if ( typeof real.capture === 'function' ) {
+			return real.capture( options );
+		}
+		if ( typeof real.captureScreenshot === 'function' ) {
+			const data_url = real.captureScreenshot( options );
+			if ( ! data_url ) return null;
+			return fetch( data_url ).then( ( res ) => res.blob() );
+		}
+		return null;
+	},
+
+	/**
+	 * Legacy synchronous form, for callers that ask the viewer for a data URL directly.
+	 *
+	 * @param {Object} [options] { width, height, maxDimension }.
+	 * @return {string|null}
+	 */
+	captureScreenshot( options ) {
+		const real = this._realView;
+		return ( real && typeof real.captureScreenshot === 'function' )
+			? real.captureScreenshot( options )
+			: null;
+	},
+
+	remove() {
+		if ( this._realView ) {
+			// Shared el with the wrapper: clean up Three.js without removing the DOM node twice.
+			if ( typeof this._realView.maybe_cleanup === 'function' ) {
+				this._realView.maybe_cleanup();
+			}
+			this._realView.stopListening();
+			this._realView.undelegateEvents();
+			this._realView = null;
+		}
+		Backbone.View.prototype.remove.apply( this, arguments );
+		return this;
+	},
+} );
+
+window.PC = window.PC || {};
+window.PC.fe = window.PC.fe || {};
+window.PC.fe.views = window.PC.fe.views || {};
+window.PC.fe.views.viewer_3d = Viewer3DWrapper;
+
+if ( wp && wp.hooks && wp.hooks.doAction ) {
+	wp.hooks.doAction( 'PC.fe.viewer_3d.registered', Viewer3DWrapper );
+}
+
+// Fetch the viewer and the models once the shopper reaches for a configurator,
+// not on every page view (see warmup.js). Same chunk name as render() above.
+create_warmup( {
+	doc: document,
+	get_urls_by_product: () => window.mkl_pc_3d_warmup,
+	import_viewer: () => import( /* webpackChunkName: "fe-3d-viewer" */ './3d-viewer/main-viewer.js' ),
+} ).bind();

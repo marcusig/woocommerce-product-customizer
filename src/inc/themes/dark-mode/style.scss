@@ -383,7 +383,6 @@ $inner_space: 1em;
 				user-select: none;
 
 				img {
-					transition: .2s all;
 					&:not(.active), &.loading {
 						opacity: 0;
 					}

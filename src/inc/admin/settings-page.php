@@ -18,7 +18,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		public $themes_url;
 
 		function __construct() {
-			add_action( 'admin_menu', array( $this, 'register' ) );
+			add_action( 'admin_menu', array( $this, 'register' ), 1000 );
 			add_action( 'admin_init', array( $this, 'init' ), 20 );
 			add_action( 'admin_footer', array( $this, 'add_backbone_templates' ), 20 );
 			add_action( 'admin_enqueue_scripts', array( $this, 'scripts') );
@@ -33,7 +33,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 * @return void
 		 */
 		public function updated_settings() {
-			$option_page = isset( $_REQUEST['option_page'] ) ? sanitize_key( wp_unslash( $_REQUEST['option_page'] ) ) : '';
+			$option_page = isset( $_REQUEST['option_page'] ) ? sanitize_key( wp_unslash( $_REQUEST['option_page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- WordPress Settings API already verified the options nonce before update_option fires.
 			if ( 'mlk_pc_settings' !== $option_page ) return;
 			mkl_pc( 'cache' )->purge();
 		}
@@ -45,25 +45,20 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		 * @return array
 		 */
 		public function plugin_settings_link( $links ) {
-			$settings_link = '<a href="' . admin_url( 'options-general.php?page=mkl_pc_settings' ) . '">' . __( 'Settings', 'product-configurator-for-woocommerce' ) . '</a>';
+			$settings_link = '<a href="' . esc_url( mkl_pc_get_settings_page_url() ) . '">' . __( 'Settings', 'product-configurator-for-woocommerce' ) . '</a>';
 			array_unshift($links, $settings_link);
 			return $links;
 		}
 
 		public function register() {
-			$page_title = __( 'Configurator settings', 'product-configurator-for-woocommerce' );
-			$menu_title = 'Product Configurator';
-			$capability = 'manage_options';
-			$menu_slug = 'mkl_pc_settings';
-			$fn = array( $this, 'display' );
-
-			add_options_page(
-				$page_title,
-				$menu_title,
-				$capability,
-				$menu_slug,
-				$fn
-			);		
+			add_submenu_page(
+				mkl_pc_get_admin_menu_slug(),
+				__( 'Configurator settings', 'product-configurator-for-woocommerce' ),
+				__( 'Settings', 'product-configurator-for-woocommerce' ),
+				'manage_options',
+				'mkl_pc_settings',
+				array( $this, 'display' )
+			);
 		}
 
 		private function get_setting( $setting = '', $default = false ) {
@@ -71,7 +66,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function display() {
-			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( wp_unslash( $_REQUEST['tab'] ) ) : 'settings';
+			$active = isset( $_REQUEST['tab'] ) ? sanitize_key( wp_unslash( $_REQUEST['tab'] ) ) : 'settings'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only settings tab selection.
 			$tabs = apply_filters( 'mkl_pc_settings_tabs', [
 				'settings' => __( 'Settings', 'product-configurator-for-woocommerce' ),
 				'addons' => __( 'Addons', 'product-configurator-for-woocommerce' ),
@@ -89,6 +84,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 						<a href="https://wc-product-configurator.com"><?php esc_html_e( 'Product Configurator website', 'product-configurator-for-woocommerce' ); ?></a><!--  | <a href="http://wc-product-configurator.com"><?php esc_html_e( 'Addons', 'product-configurator-for-woocommerce' ); ?></a> | <a href="http://wc-product-configurator.com"><?php esc_html_e( 'Themes', 'product-configurator-for-woocommerce' ); ?></a> -->
 					</div>
 				</header>
+				<?php do_action( 'mkl_pc_settings_before_tabs', $active ); ?>
 				<nav class="nav-tab-wrapper mkl-nav-tab-wrapper">
 					<?php
 					foreach( $tabs as $tab_id => $tab ) { ?>
@@ -566,6 +562,24 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'configuration_meta_mode',
+				__( 'Configuration meta data', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings', 
+				'general_settings',
+				[ 
+					'options' => [
+						'single' => __( 'A single meta containing all the choices', 'product-configurator-for-woocommerce' ),
+						'individual' => __( 'One meta per layer (easier to extract, no thumbnails)', 'product-configurator-for-woocommerce' ),
+						'both' => __( 'Both: a single meta for display, plus one meta per layer', 'product-configurator-for-woocommerce' ),
+					],
+					'default' => 'single',
+					'setting_name' => 'configuration_meta_mode',
+					'description' => __( 'How the configuration is stored on the order line item. One meta per layer is easier for exports, invoices and ERP integrations to read, but it cannot display the choice thumbnails. Only affects new orders. The "One meta per layer" option also splits the choices in the classic cart and checkout, to match the cart blocks.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'display_options_angles',
 				__( 'Angle display options', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_html' ],
@@ -685,11 +699,13 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				[ 
 					'setting_name' => 'save_images',
 					'options' => [
-						'save_to_disk' => __( 'Add images to the library', 'product-configurator-for-woocommerce' ),
+						'save_to_disk' => __( 'Save images to disk', 'product-configurator-for-woocommerce' ),
+						'add_to_library' => __( 'Save images to disk and add them to the media library', 'product-configurator-for-woocommerce' ),
 						'on_the_fly' => __( 'Generate images on the fly', 'product-configurator-for-woocommerce' ),
 					],
 					'help' => [
-						'save_to_disk' => __( '(can take a lot of space on the disk if you have many possible configurations)', 'product-configurator-for-woocommerce' ),
+						'save_to_disk' => __( '(each configuration is generated once and kept as a file - not added to the media library)', 'product-configurator-for-woocommerce' ),
+						'add_to_library' => __( '(one media library entry per configuration - use it if another plugin needs the images in the library, such as a media offload or CDN plugin)', 'product-configurator-for-woocommerce' ),
 						'on_the_fly' => __( '(save disk space, but uses more server resource)', 'product-configurator-for-woocommerce' ),
 					],
 				]
@@ -827,45 +843,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
-			$disable_caching_description = __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' );
-			if ( class_exists( 'MKL_PC_Stock_Management' ) ) {
-				$disable_caching_description .= '<br>' . __( 'It is also useful when linking products for stock management', 'product-configurator-for-woocommerce' );
-			}
-			add_settings_field(
-				'disable_caching',
-				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'disable_caching',
-					'description'  => $disable_caching_description,
-				]
-			);
-
-			add_settings_field(
-				'async_data',
-				__( 'Load configurator data asynchronously', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'async_data',
-					'description'  => __( 'Will load the data after page load', 'product-configurator-for-woocommerce' ),
-				]
-			);
-
-			add_settings_field(
-				'disable_configuration_gzip',
-				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
-				[ $this, 'callback_checkbox' ],
-				'mlk_pc_settings', 
-				'general_settings',
-				[ 
-					'setting_name' => 'disable_configuration_gzip',
-				]
-			);
-
 			add_settings_field(
 				'admin_save_timeout', 
 				__( 'Timeout when saving the configuration in the admin', 'product-configurator-for-woocommerce' ),
@@ -913,6 +890,83 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					]
 				);
 			// }
+
+			/*
+				PERFORMANCE
+			*/
+
+			add_settings_section(
+				'performance',
+				__( 'Performance', 'product-configurator-for-woocommerce' ),
+				function() {
+					echo '<p class="description">' . esc_html__( 'How the configurator data is cached and delivered to the browser. The defaults suit most stores; these options mainly matter for large configurations (many layers and choices), or when a CDN or page cache sits in front of the site.', 'product-configurator-for-woocommerce' ) . '</p>';
+				},
+				'mlk_pc_settings'
+			);
+
+			$disable_caching_description = __( 'Can be usefull when using CDNs such as CloudFlare', 'product-configurator-for-woocommerce' );
+			if ( class_exists( 'MKL_PC_Stock_Management' ) ) {
+				$disable_caching_description .= '<br>' . __( 'It is also useful when linking products for stock management', 'product-configurator-for-woocommerce' );
+			}
+			$disable_caching_description .= '<br>' . __( 'When disabled, the configuration is rebuilt from the database on every request instead of being served as a static file. This is noticeably slower on large configurations.', 'product-configurator-for-woocommerce' );
+			add_settings_field(
+				'disable_caching',
+				__( 'Disable caching of configurations', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'disable_caching',
+					'description'  => $disable_caching_description,
+				]
+			);
+
+			add_settings_field(
+				'async_data',
+				__( 'Load configurator data asynchronously', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'async_data',
+					'description'  => __( 'The configuration is fetched when the visitor opens the configurator, instead of being loaded with the page. This keeps the product page lighter, which is useful for large configurations. The data is still served from the cached configuration file (unless caching is disabled above).', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'viewer_active_images_only',
+				__( 'Only render the images the configurator is showing', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'viewer_active_images_only',
+					'description'  => __( 'The viewer normally holds an image for every choice and shows one of them. With this on it holds one image per layer instead - one per selection on multiple choice layers - and swaps it as the customer chooses. On large configurations this is most of the markup, and most of the work done when changing angle. Leave this off if a stylesheet targets the images of unselected choices.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'purge_with_page_cache',
+				__( 'Clear cached configurations when a page cache is cleared', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'purge_with_page_cache',
+					'description'  => __( 'Applies to WP Rocket, LiteSpeed Cache and WP-Optimize. On by default. Turning it off is usually safe and faster: a cached configuration is already rebuilt whenever the product is saved, so clearing a page cache does not make it out of date. Leaving it on means every configurable product has to be rebuilt the next time someone views it, all at the moment the page cache is cold - on a store with many configurable products that is a lot of work at once. Keep it on if something outside the product changes the configuration data.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'disable_configuration_gzip',
+				__( 'Disable GZIP compression of the configuration data (only affects the ajax request)', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'disable_configuration_gzip',
+				]
+			);
 
 			/*
 				LABELS
@@ -1057,6 +1111,52 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				]
 			);
 
+			// 3D viewer options
+			add_settings_section(
+				'fe_3d_settings',
+				__( '3D viewer', 'product-configurator-for-woocommerce' ),
+				function() {
+					echo '<p class="description">' . esc_html__( 'Options for the frontend 3D configurator. Enable only the compression formats your 3D models use to keep the page lighter.', 'product-configurator-for-woocommerce' ) . '</p>';
+				},
+				'mlk_pc_settings'
+			);
+
+			add_settings_field(
+				'fe_3d_use_draco_loader',
+				__( 'Enable Draco compression support', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'fe_3d_settings',
+				[
+					'setting_name' => 'fe_3d_use_draco_loader',
+					'description' => __( 'Load DRACOLoader so that GLB/GLTF models using KHR_draco_mesh_compression can be displayed (e.g. from Blender or glTF Pipeline).', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'fe_3d_use_meshopt_loader',
+				__( 'Enable Meshopt compression support', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'fe_3d_settings',
+				[
+					'setting_name' => 'fe_3d_use_meshopt_loader',
+					'description' => __( 'Load the Meshopt decoder so that models using EXT_meshopt_compression can be displayed.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
+				'fe_3d_use_ktx2_loader',
+				__( 'Enable KTX2 texture support', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_checkbox' ],
+				'mlk_pc_settings',
+				'fe_3d_settings',
+				[
+					'setting_name' => 'fe_3d_use_ktx2_loader',
+					'description' => __( 'Load the Basis Universal transcoder so that models using KHR_texture_basisu (.ktx2 textures) can be displayed. Supercompressed textures stay compressed on the GPU, so they cut both download size and video memory — usually a bigger saving on a textured product than mesh compression.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
 			// Translatepress options
 			if ( function_exists( 'trp_translate' ) ) {
 				add_settings_section(
@@ -1182,7 +1282,10 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				<div class="theme_setting_view"></div>
 				<input type='hidden' name='mkl_pc__settings[<?php echo esc_attr( $field_options['setting_name'] ); ?>]' value='<?php echo isset( $options[ $field_options[ 'setting_name' ] ] ) ? esc_attr( $options[ $field_options[ 'setting_name' ] ] ) : ''; ?>'>
 			</div>
-			<p><a href="<?php echo esc_url( add_query_arg( [ 'autofocus[section]' => 'mlk_pc', 'return' => urlencode( esc_url_raw( remove_query_arg( wp_removable_query_args(), wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) ) ], wp_customize_url() ) ); ?>"><?php esc_html_e( 'Edit the theme settings in the customizer', 'product-configurator-for-woocommerce' ); ?></a></p>
+			<p><a href="<?php
+			$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+			echo esc_url( add_query_arg( [ 'autofocus[section]' => 'mlk_pc', 'return' => urlencode( esc_url_raw( remove_query_arg( wp_removable_query_args(), $request_uri ) ) ) ], wp_customize_url() ) );
+			?>"><?php esc_html_e( 'Edit the theme settings in the customizer', 'product-configurator-for-woocommerce' ); ?></a></p>
 			<?php
 		}
 
@@ -1392,9 +1495,9 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		public function add_backbone_templates() {
-			global $pagenow;
-			$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-			if ( 'options-general.php' !== $pagenow || 'mkl_pc_settings' !== $page ) return;
+			if ( ! mkl_pc_is_settings_page() ) {
+				return;
+			}
 			
 			$themes = mkl_pc( 'themes' )->get_themes();
 			$data = [];
@@ -1455,8 +1558,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		<?php }
 
 		public function scripts() {
-			$screen = get_current_screen();
-			if ( 'settings_page_mkl_pc_settings' == $screen->id ) {
+			if ( mkl_pc_is_settings_page() ) {
 				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], MKL_PC_VERSION );
 				wp_enqueue_style( 'mlk_pc/settings', MKL_PC_ASSETS_URL.'admin/css/settings.css' , [ 'woocommerce_admin_styles' ], MKL_PC_VERSION );
 				wp_enqueue_script( 'mk_pc/settings', MKL_PC_ASSETS_URL.'admin/js/settings.js', array( 'jquery', 'backbone', 'wp-util', 'select2', 'selectWoo', 'wc-enhanced-select' ), MKL_PC_VERSION, true );

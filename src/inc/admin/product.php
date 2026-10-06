@@ -17,10 +17,12 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public $ID;
 		private $_product;
 		private $variable;
+		private $three_d;
 		private $should_update_cache = false;
 		public function __construct() {
 			$this->_hooks();
 			$this->variable = new Admin_Variable_Product();
+			$this->three_d = new Admin_Product_3D();
 		}
 
 		/**
@@ -29,8 +31,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		private function _hooks() {
-			// add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
-			add_action( 'mkl_pc_saved_product_configuration', array( $this, 'write_configuration_cache' ), 100, 1 );
+			add_filter( 'woocommerce_product_data_tabs', array( $this, 'add_product_data_tab' ), 99 );
+			add_action( 'woocommerce_product_data_panels', array( $this, 'add_pc_settings_tab_content' ) );
+			add_filter( 'product_type_options', array( $this, 'add_product_type_option_is_configurable' ) );
 			add_action( 'woocommerce_ajax_save_product_variations', array( $this, 'write_configuration_cache' ), 100, 1 );
 			add_action( 'wp_ajax_mkl_pc_hide_addon_setting', array( $this, 'hide_addon_setting' ) );
 			// woocommerce_ajax_save_product_variations
@@ -40,10 +43,17 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			// add the checkbox to activate configurator on the product
 			add_action( 'mkl_pc_is_loaded', array( $this, 'init' ), 200 ); 
 			add_action( 'admin_enqueue_scripts', array( $this, 'load_scripts' ) ); 
-			add_action( 'woocommerce_product_options_general_product_data', array($this, 'add_wc_general_product_data_fields') );
 			add_action( 'mkl_pc_admin_home_tab', array( $this, 'home_tab') );
-			add_action( 'admin_footer', array($this, 'editor' ) ); 
+			add_action( 'admin_footer', array($this, 'editor' ) );
+			add_action( 'mkl_pc_admin_documentation_content', array( $this, 'home_documentation_content' ) );
 
+			add_action( 'add_meta_boxes', array( $this, 'add_global_configurator_meta_box' ) );
+			add_action( 'add_meta_boxes', array( $this, 'add_global_layer_meta_box' ) );
+			if ( class_exists( \MKL\PC\Global_Configurators\Schema::class ) ) {
+				add_action( 'save_post_' . \MKL\PC\Global_Configurators\Schema::CPT_SLUG, array( $this, 'save_global_configurator_type' ), 10, 2 );
+			}
+
+			add_filter( 'heartbeat_received', array( $this, 'refresh_nonces_on_heartbeat' ), 10, 2 );
 		}
 
 		/**
@@ -67,72 +77,93 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function init_product_data() {
 			global $post;
 			
-			if ( ! $this->_current_screen_is( 'product' ) ) return false;
+			if ( ! $this->_is_configurator_admin_screen() ) return false;
 
 			// exit early if we don't have a post (Problem found using Yith Product addons plugin)
 			if ( ! $post ) return;
 
 			$this->ID = $post->ID;
-			$this->_product = wc_get_product( $this->ID ); 
+			if ( $this->_current_screen_is( 'product' ) ) {
+				$this->_product = wc_get_product( $this->ID );
+			} else {
+				$this->_product = null;
+			}
 		}
 
 		/**
-		 * Add the settings
+		 * Register the Configurator product data tab (after Variations).
+		 *
+		 * @param array $tabs Product data tabs.
+		 * @return array
+		 */
+		public function add_product_data_tab( $tabs ) {
+			$tabs['mkl_pc_configurator'] = array(
+				'label'    => __( 'Configurator', 'product-configurator-for-woocommerce' ),
+				'target'   => 'mkl_pc_configurator_product_data',
+				'class'    => array( 'show_if_simple', 'show_if_variable', 'show_if_is_configurable' ),
+				'priority' => 65,
+			);
+
+			return $tabs;
+		}
+
+		/**
+		 * Add "Configurable" to the product type header (Virtual, Downloadable, …).
+		 *
+		 * @param array $options Product type options.
+		 * @return array
+		 */
+		public function add_product_type_option_is_configurable( $options ) {
+			$options['mkl_pc__is_configurable'] = array(
+				'id'            => MKL_PC_PREFIX . '_is_configurable',
+				'wrapper_class' => esc_attr( implode( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array( 'show_if_simple' ) ) ) ),
+				'label'         => __( 'Configurable', 'product-configurator-for-woocommerce' ),
+				'description'   => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
+				'default'       => 'no',
+			);
+
+			return $options;
+		}
+
+		/**
+		 * Configurator tab panel content.
 		 *
 		 * @return void
 		 */
 		public function add_pc_settings_tab_content() {
-			?>
-			<div id="configurable_product_options" class="panel wc-metaboxes-wrapper">
-				<?php 
-				do_action( 'woocommerce_product_configurator_options' );
-				?>
-			</div>
-
-			<?php
-		}
-
-		/**
-		 * Add the setting to WooCommerce
-		 *
-		 * @return void
-		 */
-		public function add_wc_general_product_data_fields() {
 			global $post;
+			$product_id = $post ? (int) $post->ID : 0;
 
-			echo '<div class="options_group wc-metaboxes-wrapper '. esc_attr( implode( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) ) .'">';
-
-				woocommerce_wp_checkbox( 
-					array( 
-						'id' => MKL_PC_PREFIX.'_is_configurable',
-						'wrapper_class' => esc_attr( implode( ' ', apply_filters( 'mkl_wc_general_metaboxe_classes', array('show_if_simple') ) ) ) .' is_configurable', 
-						'class' => 'is_configurable',
-						'label' => __( 'This product is configurable', 'product-configurator-for-woocommerce' ), 
-						'description' => __( 'Select if you want this product to be configurable', 'product-configurator-for-woocommerce' ),
-					) 
-				);
-
-				?>
-				<div class="show_if_is_configurable">
-				
+			$is_global = $product_id > 0 && class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class )
+				&& \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( $product_id ) > 0;
+			$type_value = $product_id > 0 ? mkl_pc_get_configurator_type( $product_id ) : 'configurator';
+			?>
+			<div id="mkl_pc_configurator_product_data" class="panel woocommerce_options_panel hidden">
+				<?php do_action( 'mkl_pc_admin_general_tab_before_start_button' ); ?>
+				<div class="show_if_variable show_if_simple show_if_redq_rental">
 					<?php
-
-					do_action( 'mkl_pc_admin_general_tab_before_start_button' );
-					
+					woocommerce_wp_select(
+						array(
+							'id'                => MKL_PC_PREFIX . '_configurator_type',
+							'value'             => $type_value,
+							'options'           => mkl_pc_get_configurator_types(),
+							'class'             => 'configurator-type',
+							'custom_attributes' => $is_global ? array( 'disabled' => 'disabled' ) : array(),
+							'label'             => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+							'description'       => $is_global
+								? __( 'Set on the global configurator this product uses. Edit it there to change it for every product that uses it.', 'product-configurator-for-woocommerce' )
+								: __( 'Choose the configurator type: Classic, Add-ons or 3D', 'product-configurator-for-woocommerce' ),
+							'desc_tip'          => true,
+						)
+					);
 					?>
-
-					<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
-						<?php echo $this->start_button( $post->ID ) ?>
-					</div>
-
-					<?php
-
-					do_action( 'mkl_pc_admin_general_tab' );
-
-					?>
+					<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php esc_html_e( 'Configurator type changed. Please update the product to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
 				</div>
+				<div class="toolbar show_if_simple show_if_redq_rental show_if_variable start_button_container">
+					<?php echo $this->start_button( $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+				<?php do_action( 'mkl_pc_admin_general_tab' ); ?>
 			</div>
-
 			<?php
 		}
 
@@ -144,34 +175,41 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function home_tab() {
 			?>
 			<div class="instructions">
-				<h2><?php esc_html_e( 'You are configuring', 'product-configurator-for-woocommerce' ); echo ' "' . esc_html( get_the_title( $this->ID ) ); ?>"</h2>
-				<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
-				<p><?php esc_html_e( 'To proceed, follow the instructions:', 'product-configurator-for-woocommerce' ); ?></p>
-				<ol>
-				<li>
-					<?php
-					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
-					printf( esc_html__( 'define the structure of the product in %1$sLayers%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
-					?>
-				</li>
-				<li>
-					<?php
-					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
-					printf( esc_html__( 'define the views / angles in which your product will be visible in %1$sViews%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
-					?>
-				</li>
-				<li>
-					<?php
-					/* translators: 1: opening <strong> tag, 2: closing </strong> tag */
-					printf( esc_html__( 'add the Images for each of your choices in %1$sContent%2$s', 'product-configurator-for-woocommerce' ), '<strong>', '</strong>' );
-					?>
-				</li>
-				</ol>
+				<div class="instructions-header">
+					<div class="instructions-header__thumbnail">
+						<?php echo get_the_post_thumbnail( $this->ID, 'thumbnail' ); ?>
+					</div>
+					<h2><?php esc_html_e( 'You are configuring', 'product-configurator-for-woocommerce' ); echo ' "' . esc_html( get_the_title( $this->ID ) ); ?>"</h2>
+				</div>
+				<?php do_action( 'mkl_pc_admin_instructions_before_content', $this->ID, $this->_product ); ?>
+
+				<div class="instructions-content">
+					<h3><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ); ?></h3>
+					<div class="mkl-home-documentation-content mkl-home-section">
+						<?php do_action( 'mkl_pc_admin_documentation_content', $this->ID, $this->_product ); ?>
+					</div>
+					<?php if ( $this->get_home_actions() ) : ?>
+						<h3><?php esc_html_e( 'Actions', 'product-configurator-for-woocommerce' ); ?></h3>
+						<div class="mkl-home-actions-content mkl-home-section">
+							<?php 
+								foreach ( $this->get_home_actions() as $action ) {
+									$url   = isset( $action['url'] ) ? $action['url'] : '';
+									$label = isset( $action['label'] ) ? $action['label'] : '';
+									echo '<a href="' . esc_url( $url ) . '" class="button button-hero">' . wp_kses_post( $label ) . '</a>';
+								}
+								do_action( 'mkl_pc_admin_home_actions_after', $this->ID, $this->_product ); 
+							?>
+						</div>
+					<?php endif; ?>
+
+					<h3><?php esc_html_e( 'Global configurator', 'product-configurator-for-woocommerce' ); ?></h3>
+					<?php do_action( 'mkl_pc_admin_global_configurator_content', $this->ID, $this->_product ); ?>
+				</div>
 				<?php do_action( 'mkl_pc_admin_instructions_after', $this->ID ); ?>
 			</div>
 			<div class="more">
 				<h2><span class="dashicons dashicons-admin-plugins"></span> <?php esc_html_e( 'Do you need more functionality?', 'product-configurator-for-woocommerce') ; ?></h2>
-				<p><a href="<?php echo esc_url( admin_url( 'options-general.php?page=mkl_pc_settings&tab=addons' ) ); ?>"><?php esc_html_e( 'Check out the available addons and themes.', 'product-configurator-for-woocommerce' ); ?></a></p>
+				<p><a href="<?php echo esc_url( mkl_pc_get_settings_page_url( array( 'tab' => 'addons' ) ) ); ?>"><?php esc_html_e( 'Check out the available addons and themes.', 'product-configurator-for-woocommerce' ); ?></a></p>
 				<h2><span class="dashicons dashicons-star-filled"></span> <?php esc_html_e( 'Do you like the plugin?', 'product-configurator-for-woocommerce') ; ?></h2>
 				<p>
 					<?php
@@ -196,16 +234,61 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function editor() {
-			if ( ! $this->_current_screen_is( 'product' ) ) return false;
-			if ( ! $this->_product ) return;
+			if ( ! $this->_is_configurator_admin_screen() ) return false;
 
 			$structure = get_post_meta( $this->ID, MKL_PC_PREFIX.'structure', true );
 			// Make variables available to the included template
 			$data = json_encode( $structure );
-			$product_type = $this->_product->get_type(); 
-			
+			if ( $this->_product ) {
+				$product_type = $this->_product->get_type();
+			} elseif ( $this->_is_global_layer_screen() ) {
+				$product_type = \MKL\PC\Global_Layers::CPT_SLUG;
+			} else {
+				$product_type = \MKL\PC\Global_Configurators\Schema::OWNER_TYPE_GLOBAL;
+			}
+
 			include_once 'views/html-product-configurator-templates.php';
 
+		}
+
+		/**
+		 * Reissue the configurator's editor nonces on each WordPress heartbeat tick.
+		 *
+		 * The editor can stay open in a browser tab far longer than a nonce's 12-24h
+		 * lifetime; without this, saves/deletes eventually fail with a stale-nonce
+		 * 403 until the page is reloaded. Nonces are only handed back if the current
+		 * user still passes the same capability check used when they were first
+		 * generated in load_scripts(), so this can't grant anything the ajax
+		 * handlers wouldn't already allow on their own.
+		 *
+		 * @param array $response The heartbeat response payload to send back to the browser.
+		 * @param array $data     The data the browser sent with this heartbeat tick.
+		 * @return array
+		 */
+		public function refresh_nonces_on_heartbeat( $response, $data ) {
+			if ( empty( $data['mkl_pc_refresh_nonces'] ) ) {
+				return $response;
+			}
+
+			$product_id = absint( $data['mkl_pc_refresh_nonces'] );
+			if ( ! $product_id ) {
+				return $response;
+			}
+
+			$nonces = array();
+			if ( current_user_can( 'edit_post', $product_id ) ) {
+				$nonces['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $product_id );
+			}
+			if ( current_user_can( 'delete_post', $product_id ) ) {
+				$nonces['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $product_id );
+			}
+			if ( current_user_can( 'edit_posts' ) ) {
+				$nonces['global_layers_nonce'] = wp_create_nonce( 'mkl_pc_global_layers' );
+			}
+
+			$response['mkl_pc_nonces'] = $nonces;
+
+			return $response;
 		}
 
 		/**
@@ -216,6 +299,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		public function load_scripts() {
 			$this->init_product_data();
 			wp_enqueue_script( 'wp-hooks' );
+			wp_enqueue_script( 'wp-a11y' );
 			wp_register_script( 'pixijs', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js', [], '8.16.0', true );
 
 			$scripts = array(
@@ -224,24 +308,58 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array('backbone/models/state', 'models/state.js'),
 				array('backbone/models/choice', 'models/choice.js'),
 				array('backbone/models/layer', 'models/layer.js'),
+				array('backbone/models/object3d', 'models/object3d.js'),
 				array('backbone/models/product', 'models/product.js'),
 				array('backbone/models/admin', 'models/admin.js'),
 				//COLLECTIONS
 				array('backbone/collections/layers', 'collections/layers.js'),
 				array('backbone/collections/angles', 'collections/angles.js'),
+				array('backbone/collections/objects3d', 'collections/objects3d.js'),
 				array('backbone/collections/choices', 'collections/choices.js'),
+				array('backbone/collections/global-layers', 'collections/global-layers.js'),
 				array('backbone/collections/states', 'collections/states.js'),
 				array('backbone/collections/products', 'collections/products.js'),
 				//VIEWS
 				array('backbone/views/home', 'views/configurator_home.js'),
-				array('backbone/views/layers', 'views/layers.js'),
-				array('backbone/views/choices', 'views/choices.js'),
-				array('backbone/views/states', 'views/states.js'),
+				array( 'backbone/views/mobile_admin_stack_router', 'views/mobile_admin_stack_router.js' ),
+				array(
+					'backbone/views/mobile_admin_gestures',
+					'views/mobile_admin_gestures.js',
+					array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ),
+				),
+				array( 'backbone/views/layers', 'views/layers.js', array(
+					'mkl_pc-data-migration-overlay',
+					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
+				) ),
+				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
+				array( 'backbone/views/image_order_preview', 'views/image-order-preview.js' ),
+				array( 'backbone/views/image_order', 'views/image-order.js', array(
+					'mkl_pc/js/admin/backbone/views/layers',
+					'mkl_pc/js/admin/backbone/views/image_order_preview',
+				) ),
+				array('backbone/views/objects3d', 'views/objects3d.js'),
+				array( 'generated/svg-icon-registry', 'generated/svg-icon-registry.js' ),
+				array(
+					'icons',
+					'icons.js',
+					array( 'wp-hooks', 'mkl_pc/js/admin/generated/svg-icon-registry' ),
+				),
+				array(
+					'backbone/views/states',
+					'views/states.js',
+					array( 'mkl_pc/js/admin/icons' ),
+				),
 				array('backbone/views/angles', 'views/angles.js'),
-				array('backbone/views/content', 'views/content.js'),
+				array( 'backbone/views/content', 'views/content.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array('backbone/views/import', 'views/import.js'),
+				array( 'backbone/views/admin_dialog', 'views/admin-dialog.js', array( 'wp-hooks' ) ),
+				array(
+					'backbone/views/import_global_layer',
+					'views/import-global-layer.js',
+					array( 'mkl_pc/js/admin/backbone/views/admin_dialog' ),
+				),
 				array('backbone/views/app', 'views/app.js'),
-				array('backbone/views/product_selector', 'views/product_selector.js'),
+				array('backbone/views/product_selector', 'views/product_selector.js', array( 'wc-enhanced-select' ) ),
 				array('backbone/views/field_repeater', 'views/field-repeater.js'),
 				//APP
 				array('backbone/app', 'pc_app.js'), 
@@ -250,13 +368,17 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				// array('backbone', 'admin.js'),
 			);
 
-			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) ) {
+			if ( $this->_current_screen_is( 'product' ) || $this->_current_screen_is( 'shop_order' ) || $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) || $this->_is_global_layer_screen() ) {
 				wp_enqueue_style( 'mlk_pc/admin', MKL_PC_ASSETS_URL.'admin/css/admin.css' , [], filemtime( MKL_PC_ASSETS_PATH . 'admin/css/admin.css' ) );
 			}
 
-			if ( $this->_current_screen_is( 'product' ) ) {
+			if ( $this->_is_configurator_admin_screen() ) {
 
-				
+				global $post;
+				if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+					$scripts[] = array('backbone/views/3d-settings', 'build/3d-settings.js');
+				}
+
 				// wp_enqueue_script( 'mkl_pc/js/admin', $this->plugin->assets_path.'admin/js/admin.js', array('jquery'), MKL_PC_VERSION, true );
 				// TO ADD OR REMOVE DEFAULT SCRIPTS, only works for scripts in the plugins JS folder
 				$scripts = apply_filters( 'mkl_pc_admin_scripts', $scripts );
@@ -264,32 +386,215 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				wp_enqueue_style( 'wp-color-picker' );
 				wp_enqueue_script( 'wp-color-picker' );
 
+				// Some configurator screens (global layer / global configurator CPT) don't
+				// autoload heartbeat the way the native post editor does; enqueue it
+				// explicitly so nonce refresh works on every screen that hosts the editor.
+				wp_enqueue_script( 'heartbeat' );
+
+				// `wp.template()` (used throughout backbone views) is provided by `wp-util` (declared
+				// in each script's dependency list below). WooCommerce product edit screens often load
+				// this transitively; the global configurator CPT screen does not.
+				// The editor uses `wp.media` for the media modal (e.g. pc_app.js). WC enqueues this on
+				// product screens; for global configurators, load the media experience explicitly.
+				if ( (int) $this->ID > 0 ) {
+					wp_enqueue_media( array( 'post' => (int) $this->ID ) );
+				} else {
+					wp_enqueue_media();
+				}
+
 				// LOAD BACKBONE SCRIPTS
-				foreach($scripts as $script) {
-					list( $key, $file ) = $script;
-					wp_enqueue_script( 'mkl_pc/js/admin/' . $key, MKL_PC_ASSETS_URL . 'admin/js/'. $file , array( 'jquery', 'backbone' ), filemtime( MKL_PC_ASSETS_PATH . 'admin/js/'. $file ), true );
+				foreach ( $scripts as $script ) {
+					$key   = $script[0];
+					$file  = $script[1];
+					$extra = isset( $script[2] ) && is_array( $script[2] ) ? $script[2] : array();
+					$deps  = array_values( array_unique( array_merge( array( 'jquery', 'backbone', 'wp-util' ), $extra ) ) );
+					wp_enqueue_script(
+						'mkl_pc/js/admin/' . $key,
+						MKL_PC_ASSETS_URL . 'admin/js/' . $file,
+						$deps,
+						filemtime( MKL_PC_ASSETS_PATH . 'admin/js/' . $file ),
+						true
+					);
 				}
 
 				$pc_lang = array(
-					'media_title' => __( 'Select a picture', 'product-configurator-for-woocommerce' ),
-					'media_select_button' => __( 'Choose', 'product-configurator-for-woocommerce' ),
-					'layers_new_placeholder' => __( 'New Layer Name', 'product-configurator-for-woocommerce' ),
-					'angles_new_placeholder' => __( 'New Angle Name', 'product-configurator-for-woocommerce' ),
-					'choice_new_placeholder' => __( 'New Choice Name', 'product-configurator-for-woocommerce' ),
-					'group_with_content_warning' => __( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . __( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
-					'angles_no_delete_message' => __( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
+					'media_title' => esc_html__( 'Select a picture', 'product-configurator-for-woocommerce' ),
+					'media_select_button' => esc_html__( 'Choose', 'product-configurator-for-woocommerce' ),
+					'layers_new_placeholder' => esc_html__( 'New Layer Name', 'product-configurator-for-woocommerce' ),
+					'angles_new_placeholder' => esc_html__( 'New Angle Name', 'product-configurator-for-woocommerce' ),
+					'3d_objects_new_placeholder' => esc_html__( '3D object label…', 'product-configurator-for-woocommerce' ),
+					'choice_new_placeholder' => esc_html__( 'New Choice Name', 'product-configurator-for-woocommerce' ),
+					'list_filter_placeholder' => esc_html__( 'Filter list…', 'product-configurator-for-woocommerce' ),
+					'group_with_content_warning' => esc_html__( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
+					'angles_no_delete_message' => esc_html__( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
+					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_move_front' => esc_attr__( 'Move %s forward', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_move_back' => esc_attr__( 'Move %s backward', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: position in the stack, 2: number of layers */
+					'image_order_position' => esc_html__( '%1$d of %2$d from the front', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_select' => esc_attr__( 'Select %s', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_position_label' => esc_attr__( 'Position of %s in the stack', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of selected layers */
+					'image_order_selected' => esc_html__( '%d selected', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_hide' => esc_attr__( 'Hide %s from the preview', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: layer name */
+					'image_order_show' => esc_attr__( 'Show %s in the preview', 'product-configurator-for-woocommerce' ),
+					'image_order_conditions_loading' => esc_html__( 'Checking which layers conditions hide…', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of layers hidden by conditional logic */
+					'image_order_conditions_hidden' => esc_html__( '%d layers are hidden by conditions in this view.', 'product-configurator-for-woocommerce' ),
+					'preview_no_images' => esc_html__( 'No layer has an image for this view.', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: layers drawn so far, 2: total layers */
+					'preview_loading' => esc_html__( 'Drawing %1$d of %2$d layers…', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of layer images that failed */
+					'preview_failed' => esc_html__( '%d layer image could not be loaded.', 'product-configurator-for-woocommerce' ),
 					'enable_html_layers' => true,
 					'use_steps' => mkl_pc( 'settings' )->get( 'use_steps', false ),
 					'is_rest_enabled' => true,
 					'rest_url' => get_rest_url(),
 					'timeout' => (int) mkl_pc( 'settings' )->get( 'admin_save_timeout', 30000, true ),
 					'user_preferences_nonce' => wp_create_nonce( 'mkl_pc_user_preferences' ),
+					'preview_sources_nonce' => wp_create_nonce( 'mkl_pc_preview_sources' ),
 					'languages' => mkl_pc( 'languages' )->get_languages(),
 					'default_language' => mkl_pc( 'languages' )->get_default_language(),
+					'layer_types' => apply_filters( 'mkl_pc_layer_types', array(
+						'simple' => esc_html__( 'Simple', 'product-configurator-for-woocommerce' ),
+						'multiple' => esc_html__( 'Multiple choice', 'product-configurator-for-woocommerce' ),
+						'group' => esc_html__( 'Group', 'product-configurator-for-woocommerce' ),
+						'form' => esc_html__( 'Form', 'product-configurator-for-woocommerce' ),
+						'summary' => esc_html__( 'Summary', 'product-configurator-for-woocommerce' ),
+						'text_overlay' => esc_html__( 'Text overlay', 'product-configurator-for-woocommerce' ),
+					) ),
+					'object3d_item_types' => apply_filters( 'mkl_pc_object3d_item_types', array(
+						'gltf' => esc_html__( '3D model', 'product-configurator-for-woocommerce' ),
+						'light' => esc_html__( 'Light', 'product-configurator-for-woocommerce' ),
+						'environment' => esc_html__( 'Environment', 'product-configurator-for-woocommerce' ),
+						'environment_hdri' => esc_html__( 'HDRI environment', 'product-configurator-for-woocommerce' ),
+						'environment_cubemap' => esc_html__( 'Cubemap environment', 'product-configurator-for-woocommerce' ),
+						'animation' => esc_html__( 'Animation', 'product-configurator-for-woocommerce' ),
+					) ),
+					'hdr_base_url'         => MKL_PC_ASSETS_URL . 'images/hdr/',
+					'env_none'             => esc_html__( 'None', 'product-configurator-for-woocommerce' ),
+					'env_preset_outdoor'   => esc_html__( 'Preset: Outdoor', 'product-configurator-for-woocommerce' ),
+					'env_preset_studio'    => esc_html__( 'Preset: Studio', 'product-configurator-for-woocommerce' ),
+					'admin_js_build_url'   => MKL_PC_ASSETS_URL . 'admin/js/build/',
+					'default_settings_3d'  => DB::get_default_settings_3d(),
+					'default_hidden_object_names' => DB::get_default_hidden_object_names(),
+					'reset_settings_3d_confirm' => esc_html__( 'This will restore all 3D viewer settings to their defaults. Continue?', 'product-configurator-for-woocommerce' ),
+					'fe_3d_use_draco_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
+					'fe_3d_use_meshopt_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+					'fe_3d_use_ktx2_loader' => (bool) mkl_pc( 'settings' )->get( 'fe_3d_use_ktx2_loader' ),
+					'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
+					'fe_3d_ktx2_transcoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/basis/',
+					'select_angle' => esc_html__( 'Select view', 'product-configurator-for-woocommerce' ),
+					'no_cameras_in_gltf' => esc_html__( 'No cameras found in the loaded 3D models.', 'product-configurator-for-woocommerce' ),
+					'camera_imported_from_gltf' => esc_html__( '1 camera imported as a new view.', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of imported cameras */
+					'cameras_imported_from_gltf' => esc_html__( '%d cameras imported as new views.', 'product-configurator-for-woocommerce' ),
+					'icon_registry' => apply_filters( 'mkl_pc_admin_icon_registry', array() ),
+					'gltf_load_failed' => esc_html__( 'Failed to load the 3D model.', 'product-configurator-for-woocommerce' ),
+					// Shown in an alert(), so not HTML-escaped.
+					'zip_without_model' => __( 'No 3D model could be used from this ZIP.', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: 3D file name, 2: error details */
+					'gltf_load_failed_for' => esc_html__( 'Could not load “%1$s”: %2$s', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_invalid' => esc_html__( 'This file is not a valid glTF / GLB model.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_glb_header' => esc_html__( 'This file is not a valid GLB (binary glTF) file.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_legacy' => esc_html__( 'This is a legacy binary glTF file. Re-export as glTF 2.0.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_version' => esc_html__( 'This model uses an unsupported glTF version. Export as glTF 2.0.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_draco' => esc_html__( 'This model uses Draco compression, but the Draco loader is not enabled.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_ktx2' => esc_html__( 'This model uses KTX2 textures, but the KTX2 loader is not enabled.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_meshopt' => esc_html__( 'This model uses Meshopt compression, but the Meshopt decoder is not enabled.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_network' => esc_html__( 'The model could not be downloaded (network or CORS error).', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: HTTP status code */
+					'gltf_load_failed_http' => esc_html__( 'The model file could not be downloaded (HTTP %s).', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_no_scene' => esc_html__( 'The model loaded but did not contain a scene.', 'product-configurator-for-woocommerce' ),
+					'gltf_load_failed_missing_url' => esc_html__( 'No 3D file is assigned to this object.', 'product-configurator-for-woocommerce' ),
+					// 3D preview: moving lights with the gizmo. Set with textContent, so not HTML-escaped.
+					'light_edit_hint' => __( 'Click a light to move it', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: light name */
+					'light_edit_target_of' => __( 'Target of %s', 'product-configurator-for-woocommerce' ),
+					'light_edit_move' => __( 'Move', 'product-configurator-for-woocommerce' ),
+					'light_edit_rotate' => __( 'Rotate', 'product-configurator-for-woocommerce' ),
+					'light_edit_done' => __( 'Done', 'product-configurator-for-woocommerce' ),
+					'light_edit_ambient_note' => __( 'An ambient light lights everything evenly: its position has no effect.', 'product-configurator-for-woocommerce' ),
+					'light_edit_no_lights' => __( 'This product has no lights yet.', 'product-configurator-for-woocommerce' ),
+					'light_edit_no_model' => __( 'Add a 3D model in 3D Objects to preview and place the lights.', 'product-configurator-for-woocommerce' ),
+					'light_edit_open_objects' => __( 'Open 3D Objects', 'product-configurator-for-woocommerce' ),
+					'light_edit_all_settings' => __( 'All settings', 'product-configurator-for-woocommerce' ),
+					'light_edit_intensity' => __( 'Intensity', 'product-configurator-for-woocommerce' ),
+					'light_edit_color' => __( 'Color', 'product-configurator-for-woocommerce' ),
+					'light_edit_cast_shadows' => __( 'Cast shadows', 'product-configurator-for-woocommerce' ),
+					'light_edit_position' => __( 'Position', 'product-configurator-for-woocommerce' ),
+					'light_type_labels' => array(
+						'AmbientLight'     => __( 'Ambient', 'product-configurator-for-woocommerce' ),
+						'DirectionalLight' => __( 'Directional', 'product-configurator-for-woocommerce' ),
+						'PointLight'       => __( 'Point', 'product-configurator-for-woocommerce' ),
+						'SpotLight'        => __( 'Spot', 'product-configurator-for-woocommerce' ),
+						'RectAreaLight'    => __( 'Rect Area', 'product-configurator-for-woocommerce' ),
+						'HemisphereLight'  => __( 'Hemisphere', 'product-configurator-for-woocommerce' ),
+					),
+
 				);
 
-				if ( current_user_can( 'edit_post', $this->ID ) ) $pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
+				$pc_lang['global_layer_edit_conflict_confirm'] = __( 'This global layer was saved from somewhere else since you opened it: another window, another user, or another product using it.', 'product-configurator-for-woocommerce' ) . "\n\n" . __( 'Save anyway and overwrite those changes? Cancel keeps them; leave the layer without saving to load the latest version.', 'product-configurator-for-woocommerce' );
+				$pc_lang['edit_conflict_confirm'] = __( 'This configuration was saved from somewhere else since you opened it: another window, another user, or another product using the same global configurator.', 'product-configurator-for-woocommerce' ) . "\n\n" . __( 'Save anyway and overwrite those changes? Cancel keeps them; reload the editor to see the latest version.', 'product-configurator-for-woocommerce' );
+				if ( current_user_can( 'edit_post', $this->ID ) ) {
+					$pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
+				}
 				if ( current_user_can( 'delete_post', $this->ID ) ) $pc_lang['delete_nonce'] = wp_create_nonce( 'delete-pc-post_' . $this->ID );
+				if ( current_user_can( 'edit_posts' ) ) {
+					$pc_lang['global_layers_nonce'] = wp_create_nonce( 'mkl_pc_global_layers' );
+					$pc_lang['import_global_layer_title']    = esc_html__( 'Import Global Layer', 'product-configurator-for-woocommerce' );
+					$pc_lang['import_global_layer_importing'] = esc_html__( 'Importing…', 'product-configurator-for-woocommerce' );
+					$pc_lang['import_selected']             = esc_html__( 'Import Selected', 'product-configurator-for-woocommerce' );
+				}
+
+				$pc_lang['editor_product_name']       = (string) get_the_title( $this->ID );
+				$pc_lang['global_configurator_banner_label'] = esc_html__( 'Any changes you make will affect every product using it.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_product_permalink']  = (string) get_permalink( $this->ID );
+				$pc_lang['editor_back_to_product']    = esc_html__( 'Back to product', 'product-configurator-for-woocommerce' );
+				if ( $this->_is_global_layer_screen() ) {
+					// A global layer post has no storefront page, and closing returns to its edit screen.
+					$pc_lang['editor_product_permalink'] = '';
+					$pc_lang['editor_back_to_product']   = esc_html__( 'Close the layer editor', 'product-configurator-for-woocommerce' );
+				}
+				$pc_lang['editor_close_sidebar_menu'] = esc_attr__( 'Close menu', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_save']                = esc_html__( 'Save', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_save_global_layer']  = esc_html__( 'Save global layer', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_fallback_title'] = esc_html__( 'Global layer', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_focus_help'] = esc_html__( 'You are editing a global layer. Changes will affect all configurators using this data.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_focus_back'] = esc_html__( 'Back', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_focus_back_aria'] = esc_attr__( 'Exit global layer editing', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_settings_3d_focus_back'] = esc_html__( 'Back', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_settings_3d_focus_back_aria'] = esc_attr__( 'Exit 3D settings', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_settings_3d_unsaved_discard'] = esc_html__( 'You have unsaved 3D settings. Leave without saving?', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_global_layer_unsaved_discard'] = esc_html__( 'You have unsaved changes to this global layer. Leave without saving?', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_saved']               = esc_html__( 'Saved', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_saving']              = esc_html__( 'Saving…', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_config_copied_clipboard'] = esc_html__( 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + V" to paste.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_config_paste_not_allowed'] = esc_html__( 'The configuration cannot be pasted here, unlock the global layer to paste it.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_load_failed']        = esc_html__( 'Could not load the configurator. Check your connection and try again.', 'product-configurator-for-woocommerce' );
+				$pc_lang['editor_close_after_load_error'] = esc_html__( 'The configurator did not finish loading. Close anyway?', 'product-configurator-for-woocommerce' );
+				/* translators: %s: name of the 3D model or object set on the layer */
+				$pc_lang['threed_inherit_from_layer'] = esc_html__( 'Inherit from layer: %s', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_none']               = esc_html__( 'None', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_whole_model']        = esc_html__( 'Whole model', 'product-configurator-for-woocommerce' );
+				/* translators: %s: model name */
+				$pc_lang['threed_whole_model_of']     = esc_html__( 'Whole model: %s', 'product-configurator-for-woocommerce' );
+				/* translators: %s: object or model, e.g. "Suzanne (Chair model)" */
+				$pc_lang['threed_this_choice_object'] = esc_html__( "This choice's object: %s", 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_no_anchor']          = esc_html__( 'No anchor selected', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_show_all_objects']   = esc_html__( 'Show all objects, not only empties', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_select_layout']      = esc_html__( '— Select a layout —', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_select_variant']     = esc_html__( '— Select a variant —', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_no_layouts']         = esc_html__( 'No layouts yet. Add one in 3D Objects.', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_new_variant']        = esc_html__( 'Variant', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_no_model_for_choice'] = esc_html__( 'No 3D model is set on this choice or its layer.', 'product-configurator-for-woocommerce' );
+				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu( (int) $this->ID );
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );
 				
@@ -316,29 +621,220 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		}
 
 		/**
+		 * Whether the current admin screen is a configurator owner edit screen (product or CPT).
+		 *
+		 * @return bool
+		 */
+		private function _is_configurator_admin_screen() {
+			if ( $this->_current_screen_is( 'product' ) ) {
+				return true;
+			}
+			if ( class_exists( \MKL\PC\Global_Configurators\Schema::class ) && $this->_current_screen_is( \MKL\PC\Global_Configurators\Schema::CPT_SLUG ) ) {
+				return true;
+			}
+			if ( $this->_is_global_layer_screen() ) {
+				return true;
+			}
+			return false;
+		}
+
+		/**
+		 * Whether the current screen edits a single global layer.
+		 *
+		 * @return bool
+		 */
+		private function _is_global_layer_screen() {
+			return class_exists( \MKL\PC\Global_Layers::class ) && $this->_current_screen_is( \MKL\PC\Global_Layers::CPT_SLUG );
+		}
+
+		/**
+		 * Add a meta box on the global configurator CPT edit screen with the "Start configurator" button,
+		 * so editors can open the same backbone editor used for products.
+		 *
+		 * @return void
+		 */
+		public function add_global_configurator_meta_box() {
+			if ( ! class_exists( \MKL\PC\Global_Configurators\Schema::class ) ) {
+				return;
+			}
+			add_meta_box(
+				'mkl_pc_global_configurator',
+				__( 'Configurator', 'product-configurator-for-woocommerce' ),
+				array( $this, 'render_global_configurator_meta_box' ),
+				\MKL\PC\Global_Configurators\Schema::CPT_SLUG,
+				'normal',
+				'high'
+			);
+		}
+
+		/**
+		 * Renders the "Start configurator" button inside the CPT meta box.
+		 *
+		 * @param \WP_Post $post
+		 * @return void
+		 */
+		public function render_global_configurator_meta_box( $post ) {
+			if ( ! $post || ! isset( $post->ID ) ) {
+				return;
+			}
+			if ( 'auto-draft' === ( isset( $post->post_status ) ? $post->post_status : '' ) ) {
+				echo '<p>' . esc_html__( 'Save the post once to enable the configurator editor.', 'product-configurator-for-woocommerce' ) . '</p>';
+				return;
+			}
+			// No 'desc_tip': wc_help_tip()'s .woocommerce-help-tip relies on WooCommerce's own
+			// admin tooltip init, which is only enqueued on recognized WooCommerce screens
+			// (product, shop_order, …) — not this CPT screen. Description renders inline instead.
+			woocommerce_wp_select(
+				array(
+					'id'          => MKL_PC_PREFIX . '_configurator_type',
+					'value'       => mkl_pc_get_configurator_type( (int) $post->ID ),
+					'options'     => mkl_pc_get_configurator_types(),
+					'class'       => 'configurator-type',
+					'label'       => __( 'Configurator type', 'product-configurator-for-woocommerce' ),
+					'description' => __( 'Applies to every product currently using this global configurator.', 'product-configurator-for-woocommerce' ),
+				)
+			);
+			?>
+			<div class="notice notice-warning below-h2 hidden configurator-type-change-warning"><p><?php esc_html_e( 'Configurator type changed. Please update this global configurator to reload the correct editor.', 'product-configurator-for-woocommerce' ); ?></p></div>
+			<p class="start_button_container"><?php echo $this->start_button( (int) $post->ID ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
+			<?php // Which products use this configurator is shown in the "Apply configurator to" meta box, next to the fields that decide it. ?>
+			<?php wp_nonce_field( 'mkl_pc_global_configurator_type_' . $post->ID, 'mkl_pc_global_configurator_type_nonce' ); ?>
+			<?php
+		}
+
+		/**
+		 * Persist the "Configurator type" select from the global configurator CPT's meta box.
+		 *
+		 * @param int      $post_id
+		 * @param \WP_Post $post
+		 * @return void
+		 */
+		public function save_global_configurator_type( $post_id, $post ) {
+			$post_id = (int) $post_id;
+			if ( $post_id <= 0 ) return;
+			if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+			if ( wp_is_post_revision( $post_id ) ) return;
+			if ( ! isset( $_POST['mkl_pc_global_configurator_type_nonce'] ) ) return;
+			if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['mkl_pc_global_configurator_type_nonce'] ) ), 'mkl_pc_global_configurator_type_' . $post_id ) ) return;
+			if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+			if ( isset( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) {
+				update_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type', sanitize_key( wp_unslash( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) );
+			}
+		}
+
+		/**
+		 * Add a meta box on the global layer CPT edit screen with the "Start configurator" button,
+		 * so the layer and its choices can be edited with the same backbone editor used for products.
+		 *
+		 * @return void
+		 */
+		public function add_global_layer_meta_box() {
+			if ( ! class_exists( \MKL\PC\Global_Layers::class ) ) {
+				return;
+			}
+			add_meta_box(
+				'mkl_pc_global_layer',
+				__( 'Layer', 'product-configurator-for-woocommerce' ),
+				array( $this, 'render_global_layer_meta_box' ),
+				\MKL\PC\Global_Layers::CPT_SLUG,
+				'normal',
+				'high'
+			);
+		}
+
+		/**
+		 * Renders the "Start configurator" button inside the global layer meta box.
+		 *
+		 * @param \WP_Post $post
+		 * @return void
+		 */
+		public function render_global_layer_meta_box( $post ) {
+			if ( ! $post || ! isset( $post->ID ) ) {
+				return;
+			}
+			if ( 'auto-draft' === ( isset( $post->post_status ) ? $post->post_status : '' ) ) {
+				echo '<p>' . esc_html__( 'Save the post once to enable the layer editor.', 'product-configurator-for-woocommerce' ) . '</p>';
+				return;
+			}
+			$data    = \MKL\PC\Global_Layers::get( (int) $post->ID );
+			$choices = \MKL\PC\Global_Layers::normalize_choices( $data['content'] );
+			?>
+			<p>
+				<?php
+				printf(
+					/* translators: %d: number of choices the layer holds. */
+					esc_html( _n( 'This layer holds %d choice.', 'This layer holds %d choices.', count( $choices ), 'product-configurator-for-woocommerce' ) ),
+					(int) count( $choices )
+				);
+				?>
+			</p>
+			<p><?php esc_html_e( 'Editing it here changes it for every product that uses this layer.', 'product-configurator-for-woocommerce' ); ?></p>
+			<p><?php echo $this->start_button( (int) $post->ID, null, __( 'Edit the layer', 'product-configurator-for-woocommerce' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- start_button() returns escaped HTML. ?></p>
+			<?php
+		}
+
+		/**
 		 * Save a product's settigns
 		 *
 		 * @param integer $post_id
 		 * @return void
 		 */
 		public function save_product_setting( $post_id ) {
-			$_is_configurable = isset( $_POST[MKL_PC_PREFIX.'_is_configurable'] ) ? 'yes' : 'no';
-			update_post_meta( $post_id, MKL_PC_PREFIX.'_is_configurable', $_is_configurable );
-		}	
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the product save nonce before woocommerce_process_product_meta_*.
+			$_is_configurable = isset( $_POST[ MKL_PC_PREFIX . '_is_configurable' ] ) ? 'yes' : 'no';
+			update_post_meta( $post_id, MKL_PC_PREFIX . '_is_configurable', $_is_configurable );
+
+			if ( $this->is_posted_source_global( $post_id ) ) {
+				// Configurator type is a property of the shared global configurator, not this
+				// product — never pin a local value here, or mkl_pc_get_configurator_type()
+				// will keep using it instead of following the global configurator's own type.
+				delete_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type' );
+			} elseif ( isset( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+				update_post_meta( $post_id, MKL_PC_PREFIX . '_configurator_type', sanitize_key( wp_unslash( $_POST[ MKL_PC_PREFIX . '_configurator_type' ] ) ) );
+			}
+		}
+
+		/**
+		 * Whether this save request is setting the product to use a global configurator.
+		 * Reads the raw posted values directly (rather than the already-saved
+		 * `Owner_Resolver::get_global_id()`) since this callback and
+		 * `Global_Configurators\Admin_Ui::save_product_settings()` are both hooked to the same
+		 * `woocommerce_process_product_meta_*` actions at the default priority, so relying on
+		 * one having already run before the other would be a registration-order assumption.
+		 *
+		 * @param int $post_id
+		 * @return bool
+		 */
+		private function is_posted_source_global( $post_id ) {
+			if ( ! class_exists( \MKL\PC\Global_Configurators\Schema::class ) ) return false;
+
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+			$posted_source = isset( $_POST[ \MKL\PC\Global_Configurators\Schema::META_SOURCE ] ) ? sanitize_key( wp_unslash( $_POST[ \MKL\PC\Global_Configurators\Schema::META_SOURCE ] ) ) : '';
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Same WooCommerce product-save nonce as above.
+			$posted_id = isset( $_POST[ \MKL\PC\Global_Configurators\Schema::META_GLOBAL_ID ] ) ? absint( wp_unslash( $_POST[ \MKL\PC\Global_Configurators\Schema::META_GLOBAL_ID ] ) ) : 0;
+
+			return \MKL\PC\Global_Configurators\Schema::SOURCE_GLOBAL === $posted_source
+				&& $posted_id > 0
+				&& \MKL\PC\Global_Configurators\Schema::is_global_configurator_id( $posted_id )
+				&& ( ! class_exists( \MKL\PC\Global_Configurators\Owner_Resolver::class ) || \MKL\PC\Global_Configurators\Owner_Resolver::can_use_global( $post_id ) );
+		}
 
 		/**
 		 * Outputs the button to start the editor
 		 *
 		 * @param integer $id
 		 * @param integer $parent_id
+		 * @param string  $label     Button text, when the default product wording does not fit.
 		 * @return string
 		 */
-		public function start_button($id, $parent_id = NULL) {
+		public function start_button($id, $parent_id = NULL, $label = '') {
 			ob_start();
 			$id = absint( $id );
 			$parent_id = is_null( $parent_id ) ? null : absint( $parent_id );
+			$label = '' !== $label ? $label : __( "Start product's configurator", 'product-configurator-for-woocommerce' );
 			?>
-				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo esc_attr( $id ); ?>" <?php echo ( null !== $parent_id ) ? 'data-parent-id="' . esc_attr( $parent_id ) . '"' : ''; ?>><?php esc_html_e( "Start product's configurator", 'product-configurator-for-woocommerce' ); ?></a>
+				<a href="#" class="button-primary start-configuration" data-product-id="<?php echo esc_attr( $id ); ?>" <?php echo ( null !== $parent_id ) ? 'data-parent-id="' . esc_attr( $parent_id ) . '"' : ''; ?>><?php echo esc_html( $label ); ?></a>
 			<?php 
 			$return = ob_get_clean();
 			return $return;
@@ -411,6 +907,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			delete_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name );
 			update_user_meta( get_current_user_id(), 'mkl_pc_hide_addon__' . $setting_name, 1 );
 			wp_send_json_success();
+		}
+
+		public function home_documentation_content() {
+			?>
+			<a class="button button-hero" nofollow noreferrer noopener href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/getting-started/" target="_blank"><?php esc_html_e( 'Getting started', 'product-configurator-for-woocommerce' ); ?></a>
+			<a class="button button-hero" nofollow noreferrer noopener href="https://wc-product-configurator.com/docs/" target="_blank"><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ); ?></a>
+			<?php
+		}
+
+		public function get_home_actions() {
+			return apply_filters( 'mkl_pc_admin_home_actions', array(
+
+			), $this->ID, $this->_product );
 		}
 
 	}

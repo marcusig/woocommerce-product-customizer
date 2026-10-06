@@ -6,7 +6,7 @@ PC.views = PC.views || {};
 	PC.views.home = Backbone.View.extend({
 		tagName: 'div',
 		className: 'state home',
-		template: wp.template('mkl-pc-home'), 
+		template: wp.template('mkl-pc-home'),
 
 		initialize: function() {
 			this.render();

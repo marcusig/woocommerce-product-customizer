@@ -11,6 +11,8 @@ PC.layer = Backbone.Model.extend({
 		description: '',
 		order:0,
 		image_order:0,
+		is_global: false,
+		global_id: null,
 		image: {
 			url:'',
 			id: null,
@@ -36,6 +38,12 @@ PC.layer = Backbone.Model.extend({
 			} 
 		}
 		wp.hooks.doAction( 'PC.fe.models.layer.init', this );
+	},
+	isGlobal: function() {
+		return !! this.get( 'is_global' );
+	},
+	getGlobalRef: function() {
+		return this.get( 'global_id' );
 	},
 	sync: function( method, model, options ) {
 	},

@@ -8,6 +8,13 @@ PC.fe.save_data = {
 		if ( false !== reset_errors ) this.reset_errors();
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
+		// The saved names are in the language the customer configured in. Record it, so the
+		// order can be displayed in another language (eg. the admin's) from the product data.
+		if ( PC.fe.lang ) {
+			_.each( this.choices, function( choice ) {
+				if ( choice && 'object' === typeof choice && ! choice.lang ) choice.lang = PC.fe.lang;
+			} );
+		}
 		this.choices = wp.hooks.applyFilters( 'PC.fe.save_data.choices', this.choices );
 		return JSON.stringify( this.choices );
 	},
@@ -122,7 +129,31 @@ PC.fe.save_data = {
 		}.bind( this ) );
 		return selected;
 	},
-	// get choices for one layer 
+	/**
+	 * The angle the cart image is built from: the active one when "Use the active angle to generate
+	 * the image in the cart" is on, otherwise the one set to be used in the cart, or the first.
+	 *
+	 * @return {Backbone.Model|undefined}
+	 */
+	get_cart_angle: function() {
+		if ( PC.fe.config.angles.save_current ) {
+			var angle = PC.fe.angles.findWhere( 'active', true );
+		} else {
+			var angle = PC.fe.angles.findWhere( 'use_in_cart', true );
+		}
+		return angle || PC.fe.angles.first();
+	},
+	/**
+	 * The ID of the angle saved with the configuration. Every layer of the cart image must come from
+	 * it, so add-ons rendering their own layer image (e.g. Text overlay) should use this too.
+	 *
+	 * @return {Number|undefined}
+	 */
+	get_cart_angle_id: function() {
+		var angle = PC.fe.save_data.get_cart_angle();
+		return wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.angle_id', angle ? angle.id : undefined );
+	},
+	// get choices for one layer
 	parse_choices: function( model ) {
 		var is_required = parseInt( model.get( 'required' ) );
 		var default_selection = model.get( 'default_selection' ) || 'select_first';
@@ -133,17 +164,15 @@ PC.fe.save_data = {
 
 		if ( 'form' == type || 'group' == type ) is_required = false;
 
-		if ( PC.fe.config.angles.save_current ) {
-			var angle = PC.fe.angles.findWhere( 'active', true );
-		} else {
-			var angle = PC.fe.angles.findWhere( 'use_in_cart', true );
-		}
-		if ( ! angle ) {
-			angle = PC.fe.angles.first();
-		}
-
 		var model_data = wp.hooks.applyFilters( 'PC.fe.configurator.layer_data', model.attributes );
-		var angle_id = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.angle_id', angle.id );
+		var angle_id = PC.fe.save_data.get_cart_angle_id();
+		// Save where the layer sits in the merged image, so the stacking order of a saved
+		// configuration survives the layers being reordered later. `image_order` is only set on
+		// the layers that are composited out of the layer order.
+		var image_order = parseInt( model_data.image_order, 10 );
+		if ( isNaN( image_order ) ) image_order = parseInt( model_data.order, 10 );
+		if ( isNaN( image_order ) ) image_order = 0;
+		image_order = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.image_order', image_order, model );
 
 		if ( 'group' == type ) {
 			if ( ! this.count_selected_choices_in_group( model.id ) ) return;
@@ -155,6 +184,7 @@ PC.fe.save_data = {
 						layer_id: model.id,
 						choice_id: 0,
 						angle_id: angle_id,
+						image_order: image_order,
 						layer_name: model_data.name,
 						image: 0,
 						name: '',
@@ -206,12 +236,13 @@ PC.fe.save_data = {
 						} );
 					}
 
-					var img_id = choice.get_image( 'image', 'id' );
+					var img_id = choice.get_image( 'image', 'id', angle_id );
 					var choice_data = {
 						is_choice: true,
 						layer_id: model.id,
 						choice_id: choice.id,
 						angle_id: angle_id,
+						image_order: image_order,
 						layer_name: model_data.name,
 						image: img_id,
 						name: choice.get_name(),
@@ -232,12 +263,13 @@ PC.fe.save_data = {
 				var is_active = choice.get( 'active' );
 				if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) && 'form' != model.get( 'type' ) ) ) {
 					if ( false === choice.get( 'cshow' ) ) return;
-					var img_id = choice.get_image('image', 'id'); 
+					var img_id = choice.get_image( 'image', 'id', angle_id ); 
 					const choice_data = {
 						is_choice: true,
 						layer_id: model.id, 
 						choice_id: choice.id, 
 						angle_id: angle_id,
+						image_order: image_order,
 						image: img_id,
 						layer_name: model_data.name,
 						name: choice.get_name(),
@@ -266,7 +298,7 @@ PC.fe.save_data = {
 		} else {
 			// Not a choice
 			var choice = choices.first();
-			var img_id = choice.get_image('image', 'id');
+			var img_id = choice.get_image( 'image', 'id', angle_id );
 			if ( wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.add_choice', true, choice ) ) this.choices.push(
 				wp.hooks.applyFilters(
 					'PC.fe.save_data.parse_choices.added_choice',
@@ -275,6 +307,7 @@ PC.fe.save_data = {
 						layer_id: model.id,
 						choice_id: choice.id,
 						angle_id: angle_id,
+						image_order: image_order,
 						image: img_id,
 						name: choice.get_name(),
 					}

@@ -1,0 +1,472 @@
+.mkl_pc_3d_canvas_container {
+	position: absolute;
+	height: 100%;
+	width: 100%;
+	top: 0;
+	bottom: 0;
+
+	/*
+	 * The renderer sizes the drawing buffer only (setSize with updateStyle off)
+	 * and leaves the box to CSS, so the canvas fills the container on the same
+	 * frame as the reflow. Inline pixel sizes written from the resize handler ran
+	 * a frame behind the layout and left a visible gap along the growing edge.
+	 * These three declarations are load-bearing, not cosmetic: without them the
+	 * canvas falls back to its attribute size, which is pixel-ratio scaled.
+	 */
+	canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+}
+
+/*
+ * Opt-in full-bleed under the toolbar (settings_3d.extend_under_toolbar).
+ * Adds .mkl_pc_viewer--extend-under-toolbar. Themes stretch the viewer (desktop)
+ * and set focus insets for the toolbar side so the camera keeps framing the product:
+ *   --mkl_pc_viewer_focus_inset_left
+ *   --mkl_pc_viewer_focus_inset_right
+ *   --mkl_pc_viewer_focus_inset_top
+ *   --mkl_pc_viewer_focus_inset_bottom
+ * Values: px or % of the canvas axis. Unset sides default to 0.
+ * On mobile, leave insets unset / 0 so layout stays as designed.
+ */
+
+@keyframes mkl_pc_3d_loader_spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.mkl_pc_3d_loader {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1.5em;
+	box-sizing: border-box;
+	background: rgba(246, 246, 246, 0.72);
+	color: #3a3a3a;
+	font-size: 0.875em;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	line-height: 1.35;
+	text-align: center;
+	pointer-events: none;
+	opacity: 1;
+	transition: opacity 0.35s ease;
+
+	&.has-poster {
+		background: transparent;
+		color: #fff;
+	}
+
+	&.is-hiding {
+		opacity: 0;
+	}
+}
+
+.mkl_pc_3d_loader__poster {
+	position: absolute;
+	inset: 0;
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+
+	&::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			to top,
+			rgba(0, 0, 0, 0.45) 0%,
+			rgba(0, 0, 0, 0.18) 45%,
+			rgba(0, 0, 0, 0.12) 100%
+		);
+	}
+}
+
+.mkl_pc_3d_loader__content {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.85em;
+}
+
+.mkl_pc_3d_loader__spinner {
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
+	border: 1.5px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	opacity: 0.55;
+	animation: mkl_pc_3d_loader_spin 0.7s linear infinite;
+}
+
+.mkl_pc_3d_loader__text {
+	position: relative;
+	overflow: hidden;
+	height: 1.4em;
+	min-width: 8em;
+}
+
+.mkl_pc_3d_loader__text-track {
+	position: relative;
+	height: 100%;
+}
+
+.mkl_pc_3d_loader__text-item {
+	display: block;
+	white-space: nowrap;
+	transition: transform 0.35s ease, opacity 0.35s ease;
+	transform: translateY(0);
+	opacity: 1;
+
+	&.is-entering {
+		position: absolute;
+		left: 0;
+		right: 0;
+		transform: translateY(110%);
+		opacity: 0;
+	}
+
+	&.is-leaving {
+		position: absolute;
+		left: 0;
+		right: 0;
+		transform: translateY(-110%);
+		opacity: 0;
+	}
+
+	&.is-active {
+		position: relative;
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+
+// Download progress for the model itself. --mkl_pc_3d_loader_progress is written
+// by set_loading_progress from GLTFLoader's onProgress; it stays at 0 (and so
+// invisible) when the server sends no Content-Length.
+.mkl_pc_3d_loader__progress {
+	width: 100%;
+	max-width: 12em;
+	height: 2px;
+	margin-top: 0.75em;
+	border-radius: 2px;
+	overflow: hidden;
+	// Alpha rather than opacity: opacity would fade the filled bar with it.
+	background: rgba(127, 127, 127, 0.25);
+}
+
+// The canvas is focusable so it can be orbited from the keyboard; without a
+// visible ring a keyboard user cannot tell when the arrow keys will reach it.
+.mkl_pc_3d_canvas_container canvas:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: -2px;
+}
+
+// Stands in for the viewer when the browser has no WebGL at all. Uses the same
+// poster the loading overlay shows, so the shopper still sees the product.
+.mkl_pc_3d_poster_fallback {
+	position: absolute;
+	inset: 0;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: contain;
+}
+
+// Shown over the dead canvas when the browser drops the WebGL context. Some
+// browsers never fire webglcontextrestored, so the customer needs a way out.
+.mkl_pc_3d_loader--context-lost {
+	.mkl_pc_3d_loader__spinner {
+		display: none;
+	}
+}
+
+.mkl_pc_3d_loader__retry {
+	margin-top: 1em;
+	padding: 0.5em 1.2em;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	background: transparent;
+	border: 1px solid currentColor;
+	border-radius: 3px;
+
+	&:hover,
+	&:focus-visible {
+		opacity: 0.75;
+	}
+}
+
+.mkl_pc_3d_loader__progress-bar {
+	width: calc(var(--mkl_pc_3d_loader_progress, 0) * 100%);
+	height: 100%;
+	background: currentColor;
+	transition: width 0.2s linear;
+}
+
+
+/*
+ * Orbit affordance.
+ *
+ * A still render and a model that turns look the same until something moves, so
+ * this says the gesture out loud once and then quiets down: the pointer sweeps
+ * back and forth across the orbit ring, after which the label fades away and
+ * the puck shrinks to a dim resting disc that stays until the customer grabs
+ * the model. Loud enough to be read, small enough to leave the product alone.
+ *
+ * Nothing here takes pointer events. The drag that dismisses the hint has to
+ * reach the canvas underneath and orbit the model — an affordance that eats the
+ * interaction it just asked for is worse than no affordance at all.
+ *
+ * How long it stays loud is the two variables below, and nothing else. The
+ * moment the hint goes quiet is derived from them rather than written out
+ * again, because writing it out again is how it drifts: the loop count was
+ * lowered once while the settle delay kept the old figure, and the hint spent
+ * the difference sitting motionless before it shrank.
+ *
+ * `hint_settles_at` is also when premium hotspots fade in — the viewer reports
+ * the end of the settle animation as `hint:settled`, so retuning here moves
+ * them with it. See _wait_for_orbit_hint in the 3D premium add-on.
+ */
+$mkl_pc_hint_sweep_duration: 2.4s;
+$mkl_pc_hint_sweep_loops: 2;
+$mkl_pc_hint_settles_at: $mkl_pc_hint_sweep_duration * $mkl_pc_hint_sweep_loops;
+@keyframes mkl_pc_3d_hint_in {
+	from {
+		opacity: 0;
+		transform: scale(0.92);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes mkl_pc_3d_hint_sweep {
+	0%,
+	6% {
+		transform: translateX(0);
+	}
+
+	28% {
+		transform: translateX(-11px);
+	}
+
+	72% {
+		transform: translateX(11px);
+	}
+
+	94%,
+	100% {
+		transform: translateX(0);
+	}
+}
+
+// Where the hint ends up once it has said its piece: a small quiet disc that
+// keeps standing for "this one is interactive" without holding the middle of
+// the product. To have it leave entirely instead, take this to opacity 0.
+@keyframes mkl_pc_3d_hint_settle {
+	to {
+		opacity: 0.6;
+		transform: scale(0.72);
+	}
+}
+
+@keyframes mkl_pc_3d_hint_label_out {
+	to {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+}
+
+.mkl_pc_3d_hint {
+	position: absolute;
+	inset: 0;
+	z-index: 7;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.7em;
+	// Never an event target: see the note above.
+	pointer-events: none;
+	color: #fff;
+	opacity: 1;
+	// Only a transition here — an entry animation on this element would keep
+	// filling opacity and the dismissal fade would never be seen.
+	transition: opacity 0.3s ease;
+
+	&.is-hiding {
+		opacity: 0;
+	}
+}
+
+.mkl_pc_3d_hint__puck {
+	position: relative;
+	box-sizing: border-box;
+	width: 78px;
+	height: 78px;
+	border-radius: 50%;
+	// Dark enough to hold a white glyph over a white studio backdrop; the
+	// hairline border is what keeps it from disappearing into a dark one.
+	background: rgba(18, 18, 20, 0.42);
+	box-shadow: 0 3px 16px rgba(0, 0, 0, 0.28);
+	backdrop-filter: blur(7px) saturate(1.1);
+	-webkit-backdrop-filter: blur(7px) saturate(1.1);
+	animation:
+		mkl_pc_3d_hint_in 0.45s 0.1s ease both,
+		mkl_pc_3d_hint_settle 0.6s $mkl_pc_hint_settles_at ease forwards;
+}
+
+// Both icon wrappers are sized to their file's viewBox aspect — ring 42x22,
+// pointer 24x24. Change one there and change it here.
+.mkl_pc_3d_hint__orbit {
+	position: absolute;
+	bottom: 16px;
+	left: 50%;
+	display: block;
+	width: 42px;
+	height: 22px;
+	margin-left: -21px;
+	opacity: 0.85;
+}
+
+.mkl_pc_3d_hint__glyph {
+	position: absolute;
+	top: 14px;
+	left: 50%;
+	display: block;
+	width: 21px;
+	height: 21px;
+	// Centring lives in the margin so the sweep owns `transform` outright.
+	margin-left: -10.5px;
+	animation: mkl_pc_3d_hint_sweep $mkl_pc_hint_sweep_duration ease-in-out $mkl_pc_hint_sweep_loops both;
+}
+
+.mkl_pc_3d_hint__orbit svg,
+.mkl_pc_3d_hint__glyph svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.mkl_pc_3d_hint__label {
+	// A pill of its own rather than a text shadow: the backdrop behind the
+	// viewer is per-product and can be anything from a dark HDRI to white.
+	margin: 0;
+	padding: 0.35em 0.85em;
+	border: 1px solid rgba(255, 255, 255, 0.24);
+	border-radius: 999px;
+	background: rgba(18, 18, 20, 0.42);
+	box-shadow: 0 3px 16px rgba(0, 0, 0, 0.28);
+	backdrop-filter: blur(7px);
+	-webkit-backdrop-filter: blur(7px);
+	font-size: 0.8125em;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	line-height: 1.3;
+	text-align: center;
+	animation:
+		mkl_pc_3d_hint_in 0.45s 0.2s ease both,
+		mkl_pc_3d_hint_label_out 0.5s $mkl_pc_hint_settles_at ease forwards;
+}
+
+// Without a blurred backdrop the translucent fills lose most of their contrast.
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+	.mkl_pc_3d_hint__puck,
+	.mkl_pc_3d_hint__label {
+		background: rgba(18, 18, 20, 0.68);
+	}
+}
+
+/*
+ * Full-bleed viewer: keep what the customer reads with the product.
+ *
+ * With extend_under_toolbar the canvas stretches under the toolbar, but the
+ * camera goes on framing the product in the clear area beside it — that is what
+ * apply_camera_view_offset does with these same four custom properties. Any
+ * overlay centred on the raw canvas therefore drifts away from the product it
+ * belongs to; on Float's desktop layout it lands half behind the menu.
+ *
+ * Reading the same properties keeps the two in step by construction, and CSS
+ * resolves their percentages against the same axes parse_css_length does —
+ * left/right against width, top/bottom against height — so a themed % inset
+ * means the same thing to the overlay as it does to the camera.
+ */
+.mkl_pc_viewer--extend-under-toolbar {
+	.mkl_pc_3d_hint {
+		inset:
+			var(--mkl_pc_viewer_focus_inset_top, 0)
+			var(--mkl_pc_viewer_focus_inset_right, 0)
+			var(--mkl_pc_viewer_focus_inset_bottom, 0)
+			var(--mkl_pc_viewer_focus_inset_left, 0);
+	}
+
+	// Only the content moves. The loader's scrim and poster sit on the root and
+	// still have to cover the whole canvas — inset those and the stretched strip
+	// beside them shows the page through it.
+	.mkl_pc_3d_loader__content {
+		position: absolute;
+		inset:
+			var(--mkl_pc_viewer_focus_inset_top, 0)
+			var(--mkl_pc_viewer_focus_inset_right, 0)
+			var(--mkl_pc_viewer_focus_inset_bottom, 0)
+			var(--mkl_pc_viewer_focus_inset_left, 0);
+		// The root's padding no longer contains an absolutely positioned child.
+		box-sizing: border-box;
+		padding: 1.5em;
+	}
+}
+
+// The other half of the affordance, and the half that survives the once-per-
+// session hint: on a product whose orbit is not pinned shut, the cursor says
+// the model is grabbable on every later visit too.
+.mkl_pc_viewer--orbitable .mkl_pc_3d_canvas_container canvas {
+	cursor: grab;
+
+	&:active {
+		cursor: grabbing;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.mkl_pc_3d_loader {
+		transition: none;
+	}
+
+	.mkl_pc_3d_loader__spinner {
+		animation: none;
+		opacity: 0.7;
+		border-right-color: currentColor;
+	}
+
+	.mkl_pc_3d_loader__text-item {
+		transition: none;
+	}
+
+	.mkl_pc_3d_hint {
+		transition: none;
+	}
+
+	// The sweep is the whole message, so with motion off the hint has nothing
+	// left to say that the label does not say better. Keep it static and full
+	// strength rather than animating it into a resting state nobody saw it
+	// leave.
+	.mkl_pc_3d_hint__puck,
+	.mkl_pc_3d_hint__glyph,
+	.mkl_pc_3d_hint__label {
+		animation: none;
+		opacity: 1;
+		transform: none;
+	}
+}

@@ -28,7 +28,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 		 * @return array
 		 */
 		public function get_settings_list() {
-			
+			global $post;
 			$display_modes = [
 				[
 					'label' => __( 'Default', 'product-configurator-for-woocommerce' ),
@@ -279,7 +279,33 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'priority' => 500,
 					'section' => 'advanced',
 				),
+				
 			);
+
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$settings['object_3d_id'] = array(
+					'label'     => __( '3D model', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 10,
+					'html'      => Abstract_Settings::get_objects3d_select_html( array(
+						'setting'     => 'object_3d_id',
+						'placeholder' => __( '— None —', 'product-configurator-for-woocommerce' ),
+						'description' => __( 'The model this layer works with. Its choices use it unless they set their own.', 'product-configurator-for-woocommerce' ),
+					) ),
+				);
+				$settings['target_object_id'] = array(
+					'label'     => __( 'Object in the model', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 12,
+					'help'      => __( 'Optional. Narrows the layer to one object of the model: its choices show, hide, recolour or move this object instead of the whole model. Choices can pick their own.', 'product-configurator-for-woocommerce' ),
+					'html'      => '<div class="mkl-pc-setting--container">'
+						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Whole model', 'product-configurator-for-woocommerce' ) . '"> '
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
+			}
 
 			if ( mkl_pc( 'themes' )->current_theme_supports( 'columns' ) ) {
 				$settings['columns'] = array(
@@ -408,6 +434,18 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					]
 				),				
 			];
+
+			global $post;
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$sections['_threed'] = array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
+					'fields' => [
+					],
+				);
+			}
 
 			$languages = mkl_pc( 'languages' )->get_languages();
 			if ( ! empty( $languages ) ) {

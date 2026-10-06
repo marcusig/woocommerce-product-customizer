@@ -30,8 +30,8 @@ add_action( 'mkl_pc_frontend_configurator__main_view', 'mkl_pc_frontend_configur
 function mkl_pc_frontend_configurator__main_view__loader() {
 	?>
 	<div class="mkl-loader">
-		<div class="header"><?php esc_html_e( 'Loading Data', 'product-configurator-for-woocommerce' ); ?> </div>
-		<div class="spinner"></div>
+		<div class="mkl-loader__spinner spinner" aria-hidden="true"></div>
+		<div class="mkl-loader__header header"><?php esc_html_e( 'Loading…', 'product-configurator-for-woocommerce' ); ?></div>
 	</div>
 <?php
 }
@@ -213,12 +213,12 @@ function mkl_pc_frontend_configurator_choice_description() {
 add_action( 'tmpl-pc-configurator-choice-item', 'mkl_pc_frontend_configurator_choice_description', 50 );
 
 function mkl_pc_frontend_configurator_previous_step_icon() {
-	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-left.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-left.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG sanitized by Utils::inline_svg / wp_kses.
 }
 add_action( 'mkl_pc/previous_step/before', 'mkl_pc_frontend_configurator_previous_step_icon' );
 
 function mkl_pc_frontend_configurator_next_step_icon() {
-	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-right.svg' );
+	echo \MKL\PC\Utils::inline_svg( trailingslashit( MKL_PC_INCLUDE_PATH ) . 'themes-common/icons/arrow-right.svg' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- SVG sanitized by Utils::inline_svg / wp_kses.
 }
 add_action( 'mkl_pc/next_step/after', 'mkl_pc_frontend_configurator_next_step_icon' );
 
@@ -262,7 +262,12 @@ foreach( $parts as $part ) {
 	if ( file_exists( $part['path'].$part['file'] ) ) {
 		include $part['path'].$part['file'];
 	} else {
-		var_dump('file does not exist:', $part['path'].$part['file']);
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'wc_get_logger' ) ) {
+			wc_get_logger()->warning(
+				'MKL Product Configurator: template file does not exist: ' . $part['path'] . $part['file'],
+				array( 'source' => 'mkl-pc' )
+			);
+		}
 	}
 }
 

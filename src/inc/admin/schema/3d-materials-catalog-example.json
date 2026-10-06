@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+
+  "textures": {
+    "fabric_oxford_blue": {
+      "uri": "/textures/fabrics/oxford_blue.jpg",
+      "repeat": [4, 4]
+    },
+
+    "fabric_oxford_normal": {
+      "uri": "/textures/fabrics/oxford_normal.jpg",
+      "repeat": [4, 4]
+    }
+  },
+
+  "materials": {
+
+    "oxford_blue": {
+      "type": "physical",
+      "label": "Oxford Blue",
+
+      "color": "#ffffff",
+
+      "map": {
+        "texture": "fabric_oxford_blue"
+      },
+
+      "normalMap": {
+        "texture": "fabric_oxford_normal"
+      },
+
+      "roughness": 0.8,
+      "metalness": 0
+    },
+
+    "bike_paint_red": {
+      "type": "physical",
+      "color": "#ff0000",
+      "metalness": 0.9,
+      "roughness": 0.2,
+      "clearcoat": 1,
+      "clearcoatRoughness": 0.1
+    }
+  }
+}

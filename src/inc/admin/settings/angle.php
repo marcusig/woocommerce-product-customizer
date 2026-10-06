@@ -28,6 +28,7 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 		 * @return array
 		 */
 		public function get_settings_list() {
+			global $post;
 			$settings = array(
 				'name' => array(
 					'label' => __('Angle Name', 'product-configurator-for-woocommerce' ),
@@ -58,6 +59,110 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 				);
 			}
 
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$settings = array_merge( $settings, Abstract_Settings::get_3d_model_source_fields( array(
+					'can_upload'        => false,
+					'setting_model'     => 'camera_target_model',
+					'setting_upload'    => null,
+					'setting_object_id' => 'camera_target_object_id',
+					'model_label'       => __( 'Camera target (model)', 'product-configurator-for-woocommerce' ),
+					'object_id_label'   => __( 'Camera target (object)', 'product-configurator-for-woocommerce' ),
+					'section'           => 'threed',
+					'priority'          => 8,
+				) ) );
+				$settings['camera_focus_object_ids'] = array(
+					'label'   => __( 'Camera focus (objects for framing)', 'product-configurator-for-woocommerce' ),
+					'type'    => 'html',
+					'section' => 'threed',
+					'priority' => 19,
+					'html'    => '<div class="mkl-pc-setting--container mkl-pc--framing-objects-container">'
+						. '<div class="mkl-pc--framing-objects-list" data-setting="camera_focus_object_ids">'
+						. '<# if ( data.camera_focus_object_ids && data.camera_focus_object_ids.length ) { #>{{ data.camera_focus_object_ids.join(", ") }}<# } else { #><em>' . esc_html__( 'None selected', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
+						. '</div>'
+						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_objects" data-setting="camera_focus_object_ids">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
+						. ' <button type="button" class="button mkl-pc--action mkl-pc--action-clear-framing" data-action="clear_framing_objects" data-setting="camera_focus_object_ids">' . esc_html__( 'Clear', 'product-configurator-for-woocommerce' ) . '</button>'
+						. '</div>',
+				);
+				// Stored empty until changed, which the viewer reads as "fit": the first
+				// choice is what the select shows for an angle that never set it.
+				$settings['camera_framing'] = array(
+					'label'    => __( 'Framing', 'product-configurator-for-woocommerce' ),
+					'type'     => 'select',
+					'section'  => 'threed',
+					'priority' => 20,
+					'choices'  => array(
+						array(
+							'label' => __( 'Fit the target in view', 'product-configurator-for-woocommerce' ),
+							'value' => 'fit',
+						),
+						array(
+							'label' => __( 'Use the camera position as set', 'product-configurator-for-woocommerce' ),
+							'value' => 'fixed',
+						),
+					),
+					'help'     => __( 'Fit keeps the viewing direction you set and adjusts the distance so the whole target is visible, and centred, on any screen size. The camera still orbits around the target.', 'product-configurator-for-woocommerce' ),
+				);
+				$settings['camera_fit_margin'] = array(
+					'label'      => __( 'Margin around the target (%)', 'product-configurator-for-woocommerce' ),
+					'type'       => 'number',
+					'section'    => 'threed',
+					'priority'   => 21,
+					'condition'  => '"fixed" != data.camera_framing',
+					'attributes' => array(
+						'min'         => 0,
+						'max'         => 45,
+						'step'        => 1,
+						'placeholder' => 5,
+					),
+				);
+				// Empty means no cap. On a large screen the margin alone would blow the
+				// product up to fill the canvas; these stop the fit growing it further.
+				$settings['camera_fit_max_width'] = array(
+					'label'      => __( 'Maximum width (px)', 'product-configurator-for-woocommerce' ),
+					'type'       => 'number',
+					'section'    => 'threed',
+					'priority'   => 21.1,
+					'condition'  => '"fixed" != data.camera_framing',
+					'attributes' => array(
+						'min'  => 0,
+						'step' => 10,
+					),
+				);
+				$settings['camera_fit_max_height'] = array(
+					'label'      => __( 'Maximum height (px)', 'product-configurator-for-woocommerce' ),
+					'type'       => 'number',
+					'section'    => 'threed',
+					'priority'   => 21.2,
+					'condition'  => '"fixed" != data.camera_framing',
+					'attributes' => array(
+						'min'  => 0,
+						'step' => 10,
+					),
+					'help'       => __( 'Limits how large the target is drawn on big screens, on top of the margin. Leave empty for no limit. Cart and saved-design images are not limited.', 'product-configurator-for-woocommerce' ),
+				);
+				$settings['camera_turn'] = array(
+					'label'    => __( 'Camera turn when arriving', 'product-configurator-for-woocommerce' ),
+					'type'     => 'select',
+					'section'  => 'threed',
+					'priority' => 22,
+					'choices'  => array(
+						array(
+							'label' => __( 'Shortest way', 'product-configurator-for-woocommerce' ),
+							'value' => 'shortest',
+						),
+						array(
+							'label' => __( 'Clockwise, seen from above', 'product-configurator-for-woocommerce' ),
+							'value' => 'cw',
+						),
+						array(
+							'label' => __( 'Counter-clockwise, seen from above', 'product-configurator-for-woocommerce' ),
+							'value' => 'ccw',
+						),
+					),
+					'help'     => __( 'Which way the camera goes around the product when switching to this view. Ignored when the orbit is limited horizontally: the camera then takes the only way the limits allow.', 'product-configurator-for-woocommerce' ),
+				);
+			}
+
 			return apply_filters('mkl_pc_angle_default_settings', $settings );
 		}
 
@@ -67,7 +172,7 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 		 * @return array
 		 */
 		public function get_sections() {
-			return apply_filters( 'mkl_pc_layer_settings_sections', [
+			$sections = [
 				'_general' => array(
 					'id' => 'general',
 					'label' => __( 'General', 'product-configurator-for-woocommerce' ),
@@ -83,8 +188,22 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 					'collapsible' => true,
 					'fields' => [
 					]
-				),				
-			] );
+				),
+			];
+
+			global $post;
+			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				$sections['_threed'] = array(
+					'id' => 'threed',
+					'label' => __( '3D', 'product-configurator-for-woocommerce' ),
+					'priority' => 20,
+					'collapsible' => true,
+					'fields' => [
+					],
+				);
+			}
+
+			return apply_filters( 'mkl_pc_angle_settings_sections', $sections );
 		}		
 	}
 }

@@ -14,15 +14,162 @@ function mkl_pc_is_configurable( $product_id = NULL ) {
 	return MKL\PC\Utils::is_configurable( $product_id );
 }
 
+/**
+ * Checks if a product is configurable
+ *
+ * @param integer $product_id
+ * @return boolean
+ */
+function mkl_pc_get_configurator_type( $product_id = NULL ) {
+	// MKL_PC_PREFIX.'_configurator_type
+	if ( NULL == $product_id ) {
+
+		// if $product_id wasn't given, find the current one
+		$product_id = get_the_id();
+
+		if ( NULL == $product_id || false == $product_id ) return false;
+	} 
+
+	if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Schema' ) && \MKL\PC\Global_Configurators\Schema::is_global_configurator_id( $product_id ) ) {
+		$type = get_post_meta( $product_id, MKL_PC_PREFIX . '_configurator_type', true );
+		return $type ? $type : 'configurator';
+	}
+
+	// A global layer post owns no product, but it is edited with the same editor, and every 3D
+	// setting on the layer/choice forms is gated on this function. Without this branch it fell
+	// through to the is_product() bail below and returned false, so a layer made global from a
+	// 3D configurator could never have its 3D settings edited again.
+	if ( class_exists( '\\MKL\\PC\\Global_Layer\\Schema' ) && \MKL\PC\Global_Layer\Schema::is_global_layer_id( $product_id ) ) {
+		return \MKL\PC\Global_Layers::get_type( (int) $product_id );
+	}
+
+	// if $product_id doesn't match a product, exit
+	if ( ! MKL\PC\Utils::is_product( $product_id )  ) return false;
+
+	$fetched_product = wc_get_product( $product_id );
+	$type = $fetched_product->get_meta( MKL_PC_PREFIX.'_configurator_type' );
+	if ( $type ) {
+		return $type;
+	}
+
+	if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+		$global_id = \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( (int) $product_id );
+		if ( $global_id > 0 ) {
+			$type = get_post_meta( $global_id, MKL_PC_PREFIX . '_configurator_type', true );
+			if ( $type ) {
+				return $type;
+			}
+		}
+	}
+
+	return 'configurator';
+}
+
+/**
+ * The configurator types a configurator owner (product, global configurator, global layer) can have.
+ *
+ * Single source for the admin selects and for validating a type before it is stored.
+ *
+ * @return array<string, string> Type key => translated label.
+ */
+function mkl_pc_get_configurator_types() {
+	/**
+	 * Filter the available configurator types.
+	 *
+	 * @param array<string, string> $types Type key => translated label.
+	 */
+	return apply_filters(
+		'mkl_pc_configurator_types',
+		array(
+			'configurator' => __( '2D configurator', 'product-configurator-for-woocommerce' ),
+			'3d'           => __( '3D configurator', 'product-configurator-for-woocommerce' ),
+		)
+	);
+}
+
+/**
+ * Whether a string is a configurator type that can be stored.
+ *
+ * @param string $type
+ * @return bool
+ */
+function mkl_pc_is_valid_configurator_type( $type ) {
+	return is_string( $type ) && '' !== $type && array_key_exists( $type, mkl_pc_get_configurator_types() );
+}
+
+/**
+ * Allowed Three.js material property names for actions_3d material_property.
+ *
+ * Scalar/boolean props only — colors and textures use dedicated action types.
+ *
+ * @return string[]
+ */
+function mkl_pc_get_allowed_3d_material_properties() {
+	$properties = array(
+		'metalness',
+		'roughness',
+		'opacity',
+		'transparent',
+		'emissiveIntensity',
+		'envMapIntensity',
+		'aoMapIntensity',
+		'lightMapIntensity',
+		'bumpScale',
+		'displacementScale',
+		'displacementBias',
+		'clearcoat',
+		'clearcoatRoughness',
+		'transmission',
+		'thickness',
+		'ior',
+		'sheen',
+		'sheenRoughness',
+		'reflectivity',
+		'iridescence',
+		'iridescenceIOR',
+		'attenuationDistance',
+		'specularIntensity',
+		'wireframe',
+		'flatShading',
+		'depthTest',
+		'depthWrite',
+		'fog',
+		'toneMapped',
+		'vertexColors',
+	);
+
+	/**
+	 * Filter the allowlist of material property names usable in actions_3d.
+	 *
+	 * @param string[] $properties
+	 */
+	return apply_filters( 'mkl_pc_allowed_3d_material_properties', $properties );
+}
+
+/**
+ * Sanitize a material_property_name against the allowlist.
+ *
+ * @param mixed $name
+ * @return string Empty string when not allowed.
+ */
+function mkl_pc_sanitize_3d_material_property_name( $name ) {
+	$name = is_string( $name ) ? trim( $name ) : '';
+	if ( '' === $name ) {
+		return '';
+	}
+	$allowed = mkl_pc_get_allowed_3d_material_properties();
+	return in_array( $name, $allowed, true ) ? $name : '';
+}
+
 
 if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 
 	function request_is_frontend_ajax() {
-		$script_filename = isset($_SERVER['SCRIPT_FILENAME']) ? wp_unslash( $_SERVER['SCRIPT_FILENAME'] ) : '';
+		$script_filename = isset( $_SERVER['SCRIPT_FILENAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_FILENAME'] ) ) : '';
 		// Try to figure out if frontend AJAX request... If we are DOING_AJAX; let's look closer
 		if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) ) {
 			$ref = '';
-			if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) {
+			if ( ! empty( $_REQUEST['_wp_http_referer'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Referer is only used to distinguish admin vs frontend AJAX.
 				$ref = esc_url_raw( wp_unslash( $_REQUEST['_wp_http_referer'] ) );
 			} elseif ( ! empty( $_SERVER['HTTP_REFERER'] ) ) {
 				$ref = esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) );
@@ -31,7 +178,7 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 			// Include specific POST variables which indicate the request being from the admin, in case the next check fails
 			$check_variables = [ '_mkl_pc__is_configurable', 'variation_menu_order' ];
 			foreach( $check_variables as $check ) {
-				if ( in_array( $check, array_keys( $_POST ) ) ) {
+				if ( in_array( $check, array_keys( $_POST ), true ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Presence of admin POST keys only, values are not used.
 					return false;
 				}
 			}
@@ -45,6 +192,81 @@ if( ! function_exists( 'request_is_frontend_ajax' ) ) {
 		//If no checks triggered, we end up here - not an AJAX request.
 		return false;
 	}
+}
+
+/**
+ * Parent slug for Product Configurator admin pages.
+ *
+ * Add-ons should attach custom post types (`show_in_menu`) and submenu pages to this slug.
+ *
+ * @return string
+ */
+function mkl_pc_get_admin_menu_slug() {
+	/**
+	 * Filter the parent admin menu slug.
+	 *
+	 * @param string $slug
+	 */
+	return apply_filters( 'mkl_pc_admin_menu_slug', 'mkl_pc' );
+}
+
+/**
+ * Capability required to see the Product Configurator parent menu.
+ *
+ * @return string
+ */
+function mkl_pc_get_admin_menu_capability() {
+	$capability = function_exists( 'WC' ) ? 'manage_woocommerce' : 'manage_options';
+
+	/**
+	 * Filter the parent admin menu capability.
+	 *
+	 * @param string $capability
+	 */
+	return apply_filters( 'mkl_pc_admin_menu_capability', $capability );
+}
+
+/**
+ * Admin URL for the configurator settings page.
+ *
+ * @param array $query_args Extra query args (e.g. tab).
+ * @return string
+ */
+function mkl_pc_get_settings_page_url( $query_args = array() ) {
+	$query_args = array_merge(
+		array(
+			'page' => 'mkl_pc_settings',
+		),
+		$query_args
+	);
+	return add_query_arg( $query_args, admin_url( 'admin.php' ) );
+}
+
+/**
+ * Whether the current admin request is the configurator settings page.
+ *
+ * @return bool
+ */
+function mkl_pc_is_settings_page() {
+	if ( ! is_admin() ) {
+		return false;
+	}
+	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin screen detection.
+	return 'mkl_pc_settings' === $page;
+}
+
+/**
+ * Include an SVG icon
+ *
+ * @param string $icon - The icon to include. e.g. 'home', '3d/object_data'...
+ * @return string
+ */
+function mkl_pc_include_svg_icon( $icon ) {
+	if ( ! is_string( $icon ) || false !== strpos( $icon, '..' ) ) {
+		return '';
+	}
+	$path = trailingslashit( MKL_PC_ASSETS_PATH ) . 'icons/' . $icon . '.svg';
+	return \MKL\PC\Utils::inline_svg( $path );
 }
 
 /**
@@ -108,4 +330,33 @@ if ( ! function_exists( 'mkl_pc_get_configuration_price' ) ) {
 
 		return $config->get_configured_price( $args );
 	}
+}
+
+/**
+ * Get the mode used to store the configuration on cart items and order line items.
+ *
+ * - `single`     : one meta holding every choice (default, the historical behaviour)
+ * - `individual` : one meta per layer
+ * - `both`       : the single meta for display, plus one meta per layer
+ *
+ * @param \WC_Product|false $product Optional product, to allow filtering the mode per product.
+ * @return string
+ */
+function mkl_pc_get_configuration_meta_mode( $product = false ) {
+	$mode = mkl_pc( 'settings' )->get( 'configuration_meta_mode', 'single' );
+
+	if ( ! in_array( $mode, [ 'single', 'individual', 'both' ], true ) ) {
+		$mode = 'single';
+	}
+
+	/**
+	 * Filter mkl_pc/configuration_meta_mode - the configuration meta mode
+	 *
+	 * @param string            $mode    One of `single`, `individual` or `both`
+	 * @param \WC_Product|false $product The product, when available
+	 * @return string
+	 */
+	$mode = apply_filters( 'mkl_pc/configuration_meta_mode', $mode, $product );
+
+	return in_array( $mode, [ 'single', 'individual', 'both' ], true ) ? $mode : 'single';
 }

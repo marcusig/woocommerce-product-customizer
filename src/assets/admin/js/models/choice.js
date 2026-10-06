@@ -14,15 +14,28 @@ PC.choice = Backbone.Model.extend({
 	},
 	initialize: function( attributes, options ) {
 
-		if ( ! attributes.layerId ) this.set( 'layerId', options.layer.id );
+		// A choice belongs to the layer whose collection it is being built in. The stored value
+		// can say otherwise - choices served from a global layer carry the id of the layer they
+		// were authored in, not the id of the layer they are shown under - and everything that
+		// needs a choice's layer looks it up by this: PC.fe.layers.get( choice.get( 'layerId' ) )
+		// in the choice view and the viewer, and the actioner match in conditional logic.
+		var collection_layer_id = ( options && options.layer ) ? options.layer.id : null;
+		if ( collection_layer_id ) {
+			this.set( 'layerId', collection_layer_id );
+		}
 
 		if ( ! ( attributes.images instanceof Backbone.Collection ) ) {
 			var images = new PC.choice_pictures( attributes.images, { parse: true } );
 			this.set('images', images); 
 		}
 
-		// Reset choice selection to false by default
-		if ( PC.fe ) this.set( 'active', false );
+		// Reset choice selection to false by default, but only with a configurator
+		// actually running. `PC.fe` is a namespace several scripts create defensively
+		// on load, so its mere existence does not mean the frontend is up - and in the
+		// editor this would quietly clear the selection state off every choice it
+		// builds. `layers` is assigned before any choice is constructed, so it is the
+		// earliest thing that only a running configurator has.
+		if ( PC.fe && PC.fe.layers ) this.set( 'active', false );
 
 		switch ( attributes.available ) {
 			case '0':

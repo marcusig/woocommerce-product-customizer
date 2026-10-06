@@ -121,7 +121,18 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			if ( $fetched_product->is_type( 'variation' ) ) {
 				$all_variations_are_configurable = get_post_meta( $fetched_product->get_parent_id(), MKL_PC_PREFIX.'_all_variations_are_configurable', true );
 				$configurable = get_post_meta( $fetched_product->get_parent_id(), MKL_PC_PREFIX.'_is_configurable', true );
-				return $all_variations_are_configurable === 'yes' && $configurable === 'yes';
+				if ( $all_variations_are_configurable === 'yes' && $configurable === 'yes' ) {
+					return true;
+				}
+			}
+
+			// Any product reading from a global configurator is configurable, however it got
+			// there - an explicit link or the category rule. Asking the resolver rather than the
+			// category index also means an explicit link survives a product save that did not
+			// post the Configurable checkbox, which would otherwise reset the meta above to 'no'
+			// and quietly drop the product out of a configurator it is still listed under.
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+				return \MKL\PC\Global_Configurators\Owner_Resolver::get_global_id( (int) $product_id ) > 0;
 			}
 
 			return false;
@@ -144,6 +155,25 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
+		 * Check if a post id is either a product/variation or a global configurator CPT.
+		 *
+		 * Used by configurator storage/AJAX layers to decide whether a post can own configurator meta.
+		 *
+		 * @param integer|null $post_id
+		 * @return boolean
+		 */
+		public static function is_configurator_owner( $post_id = NULL ) {
+			if ( self::is_product( $post_id ) ) {
+				return true;
+			}
+			$post_type = ( NULL !== $post_id ) ? get_post_type( $post_id ) : get_post_type();
+			if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Schema' ) ) {
+				return \MKL\PC\Global_Configurators\Schema::CPT_SLUG === $post_type;
+			}
+			return false;
+		}
+
+		/**
 		 * Retreives an attachment id from its URL
 		 * credit: https://pippinsplugins.com/retrieve-attachment-id-from-image-url/
 		 *
@@ -152,8 +182,56 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		 */
 		public static function get_image_id ( $image_url ) {
 			global $wpdb;
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-off GUID lookup; WP has no API for this.
 			$attachment = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE guid = %s", $image_url ) );
 			return $attachment ? $attachment[0] : false;
+		}
+
+		/**
+		 * Sort a configuration's layers into the order they must be composited in
+		 *
+		 * Lowest first. The order comes from each layer's `image_order`, which a stored
+		 * configuration keeps a copy of; when even one layer cannot report one - it no longer
+		 * exists and the configuration pre-dates the saving of `image_order` - the layers are
+		 * left in the order the configurator saved them.
+		 *
+		 * That order is the layer order at the time, so it is the right answer unless the
+		 * product also customises `image_order`. It is the only self-consistent fallback:
+		 * sorting the layers that can report an order against the ones that cannot puts the
+		 * unknown ones arbitrarily at one end, which scrambles the stack rather than degrading it.
+		 *
+		 * @param array $layers - Array of \MKL\PC\Choice instances
+		 * @return array
+		 */
+		public static function sort_layers_for_merging( $layers ) {
+			if ( ! is_array( $layers ) ) return [];
+
+			$layers = array_values( $layers );
+			$sortable = [];
+
+			foreach ( $layers as $position => $layer ) {
+				if ( ! $layer || ! is_callable( [ $layer, 'get_image_order' ] ) ) return $layers;
+
+				$order = $layer->get_image_order();
+				if ( null === $order ) return $layers;
+
+				$sortable[] = [
+					'order'    => $order,
+					'position' => $position,
+					'layer'    => $layer,
+				];
+			}
+
+			usort(
+				$sortable,
+				function( $a, $b ) {
+					// Equal orders keep the order the configurator saved them in.
+					if ( $a['order'] === $b['order'] ) return $a['position'] <=> $b['position'];
+					return $a['order'] <=> $b['order'];
+				}
+			);
+
+			return wp_list_pluck( $sortable, 'layer' );
 		}
 
 		/**
@@ -171,7 +249,12 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			do_action('mkl_pc_before_template', $template_file, $return_instead_of_echo, $extract_these);
 
 			if (!file_exists($template_file)) {
-				error_log("MKL Product Configurator: template not found: ".$template_file);
+				if ( function_exists( 'wc_get_logger' ) ) {
+					wc_get_logger()->warning(
+						'MKL Product Configurator: template not found: ' . $template_file,
+						array( 'source' => 'mkl-pc' )
+					);
+				}
 				echo esc_html__( 'Error:', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'template not found', 'product-configurator-for-woocommerce' ) . ' (' . esc_html( $template_file ) . ')';
 			} else {
 				extract($extract_these, EXTR_SKIP);
@@ -474,6 +557,64 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 		}
 
 		/**
+		 * Move or rename a file using WP_Filesystem.
+		 *
+		 * @param string $source      Absolute source path.
+		 * @param string $destination Absolute destination path.
+		 * @param bool   $overwrite   Whether to overwrite an existing destination.
+		 * @return bool
+		 */
+		public static function fs_move( $source, $destination, $overwrite = false ) {
+			if ( ! is_string( $source ) || '' === $source || ! is_string( $destination ) || '' === $destination ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return (bool) $wp_filesystem->move( $source, $destination, $overwrite );
+		}
+
+		/**
+		 * Copy a file using WP_Filesystem.
+		 *
+		 * @param string $source      Absolute source path.
+		 * @param string $destination Absolute destination path.
+		 * @param bool   $overwrite   Whether to overwrite an existing destination.
+		 * @return bool
+		 */
+		public static function fs_copy( $source, $destination, $overwrite = false ) {
+			if ( ! is_string( $source ) || '' === $source || ! is_string( $destination ) || '' === $destination ) {
+				return false;
+			}
+
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+
+			global $wp_filesystem;
+			if ( ! $wp_filesystem ) {
+				WP_Filesystem();
+			}
+
+			if ( ! $wp_filesystem || ! is_object( $wp_filesystem ) ) {
+				return false;
+			}
+
+			return (bool) $wp_filesystem->copy( $source, $destination, $overwrite );
+		}
+
+		/**
 		 * List a directory using WP_Filesystem.
 		 *
 		 * @param string $dir_path Absolute directory path.
@@ -527,6 +668,32 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 			}
 
 			return wp_kses( $svg, self::allowed_svg_tags() );
+		}
+
+		/**
+		 * Unserialize a stored configurator value without ever instantiating an object.
+		 *
+		 * Drop-in replacement for maybe_unserialize() on configurator data. The meta API already
+		 * unserializes what it serialized, so a serialized string reaching this point was stored as a
+		 * string - possibly crafted - and must not be able to trigger PHP object injection.
+		 * Object / class / enum payloads are refused; legacy serialized arrays and scalars still decode,
+		 * so callers keep their own JSON fallback for strings.
+		 *
+		 * @param mixed $data
+		 * @return mixed The unserialized value, the value unchanged when it is not serialized, or false.
+		 */
+		public static function safe_unserialize( $data ) {
+			if ( ! is_string( $data ) || ! is_serialized( $data ) ) {
+				return $data;
+			}
+
+			$trimmed = trim( $data );
+			if ( isset( $trimmed[0] ) && in_array( $trimmed[0], array( 'O', 'C', 'E' ), true ) ) {
+				return false;
+			}
+
+			$unserialized = @unserialize( $trimmed, array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged -- Legacy PHP-serialized arrays only; objects are rejected above.
+			return $unserialized;
 		}
 	}
 }

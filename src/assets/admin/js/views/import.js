@@ -351,6 +351,9 @@ PC.import.views = PC.import.views || {};
 		},
 		process_import: function() {
 			// Import.imported_data.collections
+			// Drop stale choice/deletion tracking; layer/content deltas are rebuilt after data is loaded (see mark_all_layers_and_content_modified_for_save).
+			PC.app.deleted_layer_ids = [];
+			PC.app.modified_choices = [];
 			// Add the layers
 			PC.app.admin_data.set( 'layers', Import.imported_data.collections.layers );
 			// Add the angles
@@ -370,6 +373,8 @@ PC.import.views = PC.import.views || {};
 				alert( 'No content was imported' );
 			}
 
+			PC.app.mark_all_layers_and_content_modified_for_save();
+
 			// Add the conditions
 			if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
 				var conditions = this.col = new PC.conditionsCollection( Import.imported_data.collections.conditions, { parse: true } );
@@ -379,6 +384,10 @@ PC.import.views = PC.import.views || {};
 
 			// Hook
 			wp.hooks.doAction( 'PC.admin.import.process_import', Import );
+
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 
 			Import.state.current_tool.next();
 		}
@@ -400,7 +409,10 @@ PC.import.views = PC.import.views || {};
 		},
 		save: function( e ) {
 			$( e.currentTarget ).addClass( 'disabled' ).prop( 'disabled', true );
-			PC.app.save_all( false, { saved_all: this.on_saved.bind( this ) } );
+			PC.app.save_all( false, {
+				bulk_save_overlay: true,
+				saved_all: this.on_saved.bind( this )
+			} );
 		},
 		on_saved: function() {
 			console.log( 'saved', this );
@@ -408,7 +420,10 @@ PC.import.views = PC.import.views || {};
 		},
 		save_and_fix: function( e ) {
 			$( e.currentTarget ).addClass( 'disabled' ).prop( 'disabled', true );
-			PC.app.save_all( false, { saved_all: this.fix.bind( this ) } );
+			PC.app.save_all( false, {
+				bulk_save_overlay: true,
+				saved_all: this.fix.bind( this )
+			} );
 		},
 		fix: function() {
 			if ( ! PC_lang.update_nonce ) {

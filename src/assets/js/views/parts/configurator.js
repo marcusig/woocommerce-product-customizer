@@ -105,13 +105,29 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 
 	start: function( e, arg ) {
+		// Engine mode never auto-mounts. `PC.fe.start` already fired from init().
+		if ( wp.hooks.applyFilters( 'PC.fe.headless', !! PC.fe.headless ) ) {
+			return;
+		}
+
 		if ( this.toolbar ) this.toolbar.remove();
 		if ( this.viewer ) this.viewer.remove();
 		if ( this.footer ) this.footer.remove();
-		const Viewer_View = wp.hooks.applyFilters( 'PC.fe.viewer.main_view', PC.fe.views.viewer );
-		this.viewer = new Viewer_View( { parent: this } );
-		this.$main_window.append( this.viewer.render() );
-		
+		this.toolbar = null;
+		this.viewer = null;
+		this.footer = null;
+
+		// Settle the models before a single view exists: default selections, the
+		// configuration being edited, then conditional logic. Views are built from
+		// a state that is already final, which is what lets the layers list skip
+		// the layers conditional logic hides instead of rendering them and hiding
+		// them a moment later.
+		PC.fe.prepare_initial_state( this );
+
+		if ( wp.hooks.applyFilters( 'PC.fe.render_viewer', true ) ) {
+			PC.fe.mountViewer( this.$main_window );
+		}
+
 		if ( ! PC.fe.angles.length || ! PC.fe.layers.length || ! PC.fe.contents.content.length ) {
 			var message = $( '<div class="error configurator-error" />' ).text( 'The product configuration seems incomplete. Please make sure Layers, angles and content are set.' );
 			if ( ! PC.fe.config.inline ) {
@@ -125,63 +141,27 @@ PC.fe.views.configurator = Backbone.View.extend({
 		}
 
 		if ( arg == 'no-content' ) {
-			this.toolbar = new PC.fe.views.empty_viewer();
-			this.viewer.$el.append( this.toolbar.render() );
+			if ( this.viewer ) {
+				this.toolbar = new PC.fe.views.empty_viewer();
+				this.viewer.$el.append( this.toolbar.render() );
+			}
 		} else {
-			this.toolbar = new PC.fe.views.toolbar( { parent: this } );
-			this.footer = new PC.fe.views.footer( { parent: this } );
-
-			this.$main_window.append( this.toolbar.render() ); 
-			this.$main_window.append( this.footer.render() );
+			if ( wp.hooks.applyFilters( 'PC.fe.render_toolbar', true ) ) {
+				PC.fe.mountToolbar( this.$main_window );
+			}
+			if ( wp.hooks.applyFilters( 'PC.fe.render_footer', true ) ) {
+				PC.fe.mountFooter( this.$main_window );
+			}
 		}
 
 		this.refresh_main_window_accessibility();
 
-		// this.summary = new PC.fe.views.summary();
-		// this.$main_window.append( this.summary.$el );
-
-		var images = this.viewer.$el.find( 'img' ),
-			imagesLoaded = 0,
-			that = this;
-		
-		/*
-		$(PC.fe).trigger( 'start.loadingimages', that ); 
-		wp.hooks.doAction( 'PC.fe.start.loadingimages', that ); 
-		console.log('start loading images.'); 
-		this.viewer.$el.addClass('is-loading-image'); 
-		images.each(function(index, el) {
-			$(el).on('load', function( e ){
-				imagesLoaded++; 
-				if( imagesLoaded == images.length ) {
-					console.log('remove loading class images');	
-					that.viewer.$el.removeClass('is-loading-image');
-				}					
-			});
-		});
-		*/
 		$( PC.fe ).trigger( 'start', this );
 		wp.hooks.doAction( 'PC.fe.start', this ); 
 		this.open();
 	},
 	resetConfig: function() {
-		// Reset the configuration
-		PC.fe.contents.content.resetConfig();
-
-		// Maybe load the initial preset
-		if ( PC.fe.initial_preset ) {
-			PC.fe.setConfig( PC.fe.initial_preset );
-		}
-		
-		// Maybe reset the view
-		if ( 1 < PC.fe.angles.length ) {
-			PC.fe.angles.each( function( model ) {
-				model.set('active' , false); 
-			} );
-			PC.fe.angles.first().set( 'active', true ); 
-		}
-
-		// Trigger an action after reseting
-		wp.hooks.doAction( 'PC.fe.reset_configurator' );
+		PC.fe.reset_configuration();
 	},
 	refresh_main_window_accessibility: function() {
 		if ( ! this.$main_window || ! this.$main_window.length ) return;
@@ -378,3 +358,211 @@ PC.fe.views.empty_viewer = Backbone.View.extend({
 		return this.$el; 
 	},
 });
+
+/**
+ * Detached session/controller for engine mode. Not inserted into `body`.
+ * `PC.fe.ui` aliases `PC.fe.modal` — this is the session, not a fake window.
+ */
+PC.fe.views.stub_configurator = Backbone.View.extend({
+	tagName: 'div',
+	className: 'mkl_pc mkl_pc--headless',
+	initialize: function( options ) {
+		this.options = options || {};
+		this.product_id = options.product_id;
+		this.parent_id = options.parent_id;
+		this.viewer = null;
+		this.toolbar = null;
+		this.footer = null;
+		this.$main_window = $( '<div class="mkl_pc_container" />' );
+		this.$el.append( this.$main_window );
+
+		var data_key = 'prod_' + ( ( this.parent_id && 'async' !== PC.fe.config.data_mode ) ? this.parent_id : this.product_id );
+		if ( PC.productData && PC.productData[ data_key ] && PC.productData[ data_key ].product_info ) {
+			this.options = PC.productData[ data_key ].product_info;
+		}
+		return this;
+	},
+	open: function() {},
+	close: function() {},
+	remove: function() {
+		this.$el.remove();
+		this.stopListening();
+		return this;
+	},
+	resetConfig: function() {
+		PC.fe.reset_configuration();
+	}
+});
+
+/**
+ * THE VIEWER CONTRACT
+ * ===================
+ *
+ * A viewer is whatever `PC.fe.viewer.main_view` resolves to: the default <img>
+ * stack (PC.fe.views.viewer), the 3D viewer, or any future implementation
+ * (canvas/WebGL, one-image-per-layer, ...). Everything outside the viewer must
+ * go through this contract rather than reaching into the markup a particular
+ * viewer happens to produce - DOM structure is an implementation detail, and
+ * scraping it is what ties features to a single viewer.
+ *
+ * Required
+ * --------
+ * render() -> jQuery
+ *     Build and return the viewer's root element.
+ *
+ * Optional, but needed for the feature in brackets
+ * ------------------------------------------------
+ * capture( options ) -> Promise<Blob|null>   [PDF, cart image, Save your design]
+ *     Render the CURRENT configuration to a PNG blob, without disturbing what
+ *     the user sees. Resolve null when capture is not possible, so callers can
+ *     fall back rather than silently shipping a blank image. Options:
+ *       { width, height, maxDimension }
+ *     Implementations must decide what to draw from the MODELS (choice
+ *     `active`, and `cshow` via PC.conditionalLogic.item_is_hidden), never from
+ *     CSS classes such as `.active` / `.cshow-hidden` - those exist only in the
+ *     default viewer's markup.
+ *
+ * captureScreenshot( options ) -> dataURL|null
+ *     Legacy synchronous form, implemented by the 3D viewer. Supported by
+ *     PC.fe.capture_viewer_image() for back-compat; new viewers should
+ *     implement capture() instead.
+ *
+ * Notes
+ * -----
+ * - Multiple-choice layers can have several choices active at once, so a
+ *   capture must iterate every active choice, not one per layer.
+ * - Conditional logic sets `cshow` on the models; a viewer is responsible for
+ *   reflecting that itself, rather than relying on an external toggle of its
+ *   elements.
+ */
+
+/**
+ * Capture the current configuration as a PNG blob, through the active viewer.
+ *
+ * This is the single entry point for anything that needs a picture of the
+ * configuration (cart image, PDF, saved-design preview). It resolves null when
+ * the viewer cannot produce one, leaving the decision to fall back - or to
+ * surface an error - with the caller.
+ *
+ * @param {Object} [options] Passed through to the viewer: { width, height, maxDimension }.
+ * @return {Promise<Blob|null>}
+ */
+PC.fe.capture_viewer_image = function( options ) {
+	options = options || {};
+	var viewer = PC.fe.modal && PC.fe.modal.viewer ? PC.fe.modal.viewer : null;
+
+	/**
+	 * Filter the viewer used for the capture, e.g. to capture something other
+	 * than the currently mounted viewer.
+	 *
+	 * @param {Backbone.View|null} viewer
+	 * @param {Object} options
+	 */
+	viewer = wp.hooks.applyFilters( 'PC.fe.capture.viewer', viewer, options );
+
+	if ( ! viewer ) return Promise.resolve( null );
+
+	// A capture that fails asynchronously must resolve null as well: callers await
+	// this before the add to cart, and a rejection there stops the request itself.
+	// fetch() of a data URL, for one, is refused under a CSP whose connect-src
+	// does not allow data:.
+	var on_failure = function( method ) {
+		return function( err ) {
+			console.log( 'Product configurator: viewer ' + method + ' failed.', err );
+			return null;
+		};
+	};
+
+	// Preferred: the viewer knows how to draw itself.
+	if ( 'function' === typeof viewer.capture ) {
+		try {
+			return Promise.resolve( viewer.capture( options ) ).catch( on_failure( 'capture()' ) );
+		} catch ( err ) {
+			return Promise.resolve( on_failure( 'capture()' )( err ) );
+		}
+	}
+
+	// Back-compat: the 3D viewer returns a data URL synchronously.
+	if ( 'function' === typeof viewer.captureScreenshot ) {
+		try {
+			var data_url = viewer.captureScreenshot( options );
+			if ( ! data_url ) return Promise.resolve( null );
+			return fetch( data_url ).then( function( res ) { return res.blob(); } ).catch( on_failure( 'captureScreenshot()' ) );
+		} catch ( err ) {
+			return Promise.resolve( on_failure( 'captureScreenshot()' )( err ) );
+		}
+	}
+
+	return Promise.resolve( null );
+};
+
+/**
+ * Construct the viewer and optionally append it to `el`.
+ * Uses filter `PC.fe.viewer.main_view` so 3D (and other) viewers still swap in.
+ *
+ * @param {Element|jQuery} [el]
+ * @return {Backbone.View|null}
+ */
+PC.fe.mountViewer = function( el ) {
+	var modal = PC.fe.modal;
+	if ( ! modal ) {
+		return null;
+	}
+	if ( modal.viewer ) {
+		modal.viewer.remove();
+		modal.viewer = null;
+	}
+	var Viewer_View = wp.hooks.applyFilters( 'PC.fe.viewer.main_view', PC.fe.views.viewer );
+	modal.viewer = new Viewer_View( { parent: modal } );
+	var $rendered = modal.viewer.render();
+	if ( el ) {
+		$( el ).append( $rendered );
+	}
+	return modal.viewer;
+};
+
+/**
+ * Construct the toolbar and optionally append it to `el`.
+ *
+ * @param {Element|jQuery} [el]
+ * @return {Backbone.View|null}
+ */
+PC.fe.mountToolbar = function( el ) {
+	var modal = PC.fe.modal;
+	if ( ! modal ) {
+		return null;
+	}
+	if ( modal.toolbar ) {
+		modal.toolbar.remove();
+		modal.toolbar = null;
+	}
+	modal.toolbar = new PC.fe.views.toolbar( { parent: modal } );
+	var $rendered = modal.toolbar.render();
+	if ( el ) {
+		$( el ).append( $rendered );
+	}
+	return modal.toolbar;
+};
+
+/**
+ * Construct the footer and optionally append it to `el`.
+ *
+ * @param {Element|jQuery} [el]
+ * @return {Backbone.View|null}
+ */
+PC.fe.mountFooter = function( el ) {
+	var modal = PC.fe.modal;
+	if ( ! modal ) {
+		return null;
+	}
+	if ( modal.footer ) {
+		modal.footer.remove();
+		modal.footer = null;
+	}
+	modal.footer = new PC.fe.views.footer( { parent: modal } );
+	var $rendered = modal.footer.render();
+	if ( el ) {
+		$( el ).append( $rendered );
+	}
+	return modal.footer;
+};

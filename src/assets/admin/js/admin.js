@@ -2,23 +2,45 @@
 
 var PC = PC || {};
 !(function($) {
+	var configurable_input_selector = '#_mkl_pc__is_configurable';
+	var configurator_tab_selector = 'li.mkl_pc_configurator_options';
+
 	var configurable_product = {
 
 		init: function (){
 			configurable_product.set_configurable('init');
-			$('input.is_configurable').on( 'change', function( event ) {
+			$( configurable_input_selector ).on( 'change', function( event ) {
 				configurable_product.set_configurable( this.checked );
 			} );
+			
+			window.configurator_type = $('select.configurator-type').val();
+			const initial_configurator_type = window.configurator_type;
+			$('select.configurator-type').on( 'change', function( event ) {
+				window.configurator_type = $( this ).val();
+				if ( initial_configurator_type != window.configurator_type ) {
+					$( '.configurator-type-change-warning' ).removeClass( 'hidden' );
+					$( '.start_button_container' ).hide();
+				} else {
+					$( '.configurator-type-change-warning' ).addClass( 'hidden' );
+					$( '.start_button_container' ).show();
+				}
+			} );
+
 			this.views.init();
 			this.layers_editor.init();
 
 		},
 		structure: {
 			show: function() {
-				$('.show_if_is_configurable').show();
+				$( configurator_tab_selector ).show();
+				$( '.show_if_is_configurable' ).show();
 			},
 			hide: function() {
-				$('.show_if_is_configurable').hide();
+				$( configurator_tab_selector ).hide();
+				$( '.show_if_is_configurable' ).hide();
+				if ( $( configurator_tab_selector ).hasClass( 'active' ) ) {
+					$( 'ul.product_data_tabs li.general_options a' ).trigger( 'click' );
+				}
 			}
 
 		},
@@ -40,7 +62,7 @@ var PC = PC || {};
 
 		set_configurable: function(action) {
 			if( action == 'init') {
-				action = $('input.is_configurable').is(':checked');
+				action = $( configurable_input_selector ).is(':checked');
 			}
 			if( action === true ) {
 				this.structure.show()

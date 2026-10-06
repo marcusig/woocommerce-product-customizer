@@ -19,6 +19,8 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		private function _hooks() {
 			add_action( 'woocommerce_checkout_create_order_line_item', array( $this, 'save_data' ), 20, 4 );
 			add_filter( 'woocommerce_order_item_get_formatted_meta_data', array( $this, 'maybe_override_formatted_meta_data' ), 30, 2 );
+			add_filter( 'woocommerce_order_item_display_meta_value', array( $this, 'maybe_display_in_current_language' ), 20, 3 );
+			add_filter( 'woocommerce_order_item_get_formatted_meta_data', array( $this, 'maybe_display_individual_meta_in_current_language' ), 20, 2 );
 			add_filter( 'woocommerce_hidden_order_itemmeta', array( $this, 'hide_configuration_order_item_meta' ), 10, 1 );
 			add_filter( 'woocommerce_admin_order_item_thumbnail', array( $this, 'order_admin_item_thumbnail' ), 30, 3 );
 			add_filter( 'woocommerce_order_item_thumbnail', array( $this, 'order_item_thumbnail' ), 30, 2 );
@@ -100,11 +102,28 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				if ( isset( $values['pc_configurator_data_raw'] ) && is_string( $values['pc_configurator_data_raw'] ) && '' !== $values['pc_configurator_data_raw'] ) {
 					$item->add_meta_data( '_pc_configurator_data_raw', $values['pc_configurator_data_raw'], false );
 				}
-				$item->add_meta_data( 
-					apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
-					$this->get_formatted_configurator_data( $configurator_data, $item ), 
-					false
-				);
+				$meta_mode = mkl_pc_get_configuration_meta_mode( $item->get_product() );
+
+				/**
+				 * Build the per-layer choices once, and derive both outputs from them.
+				 * `get_configuration_choices_for_display()` must not run twice for the same
+				 * item: add-ons use the item counter to detect a new item, and treat a second
+				 * pass over the same one as a repeated layer (the Form builder blanks the
+				 * label in that case).
+				 */
+				$configuration_choices = $this->prepare_configuration_choices( $configurator_data, $item );
+
+				if ( 'individual' !== $meta_mode ) {
+					$item->add_meta_data( 
+						apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
+						! empty( $configuration_choices ) ? $this->get_choices_html( $configuration_choices ) : '', 
+						false
+					);
+				}
+
+				if ( 'single' !== $meta_mode ) {
+					$this->add_individual_layer_meta( $item, $configuration_choices );
+				}
 				if ( $sku = $this->get_sku( $configurator_data ) ) {
 					$item->add_meta_data(
 						esc_html( mkl_pc( 'settings')->get_label( 'sku_label', esc_html_x( 'SKU', 'Label for the SKU meta data', 'product-configurator-for-woocommerce' ) ) ),
@@ -114,6 +133,56 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				}
 				do_action( 'mkl_pc/order_created/after_saved_data', $item, $order, $configurator_data );
 			}
+
+			// Move 3D screenshot from temp to final location (not an attachment).
+			if ( ! empty( $values['configurator_3d_screenshot_path'] ) && is_string( $values['configurator_3d_screenshot_path'] ) ) {
+				$final_relative = $this->move_3d_screenshot_to_order( $values['configurator_3d_screenshot_path'], $order, $cart_item_key );
+				if ( $final_relative ) {
+					$item->add_meta_data( '_configurator_3d_screenshot_path', $final_relative, false );
+				}
+			}
+		}
+
+		/**
+		 * Move 3D screenshot from cart temp folder to final order folder.
+		 *
+		 * A cart item restored by "Order again" carries the original order's screenshot
+		 * (orders/...) instead of a temp file. That file still belongs to the original order, so it
+		 * is copied; only cart-temp files are moved.
+		 *
+		 * @param string $temp_relative Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png or orders/order-123-abc.png)
+		 * @param \WC_Order $order
+		 * @param string $cart_item_key
+		 * @return string|false Final relative path (e.g. orders/order-123-abc.png) or false on failure
+		 */
+		private function move_3d_screenshot_to_order( $temp_relative, $order, $cart_item_key ) {
+			if ( strpos( $temp_relative, '..' ) !== false ) {
+				return false;
+			}
+			$source_relative = trim( $temp_relative, '/' );
+			$is_temp         = 0 === strpos( $source_relative, 'cart-temp/' );
+			if ( ! $is_temp && 0 !== strpos( $source_relative, 'orders/' ) ) {
+				return false;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			$base_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images';
+			$temp_path     = $base_dir . '/' . $source_relative;
+			if ( ! file_exists( $temp_path ) || ! is_file( $temp_path ) ) {
+				return false;
+			}
+			$orders_dir = $base_dir . '/orders';
+			if ( ! file_exists( $orders_dir ) ) {
+				wp_mkdir_p( $orders_dir );
+			}
+			$order_id   = $order->get_id();
+			$safe_key   = sanitize_file_name( substr( $cart_item_key, 0, 32 ) );
+			$final_name = 'order-' . $order_id . '-' . $safe_key . '.png';
+			$final_path = $orders_dir . '/' . $final_name;
+			$stored = $is_temp ? \MKL\PC\Utils::fs_move( $temp_path, $final_path, true ) : \MKL\PC\Utils::fs_copy( $temp_path, $final_path, true );
+			if ( $stored ) {
+				return 'orders/' . $final_name;
+			}
+			return false;
 		}
 
 		public function get_sku( $configurator_data ) {
@@ -156,27 +225,209 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		 * @return array
 		 */
 		public function get_formatted_configurator_data( $configurator_data, $order_item ) {
-			
+			$order_meta_for_configuration = $this->prepare_configuration_choices( $configurator_data, $order_item );
+
+			if ( ! empty( $order_meta_for_configuration ) ) {
+				return $this->get_choices_html( $order_meta_for_configuration );
+			}
+
+			return '';
+		}
+
+		/**
+		 * Move the item counter forward and collect the per-layer choices.
+		 *
+		 * Add-ons use the `$mkl_pc_get_current_item` counter to tell one order item from the
+		 * next, so this must run exactly once per item: a second pass over the same item is
+		 * seen as a repeated layer and loses the labels.
+		 *
+		 * @param array          $configurator_data
+		 * @param \WC_Order_Item $order_item
+		 * @return array
+		 */
+		protected function prepare_configuration_choices( $configurator_data, $order_item ) {
 			global $mkl_pc_get_current_item;
 			if ( ! $mkl_pc_get_current_item ) {
 				$mkl_pc_get_current_item = 1;
 			} else {
 				$mkl_pc_get_current_item++;
 			}
-			static $items_count;
-			if ( ! $items_count ) {
-				$items_count = 1;
-			} else {
-				$items_count += 1;
+
+			if ( ! is_array( $configurator_data ) ) return [];
+
+			return $this->get_configuration_choices_for_display( $configurator_data, $order_item );
+		}
+
+		/**
+		 * Store one meta per layer on the order item, rather than a single combined meta.
+		 *
+		 * The values are stored as plain text, so that exports, invoices and ERP
+		 * integrations can read them without having to parse markup.
+		 *
+		 * @param \WC_Order_Item $item
+		 * @param array          $choices Output of {@see prepare_configuration_choices()}
+		 * @return void
+		 */
+		protected function add_individual_layer_meta( $item, $choices ) {
+			$pairs = $this->get_individual_layer_meta( $item, $choices );
+			if ( empty( $pairs ) ) return;
+
+			$map = [];
+			foreach ( $pairs as $pair ) {
+				$item->add_meta_data( $pair['key'], $pair['value'], false );
+				$map[] = [
+					'key'       => $pair['key'],
+					'value'     => $pair['value'],
+					'layer_id'  => $pair['layer_id'],
+					'choice_id' => $pair['choice_id'],
+				];
+			}
+			// Which layer each meta was made from, so it can be displayed in another language.
+			$item->add_meta_data( '_configurator_individual_meta', $map, true );
+		}
+
+		/**
+		 * Build the individual layer metas: one key / value pair per layer, as plain text.
+		 *
+		 * @param \WC_Order_Item $item
+		 * @param array          $choices Output of {@see prepare_configuration_choices()}
+		 * @return array - [ 'key', 'value', 'layer_id', 'choice_id' ] per meta
+		 */
+		protected function get_individual_layer_meta( $item, $choices ) {
+			$pairs = [];
+			if ( empty( $choices ) || ! is_array( $choices ) ) return $pairs;
+
+			foreach ( $choices as $choice ) {
+				if ( empty( $choice ) || ! is_array( $choice ) ) continue;
+
+				$layer = isset( $choice['layer'] ) ? $choice['layer'] : null;
+				$key   = isset( $choice['label'] ) ? $choice['label'] : '';
+				$value = isset( $choice['value'] ) ? $choice['value'] : '';
+
+				/**
+				 * Filter mkl_pc/order_created/individual_meta/keep_html - whether to keep the
+				 * markup in the individual layer metas. Off by default: the point of the
+				 * individual metas is to be machine readable.
+				 *
+				 * @param bool           $keep_html
+				 * @param \MKL\PC\Choice $layer
+				 * @param \WC_Order_Item $item
+				 * @return bool
+				 */
+				if ( ! apply_filters( 'mkl_pc/order_created/individual_meta/keep_html', false, $layer, $item ) ) {
+					$key   = $this->meta_to_plain_text( $key );
+					$value = $this->meta_to_plain_text( $value );
+				}
+
+				// Add-ons blank the label when a layer is repeated, because the combined meta
+				// only shows it once. Each individual meta stands on its own, so put it back.
+				if ( '' === $key && $layer && is_callable( [ $layer, 'get_layer' ] ) ) {
+					$key = $this->meta_to_plain_text( $layer->get_layer( 'name' ) );
+				}
+
+				/**
+				 * Filter mkl_pc/order_created/individual_meta/key - the meta key of an individual layer meta
+				 *
+				 * @param string         $key
+				 * @param \MKL\PC\Choice $layer
+				 * @param \WC_Order_Item $item
+				 * @return string
+				 */
+				$key = apply_filters( 'mkl_pc/order_created/individual_meta/key', $key, $layer, $item );
+
+				/**
+				 * Filter mkl_pc/order_created/individual_meta/value - the meta value of an individual layer meta
+				 *
+				 * @param string         $value
+				 * @param \MKL\PC\Choice $layer
+				 * @param \WC_Order_Item $item
+				 * @return string
+				 */
+				$value = apply_filters( 'mkl_pc/order_created/individual_meta/value', $value, $layer, $item );
+
+				// WooCommerce skips empty values when displaying the meta, so there is
+				// nothing to gain from storing them.
+				if ( ! is_scalar( $value ) || '' === (string) $value ) continue;
+
+				$pairs[] = [
+					'key'       => (string) $key,
+					'value'     => (string) $value,
+					'layer_id'  => $layer && isset( $layer->layer_id ) ? $layer->layer_id : null,
+					'choice_id' => $layer && isset( $layer->choice_id ) ? $layer->choice_id : null,
+				];
+			}
+			return $pairs;
+		}
+
+		/**
+		 * Display the individual layer metas in the current language, when the order was placed in another one.
+		 *
+		 * Like the combined configuration, they are stored at checkout in the customer's language.
+		 * Each one is matched to its layer through `_configurator_individual_meta`, and replaced by
+		 * the same meta built in the current language. Orders placed before that map existed are
+		 * left as they are.
+		 *
+		 * @param array          $formatted_meta
+		 * @param \WC_Order_Item $order_item
+		 * @return array
+		 */
+		public function maybe_display_individual_meta_in_current_language( $formatted_meta, $order_item ) {
+			if ( empty( $formatted_meta ) || ! is_callable( [ $order_item, 'get_meta' ] ) ) return $formatted_meta;
+
+			$map = $order_item->get_meta( '_configurator_individual_meta' );
+			if ( empty( $map ) || ! is_array( $map ) ) return $formatted_meta;
+
+			$configurator_data = $order_item->get_meta( '_configurator_data' );
+			if ( ! $this->saved_in_other_language( $configurator_data ) ) return $formatted_meta;
+
+			// Index the metas in the current language by layer and choice. A layer can hold
+			// several metas (eg. multiple choices), so keep them in order.
+			$current = [];
+			foreach ( $this->get_individual_layer_meta( $order_item, $this->prepare_configuration_choices( $configurator_data, $order_item ) ) as $pair ) {
+				$current[ $pair['layer_id'] . ':' . $pair['choice_id'] ][] = $pair;
 			}
 
-			if ( is_array( $configurator_data ) ) {
-				$order_meta_for_configuration = $this->get_configuration_choices_for_display( $configurator_data, $order_item );
-				if ( ! empty( $order_meta_for_configuration ) ) {
-					return $this->get_choices_html( $order_meta_for_configuration );
+			// Pair each stored meta with the map entry it was written from, in the same order.
+			$seen = [];
+			foreach ( $formatted_meta as $id => $meta ) {
+				foreach ( $map as $index => $entry ) {
+					if ( isset( $seen[ $index ] ) || ! is_array( $entry ) ) continue;
+					if ( ! isset( $entry['key'], $entry['value'] ) || (string) $entry['key'] !== (string) $meta->key || (string) $entry['value'] !== (string) $meta->value ) continue;
+					$seen[ $index ] = true;
+
+					$layer_key = ( isset( $entry['layer_id'] ) ? $entry['layer_id'] : '' ) . ':' . ( isset( $entry['choice_id'] ) ? $entry['choice_id'] : '' );
+					if ( empty( $current[ $layer_key ] ) ) break;
+					$pair = array_shift( $current[ $layer_key ] );
+
+					$formatted_meta[ $id ]->display_key   = apply_filters( 'woocommerce_order_item_display_meta_key', $pair['key'], $meta, $order_item );
+					$formatted_meta[ $id ]->display_value = wpautop( make_clickable( apply_filters( 'woocommerce_order_item_display_meta_value', $pair['value'], $meta, $order_item ) ) );
+					break;
 				}
 			}
-			return '';
+
+			return $formatted_meta;
+		}
+
+		/**
+		 * Turn a meta label or value into plain text.
+		 *
+		 * @param mixed $html
+		 * @return string
+		 */
+		protected function meta_to_plain_text( $html ) {
+			if ( ! is_scalar( $html ) ) return '';
+
+			$text = (string) $html;
+
+			// Keep words apart where the markup was doing the separating.
+			$text = preg_replace( '#<(br|/div|/p|/li|/span)[^>]*>#i', ' ', $text );
+			$text = wp_strip_all_tags( $text );
+			$text = html_entity_decode( $text, ENT_QUOTES, 'UTF-8' );
+			// Decoding can bring markup back (eg. an escaped tag stored as an entity).
+			$text = wp_strip_all_tags( $text );
+			$text = preg_replace( '/\s+/u', ' ', $text );
+
+			return trim( (string) $text );
 		}
 
 		/**
@@ -253,6 +504,47 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				}
 			}
 			return $formatted_meta;
+		}
+
+		/**
+		 * Display the configuration in the current language, when the order was placed in another one.
+		 *
+		 * The configuration meta is stored at checkout, in the language the customer ordered in. It
+		 * is rebuilt when displayed in another language: the admin's order page, and the emails
+		 * TranslatePress sends in the admin's language (the New order email is sent during the
+		 * customer's checkout, so this cannot be limited to wp-admin).
+		 *
+		 * @param string         $display_value
+		 * @param object         $meta
+		 * @param \WC_Order_Item $order_item
+		 * @return string
+		 */
+		public function maybe_display_in_current_language( $display_value, $meta, $order_item ) {
+			if ( ! is_object( $meta ) || ! isset( $meta->value ) || ! is_string( $meta->value ) ) return $display_value;
+			if ( ! strpos( $meta->value, 'order-configuration' ) || strpos( $meta->value, 'order-configuration-details' ) ) return $display_value;
+			if ( ! is_callable( [ $order_item, 'get_meta' ] ) ) return $display_value;
+
+			$configurator_data = $order_item->get_meta( '_configurator_data' );
+			if ( ! $this->saved_in_other_language( $configurator_data ) ) return $display_value;
+
+			$rebuilt = $this->get_formatted_configurator_data( $configurator_data, $order_item );
+			return $rebuilt ? $rebuilt : $display_value;
+		}
+
+		/**
+		 * Whether a stored configuration was saved in another language than the one being displayed
+		 *
+		 * @param array $configurator_data - The order item's `_configurator_data`
+		 * @return bool
+		 */
+		public function saved_in_other_language( $configurator_data ) {
+			if ( ! is_array( $configurator_data ) ) return false;
+			foreach ( $configurator_data as $choice ) {
+				if ( ! is_object( $choice ) || ! is_callable( [ $choice, 'saved_in_current_language' ] ) ) continue;
+				// Every choice of a configuration is saved in the same language: the first one is enough.
+				return $choice->is_stored() && ! $choice->saved_in_current_language();
+			}
+			return false;
 		}
 
 		public function set_order_item_meta( $layer, $product ) {
@@ -349,15 +641,27 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 
 		public function get_order_item_image( $order_item, $return = 'html', $size = false ) {
 
-			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false; 
-			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false; 
+			if ( ! is_callable( [ $order_item, 'get_product_id' ] ) ) return false;
+			if ( ! mkl_pc_is_configurable( $order_item->get_product_id() ) ) return false;
+
+			// 3D screenshot (saved at order placement, not an attachment)
+			$screenshot_path = $order_item->get_meta( '_configurator_3d_screenshot_path', true );
+			if ( $screenshot_path && is_string( $screenshot_path ) ) {
+				$url = $this->get_order_3d_screenshot_url( $screenshot_path );
+				if ( $url ) {
+					if ( 'url' == $return ) {
+						return $url;
+					}
+					return '<img src="' . esc_url( $url ) . '" alt="" class="attachment-woocommerce_thumbnail" />';
+				}
+			}
 
 			$configurator_data = $order_item->get_meta( '_configurator_data' );
 
 			if ( ! $configurator_data ) return false;
 
-			$choices = array(); 
-			usort( $configurator_data, [ $this, '_order_images' ] );
+			$choices = array();
+			$configurator_data = Utils::sort_layers_for_merging( $configurator_data );
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer ) continue;
 				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
@@ -368,7 +672,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			$configuration = new Configuration( NULL, array( 'product_id' => $order_item['product_id'], 'content' => json_encode( $choices ) ) );
 			if ( ! $size ) $size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 			$size = apply_filters( 'mkl_pc/order_image_size', $size, $order_item, $configurator_data );
-			
+
 			if ( 'url' == $return ) {
 				return $configuration->get_image_url( false, $size );
 			}
@@ -381,21 +685,25 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		}
 
 		/**
+		 * Get the public URL for an order 3D screenshot (final path under mkl-pc-config-images).
+		 *
+		 * @param string $relative_path e.g. orders/order-123-abc.png
+		 * @return string|null
+		 */
+		private function get_order_3d_screenshot_url( $relative_path ) {
+			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
+				return null;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			return $wp_upload_dir['baseurl'] . '/mkl-pc-config-images/' . trim( $relative_path, '/' );
+		}
+
+		/**
 		 * Order images
 		 *
 		 * @param object $choice_a
 		 * @param object $choice_b
 		 * @return integer
 		 */
-		private function _order_images( $choice_a, $choice_b ) {
-			$a = $choice_a->get_layer( 'image_order' );
-			$b = $choice_b->get_layer( 'image_order' );
-			// fallback to normal sort
-			if ( false === $a ) {
-				$a = $choice_a->get_layer( 'order' );
-				$b = $choice_b->get_layer( 'order' );
-			}
-			return ($a > $b) ? +1 : -1;
-		}
 	}
 }

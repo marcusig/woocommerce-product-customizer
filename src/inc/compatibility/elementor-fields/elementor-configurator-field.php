@@ -144,7 +144,7 @@ class Elementor_Configuration_Field extends \ElementorPro\Modules\Forms\Fields\F
 	}
 
 	public function process_field( $field, $record, $ajax_handler ) {
-		if ( isset( $_REQUEST['configurator_data_raw'] ) ) {
+		if ( isset( $_REQUEST['configurator_data_raw'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Elementor form submission nonce is verified by Elementor before process_field.
 			$id = $field['id'];
 			$configurator_data_raw = sanitize_text_field( wp_unslash( $_REQUEST['configurator_data_raw'] ) );
 			$record->update_field( $id, 'value', apply_filters( 'mkl_pc/elementor_field/configuration_value', $field['value'], $configurator_data_raw ) );

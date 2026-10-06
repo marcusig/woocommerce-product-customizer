@@ -10,6 +10,14 @@ PC.states = Backbone.Collection.extend({
     },
 });
 
+/**
+ * When admin_menu is inlined in PC_lang, skip the menu AJAX round-trip.
+ */
+PC.states.hasInlinedMenu = function() {
+	var lang = typeof window.PC_lang === 'object' && window.PC_lang ? window.PC_lang : null;
+	return !!( lang && Array.isArray( lang.admin_menu ) && lang.admin_menu.length > 0 );
+};
+
 // PC.menus = Backbone.Collection.extend({
 // 	model: PC.menu,
 // });

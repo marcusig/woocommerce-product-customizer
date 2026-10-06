@@ -1,0 +1,348 @@
+var PC = PC || {};
+
+( function( _ ) {
+	/**
+	 * Global Layers Collection
+	 * 
+	 * Stores global layer data and edit states across the configurator.
+	 * Edit states are not persisted to DB.
+	 */
+	PC.global_layers = Backbone.Collection.extend({
+		url: function() {
+			return ajaxurl + '?action=mkl_pc_global_layers';
+		},
+		model: Backbone.Model.extend({
+			defaults: {
+				global_id: null,
+				layer: null,
+				content: null,
+				is_editing_layer: false,
+				is_editing_choices: false,
+			}
+		}),
+		
+		initialize: function( models, options ) {
+			// Edit states (not persisted)
+			this.edit_states = {};
+		},
+
+		/**
+		 * Process choices array and update layerId to the target layer ID
+		 * Global layers store only an array of choices (no layerId wrapper)
+		 * @param {Array} choices - Array of choice objects
+		 * @param {number} target_layer_id - The target layer ID to use
+		 * @return {Array} Processed choices array with updated layerIds
+		 */
+		process_content_layer_id: function( choices, target_layer_id ) {
+			if ( ! choices || ! target_layer_id ) return choices;
+
+			// CPT may store { choices: [...] } or a bare choice list; normalize to an array of choices.
+			if ( choices && typeof choices === 'object' && ! Array.isArray( choices ) && Array.isArray( choices.choices ) ) {
+				choices = choices.choices;
+			}
+
+			// Global layers should always be an array of choices
+			if ( Array.isArray( choices ) ) {
+				return _.map( choices, function( choice ) {
+					var processed_choice = _.extend( {}, choice );
+					processed_choice.layerId = target_layer_id;
+					return processed_choice;
+				} );
+			}
+			
+			return choices;
+		},
+
+		/**
+		 * Get or create a global layer entry
+		 * @param {number} global_id - The CPT post ID
+		 * @return {Backbone.Model}
+		 */
+		get_or_create: function( global_id ) {
+			var model = this.get( global_id );
+			if ( ! model ) {
+				model = this.add({
+					id: global_id,
+					global_id: global_id,
+					layer: null,
+					content: null,
+					is_editing_layer: false,
+					is_editing_choices: false
+				});
+			}
+			return model;
+		},
+
+		/**
+		 * Set edit state for a global layer (not persisted)
+		 */
+		set_editing_layer: function( global_id, is_editing ) {
+			var model = this.get_or_create( global_id );
+			model.set( 'is_editing_layer', !! is_editing );
+			this.edit_states[global_id] = { is_editing_layer: !! is_editing };
+			if ( PC.app && PC.app.syncGlobalLayerFocusChrome ) {
+				PC.app.syncGlobalLayerFocusChrome();
+			}
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+		},
+
+		/**
+		 * Set edit state for choices of a global layer (not persisted)
+		 */
+		set_editing_choices: function( global_id, is_editing ) {
+			var model = this.get_or_create( global_id );
+			model.set( 'is_editing_choices', !! is_editing );
+			if ( ! this.edit_states[global_id] ) this.edit_states[global_id] = {};
+			this.edit_states[global_id].is_editing_choices = !! is_editing;
+			if ( PC.app && PC.app.syncGlobalLayerFocusChrome ) {
+				PC.app.syncGlobalLayerFocusChrome();
+			}
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+		},
+
+		/**
+		 * Whether the editor is opened on the global layer post itself, where the layer is the
+		 * document being edited rather than a locked copy borrowed by a product.
+		 */
+		is_standalone: function() {
+			return !! ( PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
+		},
+
+		/**
+		 * Get edit state for layer
+		 */
+		is_editing_layer: function( global_id ) {
+			if ( this.is_standalone() ) return true;
+			var model = this.get( global_id );
+			return model ? model.get( 'is_editing_layer' ) : false;
+		},
+
+		/**
+		 * Get edit state for choices
+		 */
+		is_editing_choices: function( global_id ) {
+			if ( this.is_standalone() ) return true;
+			var model = this.get( global_id );
+			return model ? model.get( 'is_editing_choices' ) : false;
+		},
+
+		/**
+		 * Fetch a global layer from server
+		 * @param {number} global_id - The CPT post ID
+		 * @param {Object} options - jQuery AJAX options
+		 *   - target_layer_id (optional) - If provided, updates choice layerIds to this ID
+		 *   - success - Success callback
+		 *   - error - Error callback
+		 */
+		fetch_global_layer: function( global_id, options ) {
+			options = options || {};
+			var model = this.get_or_create( global_id );
+			var target_layer_id = options.target_layer_id || null;
+			
+			return wp.ajax.post( {
+				action: 'mkl_pc_get_global_layer',
+				global_id: global_id,
+				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
+			} ).done( function( response ) {
+				if ( response && response.layer ) {
+					var processed_content = response.content;
+					
+					// Process choices to update layerIds if target_layer_id is provided
+					if ( target_layer_id && processed_content ) {
+						processed_content = this.process_content_layer_id( processed_content, target_layer_id );
+						// Also update the response object for the callback
+						response.content = processed_content;
+					}
+					
+					model.set( {
+						layer: response.layer,
+						content: processed_content || null
+					} );
+					model.set( 'edit_token', response.edit_token || '', { silent: true } );
+					if ( options.success ) options.success( model, response );
+				}
+			}.bind( this ) ).fail( function( error ) {
+				if ( options.error ) options.error( model, error );
+			}.bind( this ) );
+		},
+
+		/**
+		 * Save a global layer to server
+		 * @param {number} global_id - The CPT post ID (0 for new)
+		 * @param {Object} layer_data - Layer data (optional if only updating content)
+		 * @param {Array} content_data - Array of choice objects (optional if only updating layer)
+		 * @param {Object} options - jQuery AJAX options
+		 */
+		save_global_layer: function( global_id, layer_data, content_data, options ) {
+			options = options || {};
+			var collection = this;
+			var model = this.get_or_create( global_id );
+			var request_data = {
+				action: 'mkl_pc_save_global_layer',
+				global_id: global_id,
+				layer: layer_data ? JSON.stringify( layer_data ) : null,
+				content: content_data ? JSON.stringify( content_data ) : null,
+				angles: this.get_angles_snapshot(),
+				configurator_type: this.get_type_snapshot(),
+				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
+			};
+			var send = function( token_data ) {
+				return wp.ajax.post( _.extend( {}, request_data, token_data ) );
+			};
+			// Updating a layer goes through the revision check; a new one has nothing to conflict with.
+			var request = ( global_id && PC.app && PC.app.send_with_revision_check )
+				? PC.app.send_with_revision_check( this.get_edit_token_state( model ), send )
+				: send( {} );
+
+			return request.done( function( response ) {
+				if ( response && response.global_id && response.edit_token ) {
+					collection.get_or_create( response.global_id ).set( 'edit_token', response.edit_token, { silent: true } );
+				}
+				// Update local model with saved data
+				if ( layer_data ) {
+					model.set( 'layer', layer_data );
+				}
+				if ( content_data ) {
+					model.set( 'content', content_data );
+				}
+				if ( options.success ) {
+					options.success( model, response );
+				}
+			}.bind( this ) ).fail( function( error ) {
+				if ( options.error ) options.error( model, error );
+			}.bind( this ) );
+		},
+
+		/**
+		 * Token state for one global layer post. See PC.app.send_with_revision_check().
+		 *
+		 * The baseline is the token from the last fetch or save of the layer. Before either, it is the
+		 * one that came with the editor data: for a product, the tokens of the global layers it shows;
+		 * in the standalone editor, the layer post's own token.
+		 *
+		 * @param {Backbone.Model} model Global layer entry.
+		 * @return {Object}
+		 */
+		get_edit_token_state: function( model ) {
+			var collection = this;
+			return {
+				confirm_message: ( window.PC_lang && PC_lang.global_layer_edit_conflict_confirm ) || '',
+				get_expected: function() {
+					var token = model.get( 'edit_token' );
+					if ( 'string' === typeof token ) {
+						return token;
+					}
+					var admin_data = PC.app && PC.app.admin_data;
+					if ( ! admin_data ) {
+						return '';
+					}
+					if ( collection.is_standalone() ) {
+						return admin_data.get( 'edit_token' ) || '';
+					}
+					var tokens = admin_data.get( 'global_layer_edit_tokens' ) || {};
+					return tokens[ model.id ] || '';
+				},
+				get_attempted: function() {
+					return model.get( 'attempted_edit_token' ) || '';
+				},
+				set_attempted: function( token ) {
+					model.set( 'attempted_edit_token', token, { silent: true } );
+				},
+				set_confirmed: function( token ) {
+					model.set( 'edit_token', token, { silent: true } );
+				},
+			};
+		},
+
+		/**
+		 * The editing product's views, stored alongside the layer so it can be edited on its own
+		 * later (a global layer post has no views of its own).
+		 *
+		 * Standalone editing sends nothing: its views are rebuilt from this same snapshot, so
+		 * writing them back would only ever degrade it.
+		 *
+		 * @return {string|undefined} JSON views list, or undefined when there is nothing to store.
+		 */
+		get_angles_snapshot: function() {
+			if ( this.is_standalone() ) return undefined;
+			var angles = PC.app && PC.app.get_collection ? PC.app.get_collection( 'angles' ) : null;
+			if ( ! angles || ! angles.length ) return undefined;
+			return JSON.stringify( PC.toJSON( angles ) );
+		},
+
+		/**
+		 * The editing product's configurator type, stored alongside the layer so the standalone
+		 * editor shows the right settings (a global layer post has no type of its own, and an
+		 * empty 3D layer has no data to infer one from).
+		 *
+		 * Standalone editing sends nothing, so saving a layer from its own editor never rewrites
+		 * the type - same reasoning as the views snapshot above.
+		 *
+		 * @return {string|undefined} Type key, or undefined when there is nothing to store.
+		 */
+		get_type_snapshot: function() {
+			if ( this.is_standalone() ) return undefined;
+			return window.configurator_type || undefined;
+		},
+
+		/**
+		 * Fetch choices for a specific global layer
+		 * @param {number} global_id - The CPT post ID
+		 * @param {number} layer_id - The local layer ID (will be used to update layerIds in choices)
+		 * @param {Object} options - jQuery AJAX options
+		 */
+		fetch_global_choices: function( global_id, layer_id, options ) {
+			options = options || {};
+			var model = this.get_or_create( global_id );
+			var product = PC.app && PC.app.get_product ? PC.app.get_product() : null;
+			
+			return wp.ajax.post( {
+				action: 'mkl_pc_get_global_layer',
+				product_id: product && product.id ? product.id : 0,
+				layer_id: layer_id,
+				is_global: 1,
+				global_id: global_id,
+				nonce: ( window.PC_lang && PC_lang.global_layers_nonce ) ? PC_lang.global_layers_nonce : undefined
+			} ).done( function( response ) {
+				if ( response.content ) {
+					// Process choices to update layerIds (global layers store array of choices)
+					var choices_array = this.process_content_layer_id( response.content, layer_id );
+					
+					// Update local model's content with fetched choices
+					var current_content = model.get( 'content' ) || [];
+					// Find and update the content entry for this layer
+					var found = false;
+					for ( var i = 0; i < current_content.length; i++ ) {
+						if ( current_content[i].layerId == layer_id ) {
+							current_content[i].choices = choices_array;
+							current_content[i].layerId = layer_id;
+							found = true;
+							break;
+						}
+					}
+					if ( ! found ) {
+						current_content.push( {
+							layerId: layer_id,
+							choices: choices_array,
+							global_id: global_id
+						} );
+					}
+					model.set( 'content', current_content );
+					
+					// Return processed choices array in response
+					if ( options.success ) options.success( choices_array, response );
+				} else if ( options.error ) {
+					options.error( model, response );
+				}
+			}.bind( this ) ).fail( function( error ) {
+				if ( options.error ) options.error( model, error );
+			}.bind( this ) );
+		},
+	});
+
+} ) ( PC._us || window._ );
+

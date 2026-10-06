@@ -27,7 +27,6 @@
 
 		}
 		img {
-			transition: .2s all;
 			&:not(.active), &.loading {
 				opacity: 0;
 			}

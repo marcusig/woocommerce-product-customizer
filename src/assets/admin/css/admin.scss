@@ -1,3 +1,56 @@
+:root {
+	--global-layer-primary: #642077;
+	--global-layer-primary-rgb: 100, 32, 119;
+	/* Comma-separated channels so this expands to rgba(100, 32, 119, 0.08) */
+	--global-layer-bg: rgba(var(--global-layer-primary-rgb), 0.08);
+}
+
+/**
+ * Undo the Content tab's collapsed icon rail: give the sidebar nav its full width and its labels
+ * back, and drop the layers list it was making room for. Used where that list is not shown —
+ * narrow viewports, and a global layer's own screen, which has a single layer to begin with.
+ */
+@mixin mkl-pc-sidebar-nav-expanded {
+	.mkl-pc-admin-ui__sidebar-mid {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.mkl-pc-admin-ui__nav-wrap--primary {
+		flex: 1 1 auto;
+		width: 100%;
+		max-width: none;
+		align-self: stretch;
+		position: relative;
+		top: auto;
+	}
+	.mkl-pc-admin-ui__nav .mkl-pc-admin-ui__nav-item {
+		justify-content: flex-start;
+		padding-left: 2px;
+		padding-right: 8px;
+		.mkl-pc-admin-ui__nav-item-text {
+			position: static;
+			width: auto;
+			height: auto;
+			padding: 0;
+			margin: 0;
+			overflow: visible;
+			clip: auto;
+			white-space: nowrap;
+			border: 0;
+		}
+		.mkl-pc-admin-ui__nav-item-chevron {
+			display: flex;
+		}
+		&::after {
+			content: none;
+			display: none;
+		}
+	}
+	.mkl-pc-admin-ui__sidebar-layers {
+		display: none !important;
+	}
+}
+
 #woocommerce-product-data .panel .wc-metaboxes-wrapper {
 	width: 100%;
 }
@@ -6,7 +59,13 @@
 	border-top: 1px solid #eee;
 	padding-top: 20px !important;
 	padding-bottom: 20px !important;
-	padding-left: 162px!important;
+	@media (min-width: 900px) {
+		padding-left: 162px!important;
+	}
+}
+
+#woocommerce-product-data .notice.configurator-type-change-warning {
+    margin: 0px 15px;
 }
 
 .wc-pc-tabs,
@@ -46,19 +105,106 @@ ul.wc-pc-tabs-sub,
 .image-selectors {
 	display: none;
 
-} 
-html .media-modal.pc-modal {
+}
+
+
+
+/*
+ * Product Configurator — admin modal (`admin.scss`)
+ *
+ * Sections (approximate): WC product metabox tweaks → Modal shell (.mkl-pc-admin-ui) → Reusable admin
+ * dialog (.mkl-pc-admin-dialog) → Sidebar + canvas
+ * → Structures / Forms → Lists & toolbars → Content tab placeholders → Import-export → Globals / misc.
+ */
+
+$modal-spacing: 16px; // 16px 24px
+$light-border-color: #dddddd;
+$very-light-bg-color: #fcfcfc;
+$light-bg-color: #f3f3f3;
+$text-color: #23282d;
+
+$left-col-width: 328px;
+$pc-admin-nav-rail: 56px;
+
+$tablet-left-col-width: 270px;
+
+$pc-admin-sidebar-bg: #1e1e1e;
+$pc-admin-sidebar-fg: #e0e0e0;
+$pc-admin-sidebar-fg-mutted: #949494;
+$pc-admin-sidebar-muted: #a0a5aa;
+$pc-admin-canvas-chrome: #dcdcde;
+
+/* --------------------------------------------------------------------------
+ * Shared UI — loading indicator (migration overlay, sidebar save, etc.)
+ * -------------------------------------------------------------------------- */
+
+@keyframes mkl-pc-spinner-rotate {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.mkl-pc-spinner {
+	display: inline-block;
+	flex-shrink: 0;
+	width: 36px;
+	height: 36px;
+	box-sizing: border-box;
+	border: 3px solid #c3c4c7;
+	border-top-color: var(--wp-admin-theme-color, #007cba);
+	border-radius: 50%;
+	animation: mkl-pc-spinner-rotate 0.8s linear infinite;
+	vertical-align: middle;
+}
+
+.mkl-pc-spinner--sm {
+	width: 20px;
+	height: 20px;
+	border-width: 2px;
+}
+
+.mkl-pc-migration-overlay__spinner.mkl-pc-spinner {
+	display: block;
+	margin: 0 auto 16px;
+}
+
+.mkl-pc-migration-overlay.is-complete .mkl-pc-migration-overlay__spinner {
+	display: none;
+}
+
+body.pc-modal-opened {
+	overflow: hidden;
+}
+.pc-modal-backdrop {
+	z-index: 149000 !important;
+}
+html .mkl-pc-admin-ui.pc-modal {
+	z-index: 150000 !important;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	max-width: 100vw;
+	max-height: 100vh;
+	background: $pc-admin-canvas-chrome;
+	box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+	box-sizing: border-box;
+	overflow: hidden;
+	font-size: 13px;
+	line-height: 1.4;
+
 	.hidden {
 		display: none;
 	}
 	.delete:not(.button-primary) {
 		color: #a00;
 	}
-
 	.form-details .actions-container button + button {
 		margin-left: 6px;
 	}
-
 	.button-primary.delete {
 		background: #DB3434;
 		border-color: #a00;
@@ -73,10 +219,14 @@ html .media-modal.pc-modal {
 		&:active {
 			background: lighten(#DB3434, 7);
 			border-color: #DB3434;
-			box-shadow: inset 0 2px 5px -3px rgba( 0, 0, 0, 0.5 );
+			box-shadow: inset 0 2px 5px -3px rgba(0, 0, 0, 0.5);
 			transform: translateY(1px);
 			outline: none;
 		}
+	}
+	
+	&.wp-core-ui .button-link {
+		border-color: transparent;
 	}
 
 	.notice-container {
@@ -84,116 +234,1191 @@ html .media-modal.pc-modal {
 		position: absolute;
 		bottom: 10px;
 		left: 10px;
-		/* background: red; */
 	}
-
 	.pc-notice {
 		padding: 15px;
 		min-width: 200px;
 		max-width: 300px;
 		border-radius: 8px;
 		background: #000000e3;
-		color: #FFF;
+		color: #fff;
 		a {
-			color: #FFF;
+			color: #fff;
 		}
 	}
 	.pc-notice + .pc-notice {
 		margin-top: 8px;
 	}
-
 	.pc-notice .dashicons {
 		font-size: 30px;
 		width: 30px;
 		height: 30px;
 		margin-right: 10px;
-		vertical-align:middle;
+		vertical-align: middle;
 	}
-
 	.pc-notice.notice-success .dashicons {
 		color: #00a32a;
 	}
+	.pc-notice.notice-error {
+		max-width: 420px;
+		.dashicons {
+			color: #d63638;
+		}
+	}
+	.pc-notice.notice-warning .dashicons {
+		color: #dba617;
+	}
 
+	@media ( max-width: 900px ) {
+		@media ( prefers-reduced-motion: no-preference ) {
+			.mkl-pc-admin-ui__content.content.mkl-pc-mobile-stack--animating,
+			.mkl-pc-admin-ui__content.structure.mkl-pc-mobile-stack--animating {
+				transition: opacity 0.18s ease;
+				// opacity: 0.88;
+				// translate: translateY(-100%);
+			}
+		}
+	}
 
-}
+	.mkl-pc-admin-ui__body {
+		flex: 1;
+		min-height: 0;
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
 
+	.mkl-pc-admin-ui__main {
+		flex: 1;
+		display: grid;
+		grid-template-columns: minmax(0, $left-col-width) minmax(0, 1fr);
+		grid-template-rows: 1fr;
+		min-height: 0;
+		min-width: 0;
+		background: $pc-admin-sidebar-bg;
 
-/*
-PC MODAL 
-*/
+		.mkl-pc-admin-ui__sidebar-mobile-scrim {
+			display: none;
+		}
 
-$modal-spacing: 16px;
-$light-border-color: #dddddd;
-$very-light-bg-color: #fcfcfc;
-$light-bg-color: #f3f3f3;
-$text-color: #23282d;
+		@media ( max-width: 900px ) {
+			display: block;
+			position: relative;
+			height: 100%;
 
-$left-col-width: 300px;
+			&:has( .mkl-pc-admin-ui__sidebar.mkl-pc-admin-ui__sidebar--open ) .mkl-pc-admin-ui__sidebar-mobile-scrim,
+			&:has( .mkl-pc-admin-ui__nav.visible ) .mkl-pc-admin-ui__sidebar-mobile-scrim {
+				display: block;
+				position: fixed;
+				inset: 0;
+				z-index: 200000;
+				margin: 0;
+				padding: 0;
+				border: 0;
+				border-radius: 0;
+				background: rgba(0, 0, 0, 0.35);
+				cursor: pointer;
+				-webkit-appearance: none;
+				appearance: none;
+			}
+		}
+		> .mkl-pc-admin-ui__sidebar {
+			display: flex;
+			flex-direction: column;
+			grid-column: 1;
+			grid-row: 1;
+			min-height: 0;
+			border-right: 1px solid #2c2c2c;
+			background: $pc-admin-sidebar-bg;
+			color: $pc-admin-sidebar-fg;
+			.mkl-pc-admin-ui__sidebar-top {
+				flex: 0 0 auto;
+				padding: 12px 14px 35px;
+			}
 
-$tablet-left-col-width: 270px;
+			button.mkl-pc-admin-ui__product-icon-back-button {
+				flex: 0 0 auto;
+				align-self: flex-start;
+				width: 40px;
+				min-width: 40px;
+				height: 40px;
+				padding: 2px;
+				border-radius: 6px;
+				line-height: 1;
+				background: transparent;
+				border: none;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+			}
+			
+			svg.edit-site-site-icon__icon {
+				max-width: 100%;
+				max-height: 36px;
+				height: auto;
+			}
+			
+			svg.edit-site-site-icon__icon path {
+				fill: #FFF;
+			}
+			
+			.mkl-pc-admin-ui__product-name--container {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				min-width: 0;
+			}
 
-body.pc-modal-opened {
-	overflow: hidden;
-}
-.pc-modal-backdrop {
-	z-index: 149000;
-}
-html .media-modal.pc-modal {
-	z-index: 150000!important;
-	.media-frame-title { 
+			.mkl-pc-admin-ui__product-heading {
+				flex: 1 1 auto;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+				align-items: stretch;
+				gap: 4px;
+			}
+			
+			.mkl-pc-admin-ui__product-name {
+				display: block;
+				color: $pc-admin-sidebar-fg;
+				font-size: 15px;
+				font-weight: 500;
+				line-height: 1.35;
+				text-decoration: none;
+				position: relative;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				overflow: hidden;
+				padding-right: 20px;
+				
+				&::after {
+					content: "↗";
+					font-weight: 400;
+					opacity: 0;
+					position: absolute;
+					right: 0;
+					transition: opacity 0.12s ease;
+				}
+
+				&:hover,
+				&:focus {
+					color: #fff;
+					&::after {
+						opacity: 1;
+					}
+				}
+			}
+			.mkl-pc-admin-ui__back-to-product {
+				display: inline-flex;
+				align-items: center;
+				gap: 10px;
+				margin-top: 30px;
+				padding: 0;
+				padding-left: 16px;
+				border: 0;
+				background: transparent;
+				color: $pc-admin-sidebar-muted;
+				font-size: 14px;
+				cursor: pointer;
+				&:hover,
+				&:focus {
+					color: #fff;
+				}
+			}
+			.mkl-pc-admin-ui__back-chevron {
+				height: 20px;
+				width: 20px;
+				&::before {
+					font: normal 20px/1 dashicons;
+					content: "\f341";
+					line-height: 1;
+				}
+			}
+
+			.mkl-pc-admin-ui__sidebar-focus {
+				margin-top: 18px;
+				align-items: center;
+				gap: 10px;
+				.mkl-pc-sidebar-focus__back {
+					display: inline-flex;
+					align-items: center;
+					gap: 10px;
+					padding: 0;
+					margin: 0;
+					border: 0;
+					background: transparent;
+					color: $pc-admin-sidebar-muted;
+					font-size: 14px;
+					line-height: 1;
+					cursor: pointer;
+					&:hover,
+					&:focus {
+						color: #fff;
+					}
+				}
+				.mkl-pc-sidebar-focus__title {
+					font-size: 18px;
+					font-weight: 600;
+					color: #fff;
+					line-height: 1.25;
+					margin: 0 0 3px;
+					padding-left: 2px;
+				}
+				.mkl-pc-sidebar-focus__help {
+					margin: 0;
+					font-size: 12px;
+					line-height: 1.45;
+					color: $pc-admin-sidebar-muted;
+					padding-left: 2px;
+					max-width: 100%;
+				}
+			}
+			.mkl-pc-admin-ui__sidebar-3d-sections {
+				display: none;
+			}
+			.mkl-pc-admin-ui__sidebar-mid {
+				flex: 1 1 auto;
+				display: flex;
+				flex-direction: column;
+				min-height: 0;
+				min-width: 0;
+				/* Single scroll: full menu, or (content mode) nav rail + layer list together */
+				overflow-y: auto;
+				overflow-x: visible;
+				-webkit-overflow-scrolling: touch;
+				/* Match wp block editor (e.g. .block-editor-block-contextual-toolbar .block-editor-block-toolbar) */
+				scrollbar-width: thin;
+				scrollbar-gutter: stable both-edges;
+				scrollbar-color: #e0e0e0 transparent;
+
+				&::-webkit-scrollbar-track {
+					background-color: transparent;
+				}
+				&::-webkit-scrollbar-thumb {
+					background-color: #e0e0e0;
+					border-radius: 8px;
+					border: 3px solid transparent;
+					background-clip: padding-box;
+				}
+				&:hover,
+				&:focus,
+				&:focus-within {
+					scrollbar-color: #949494 transparent;
+				}
+				&:hover::-webkit-scrollbar-thumb,
+				&:focus::-webkit-scrollbar-thumb,
+				&:focus-within::-webkit-scrollbar-thumb {
+					background-color: #949494;
+				}
+			}
+			@media (hover: none) {
+				.mkl-pc-admin-ui__sidebar-mid {
+					scrollbar-color: #949494 transparent;
+				}
+			}
+			.mkl-pc-admin-ui__nav-wrap {
+				flex: 1 1 auto;
+				min-height: 0;
+				min-width: 0;
+				overflow: visible;
+				padding: 0 10px 0 12px;
+				width: 100%;
+				box-sizing: border-box;
+				transition: width 0.28s ease, flex-basis 0.28s ease, padding 0.28s ease;
+				&:hover, 
+				&:focus-within {
+					& + .mkl-pc-admin-ui__sidebar-layers {
+						opacity: 0.2 !important;
+						transition: opacity 0.28s ease;
+						filter: blur(3px);
+					}
+				}
+			}
+			.mkl-pc-admin-ui__sidebar-layers {
+				display: none;
+				flex: 1 1 auto;
+				flex-direction: column;
+				min-width: 0;
+				min-height: 0;
+				height: 100%;
+				border-left: 1px solid #2c2c2c;
+				overflow: visible;
+				padding: 10px 8px 8px 8px;
+				box-sizing: border-box;
+			}
+			.mkl-pc-admin-ui__sidebar-layers-heading {
+				margin: 0 0 6px;
+				padding: 4px 2px 10px 8px;
+				font-size: 15px;
+				font-weight: 600;
+				color: #fff;
+				line-height: 1.3;
+			}
+			.mkl-pc-admin-ui__sidebar-layers-list {
+				flex: 0 0 auto;
+				min-height: 0;
+				overflow: visible;
+			}
+			.mkl-pc-admin-ui__sidebar-footer {
+				flex: 0 0 auto;
+				padding: 10px 16px 16px;
+				border-top: 1px solid #2c2c2c;
+			}
+			.mkl-pc-sidebar-save__content {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 8px;
+			}
+			.mkl-pc-sidebar-save__icon.dashicons {
+				width: 20px;
+				height: 20px;
+				font-size: 20px;
+				line-height: 1;
+				flex-shrink: 0;
+				margin-top: 1px;
+			}
+			.mkl-pc-sidebar-save__spinner {
+				display: none;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-sidebar-save__spinner {
+				display: inline-block;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-sidebar-save__icon {
+				display: none !important;
+			}
+			/* Lighter ring on dark sidebar “saving” state */
+			.mkl-pc-admin-ui__sidebar-primary-save.is-loading .mkl-pc-spinner--sm {
+				border-color: rgba(255, 255, 255, 0.28);
+				border-top-color: #fff;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save[aria-disabled="false"] .mkl-pc-sidebar-save__icon.dashicons {
+				color: inherit;
+			}
+			.mkl-pc-admin-ui__sidebar-primary-save {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 100%;
+				text-align: center;
+				margin: 0;
+				text-shadow: none !important;
+				box-shadow: none !important;
+				&.disabled,
+				&[aria-disabled="true"] {
+					opacity: 1;
+					cursor: default;
+					background: rgba(255, 255, 255, 0.14) !important;
+					border-color: transparent !important;
+					color: #949494 !important;
+				}
+				&[aria-disabled="true"] .mkl-pc-sidebar-save__icon.dashicons-saved {
+					// color: #68de7c;
+				}
+				&[aria-disabled="true"]:focus-visible {
+					outline: 2px solid #72aee6;
+					outline-offset: 2px;
+				}
+				&[aria-disabled="false"]:hover,
+				&[aria-disabled="false"]:focus {
+					background: #f0f0f0 !important;
+					border-color: #f0f0f0 !important;
+					color: #000 !important;
+				}
+			}
+			.mkl-pc-admin-ui__sidebar-footer:not(.saving) {
+				.mkl-pc-admin-ui__sidebar-primary-save[aria-disabled="true"]:not(.is-loading) {
+					justify-content: start;
+					background: transparent !important;
+				}
+			}
+			@media ( max-width: 900px ) {
+				position: fixed;
+				z-index: 200001;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				width: min( 340px, 92vw );
+				grid-column: auto;
+				grid-row: auto;
+				transform: translateX(-100%);
+				transition: transform 0.2s ease, box-shadow 0.2s ease;
+				box-shadow: 2px 0 20px rgba(0, 0, 0, 0);
+				will-change: transform, box-shadow;
+				&:has( .mkl-pc-admin-ui__nav.visible ),
+				&.mkl-pc-admin-ui__sidebar--open {
+					transform: translateX(0);
+					box-shadow: 2px 0 20px rgba(0, 0, 0, 0.35);
+				}
+			}
+		}
+		> .mkl-pc-admin-ui__state {
+			grid-column: 2;
+			grid-row: 1;
+			min-width: 0;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			background: transparent;
+			margin: 16px 16px 16px 0;
+			overflow: hidden;
+			@media ( max-width: 900px ) {
+				margin: 0;
+				border-radius: 0;
+				width: 100%;
+				height: 100%;
+			}
+			> .state {
+				flex: 1;
+				min-height: 0;
+				min-width: 0;
+				display: flex;
+				flex-direction: column;
+				&.home {
+					overflow: auto;
+					-webkit-overflow-scrolling: touch;
+				}
+			}
+		}
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.structure ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.conditional ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.settings-3d ) {
+			// background: $pc-admin-canvas-chrome;
+			box-shadow: none;
+		}
+		> .mkl-pc-admin-ui__state:has( .state.home ),
+		> .mkl-pc-admin-ui__state:has( .state.image-order-state ),
+		> .mkl-pc-admin-ui__state:has( .font-library-app ),
+		> .mkl-pc-admin-ui__state:has( .state.conditional_placeholder ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content > .no-data ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.price-bulk-edit ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.import-export ) {
+			background: #FFF;
+			box-shadow: none;
+			@media ( min-width: 900px ) {
+				border-radius: 8px;
+			}
+		}
+		/* Message-only panes — the Conditional logic add-on upsell and the Content
+		   tab before layers/angles exist. They have no chrome of their own, so
+		   without a light surface they render dark text on the dark canvas. */
+		> .mkl-pc-admin-ui__state:has( .state.conditional_placeholder ),
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content > .no-data ) {
+			overflow: auto;
+			.tab_content,
+			.no-data {
+				max-width: 640px;
+				padding: 1.6em;
+				color: #1d2327;
+				p {
+					margin: 0 0 1em;
+					font-size: 13px;
+					line-height: 1.6;
+				}
+				p:last-child {
+					margin-bottom: 0;
+				}
+			}
+		}
+		> .mkl-pc-admin-ui__state:has( .mkl-pc-admin-ui__content.content ) {
+			// background: $pc-admin-canvas-chrome;
+			> .state.content-state {
+				min-height: 0;
+				display: flex;
+				flex-direction: column;
+				flex: 1;
+			}
+		}
+		&.mkl-pc-admin-ui--content-mode {
+			> .mkl-pc-admin-ui__sidebar {
+				.mkl-pc-admin-ui__sidebar-mid {
+					flex-direction: row;
+					align-items: flex-start;
+					border-top: 1px solid #2c2c2c;
+				}
+				.mkl-pc-admin-ui__nav-wrap--primary {
+					flex: 0 0 $pc-admin-nav-rail;
+					width: $pc-admin-nav-rail;
+					max-width: $pc-admin-nav-rail;
+					min-width: 0;
+					padding: 0 4px;
+					padding-top: 3px;
+					display: flex;
+					flex-direction: column;
+					align-self: flex-start;
+					min-height: 0;
+					overflow: visible;
+					position: sticky;
+					top: 0;
+					z-index: 2;
+				}
+				.mkl-pc-admin-ui__nav {
+					box-sizing: border-box;
+					flex: 0 0 auto;
+					width: 100%;
+					max-width: 100%;
+					overflow: visible;
+				}
+				.mkl-pc-admin-ui__nav .mkl-pc-admin-ui__nav-item {
+					justify-content: center;
+					padding-left: 8px;
+					padding-right: 8px;
+					min-width: 0;
+					.mkl-pc-admin-ui__nav-item-text {
+						position: absolute;
+						width: 1px;
+						height: 1px;
+						padding: 0;
+						margin: -1px;
+						overflow: hidden;
+						clip: rect(0, 0, 0, 0);
+						white-space: nowrap;
+						border: 0;
+					}
+					.mkl-pc-admin-ui__nav-item-chevron {
+						display: none;
+					}
+					/* CSS-only label on hover/focus when collapsed */
+					&::after {
+						content: attr(data-mkl-hint);
+						position: absolute;
+						left: calc(100% + 8px);
+						top: 50%;
+						transform: translateY(-50%);
+						padding: 6px 10px;
+						background: #2c3338;
+						color: #fff;
+						font-size: 12px;
+						font-weight: 500;
+						line-height: 1.2;
+						white-space: nowrap;
+						border-radius: 4px;
+						box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+						opacity: 0;
+						pointer-events: none;
+						z-index: 30;
+						transition: opacity 0.12s ease;
+					}
+					&:hover::after,
+					&:focus-visible::after {
+						opacity: 1;
+					}
+				}
+				.mkl-pc-admin-ui__nav .mkl-pc-admin-ui__nav-separator,
+				.mkl-pc-admin-ui__nav .separator {
+					margin-left: 4px;
+					margin-right: 4px;
+					max-width: 100%;
+					box-sizing: border-box;
+				}
+				.mkl-pc-admin-ui__sidebar-layers {
+					display: flex;
+					flex: 1 1 auto;
+					min-width: 0;
+					animation: mkl-pc-sidebar-layers-in 0.32s ease forwards;
+				}
+				.mkl-pc-admin-ui__sidebar-layers-list {
+					ul.layers {
+						margin: 0;
+						padding: 0;
+						list-style: none;
+					}
+					li button.layer {
+						display: flex;
+						align-items: center;
+						gap: 8px;
+						padding: 8px 10px;
+						margin: 0 0 2px;
+						border: 0;
+						border-radius: 6px;
+						color: $pc-admin-sidebar-fg-mutted;
+						text-decoration: none;
+						background: transparent;
+						text-align: left;
+						&:hover,
+						&:focus {
+							color: #fff;
+							background: rgba(255, 255, 255, 0.06);
+						}
+					}
+					li.active button.layer {
+						background: rgba(255, 255, 255, 0.12);
+						color: #fff;
+					}
+					span.number-of-choices {
+						margin-left: auto;
+						background: rgba(255, 255, 255, 0.12);
+						color: $pc-admin-sidebar-fg;
+					}
+				}
+				@media ( max-width: 900px ) {
+					@include mkl-pc-sidebar-nav-expanded;
+				}
+			}
+		}
+	}
+
+	&.is-global-layer-focus {
+		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
+			.mkl-pc-admin-ui__back-to-product {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-focus {
+				display: flex;
+			}
+			.mkl-pc-admin-ui__nav-wrap {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-layers,
+			.mkl-pc-admin-ui__sidebar-3d-sections {
+				display: none !important;
+			}
+		}
+		.mkl-pc-admin-ui__header .mkl-pc-admin-ui__menu-toggle,
+		.structure-content {
+			display: none !important;
+		}
+		.mkl-pc-admin-ui__sidebar-mid {
+			overflow: hidden !important;
+			transform: translateX(-100%);
+		}
+	}
+
+	// Editing a global layer on its own screen: the post holds exactly one layer, so nothing on
+	// these screens gets to pick, add, duplicate or delete a layer. Choices are untouched — they
+	// are the part of the layer this screen exists to edit.
+	&.is-global-layer-standalone {
+		// Only the layer form loses its actions; the choice form keeps Duplicate and Delete.
+		.layer-form > .form-details > header .actions-container {
+			.delete-item,
+			.duplicate-item,
+			.prompt-delete {
+				display: none !important;
+			}
+		}
+		// The Content screen's layer picker has one entry: hide it, and the ways back to it.
+		.mkl-pc-content-main-layer-panel,
+		.mkl-pc-mobile-content-toolbar--layers-back {
+			display: none !important;
+		}
+		// Content mode collapses the nav to an icon rail to make room for that list; without it
+		// the rail would just leave the sidebar empty.
+		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
+			@include mkl-pc-sidebar-nav-expanded;
+		}
+	}
+
+	// Layer details: the structure screen's card styling, but with the form as the only column.
+	// It borrows .structure for that styling, so the width cap and the narrow-view slide stack —
+	// both of which assume a list column to slide away from — have to be undone here.
+	.mkl-pc-admin-ui__content.structure.layer-details {
+		> .mkl-pc-admin-layout__column-track > .pc-sidebar {
+			max-width: none;
+		}
+		@media ( max-width: 900px ) {
+			> .mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+				position: relative;
+				transform: none;
+			}
+		}
+	}
+
+	&.is-settings-3d-focus {
+		.mkl-pc-admin-ui__main > .mkl-pc-admin-ui__sidebar {
+			// button.mkl-pc-admin-ui__product-icon-back-button {
+			// 	display: none !important;
+			// }
+			.mkl-pc-admin-ui__back-to-product {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-focus {
+				display: flex;
+			}
+			.mkl-pc-admin-ui__nav-wrap {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-layers {
+				display: none !important;
+			}
+			.mkl-pc-admin-ui__sidebar-mid {
+				flex-direction: column;
+				align-items: stretch;
+			}
+			.mkl-pc-admin-ui__sidebar-3d-sections {
+				display: flex !important;
+				flex: 1 1 auto;
+				flex-direction: column;
+				min-height: 0;
+				min-width: 0;
+				overflow-y: auto;
+				padding: 8px 12px 12px;
+				.mkl-pc-admin-ui__nav.pc-3d-section-tabs--sidebar {
+					padding: 4px 0 12px;
+					.mkl-pc-admin-ui__nav-item.pc-3d-section-tab {
+						.mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg {
+							width: 20px;
+							height: 20px;
+							display: block;
+							filter: invert(1);
+							opacity: 0.85;
+						}
+						&.active .mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg,
+						&:hover .mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg,
+						&:focus-visible .mkl-pc-admin-ui__nav-item-icon .pc-admin-icon svg {
+							filter: none;
+							opacity: 1;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	.mkl-pc-admin-ui__nav {
+		margin: 0;
+		padding: 4px 0 12px;
+		.mkl-pc-admin-ui__nav-separator,
+		.separator {
+			height: 1px;
+			margin: 13px 4px 8px 2px;
+			background: transparent;
+			pointer-events: none;
+		}
+		.mkl-pc-admin-ui__nav-item {
+			display: flex;
+			align-items: center;
+			gap: 5px;
+			margin: 0 0 1px;
+			padding: 0 8px 0 2px;
+			min-height: 32px;
+			width: 100%;
+			max-width: 100%;
+			box-sizing: border-box;
+			color: $pc-admin-sidebar-fg-mutted;
+			text-decoration: none;
+			border: 0;
+			box-shadow: none;
+			font-family: inherit;
+			font-size: 13px;
+			text-align: left;
+			-webkit-appearance: none;
+			appearance: none;
+			line-height: 1.35;
+			font-weight: 400;
+			background: transparent;
+			cursor: pointer;
+			position: relative;
+			border-radius: 4px;
+			.mkl-pc-admin-ui__nav-item-icon {
+				flex: 0 0 36px;
+				width: 36px;
+				height: 24px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				.pc-admin-icon {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+				}
+				.pc-admin-icon svg {
+					width: 18px;
+					height: 18px;
+					display: block;
+					opacity: 0.92;
+					fill: currentColor;
+				}
+				.dashicons {
+					width: 18px;
+					height: 18px;
+					font-size: 18px;
+					line-height: 1;
+					opacity: 0.92;
+				}
+			}
+			.mkl-pc-admin-ui__nav-item-text {
+				flex: 1 1 auto;
+				min-width: 0;
+				text-align: left;
+			}
+			.mkl-pc-admin-ui__nav-item-chevron {
+				flex: 0 0 20px;
+				width: 20px;
+				height: 20px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+			&:hover,
+			&:focus {
+				color: #fff;
+				background: rgba(255, 255, 255, 0.045);
+			}
+			&.active {
+				background: rgba(255, 255, 255, 0.08);
+				color: #fff;
+				font-weight: 500;
+				.mkl-pc-admin-ui__nav-item-chevron::before {
+					font: normal 12px/1 dashicons;
+					display: block;
+					color: $pc-admin-sidebar-muted;
+					content: "\f345";
+				}
+			}
+		}
+	}
+
+	.mkl-pc-admin-ui__header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		padding: 0 50px 0 16px;
+		min-height: 52px;
+		border-bottom: 1px solid $light-border-color;
+		background: #fff;
+		flex: 0 0 auto;
+
+		@media ( min-width: 900px ) {
+			display: none;
+		}
+
+		h1 {
+			flex: 1;
+			margin: 0;
+			font-size: 1.1em;
+			font-weight: 600;
+			padding: 12px 0;
+			line-height: 1.3;
+		}
+		.mkl-pc-admin-ui__menu-toggle {
+			display: none;
+			@media ( max-width: 900px ) {
+				display: inline-block;
+				align-items: center;
+			}
+		}
 		.description { 
 			display: block;
 			padding-left: $modal-spacing;
+			width: 100%;
+			flex-basis: 100%;
+			padding-bottom: 8px;
 			@media(max-width: 900px) {
 				display: none;
 			}
 		} 
-
-	} 
-	.media-frame-menu {
-		@media(max-width: 900px) {
-			.media-menu {
-				min-width: 180px;
-				transition: left 0.2s;
-			}
-		}
-		
 	}
 
-	.media-frame-content{
+	.mkl-pc-admin-ui__close {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 50px;
+		height: 50px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: #787c82;
+		cursor: pointer;
+		z-index: 6;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		&:hover,
+		&:focus {
+			color: #1d2327;
+			background: rgba(0, 0, 0, 0.04);
+		}
+	}
+	.mkl-pc-admin-ui__close-icon {
+		display: block;
+		width: 20px;
+		height: 20px;
+		&::before {
+			font: normal 20px/1 dashicons;
+			content: "\f158";
+		}
+	}
 
+	/*
+	 * Shared admin layout hooks (Structure, Content, Conditional): markup adds
+	 * .mkl-pc-admin-layout on the section root with --two-column or --three-column;
+	 * .mkl-pc-admin-layout__toolbar on mobile back rows; .mkl-pc-admin-layout__column
+	 * with --list / --detail (two-column) or --layers / --choices / --detail (content).
+	 * Legacy class names (.structure-content, .choice-details, …) stay for existing CSS/JS.
+	 */
+
+	.mkl-pc-admin-layout__column-track {
+		display: contents;
+	}
+
+	@media ( max-width: 900px ) {
+		.mkl-pc-admin-layout__column-track {
+			display: block;
+			flex: 1 1 auto;
+			min-height: 0;
+			position: relative;
+			overflow: hidden;
+			align-self: stretch;
+			width: 100%;
+		}
+
+		.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+			position: absolute;
+			left: 0;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			width: 100%;
+			box-sizing: border-box;
+			margin: 0;
+			overflow-x: hidden;
+			overflow-y: auto;
+			-webkit-overflow-scrolling: touch;
+			flex: none;
+			transform: translateX(-100%);
+			transition: transform 0.22s ease;
+			will-change: transform;
+			z-index: 1;
+		}
+
+		@media ( prefers-reduced-motion: reduce ) {
+			.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+				transition: none;
+			}
+		}
+
+		.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column.current {
+			transform: translateX(0);
+			z-index: 2;
+		}
+
+		.mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column.current ~ .mkl-pc-admin-layout__column {
+			transform: translateX(100%);
+		}
+	}
+
+	.mkl-pc-admin-ui__content {
+		flex: 1;
+		min-height: 0;
+		position: relative;
+		transition: transform 0.18s ease;
+		will-change: transform;
 		.mkl-list {
-			padding-bottom: 80px;
+			padding-bottom: 32px;
 		}
 
 		&.structure {
-			.pc-sidebar {
-				position: absolute;
-				top: 0;
-				right: 0;
-				bottom: 0;
-				width: 50%;
-				padding: 0;
-				z-index: 75;
-				background: #F8F8F8;
-				border-left: 1px solid #dcdcde;
-				overflow: auto;
-				box-sizing: border-box;
-				-webkit-overflow-scrolling: touch;
+			display: flex;
+			flex-direction: row;
+			align-items: stretch;
+			gap: 16px;
+			box-sizing: border-box;
+			flex: 1 1 0%;
+			min-height: 0;
+			min-width: 0;
+			align-self: stretch;
+			overflow: hidden;
+
+			> .mkl-pc-mobile-structure-toolbar {
+				display: none;
 			}
-			.structure-content {
-				width: 50%;
+
+			> .mkl-pc-admin-layout__column-track > .structure-content,
+			> .mkl-pc-admin-layout__column-track > .pc-sidebar {
+				background: #fff;
+				border: 1px solid $light-border-color;
+				border-radius: 8px;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+				flex: 1 1 0%;
+				min-width: 0;
+				min-height: 0;
+				overflow-x: hidden;
+				overflow-y: auto;
+				-webkit-overflow-scrolling: touch;
 				box-sizing: border-box;
-				position: absolute;
-				top: 0;
-				bottom: 0;
+				&:empty {
+					opacity: .2;
+				}
+			}
+			> .mkl-pc-admin-layout__column-track > .structure-content {
+				max-width: min(420px, 50%);
 				display: flex;
 				flex-direction: column;
+				position: relative;
+				flex: 1 1 0%;
+				.structure-toolbar {
+					flex: 0 0 auto;
+				}
+				.floating-add {
+					flex: 0 0 auto;
+				}
 				.mkl-list {
+					flex: 1;
 					position: relative;
 					width: 100%;
-					flex: 1;
-					overflow: auto;
+					min-height: 0;
+					overflow: visible;
+					overflow-y: auto;
+				}
+			}
+			> .mkl-pc-admin-layout__column-track > .pc-sidebar {
+				position: relative;
+				width: auto;
+				flex: 1 1 0%;
+				padding: 0;
+				z-index: 1;
+			}
+			@media ( max-width: 900px ) {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 10px;
+				margin-top: 10px;
+				flex: 1 1 auto;
+
+				> .mkl-pc-mobile-structure-toolbar {
+					display: none;
+					flex: 0 0 auto;
+					align-items: center;
+					padding: 8px 10px;
+					background: #fff;
+					border: 1px solid $light-border-color;
+					border-radius: 8px;
+					box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+					box-sizing: border-box;
+
+					.mkl-pc-mobile-back-to-structure-list {
+						display: inline-flex;
+						align-items: center;
+						gap: 4px;
+						padding: 4px 0;
+						text-decoration: none;
+
+						.mkl-pc-mobile-back-to-structure-list__icon {
+							line-height: 1;
+						}
+					}
+				}
+
+				/* Empty detail column hidden; :has() works with .pc-sidebar nested in the track */
+				// &:not( :has( .pc-sidebar .layer-form ) ):not( :has( .pc-sidebar .condition-details ) ) > .mkl-pc-admin-layout__column-track > .pc-sidebar {
+				// 	display: none;
+				// }
+
+				&:not( :has( .pc-sidebar .layer-form ) ):not( :has( .pc-sidebar .condition-details ) ) > .mkl-pc-admin-layout__column-track > .structure-content {
+					flex: 1 1 auto;
+					max-width: none;
+					min-height: 0;
+				}
+
+				&:has( .pc-sidebar .layer-form ) > .mkl-pc-mobile-structure-toolbar,
+				&:has( .pc-sidebar .condition-details ) > .mkl-pc-mobile-structure-toolbar {
+					display: flex;
+				}
+
+				> .mkl-pc-admin-layout__column-track > .structure-content.mkl-pc-admin-layout__column,
+				> .mkl-pc-admin-layout__column-track > .pc-sidebar.mkl-pc-admin-layout__column {
+					position: absolute;
+					left: 0;
+					top: 0;
+					right: 0;
+					bottom: 0;
+					width: 100%;
+					max-width: none;
+					flex: none;
+				}
+			}
+		}
+
+		&.settings-3d {
+			display: flex;
+			flex-direction: row;
+			align-items: stretch;
+			gap: 16px;
+			box-sizing: border-box;
+			flex: 1 1 0%;
+			min-height: 0;
+			min-width: 0;
+			align-self: stretch;
+			overflow: hidden;
+
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-settings,
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-preview {
+				background: #fff;
+				border: 1px solid $light-border-color;
+				border-radius: 8px;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+				flex: 1 1 0%;
+				min-width: 0;
+				min-height: 0;
+				overflow-x: hidden;
+				overflow-y: auto;
+				-webkit-overflow-scrolling: touch;
+				box-sizing: border-box;
+			}
+
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-settings {
+				max-width: min(420px, 50%);
+				display: flex;
+				flex-direction: column;
+				position: relative;
+				flex: 1 1 0%;
+			}
+
+			> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-preview {
+				position: relative;
+				width: auto;
+				flex: 1 1 0%;
+				padding: 0;
+				z-index: 1;
+				display: flex;
+				flex-direction: column;
+			}
+
+			@media ( max-width: 900px ) {
+				flex-direction: column;
+				align-items: stretch;
+				gap: 10px;
+				margin-top: 0;
+				flex: 1 1 auto;
+				overflow: visible;
+
+				> .mkl-pc-admin-layout__column-track {
+					display: flex;
+					flex-direction: column;
+					flex: 1 1 auto;
+					min-height: 0;
+					position: relative;
+					overflow: visible;
+					width: 100%;
+					align-self: stretch;
+				}
+
+				> .mkl-pc-admin-layout__column-track > .mkl-pc-admin-layout__column {
+					position: relative;
+					left: auto;
+					top: auto;
+					right: auto;
+					bottom: auto;
+					width: 100% !important;
+					max-width: none !important;
+					flex: 1 1 auto;
+					min-height: 0;
+					transform: none !important;
+					transition: none;
+				}
+
+				> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-settings {
+					flex: 0 1 auto;
+					max-height: min(55vh, 520px);
+				}
+
+				> .mkl-pc-admin-layout__column-track > .pc-3d-settings-column-preview {
+					flex: 1 1 36vh;
+					min-height: 220px;
 				}
 			}
 		}
@@ -236,16 +1461,8 @@ html .media-modal.pc-modal {
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background-color: rgba(255,255,255,0.6);
 		z-index: 200;
-		.spinner {
-			position: absolute;
-			left: 50%;
-			top: 50%;
-			float: none;
-			transform: translateX(-50%) translateY(-50%);
-			visibility: visible;
-		}
+		background-color: #000000c7;
 	}
 
 	.pc-sidebar {
@@ -266,22 +1483,13 @@ html .media-modal.pc-modal {
 		}
 		.components-panel__body-toggle.components-button {
 			background: linear-gradient(180deg, #FFF, transparent);
+			box-sizing: border-box;
 		}
 		.setting-section:not(.is-opened) {
 			.components-panel__body-toggle.components-button .components-panel__arrow {
 				transform: translateY(-50%) rotate(180deg);
 			}
 		}
-		
-		// .components-panel__body.is-opened {
-		// 	padding: 26px;
-		// 	.components-panel__body-title {
-		// 		margin: -26px -26px 5px;
-		// 		.components-panel__body-toggle.components-button {
-		// 			padding-left: 26px;
-		// 		}
-		// 	}
-		// }
 		.setting {
 			grid-column: 1 / -1;
 			&.col-half {
@@ -331,12 +1539,11 @@ html .media-modal.pc-modal {
 			}
 			
 			.selection {
-				padding: 8px 9px;
+				padding: 0 9px;
 				border: 1px solid #00000014;
-				display: inline-block;
-				line-height: 1;
-				vertical-align: middle;
-				min-height: 8px;
+				display: inline-flex;
+				align-items: center;
+				min-height: 40px;
 				border-radius: 3px;
 			}
 
@@ -430,6 +1637,7 @@ html .media-modal.pc-modal {
 	p.help {
 		clear: both;
 		color: var(--wc-subtext, #5F5F5F);
+		max-width: 450px;
 		@media (min-width: 900px) {
 			padding: 0;
 			padding-bottom: 1em;
@@ -463,54 +1671,113 @@ html .media-modal.pc-modal {
 html .pc-modal-container {
 	&.loading {
 		.loading-screen {
-			display: block;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-direction: column;
 		}
-
+		.mkl-pc-editor-load--busy {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 12px;
+		}
+	}
+	&.load-error {
+		.loading-screen {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-direction: column;
+			padding: 24px;
+			box-sizing: border-box;
+		}
+		.mkl-pc-editor-load--busy {
+			display: none !important;
+		}
+		.mkl-pc-editor-load--error {
+			display: block !important;
+			max-width: 420px;
+			text-align: center;
+		}
+		.mkl-pc-editor-load__message {
+			margin: 0 0 16px;
+			color: #fff;
+			font-size: 15px;
+			line-height: 1.5;
+		}
+		.mkl-pc-editor-load__actions {
+			display: flex;
+			gap: 8px;
+			justify-content: center;
+			flex-wrap: wrap;
+		}
+		.mkl-pc-editor-load__retry,
+		.mkl-pc-editor-load__close {
+			margin-top: 4px;
+		}
+		.mkl-pc-admin-ui__close {
+			z-index: 210;
+			color: #f0f0f1;
+			&:hover,
+			&:focus {
+				color: #fff;
+				background: rgba(255, 255, 255, 0.08);
+			}
+		}
 	}
 	.success {
 		color: #41B841;
 	}
-	.media-frame-toolbar {	
-		.button-group {
-			.button {
-				float: none;
-			}
-		}
-		.spinner {
-			margin-top: 21px; 
-			float: left;
-
-		}
-		&.saving {
-			.spinner {
-				visibility: visible;
-			}		
-		}
-		.saved-message {
-			display: none;
-			float: left;
-			line-height: 20px;
-			margin-top: 20px;
-		}
-		&.saved {
-			.saved-message {
-				display: inline-block;
-			}
-		}
-	}
 	.state.home {
+		.mkl-pc-admin-ui__content {
+			flex: 1 0 auto;
+			min-height: 100%;
+			height: auto;
+			overflow: visible;
+		}
 		.tab_content {
-			height: 100%;
+			min-height: 100%;
+			height: auto;
 			padding: 0;
 			@media ( min-width: 800px ) {
 				display: flex;
 			}
 			.instructions {
-				overflow: auto;
-				padding: 20px;
+				overflow: visible;
+				padding: 30px;
+				flex: 1;
+				.instructions-header {
+					display: flex;
+					align-items: center;
+					gap: 20px;
+					margin-bottom: 20px;
+				}
+				.instructions-header__thumbnail {
+					width: 80px;
+					height: 80px;
+					border-radius: 4px;
+					overflow: hidden;
+					border: 1px solid #CCC;
+					background: #f6f6f6;
+					box-sizing: border-box;
+					img {
+						width: 100%;
+						height: 100%;
+						object-fit: cover;
+					}
+				}
+				.notice {
+					margin-left: 0;
+					margin-right: 0;
+				}
 				@media ( min-width: 800px ) {
 					width: calc( 100% - 400px );
 				}
+			}
+			.mkl-home-section {
+				margin-bottom: 30px;
 			}
 			.more {
 				padding: 20px;
@@ -533,6 +1800,9 @@ html .pc-modal-container {
 		button + button {
 			margin-left: 6px;
 		}
+	}
+	.pc-gltf-load-error {
+		margin-top: 8px;
 	}
 
 	.setting span.name.required_info {
@@ -581,15 +1851,117 @@ html .pc-modal-container {
 	z-index: 1500000;
 }
 
+.pc-3d-settings {
+	.pc-3d-tree {
+		margin-top: 8px;
+		max-height: 260px;
+		overflow: auto;
+		padding: 8px 10px;
+		border-radius: 4px;
+		background: #fff;
+		box-shadow: inset 0 0 0 1px #e0e0e0;
+	}
+
+	.pc-3d-tree-list {
+		margin: 0;
+		padding-left: 0;
+		list-style: none;
+		font-size: 13px;
+		line-height: 1.4;
+		color: #1d2327;
+	}
+
+	.pc-3d-tree-item {
+		position: relative;
+		margin: 0;
+		padding: 2px 0 2px 18px;
+	}
+
+	.pc-3d-tree-item::before {
+		content: '';
+		position: absolute;
+		left: 7px;
+		top: 0;
+		bottom: -2px;
+		border-left: 1px solid #dcdcde;
+	}
+
+	.pc-3d-tree-item::after {
+		content: '';
+		position: absolute;
+		left: 7px;
+		top: 11px;
+		width: 10px;
+		border-top: 1px solid #dcdcde;
+	}
+
+	.pc-3d-tree-item:last-child::before {
+		bottom: 11px;
+	}
+
+	.pc-3d-tree-item > ul {
+		margin: 0;
+		padding-left: 14px;
+		list-style: none;
+	}
+
+	.pc-3d-tree-item--root {
+		font-weight: 500;
+	}
+
+	.pc-3d-tree-visible {
+		margin-right: 6px;
+	}
+
+	.pc-3d-tree-label {
+		vertical-align: middle;
+	}
+
+	.pc-3d-tree-item--has-children {
+		padding-left: 22px;
+		> .pc-3d-tree-toggle {
+			position: absolute;
+			left: 0;
+			top: 3px;
+			width: 14px;
+			height: 14px;
+			padding: 0;
+			margin: 0;
+			border: 0;
+			background: #FFF;
+			border: 1px solid #EEE;
+			border-radius: 3px;
+			z-index: 2;
+			cursor: pointer;
+		}
+		> .pc-3d-tree-toggle::before {
+			content: '▾';
+			font-size: 14px;
+			line-height: 14px;
+			color: #50575e;
+			transform: translateY(-1px);
+		}
+		&.is-collapsed {
+			> ul {
+				display: none;
+			}
+			> .pc-3d-tree-toggle::before {
+				content: '▸';
+			}
+		}
+	}
+}
+
 .mkl-list-item {
 	border-bottom: 1px solid #f0f0f0;
 	position: relative;
-    width: 100%;
-    max-width: 100%;
+	width: 100%;
+	max-width: 100%;
 	box-sizing: border-box;
 	transition: transform 0.2s;
 
-	button {
+	/* Fallback: plain row button only when not using the layer/choice list shell */
+	&:not(.layer):not(.choice):not(.condition) button {
 		position: relative;
 		border: none;
 		padding: $modal-spacing;
@@ -598,37 +1970,222 @@ html .pc-modal-container {
 		background: transparent;
 		box-sizing: border-box;
 		width: 100%;
-		box-sizing: border-box;
 		cursor: pointer;
-		&:hover h3 {
+
+		&:hover {
+			color: var(--wp-admin-theme-color, #0073aa);
+			background-color: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.04);
+
+			h3 {
+				color: var(--wp-admin-theme-color, #0073aa);
+			}
+		}
+	}
+
+	/* Structure / choices / conditions: drag handle + overlay hit target + body content */
+	&.layer,
+	&.choice,
+	&.condition {
+		> .mkl-pc-admin-list-row__inner {
+			position: relative;
+			display: flex;
+			align-items: stretch;
+			min-height: 48px;
+			padding-right: $modal-spacing;
+			padding-left: 36px;
+			box-sizing: border-box;
+		}
+
+		.mkl-pc-admin-list-row__hit {
+			position: absolute;
+			inset: 0;
+			inset-inline-start: 36px;
+			z-index: 1;
+			margin: 0;
+			padding: 0 !important;
+			width: auto !important;
+			border: 0;
+			border-radius: 0;
+			background: transparent;
+			cursor: pointer;
+			text-align: left;
+			-webkit-appearance: none;
+			appearance: none;
+		}
+
+		.mkl-pc-admin-list-row__body {
+			position: relative;
+			z-index: 2;
+			flex: 1 1 auto;
+			min-width: 0;
+			display: flex;
+			align-items: center;
+			padding: 12px 0;
+			pointer-events: none;
+		}
+
+		&:hover > .mkl-pc-admin-list-row__inner {
+			background-color: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.04);
+		}
+	}
+
+	&.layer {
+		.mkl-pc-admin-list-row__label {
+			display: flex;
+			flex: 1;
+			align-items: center;
+			gap: 10px;
+			min-width: 0;
+		}
+
+		.layer-item--image {
+			flex: 0 0 auto;
+			width: 40px;
+			height: 40px;
+			border-radius: 6px;
+			overflow: hidden;
+			background: #f0f0f1;
+			border: 1px solid #dcdcde;
+			box-sizing: border-box;
+
+			&:empty {
+				background: #f6f7f7;
+				border-style: dashed;
+			}
+		}
+
+		.layer-item--image .layer-img {
+			display: block;
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.layer-label-container {
+			margin: 0;
+			font-weight: 500;
+			font-size: 15px;
+			line-height: 1.4;
+			color: #1e1e1e;
+			flex: 1 1 auto;
+			min-width: 0;
+
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		
+			.layer-label--extras {
+				font-size: 12px;
+				font-weight: normal;
+				opacity: 0.7;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+
+				.layer-label--extras-item.layer-label--extras-item--type {
+					display: inline-flex;
+					gap: 6px;
+					align-items: center;
+				}
+				svg {
+					fill: currentColor;
+				}
+			}
+
+			.layer-label--type-icon.dashicons {
+				width: 16px;
+				height: 16px;
+				font-size: 16px;
+				line-height: 1;
+				flex: 0 0 auto;
+				opacity: 0.5;
+			}
+
+			.layer-label--type-icon.pc-admin-icon {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				flex: 0 0 auto;
+				opacity: 0.5;
+			}
+
+			.layer-label--type-icon.pc-admin-icon svg {
+				width: 24px;
+				height: 24px;
+				display: block;
+			}
+
+			.mkl-pc--global {
+				display: inline-flex;
+				align-items: center;
+				gap: 4px;
+				vertical-align: middle;
+				color: var(--global-layer-primary, #3858e9);
+			}
+
+			.mkl-pc--global-icon.dashicons {
+				width: 14px;
+				height: 14px;
+				font-size: 14px;
+				line-height: 1;
+				opacity: 0.95;
+				color: var(--global-layer-primary, #3858e9);
+			}
+		}
+
+		&:hover > .mkl-pc-admin-list-row__inner .layer-label-container {
 			color: var(--wp-admin-theme-color, #0073aa);
 		}
 	}
 
-	.layer-img {
+	&.choice {
+		.choice-label-container {
+			margin: 0;
+			font-weight: 500;
+			font-size: 15px;
+			line-height: 1.4;
+			color: #1e1e1e;
+			flex: 1 1 auto;
+			min-width: 0;
+		}
+
+		&:hover > .mkl-pc-admin-list-row__inner .choice-label-container {
+			color: var(--wp-admin-theme-color, #0073aa);
+		}
+	}
+
+	&.condition {
+		.mkl-pc-admin-list-row__body h3 {
+			color: #1e1e1e;
+		}
+
+		&:hover .mkl-pc-admin-list-row__body h3 {
+			color: var(--wp-admin-theme-color, #0073aa);
+		}
+	}
+
+	/* Content sidebar: layer row is a single button; keep thumbnail on the right */
+	button.mkl-list-item.layer .icon .layer-img {
 		position: absolute;
-		right:10px;
+		right: 10px;
 		max-height: 80%;
 		max-width: 40px;
 		top: 50%;
 		transform: translateY(-50%);
 	}
-	// h3 {
-	// 	margin: 0;
-	// 	padding: 0;
+
 	.sort {
 		width: 24px;
 		height: 24px;
 		position: absolute;
-		z-index: 2;
-		top: 14px;
-		left: 10px;
-
-		// visibility: hidden;
+		z-index: 30;
+		left: 6px;
+		top: 50%;
+		transform: translateY(-50%);
 		vertical-align: middle;
-		margin-right: .5em;
+		margin-right: 0.5em;
 		color: #a0a5aa;
-		cursor: move;
+		cursor: grab;
 		text-align: center;
 
 		svg {
@@ -640,92 +2197,808 @@ html .pc-modal-container {
 				fill: var(--wp-admin-theme-color, #0073aa);
 			}
 		}
-		
+	}
+
+	&:not(.layer):not(.choice):not(.condition) > .sort {
+		top: 14px;
+	}
+
+	&.layer > .mkl-pc-admin-list-row__inner > .sort,
+	&.choice > .mkl-pc-admin-list-row__inner > .sort,
+	&.condition > .mkl-pc-admin-list-row__inner > .sort {
+		top: 50%;
+		transform: translateY(-50%);
 	}
 
 	.group-list {
 		margin: 0.7em;
 		border: 1px solid #e4e4e4;
 		border-radius: 8px;
-		transition: box-shadow .2s;
+		transition: box-shadow 0.2s;
+
 		.mkl-list-item:first-child {
 			> button {
 				border-radius: 8px 8px 0 0;
 			}
+
+			&.layer .mkl-pc-admin-list-row__inner,
+			&.choice .mkl-pc-admin-list-row__inner {
+				border-radius: 8px 8px 0 0;
+			}
 		}
+
 		.mkl-list-item:last-child {
 			border-bottom: none;
+
 			&:not(.is-group) > button {
 				border-radius: 0 0 8px 8px;
 			}
+
+			&.layer:not(.is-group) .mkl-pc-admin-list-row__inner,
+			&.choice:not(.is-group) .mkl-pc-admin-list-row__inner {
+				border-radius: 0 0 8px 8px;
+			}
 		}
+
 		&:empty {
 			padding: 14px;
-			border: 2px dashed #CCC;
+			border: 2px dashed #ccc;
 		}
 	}
 
 	&:hover {
+		> .mkl-pc-admin-list-row__inner > .sort svg,
 		> .sort svg {
 			opacity: 1;
 		}
+
 		> .group-list {
 			box-shadow: 0 2px 16px #0000001c;
 		}
 	}
 
-
 	&.active {
 		position: relative;
+
 		&.is-group {
 			outline: 2px solid var(--wp-admin-theme-color, #0073aa);
 			border-radius: 8px;
 		}
-		& > button {
-			background-color: var(--wp-admin-theme-color, #0073aa);
-			color: #fff;
+
+		&:not(.layer):not(.choice):not(.condition) > button {
+			background-color: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.08);
+			color: #1e1e1e;
+
 			h3 {
-				color: #fff;
+				color: #1e1e1e;
 			}
 		}
-		
-		// &::after {
-		// 	right: 0;
-		// 	border: solid 8px transparent;
-		// 	content: " ";
-		// 	height: 0;
-		// 	width: 0;
-		// 	position: absolute;
-		// 	pointer-events: none;
-		// 	border-right-color: #ffffff;
-		// 	top: 50%;
-		// 	margin-top: -8px;						
-		// }
-		> .sort svg {
-			fill: #FFF;
+
+		&.layer > .mkl-pc-admin-list-row__inner,
+		&.choice > .mkl-pc-admin-list-row__inner,
+		&.condition > .mkl-pc-admin-list-row__inner {
+			background-color: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.08);
 		}
+
+		&.layer .layer-label-container,
+		&.choice .choice-label-container,
+		&.condition .mkl-pc-admin-list-row__body h3 {
+			color: #1e1e1e;
+		}
+
 	}
 
 	&.ui-sortable-helper {
 		background: rgba(255, 255, 255, 0.75);
 		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-		transform: scale(.9);
+		transform: scale(0.9);
 	}
-	
+
 	h3 {
 		margin: 0;
 		font-weight: 500;
 		font-size: 15px;
+		display: flex;
+		justify-content: space-between;
 	}
+
 	span.number-of-choices {
 		display: inline-block;
-		padding: 0px 5px;
+		padding: 0 5px;
 		margin-left: 9px;
 		background: #efefef;
 		border-radius: 4px;
 	}
-	// padding: $modal-spacing - 5;
-	// padding-left: $modal-spacing + 5;
+}
+
+/**
+ * The Image order screen.
+ *
+ * A stack, not a list: both ends are labelled, because "the top of the list" is
+ * exactly the thing that gets read the wrong way round. Rows carry no thumbnail
+ * and no layer type - this screen arranges layers rather than editing them, and
+ * on a product with a hundred and fifty of them row height is scrolling.
+ */
+.mkl-pc-admin-ui__content.image-order {
+	overflow: auto;
+	padding: 16px;
+	box-sizing: border-box;
+}
+
+/* -------------------------------------------------------- two-column body */
+
+.mkl-pc-image-order__body {
+	display: flex;
+	align-items: flex-start;
+	gap: 20px;
+}
+
+.mkl-pc-image-order__main {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.mkl-pc-image-order__preview {
+	flex: 0 0 340px;
+	position: sticky;
+	top: 0;
+	max-width: 340px;
+}
+
+/* ----------------------------------------------------------------- preview */
+
+.mkl-pc-preview__inner {
+	display: flex;
+	flex-direction: column-reverse;
+	gap: 8px;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+	padding: 10px;
+	box-sizing: border-box;
+}
+
+.mkl-pc-preview__side {
+	min-width: 0;
+}
+
+.mkl-pc-preview__angles {
+	margin-bottom: 8px;
+
+	.mkl-pc-preview__angle-select {
+		width: 100%;
+		max-width: 100%;
+		font-size: 12px;
+		min-height: 30px;
+	}
+}
+
+.mkl-pc-preview__canvas-wrap {
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	width: 100%;
+	min-height: 0;
+}
+
+.mkl-pc-preview__canvas {
+	/* Scaled by whichever axis runs out first, so a tall product on a short screen
+	   is made smaller rather than cut off. `width`/`height` auto keeps the canvas at
+	   its own aspect, so either maximum can bite without distorting it.
+	   The height cap is set from measurement in fit_canvas(): a percentage here
+	   would resolve against a parent whose height is capped rather than definite,
+	   which makes it no cap at all. */
+	display: block;
+	width: auto;
+	height: auto;
+	max-width: 100%;
+	border-radius: 4px;
+	/* A checkerboard, because layer images are transparent and most of what they
+	   draw is white or near-white. On a plain white panel half the stack would be
+	   invisible. */
+	background-color: #fff;
+	background-image:
+		linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%),
+		linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%);
+	background-size: 16px 16px;
+	background-position: 0 0, 8px 8px;
+}
+
+/* Visibility is WP's own .spinner / .spinner.is-active; this only places it. */
+.mkl-pc-preview__spinner {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	margin: -10px 0 0 -10px;
+	float: none;
+}
+
+.mkl-pc-preview__status {
+	margin: 8px 0 0;
+	min-height: 1.4em;
+	font-size: 11px;
+	line-height: 1.4;
+	color: #646970;
+}
+
+.mkl-pc-preview__retry {
+	font-size: 11px;
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.mkl-pc-image-order__header {
+	margin-bottom: 16px;
+
+	h1 {
+		margin: 0;
+		font-size: 1.1em;
+		font-weight: 600;
+		line-height: 1.3;
+		color: $text-color;
+	}
+
+	@media ( max-width: 900px ) {
+		h1 {
+			display: none;
+		}
+	}
+}
+
+.mkl-pc-image-order__intro {
+	margin: 6px 0 0;
+	max-width: 60ch;
+	font-size: 13px;
+	line-height: 1.6;
+	color: #646970;
+}
+
+.mkl-pc-image-order__bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+	margin-bottom: 12px;
+}
+
+.mkl-pc-order-state {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	font-size: 13px;
+	color: #646970;
+
+	.mkl-pc-order-state__dot {
+		flex: 0 0 auto;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: #c3c4c7;
+	}
+
+	.mkl-pc-order-state__chip--custom {
+		display: none;
+	}
+
+	&.is-custom {
+		color: #1d2327;
+
+		.mkl-pc-order-state__chip--follows {
+			display: none;
+		}
+
+		.mkl-pc-order-state__chip--custom {
+			display: inline;
+		}
+
+		.mkl-pc-order-state__dot {
+			background: var(--wp-admin-theme-color, #2271b1);
+		}
+	}
+}
+
+.mkl-pc-image-order .mkl-pc-order-reset {
+	display: none;
+	flex: 0 0 auto;
+	font-size: 13px;
+}
+
+.mkl-pc-image-order__bar.is-custom .mkl-pc-order-reset {
+	display: inline;
+}
+
+/* ------------------------------------------------------------------ filter */
+
+.mkl-pc-image-order__filter {
+	position: relative;
+	margin-bottom: 8px;
+
+	&::before {
+		content: '\f179';
+		font-family: dashicons;
+		font-size: 18px;
+		line-height: 1;
+		color: #787c82;
+		position: absolute;
+		left: 7px;
+		top: 50%;
+		transform: translateY(-50%);
+	}
+
+	.mkl-pc-image-order__filter-input {
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 32px;
+		padding-left: 30px;
+		font-size: 13px;
+	}
+}
+
+.mkl-pc-image-order__filter-note {
+	display: none;
+	margin: 0 0 12px;
+	padding: 8px 12px;
+	max-width: none;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #646970;
+	background: #f6f7f7;
+	border-left: 3px solid #c3c4c7;
+	border-radius: 0 4px 4px 0;
+}
+
+.mkl-pc-image-order--filtering .mkl-pc-image-order__filter-note {
+	display: block;
+}
+
+.mkl-pc-image-order__no-results {
+	margin: 12px 0 0;
+	padding: 20px 14px;
+	color: #646970;
+	text-align: center;
+}
+
+/* --------------------------------------------------------------- selection */
+
+.mkl-pc-image-order__selection {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 12px;
+	margin-bottom: 8px;
+	padding: 8px 12px;
+	background: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.06);
+	border: 1px solid rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.25);
+	border-radius: 4px;
+
+	&[hidden] {
+		display: none;
+	}
+}
+
+.mkl-pc-image-order__selection-count {
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.mkl-pc-image-order__selection-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+
+	.mkl-pc-bulk {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 4px;
+		min-height: 30px;
+
+		.dashicons {
+			width: 18px;
+			height: 18px;
+			font-size: 18px;
+			line-height: 18px;
+		}
+	}
+
+	/* One control that names the action it will take, rather than a Hide and a
+	   Show sitting next to each other with one of them always inert. */
+	.mkl-pc-bulk--visibility {
+		.mkl-pc-bulk__label--show { display: none; }
+
+		&.is-showing {
+			.mkl-pc-bulk__label--hide { display: none; }
+			.mkl-pc-bulk__label--show { display: inline; }
+		}
+	}
+}
+
+/* The preview earns its own column only when there is room for both. Below that
+   it moves above the stack - source order puts it second, so it has to be pulled
+   back - and turns into a wide, short strip: still sticky, so a reorder stays
+   visible, but not eating the screen the list needs. */
+@media ( max-width: 1100px ) {
+	.mkl-pc-image-order__body {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.mkl-pc-image-order__main {
+		width: 100%;
+	}
+
+	.mkl-pc-image-order__preview {
+		order: -1;
+		flex: 0 0 auto;
+		max-width: none;
+		width: 100%;
+		margin-bottom: 12px;
+		z-index: 2;
+	}
+
+	.mkl-pc-preview__inner {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		gap: 12px;
+		background: #fff;
+	}
+
+	.mkl-pc-preview__canvas-wrap {
+		flex: 0 0 auto;
+		width: 132px;
+	}
+
+	.mkl-pc-preview__side {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.mkl-pc-preview__angles {
+		margin-bottom: 6px;
+	}
+
+	.mkl-pc-preview__status {
+		margin-top: 0;
+	}
+}
+
+/* On a phone the strip is a big share of the viewport, and pinning it there puts
+   it over the list rather than beside it. It scrolls away with the page instead. */
+@media ( max-width: 900px ) {
+	.mkl-pc-image-order__preview {
+		position: static;
+		top: auto;
+	}
+}
+
+/* ------------------------------------------------------------------- stack */
+
+.mkl-pc-stack {
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+	background: #fff;
+	overflow: hidden;
+}
+
+.mkl-pc-stack-edge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 14px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.3;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: #646970;
+	background: #f6f7f7;
+
+	&::after {
+		content: '';
+		flex: 1 1 auto;
+		height: 1px;
+		background: linear-gradient(to right, #dcdcde, rgba(220, 220, 222, 0));
+	}
+}
+
+.mkl-pc-stack-edge--front {
+	border-bottom: 1px solid #dcdcde;
+
+	.mkl-pc-stack-edge__label {
+		color: var(--wp-admin-theme-color, #2271b1);
+	}
+}
+
+.mkl-pc-stack-edge--back {
+	border-top: 1px solid #dcdcde;
+}
+
+/* The generic list padding would open a gap above the "Back" edge. */
+.mkl-pc-admin-ui__content .mkl-pc-stack__list {
+	padding-bottom: 0;
+}
+
+.mkl-pc-stack__list:empty {
+	display: none;
+}
+
+/* sortable('disable') also adds ui-state-disabled, which the jQuery UI theme
+   fades out. The list is still being read while it is filtered. */
+.mkl-pc-stack__list.ui-state-disabled {
+	opacity: 1;
+	filter: none;
+}
+
+.mkl-pc-stack-item {
+	background: #fff;
+
+	&.layer > .mkl-pc-admin-list-row__inner {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		min-height: 0;
+		padding: 4px 12px 4px 30px;
+	}
+
+	&:last-child {
+		border-bottom: none;
+	}
+
+	&.is-selected {
+		background: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.06);
+	}
+
+	&.mkl-pc-stack-item--moved {
+		background-color: rgba(var(--wp-admin-theme-color--rgb, rgb(0, 115, 170)), 0.16);
+		transition: background-color 0.4s ease-out;
+	}
+}
+
+.mkl-pc-stack-item__select {
+	display: inline-flex;
+	align-items: center;
+	flex: 0 0 auto;
+	margin: 0;
+
+	input[type="checkbox"] {
+		margin: 0;
+	}
+}
+
+.mkl-pc-stack-item__name {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-size: 13px;
+	line-height: 1.4;
+	color: #1d2327;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mkl-pc-stack-pos {
+	flex: 0 0 auto;
+
+	.mkl-pc-stack-pos__input {
+		width: 58px;
+		min-height: 28px;
+		padding: 0 4px;
+		font-size: 12px;
+		text-align: center;
+	}
+}
+
+.mkl-pc-stack-move {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 2px;
+}
+
+.mkl-pc-image-order__conditions {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	margin: 0 0 8px;
+	padding: 8px 12px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #50575e;
+	background: #f6f7f7;
+	border-left: 3px solid var(--wp-admin-theme-color, #2271b1);
+	border-radius: 0 4px 4px 0;
+
+	&[hidden] { display: none; }
+
+	.dashicons {
+		flex: 0 0 auto;
+		width: 16px;
+		height: 16px;
+		font-size: 16px;
+		line-height: 16px;
+		color: var(--wp-admin-theme-color, #2271b1);
+	}
+
+	&.is-pending .mkl-pc-conditions-show-all { display: none; }
+
+	.mkl-pc-conditions-show-all {
+		flex: 0 0 auto;
+		margin-left: auto;
+		font-size: 12px;
+	}
+}
+
+/* Off because the rules say a customer would not see it here - distinct from a
+   row somebody switched off to look underneath. */
+.mkl-pc-stack-item.is-hidden-by-conditions .mkl-pc-stack-item__name::after {
+	content: '\f504';
+	font-family: dashicons;
+	font-size: 14px;
+	line-height: 1;
+	vertical-align: -2px;
+	margin-left: 6px;
+	color: var(--wp-admin-theme-color, #2271b1);
+	text-decoration: none;
+}
+
+/* Switched off in the preview only - the layer still ships, it is just not drawn
+   here while you look at what sits under it. */
+.mkl-pc-stack-item.is-preview-hidden .mkl-pc-stack-item__name {
+	color: #8c929b;
+	text-decoration: line-through;
+	text-decoration-color: #c3c4c7;
+}
+
+.mkl-pc-stack-item.is-preview-hidden .mkl-pc-stack-vis {
+	color: var(--wp-admin-theme-color, #2271b1);
+}
+
+.mkl-pc-stack-move__btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	color: #50575e;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	cursor: pointer;
+
+	.dashicons {
+		width: 18px;
+		height: 18px;
+		font-size: 18px;
+		line-height: 18px;
+	}
+
+	&:hover:not( [disabled] ) {
+		color: var(--wp-admin-theme-color, #2271b1);
+		border-color: #dcdcde;
+		background: #f6f7f7;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+		outline-offset: 1px;
+	}
+
+	&[disabled] {
+		color: #c3c4c7;
+		cursor: default;
+	}
+}
+
+/* Dragging moves a layer past its neighbours; with rows hidden they are not the
+   neighbours the screen is showing. */
+.mkl-pc-image-order--filtering .mkl-pc-stack-item > .mkl-pc-admin-list-row__inner > .sort {
+	visibility: hidden;
+}
+
+/* ------------------------------------------------------------ empty states */
+
+.mkl-pc-image-order__empty {
+	display: none;
+	margin: 0;
+	padding: 24px 14px;
+	color: #646970;
+	text-align: center;
+	border: 1px dashed #dcdcde;
+	border-radius: 8px;
+}
+
+.mkl-pc-image-order--empty {
+	.mkl-pc-stack,
+	.mkl-pc-image-order__bar,
+	.mkl-pc-image-order__filter,
+	.mkl-pc-image-order__selection {
+		display: none;
+	}
+
+	.mkl-pc-image-order__empty {
+		display: block;
+	}
+}
+
+/* ------------------------------------------------------- desktop: inner scroll */
+
+/**
+ * With room for two columns, the screen holds still and the stack scrolls inside
+ * it. Scrolling the whole panel took the filter, the selection bar and both end
+ * labels off screen - and those are the things you navigate a long stack with,
+ * so they are exactly what should not move.
+ *
+ * The stack shrinks rather than grows: `0 1 auto` keeps a short list compact
+ * instead of stretching an mostly-empty bordered box down the page, and lets a
+ * long one give way to the scroller.
+ */
+@media ( min-width: 1101px ) {
+	.mkl-pc-admin-ui__content.image-order {
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.mkl-pc-image-order__body {
+		align-items: stretch;
+		flex: 1 1 auto;
+		min-height: 0;
+		min-width: 690px;
+	}
+
+	.mkl-pc-image-order__main {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+	}
+
+	/* Stretching the column is what bounds the preview's height; without it
+	   `max-height: 100%` on the canvas resolves against nothing and a tall product
+	   overflows the panel, which no longer scrolls. */
+	.mkl-pc-image-order__preview {
+		align-self: stretch;
+		min-height: 0;
+	}
+
+	.mkl-pc-preview__inner {
+		max-height: 100%;
+		/* column-reverse runs bottom-up, so packing at main-end is what puts the
+		   group at the top of a column taller than its content. */
+		justify-content: flex-end;
+		min-height: 0;
+	}
+
+	.mkl-pc-preview__canvas-wrap {
+		flex: 0 1 auto;
+	}
+
+	.mkl-pc-stack {
+		display: flex;
+		flex-direction: column;
+		flex: 0 1 auto;
+		min-height: 0;
+	}
+
+	.mkl-pc-stack-edge {
+		flex: 0 0 auto;
+	}
+
+	.mkl-pc-stack__list {
+		flex: 1 1 auto;
+		min-height: 0;
+		overflow-y: auto;
+	}
 }
 
 .mkl-list-item__placeholder {
@@ -733,59 +3006,422 @@ html .pc-modal-container {
     border: 2px dashed #CCC;
 }
 
-//.layers,
-.structure-toolbar,
-.choices-toolbar {
-	
-	position: sticky;
-	top: 0;
-	z-index: 3;
-	padding: $modal-spacing;
-	background: #F8F8F8;
-	border-bottom: 1px solid #CCC;
+.mkl-list .mkl-list-item.mkl-list-item--filtered-out,
+ul.layers > li.mkl-list-item--filtered-out {
+	display: none !important;
+}
 
-	h4 {
-		margin: 0;
-		input {
-			width: 100%;
-		}
+.mkl-pc-admin-ui__sidebar-layers-filter {
+	padding: 0 0 25px;
+	box-sizing: border-box;
+
+	.mkl-pc-list-filter-input {
+		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
 	}
-	button {
-		position: absolute;
-		right: ($modal-spacing - 1);
-		top: calc(50%);
-		transform: translateY(-50%);
-		@media( max-width: 900px ){
-			font-size: 16px; 
-			height: auto; 
-			padding-left: 4px; 
-			padding-right: 4px; 
-			span {
-				display: none; 
-			}
-			&::before {
-				content: '\f132';
-				font-family: 'dashicons'; 
-				font-size: 1.3em;
-				padding-top: 2px;
-				display: inline-block;
-				right: 18px;
 
-			}
+	/* Dark sidebar: search field matches block-editor / dark rail inputs */
+	.mkl-pc-list-filter-input--sidebar-layers {
+		margin: 0;
+		min-height: 32px;
+		padding: 6px 10px 6px 10px;
+		font-size: 13px;
+		line-height: 1.4;
+		color: $pc-admin-sidebar-fg;
+		background: #2c2c2c;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 4px;
+		box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+		-webkit-appearance: none;
+		appearance: none;
+
+		&::placeholder {
+			color: $pc-admin-sidebar-fg-mutted;
+			opacity: 1;
+		}
+
+		&:hover {
+			color: $pc-admin-sidebar-fg;
+			border-color: rgba(255, 255, 255, 0.2);
+			background: #333;
+		}
+
+		&:focus {
+			color: $pc-admin-sidebar-fg;
+			background: #262626;
+			border-color: var(--wp-admin-theme-color, #3858e9);
+			box-shadow:
+				0 0 0 1px var(--wp-admin-theme-color, #3858e9),
+				inset 0 1px 2px rgba(0, 0, 0, 0.35);
+			outline: none;
 		}
 	}
 }
 
-.order-toolbar {
+.structure-toolbar.pc-objects3d-toolbar {
+	// Anchor the add menu below the toggle; avoid flex align-items:center + abspos top:auto
+	// static-position rules that vertically center a tall menu with the short button.
+	.structure-toolbar__primary {
+		position: relative;
+		align-items: flex-start;
+	}
+
+	.pc-3d-add-toggle {
+		position: static;
+		transform: none;
+	}
+	.pc-3d-add-menu {
+		margin-top: 10px;
+		border: 1px solid rgb(187, 185, 185);
+		z-index: 20;
+		background: #FFF;
+		padding: 15px;
+		overflow: auto;
+		@media( min-width: 900px ){
+			border-radius: 4px;
+			box-shadow: 0 4px 15px #00000009;
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: auto;
+			margin-top: 8px;
+			width: max-content;
+			max-width: min( 360px, calc( 100vw - 32px ) );
+			max-height: calc(100vh - 330Px);
+		}
+
+		&.hidden {
+			display: none;
+		}
+	}
+	.pc-3d-add-section {
+		margin-bottom: 10px;
+		h4 {
+			margin: 0 0 8px;
+			font-size: 12px;
+			font-weight: 600;
+		}
+	}
+	.pc-3d-add-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 100px);
+		gap: 6px;
+	}
+	.pc-3d-add-tile.button {
+		position: relative;
+		transform: none;
+		width: 100%;
+		min-height: 60px;
+		height: auto;
+		margin: 0;
+		top: 0;
+		left: 0;
+
+		padding: 15px 8px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		gap: 8px;
+		line-height: 1.1;
+
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		color: initial;
+		font-size: 14px;
+		&::after {
+			content: '';
+			background-color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+			opacity: 0;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
+		&:hover, &:focus {
+			color: var(--wp-components-color-accent, var(--wp-admin-theme-color, #3858e9));
+			&::after {
+				opacity: 0.04;
+			}
+		}
+	}
+	.pc-3d-add-tile {
+		.dashicons, svg {
+			font-size: 24px;
+			width: 24px;
+			height: 24px;
+			margin-bottom: 4px;
+			path {
+				fill: currentColor;
+			}
+		}
+	}
+	.pc-3d-add-tile-label {
+		font-size: 10px;
+		text-align: center;
+		white-space: normal;
+	}
+	.pc-3d-premium-objects-notice {
+		.addon-setting-info {
+			padding: 8px 10px;
+		}
+		.pc-3d-add-grid {
+			margin: 8px 0 4px;
+		}
+	}
+	.pc-3d-add-tile--teaser {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		min-height: 60px;
+		padding: 10px 8px;
+		box-sizing: border-box;
+		color: #1d2327;
+		background: #f6f7f7;
+		border-radius: 2px;
+		cursor: default;
+	}
+}
+
+.structure-toolbar {
 	position: sticky;
-	bottom: 0;
-	width: 100%;
+	top: 0;
+	z-index: 3;
+	padding: 12px 14px;
+	
+	border-bottom: 1px solid #dcdcde;
+	background: #fff;
+	border-radius: 8px 8px 0 0;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	flex-wrap: nowrap;
+	gap: 0;
 	box-sizing: border-box;
-	height: auto;
-	background: #F8F8F8;
-	border-top: 1px solid #CCC;
-	padding: 10px;
-	text-align: center;
+
+	.structure-toolbar__primary {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px 12px;
+		width: 100%;
+		box-sizing: border-box;
+
+		h1 {
+			flex: 0 1 auto;
+			margin: 0;
+			font-size: 1.1em;
+			font-weight: 600;
+			line-height: 1.3;
+			color: $text-color;
+			min-width: 0;
+		}
+	}
+
+	.structure-toolbar__add {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		flex: 1 1 200px;
+		min-width: 0;
+
+		h4 {
+			flex: 1 1 200px;
+			max-width: min(320px, 100%);
+			margin: 0;
+			min-width: 0;
+			position: relative;
+
+			input {
+				width: 100%;
+				box-sizing: border-box;
+			}
+		}
+
+		button.add-layer,
+		.button.add-layer,
+		.button-primary {
+			position: static;
+			transform: none;
+			align-self: center;
+			flex: 0 0 auto;
+			white-space: nowrap;
+			@media (max-width: 900px) {
+				height: auto;
+				padding-left: 10px;
+				padding-right: 10px;
+				line-height: 1;
+
+				span {
+					position: absolute;
+					clip: rect(0 0 0 0);
+					overflow: hidden;
+					width: 1px;
+					height: 1px;
+					border: 0;
+					margin: -1px;
+					padding: 0;
+					white-space: nowrap;
+					pointer-events: none;
+				}
+
+				&::before {
+					content: '\f132';
+					font-family: 'dashicons';
+					font-size: 1.3em;
+					padding-top: 2px;
+					display: inline-block;
+				}
+			}
+		}
+	}
+
+	.structure-toolbar__filter {
+		flex: none;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		min-width: 0;
+		box-sizing: border-box;
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 1px solid #dcdcde;
+		position: relative;
+
+		&::before {
+			content: '\f179';
+			font-family: dashicons;
+			font-size: 18px;
+			line-height: 1;
+			color: #787c82;
+			flex: 0 0 auto;
+			position: absolute;
+			left: 7px;
+		}
+
+		.mkl-pc-list-filter-input {
+			flex: 1 1 auto;
+			min-width: 0;
+			width: 100%;
+			max-width: 100%;
+			box-sizing: border-box;
+			min-height: 32px;
+			padding-left: 30px;
+			font-size: 12px;
+		}
+	}
+
+	.mkl-pc-toolbar-dropdown {
+		position: relative;
+		flex: 0 0 auto;
+		align-self: center;
+
+		.mkl-pc-toolbar-more {
+			min-width: 26px;
+			padding-left: 0;
+			padding-right: 0;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			border: none;
+		}
+
+		.mkl-pc-toolbar-dropdown__menu[hidden] {
+			display: none !important;
+		}
+
+		.mkl-pc-toolbar-dropdown__menu {
+			position: absolute;
+			top: calc(100% + 4px);
+			right: 0;
+			left: auto;
+			min-width: 248px;
+			max-width: min(320px, 92vw);
+			margin: 0;
+			padding: 6px 0;
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-radius: 4px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+			z-index: 30;
+			box-sizing: border-box;
+		}
+
+		.mkl-pc-toolbar-dropdown__sep {
+			display: block;
+			height: 1px;
+			margin: 6px 0;
+			padding: 0;
+			background: #dcdcde;
+			border: 0;
+		}
+
+		.mkl-pc-toolbar-dropdown__label {
+			padding: 8px 14px 4px;
+			font-size: 11px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.02em;
+			color: #646970;
+			line-height: 1.3;
+		}
+
+		.mkl-pc-toolbar-dropdown__group {
+			padding-bottom: 4px;
+		}
+
+		.mkl-pc-toolbar-dropdown__item {
+			display: block;
+			width: 100%;
+			margin: 0;
+			padding: 8px 14px;
+			font-size: 13px;
+			line-height: 1.4;
+			text-align: left;
+			border: 0;
+			border-radius: 0;
+			background: transparent;
+			box-shadow: none;
+			cursor: pointer;
+			color: #1d2327;
+			position: relative;
+
+			&:hover,
+			&:focus {
+				background: #f6f7f7;
+				color: var(--wp-admin-theme-color, #2271b1);
+			}
+
+			&.mkl-pc-toolbar-dropdown__item--choice {
+				padding-left: 36px;
+
+				&.mkl-pc-toolbar-dropdown__item--active::before {
+					content: '\f147';
+					font-family: dashicons;
+					font-size: 18px;
+					line-height: 1;
+					position: absolute;
+					left: 10px;
+					top: 50%;
+					transform: translateY(-50%);
+					color: var(--wp-admin-theme-color, #2271b1);
+				}
+			}
+		}
+	}
+
+	&.structure-toolbar--choices .structure-toolbar__primary h1 {
+		flex: 0 0 auto;
+	}
 }
 
 .form-details {
@@ -796,9 +3432,42 @@ html .pc-modal-container {
 	}
 }
 
+.mkl-pc-badge {
+	display: inline-block;
+	font-size: 10px;
+	text-transform: uppercase;
+	font-weight: normal;
+	line-height: 1;
+	vertical-align: middle;
+	padding: 4px;
+	border-radius: 4px;
+	background: var(--mkl_pc-badge-background);
+	color: #FFF;
+}
+
+.form-details label.euler-axis input[type="number"] {
+    max-width: 80px;
+}
+
+.mkl-pc-setting--euler {
+    display: flex;
+    gap: 8px;
+}
+
+span.euler-axis-label {
+    display: block;
+    padding: 0 7px;
+}
+
+label.euler-axis {
+    display: flex;
+    align-items: center;
+    background: #EEE;
+    border-radius: 3px;
+}
 /*
-CONTENT
-*/
+ * Content tab — choices columns. Base rules below; canonical layout under .mkl-pc-admin-ui--content-mode.
+ */
 .content-col {
 	position: absolute;
 	left: 0;
@@ -808,50 +3477,17 @@ CONTENT
 	overflow: auto;
 }
 
-.content-layers-list,
-.content-choices-list {
-	width: $left-col-width;
-	background: $very-light-bg-color;
-	border-right: 1px solid $light-border-color;
-	z-index: 2;
-	transition: all 0.2s;
-	.layers {
-		padding: 0;
-		margin: 0;
-		li {
-			margin: 0; 
-			padding: 0; 
-			a {
-				display: block;
-				padding: $modal-spacing;
-				border-bottom: 1px solid $light-border-color;
-			}
-			&.active {
-				> a {
-					background: #fff;
-					color: $text-color;
-					
-				}
-				background: $light-bg-color;
-			}
-			.layer-details {
-				box-shadow: inset 0px 3px 2px rgba(0, 0, 0, 0.05), inset 0px -3px 2px rgba(0, 0, 0, 0.05);
-
-			}
-		}
-	}
-	@media(max-width: 900px) {
-		width: $tablet-left-col-width;
-	}
-}
-
+/* Legacy two-step panel slide (choices list vs detail); superseded where --content-mode sets grid */
 .content-choices-list {
 	width: $left-col-width + 45;
 	padding-left: 45px;
 	visibility: hidden;
 	transform: translateX(300px);
-	transition: transform 0.2s;
+	transition: transform 0.2s, visibility 0.2s;
 	overflow: hidden;
+	background: $very-light-bg-color;
+	border-right: 1px solid $light-border-color;
+	z-index: 2;
 	@media(max-width: 900px) {
 		width: $tablet-left-col-width; 
 	}
@@ -873,89 +3509,10 @@ CONTENT
 		}
 	}
 
-	.active-layer {
-		display: block;
-		position: absolute;
-		top: 0;
-		left: 0;
-		bottom: 0;
-		width: 45px;
-		padding: 0;
-		box-sizing: border-box;
-		border: none;
-		border-right: 1px solid #ddd;
-		text-align: left;
-		&::before{
-			top: 0;
-			position: absolute;
-			content: "\f141";
-			display: block;
-			width: 100%;
-			height: 65px;
-			border-bottom: 1px solid #ddd; 
-			color: #ccc;
-
-			font-family: 'dashicons';
-			font-size: 31px;
-			line-height: 66px;
-			text-align: center;
-		}
-		&:focus {
-			outline: none;
-			background: #f3f3f3;
-			box-shadow: inset 0 0 8px rgba(0, 133, 186, 0.25);
-			&::before {
-				color: rgba(0, 133, 186, 0.85);
-			}
-		}
-		span.name {
-			position: absolute;
-			top: 110px;
-			transform-origin: 0 0;
-			transform: rotate(90deg) translateY(-100%);
-			width: 400px;
-			height: 45px;
-			padding: 0; 
-			padding-left: 21px;
-			line-height: 45px;
-
-		}
-		span.icon {
-			position: absolute;
-			top: 68px;
-			box-sizing: border-box;
-			width: 100%;
-			padding: 8px;
-
-			img {
-				max-width: 100%; 
-			}
-
-
-		}
-	}
-
 }
 
-
-.add-choice-container {
-	padding: $modal-spacing;
-	border-bottom: 1px solid $light-border-color;
-}
-.content-choices {
-	width: 100%;
-	padding-left: $left-col-width;
-	z-index: 1;
-	background: #f3f3f3;
-	@media(max-width: 900px) {
-		padding-left: $tablet-left-col-width;
-	}
-}
 .choice-details {
 	visibility: hidden;
-	// transform: translateX(-80px);
-	// transition: transform 0.2s;
-	// padding: $modal-spacing;
 	right: 0;
 	left: 344px;
 	background: #F8F8F8;
@@ -1003,28 +3560,299 @@ CONTENT
 					max-width: 80px;
 				}
 			}
-
-			// & ~ .view .pictures .picture.thumbnail-picture {
-			// 	display: none;
-			// }
 		}
 	}
 }
 .mkl-pc-setting--container {
 	width: 100%;
 }
-.show-choices {
-	.content-layers-list {
-		transform: translateX(-300px);
+.mkl-pc-admin-ui--content-mode {
+	.mkl-pc-admin-ui__content.content {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 380px) minmax(0, 1.12fr);
+		gap: 10px;
+		min-height: 0;
+		flex: 1;
+		width: 100%;
+		box-sizing: border-box;
+		align-content: stretch;
 
+		> .mkl-pc-mobile-content-toolbar--choices-back,
+		> .mkl-pc-mobile-content-toolbar--layers-back {
+			display: none;
+		}
+
+		> .mkl-pc-admin-layout__column-track > .mkl-pc-content-main-layer-panel {
+			display: none;
+		}
+		.content-choices-list,
+		.content-choice.choice-details {
+			position: relative;
+			left: auto;
+			right: auto;
+			top: auto;
+			bottom: auto;
+			width: auto;
+			max-height: none;
+			min-height: 0;
+			transform: none;
+			transition: none;
+		}
+		.content-choices-list {
+			visibility: visible;
+			padding: 0;
+			background: #fff;
+			border: 1px solid $light-border-color;
+			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+			overflow: auto;
+			@media (min-width: 900px) {
+				border-radius: 8px;
+			}
+		}
+		.content-choice.choice-details {
+			visibility: visible;
+			left: auto;
+			background: #fff;
+			border: 1px solid $light-border-color;
+			border-radius: 8px;
+		}
+
+		.choice-details:has(> .choice-form),
+		.choice-details:has(> .layer-form) {
+			> .mkl-pc-content-placeholder {
+				display: none;
+			}
+		}
+		.mkl-pc-content-placeholder {
+			margin: 0;
+			padding: 12px 14px;
+			color: #646970;
+			font-size: 13px;
+			line-height: 1.45;
+
+			display: flex;
+			height: 100%;
+			justify-content: center;
+			align-items: center;
+			box-sizing: border-box;
+		}
+
+		@media ( max-width: 900px ) {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			min-height: 0;
+			margin-top: 10px;
+
+			> .mkl-pc-admin-layout__column-track {
+				flex: 1 1 auto;
+				min-height: 0;
+			}
+
+			> .mkl-pc-mobile-content-toolbar--choices-back,
+			> .mkl-pc-mobile-content-toolbar--layers-back {
+				display: none;
+				flex: 0 0 auto;
+				align-items: center;
+				padding: 8px 10px;
+				background: #fff;
+				border: 1px solid $light-border-color;
+				border-radius: 8px;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+				box-sizing: border-box;
+
+				.mkl-pc-mobile-back-to-choices-list,
+				.mkl-pc-mobile-back-to-layers {
+					display: inline-flex;
+					align-items: center;
+					gap: 4px;
+					padding: 4px 0;
+					text-decoration: none;
+				}
+
+				.mkl-pc-mobile-back-to-choices-list__icon,
+				.mkl-pc-mobile-back-to-layers__icon {
+					line-height: 1;
+				}
+			}
+
+			> .mkl-pc-admin-layout__column-track > .mkl-pc-content-main-layer-panel {
+				display: flex;
+				flex-direction: column;
+				flex: 1 1 auto;
+				min-height: 0;
+				background: #fff;
+				border: 1px solid $light-border-color;
+				border-radius: 8px;
+				box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+				box-sizing: border-box;
+				overflow: hidden;
+
+				.mkl-pc-content-main-layer-panel__heading {
+					margin: 0;
+					padding: 12px 14px 8px;
+					font-size: 14px;
+					font-weight: 600;
+					border-bottom: 1px solid $light-border-color;
+					flex: 0 0 auto;
+				}
+
+				.mkl-pc-content-main-layer-panel__filter {
+					padding: 8px 10px;
+					border-bottom: 1px solid $light-border-color;
+					flex: 0 0 auto;
+				}
+
+				.mkl-pc-content-main-layers-list {
+					flex: 1 1 auto;
+					min-height: 0;
+					overflow: auto;
+					-webkit-overflow-scrolling: touch;
+					padding: 6px 8px 10px;
+
+					ul.layers {
+						margin: 0;
+						padding: 0;
+						list-style: none;
+					}
+
+					li {
+						margin: 0 0 6px;
+						padding: 0;
+
+						&:last-child {
+							margin-bottom: 0;
+						}
+					}
+
+					li button.layer {
+						width: 100%;
+						max-width: 100%;
+						box-sizing: border-box;
+						display: flex;
+						align-items: center;
+						gap: 8px;
+						flex-wrap: wrap;
+						padding: 10px 12px;
+						margin: 0;
+						border: 1px solid $light-border-color;
+						border-radius: 6px;
+						background: #f6f7f7;
+						color: $text-color;
+						font-family: inherit;
+						font-size: 13px;
+						line-height: 1.35;
+						font-weight: 400;
+						text-align: left;
+						text-decoration: none;
+						cursor: pointer;
+						box-shadow: none;
+						-webkit-appearance: none;
+						appearance: none;
+						transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+
+						&:hover {
+							background: #fff;
+							border-color: #c3c4c7;
+						}
+
+						&:focus {
+							outline: none;
+							background: #fff;
+							border-color: var(--wp-admin-theme-color, #2271b1);
+							box-shadow: 0 0 0 1px var(--wp-admin-theme-color, #2271b1);
+						}
+
+						&:focus:not(:focus-visible) {
+							box-shadow: none;
+						}
+
+						&:focus-visible {
+							box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.25);
+						}
+					}
+
+					li.active button.layer {
+						background: #fff;
+						border-color: var(--wp-admin-theme-color, #2271b1);
+						box-shadow: inset 3px 0 0 var(--wp-admin-theme-color, #2271b1);
+						font-weight: 500;
+					}
+
+					.name {
+						flex: 1 1 auto;
+						min-width: 0;
+						word-break: break-word;
+					}
+
+					span.number-of-choices {
+						margin-left: auto;
+						flex-shrink: 0;
+						min-width: 1.5em;
+						padding: 2px 8px;
+						border-radius: 10px;
+						font-size: 11px;
+						font-weight: 600;
+						line-height: 1.35;
+						text-align: center;
+						background: #dcdcde;
+						color: #1d2327;
+					}
+
+					li.active span.number-of-choices {
+						background: rgba(34, 113, 177, 0.12);
+						color: #1d2327;
+					}
+				}
+			}
+
+			.content-choices-list,
+			.content-choice.choice-details {
+				width: 100%;
+				min-height: 0;
+			}
+
+			&:not( :has( .content-choice.choice-details .choice-form ) ):not( :has( .content-choice.choice-details .layer-form ) ):not( [data-mkl-pc-content-stack="choice_detail"] ) {
+				> .mkl-pc-admin-layout__column-track > .content-choice.choice-details {
+					display: none;
+				}
+			}
+
+			&:has( .content-choice.choice-details .choice-form ),
+			&:has( .content-choice.choice-details .layer-form ),
+			&[data-mkl-pc-content-stack="choice_detail"] {
+				> .mkl-pc-mobile-content-toolbar--choices-back {
+					display: flex;
+				}
+
+				> .mkl-pc-mobile-content-toolbar--layers-back {
+					display: none !important;
+				}
+			}
+
+			&[data-mkl-pc-content-stack="choices"] > .mkl-pc-mobile-content-toolbar--layers-back {
+				display: flex;
+			}
+
+			> .mkl-pc-admin-layout__column-track > .mkl-pc-content-main-layer-panel.mkl-pc-admin-layout__column,
+			> .mkl-pc-admin-layout__column-track > .content-choices-list.mkl-pc-admin-layout__column,
+			> .mkl-pc-admin-layout__column-track > .content-choice.choice-details.mkl-pc-admin-layout__column {
+				position: absolute;
+				left: 0;
+				top: 0;
+				right: 0;
+				bottom: 0;
+				width: 100%;
+				max-width: none;
+				flex: none;
+			}
+		}
 	}
-	.content-choices-list {
-		transform: translateX(0);
-		visibility: visible;
-	}
-	.choice-details {
-		transform: translateX(0);
-		visibility: visible;
+
+	/* Empty-state (left column): .content-state wraps .mkl-pc-admin-ui__content, not vice versa */
+	.state.content-state.show-choices .mkl-pc-admin-ui__content.content .content-choices-list > .mkl-pc-content-placeholder {
+		display: none;
 	}
 }
 .tab_content {
@@ -1064,9 +3892,114 @@ CONTENT
 	}
 }
 
+.mkl-pc-3d-object-selector--container {
+	position: fixed;
+	z-index: 160001;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
 
+	&::before {
+		content: '';
+		display: block;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: #000;
+		opacity: 0.4;
+	}
 
-.media-frame-content.import-export {
+	.mkl-pc-3d-object-selector {
+		position: absolute;
+		width: 100%;
+		max-width: 480px;
+		max-height: 80vh;
+		padding: 1em;
+		background: #fff;
+		box-shadow: 0 5px 15px rgba(0, 0, 0, 0.19);
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		display: flex;
+		flex-direction: column;
+
+		h3 {
+			margin-top: 0;
+		}
+
+		.mkl-pc-3d-object-selector--filter {
+			margin: 0 0 0.5em;
+		}
+
+		.mkl-pc-3d-object-selector--filter-input {
+			width: 100%;
+			padding: 4px 8px;
+		}
+
+		.mkl-pc-3d-object-selector--tree-container {
+			flex: 1;
+			min-height: 200px;
+			max-height: 40vh;
+			overflow: auto;
+			border: 1px solid #c3c4c7;
+			padding: 4px;
+			margin-bottom: 1em;
+		}
+
+		.mkl-pc-3d-object-selector--tree {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+
+		.mkl-pc-3d-object-selector--item {
+			cursor: pointer;
+			padding: 4px 8px;
+			margin: 2px 0;
+			border-radius: 2px;
+
+			&:hover {
+				background: #f0f0f1;
+			}
+
+			&.selected {
+				background: #2271b1;
+				color: #fff;
+			}
+		}
+
+		// One heading per model when a picker lists every model.
+		.mkl-pc-3d-object-selector--subheader {
+			padding: 10px 8px 4px;
+			font-weight: 600;
+			text-transform: uppercase;
+			font-size: 11px;
+			color: #50575e;
+
+			&:first-child {
+				padding-top: 4px;
+			}
+		}
+
+		.mkl-pc-3d-object-selector--item-model {
+			font-style: italic;
+		}
+
+		.mkl-pc-3d-object-selector--show-all {
+			margin: 0 0 8px;
+		}
+
+		.mkl-pc-3d-object-selector--actions {
+			display: flex;
+			gap: 8px;
+		}
+	}
+}
+
+.mkl-pc-admin-ui__content.import-export {
 
 	.import-export-content {
 		display: flex;
@@ -1181,7 +4114,7 @@ CONTENT
 	}
 }
 
-.state.showing-tool .media-frame-content.import-export {
+.state.showing-tool .mkl-pc-admin-ui__content.import-export {
 	.import-export-content {
 		display: none;
 	}
@@ -1225,6 +4158,25 @@ a.mkl-pc-link--external::before {
 	}	
 }
 
+.pc-3d-ar-discovery,
+.pc-3d-postprocessing-discovery {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+
+	&__icon {
+		display: inline-flex;
+		width: 2rem;
+		height: 2rem;
+		color: var(--wp-admin-theme-color, #007cba);
+
+		svg {
+			width: 100%;
+			height: 100%;
+		}
+	}
+}
+
 /* Floating add button */
 .floating-add {
     position: absolute;
@@ -1260,9 +4212,9 @@ a.mkl-pc-link--external::before {
 		width: 28px;
 		padding: 0;
 		i {
-			vertical-align: middle;
 			border-radius: 3px;
-			line-height: 1;
+			line-height: 28px;
+			height: 28px;
 		}
 	}
 	&.showing {
@@ -1282,8 +4234,6 @@ a.mkl-pc-link--external::before {
 	border: 1px solid #CCC;
 
 	button {
-		.dashicons {
-		}		
 		&.remove-option span {
 			display: none;
 		}
@@ -1293,24 +4243,52 @@ a.mkl-pc-link--external::before {
 		}
 	}
 	
+	min-width: 0;
+
+	// Reorder arrows | fields | remove. Fields stack in the middle column so a row
+	// with several visible fields (e.g. Choice > Actions) never outgrows the sidebar.
 	.field-repeater--option {
-		display: flex;
-		align-items: center;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: start;
 		padding: 8px;
 		border-bottom: 1px solid #e0e0e0;
-		gap: 4px;
+		gap: 6px 4px;
+
+		> *:not(.order):not(.remove-option) {
+			grid-column: 2;
+			min-width: 0;
+		}
 
 		label {
-			flex: 1;
-			margin-right: 5px;
+			display: block;
 			input {
-				display: block;
-				width: 100%;
 				float: none;
 			}
-			
+			input[type="text"], input[type="number"], select {
+				display: block;
+				box-sizing: border-box;
+				width: 100%;
+				max-width: 100%;
+			}
+		}
+		.pc-attachment-link {
+			display: block;
+			overflow-wrap: anywhere;
+		}
+		.pc-anchor-list,
+		.pc-object-choice {
+			display: block;
+			margin-bottom: 4px;
+			overflow-wrap: anywhere;
+		}
+		// .button sets its own display, which beats the attribute.
+		[hidden] {
+			display: none !important;
 		}
 		.remove-option {
+			grid-column: 3;
+			grid-row: 1;
 			border: none;
 			i.dashicons {
 				line-height: 1;
@@ -1321,6 +4299,8 @@ a.mkl-pc-link--external::before {
 			} 
 		}		
 		.order {
+			grid-column: 1;
+			grid-row: 1;
 			display: flex;
 			flex-direction: column;
 			margin-right: 3px;
@@ -1345,6 +4325,466 @@ a.mkl-pc-link--external::before {
 	
 }
 
+.mkl-pc-global-configurator--banner {
+	display: none;
+	align-items: center;
+	gap: 6px;
+	margin-top: 0;
+	padding: 0;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.35;
+	color: rgba(255, 255, 255, 0.78);
+}
+.global-configurator-icon {
+	width: 28px;
+	height: 28px;
+	font-size: 28px;
+	line-height: 1;
+	display: none;
+}
+
+.mkl-pc-global-configurator--banner-link,
+.mkl-pc-global-configurator--banner-plain {
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	color: inherit;
+}
+
+.mkl-pc-global-configurator--banner-link {
+	text-decoration: none;
+
+	&:hover,
+	&:focus {
+		color: #fff;
+		text-decoration: underline;
+	}
+}
+
+.mkl-pc-global-configurator--banner-plain {
+	cursor: default;
+}
+
+/* Global mode: compact banner under sidebar title */
+.pc-modal-container.mkl-pc-configurator-is-global .mkl-pc-global-configurator--banner {
+	display: flex;
+}
+
+.pc-modal-container.mkl-pc-configurator-is-global .global-configurator-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+}
+
+.pc-modal-container.mkl-pc-configurator-is-global .edit-site-site-icon__icon {
+	display: none;
+}
+
+.pc-modal-container.mkl-pc-configurator-is-global .mkl-pc-admin-ui__body {
+	min-height: 0;
+}
+
+@keyframes mkl-pc-sidebar-layers-in {
+	0% {
+		opacity: 0;
+		transform: translateX(20px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+/* global layers */
+
+/*
+ * Reusable admin dialog — tmpl-mkl-pc-admin-dialog, PC.views.admin_dialog (views/admin-dialog.js).
+ * Separate from the main configurator shell (.mkl-pc-admin-ui.pc-modal).
+ */
+html .mkl-pc-admin-dialog-mount {
+	position: fixed;
+	inset: 0;
+	z-index: 150000;
+	box-sizing: border-box;
+}
+
+.mkl-pc-admin-dialog {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+		max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+	box-sizing: border-box;
+	font-size: 13px;
+	line-height: 1.4;
+	color: #1d2327;
+
+	&__backdrop {
+		position: absolute;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.45);
+		cursor: pointer;
+	}
+
+	&__panel {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		width: min(100%, 560px);
+		max-height: min(90vh, 720px);
+		background: #fff;
+		border-radius: 8px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+		overflow: hidden;
+		box-sizing: border-box;
+	}
+
+	&__header {
+		flex: 0 0 auto;
+		position: relative;
+		min-height: 48px;
+		padding: 12px 48px 12px 16px;
+		border-bottom: 1px solid $light-border-color;
+		box-sizing: border-box;
+	}
+
+	&__title {
+		margin: 0;
+		font-size: 1.15em;
+		font-weight: 600;
+		line-height: 1.35;
+		padding-right: 8px;
+	}
+
+	&__close {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		width: 40px;
+		height: 40px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 4px;
+		background: transparent;
+		color: #787c82;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 2;
+		&:hover,
+		&:focus {
+			color: #1d2327;
+			background: rgba(0, 0, 0, 0.06);
+		}
+	}
+
+	&__close-icon {
+		display: block;
+		width: 20px;
+		height: 20px;
+		&::before {
+			font: normal 20px/1 dashicons;
+			content: "\f158";
+		}
+	}
+
+	&__body {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+	}
+
+	&__footer-actions {
+		flex: 0 0 auto;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		padding: 12px 16px;
+		border-top: 1px solid $light-border-color;
+		background: #f6f7f7;
+		box-sizing: border-box;
+	}
+}
+
+.mkl-pc-admin-dialog--import-global-layer {
+	.mkl-pc-import-global-layer {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+		max-height: min(55vh, 480px);
+	}
+
+	.mkl-pc-import-global-layer__toolbar {
+		flex: 0 0 auto;
+		padding: 12px 16px 10px;
+		border-bottom: 1px solid $light-border-color;
+		box-sizing: border-box;
+
+		.global-layers-filter {
+			width: 100%;
+			max-width: 100%;
+			box-sizing: border-box;
+		}
+	}
+
+	.global-layers-list {
+		flex: 1;
+		min-height: 120px;
+		overflow: auto;
+		padding: 12px 16px;
+		box-sizing: border-box;
+
+		> p {
+			margin: 1em 0;
+			color: #646970;
+
+			&.error {
+				color: #b32d2e;
+			}
+		}
+
+		.mkl-pc-spinner {
+			display: block;
+			margin: 24px auto;
+		}
+	}
+
+	.global-layer-item {
+		label {
+			display: flex;
+			align-items: flex-start;
+			gap: 12px;
+			padding: 12px 14px;
+			margin: 0 0 10px;
+			border: 1px solid $light-border-color;
+			border-radius: 6px;
+			cursor: pointer;
+			box-sizing: border-box;
+			transition: border-color 0.12s ease, background 0.12s ease;
+
+			&:hover {
+				border-color: var(--wp-admin-theme-color, #2271b1);
+				background: #f6f7f7;
+			}
+		}
+
+		input[type="radio"] {
+			margin-top: 4px;
+		}
+
+		.layer-info {
+			flex: 1;
+			min-width: 0;
+		}
+
+		h4 {
+			margin: 0 0 6px;
+			font-size: 13px;
+			font-weight: 600;
+			line-height: 1.35;
+		}
+
+		.admin-label {
+			font-weight: 400;
+			opacity: 0.85;
+		}
+
+		.layer-thumbnail {
+			display: block;
+			max-width: 56px;
+			height: auto;
+			margin-top: 4px;
+			border-radius: 4px;
+			border: 1px solid #dcdcde;
+		}
+
+		.layer-type {
+			display: block;
+			margin-top: 4px;
+			font-size: 12px;
+			color: #646970;
+		}
+
+		.layer-capabilities {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 4px;
+			margin-top: 6px;
+		}
+
+		// Dimmed, not hidden: a layer that paints nothing here can still carry prices, SKUs and
+		// form data, so it stays selectable - it just should not be the obvious pick.
+		&.is-incompatible label {
+			opacity: 0.75;
+		}
+	}
+
+	.mkl-pc-import-global-layer__warning {
+		flex: 0 0 auto;
+		margin: 0 16px 12px;
+
+		p {
+			margin: 8px 0;
+		}
+	}
+}
+
+// Capability tags: what a global layer can actually render. Shared by the import dialog and the
+// Global Layers list table, so they live outside the dialog's scope.
+.mkl-pc-capability-tag {
+	display: inline-block;
+	padding: 1px 7px;
+	border: 1px solid transparent;
+	border-radius: 9px;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.6;
+	white-space: nowrap;
+
+	&--2d {
+		border-color: #c3d9ed;
+		background: #eef5fb;
+		color: #1d4b75;
+	}
+
+	&--3d {
+		border-color: #cfc7e8;
+		background: #f2eefb;
+		color: #4b3b7a;
+	}
+
+	&--none {
+		border-color: #dcdcde;
+		background: #f6f7f7;
+		color: #646970;
+	}
+
+	&--mismatch {
+		border-color: #f0c48a;
+		background: #fcf3e7;
+		color: #8a5700;
+	}
+}
+
+.mkl-pc-badge--global {
+	--mkl_pc-badge-background: var(--global-layer-primary);
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+
+	.dashicons {
+		width: 12px;
+		height: 12px;
+		font-size: 12px;
+		line-height: 1;
+	}
+}
+
+.mkl-pc-global-layer-heading {
+    margin: 6px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    background: var(--global-layer-bg);
+    border-radius: 6px;
+	justify-content: space-between;
+	h4 {
+		color: var(--global-layer-primary);
+		margin: 0;
+		padding: 10px;
+	}
+}
+
+html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened {
+    position: relative;
+}
+html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    background: #ffffff6e;
+}
+
+.layer-form.is-global.is-global-locked .setting-section .section-fields, 
+.layer-form.is-global.is-global-locked .mkl-pc-image-settings,
+.is-global-locked.is-global-layer .mkl-pc-image-settings {
+    pointer-events: none;
+    cursor: no-drop;
+}
+
+.layer-form.is-saving {
+	position: relative;
+	pointer-events: none;
+	opacity: 0.65;
+}
+
+.mkl-choice-list-inner.is-saving-global-choices {
+	position: relative;
+	pointer-events: none;
+	opacity: 0.65;
+}
+
+.is-global-locked.is-global-layer .actions-container button.delete-item, 
+.is-global-locked.is-global-layer .actions-container button.duplicate-item {
+    display: none;
+}
+
+.is-global-layer .content-col {
+    top: 45px;
+}
+
+.is-global-layer .global-actions-container + .structure-toolbar__primary {
+    margin-top: 10px;
+}
+
+.global-actions-container {
+    height: 45px;
+    background: var(--global-layer-bg);
+	color: var(--global-layer-primary);
+    align-items: center;
+    padding-left: 10px;
+    padding-right: 10px;
+    gap: 5px;
+	justify-content: center;
+	border-radius: 6px;
+
+	display: none;
+	h3 {
+		color: var(--global-layer-primary);
+		font-size: 14px;
+	}
+}
+.is-global-layer .global-actions-container {
+	display: flex;
+}
+.is-global-locked .global-actions-container {
+	.cancel-edit-choices, span.dashicons-unlock {
+		display: none;
+	}
+}
+.is-global-layer:not(.is-global-locked) .global-actions-container {
+	.edit-choices, span.dashicons-lock {
+		display: none;
+	}
+}
+
 @keyframes mkl-slide-down {
     0% {
         transform: translateY(-25px) scaleY( 0 );
@@ -1360,3 +4800,400 @@ a.mkl-pc-link--external::before {
     animation: mkl-slide-down .2s;
 }
 
+.pc-3d-settings {
+	.pc-3d-settings-column-settings {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		min-height: 0;
+		overflow: hidden;
+		padding: 0;
+	}
+	.pc-3d-sections-layout {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 100%;
+		min-height: 0;
+	}
+	.pc-3d-settings-column-preview {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.pc-3d-section-panel {
+		display: none;
+		&.active {
+			display: block;
+		}
+		&[hidden] {
+			display: none !important;
+		}
+	}
+	.pc-3d-settings-sections {
+		margin-top: 0;
+		padding: 0;
+		flex: 1;
+		min-width: 0;
+		min-height: 0;
+		overflow-y: auto;
+	}
+	.pc-3d-settings-section {
+		margin-bottom: 1.5em;
+		border-bottom: 1px solid #ddd;
+		padding-bottom: 1em;
+		.components-panel__body-toggle {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+		}
+		.pc-3d-settings-section-icon {
+			width: 16px;
+			height: 16px;
+			flex: 0 0 16px;
+			opacity: 0.9;
+		}
+		&:last-child {
+			border-bottom: 0;
+		}
+		h4 {
+			margin: 0 0 0.75em;
+			font-size: 1em;
+		}
+		.pc-3d-setting-group {
+			margin-bottom: 2em;
+			padding-top: 2em;
+			border-top: 1px solid #CCC;
+			h5 {
+				margin: 0.5em 0 0.25em;
+				font-size: 0.95em;
+			}
+		}
+		// Environment > Lights: filled by _render_lights_panel in 3d-preview-view.js.
+		.pc-3d-lights-list {
+			margin: 0 0 1em;
+			padding: 0;
+			list-style: none;
+			border: 1px solid #dcdcde;
+			border-radius: 4px;
+			li {
+				margin: 0;
+				& + li {
+					border-top: 1px solid #f0f0f1;
+				}
+			}
+		}
+		.pc-3d-lights-list__item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			width: 100%;
+			padding: 6px 10px;
+			border: 0;
+			background: transparent;
+			color: #1d2327;
+			font: inherit;
+			text-align: left;
+			cursor: pointer;
+			// .is-hovered also comes from hovering the light in the preview.
+			&:hover,
+			&.is-hovered {
+				background: #f6f7f7;
+			}
+			&:focus-visible {
+				outline: 2px solid var(--wp-admin-theme-color, #2271b1);
+				outline-offset: -2px;
+			}
+			&.is-selected {
+				background: #f0f6fc;
+				box-shadow: inset 3px 0 0 var(--wp-admin-theme-color, #2271b1);
+				font-weight: 600;
+			}
+		}
+		.pc-3d-lights-list__swatch {
+			flex: none;
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+		}
+		.pc-3d-lights-list__name {
+			flex: 1;
+			min-width: 0;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		.pc-3d-lights-list__type {
+			flex: none;
+			color: #646970;
+			font-size: 0.9em;
+			font-weight: 400;
+		}
+		.pc-3d-light-settings {
+			padding-left: 12px;
+			border-left: 2px solid #dcdcde;
+			input[type="range"] {
+				vertical-align: middle;
+			}
+		}
+		.pc-3d-light-position {
+			display: inline-flex;
+			gap: 4px;
+			input {
+				width: 5.5em;
+			}
+		}
+		.pc-3d-light-settings__more {
+			margin-top: 0.5em;
+		}
+		// Disclosure groups: a feature toggle plus the settings it owns.
+		// Behaviour lives in assets/admin/js/views/3d/3d-field-groups.js.
+		.pc-3d-field-group {
+			margin: 0 0 1.25em;
+
+			> .field-row {
+				margin-bottom: 0.25em;
+
+				> label {
+					font-weight: 600;
+				}
+			}
+		}
+		.pc-3d-field-group__hint,
+		.pc-3d-option-help {
+			display: block;
+			margin: 0 0 0.5em 1.5em;
+			font-size: .9em;
+			opacity: .7;
+		}
+		.pc-3d-option-help {
+			margin-left: 0;
+			font-style: italic;
+
+			&:empty {
+				display: none;
+			}
+		}
+		.pc-3d-field-group__body {
+			display: none;
+			margin-left: 0.5em;
+			padding-left: 1em;
+			border-left: 2px solid #DCDCDE;
+
+			> .field-row:last-child {
+				margin-bottom: 0.5em;
+			}
+		}
+		.pc-3d-field-group.is-open > .pc-3d-field-group__body {
+			display: block;
+		}
+		.field-row {
+			margin: 0.5em 0 1em;
+			label {
+				display: block;
+				margin-bottom: 0.25em;
+			}
+			select, input[type="number"], input[type="color"] {
+				margin-right: 0.5em;
+			}
+			input[type="range"] {
+				vertical-align: middle;
+				max-width: 200px;
+			}
+			.description {
+				display: block;
+				font-size: .9em;
+				opacity: .7;
+			}
+		}
+		.pc-3d-value-display {
+			display: inline-block;
+			min-width: 2.5em;
+			margin-left: 0.25em;
+		}
+		.pc-3d-import-cameras-status {
+			margin: -0.25em 0 1em;
+			padding: 0.5em 0.75em;
+			background: #edfaef;
+			border-left: 4px solid #00a32a;
+			.dashicons {
+				color: #00a32a;
+				vertical-align: text-bottom;
+			}
+		}
+		.pc-3d-lights-list {
+			margin-top: 0.5em;
+		}
+		.pc-3d-light-item {
+			margin: 0.5em 0;
+			padding: 0.5em;
+			background: #f5f5f5;
+			border-radius: 3px;
+			label, select, input {
+				margin-right: 0.5em;
+			}
+			input[type="color"] {
+				width: 2em;
+				height: 1.5em;
+				padding: 0;
+				vertical-align: middle;
+			}
+		}
+	}
+}
+
+.pc-3d-settings .pc-3d-preview {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 350px;
+	.pc-3d-preview--canvas-container {
+		flex: 1;
+		min-height: 350px;
+		position: relative;
+	}
+	.pc-3d-preview--canvas-container canvas {
+		width: 100%;
+		height: 100%;
+		display: block;
+		position: absolute;
+		top: 0;
+		left: 0;
+	}
+	.pc-3d-preview-loading {
+		position: absolute;
+		inset: 0;
+		z-index: 10;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(255, 255, 255, 0.88);
+		transition: opacity 0.2s ease;
+		&.is-hidden {
+			pointer-events: none;
+			opacity: 0;
+		}
+		.pc-3d-preview-loading-steps {
+			margin: 0;
+			padding: 0;
+			list-style: none;
+			text-align: left;
+			font-size: 13px;
+			color: #1d2327;
+		}
+		.pc-3d-preview-loading-step {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 4px 0;
+			.spinner {
+				float: none;
+				margin: 0;
+				display: inline-block;
+			}
+		}
+	}
+	.pc-3d-preview-error {
+		position: absolute;
+		left: 12px;
+		right: 12px;
+		top: 12px;
+		z-index: 11;
+		padding: 10px 12px;
+		background: #fcf9e8;
+		border: 1px solid #dba617;
+		border-radius: 4px;
+		color: #1d2327;
+		font-size: 13px;
+		line-height: 1.4;
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+		pointer-events: none;
+		.pc-3d-preview-error__heading {
+			margin: 0 0 6px;
+			font-weight: 600;
+		}
+		.pc-3d-preview-error__list {
+			margin: 0;
+			padding-left: 1.2em;
+		}
+	}
+	// Light gizmo: a hint while nothing is selected, the selection's controls while something is.
+	.pc-3d-light-edit {
+		position: absolute;
+		left: 12px;
+		bottom: 12px;
+		z-index: 5;
+		max-width: calc(100% - 24px);
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 8px;
+		padding: 4px 10px;
+		background: rgba(255, 255, 255, 0.85);
+		border-radius: 4px;
+		color: #50575e;
+		font-size: 12px;
+		line-height: 1.5;
+		pointer-events: none;
+		&.is-active {
+			padding: 6px 8px 6px 10px;
+			background: rgba(255, 255, 255, 0.95);
+			box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+			color: #1d2327;
+			pointer-events: auto;
+		}
+		.pc-3d-light-edit__modes {
+			display: inline-flex;
+			gap: 2px;
+		}
+		.button.is-pressed {
+			background: #1d2327;
+			border-color: #1d2327;
+			color: #fff;
+		}
+		.pc-3d-light-edit__note {
+			flex-basis: 100%;
+			color: #50575e;
+		}
+	}
+}
+
+.pc-3d-settings .pc-3d-tree-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 0;
+	font-size: 13px;
+	color: #1d2327;
+	.spinner {
+		float: none;
+		margin: 0;
+	}
+}
+
+.pc-3d-settings .pc-3d-tree-message {
+	margin: 0;
+	padding: 10px 0;
+	font-size: 13px;
+	color: #646970;
+}
+/* 3D object type is shown in the row label (dashicon + text), same pattern as layer types. */
+
+@import 'select2';
+
+// Layer/choice "Position on anchors"
+.mkl-pc--anchor-placement {
+	// .button and the follow labels set their own display, which beats the attribute.
+	[hidden] {
+		display: none !important;
+	}
+	.mkl-pc--anchor-list {
+		margin-bottom: 6px;
+		overflow-wrap: anywhere;
+	}
+	.mkl-pc--anchor-follow {
+		display: block;
+		margin-top: 8px;
+	}
+}

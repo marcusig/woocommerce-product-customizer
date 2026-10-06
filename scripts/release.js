@@ -11,12 +11,25 @@ if (!version) {
 }
 
 // Paths
-const distDir = path.resolve(__dirname, '../dist');
+const pluginDir = path.resolve(__dirname, '..');
+const distDir = path.resolve(pluginDir, 'dist');
 const svnTrunk = path.resolve(__dirname, '../../../repository/product-configurator-for-woocommerce/trunk');
 const repoUrl = 'http://plugins.svn.wordpress.org/product-configurator-for-woocommerce';
 
 console.log( distDir );
 console.log( svnTrunk );
+
+// Build first, before anything touches SVN.
+//
+// dist is a plain mirror of src for most of the day — it is what the local site
+// loads — so it drifts behind the moment a source file is edited without a build,
+// and this script ships whatever happens to be sitting there. Building here is the
+// difference between releasing the working tree and releasing the last build.
+//
+// It runs ahead of the svn update/copy so a failing build aborts while trunk is
+// still untouched, rather than half way through a release.
+console.log( '🏗️  Building dist' );
+execSync( 'npm run build', { cwd: pluginDir, stdio: 'inherit' } );
 
 // Bring trunk up to date before replacing contents (avoids E155011 out-of-date commits).
 // Update trunk only — not tags/ — so releases stay fast.

@@ -22,6 +22,7 @@ class Update {
 			'1.2.41' => [ [ mkl_pc( 'cache' ), 'purge' ] ],
 			'1.3.00' => [ [ $this, 'set_default_setting_value_v1_3_00' ] ],
 			'1.5.10' => [ [ $this, 'set_default_setting_value_v1_5_10' ] ],
+			'2.0.0' => [ [ $this, 'set_default_setting_value_v2_0_0' ], [ $this, 'migrate_image_mode_v2_0_0' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -54,7 +55,7 @@ class Update {
 	private function update_wrong_layer_ids() {
 		// Get all the products
 		global $wpdb;
-		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s ", '_mkl_product_configurator_content') );
+		$metas = $wpdb->get_results( $wpdb->prepare( "SELECT meta_id, meta_value FROM $wpdb->postmeta WHERE meta_key = %s ", '_mkl_product_configurator_content') ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time plugin update migration.
 		foreach( $metas as $index => $meta ) {
 			$data = unserialize( $meta->meta_value );
 			// Add a backup of the post data
@@ -75,7 +76,7 @@ class Update {
 					'meta_value' => serialize( $data )    // integer (number) 
 				), 
 				array( 'meta_id' => $meta->meta_id )
-			);
+			); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time plugin update migration.
 		}
 	}
 
@@ -121,6 +122,58 @@ class Update {
 		$options = get_option( 'mkl_pc__settings' );
 		$options['show_edit_configuration_link'] = true;
 		$options['show_view_configuration_link'] = true;
+		update_option( 'mkl_pc__settings', $options );
+	}
+
+	/**
+	 * Set default values on upgrade to 2.0
+	 *
+	 * `purge_with_page_cache` is written here rather than defaulted at runtime: an
+	 * unticked checkbox submits nothing, so the key is simply absent from the saved
+	 * settings, and a default in Settings::get_defaults() would put it straight back -
+	 * making the box impossible to turn off. Seeding the stored option instead keeps
+	 * the existing behaviour for stores upgrading to 2.0, while an absent key ( the box
+	 * having been unticked ) correctly reads as off.
+	 *
+	 * @return void
+	 */
+	private function set_default_setting_value_v2_0_0() {
+		$options = get_option( 'mkl_pc__settings' );
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+		$options['fe_3d_use_draco_loader'] = true;
+		$options['purge_with_page_cache']  = 'on';
+		update_option( 'mkl_pc__settings', $options );
+	}
+
+	/**
+	 * Keep adding configuration images to the media library for stores that saw them there
+	 *
+	 * Before 2.0, "save to disk" also registered every generated image as an attachment. 2.0
+	 * keeps them as plain files, and the library behaviour became its own mode. A store that
+	 * had the images visible in its library keeps that; one that had hidden them gets the
+	 * plain files, which is what hiding them was asking for.
+	 *
+	 * Both keys can be absent from the stored option: the image mode then defaults to
+	 * save_to_disk, and `show_config_images_in_the_library` reads as true at runtime - it is
+	 * also erased by every settings form save, since it lives on the Tools tab.
+	 *
+	 * @return void
+	 */
+	private function migrate_image_mode_v2_0_0() {
+		$options = get_option( 'mkl_pc__settings' );
+		if ( ! is_array( $options ) ) {
+			$options = array();
+		}
+
+		$mode = isset( $options['save_images'] ) ? $options['save_images'] : 'save_to_disk';
+		if ( 'save_to_disk' !== $mode ) return;
+
+		$shown_in_library = ! array_key_exists( 'show_config_images_in_the_library', $options ) || ! empty( $options['show_config_images_in_the_library'] );
+		if ( ! $shown_in_library ) return;
+
+		$options['save_images'] = 'add_to_library';
 		update_option( 'mkl_pc__settings', $options );
 	}
 

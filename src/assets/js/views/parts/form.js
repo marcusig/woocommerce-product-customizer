@@ -10,8 +10,7 @@ PC.fe.views.form = Backbone.View.extend({
 	},
 	events: {
 		'click .configurator-add-to-cart': 'add_to_cart',
-		'click .add-to-quote': 'add_to_quote',
-		'change input.qty': 'qty_change'
+		'click .add-to-quote': 'add_to_quote'
 	},
 	render: function() {
 		if ( ! PC.fe.config.cart_item_key ) {
@@ -48,21 +47,23 @@ PC.fe.views.form = Backbone.View.extend({
 			this.$( '.configurator-add-to-cart' ).remove();
 		}
 		
-		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length && ! $( '.add-request-quote-button' ).length ) {
-			this.$( '.add-to-quote' ).remove();
+		// The YITH button is printed only for a product YITH would quote, and sends its own request, so it
+		// does not depend on YITH's markup being on the page. The other quote plugins still do.
+		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
+			this.$( '.add-to-quote' ).not( '.yith-raq' ).remove();
 		}
 		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
-			this.$( '.add-to-quote' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
+			this.$( '.add-to-quote' ).not( '.yith-raq' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
 		}
-		if ( $( '.add-request-quote-button' ).length && PC_config.config.ywraq_hide_add_to_cart ) {
+		if ( this.$( '.yith-raq.add-to-quote' ).length && PC_config.config.ywraq_hide_add_to_cart ) {
 			this.$( '.configurator-add-to-cart' ).remove();
 		}
 
 		if ( this.$( 'input.qty' ).length ) {
-			// Get qty with the Cart's input
-			if ( this.$( 'input.qty' ) != this.$cart.find( '.qty' ) ) {
-				this.$( 'input.qty' ).val( this.$cart.find( '.qty' ).val() );
-			}
+			// A view of PC.fe.get_qty(): it reports edits and redraws itself when
+			// the quantity changes anywhere else, so it no longer has to be kept
+			// in step with the product form's input by copying values across.
+			PC.fe.bind_qty_input( this.$( 'input.qty' ) );
 			// Set min value
 			if ( 'undefined' != typeof PC.fe.currentProductData.product_info.qty_min_value ) {
 				this.$( 'input.qty' ).prop( 'min', PC.fe.currentProductData.product_info.qty_min_value );
@@ -181,6 +182,10 @@ PC.fe.views.form = Backbone.View.extend({
 					}
 				});
 
+				// Cart image: ask the viewer for a picture of the configuration.
+				var dataUrl = await this.capture_item_image();
+				if ( dataUrl ) request_body.append( 'pc_3d_screenshot', dataUrl );
+
 				/**
 				 * Append extra multipart fields (add-ons). Default FormData is unchanged.
 				 *
@@ -271,11 +276,7 @@ PC.fe.views.form = Backbone.View.extend({
 		$( 'input[name=pc_configurator_data]' ).val( '' );
 
 		var default_qty = PC.fe.currentProductData?.product_info?.qty_min_value || 1;
-		$( 'form.cart input[name=quantity], .mkl_pc .form input[name=quantity]' ).val( default_qty );
-		if ( PC.fe.currentProductData?.product_info ) {
-			PC.fe.currentProductData.product_info.qty = default_qty;
-		}
-		wp.hooks.doAction( 'PC.fe.qty_changed', default_qty );
+		PC.fe.set_qty( default_qty );
 		wp.hooks.doAction( 'PC.fe.reset_after_ajax_add_to_cart', this );
 	},
 
@@ -325,31 +326,195 @@ PC.fe.views.form = Backbone.View.extend({
 			return;
 		}
 
+		// YITH: our own request, see add_to_yith_quote().
+		if ( $( e.currentTarget ).is( '.yith-raq' ) ) {
+			return this.add_to_yith_quote( data, $( e.currentTarget ) );
+		}
+
+		// The other quote plugins post the product form themselves, so the picture of the configuration
+		// has to travel as a form field - there is no request body of ours to append it to.
+		var dataUrl = await this.capture_item_image();
+		if ( dataUrl ) this.set_quote_screenshot_field( dataUrl );
+
 		// Woocommerce Add To Quote plugin
 		if ( $( '.afrfqbt_single_page' ).length ) {
 			$( '.afrfqbt_single_page' ).trigger( 'click' );
 			if ( PC.fe.config.close_configurator_on_add_to_cart && ! PC.fe.inline ) PC.fe.modal.close();
 		}
-
-		if ( $( e.currentTarget ).is( '.yith-raq' ) ) {
-			$( '.add-request-quote-button' ).trigger( 'click' );
-			if ( ! PC.fe.inline ) PC.fe.modal.close();
-			if ( PC_config.config.ywraq_hide_add_to_cart ) {
-				if ( 'button' === PC.fe.trigger_el[0].type ) $( PC.fe.trigger_el[0] ).remove();
-			}
-		}
 	},
-	qty_change: function( e ) {
-		
-		PC.fe.currentProductData.product_info.qty = $( e.target ).val();
-		// If Extra price is not installed, check if price needs an update
-		if ( 'undefined' === typeof pc_get_extra_price && PC.fe.currentProductData.product_info?.price_tiers ) {
-			$( '.pc-total-price' ).html( PC.utils.formatMoney( PC.fe.get_product_price() ) );
-			// Display regular price
-			if ( PC.fe.currentProductData.product_info.regular_price && PC.fe.currentProductData.product_info.is_on_sale && $( '.pc-total--regular-price' ).length ) {
-				$( '.pc-total--regular-price' ).html( PC.utils.formatMoney( ( parseFloat( PC.fe.currentProductData.product_info.regular_price ) ) ) );
-			}
+
+	/**
+	 * Add the configuration to the YITH quote list through pc_add_to_quote.
+	 *
+	 * Posts the configurator's form like the ajax add to cart does, so variation attributes and
+	 * add-on fields come along, but needs nothing of YITH on the page. The configurator stays open
+	 * until the answer is back, so a refusal is shown where the shopper can act on it.
+	 *
+	 * @param {string} data    Configuration JSON.
+	 * @param {jQuery} $button The button clicked.
+	 */
+	add_to_yith_quote: async function( data, $button ) {
+		if ( $button.hasClass( 'adding-to-quote' ) ) return;
+		$button.addClass( 'adding-to-quote' ).prop( 'disabled', true );
+
+		if ( ! PC.fe.add_to_cart_modal ) PC.fe.add_to_cart_modal = new PC.fe.views.add_to_cart_modal();
+		PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atq-adding' );
+
+		var request_body = this.$cart && this.$cart.length ? new FormData( this.$cart[0] ) : new FormData();
+		// Nothing here is an add to cart.
+		request_body.delete( 'add-to-cart' );
+		request_body.delete( 'pc_3d_screenshot' );
+		request_body.set( 'product_id', PC.fe.active_product );
+		request_body.set( 'pc_configurator_data', data );
+		if ( 'function' === typeof PC.fe.get_qty ) request_body.set( 'quantity', PC.fe.get_qty() );
+
+		var dataUrl = await this.capture_item_image();
+		if ( dataUrl ) request_body.append( 'pc_3d_screenshot', dataUrl );
+
+		/**
+		 * Append extra multipart fields to the quote request.
+		 *
+		 * @param {FormData}      request_body Body sent to `pc_add_to_quote`.
+		 * @param {Backbone.View} form_view    This form view instance.
+		 */
+		wp.hooks.doAction( 'PC.fe.add_to_quote.append_ajax_request_body', request_body, this );
+
+		var response;
+		try {
+			var raw = await fetch( PC_config.ajaxurl + '?action=pc_add_to_quote', {
+				method: 'POST',
+				credentials: 'same-origin',
+				body: request_body
+			} );
+			response = await raw.json();
+		} catch ( error ) {
+			console.error( 'Configurator: Error adding to the quote' );
+			console.error( error );
+			response = { result: 'error', message: '' };
 		}
-		wp.hooks.doAction( 'PC.fe.qty_changed', PC.fe.currentProductData.product_info.qty );
+
+		$button.removeClass( 'adding-to-quote' ).prop( 'disabled', false );
+
+		if ( ! response || 'error' === response.result || ! response.result ) {
+			/**
+			 * The configuration could not be added to the quote list.
+			 *
+			 * @param {Object}        response Server answer: result, message.
+			 * @param {Backbone.View} form_view This form view instance.
+			 */
+			wp.hooks.doAction( 'PC.fe.add_to_quote.failed', response, this );
+			$( document.body ).trigger( 'pc_not_added_to_quote', [ response ] );
+			this.show_quote_error( response && response.message );
+			return;
+		}
+
+		/**
+		 * The configuration is in the quote list.
+		 *
+		 * @param {Object}        response Server answer: result (added|updated), message, item_key, list_url, count, redirect.
+		 * @param {Backbone.View} form_view This form view instance.
+		 */
+		wp.hooks.doAction( 'PC.fe.add_to_quote.added', response, this );
+		$( document.body ).trigger( 'pc_added_to_quote', [ response ] );
+
+		// YITH's quote list widgets, when the page has them.
+		if ( $.fn.ywraq_refresh_widget ) {
+			var $widgets = $( '.widget_ywraq_list_quote, .widget_ywraq_mini_list_quote' );
+			if ( $widgets.length ) $widgets.ywraq_refresh_widget();
+		}
+
+		if ( PC_config.config.ywraq_hide_add_to_cart && PC.fe.trigger_el && PC.fe.trigger_el[0] && 'button' === PC.fe.trigger_el[0].type ) {
+			$( PC.fe.trigger_el[0] ).remove();
+		}
+
+		if ( response.redirect && response.list_url ) {
+			PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atq-redirect', response );
+			window.location.href = response.list_url;
+			return;
+		}
+
+		this.show_quote_count( $button, response.count );
+
+		// The configurator stays open: the confirmation offers to keep configuring or to go to the list.
+		PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atq-added', response );
+	},
+
+	/**
+	 * Show how many items the quote request holds, on the quote button.
+	 *
+	 * @param {jQuery} $button The quote button.
+	 * @param {number} count   Items in the list.
+	 */
+	show_quote_count: function( $button, count ) {
+		count = parseInt( count, 10 );
+		var $badge = $button.find( '.pc-quote-count' );
+		if ( ! count ) {
+			$badge.remove();
+			return;
+		}
+		if ( ! $badge.length ) {
+			$badge = $( '<span class="pc-quote-count"></span>' ).appendTo( $button );
+		}
+		var labels = PC_config.config.ywraq_count_label || {};
+		var label = ( ( 1 === count ? labels.one : labels.other ) || '%s' ).replace( '%s', count );
+		$badge.text( count ).attr( 'title', label );
+		$button.addClass( 'has-quote-items' ).attr( 'aria-description', label );
+	},
+
+	/**
+	 * Show a quote refusal in the configurator, in the add to cart modal.
+	 *
+	 * @param {string} message HTML message from the server.
+	 */
+	show_quote_error: function( message ) {
+		if ( ! PC.fe.add_to_cart_modal ) PC.fe.add_to_cart_modal = new PC.fe.views.add_to_cart_modal();
+		PC.fe.add_to_cart_modal.show_template( 'mkl-pc-atc-not-added', { messages: message || PC_config.config.ywraq_error_message || '' } );
+	},
+
+	/**
+	 * The picture that goes with a cart or quote item: a capture of the viewer, for 3D only.
+	 *
+	 * Goes through PC.fe.capture_viewer_image so any viewer that implements the capture contract
+	 * works here, not just the 3D one.
+	 *
+	 * @return {Promise<string|null>} PNG data URL, or null.
+	 */
+	capture_item_image: async function() {
+		if ( ! PC.fe.config.show_image_in_cart || ! PC.fe.currentProductData || ! PC.fe.currentProductData.product_info || PC.fe.currentProductData.product_info.configurator_type !== '3d' ) {
+			return null;
+		}
+		var size = PC.fe.config.cart_screenshot_size || { width: 800, height: 800 };
+		var blob = await PC.fe.capture_viewer_image( { view: 'current', width: size.width, height: size.height } );
+		if ( ! blob ) return null;
+		return new Promise( function( resolve ) {
+			var reader = new FileReader();
+			reader.onloadend = function() { resolve( reader.result ); };
+			reader.onerror = function() { resolve( null ); };
+			reader.readAsDataURL( blob );
+		} );
+	},
+	/**
+	 * Carry the viewer's picture in the product form, for quote plugins that serialize it.
+	 *
+	 * The field is only added once there is something to send, so a form without a
+	 * configuration never posts an empty one.
+	 *
+	 * @param {string} data_url PNG data URL.
+	 */
+	set_quote_screenshot_field: function( data_url ) {
+		if ( ! this.$cart || ! this.$cart.length ) return;
+		var $field = this.$cart.find( 'input[name=pc_3d_screenshot]' );
+		if ( ! $field.length ) {
+			$field = $( '<input type="hidden" name="pc_3d_screenshot">' ).appendTo( this.$cart );
+		}
+		$field.val( data_url );
+	},
+	/**
+	 * Kept for third-party code that calls it directly. The input itself is
+	 * bound through PC.fe.bind_qty_input, and refreshing the displayed price now
+	 * happens on PC.fe.qty_changed, so it runs whichever input was edited.
+	 */
+	qty_change: function( e ) {
+		PC.fe.set_qty( $( e.target ).val(), { source: e.target } );
 	}
 } );

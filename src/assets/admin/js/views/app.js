@@ -66,12 +66,19 @@ PC.views = PC.views || {};
 		},
 
 		set_data: function() {
+			var productId = this.current_product ? this.current_product.id : null;
 
+			if( PC.app.admin_data.get('settings_3d') != false ) {
+				this.settings_3d = PC.app.admin_data.get('settings_3d');
+			}
 			if( PC.app.admin_data.get('layers') != false ) {
-				this.layers = new PC.layers( PC.app.admin_data.get('layers') );
+				this.layers = new PC.layers( PC.app.admin_data.get('layers'), productId ? { product_id: productId } : {} );
 			}
 			if( PC.app.admin_data.get('angles') != false ) {
 				this.angles = new PC.angles( PC.app.admin_data.get('angles'), { parse: true } );
+			}
+			if( PC.app.admin_data.get('objects3d') != false ) {
+				this.objects3d = new PC.objects3d( PC.app.admin_data.get('objects3d') || [], productId ? { product_id: productId } : {} );
 			}
 
 		},
@@ -82,6 +89,9 @@ PC.views = PC.views || {};
 				if ( content.get( model.id ) ) {
 					content.remove( model.id );
 					PC.app.is_modified[ 'content' ] = true;
+					if ( PC.app.syncSidebarSaveButtonState ) {
+						PC.app.syncSidebarSaveButtonState();
+					}
 				}
 			}
 
@@ -96,6 +106,9 @@ PC.views = PC.views || {};
 					
 				}, this );
 				PC.app.is_modified[ 'content' ] = true;
+				if ( PC.app.syncSidebarSaveButtonState ) {
+					PC.app.syncSidebarSaveButtonState();
+				}
 			}
 		},
 		get_current_product: function() { return this.current_product; },
@@ -111,73 +124,189 @@ PC.views = PC.views || {};
 		className: 'pc-modal-container',
 		template : wp.media.template( 'mkl-modal' ),
 		loading: 0,
-		initialize: function( options ){ 
+		initialize: function( options ) { 
 
 			this.product = options.current_product;
 			this.states = new PC.states();
 			this.admin = PC.app.get_admin();
+			this.loading = 0;
+
+			var menuInlined = PC.states.hasInlinedMenu();
+
 			if ( ! this.admin.structure ) {
-				this.loading ++;
-
-				PC.app.admin_data.fetch({
-					success: _.bind(function( model, res, options ) {
-						
-						this.admin.set_data();
-
-						this.fetched( model, res, options );
-
-						if ( this.contentMissing ) {
-							this.contentMissing = false;
-							this.product.fetch({
-								success: _.bind(this.fetched, this),
-								error: function(model, res, options) {
-									console.log('error fecthing data');
-									console.log( model, res, options );
-								}
-							});
-						}
-
-		
-					}, this),
-					error: function(model, res, options) {
-						console.log('error fecthing data');
-						console.log( model, res, options );
-					}
-				}); 
-
+				this.loading++;
+				PC.app.admin_data.fetch( {
+					data: this.product.id != PC.app.id ? { variation_id: this.product.id } : {},
+					success: _.bind( this.onAdminDataLoaded, this ),
+					error: _.bind( this.onAdminDataLoadError, this )
+				} );
 			}
 
 			if ( ! this.product.get( 'content' ) ) {
-				this.loading ++;
+				this.loading++;
 				this.contentMissing = true;
+			} else {
+				this.contentMissing = false;
 			}
 
 			this.open();
 
-			this.$el.addClass('loading'); 
-			// fetch the states from the server
-			this.states.fetch( {
-				// when received, executes this.fetched
-				url: this.states.url() + '&id=' + this.product.id, 
-				success: _.bind(this.fetched, this)
+			this.$el.addClass( 'loading' );
 
-			} );
-			this.loading ++;
+			if ( menuInlined && typeof PC_lang !== 'undefined' && PC_lang.admin_menu ) {
+				this.states.reset( PC_lang.admin_menu, { parse: true } );
+			} else {
+				this.loading++;
+				this.states.fetch( {
+					url: this.states.url() + '&id=' + this.product.id,
+					success: _.bind( this.fetched, this ),
+					error: _.bind( this.onMenuLoadError, this )
+				} );
+			}
+
+			if ( this.loading === 0 ) {
+				this.refresh();
+				this.$el.removeClass( 'loading' );
+				this.clearLoadErrorUI();
+			}
 			return this;
+		},
 
+		onAdminDataLoaded: function( model, res, options ) {
+			var configurator_source = PC.app.admin_data.get( 'configurator_source' ) || 'local';
+			this.$el.addClass( 'mkl-pc-configurator-is-' + configurator_source );
+
+			this.admin.set_data();
+
+			this.fetched( model, res, options );
+
+			if ( this.contentMissing ) {
+				this.contentMissing = false;
+				this.product.fetch( {
+					success: _.bind( this.fetched, this ),
+					error: _.bind( this.onProductContentLoadError, this )
+				} );
+			}
+		},
+
+		onAdminDataLoadError: function( model, res, options ) {
+			if ( window.console && console.log ) {
+				console.log( 'error fetching configurator init data', model, res, options );
+			}
+			this.handleLoadError( 'init', res );
+		},
+
+		onMenuLoadError: function( collection, res, options ) {
+			if ( window.console && console.log ) {
+				console.log( 'error fetching configurator menu', collection, res, options );
+			}
+			this.handleLoadError( 'menu', res );
+		},
+
+		onProductContentLoadError: function( model, res, options ) {
+			if ( window.console && console.log ) {
+				console.log( 'error fetching product content', model, res, options );
+			}
+			this.handleLoadError( 'content', res );
+		},
+
+		handleLoadError: function( step, xhr ) {
+			this.loading = 0;
+			this.$el.removeClass( 'loading' );
+			this.$el.addClass( 'load-error' );
+			var msg = ( typeof PC_lang !== 'undefined' && PC_lang.editor_load_failed )
+				? PC_lang.editor_load_failed
+				: 'Could not load the configurator.';
+			if ( xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message ) {
+				msg = xhr.responseJSON.data.message;
+			}
+			var $screen = this.$el.find( '.loading-screen' );
+			$screen.find( '.mkl-pc-editor-load--busy' ).attr( 'hidden', true ).hide();
+			var $err = $screen.find( '.mkl-pc-editor-load--error' );
+			$err.removeAttr( 'hidden' ).show();
+			$err.find( '.mkl-pc-editor-load__message' ).text( msg );
+			if ( window.wp && wp.a11y && wp.a11y.speak ) {
+				wp.a11y.speak( msg );
+			}
+		},
+
+		clearLoadErrorUI: function() {
+			this.$el.removeClass( 'load-error' );
+			var $screen = this.$el.find( '.loading-screen' );
+			$screen.find( '.mkl-pc-editor-load--error' ).attr( 'hidden', true ).hide();
+			$screen.find( '.mkl-pc-editor-load--busy' ).removeAttr( 'hidden' ).show();
+		},
+
+		retryLoad: function( e ) {
+			if ( e && e.preventDefault ) {
+				e.preventDefault();
+			}
+			this.clearLoadErrorUI();
+			this.$el.addClass( 'loading' );
+
+			var menuInlined = PC.states.hasInlinedMenu();
+			this.loading = 0;
+
+			if ( ! this.admin.structure ) {
+				this.loading++;
+				PC.app.admin_data.fetch( {
+					data: this.product.id != PC.app.id ? { variation_id: this.product.id } : {},
+					success: _.bind( this.onAdminDataLoaded, this ),
+					error: _.bind( this.onAdminDataLoadError, this )
+				} );
+			}
+
+			if ( ! this.product.get( 'content' ) ) {
+				this.loading++;
+				this.contentMissing = true;
+			} else {
+				this.contentMissing = false;
+			}
+
+			if ( menuInlined && typeof PC_lang !== 'undefined' && PC_lang.admin_menu ) {
+				this.states.reset( PC_lang.admin_menu, { parse: true } );
+			} else {
+				this.loading++;
+				this.states.fetch( {
+					url: this.states.url() + '&id=' + this.product.id,
+					success: _.bind( this.fetched, this ),
+					error: _.bind( this.onMenuLoadError, this )
+				} );
+			}
+
+			if ( this.loading === 0 ) {
+				this.refresh();
+				this.$el.removeClass( 'loading' );
+				this.clearLoadErrorUI();
+			}
 		},
  		// States are fecthed
 		fetched: function( model, response, options ) {
-			this.loading --;
+			this.loading--;
 			if( this.loading == 0 ) {
 				this.refresh(); 
-				this.$el.removeClass('loading');
+				this.$el.removeClass( 'loading' );
+				this.clearLoadErrorUI();
+
+				/**
+				 * The editor has everything it fetches on open.
+				 *
+				 * The point for an add-on to pull data of its own: the editor is up and
+				 * usable, so a fetch from here costs nothing anyone is waiting on, and
+				 * whatever it loads is in place long before a screen that needs it is
+				 * opened.
+				 *
+				 * @param {Backbone.View} editor
+				 * @param {Backbone.Model} product
+				 */
+				wp.hooks.doAction( 'PC.admin.data_loaded', this, this.product );
 			}
 		},
 
 		events: {
-			'click .media-modal-close': 'close',
-			// 'click .pc-modal-backdrop': 'close',
+			'click .mkl-pc-admin-ui__close': 'close',
+			'click .mkl-pc-editor-load__retry': 'retryLoad',
+			'click .mkl-pc-editor-load__close': 'close',
 		},
 
 		open: function() {
@@ -190,7 +319,7 @@ PC.views = PC.views || {};
 				this.modal = this.$('.pc-modal');
 				this.backdrop = this.$('.pc-modal-backdrop');
 			
-				this.modal_content = this.modal.find('.media-frame');
+				this.modal_content = this.modal.find('.mkl-pc-admin-ui__main');
 				this.statesView = new PC.views.states( { el: this.modal_content, parent:this } );
 			}
 			
@@ -204,8 +333,16 @@ PC.views = PC.views || {};
 		},
 
 		close: function() {
-			if( _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) { 
-				if( !confirm( PC.lang.confirm_closing || 'Some values have not been saved. Are you sure you want to close?' ) ) 
+			var closing_after_load_error = this.$el.hasClass( 'load-error' );
+			if ( closing_after_load_error ) {
+				this.clearLoadErrorUI();
+			} else if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() && PC.app.global_layer_session_dirty ) {
+				if ( ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return false;
+				}
+			}
+			if ( ! closing_after_load_error && _.indexOf( _.values( PC.app.is_modified ), true ) != -1 ) {
+				if( !confirm( PC.lang.confirm_closing || 'Some values have not been saved. Are you sure you want to close?' ) )
 					return false;
 			}
 			this.opened = false;

@@ -53,11 +53,20 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * Check configuration on add to cart
 		 */
 		public function validate_add_to_cart( $passed, $product_id, $quantity, $variation_id = 0, $variation = array(), $cart_item_data = array() ) {
+			$parent_id = $product_id;
 			if ( $variation_id ) {
 				$product_id = $variation_id;
 			}
 
-			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
+			$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce add-to-cart nonce; JSON is decoded then sanitized via db->sanitize().
+
+			// A payload that is present but does not decode - cut short by post_max_size or a proxy, or
+			// tampered with - used to pass, and the item went into the cart with no configuration.
+			// The parent is checked too: wc_cart_add_item_data() reads the payload for it.
+			if ( $passed && '' !== $raw_configurator_data && ( mkl_pc_is_configurable( $parent_id ) || mkl_pc_is_configurable( $product_id ) ) && null === $this->decode_configurator_payload( $raw_configurator_data ) ) {
+				wc_add_notice( esc_html_x( 'The configuration data could not be read, the product could not be added to the cart.', 'Error message when configuration data is invalid on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
+				return false;
+			}
 
 			if ( $passed && mkl_pc_is_configurable( $product_id ) && ! $this->has_configuration_data( $raw_configurator_data, $cart_item_data ) && ! mkl_pc( 'settings' )->get( 'enable_default_add_to_cart' ) ) {
 				wc_add_notice( esc_html_x( 'Configuration data is missing, the product could not be added to the cart.', 'Error message when configuration data is missing on add to cart', 'product-configurator-for-woocommerce' ), 'error' );
@@ -142,13 +151,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				return $quote_item_data;
 			}
 
-			$data = json_decode( $raw_configurator_data );
-			if ( ! $data ) {
-				$data = json_decode( stripcslashes( $raw_configurator_data ) );
-			}
-			if ( $data ) {
+			$data = $this->decode_configurator_payload( $raw_configurator_data );
+			if ( ! empty( $data ) ) {
 				$data = Plugin::instance()->db->sanitize( $data );
-				$configuration = new Configuration( 
+				$configuration = new Configuration(
 					null,
 					[
 						'product_id' => $product_id, 
@@ -170,17 +176,44 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			return $quote_item_data;
 		}
 		
+		/**
+		 * Decode a configurator payload posted with add to cart or a quote request.
+		 *
+		 * @param mixed $raw_configurator_data Unslashed payload.
+		 * @return array|null The list of choices (possibly empty), or null when the payload is not a JSON array.
+		 */
+		public function decode_configurator_payload( $raw_configurator_data ) {
+			if ( ! is_string( $raw_configurator_data ) || '' === $raw_configurator_data ) {
+				return null;
+			}
+			$data = json_decode( $raw_configurator_data );
+			// A payload carrying one level of slashes too many only decodes once they are stripped.
+			if ( ! is_array( $data ) ) {
+				$data = json_decode( stripcslashes( $raw_configurator_data ) );
+			}
+			// YITH Request a Quote Premium posts the form through FormData with encodeURIComponent()
+			// on every field, so its payload arrives still URL-encoded.
+			if ( ! is_array( $data ) ) {
+				$data = json_decode( urldecode( $raw_configurator_data ) );
+			}
+			return is_array( $data ) ? $data : null;
+		}
+
 		// Filter data that's saved in the cart, and add the configurator data
 		public function wc_cart_add_item_data( $cart_item_data, $product_id, $variation_id ) {
 			if ( mkl_pc_is_configurable( $product_id ) ) {
 
-				$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : '';
-				if ( is_string( $raw_configurator_data ) && '' !== $raw_configurator_data ) { 
+				$raw_configurator_data = isset( $_POST['pc_configurator_data'] ) ? wp_unslash( $_POST['pc_configurator_data'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WooCommerce add-to-cart nonce; JSON is decoded then sanitized via db->sanitize().
+				$data = $this->decode_configurator_payload( $raw_configurator_data );
+
+				// A payload that does not decode is refused in validate_add_to_cart(). Code adding to the
+				// cart without validation must not lose the item being edited over it either.
+				if ( null !== $data ) {
 
 					/**
 					 * Editing the cart: Delete and replace the item from the cart
 					 */
-					if ( isset( $_POST['pc_cart_item_key'] ) ) {
+					if ( isset( $_POST['pc_cart_item_key'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce add-to-cart nonce.
 						$cart_item_key = sanitize_text_field( wp_unslash( $_POST['pc_cart_item_key'] ) );
 						$cart = WC()->cart;
 						if ( $cart_item_key && $cart->get_cart_item( $cart_item_key ) ) {
@@ -188,39 +221,312 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 						}
 					}
 
-
-					$data = json_decode( $raw_configurator_data );
-					if ( ! $data ) {
-						$data = json_decode( stripcslashes( $raw_configurator_data ) );
-					}
-					if ( $data ) {
+					if ( ! empty( $data ) ) {
 						$data = Plugin::instance()->db->sanitize( $data );
+					}
+					if ( ! empty( $data ) && is_array( $data ) ) {
 						$item_weight = 0;
-						$layers = array();
-						if ( is_array( $data ) ) { 
-							$configuration = new Configuration( null, [
-								'content' => $data, 
-								'product_id' => $product_id, 
-								'variation_id'=> $variation_id 
-							] );
-							$layers = $configuration->get_layers();
+						$configuration = new Configuration( null, [
+							'content' => $data,
+							'product_id' => $product_id,
+							'variation_id'=> $variation_id
+						] );
+						$layers = $configuration->get_layers();
 
-							foreach( $configuration->get_layers() as $layer ) {
-								if ( $weight = $layer->get_choice( 'weight' ) ) {
-									$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
-								}
+						foreach( $layers as $layer ) {
+							if ( $weight = $layer->get_choice( 'weight' ) ) {
+								$item_weight += apply_filters( 'mkl_pc/wc_cart_add_item_data/choice_weight', floatval( $weight ), $layer );
 							}
 						}
 
 						if ( $item_weight ) {
-							$cart_item_data['configuration_weight'] = $item_weight; 
+							$cart_item_data['configuration_weight'] = $item_weight;
 						}
 						$cart_item_data['configurator_data'] = $layers;
 						$cart_item_data['configurator_data_raw'] = $configuration->content;
 					}
-				} 
-			} 
-			return $cart_item_data; 
+				}
+
+				// Save 3D viewer screenshot to temp folder when show_image_in_cart is on (not saved as attachment).
+				if ( ! empty( $_POST['pc_3d_screenshot'] ) && is_string( $_POST['pc_3d_screenshot'] ) && $this->accepts_3d_screenshot( $product_id ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce add-to-cart nonce.
+					$saved = $this->save_3d_screenshot_to_temp( wp_unslash( $_POST['pc_3d_screenshot'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as a PNG in save_3d_screenshot_to_temp().
+					if ( $saved ) {
+						$cart_item_data['configurator_3d_screenshot_path'] = $saved;
+					}
+				}
+			}
+			return $cart_item_data;
+		}
+
+		/**
+		 * Whether a screenshot posted along with this product should be kept.
+		 *
+		 * Only a 3D configuration has no layer images to merge, so only a 3D product takes the
+		 * viewer's picture. A 2D product's cart and order image stays the one the server merges:
+		 * accepting a posted picture there would let the browser replace it with anything.
+		 *
+		 * @param int $product_id Parent product ID.
+		 * @return bool
+		 */
+		public function accepts_3d_screenshot( $product_id ) {
+			return mkl_pc( 'settings' )->get( 'show_image_in_cart' )
+				&& mkl_pc_is_configurable( $product_id )
+				&& '3d' === mkl_pc_get_configurator_type( $product_id );
+		}
+
+		/**
+		 * Width and height of the 3D cart screenshot (from the merge_size setting).
+		 *
+		 * The viewer captures at exactly this size, and save_3d_screenshot_to_temp() refuses
+		 * anything larger, so the one filter moves both.
+		 *
+		 * @return array{width: int, height: int}
+		 */
+		public function get_3d_screenshot_dimensions() {
+			$size = mkl_pc( 'settings' )->get( 'merge_size', 'full' );
+			$w    = 800;
+			$h    = 800;
+			if ( 'full' !== $size ) {
+				global $_wp_additional_image_sizes;
+				if ( in_array( $size, array( 'thumbnail', 'medium', 'medium_large', 'large' ), true ) ) {
+					$w = (int) get_option( $size . '_size_w' );
+					$h = (int) get_option( $size . '_size_h' );
+				} elseif ( ! empty( $_wp_additional_image_sizes[ $size ] ) ) {
+					$w = (int) $_wp_additional_image_sizes[ $size ]['width'];
+					$h = (int) $_wp_additional_image_sizes[ $size ]['height'];
+				}
+				if ( $w <= 0 ) { $w = 800; }
+				if ( $h <= 0 ) { $h = 800; }
+			}
+
+			/**
+			 * Filter the size of the 3D cart screenshot, which is also the largest one accepted.
+			 *
+			 * @param array{width: int, height: int} $dimensions
+			 */
+			$dimensions = apply_filters( 'mkl_pc_3d_screenshot_dimensions', array( 'width' => $w, 'height' => $h ) );
+			return array(
+				'width'  => max( 1, (int) $dimensions['width'] ),
+				'height' => max( 1, (int) $dimensions['height'] ),
+			);
+		}
+
+		/**
+		 * Save 3D screenshot data URL to temp file. No attachment is created.
+		 *
+		 * Anyone can post this with an add to cart, and the file lands in a public folder, so
+		 * nothing is written unless it is a PNG no larger than the screenshot size.
+		 *
+		 * @param string $data_url Data URL (e.g. data:image/png;base64,...)
+		 * @return string|false Relative path (e.g. cart-temp/3d-xxx.png) under mkl-pc-config-images, or false on failure
+		 */
+		public function save_3d_screenshot_to_temp( $data_url ) {
+			if ( ! is_string( $data_url ) ) {
+				return false;
+			}
+			// YITH Request a Quote Premium posts every field through encodeURIComponent().
+			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
+				$data_url = urldecode( $data_url );
+			}
+			// Never sanitize_text_field() this value first: it strips percent-encoded octets.
+			if ( strpos( $data_url, 'data:image/png;base64,' ) !== 0 ) {
+				return false;
+			}
+			$raw = $this->decode_3d_screenshot( substr( $data_url, strlen( 'data:image/png;base64,' ) ) );
+			if ( false === $raw ) {
+				return false;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			$base_dir      = $wp_upload_dir['basedir'] . '/mkl-pc-config-images';
+			$temp_dir      = $base_dir . '/cart-temp';
+			if ( ! file_exists( $base_dir ) ) {
+				wp_mkdir_p( $base_dir );
+			}
+			if ( ! file_exists( $temp_dir ) ) {
+				wp_mkdir_p( $temp_dir );
+			}
+			// Not wp_unique_id(): it counts per request, so every add-to-cart got the same name and
+			// customers overwrote each other's screenshots. The name is also a public URL, so it
+			// must not be guessable either.
+			$filename = '3d-' . wp_generate_uuid4() . '.png';
+			$filepath = $temp_dir . '/' . $filename;
+			if ( file_put_contents( $filepath, $raw ) === false ) {
+				return false;
+			}
+			return 'cart-temp/' . $filename;
+		}
+
+		/**
+		 * Decode a posted screenshot, or refuse it.
+		 *
+		 * @param string $base64 The data URL without its prefix.
+		 * @return string|false PNG bytes, or false when it is not a PNG of at most the screenshot size.
+		 */
+		private function decode_3d_screenshot( $base64 ) {
+			$max = $this->get_3d_screenshot_dimensions();
+			// A PNG is never much larger than its raw pixels: four bytes each, a filter byte per
+			// row, and a few chunk headers. Checked before decoding, which copies the whole string.
+			$max_bytes = $max['width'] * $max['height'] * 4 + $max['height'] + 65536;
+			if ( strlen( $base64 ) > ceil( $max_bytes / 3 ) * 4 ) {
+				return false;
+			}
+			$raw = base64_decode( $base64, true );
+			if ( false === $raw ) {
+				return false;
+			}
+			$info = @getimagesizefromstring( $raw ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Warns on a truncated image; false is the answer we need.
+			if ( ! $info || IMAGETYPE_PNG !== $info[2] || $info[0] > $max['width'] || $info[1] > $max['height'] ) {
+				return false;
+			}
+			// A PNG ends with its IEND chunk. Anything appended after a valid image would otherwise
+			// be published under the shop's domain along with it.
+			if ( "\x00\x00\x00\x00IEND\xAE\x42\x60\x82" !== substr( $raw, -12 ) ) {
+				return false;
+			}
+			return $raw;
+		}
+
+		/**
+		 * Cron callback: delete 3D screenshots nothing can reach any more.
+		 * Called by scheduled event mkl_pc_cleanup_3d_cart_screenshots.
+		 *
+		 * Two folders, two lifetimes. cart-temp holds the picture for a cart or a quote list that is
+		 * still being put together, so it follows WooCommerce's own session lifetime. quotes/ holds the
+		 * picture for a request that was sent by email, which a merchant may act on weeks later.
+		 *
+		 * A persistent cart (logged in) never expires, so its picture can still be swept from under it.
+		 * That degrades to a missing thumbnail: the configuration itself is untouched.
+		 */
+		public function cleanup_old_3d_screenshots() {
+			$base_dir = wp_upload_dir()['basedir'] . '/mkl-pc-config-images';
+			$this->delete_files_older_than( $base_dir . '/cart-temp', $this->get_cart_screenshot_max_age() );
+			$this->delete_files_older_than( $base_dir . '/quotes', $this->get_quote_screenshot_max_age() );
+
+			// Placeholders waiting to be generated. Configuration::get_image_url() writes one
+			// per lazy render and only the browser's ajax call consumes it, so every render
+			// without JavaScript - a crawler, an email client, a feed - leaves one behind for
+			// good. They are worthless within minutes of being written.
+			$this->delete_files_older_than( $base_dir, $this->get_image_placeholder_max_age(), '*-temp-*' );
+
+			// Merges kept for the "generate images on the fly" mode. That mode is a promise to
+			// spend server time instead of disk, so its cache expires rather than accumulating.
+			$this->delete_files_older_than( $base_dir . '/cache', $this->get_merge_cache_max_age() );
+		}
+
+		/**
+		 * How long a placeholder waiting to be generated is kept.
+		 *
+		 * @return int Seconds.
+		 */
+		public function get_image_placeholder_max_age() {
+			return (int) apply_filters( 'mkl_pc_image_placeholder_max_age', DAY_IN_SECONDS );
+		}
+
+		/**
+		 * How long a merge generated on the fly is cached.
+		 *
+		 * @return int Seconds, or 0 to keep it for good.
+		 */
+		public function get_merge_cache_max_age() {
+			return (int) apply_filters( 'mkl_pc_merge_cache_max_age', MONTH_IN_SECONDS );
+		}
+
+		/**
+		 * How long a cart screenshot is kept: as long as the cart it belongs to can come back.
+		 *
+		 * WooCommerce keeps a session for 2 days (guests) or 7 (logged in), and a site can filter that,
+		 * so follow whatever it is rather than a number of our own, plus a day of grace.
+		 *
+		 * @return int Seconds.
+		 */
+		public function get_cart_screenshot_max_age() {
+			$session_lifetime = (int) apply_filters( 'wc_session_expiration', WEEK_IN_SECONDS );
+			$default_max_age  = max( 2 * DAY_IN_SECONDS, $session_lifetime ) + DAY_IN_SECONDS;
+			return (int) apply_filters( 'mkl_pc_3d_screenshot_temp_max_age', $default_max_age );
+		}
+
+		/**
+		 * How long the picture of a quote that was sent by email is kept.
+		 *
+		 * @return int Seconds, or 0 to keep it for good.
+		 */
+		public function get_quote_screenshot_max_age() {
+			$setting = mkl_pc( 'settings' )->get( 'quote_image_retention', '30' );
+			$days    = ( 'never' === $setting ) ? 0 : absint( $setting );
+			return (int) apply_filters( 'mkl_pc_3d_screenshot_quote_max_age', $days * DAY_IN_SECONDS );
+		}
+
+		/**
+		 * @param string $dir             Absolute folder.
+		 * @param int    $max_age_seconds 0 keeps everything.
+		 * @return void
+		 */
+		private function delete_files_older_than( $dir, $max_age_seconds, $pattern = '*.png' ) {
+			if ( $max_age_seconds <= 0 || ! is_dir( $dir ) ) {
+				return;
+			}
+			$files = glob( $dir . '/' . $pattern );
+			if ( ! is_array( $files ) ) {
+				return;
+			}
+			$now = time();
+			foreach ( $files as $file ) {
+				if ( ! is_file( $file ) ) {
+					continue;
+				}
+				if ( ( $now - filemtime( $file ) ) > $max_age_seconds ) {
+					wp_delete_file( $file );
+				}
+			}
+		}
+
+		/**
+		 * Move a cart screenshot into the quotes folder, where it outlives the session.
+		 *
+		 * Used when a quote is sent without an order being created: the list is cleared right after,
+		 * so nothing would hold on to a cart-temp file any more.
+		 *
+		 * @param string $relative_path A cart-temp/... path.
+		 * @param string $item_key      Quote item key, for a recognisable file name.
+		 * @return string|false New relative path, or false when there is nothing to move.
+		 */
+		public function move_3d_screenshot_to_quotes( $relative_path, $item_key ) {
+			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
+				return false;
+			}
+			$relative_path = trim( $relative_path, '/' );
+			if ( 0 !== strpos( $relative_path, 'cart-temp/' ) ) {
+				return false;
+			}
+			$base_dir    = wp_upload_dir()['basedir'] . '/mkl-pc-config-images';
+			$source_path = $base_dir . '/' . $relative_path;
+			if ( ! file_exists( $source_path ) || ! is_file( $source_path ) ) {
+				return false;
+			}
+			$quotes_dir = $base_dir . '/quotes';
+			if ( ! file_exists( $quotes_dir ) ) {
+				wp_mkdir_p( $quotes_dir );
+			}
+			$file_name = 'quote-' . sanitize_file_name( substr( (string) $item_key, 0, 32 ) ) . '-' . wp_generate_uuid4() . '.png';
+			if ( ! Utils::fs_move( $source_path, $quotes_dir . '/' . $file_name, true ) ) {
+				return false;
+			}
+			return 'quotes/' . $file_name;
+		}
+
+		/**
+		 * Get the public URL for a 3D screenshot path (temp or final).
+		 *
+		 * @param string $relative_path Path relative to mkl-pc-config-images (e.g. cart-temp/3d-xxx.png)
+		 * @return string|null URL or null if path invalid
+		 */
+		public function get_3d_screenshot_url( $relative_path ) {
+			if ( ! is_string( $relative_path ) || strpos( $relative_path, '..' ) !== false ) {
+				return null;
+			}
+			$wp_upload_dir = wp_upload_dir();
+			$base_url      = $wp_upload_dir['baseurl'] . '/mkl-pc-config-images';
+			return $base_url . '/' . trim( $relative_path, '/' );
 		}
 
 		/**
@@ -242,6 +548,11 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function restore_configuration_cart_item_data_from_order_item( $data, $item ) {
 			if ( ! is_a( $item, 'WC_Order_Item_Product' ) ) {
 				return $data;
+			}
+
+			$screenshot_path = $item->get_meta( '_configurator_3d_screenshot_path', true );
+			if ( $screenshot_path && is_string( $screenshot_path ) ) {
+				$data['configurator_3d_screenshot_path'] = $screenshot_path;
 			}
 
 			if ( $this->has_configuration_data( '', $data ) ) {
@@ -395,14 +706,22 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 				$is_block = ( 'block' === $this->_get_cart_item_context( $cart_item ) );
 
+				/**
+				 * The cart blocks always list one row per layer: the Store API cannot carry the
+				 * combined HTML. The classic cart follows the configuration meta mode, so that
+				 * both carts match the way the choices are stored on the order.
+				 */
+				$meta_mode     = mkl_pc_get_configuration_meta_mode( $cart_item['data'] );
+				$split_choices = $is_block || 'individual' === $meta_mode;
+
 				if ( $compound_sku && count( $sku ) ) {
 					$sku_item = array(
 						'className' => 'configuration-sku',
 						'key' => mkl_pc( 'settings')->get_label( 'sku_label', __( 'SKU', 'product-configurator-for-woocommerce' ) ),
 						'value' => implode( mkl_pc( 'settings')->get_label( 'sku_glue', '' ), $sku )
 					);
-					if ( $is_block ) {
-						$sku_items = $this->_prepare_block_cart_item_data( array( $sku_item ) );
+					if ( $split_choices ) {
+						$sku_items = $this->_prepare_split_cart_item_data( array( $sku_item ) );
 						if ( ! empty( $sku_items ) ) {
 							$data[] = $sku_items[0];
 						}
@@ -411,8 +730,27 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					}
 				}
 
-				if ( $is_block ) {
-					$data = array_merge( $data, $this->_prepare_block_cart_item_data( $this->get_choices_data( $choices ) ) );
+				if ( $split_choices ) {
+					$choice_rows = $this->get_choices_data( $choices );
+
+					// Only tidy the rows when the choices are meant to stand on their own.
+					// In the other modes the blocks keep listing exactly what they always have.
+					if ( 'individual' === $meta_mode ) {
+						$choice_rows = $this->_normalize_split_choice_rows( $choice_rows );
+					}
+
+					$choice_rows = $this->_prepare_split_cart_item_data( $choice_rows );
+
+					// There is no combined value to append the edit link to, so it goes after
+					// the last choice. The blocks handle their own edit link.
+					if ( $edit_link && ! $is_block && ! empty( $choice_rows ) ) {
+						$last_row = count( $choice_rows ) - 1;
+						if ( isset( $choice_rows[ $last_row ]['value'] ) ) {
+							$choice_rows[ $last_row ]['value'] .= '<div class="mkl-pc-edit-link--container">' . $edit_link . '</div>';
+						}
+					}
+
+					$data = array_merge( $data, $choice_rows );
 				} else {
 					$value = $this->get_choices_html( $choices );
 					if ( $edit_link ) {
@@ -463,6 +801,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		public function cart_item_thumbnail( $image, $cart_item, $cart_item_key ) {
 			if ( ! mkl_pc( 'settings' )->get( 'show_image_in_cart' ) ) return $image;
 			if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
+				// 3D screenshot (temp file, not attachment)
+				if ( ! empty( $cart_item['configurator_3d_screenshot_path'] ) ) {
+					$url = $this->get_3d_screenshot_url( $cart_item['configurator_3d_screenshot_path'] );
+					if ( $url ) {
+						return '<img src="' . esc_url( $url ) . '" alt="' . esc_attr( $cart_item['data']->get_name() ) . '" class="attachment-woocommerce_thumbnail" />';
+					}
+				}
 				$configuration = $this->_get_configuration_for_cart_item( $cart_item );
 				$size          = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 				$img           = $this->get_configuration_cart_thumbnail_html( $configuration, $size );
@@ -488,11 +833,18 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			$size = mkl_pc( 'settings' )->get( 'cart_thumbnail_size', 'woocommerce_thumbnail' );
 			foreach ( $cart_content as $key => $cart_item ) {
 				if ( mkl_pc_is_configurable( $cart_item['product_id'] ) && isset( $cart_item['configurator_data'] ) ) {
-					$configuration = $this->_get_configuration_for_cart_item( $cart_item );
-					$img_url = $configuration->get_image_url( false, $size );
+					$img_url = null;
+					if ( ! empty( $cart_item['configurator_3d_screenshot_path'] ) ) {
+						$img_url = $this->get_3d_screenshot_url( $cart_item['configurator_3d_screenshot_path'] );
+					}
+					if ( ! $img_url ) {
+						$configuration = $this->_get_configuration_for_cart_item( $cart_item );
+						$img_url = $configuration->get_image_url( false, $size );
+					}
+
 					if ( ! $img_url || ! is_string( $img_url ) ) continue;
 
-					if ( 'save_to_disk' === mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ) ) {
+					if ( in_array( mkl_pc( 'settings' )->get( 'save_images', 'save_to_disk' ), array( 'save_to_disk', 'add_to_library' ), true ) ) {
 						$attachment_id = Utils::get_image_id( $img_url );
 
 						// If we have an attachment ID, set the ID and move to the next item
@@ -560,17 +912,6 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @param object $choice_b
 		 * @return integer
 		 */
-		private function _order_images( $choice_a, $choice_b ) {
-			if ( ! $choice_a || ! $choice_b ) return 0;
-			$a = $choice_a->get_layer( 'image_order' );
-			$b = $choice_b->get_layer( 'image_order' );
-			// fallback to normal sort
-			if ( false === $a ) {
-				$a = $choice_a->get_layer( 'order' );
-				$b = $choice_b->get_layer( 'order' );
-			}
-			return ($a > $b) ? +1 : -1;
-		}
 
 		/**+
 		 * Get the choices HTML to be displayed
@@ -746,7 +1087,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 			// Plain permalinks and other setups where is_store_api_request() does not match.
 			if ( ! empty( $_SERVER['REQUEST_URI'] ) ) {
-				$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] );
+				$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) );
 				if ( false !== strpos( $request_uri, 'wc/store/' ) || false !== strpos( $request_uri, 'rest_route=/wc/store/' ) ) {
 					return true;
 				}
@@ -757,6 +1098,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			}
 
 			// Cart/checkout blocks resolve item data via CartItemSchema outside is_cart()/is_checkout().
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Used only to detect WooCommerce CartItemSchema in the call stack, not for debug output.
 			$trace = debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS, 15 );
 			foreach ( $trace as $call ) {
 				if ( isset( $call['class'] ) && false !== strpos( $call['class'], 'CartItemSchema' ) ) {
@@ -793,14 +1135,47 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		}
 
 		/**
-		 * Prepare cart item data elements for the cart/checkout blocks (Store API).
+		 * Tidy the per-layer rows so that each one can stand on its own.
 		 *
-		 * The Store API drops any item_data element that contains a non-scalar value.
+		 * Inside the combined value a layer with a label but no value reads as a heading, and
+		 * a repeated layer only needs its label once. Listed one per row, the first becomes an
+		 * empty row and the second loses its label, so drop the one and restore the other.
+		 *
+		 * @param array $rows Output of {@see get_choices_data()}
+		 * @return array
+		 */
+		private function _normalize_split_choice_rows( $rows ) {
+			$normalized = array();
+
+			foreach ( $rows as $row ) {
+				// Headings and group layers: a label, but nothing selected to show.
+				if ( ! isset( $row['value'] ) || '' === trim( wp_strip_all_tags( (string) $row['value'] ) ) ) {
+					continue;
+				}
+
+				$layer = isset( $row['choice']['layer'] ) ? $row['choice']['layer'] : null;
+
+				if ( empty( $row['key'] ) && $layer && is_callable( [ $layer, 'get_layer' ] ) ) {
+					$row['key']  = $layer->get_layer( 'name' );
+					$row['name'] = $row['key'];
+				}
+
+				$normalized[] = $row;
+			}
+
+			return $normalized;
+		}
+
+		/**
+		 * Prepare cart item data elements for the one-row-per-layer display.
+		 *
+		 * Used by the cart/checkout blocks, which drop any item_data element holding a
+		 * non-scalar value, and by the classic cart when the choices are listed individually.
 		 *
 		 * @param array $items
 		 * @return array
 		 */
-		private function _prepare_block_cart_item_data( $items ) {
+		private function _prepare_split_cart_item_data( $items ) {
 			$prepared = array();
 
 			foreach ( $items as $item ) {
@@ -836,7 +1211,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		private function _get_configuration_for_cart_item( $cart_item ) {
 			$configurator_data = $cart_item['configurator_data'];
 			$choices = array(); 
-			usort( $configurator_data, [ $this, '_order_images' ] );
+			$configurator_data = Utils::sort_layers_for_merging( $configurator_data );
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer ) continue;
 				/**

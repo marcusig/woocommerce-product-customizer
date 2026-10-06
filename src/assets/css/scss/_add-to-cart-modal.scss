@@ -146,3 +146,96 @@ body.show-add-to-cart-modal.configurator_is_inline .adding-to-cart--modal {
         animation: anim-tick .75s;
     }
 }
+
+// Quote request confirmation (YITH), shown in the same modal.
+.adding-to-cart--modal .adding-to-quote--added {
+    .header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+    .messages:not(:empty) {
+        padding-bottom: 0;
+    }
+}
+
+.adding-to-quote--item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding-bottom: 28px;
+}
+
+.adding-to-quote--image {
+    flex: 0 0 auto;
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    border-radius: 8px;
+    background: #f4f4f4;
+}
+
+// No picture (2D): centred under the title like the rest of the box.
+.adding-to-quote--details:only-child {
+    text-align: center;
+}
+
+.adding-to-quote--name {
+    font-weight: 600;
+    padding-bottom: 6px;
+}
+
+@media (max-width: 600px) {
+    .adding-to-cart--modal .has-box {
+        padding: 28px 20px;
+        margin: 0 16px;
+
+        .header {
+            font-size: 22px;
+            padding-bottom: 20px;
+        }
+    }
+    .adding-to-quote--item {
+        flex-direction: column;
+        text-align: center;
+    }
+    .adding-to-cart--adding-cta .or {
+        display: block;
+        padding: 8px 0;
+    }
+}
+
+.add-to-quote.adding-to-quote {
+    opacity: .6;
+    cursor: progress;
+}
+
+// A corner badge: it cannot wrap the label, however narrow the theme makes the button.
+.add-to-quote.has-quote-items {
+    position: relative;
+    overflow: visible;
+}
+
+.add-to-quote .pc-quote-count {
+    position: absolute;
+    // Inside the right edge: a button flush with the screen edge would clip it.
+    top: -.6em;
+    right: .4em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.7em;
+    height: 1.7em;
+    padding: 0 .45em;
+    box-sizing: border-box;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    background: #fff;
+    color: #1e1e1e;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+    pointer-events: none;
+}

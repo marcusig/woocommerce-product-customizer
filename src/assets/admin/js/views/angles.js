@@ -24,14 +24,54 @@ PC.views.angles = PC.views.layers.extend({
 });
 
 PC.views.angle = PC.views.layer.extend({
+	object_type: 'angle',
+	collectionName: 'angles',
 	edit_view: function(){ return PC.views.angle_form; },
 });
 
 PC.views.angle_form = PC.views.layer_form.extend({
 	collectionName: 'angles',
 	template: wp.template('mkl-pc-structure-angle-form'),
+	events: ( function() {
+		var parent = PC.views.layer_form.prototype.events || {};
+		return _.extend( {}, parent, {
+			'change select[data-setting="camera_target_model"]': 'on_camera_target_model_change',
+			'objects_selected': 'on_objects_selected'
+		} );
+	} )(),
 	pre_init: function( options ) {
 		this.listenTo( this.model, 'change:use_in_cart' , this.set_default_view );
+	},
+	on_objects_selected: function( event, payload ) {
+		if ( ! payload || payload.setting !== 'camera_focus_object_ids' ) return;
+		var ids = payload.ids || [];
+		var $list = this.$( '.mkl-pc--framing-objects-list' );
+		if ( $list.length ) {
+			$list.html( ids.length ? ids.join( ', ' ) : '<em>' + ( window.PC_lang && PC_lang.none_selected ? PC_lang.none_selected : 'None selected' ) + '</em>' );
+		}
+	},
+	on_camera_target_model_change: function() {
+		this.model.set( 'camera_target_object_id', '' );
+		this.$( 'input[data-setting="camera_target_object_id"]' ).val( '' );
+		if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.angles = true;
+	},
+	render: function() {
+		var ret = PC.views.layer_form.prototype.render.apply( this, arguments );
+		if ( this.$( 'select[data-setting="camera_target_model"]' ).length ) {
+			this.populate_camera_target_model();
+		}
+		return ret;
+	},
+	populate_camera_target_model: function() {
+		var self = this;
+		var populate = function() {
+			PC.threeD.populateObjects3dSettingSelect( self, 'camera_target_model', { types: [ 'gltf' ] } );
+		};
+		if ( PC.threeD && typeof PC.threeD.populateObjects3dSettingSelect === 'function' ) {
+			populate();
+		} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+			PC.threeD.ensureReady().then( populate );
+		}
 	},
 	set_default_view: function( model, seleted ) {
 		if ( seleted ) {
@@ -44,3 +84,14 @@ PC.views.angle_form = PC.views.layer_form.extend({
 		}
 	},
 });
+
+PC.actions = PC.actions || {};
+PC.actions.clear_framing_objects = function( el, context ) {
+	if ( ! context || ! context.model ) return;
+	context.model.set( 'camera_focus_object_ids', [] );
+	var $list = context.$el && context.$el.find( '.mkl-pc--framing-objects-list' );
+	if ( $list.length ) {
+		$list.html( '<em>' + ( window.PC_lang && PC_lang.none_selected ? PC_lang.none_selected : 'None selected' ) + '</em>' );
+	}
+	if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.angles = true;
+};

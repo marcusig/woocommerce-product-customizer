@@ -1,6 +1,267 @@
 var PC = PC || {};
 // Backbone.emulateHTTP = true;
 
+PC.actions = PC.actions || {};
+PC.threeD = PC.threeD || {};
+
+// Generic file select/remove actions for settings fields of type "file".
+// Value at data-setting path is always { attachment_id, url }. No filename stored.
+if ( ! PC.actions.pc_file_select ) {
+	PC.actions.pc_file_select = function ( $el, context ) {
+		if ( ! context || ! context.model || ! window.wp || ! window.wp.media ) return;
+
+		var $container = $el.closest( '.mkl-pc-setting--file' );
+		if ( ! $container.length ) return;
+
+		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
+		var allowed = $container.attr( 'data-allowed-types' ) || 'image';
+
+		if ( ! settingPath ) return;
+
+		var mediaArgs = {
+			title: ( PC.lang && PC.lang.media_title_file ) ? PC.lang.media_title_file : 'Select file',
+			button: {
+				text: ( PC.lang && PC.lang.media_select_button_file ) ? PC.lang.media_select_button_file : 'Use this file',
+			},
+			multiple: false,
+		};
+
+		if ( allowed === 'image' ) {
+			mediaArgs.library = { type: 'image' };
+		}
+
+		var frame = window.wp.media( mediaArgs );
+
+		var setPath = function( model, path, value ) {
+			if ( ! path ) return;
+			path = String( path );
+			if ( path.indexOf( '.' ) === -1 ) {
+				model.set( path, value );
+				return;
+			}
+			var parts = path.split( '.' );
+			var rootKey = parts[0];
+			var obj = model.get( rootKey );
+			obj = obj && typeof obj === 'object' ? _.extend( {}, obj ) : {};
+			var cursor = obj;
+			for ( var i = 1; i < parts.length - 1; i++ ) {
+				var key = parts[i];
+				cursor[ key ] = cursor[ key ] && typeof cursor[ key ] === 'object' ? _.extend( {}, cursor[ key ] ) : {};
+				cursor = cursor[ key ];
+			}
+			cursor[ parts[ parts.length - 1 ] ] = value;
+			model.set( rootKey, obj );
+		};
+
+		frame.on( 'select', function () {
+			var selection = frame.state().get( 'selection' );
+			var att = selection && selection.first ? selection.first().toJSON() : null;
+			if ( ! att ) return;
+
+			var url = att.gltf_url || att.url || '';
+			setPath( context.model, settingPath, {
+				attachment_id: att.id,
+				url: url,
+			} );
+
+			if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
+				window.PC.app.is_modified[ context.collectionName ] = true;
+			}
+
+			if ( context.render ) {
+				context.render();
+			}
+		} );
+
+		frame.open();
+	};
+}
+
+if ( ! PC.actions.pc_file_remove ) {
+	PC.actions.pc_file_remove = function ( $el, context ) {
+		if ( ! context || ! context.model ) return;
+
+		var $container = $el.closest( '.mkl-pc-setting--file' );
+		if ( ! $container.length ) return;
+
+		var settingPath = $container.attr( 'data-setting' ) || $el.data( 'setting' ) || '';
+		if ( ! settingPath ) return;
+
+		var setPath = function( model, path, value ) {
+			if ( ! path ) return;
+			path = String( path );
+			if ( path.indexOf( '.' ) === -1 ) {
+				model.set( path, value );
+				return;
+			}
+			var parts = path.split( '.' );
+			var rootKey = parts[0];
+			var obj = model.get( rootKey );
+			obj = obj && typeof obj === 'object' ? _.extend( {}, obj ) : {};
+			var cursor = obj;
+			for ( var i = 1; i < parts.length - 1; i++ ) {
+				var key = parts[i];
+				cursor[ key ] = cursor[ key ] && typeof cursor[ key ] === 'object' ? _.extend( {}, cursor[ key ] ) : {};
+				cursor = cursor[ key ];
+			}
+			cursor[ parts[ parts.length - 1 ] ] = value;
+			model.set( rootKey, obj );
+		};
+
+		setPath( context.model, settingPath, { attachment_id: null, url: '' } );
+
+		if ( window.PC && window.PC.app && window.PC.app.is_modified && context.collectionName ) {
+			window.PC.app.is_modified[ context.collectionName ] = true;
+		}
+
+		if ( context.render ) {
+			context.render();
+		}
+	};
+}
+
+/**
+ * Refuse a ZIP picked as a 3D model when no model came out of it, saying why.
+ *
+ * Its own URL would otherwise be saved as the model, and the merchant would only
+ * find out later, from a preview reporting "not a valid glTF".
+ *
+ * @param {Object} attachment - attachment.toJSON() from the media frame
+ * @returns {boolean} True when the attachment was refused.
+ */
+PC.threeD.refuse_unusable_zip = function ( attachment ) {
+	if ( ! attachment || attachment.gltf_url || attachment.subtype !== 'zip' ) return false;
+	window.alert( attachment.gltf_error || ( typeof PC_lang !== 'undefined' && PC_lang.zip_without_model ) || 'No 3D model could be used from this ZIP.' );
+	return true;
+};
+
+// Provide the 3D model media frame even if 3D settings haven't been opened yet.
+if ( ! PC.threeD.openModelMediaFrame ) {
+	PC.threeD.openModelMediaFrame = function ( opts = {} ) {
+		const selectedId = opts.selectedId != null ? opts.selectedId : null;
+		const title = opts.title || 'Upload 3D Model';
+		const buttonText = opts.buttonText || 'Use this file';
+		const onSelect = typeof opts.onSelect === 'function' ? opts.onSelect : null;
+		if ( ! window.wp || ! window.wp.media ) return null;
+
+		const frame = window.wp.media( {
+			title: title,
+			button: { text: buttonText },
+			multiple: false,
+			selected: selectedId,
+			library: {
+				type: [ 'model/gltf-binary', 'model/gltf+json', 'application/zip' ],
+			},
+		} );
+
+		frame.on( 'open', function () {
+			const selection = frame.state().get( 'selection' );
+			if ( selectedId ) {
+				const attachment = window.wp.media.attachment( selectedId );
+				selection.add( attachment ? [ attachment ] : [] );
+			} else {
+				selection.reset( null );
+			}
+		} );
+
+		if ( frame.uploader?.options?.uploader?.params ) {
+			frame.uploader.options.uploader.params.context = 'configurator_assets';
+		}
+
+		if ( onSelect ) {
+			frame.on( 'select', () => {
+				const attachment = frame.state().get( 'selection' ).first().toJSON();
+				if ( PC.threeD.refuse_unusable_zip( attachment ) ) return;
+				onSelect( attachment );
+			} );
+		}
+
+		frame.open();
+		return frame;
+	};
+}
+
+// 3D Objects upload actions (used by Object3D settings fields). Store only { attachment_id, url } at gltf.
+if ( ! PC.actions.edit_object3d_upload ) {
+	PC.actions.edit_object3d_upload = function ( $el, context ) {
+		if ( ! context || ! context.model || ! PC.threeD.openModelMediaFrame ) return;
+		const gltf = context.model.get( 'gltf' );
+		const selectedId = ( gltf && gltf.attachment_id != null ) ? gltf.attachment_id : null;
+		PC.threeD.openModelMediaFrame( {
+			selectedId: selectedId,
+			onSelect: function ( attachment ) {
+				const url = attachment.gltf_url || attachment.url || '';
+				context.model.set( 'gltf', {
+					attachment_id: attachment.id,
+					url: url,
+				} );
+				if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
+					window.PC.app.is_modified[ 'objects3d' ] = true;
+					if ( window.PC.app.syncSidebarSaveButtonState ) {
+						window.PC.app.syncSidebarSaveButtonState();
+					}
+				}
+				if ( context.$el && $el && $el.data ) {
+					const setting = $el.data( 'setting' ) || 'gltf';
+					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
+				}
+				// If GLTF contains lights, offer to import them as objects3d of type Light
+				if ( url && window.PC.threeD && window.PC.threeD.store && typeof window.PC.threeD.store.get === 'function' && window.PC.threeD.getLightsFromSceneForImport ) {
+					window.PC.threeD.store.get( url, function ( err, data ) {
+						if ( err || ! data || ! data.gltf || ! data.gltf.scene ) return;
+						const lights = window.PC.threeD.getLightsFromSceneForImport( data.gltf.scene );
+						if ( ! lights.length ) return;
+						const n = lights.length;
+						const msg = ( typeof PC_lang !== 'undefined' && PC_lang.import_lights_from_gltf )
+							? PC_lang.import_lights_from_gltf.replace( '%d', String( n ) )
+							: 'This model contains ' + n + ' light(s). Import them as 3D Objects?';
+						if ( ! window.confirm( msg ) ) return;
+						const col = context.model && context.model.collection;
+						if ( ! col || ! col.create_object ) return;
+						lights.forEach( function ( light ) {
+							const attrs = col.create_object( {
+								object_type: 'light',
+								name: light.name,
+								light_position: light.position,
+								light_type: light.type,
+								light_color: light.color,
+								light_intensity: light.intensity,
+								cast_shadows: light.cast_shadows === true,
+								light_target: light.target,		
+							} );
+							col.add( attrs );
+						} );
+						if ( window.PC.app && window.PC.app.is_modified ) {
+							window.PC.app.is_modified.objects3d = true;
+							if ( window.PC.app.syncSidebarSaveButtonState ) {
+								window.PC.app.syncSidebarSaveButtonState();
+							}
+						}
+					} );
+				}
+			},
+		} );
+	};
+}
+
+if ( ! PC.actions.remove_object3d_upload ) {
+	PC.actions.remove_object3d_upload = function ( $el, context ) {
+		if ( ! context || ! context.model ) return;
+		context.model.set( 'gltf', { attachment_id: null, url: '' } );
+		if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
+			window.PC.app.is_modified[ 'objects3d' ] = true;
+			if ( window.PC.app.syncSidebarSaveButtonState ) {
+				window.PC.app.syncSidebarSaveButtonState();
+			}
+		}
+		if ( context.$el && $el && $el.data ) {
+			const setting = $el.data( 'setting' ) || 'gltf';
+			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
+		}
+		context.render();
+	};
+}
+
 PC.toJSON = function( item ) {
 	var _ = PC._us || window._;
 	if ( item instanceof Backbone.Collection ) {
@@ -29,18 +290,630 @@ PC.toJSON = function( item ) {
 	PC.setActionParameter = 'pc_set_data';
 	PC.get_ajax_nonce_param = function() {
 		return PC_lang && PC_lang.update_nonce ? '&nonce=' + encodeURIComponent( PC_lang.update_nonce ) : '';
-	}; 
-	// PC.base_url = 
+	};
+
+	// Keep the editor's nonces fresh via the WP heartbeat. A nonce is only good for
+	// 12-24h, but the editor tab can stay open much longer than that; without this,
+	// saves eventually start failing with a stale-nonce error until the page reloads.
+	$( document ).on( 'heartbeat-send', function( event, data ) {
+		if ( PC.app && PC.app.id ) {
+			data.mkl_pc_refresh_nonces = PC.app.id;
+		}
+	} );
+
+	$( document ).on( 'heartbeat-tick', function( event, data ) {
+		var nonces = data && data.mkl_pc_nonces;
+		if ( ! nonces || ! window.PC_lang ) return;
+
+		if ( nonces.update_nonce ) PC_lang.update_nonce = nonces.update_nonce;
+		if ( nonces.delete_nonce ) PC_lang.delete_nonce = nonces.delete_nonce;
+		if ( nonces.global_layers_nonce ) PC_lang.global_layers_nonce = nonces.global_layers_nonce;
+	} );
+
+	// PC.base_url =
 	PC.app = PC.app || {
 		is_modified: {
 			layers: false,
 			angles: false,
 			content: false,
+			settings_3d: false,
+			'objects3d': false,
 		},
 		modified_choices: [],
+		modified_layer_ids: {},
+		deleted_layer_ids: [],
+		modified_content_layer_ids: {},
 		state: null,
+		/** True when the user changed global layer data while in focus mode (not product delta). */
+		global_layer_session_dirty: false,
+		settings_3d_sidebar_focus_active: false,
+		sidebar_focus_return_menu_id: null,
+		get_global_layers: function() {
+			if ( ! this.global_layers ) {
+				this.global_layers = new PC.global_layers();
+			}
+			return this.global_layers;
+		},
+		/**
+		 * True when the editor was opened on a global layer post itself, rather than on a product
+		 * that uses one.
+		 *
+		 * There is no product to save a delta against: the layer and its choices are the document,
+		 * so nothing is locked, there is nothing to disconnect from, and saving writes the CPT.
+		 *
+		 * @return {boolean}
+		 */
+		isGlobalLayerStandalone: function() {
+			return !! ( this.admin_data && 'global_layer' === this.admin_data.get( 'configurator_source' ) );
+		},
+		/**
+		 * The single layer a standalone global layer editor is editing.
+		 *
+		 * @return {null|{ global_id: number, layerModel: Backbone.Model }}
+		 */
+		getStandaloneGlobalLayerContext: function() {
+			if ( ! this.isGlobalLayerStandalone() ) {
+				return null;
+			}
+			var info = this.admin_data.get( 'global_layer' ) || {};
+			var global_id = parseInt( info.id, 10 );
+			if ( ! global_id ) {
+				return null;
+			}
+			var layerModel = this.getProductLayerByGlobalId( global_id );
+			if ( ! layerModel && this.admin && this.admin.layers && this.admin.layers.length ) {
+				layerModel = this.admin.layers.first();
+			}
+			return layerModel ? { global_id: global_id, layerModel: layerModel } : null;
+		},
+		/**
+		 * @return {null|{ global_id: number, globalModel: Backbone.Model, layerModel: Backbone.Model }}
+		 */
+		getGlobalLayerFocusContext: function() {
+			// Standalone editing is not focus mode: the sidebar keeps its normal navigation.
+			if ( this.isGlobalLayerStandalone() ) {
+				return null;
+			}
+			var gl = this.get_global_layers();
+			var found = null;
+			gl.each( function( gm ) {
+				var gid = gm.get( 'global_id' );
+				if ( ! gid || found ) {
+					return;
+				}
+				if ( gm.get( 'is_editing_layer' ) || gm.get( 'is_editing_choices' ) ) {
+					found = gm;
+				}
+			} );
+			if ( ! found ) {
+				return null;
+			}
+			var global_id = found.get( 'global_id' );
+			var layerModel = this.getProductLayerByGlobalId( global_id );
+			return { global_id: global_id, globalModel: found, layerModel: layerModel };
+		},
+		/**
+		 * Find the product layer row for a global CPT id (loose id match: number vs string).
+		 * @return {Backbone.Model|null}
+		 */
+		getProductLayerByGlobalId: function( global_id ) {
+			if ( ! this.admin || ! this.admin.layers || global_id == null ) {
+				return null;
+			}
+			var gid = String( global_id );
+			return this.admin.layers.find( function( m ) {
+				if ( ! m.get( 'is_global' ) ) {
+					return false;
+				}
+				var g = m.get( 'global_id' );
+				return g != null && String( g ) === gid;
+			} ) || null;
+		},
+		/**
+		 * Display name for focus chrome: admin_label if non-empty, else name, else fallback string.
+		 */
+		getGlobalLayerDisplayTitle: function( layerModel ) {
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			if ( ! layerModel ) {
+				return lang.editor_global_layer_fallback_title || 'Global layer';
+			}
+			var admin = layerModel.get( 'admin_label' );
+			if ( admin != null && String( admin ).trim() !== '' ) {
+				return String( admin ).trim();
+			}
+			var name = layerModel.get( 'name' );
+			if ( name != null && String( name ).trim() !== '' ) {
+				return String( name ).trim();
+			}
+			return lang.editor_global_layer_fallback_title || 'Global layer';
+		},
+		isGlobalLayerFocusActive: function() {
+			return !! this.getGlobalLayerFocusContext();
+		},
+		markGlobalSessionDirty: function() {
+			// Standalone editing has no product delta to keep separate: every edit is an edit to the
+			// layer post, and one save writes both its attributes and its choices.
+			if ( this.isGlobalLayerStandalone() ) {
+				this.is_modified.layers = true;
+				this.is_modified.content = true;
+				if ( this.syncSidebarSaveButtonState ) {
+					this.syncSidebarSaveButtonState();
+				}
+				return;
+			}
+			if ( ! this.isGlobalLayerFocusActive() ) {
+				return;
+			}
+			this.global_layer_session_dirty = true;
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+		},
+		clearGlobalSessionDirty: function() {
+			this.global_layer_session_dirty = false;
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+		},
+		/** Stub event for programmatic save/cancel calls (no real DOM event). */
+		syntheticMouseEvent: {
+			preventDefault: $.noop,
+			stopPropagation: $.noop
+		},
+		formatLayerAjaxErrorMessage: function( error ) {
+			if ( error && error.data ) {
+				if ( typeof error.data === 'string' ) {
+					return error.data;
+				}
+				if ( error.data.message ) {
+					return error.data.message;
+				}
+				return JSON.stringify( error.data );
+			}
+			if ( error && error.message ) {
+				return error.message;
+			}
+			return 'Unknown error';
+		},
+		buildGlobalLayerSavePayloadFromModel: function( layerModel ) {
+			var layer_data = PC.toJSON( layerModel );
+			var choices_data = [];
+			var layer_content = this.get_layer_content( layerModel.id );
+			if ( layer_content && layer_content.length ) {
+				layer_content.each( function( choice ) {
+					choices_data.push( choice.toJSON() );
+				} );
+			}
+			return { layer_data: layer_data, choices_data: choices_data };
+		},
+		setDataMigrationOverlay: function( phase ) {
+			if ( ! window.MKL_PC_DataMigrationOverlay ) {
+				return;
+			}
+			if ( phase ) {
+				window.MKL_PC_DataMigrationOverlay.show( phase );
+			} else {
+				window.MKL_PC_DataMigrationOverlay.hide();
+			}
+		},
+		afterJqXHR: function( xhr, callback ) {
+			if ( xhr && typeof xhr.always === 'function' ) {
+				xhr.always( callback );
+			} else {
+				callback();
+			}
+		},
+		/**
+		 * Active sidebar focus mode: global_layer, settings_3d, or null.
+		 *
+		 * @return {null|Object}
+		 */
+		getSidebarFocusContext: function() {
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			var global_ctx = this.getGlobalLayerFocusContext();
+			if ( global_ctx ) {
+				return {
+					mode: 'global_layer',
+					title: this.getGlobalLayerDisplayTitle( global_ctx.layerModel ),
+					help: lang.editor_global_layer_focus_help || '',
+					back_text: lang.editor_global_layer_focus_back || '',
+					back_aria: lang.editor_global_layer_focus_back_aria || 'Exit global layer editing',
+				};
+			}
+			if ( this.settings_3d_sidebar_focus_active ) {
+				var menu_meta = this.getSettings3dMenuMeta();
+				return {
+					mode: 'settings_3d',
+					title: menu_meta.title,
+					help: menu_meta.description,
+					back_text: lang.editor_settings_3d_focus_back || lang.editor_global_layer_focus_back || 'Back',
+					back_aria: lang.editor_settings_3d_focus_back_aria || 'Exit 3D settings',
+				};
+			}
+			return null;
+		},
+		getSettings3dMenuMeta: function() {
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			var fallback_title = '3D settings';
+			var fallback_description = '';
+			if ( lang.admin_menu && lang.admin_menu.length ) {
+				for ( var i = 0; i < lang.admin_menu.length; i++ ) {
+					var item = lang.admin_menu[ i ];
+					if ( item && item.menu_id === 'settings_3d' ) {
+						return {
+							title: item.title || item.label || fallback_title,
+							description: item.description || fallback_description,
+						};
+					}
+				}
+			}
+			return { title: fallback_title, description: fallback_description };
+		},
+		getSidebarShellElements: function( main_view ) {
+			var $main = main_view && main_view.$el && main_view.$el.length ? main_view.$el : $( '.mkl-pc-admin-ui__main' ).first();
+			var $modal = $main.closest( '.pc-modal.mkl-pc-admin-ui' );
+			if ( ! $modal.length ) {
+				$modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			}
+			var $sidebar = $main.find( '.mkl-pc-admin-ui__sidebar' ).first();
+			if ( ! $sidebar.length ) {
+				$sidebar = $modal.find( '.mkl-pc-admin-ui__sidebar' ).first();
+			}
+			var $focus = $sidebar.find( '.mkl-pc-admin-ui__sidebar-focus' ).first();
+			return {
+				$modal: $modal,
+				$sidebar: $sidebar,
+				$back_row: $sidebar.find( '.mkl-pc-admin-ui__back-to-product' ),
+				$focus: $focus,
+				$title: $focus.find( '.mkl-pc-sidebar-focus__title' ),
+				$help: $focus.find( '.mkl-pc-sidebar-focus__help' ),
+				$back_btn: $focus.find( '.mkl-pc-sidebar-focus__back' ),
+				$back_text: $focus.find( '.mkl-pc-sidebar-focus__back-text' ),
+				$sections_3d: $sidebar.find( '.mkl-pc-admin-ui__sidebar-3d-sections' ),
+			};
+		},
+		/**
+		 * Toggle reusable sidebar focus chrome for global layer or 3D settings focus.
+		 */
+		syncSidebarFocusChrome: function( main_view ) {
+			var ctx = this.getSidebarFocusContext();
+			var shell = this.getSidebarShellElements( main_view );
+			if ( ! shell.$sidebar.length ) {
+				return;
+			}
+			// Standalone global layer editing: one layer, no product, so the structure list loses
+			// its add / import / delete affordances (CSS keys off this class).
+			shell.$modal.toggleClass( 'is-global-layer-standalone', this.isGlobalLayerStandalone() );
+			shell.$modal.removeClass( 'is-global-layer-focus is-settings-3d-focus' );
+			if ( ctx ) {
+				shell.$modal.addClass( ctx.mode === 'global_layer' ? 'is-global-layer-focus' : 'is-settings-3d-focus' );
+				shell.$title.text( ctx.title || '' );
+				shell.$help.text( ctx.help || '' );
+				if ( ctx.help ) {
+					shell.$help.show();
+				} else {
+					shell.$help.hide();
+				}
+				shell.$back_text.text( ctx.back_text || '' );
+				shell.$back_btn.attr( 'aria-label', ctx.back_aria || ctx.back_text || '' );
+				shell.$focus.attr( 'data-sidebar-focus-mode', ctx.mode );
+				shell.$back_row.attr( 'hidden', 'hidden' ).hide();
+				shell.$focus.removeAttr( 'hidden' ).show();
+				if ( ctx.mode === 'settings_3d' ) {
+					shell.$sections_3d.removeAttr( 'hidden' ).attr( 'aria-hidden', 'false' );
+				} else {
+					shell.$sections_3d.attr( 'hidden', 'hidden' ).attr( 'aria-hidden', 'true' );
+				}
+			} else {
+				shell.$focus.attr( 'data-sidebar-focus-mode', '' );
+				shell.$back_row.removeAttr( 'hidden' ).show();
+				shell.$focus.attr( 'hidden', 'hidden' ).hide();
+				shell.$sections_3d.attr( 'hidden', 'hidden' ).attr( 'aria-hidden', 'true' );
+			}
+		},
+		syncGlobalLayerFocusChrome: function( main_view ) {
+			this.syncSidebarFocusChrome( main_view );
+		},
+		enterSettings3dSidebarFocus: function( main_view ) {
+			this.settings_3d_sidebar_focus_active = true;
+			var shell = this.getSidebarShellElements( main_view );
+			if ( shell.$modal.length ) {
+				shell.$modal.addClass( 'is-settings-3d-focus' );
+			}
+			this.syncSidebarFocusChrome( main_view );
+		},
+		exitSettings3dSidebarFocus: function( main_view ) {
+			this.settings_3d_sidebar_focus_active = false;
+			var shell = this.getSidebarShellElements( main_view );
+			if ( shell.$modal.length ) {
+				shell.$modal.removeClass( 'is-settings-3d-focus' );
+			}
+			this.syncSidebarFocusChrome( main_view );
+		},
+		isSettings3dSidebarFocusActive: function() {
+			return !! this.settings_3d_sidebar_focus_active;
+		},
+		/**
+		 * Allow leaving 3D settings focus without a discard prompt.
+		 * Dirty settings remain marked so the sidebar Save stays enabled;
+		 * confirmation is only used when closing the modal or leaving unsaved global layers.
+		 * @return {boolean}
+		 */
+		requestLeaveSettings3dFocus: function() {
+			return true;
+		},
+		leaveSettings3dViaSidebarBack: function() {
+			if ( ! this.requestLeaveSettings3dFocus() ) {
+				return;
+			}
+			this.activateSidebarReturnMenuItem();
+		},
+		activateSidebarReturnMenuItem: function() {
+			var return_id = this.sidebar_focus_return_menu_id || 'home';
+			this.sidebar_focus_return_menu_id = null;
+			if ( ! return_id ) {
+				this.exitSettings3dSidebarFocus( PC.app && PC.app.states_view );
+				return;
+			}
+			var $modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			var $btn = $modal.find( '.mkl-pc-admin-ui__nav-item[data-menu-id="' + return_id + '"]' ).first();
+			if ( $btn.length ) {
+				$btn.trigger( 'click' );
+			} else {
+				this.exitSettings3dSidebarFocus( PC.app && PC.app.states_view );
+			}
+		},
+		/** @return {Backbone.View|null} PC.views.layer list item view for a layer model */
+		findLayerListItemViewForModel: function( layerModel ) {
+			if ( ! layerModel ) {
+				return null;
+			}
+			var found = null;
+			var $scope = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			if ( ! $scope.length ) {
+				$scope = $( document );
+			}
+			$scope.find( '.layers-state .layer.mkl-list-item' ).each( function() {
+				var v = $( this ).data( 'view' );
+				if ( v && v.model === layerModel ) {
+					found = v;
+					return false;
+				}
+			} );
+			return found;
+		},
+		/**
+		 * Save global layer CPT from layer model data (same payload as layer_form.save_global).
+		 * Used when the layer form view is not mounted. Returns jqXHR or null if skipped by filter.
+		 */
+		persistGlobalLayerCpt: function( global_id, layerModel ) {
+			var self = this;
+			if ( ! global_id || ! layerModel ) {
+				return null;
+			}
+			try {
+				wp.hooks.doAction( 'PC.admin.layer.saveGlobal', layerModel, null );
+			} catch ( err ) {}
+			if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+				if ( ! wp.hooks.applyFilters( 'mkl_pc_layer_save_global_use_default', true, layerModel, null ) ) {
+					return null;
+				}
+			}
+			var payload = this.buildGlobalLayerSavePayloadFromModel( layerModel );
+			var layer_data = payload.layer_data;
+			var choices_data = payload.choices_data;
+			this.setDataMigrationOverlay( 'save_global_layer' );
+			var layerView = self.findLayerListItemViewForModel( layerModel );
+			if ( layerView && layerView.form && layerView.form.$el && layerView.form.$el.length ) {
+				layerView.form.$el.addClass( 'is-saving' );
+			}
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, layer_data, choices_data, {
+				success: function( model, response ) {
+					PC.app.get_global_layers().set_editing_layer( global_id, false );
+					if ( response && response.layer ) {
+						var global_model = PC.app.get_global_layers().get_or_create( global_id );
+						global_model.set( { layer: response.layer, content: response.content } );
+					}
+					if ( PC.app.clearDirtyStateForLayer ) {
+						PC.app.clearDirtyStateForLayer( layerModel );
+					}
+					if ( PC.app.clearGlobalSessionDirty ) {
+						PC.app.clearGlobalSessionDirty();
+					}
+					var lv = PC.app.findLayerListItemViewForModel( layerModel );
+					if ( lv && lv.form ) {
+						lv.form.global_editing = false;
+						if ( lv.form.update_global_lock_state ) {
+							lv.form.update_global_lock_state();
+						}
+						lv.form.render();
+					}
+					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', layerModel, lv && lv.form, response );
+				},
+				error: function( model, error ) {
+					window.alert( 'Error saving global layer: ' + self.formatLayerAjaxErrorMessage( error ) );
+				}
+			} );
+			var finishUi = function() {
+				self.setDataMigrationOverlay();
+				if ( layerView && layerView.form && layerView.form.$el && layerView.form.$el.length ) {
+					layerView.form.$el.removeClass( 'is-saving' );
+				}
+			};
+			this.afterJqXHR( xhr, finishUi );
+			return xhr;
+		},
+		/**
+		 * Persist global layer CPT from sidebar (attributes and/or choices).
+		 * @return {jQuery.Promise|jqXHR|undefined}
+		 */
+		saveGlobalLayerFromSidebar: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx || ! ctx.global_id ) {
+				return;
+			}
+			var gl = this.get_global_layers();
+			var gid = ctx.global_id;
+			var editingLayer = gl.is_editing_layer( gid );
+			var editingChoices = gl.is_editing_choices( gid );
+			var self = this;
+			var $footer = $( '.mkl-pc-admin-ui__sidebar-footer' ).first();
+			var finishFooter = function() {
+				$footer.removeClass( 'saving' );
+				if ( self.syncSidebarSaveButtonState ) {
+					self.syncSidebarSaveButtonState();
+				}
+			};
+			$footer.addClass( 'saving' );
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+
+			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
+			if ( editingLayer ) {
+				if ( ! ctx.layerModel ) {
+					finishFooter();
+					return;
+				}
+				if ( layerView && layerView.form && typeof layerView.form.save_global === 'function' ) {
+					var xhr = layerView.form.save_global( this.syntheticMouseEvent );
+					this.afterJqXHR( xhr, finishFooter );
+					return xhr;
+				}
+				var xhrPersist = this.persistGlobalLayerCpt( gid, ctx.layerModel );
+				this.afterJqXHR( xhrPersist, finishFooter );
+				return xhrPersist;
+			}
+
+			if ( editingChoices && this.state && this.state.collectionName === 'content' && typeof this.state.on_save_choices === 'function' ) {
+				var xhr2 = this.state.on_save_choices( this.syntheticMouseEvent );
+				this.afterJqXHR( xhr2, finishFooter );
+				return xhr2;
+			}
+
+			finishFooter();
+			return;
+		},
+		/**
+		 * Exit global focus: optional confirm if dirty; discard reloads global data where applicable.
+		 * @return {boolean} false if user cancelled staying (aborted navigation).
+		 */
+		requestLeaveGlobalLayerFocus: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx ) {
+				return true;
+			}
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			if ( this.global_layer_session_dirty ) {
+				if ( ! window.confirm( lang.editor_global_layer_unsaved_discard || 'You have unsaved changes to this global layer. Leave without saving?' ) ) {
+					return false;
+				}
+				this.discardGlobalLayerFocusSession();
+			} else {
+				this.exitGlobalLayerFocusClean();
+			}
+			return true;
+		},
+		/**
+		 * Leave global edit mode without server refetch (no unsaved edits).
+		 */
+		exitGlobalLayerFocusClean: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx ) {
+				return;
+			}
+			var gid = ctx.global_id;
+			var gl = this.get_global_layers();
+			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
+			if ( gl.is_editing_layer( gid ) && layerView && layerView.form && typeof layerView.form.cancel_global === 'function' ) {
+				layerView.form.cancel_global( this.syntheticMouseEvent );
+			} else if ( gl.is_editing_layer( gid ) ) {
+				gl.set_editing_layer( gid, false );
+			}
+			if ( gl.is_editing_choices( gid ) && this.state && this.state.collectionName === 'content' && this.state.active_layer ) {
+				var al = this.state.active_layer;
+				if ( al.model && al.model.get( 'global_id' ) === gid ) {
+					al.editing_choices = false;
+					gl.set_editing_choices( gid, false );
+					if ( al.render ) {
+						al.render();
+					}
+					if ( al.$el ) {
+						al.$el.trigger( 'choices-edit-mode-changed' );
+					}
+					if ( typeof wp !== 'undefined' && wp.hooks ) {
+						wp.hooks.doAction( 'PC.admin.choices.editModeChanged', al.model, al );
+					}
+					if ( this.state.update_global_actions_visibility ) {
+						this.state.update_global_actions_visibility();
+					}
+				} else {
+					gl.set_editing_choices( gid, false );
+				}
+			} else if ( gl.is_editing_choices( gid ) ) {
+				gl.set_editing_choices( gid, false );
+			}
+			this.clearGlobalSessionDirty();
+			if ( this.syncGlobalLayerFocusChrome ) {
+				this.syncGlobalLayerFocusChrome();
+			}
+		},
+		discardGlobalLayerFocusSession: function() {
+			var ctx = this.getGlobalLayerFocusContext();
+			if ( ! ctx ) {
+				this.clearGlobalSessionDirty();
+				return;
+			}
+			var gid = ctx.global_id;
+			var gl = this.get_global_layers();
+			var layerView = ctx.layerModel ? this.findLayerListItemViewForModel( ctx.layerModel ) : null;
+
+			if ( gl.is_editing_choices( gid ) && this.state && this.state.collectionName === 'content' && this.state.active_layer && typeof this.state.on_cancel_edit_choices === 'function' ) {
+				if ( this.state.active_layer.model && this.state.active_layer.model.get( 'global_id' ) === gid ) {
+					this.state.on_cancel_edit_choices( this.syntheticMouseEvent );
+				} else {
+					gl.set_editing_choices( gid, false );
+				}
+			}
+			if ( gl.is_editing_layer( gid ) && layerView && layerView.form && typeof layerView.form.cancel_global === 'function' ) {
+				layerView.form.cancel_global( this.syntheticMouseEvent );
+			}
+			if ( gl.is_editing_layer( gid ) || gl.is_editing_choices( gid ) ) {
+				gl.set_editing_layer( gid, false );
+				gl.set_editing_choices( gid, false );
+			}
+			var self = this;
+			if ( ctx.layerModel ) {
+				gl.fetch_global_layer( gid, {
+					success: function() {
+						var stored = gl.get( gid );
+						var layerJson = stored && stored.get( 'layer' );
+						if ( layerJson && typeof layerJson === 'object' ) {
+							ctx.layerModel.set( layerJson );
+						}
+						if ( layerView && layerView.form ) {
+							layerView.form.remove();
+							layerView.form = null;
+						}
+						if ( layerView && layerView.model && layerView.model.get( 'active' ) ) {
+							layerView.edit();
+						}
+						if ( self.syncGlobalLayerFocusChrome ) {
+							self.syncGlobalLayerFocusChrome();
+						}
+					}
+				} );
+			}
+			this.clearGlobalSessionDirty();
+			if ( this.syncGlobalLayerFocusChrome ) {
+				this.syncGlobalLayerFocusChrome();
+			}
+		},
 		init: function( options ) {
 			PC.lang = PC_lang || {};
+			if ( PC.merge_icon_registry && PC.lang && PC.lang.icon_registry ) {
+				PC.merge_icon_registry( PC.lang.icon_registry );
+			}
 			if ( options.product_id === undefined) { 
 				throw( { name: 'Error', message: 'product_id parameter is missing to start the configurator.' } );
 				return false; 
@@ -55,6 +928,23 @@ PC.toJSON = function( item ) {
 				});
 				this.admin = new PC.views.admin({ model: this.admin_data });
 			}
+
+			// Ensure global layers collection is initialized
+			this.get_global_layers();
+
+			$( window ).off( 'beforeunload.mklPcGlobalLayer' ).on( 'beforeunload.mklPcGlobalLayer', function( unloadEv ) {
+				var standaloneDirty = PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() &&
+					_.indexOf( _.values( PC.app.is_modified ), true ) !== -1;
+				if ( standaloneDirty || ( PC.app && PC.app.global_layer_session_dirty && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) ) {
+					var msg = ( typeof PC_lang === 'object' && PC_lang && PC_lang.editor_global_layer_unsaved_discard )
+						? PC_lang.editor_global_layer_unsaved_discard
+						: '';
+					if ( msg ) {
+						unloadEv.returnValue = msg;
+						return msg;
+					}
+				}
+			} );
 
 			// document.addEventListener( 'paste', ( e ) => {
 			// 	if ( !app.configuratorView?.isVisible() ) return;
@@ -101,6 +991,10 @@ PC.toJSON = function( item ) {
 					return this.get_product().get( key );
 				case 'layers':
 				case 'angles':
+				case 'objects3d':
+					return this.admin[ key ];
+				case 'settings_3d':
+					return this.get_admin().settings_3d;
 				default :
 					return this.admin[ key ];
 			}
@@ -116,34 +1010,765 @@ PC.toJSON = function( item ) {
 			var content = this.get_layer_content( layerId );
 			return content.get( choiceId ) || false;
 		},
+		/**
+		 * Link or unlink a layer's content row to a global layer, and flag it for saving.
+		 *
+		 * A layer and its choices live in two collections that are saved separately, so making a
+		 * layer global (or disconnecting it) has to move both: the layer row carries `is_global` /
+		 * `global_id`, the content row carries its own `global_id`, and the server reads them
+		 * independently. Setting only one leaves the layer linked while its choices are not, or
+		 * the other way round.
+		 *
+		 * @param {Backbone.Model} layerModel Layer whose content row should follow.
+		 * @param {Number|null}    global_id  Global layer id, or null to take a local copy back.
+		 * @return {Boolean} Whether a content row was found and updated.
+		 */
+		setContentRowGlobalId: function( layerModel, global_id ) {
+			if ( ! layerModel ) {
+				return false;
+			}
+			var layer_id = layerModel.get( '_id' ) || layerModel.id;
+			var content = this.get_collection( 'content' );
+			var row = content && content.get ? content.get( layer_id ) : null;
+			if ( ! row ) {
+				return false;
+			}
+
+			row.set( 'global_id', global_id ? parseInt( global_id, 10 ) : null );
+
+			// Choices coming out of a global layer carry the id of the layer they were authored
+			// in. Once they are this product's own, they have to point at this product's layer -
+			// the frontend finds a choice's layer with PC.fe.layers.get( choice.layerId ).
+			if ( ! global_id ) {
+				var choices = row.get( 'choices' );
+				if ( choices && choices.each ) {
+					choices.each( function( choice ) {
+						if ( choice.get( 'layerId' ) != layer_id ) {
+							choice.set( 'layerId', layer_id );
+						}
+						PC.app.modified_choices.push( { layerId: layer_id, choiceId: choice.id } );
+					} );
+				}
+			}
+
+			this.modified_content_layer_ids[ String( layer_id ) ] = true;
+			this.is_modified.content = true;
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+			return true;
+		},
+		/**
+		 * After a global layer CPT save, drop this layer from product delta maps and refresh sidebar save state.
+		 *
+		 * @param {Backbone.Model|number|string} layerModelOrId Layer model or local layer _id.
+		 */
+		clearDirtyStateForLayer: function( layerModelOrId ) {
+			var lid = layerModelOrId;
+			if ( layerModelOrId && typeof layerModelOrId.get === 'function' ) {
+				lid = layerModelOrId.get( '_id' );
+			}
+			if ( lid != null && lid !== '' ) {
+				delete this.modified_layer_ids[ lid ];
+			}
+			var strId = lid != null ? String( lid ) : '';
+			if ( this.modified_content_layer_ids && strId !== '' ) {
+				delete this.modified_content_layer_ids[ strId ];
+				delete this.modified_content_layer_ids[ lid ];
+			}
+			this.is_modified.layers = ! _.isEmpty( this.modified_layer_ids );
+			this.is_modified.content = ! _.isEmpty( this.modified_content_layer_ids );
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+		},
+		/**
+		 * Max layer rows per layers delta save request (default 50).
+		 *
+		 * @return {number}
+		 */
+		get_layer_save_batch_max: function() {
+			var default_max_layers = 5;
+			if ( window.wp && wp.hooks && wp.hooks.applyFilters ) {
+				var filtered_max = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin_layer_save_batch_max', default_max_layers ), 10 );
+				return filtered_max > 0 ? filtered_max : default_max_layers;
+			}
+			return default_max_layers;
+		},
+		/**
+		 * Max total choices per content delta batch (greedy packing).
+		 *
+		 * @return {number}
+		 */
+		get_content_save_max_choices_per_batch: function() {
+			var default_max_choices = 60;
+			if ( window.wp && wp.hooks && wp.hooks.applyFilters ) {
+				var filtered_max = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin_content_save_max_choices_per_batch', default_max_choices ), 10 );
+				return filtered_max > 0 ? filtered_max : default_max_choices;
+			}
+			return default_max_choices;
+		},
+		/**
+		 * Max approx. JSON bytes per content delta batch.
+		 *
+		 * @return {number}
+		 */
+		get_content_save_max_bytes_per_batch: function() {
+			var default_max_bytes = 512 * 1024;
+			if ( window.wp && wp.hooks && wp.hooks.applyFilters ) {
+				var filtered_max = parseInt( wp.hooks.applyFilters( 'mkl_pc_admin_content_save_max_bytes_per_batch', default_max_bytes ), 10 );
+				return filtered_max > 0 ? filtered_max : default_max_bytes;
+			}
+			return default_max_bytes;
+		},
+		count_choices_in_content_item: function( content_layer_json ) {
+			if ( ! content_layer_json || ! content_layer_json.choices ) {
+				return 0;
+			}
+			if ( Array.isArray( content_layer_json.choices ) ) {
+				return content_layer_json.choices.length;
+			}
+			return 0;
+		},
+		/**
+		 * Layer IDs with local edits, in canonical order (structure index first, then extras).
+		 *
+		 * @param {Array} layers_index
+		 * @param {Object} modified_layer_map
+		 * @return {string[]}
+		 */
+		order_modified_layer_ids_for_save: function( layers_index, modified_layer_map ) {
+			var layer_modifications = modified_layer_map || {};
+			var modified_layer_keys = Object.keys( layer_modifications );
+			var ordered_layer_ids = [];
+			var seen_layer_ids = {};
+			var structure_index;
+			var layer_identifier_string;
+			var extra_key_index;
+			for ( structure_index = 0; structure_index < layers_index.length; structure_index++ ) {
+				layer_identifier_string = String( layers_index[ structure_index ] );
+				if ( modified_layer_keys.indexOf( layer_identifier_string ) !== -1 && ! seen_layer_ids[ layer_identifier_string ] ) {
+					ordered_layer_ids.push( layer_identifier_string );
+					seen_layer_ids[ layer_identifier_string ] = true;
+				}
+			}
+			for ( extra_key_index = 0; extra_key_index < modified_layer_keys.length; extra_key_index++ ) {
+				layer_identifier_string = modified_layer_keys[ extra_key_index ];
+				if ( ! seen_layer_ids[ layer_identifier_string ] ) {
+					ordered_layer_ids.push( layer_identifier_string );
+					seen_layer_ids[ layer_identifier_string ] = true;
+				}
+			}
+			return ordered_layer_ids;
+		},
+		/**
+		 * Content layer IDs with local edits, in collection order.
+		 *
+		 * @param {Backbone.Collection} layers_collection
+		 * @param {Object} modified_content_map
+		 * @return {string[]}
+		 */
+		order_modified_content_layer_ids_for_save: function( layers_collection, modified_content_map ) {
+			var content_modifications = modified_content_map || {};
+			var modified_content_keys = Object.keys( content_modifications );
+			var ordered_content_layer_ids = [];
+			var seen_content_layer_ids = {};
+			layers_collection.each( function( layer_model ) {
+				var layer_identifier_string = String( layer_model.id );
+				if ( modified_content_keys.indexOf( layer_identifier_string ) !== -1 && ! seen_content_layer_ids[ layer_identifier_string ] ) {
+					ordered_content_layer_ids.push( layer_identifier_string );
+					seen_content_layer_ids[ layer_identifier_string ] = true;
+				}
+			} );
+			var extra_key_index;
+			var layer_identifier_string;
+			for ( extra_key_index = 0; extra_key_index < modified_content_keys.length; extra_key_index++ ) {
+				layer_identifier_string = modified_content_keys[ extra_key_index ];
+				if ( ! seen_content_layer_ids[ layer_identifier_string ] ) {
+					ordered_content_layer_ids.push( layer_identifier_string );
+					seen_content_layer_ids[ layer_identifier_string ] = true;
+				}
+			}
+			return ordered_content_layer_ids;
+		},
+		/**
+		 * Split layers delta into batches; deletions run only on the last batch.
+		 *
+		 * @param {Backbone.Collection} layers_collection
+		 * @param {Array} layers_index
+		 * @param {string[]} ordered_modified_layer_ids
+		 * @param {Array} deleted_layer_ids
+		 * @return {Array<Object>}
+		 */
+		build_layers_delta_batches: function( layers_collection, layers_index, ordered_modified_layer_ids, deleted_layer_ids ) {
+			var max_layers_per_batch = this.get_layer_save_batch_max();
+			// A deleted id can come back: new ids are max + 1, so removing the last layer and adding
+			// one reuses it. Anything still in the index is not deleted, whatever the list says.
+			var index_lookup = _.object( _.map( layers_index, String ), [] );
+			var deleted_ids_copy = _.filter( deleted_layer_ids || [], function( deleted_id ) {
+				return ! _.has( index_lookup, String( deleted_id ) );
+			} );
+			var layer_save_batches = [];
+			var chunk_offset;
+			var chunk_index;
+			var layer_id_chunk;
+			var layers_payload_by_id;
+			var is_final_batch;
+			if ( ordered_modified_layer_ids.length === 0 ) {
+				if ( deleted_ids_copy.length ) {
+					layer_save_batches.push( { layers_index: layers_index, layers: {}, deleted: deleted_ids_copy } );
+				}
+				return layer_save_batches;
+			}
+			for ( chunk_offset = 0; chunk_offset < ordered_modified_layer_ids.length; chunk_offset += max_layers_per_batch ) {
+				layer_id_chunk = ordered_modified_layer_ids.slice( chunk_offset, chunk_offset + max_layers_per_batch );
+				is_final_batch = ( chunk_offset + max_layers_per_batch ) >= ordered_modified_layer_ids.length;
+				layers_payload_by_id = {};
+				for ( chunk_index = 0; chunk_index < layer_id_chunk.length; chunk_index++ ) {
+					var layer_identifier = layer_id_chunk[ chunk_index ];
+					var layer_model = layers_collection.get( layer_identifier );
+					if ( layer_model ) {
+						layers_payload_by_id[ layer_identifier ] = layer_model.toJSON();
+					}
+				}
+				layer_save_batches.push( {
+					layers_index: layers_index,
+					layers: layers_payload_by_id,
+					deleted: is_final_batch ? deleted_ids_copy : [],
+				} );
+			}
+			return layer_save_batches;
+		},
+		/**
+		 * Greedy content batches by choice count and JSON size.
+		 *
+		 * @param {Backbone.Collection} content_collection
+		 * @param {string[]} ordered_content_layer_ids
+		 * @return {Array<Object>}
+		 */
+		build_content_delta_batches: function( content_collection, ordered_content_layer_ids ) {
+			var max_choices_per_batch = this.get_content_save_max_choices_per_batch();
+			var max_bytes_per_batch = this.get_content_save_max_bytes_per_batch();
+			var content_save_batches = [];
+			var current_batch_content = {};
+			var batch_choice_total = 0;
+			var batch_byte_total = 0;
+			var app_context = this;
+			var flush_current_batch = function() {
+				if ( Object.keys( current_batch_content ).length ) {
+					content_save_batches.push( { content: _.extend( {}, current_batch_content ) } );
+					current_batch_content = {};
+					batch_choice_total = 0;
+					batch_byte_total = 0;
+				}
+			};
+			ordered_content_layer_ids.forEach( function( layer_identifier ) {
+				var layer_model = content_collection.get( layer_identifier );
+				if ( ! layer_model ) {
+					return;
+				}
+				var content_layer_json = layer_model.toJSON();
+				var choice_count = app_context.count_choices_in_content_item( content_layer_json );
+				var json_byte_length = JSON.stringify( content_layer_json ).length;
+				if ( choice_count > max_choices_per_batch || json_byte_length > max_bytes_per_batch ) {
+					flush_current_batch();
+					var single_layer_content = {};
+					single_layer_content[ String( layer_identifier ) ] = content_layer_json;
+					content_save_batches.push( { content: single_layer_content } );
+					return;
+				}
+				if ( Object.keys( current_batch_content ).length && ( batch_choice_total + choice_count > max_choices_per_batch || batch_byte_total + json_byte_length > max_bytes_per_batch ) ) {
+					flush_current_batch();
+				}
+				current_batch_content[ String( layer_identifier ) ] = content_layer_json;
+				batch_choice_total += choice_count;
+				batch_byte_total += json_byte_length;
+			} );
+			flush_current_batch();
+			return content_save_batches;
+		},
+		/**
+		 * Send one pc_set_data request with the configurator's revision check.
+		 *
+		 * @param {Object} ajax_options wp.ajax.send options. success / error are honoured.
+		 * @return {jQuery.Promise}
+		 */
+		send_save_request: function( ajax_options ) {
+			var success_callback = ajax_options.success;
+			var error_callback = ajax_options.error;
+			var request_context = ajax_options.context || this;
+			var result = this.send_with_revision_check( this.get_product_edit_token_state(), function( token_data ) {
+				var request_options = _.extend( {}, ajax_options, {
+					data: _.extend( {}, ajax_options.data, token_data ),
+				} );
+				delete request_options.success;
+				delete request_options.error;
+				return wp.ajax.send( request_options );
+			} );
+			if ( success_callback ) {
+				result.done( function() { success_callback.apply( request_context, arguments ); } );
+			}
+			if ( error_callback ) {
+				result.fail( function() { error_callback.apply( request_context, arguments ); } );
+			}
+			return result;
+		},
+		/**
+		 * Run a save with the revision check.
+		 *
+		 * Every save carries a new token and the one the editor last knew for that post. The server
+		 * refuses it (409, mkl_pc_edit_conflict) when someone saved since - another user, another tab,
+		 * or another product using the same global configurator or layer. The user may overwrite,
+		 * which runs the save again with force_save; otherwise it fails like any other request.
+		 *
+		 * @param {Object}   token_state get_expected(), get_attempted(), set_attempted( token ),
+		 *                               set_confirmed( token ), and optionally confirm_message.
+		 * @param {Function} send        Receives the token fields to add to the request; returns a jQuery promise.
+		 * @return {jQuery.Promise} Settles like the last request sent.
+		 */
+		send_with_revision_check: function( token_state, send ) {
+			var app = this;
+			var result = $.Deferred();
+			var attempt = function( force_save ) {
+				var edit_token = app.generate_edit_token();
+				var token_data = {
+					edit_token: edit_token,
+					expected_edit_token: token_state.get_expected() || '',
+					attempted_edit_token: token_state.get_attempted() || '',
+				};
+				if ( force_save ) {
+					token_data.force_save = 1;
+				}
+				// Kept until a response arrives: a save that lands but whose response is lost (a timeout)
+				// must not read as a conflict when it is retried.
+				token_state.set_attempted( edit_token );
+				send( token_data ).done( function() {
+					token_state.set_attempted( '' );
+					token_state.set_confirmed( edit_token );
+					result.resolveWith( this, arguments );
+				} ).fail( function( jq_xhr ) {
+					var message = token_state.confirm_message || ( window.PC_lang && PC_lang.edit_conflict_confirm ) || 'This configuration was saved from somewhere else since you opened it. Save anyway and overwrite those changes?';
+					if ( ! force_save && app.is_edit_conflict( jq_xhr ) && window.confirm( message ) ) {
+						attempt( true );
+						return;
+					}
+					result.rejectWith( this, arguments );
+				} );
+			};
+			attempt( false );
+			return result.promise();
+		},
+		/**
+		 * Token state for the configurator being edited (a product or a global configurator).
+		 *
+		 * @return {Object} See send_with_revision_check().
+		 */
+		get_product_edit_token_state: function() {
+			var app = this;
+			return {
+				get_expected: function() {
+					return ( app.admin_data && app.admin_data.get( 'edit_token' ) ) || '';
+				},
+				get_attempted: function() {
+					return app.attempted_edit_token || '';
+				},
+				set_attempted: function( token ) {
+					app.attempted_edit_token = token;
+				},
+				set_confirmed: function( token ) {
+					if ( app.admin_data ) {
+						app.admin_data.set( 'edit_token', token, { silent: true } );
+					}
+				},
+			};
+		},
+		/**
+		 * Whether a failed save was refused by the revision check.
+		 *
+		 * @param {Object} jq_xhr
+		 * @return {boolean}
+		 */
+		is_edit_conflict: function( jq_xhr ) {
+			return !! ( jq_xhr && 409 === jq_xhr.status && jq_xhr.responseJSON && jq_xhr.responseJSON.data && 'mkl_pc_edit_conflict' === jq_xhr.responseJSON.data.code );
+		},
+		/**
+		 * @return {string} A token identifying one save request.
+		 */
+		generate_edit_token: function() {
+			if ( window.crypto && typeof window.crypto.randomUUID === 'function' ) {
+				return window.crypto.randomUUID();
+			}
+			return 'pc-' + Date.now().toString( 36 ) + '-' + Math.random().toString( 36 ).slice( 2 );
+		},
+		/**
+		 * Sequential pc_set_data requests for multiple payloads of the same component.
+		 *
+		 * @param {string} collection_key
+		 * @param {Array<Object>} request_batches
+		 * @param {Object} ajax_options
+		 * @return {jQuery.Promise}
+		 */
+		send_configurator_save_batches: function( collection_key, request_batches, ajax_options ) {
+			var app = this;
+			var success_callback = ajax_options.success;
+			var error_callback = ajax_options.error;
+			var request_context = ajax_options.context || this;
+			var shared_request_data = _.extend( {}, ajax_options.data );
+			var request_chain = $.when();
+			var last_success_response;
+			request_batches.forEach( function( batch_payload, batch_index ) {
+				request_chain = request_chain.then( function() {
+					var batch_ajax_options = _.extend( {}, ajax_options, {
+						data: _.extend( {}, shared_request_data ),
+					} );
+					batch_ajax_options.data[ collection_key ] = JSON.stringify( batch_payload );
+					// The server rebuilds the frontend config file on the request carrying saveCache,
+					// so only the last batch may send it.
+					if ( batch_index < request_batches.length - 1 ) {
+						delete batch_ajax_options.data.saveCache;
+					}
+					delete batch_ajax_options.success;
+					delete batch_ajax_options.error;
+					return app.send_save_request( batch_ajax_options ).done( function( response_body ) {
+						last_success_response = response_body;
+					} );
+				} );
+			} );
+			request_chain.done( function() {
+				if ( success_callback ) {
+					success_callback.call( request_context, last_success_response );
+				}
+			} );
+			request_chain.fail( function( jq_xhr_or_message, text_status, error_thrown ) {
+				if ( error_callback ) {
+					error_callback.call( request_context, jq_xhr_or_message, text_status, error_thrown );
+				}
+			} );
+			return request_chain.promise();
+		},
+		/**
+		 * Mark every layer and every content row as modified so save() sends batched delta payloads
+		 * (used after bulk replace such as file import — avoids stale IDs and avoids one giant full-json request).
+		 */
+		should_migrate_chunk_storage_before_save: function() {
+			var pc_storage = this.admin_data && this.admin_data.get( 'pc_storage' );
+			return !!( pc_storage && pc_storage.needs_batch_migration );
+		},
+		/**
+		 * Server: verify integrity, strip legacy blobs when safe, bump storage_format_version.
+		 *
+		 * @return {jQuery.jqXHR|jQuery.Promise}
+		 */
+		run_chunk_storage_finalize_if_needed: function() {
+			var app = this;
+			var save_target = this.save_target || null;
+			var variation_id = ( ! save_target && this.options.product_type === 'variation' && this.options.product_id ) ? this.options.product_id : 0;
+			return $.post( ajaxurl, {
+				action: 'mkl_pc_finalize_chunked_storage',
+				nonce: save_target ? save_target.nonce : PC_lang.update_nonce,
+				id: save_target ? save_target.id : this.id,
+				variation_id: variation_id,
+			} ).done( function( response ) {
+				// The snapshot describes whatever was just written. While a save is redirected at
+				// another post it says nothing about this product, so leave the editor's own state.
+				if ( ! save_target && response && response.success && response.data && response.data.snapshot && app.admin_data ) {
+					app.admin_data.set( 'pc_storage', response.data.snapshot );
+				}
+			} );
+		},
+		mark_all_layers_and_content_modified_for_save: function() {
+			var layer_identifier;
+			this.modified_layer_ids = {};
+			var layers_collection = this.get_collection( 'layers' );
+			if ( layers_collection && layers_collection.length ) {
+				layers_collection.each( function( layer_model ) {
+					layer_identifier = layer_model.get( '_id' );
+					if ( layer_identifier ) {
+						this.modified_layer_ids[ layer_identifier ] = true;
+					}
+				}.bind( this ) );
+			}
+			this.modified_content_layer_ids = {};
+			var product_model = this.get_product();
+			var content_collection = product_model && product_model.get( 'content' );
+			if ( content_collection && content_collection.length ) {
+				content_collection.each( function( content_row_model ) {
+					layer_identifier = content_row_model.get( 'layerId' ) || content_row_model.id;
+					if ( layer_identifier ) {
+						this.modified_content_layer_ids[ String( layer_identifier ) ] = true;
+					}
+				}.bind( this ) );
+			}
+		},
+		/**
+		 * Save a standalone global layer: one CPT write covering both the layer and its choices.
+		 *
+		 * The product save path sends deltas against product meta, which a global layer post has
+		 * none of, so it is bypassed entirely here.
+		 *
+		 * @param {Object} state   Active state view, or null.
+		 * @param {Object} options save_all options (`saved_one` / `saved_all` callbacks).
+		 * @return {jQuery.jqXHR|undefined}
+		 */
+		save_standalone_global_layer: function( state, options ) {
+			options = options || {};
+			var ctx = this.getStandaloneGlobalLayerContext();
+			var dirty = _.indexOf( _.values( this.is_modified ), true ) !== -1;
+			if ( ! ctx || ! dirty ) {
+				if ( options.saved_all ) options.saved_all();
+				return;
+			}
+
+			var app = this;
+			this.saving = 1;
+			if ( state ) {
+				state.$toolbar.addClass( 'saving' );
+				state.$el.addClass( 'saving' );
+			}
+			if ( this.syncSidebarSaveButtonState ) {
+				this.syncSidebarSaveButtonState();
+			}
+
+			var xhr = this.persistGlobalLayerCpt( ctx.global_id, ctx.layerModel );
+			this.afterJqXHR( xhr, function() {
+				app.saving = 0;
+				_.each( app.is_modified, function( value, key ) {
+					app.is_modified[ key ] = false;
+				} );
+				app.modified_layer_ids = {};
+				app.deleted_layer_ids = [];
+				app.modified_content_layer_ids = {};
+				app.modified_choices = [];
+				if ( state ) {
+					state.$toolbar.removeClass( 'saving' );
+					state.$el.removeClass( 'saving' );
+				}
+				if ( app.syncSidebarSaveButtonState ) {
+					app.syncSidebarSaveButtonState();
+				}
+				if ( options.saved_one ) {
+					options.saved_one( 'layers' );
+					options.saved_one( 'content' );
+				}
+				if ( options.saved_all ) options.saved_all();
+			} );
+			return xhr;
+		},
+		/**
+		 * Load the conditions collection if the add-on is active and it was never fetched.
+		 *
+		 * The editor fetches conditions lazily, so anything that has to send the whole
+		 * configuration elsewhere has to ask for them first or it silently sends none.
+		 *
+		 * @param {Function} done Called once conditions are available, the add-on is inactive,
+		 *                        or the fetch failed.
+		 * @return {void}
+		 */
+		ensureConditionsLoaded: function( done ) {
+			var product = this.get_product();
+			if ( ! PC.views.conditional || ! product || product.get( 'conditions' ) ) {
+				done();
+				return;
+			}
+			var conditions = new PC.conditionsCollection();
+			product.set( 'conditions', conditions );
+			conditions.fetch( {
+				url: conditions.url() + '&id=' + product.id,
+				success: function() { done(); },
+				error: function() { done(); }
+			} );
+		},
+		/**
+		 * Components this editor could push to another owner, in the order they are sent.
+		 *
+		 * @return {string[]}
+		 */
+		getTransferableComponents: function() {
+			var components = [ 'layers', 'angles', 'content' ];
+			if ( PC.views.conditional ) {
+				components.push( 'conditions' );
+			}
+			// Only loaded for a 3D configurator (see DB::get_init_data), so presence is the gate:
+			// componentHasData() drops them again for anything else.
+			components.push( 'settings_3d', 'objects3d' );
+			return wp.hooks.applyFilters( 'PC.admin.transferable_components', components );
+		},
+		/**
+		 * Whether a component holds anything worth sending.
+		 *
+		 * Most components are Backbone collections, but settings_3d is a plain object with no
+		 * `length` - testing that alone reports it as empty and drops it from the copy.
+		 *
+		 * @param {string} key
+		 * @return {boolean}
+		 */
+		componentHasData: function( key ) {
+			var collection = this.get_collection( key );
+			if ( ! collection ) {
+				return false;
+			}
+			if ( collection instanceof Backbone.Collection || collection instanceof Array || typeof collection.length === 'number' ) {
+				return collection.length > 0;
+			}
+			return 'object' === typeof collection && Object.keys( collection ).length > 0;
+		},
+		/**
+		 * Send the configuration currently loaded in the editor to a different owner post.
+		 *
+		 * Used when a product is turned into a global configurator: rather than have the server
+		 * duplicate meta rows behind a single request, the editor writes to the new post through
+		 * the ordinary save path, which already splits layers and content into batches sized for
+		 * the request limits and reports progress as it goes.
+		 *
+		 * The caller is responsible for having saved the product first - this marks every
+		 * component modified and then clears that state, so pending edits would otherwise be
+		 * silently dropped from the product's own dirty tracking.
+		 *
+		 * @param {number} target_id    Post id to write to.
+		 * @param {string} target_nonce Nonce for `update-pc-post_<target_id>`.
+		 * @param {Object} options      `saved_all` / `failed` callbacks, `overlay_mode`.
+		 * @return {boolean} False when there is nothing to send.
+		 */
+		saveConfigurationToOwner: function( target_id, target_nonce, options ) {
+			options = options || {};
+			target_id = parseInt( target_id, 10 ) || 0;
+			if ( ! target_id || ! target_nonce ) {
+				return false;
+			}
+
+			var app = this;
+			var components = this.getTransferableComponents();
+			var has_data = false;
+
+			this.mark_all_layers_and_content_modified_for_save();
+			this.deleted_layer_ids = [];
+			this.modified_choices = [];
+			_.each( this.is_modified, function( value, key ) {
+				app.is_modified[ key ] = false;
+			} );
+			components.forEach( function( key ) {
+				if ( app.componentHasData( key ) ) {
+					app.is_modified[ key ] = true;
+					has_data = true;
+				}
+			} );
+
+			if ( ! has_data ) {
+				return false;
+			}
+
+			this.save_target = { id: target_id, nonce: target_nonce };
+			// The target post has no chunked storage yet, so there is nothing to migrate and
+			// nothing to finalize against this product.
+			this._pending_chunk_storage_finalize = false;
+
+			var release = function() {
+				app.save_target = null;
+			};
+
+			this.save_all( null, {
+				bulk_save_overlay: true,
+				overlay_mode: options.overlay_mode || 'to_global',
+				suppress_error_alert: true,
+				saved_all: function() {
+					release();
+					// Returned so save_all holds the overlay until the caller's follow-up work
+					// (linking the product) has actually finished. See show_complete_when().
+					return options.saved_all ? options.saved_all() : undefined;
+				},
+				failed: function( errors ) {
+					release();
+					if ( options.failed ) {
+						options.failed( errors );
+					}
+				}
+			} );
+			return true;
+		},
 		save_all: function( state, options ) {
+			if ( this.isGlobalLayerStandalone() ) {
+				return this.save_standalone_global_layer( state, options );
+			}
+			options = options || {};
 			this.saving = 0;
 			this.errors = [];
+			this._chunk_storage_migration_ui = false;
+			this._migration_messaging_keys = null;
+			this._bulk_save_overlay = !! options.bulk_save_overlay;
 			if ( _.indexOf( _.values( this.is_modified ), true ) != -1 ) {
 
+				var migrationSaveUi = false;
+				if ( this.should_migrate_chunk_storage_before_save() ) {
+					migrationSaveUi = true;
+					this._pending_chunk_storage_finalize = true;
+					this._chunk_storage_migration_ui = true;
+					this.mark_all_layers_and_content_modified_for_save();
+					var layers_for_migration = this.get_collection( 'layers' );
+					var product_for_migration = this.get_product();
+					var content_for_migration = product_for_migration && product_for_migration.get( 'content' );
+					if ( layers_for_migration && layers_for_migration.length ) {
+						this.is_modified.layers = true;
+					}
+					if ( content_for_migration && content_for_migration.length ) {
+						this.is_modified.content = true;
+					}
+				} else if ( this._bulk_save_overlay ) {
+					this._chunk_storage_migration_ui = true;
+				}
+
 				if ( state ) {
-					state.$save_button.addClass('disabled');
-					state.$save_all_button.addClass('disabled');
 					state.$toolbar.addClass('saving');
 					state.$el.addClass('saving');
+					if ( this.syncSidebarSaveButtonState ) {
+						this.syncSidebarSaveButtonState();
+					}
 				}
-				var count = 0;
-				var total = _.filter( _.values( this.is_modified ), function( a ) { return a === true } ).length;
-				$.each( this.is_modified, function( key, val ) {
-					count++;
-					if ( val == true ) {
-						this.saving ++;
-						this.save( key, this.get_collection( key ), {
-							// success: 'successfuil'
-							success: _.bind( this.saved_all, this, key, state, options ),
-							error: _.bind( this.error_saving, this, key, state, options ),
+				var modified_collection_keys = [];
+				_.each( this.is_modified, function( val, key ) {
+					if ( val === true ) {
+						modified_collection_keys.push( key );
+					}
+				} );
+				if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+					this._migration_messaging_keys = [];
+					for ( var mki = 0; mki < modified_collection_keys.length; mki++ ) {
+						var mk = modified_collection_keys[ mki ];
+						if ( mk === 'layers' || mk === 'content' ) {
+							this._migration_messaging_keys.push( mk );
+						}
+					}
+					var firstMigrationPhase = this._migration_messaging_keys.length ? this._migration_messaging_keys[ 0 ] : 'finalize';
+					var overlayMode = options.overlay_mode || ( migrationSaveUi ? 'migration' : ( this._bulk_save_overlay ? 'bulk_save' : 'migration' ) );
+					window.MKL_PC_DataMigrationOverlay.show( firstMigrationPhase, overlayMode );
+				}
+				this.saving = modified_collection_keys.length;
+				var app = this;
+				var save_all_chain = $.when();
+				modified_collection_keys.forEach( function( collection_key, index ) {
+					save_all_chain = save_all_chain.then( function() {
+						var save_promise_or_other = app.save( collection_key, app.get_collection( collection_key ), {
+							success: _.bind( app.saved_all, app, collection_key, state, options ),
+							error: _.bind( app.error_saving, app, collection_key, state, options ),
 							data: {
-								saveCache: count === total
+								saveCache: index === modified_collection_keys.length - 1
 							}
 						} );
+						if ( save_promise_or_other && typeof save_promise_or_other.then === 'function' ) {
+							return save_promise_or_other;
+						}
+						// save() normally returns a promise; false is only used for skipped saves (legacy).
+						return $.when( true );
+					} );
+				} );
+				// A rejected batch stops the chain, so the components queued behind it never run
+				// and never decrement `saving`. Without this the save never settles: the overlay
+				// stays up and no error is reported.
+				save_all_chain.fail( function() {
+					if ( app.saving > 0 ) {
+						app.saving = 1;
+						app.error_saving( null, state, options, null );
 					}
-
-				}.bind( this ) );
+				} );
 			} else {
 				if ( options && options.saved_all ) options.saved_all();
 			}
@@ -154,46 +1779,135 @@ PC.toJSON = function( item ) {
 		error_saving: function( key, state, options, error, a, b ) {
 			this.saving--;
 			if ( this.saving == 0 ) {
-				state.state_saved( 1 );
+				if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
+					window.MKL_PC_DataMigrationOverlay.hide();
+				}
+				this._chunk_storage_migration_ui = false;
+				this._migration_messaging_keys = null;
+				this._bulk_save_overlay = false;
+				if ( state && state.state_saved ) {
+					state.state_saved( 1 );
+				}
 				if ( error && 'string' == typeof error && error.length > 0 ) this.errors.push( error );
 				if ( error && 'object' == typeof error ) {
 					const type = error?.status || 'unknown';
 					const response = error?.responseJSON;
 					this.errors.push( 'Error type: ' + type );
 					if ( response && response.data && response.data.message ) this.errors.push( 'Error message: ' + response.data.message );
+					// wp.ajax rejects a wp_send_json_error() with its data payload, not a jqXHR.
+					else if ( error.message ) this.errors.push( 'Error message: ' + error.message );
 					if ( !response && error?.responseText ) this.errors.push( 'Error response: ' + error.responseText );
 				}
 				console.log( key, state, options, error, a, b, this.errors );
-				alert( this.errors.join( "\n" ) );
+				if ( options && options.failed ) {
+					options.failed( this.errors.slice() );
+				}
+				if ( ! options || ! options.suppress_error_alert ) {
+					alert( this.errors.join( "\n" ) );
+				}
 			}
 		},
 		saved_all: function( key, state, options ) {
 			this.saving--;
 			this.is_modified[ key ] = false;
+			if ( key === 'layers' ) { this.modified_layer_ids = {}; this.deleted_layer_ids = []; }
+			if ( key === 'content' ) this.modified_content_layer_ids = {};
 			if ( options && options.saved_one ) options.saved_one( key );
+			if ( this._chunk_storage_migration_ui && this._migration_messaging_keys && window.MKL_PC_DataMigrationOverlay ) {
+				var migKeys = this._migration_messaging_keys;
+				var migIdx = migKeys.indexOf( key );
+				if ( migIdx >= 0 && migKeys[ migIdx + 1 ] && this.saving > 0 ) {
+					window.MKL_PC_DataMigrationOverlay.setPhase( migKeys[ migIdx + 1 ] );
+				} else if ( this.saving > 0 && ( migIdx === -1 || migIdx === migKeys.length - 1 ) ) {
+					window.MKL_PC_DataMigrationOverlay.setPhase( 'other' );
+				}
+			}
 			if ( this.saving == 0 ) {
 
-				if ( state && state.state_saved ) state.state_saved();
-				if ( options && options.saved_all ) options.saved_all();
-				// _.delay(function() {
-				// 	that.admin.close();
-				// }, 1500);
+				var app = this;
+				var pc_storage = this.admin_data && this.admin_data.get( 'pc_storage' );
+				// pc_storage is only refreshed by finalize itself. A product that opened with no data still
+				// says "nothing to finalize" after its first chunks land, so finalize it anyway - unless
+				// the save went to another post (save_target), which says nothing about this one.
+				var opened_empty = pc_storage && 'empty' === pc_storage.layers && 'empty' === pc_storage.content && ! this.save_target;
+				var run_finalize = this._pending_chunk_storage_finalize || ( pc_storage && ( pc_storage.needs_format_finalize || opened_empty ) );
+				this._pending_chunk_storage_finalize = false;
+				var overlay_ui = this._chunk_storage_migration_ui;
+				var finish_save_all_ui = function() {
+					if ( state && state.state_saved ) {
+						state.state_saved();
+					}
+					if ( options && options.saved_all ) {
+						return options.saved_all();
+					}
+				};
+				/**
+				 * A saved_all handler may still have work to do once every chunk has landed - the
+				 * turn-into-global flow only links the product at that point. When it returns a
+				 * promise, hold the overlay on its current phase until that settles, so the user
+				 * is not shown (and offered to dismiss) a completion that has not happened yet.
+				 */
+				var show_complete_when = function( pending ) {
+					if ( ! overlay_ui || ! window.MKL_PC_DataMigrationOverlay ) {
+						return;
+					}
+					if ( pending && typeof pending.then === 'function' ) {
+						pending.then(
+							function() { window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' ); },
+							function() { window.MKL_PC_DataMigrationOverlay.hide(); }
+						);
+						return;
+					}
+					window.MKL_PC_DataMigrationOverlay.setPhase( 'complete' );
+				};
+				if ( run_finalize ) {
+					if ( overlay_ui && window.MKL_PC_DataMigrationOverlay ) {
+						window.MKL_PC_DataMigrationOverlay.setPhase( 'finalize' );
+					}
+					var finalizeXhr = this.run_chunk_storage_finalize_if_needed();
+					var finalize_failed = false;
+					finalizeXhr.fail( function() {
+						finalize_failed = true;
+					} );
+					finalizeXhr.always( function() {
+						var pending = finish_save_all_ui();
+						if ( finalize_failed ) {
+							if ( overlay_ui && window.MKL_PC_DataMigrationOverlay ) {
+								window.MKL_PC_DataMigrationOverlay.hide();
+							}
+							return;
+						}
+						show_complete_when( pending );
+					} );
+				} else {
+					show_complete_when( finish_save_all_ui() );
+				}
 
 			}
 			PC.app.modified_choices = []; 
 
 		},
 		save: function( what, collection, options ) {
-			if ( ! what || ! collection ) {
-				console.log( 'A collection name and data must be set in order to save proprerly.' );
+			if ( ! what ) {
+				console.log( 'A data key must be set in order to save properly.' );
 				return;
 			}
-			var save_id = this.id;
-			if ( this.options.product_type == 'variation' && ( 'content' == what || 'conditions' == what  ) ) {
+			// settings_3d and similar state data use a plain object; others use a collection
+			if ( ! collection && what !== 'settings_3d' ) {
+				console.log( 'Collection or data must be set in order to save properly.' );
+				return;
+			}
+			// A save target redirects the whole save at another owner post (a global configurator
+			// being created from this product). That post owns every component itself, so the
+			// variation split below and the parent_id hint do not apply to it.
+			var save_target = this.save_target || null;
+			var save_id = save_target ? save_target.id : this.id;
+			if ( ! save_target && this.options.product_type == 'variation' && ( 'content' == what || 'conditions' == what  ) ) {
 				save_id = this.options.product_id;
 			}
+			var save_nonce = save_target ? save_target.nonce : PC_lang.update_nonce;
 			// If we do not have the necessary nonce, fail immeditately.
-			if ( ! PC_lang.update_nonce ) {
+			if ( ! save_nonce ) {
 				console.log('nonce problem');
 				return $.Deferred().rejectWith( this ).promise();
 			}
@@ -210,29 +1924,61 @@ PC.toJSON = function( item ) {
 			options.data = _.extend( options.data || {}, {
 				action:  PC.setActionParameter,
 				id:      save_id,
-				nonce:   PC_lang.update_nonce,
+				nonce:   save_nonce,
 				data: what,
 				// id: wp.media.model.settings.post.id
 			});
 
-			if ( save_id != this.id ) {
+			if ( ! save_target && save_id != this.id ) {
 				options.data.parent_id = this.id;
 			}
 
-			if (collection.length > 0) {
+			// Plain object (e.g. settings_3d) — no collection or array
+			if ( collection && typeof collection === 'object' && ! ( collection instanceof Backbone.Collection ) && ! ( collection instanceof Array ) ) {
+				options.data[what] = JSON.stringify( collection );
+			} else if ( collection && collection.length > 0 ) {
 
-				if ( collection instanceof Array ) {
+				if ( 'layers' === what && collection instanceof Backbone.Collection ) {
+					var layers_structure_index = collection.pluck( '_id' ).filter( function( layer_id_value ) { return layer_id_value; } );
+					var modified_layer_map = PC.app.modified_layer_ids && typeof PC.app.modified_layer_ids === 'object' ? PC.app.modified_layer_ids : {};
+					var modified_layer_key_list = Object.keys( modified_layer_map );
+					var has_deleted_layers = PC.app.deleted_layer_ids && PC.app.deleted_layer_ids.length > 0;
+					if ( modified_layer_key_list.length > 0 || has_deleted_layers ) {
+						var ordered_layer_ids_for_save = this.order_modified_layer_ids_for_save( layers_structure_index, modified_layer_map );
+						var layer_save_batches = this.build_layers_delta_batches( collection, layers_structure_index, ordered_layer_ids_for_save, PC.app.deleted_layer_ids || [] );
+						if ( layer_save_batches.length > 1 ) {
+							return this.send_configurator_save_batches( what, layer_save_batches, options );
+						}
+						options.data[what] = JSON.stringify( layer_save_batches.length ? layer_save_batches[ 0 ] : { layers_index: layers_structure_index, layers: {}, deleted: PC.app.deleted_layer_ids || [] } );
+					} else {
+						options.data[what] = JSON.stringify( collection );
+					}
+				} else if ( 'content' === what && collection instanceof Backbone.Collection ) {
+					var modified_content_layer_map = PC.app.modified_content_layer_ids && typeof PC.app.modified_content_layer_ids === 'object' ? PC.app.modified_content_layer_ids : {};
+					var modified_content_key_list = Object.keys( modified_content_layer_map );
+					if ( modified_content_key_list.length > 0 ) {
+						options.data.modified_choices = PC.app.modified_choices;
+						var ordered_content_layer_ids_for_save = this.order_modified_content_layer_ids_for_save( collection, modified_content_layer_map );
+						var content_save_batches = this.build_content_delta_batches( collection, ordered_content_layer_ids_for_save );
+						if ( content_save_batches.length > 1 ) {
+							return this.send_configurator_save_batches( what, content_save_batches, options );
+						}
+						options.data[what] = JSON.stringify( content_save_batches.length ? content_save_batches[ 0 ] : { content: {} } );
+					} else {
+						options.data[what] = JSON.stringify( collection );
+						options.data.modified_choices = PC.app.modified_choices;
+					}
+				} else if ( collection instanceof Array ) {
 					options.data[what] = {};
-					$.each( collection, function( index, value ){
+					$.each( collection, function( index, value ) {
 						options.data[what][index] = ( value instanceof Backbone.Collection ) ? JSON.stringify( value ) : value;
-					});
+					} );
 				} else if ( collection instanceof Backbone.Collection ) {
 					options.data[what] = JSON.stringify( collection );
+					if ( 'content' == what ) {
+						options.data.modified_choices = PC.app.modified_choices;
+					}
 				}
-				if ( 'content' == what ) {
-					options.data.modified_choices = PC.app.modified_choices;
-				}
-	
 			} else {
 				options.data[what] = 'empty';
 			}
@@ -246,7 +1992,7 @@ PC.toJSON = function( item ) {
 			// 	}, this );
 			// }
 
-			return wp.ajax.send( options );
+			return this.send_save_request( options );
 		},
 
 		get_new_id: function( collection ){
@@ -279,6 +2025,66 @@ PC.toJSON = function( item ) {
 
 		get_data_from_clipboard: function() {
 			// PCCOPY-choices-
+		},
+
+		/**
+		 * Site-editor-like sidebar save control: aria-disabled + checkmark when clean (still focusable), Save when dirty, loading on the button while saving.
+		 */
+		syncSidebarSaveButtonState: function() {
+			var $btn = $( '.mkl-pc-admin-ui .mkl-pc-admin-ui__sidebar-primary-save' ).first();
+			if ( ! $btn.length ) {
+				return;
+			}
+			var lang = typeof PC_lang !== 'undefined' ? PC_lang : ( this.lang || {} );
+			var focusActive = this.isGlobalLayerFocusActive && this.isGlobalLayerFocusActive();
+			var saveLabel = focusActive ? ( lang.editor_save_global_layer || 'Save global layer' ) : ( lang.editor_save || 'Save' );
+			var savedLabel = lang.editor_saved || 'Saved';
+			var savingLabel = lang.editor_saving || 'Saving…';
+			var dirty = _.indexOf( _.values( this.is_modified ), true ) !== -1;
+			if ( focusActive && this.global_layer_session_dirty ) {
+				dirty = true;
+			}
+			var $toolbar = $btn.closest( '.mkl-pc-admin-ui__sidebar-footer' );
+			var footIsSaving = $toolbar.hasClass( 'saving' );
+			var appIsSaving = this.saving > 0;
+
+			var $label = $btn.find( '.mkl-pc-sidebar-save__label' );
+			var $icon = $btn.find( '.mkl-pc-sidebar-save__icon' );
+			if ( ! $label.length ) {
+				$btn.html(
+					'<span class="mkl-pc-sidebar-save__content">' +
+						'<span class="mkl-pc-sidebar-save__icon dashicons" aria-hidden="true"></span>' +
+						'<span class="mkl-pc-sidebar-save__spinner mkl-pc-spinner mkl-pc-spinner--sm" aria-hidden="true"></span>' +
+						'<span class="mkl-pc-sidebar-save__label"></span>' +
+					'</span>'
+				);
+				$label = $btn.find( '.mkl-pc-sidebar-save__label' );
+				$icon = $btn.find( '.mkl-pc-sidebar-save__icon' );
+			}
+
+			$btn.removeClass( 'is-loading disabled' ).prop( 'disabled', false ).removeAttr( 'disabled' );
+
+			if ( footIsSaving || appIsSaving ) {
+				$btn.attr( 'aria-disabled', 'true' ).attr( 'aria-busy', 'true' );
+				$btn.attr( 'aria-label', savingLabel );
+				$btn.addClass( 'is-loading' );
+				$label.text( savingLabel );
+				$icon.removeClass( 'dashicons-saved dashicons-yes' );
+				return;
+			}
+
+			$btn.attr( 'aria-busy', 'false' );
+			if ( dirty ) {
+				$btn.attr( 'aria-disabled', 'false' );
+				$label.text( saveLabel );
+				$btn.attr( 'aria-label', saveLabel );
+				$icon.removeClass( 'dashicons-saved dashicons-yes dashicons-update' ).hide();
+			} else {
+				$btn.attr( 'aria-disabled', 'true' );
+				$label.text( savedLabel );
+				$btn.attr( 'aria-label', savedLabel );
+				$icon.removeClass( 'dashicons-update' ).addClass( 'dashicons-saved' ).show();
+			}
 		}
 	};
 
@@ -340,7 +2146,7 @@ PC.toJSON = function( item ) {
 		},
 
 		ready: function() {
-			// $( '.media-modal' ).addClass( 'no-sidebar smaller' ); 
+			// $( '.mkl-pc-admin-ui' ).addClass( 'no-sidebar smaller' ); 
 		},
 
 		select: function() {
@@ -383,8 +2189,83 @@ PC.toJSON = function( item ) {
 				}
 			}.bind( this ) );
 			this.frame().open();
-		}
+		},
+		
+	};
+	
+	PC.get_layer_type_label = function( type ) {
+		return PC.lang.layer_types[ type ] || type;
+	};
 
+	/**
+	 * Dashicon class for layer type row (admin list). Extend via filter mkl_pc_layer_type_dashicon.
+	 */
+	PC.layer_type_dashicon_class = function( type ) {
+		var map = {
+			simple: 'dashicons-format-image',
+			multiple: 'dashicons-list-view',
+			group: 'dashicons-category',
+			form: 'dashicons-feedback',
+			summary: 'dashicons-text-page',
+			text_overlay: 'dashicons-editor-textcolor',
+		};
+		var icon = map[ type ] || 'dashicons-admin-generic';
+		if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+			return wp.hooks.applyFilters( 'mkl_pc_layer_type_dashicon', icon, type );
+		}
+		return icon;
+	};
+
+	/**
+	 * Trusted icon HTML for a layer type row (registry or dashicon fallback).
+	 */
+	PC.layer_type_icon_html = function( type ) {
+		return PC.get_icon( 'layer_type_' + type, { fallback_dashicon: PC.layer_type_dashicon_class( type ) } );
+	};
+
+	/**
+	 * Localized label for a 3D object row (model, light, environment, animation).
+	 *
+	 * @param {object} data Object3d model attributes (must include object_type; environment uses env_type).
+	 * @returns {string}
+	 */
+	PC.get_object3d_item_type_label = function( data ) {
+		if ( ! data ) {
+			return '';
+		}
+		var ot = data.object_type || '';
+		var lang = ( PC.lang && PC.lang.object3d_item_types ) ? PC.lang.object3d_item_types : {};
+		if ( ot === 'environment' ) {
+			if ( data.env_type === 'hdri' && lang.environment_hdri ) {
+				return lang.environment_hdri;
+			}
+			if ( data.env_type === 'cubemap' && lang.environment_cubemap ) {
+				return lang.environment_cubemap;
+			}
+			if ( lang.environment ) {
+				return lang.environment;
+			}
+		}
+		if ( lang[ ot ] ) {
+			return lang[ ot ];
+		}
+		return ot;
+	};
+
+	/**
+	 * Trusted icon HTML for a 3D object list row (registry or dashicon fallback).
+	 */
+	PC.object3d_item_type_icon_html = function( data ) {
+		var ot = data && data.object_type ? data.object_type : '';
+		var id = 'object3d_' + ot;
+		if ( ot === 'environment' ) {
+			if ( data.env_type === 'hdri' ) {
+				id = 'object3d_environment_hdri';
+			} else if ( data.env_type === 'cubemap' ) {
+				id = 'object3d_environment_cubemap';
+			}
+		}
+		return PC.get_icon( id );
 	};
 
 	PC.copy_items = function( view ) {
@@ -420,7 +2301,10 @@ PC.toJSON = function( item ) {
 
 		navigator.clipboard.writeText( JSON.stringify( data ) )
 			.then( c => {
-				PC.show_notice( 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + v" to paste.' );
+				var msg = ( typeof PC_lang !== 'undefined' && PC_lang.editor_config_copied_clipboard )
+					? PC_lang.editor_config_copied_clipboard
+					: 'Configuration copied to clipboard. Go to "Edit > Paste" or "Ctrl/Cmd + V" to paste.';
+				PC.show_notice( msg );
 			} );
 	};
 
@@ -439,6 +2323,10 @@ PC.toJSON = function( item ) {
 			icon.className = 'dashicons dashicons-no';
 			el.prepend( icon );
 		}
+		if ( 'warning' == type ) {
+			icon.className = 'dashicons dashicons-warning';
+			el.prepend( icon );
+		}
 		if ( 'saved' == type ) {
 			icon.className = 'dashicons dashicons-saved';
 			el.prepend( icon );
@@ -452,8 +2340,92 @@ PC.toJSON = function( item ) {
 			}
 		}
 		target.appendChild(el);
-		setTimeout(() => el.remove(), 5000);
+		const notice_duration = ( 'error' === type || 'warning' === type ) ? 8000 : 5000;
+		setTimeout(() => el.remove(), notice_duration);
 	}
+
+	/**
+	 * Filter admin list rows by visible label (layers, angles, choices). Supports nested groups.
+	 * @param {JQuery} $listRoot — scroll list: `.mkl-list` or `ul.layers` (direct children are rows).
+	 * @param {string} rawQuery
+	 * @param {{ mode?: 'nested'|'flat-li' }} options — `flat-li` for Content sidebar `ul.layers > li`.
+	 */
+	PC.applyAdminListFilter = function( $listRoot, rawQuery, options ) {
+		options = options || {};
+		var q = ( rawQuery || '' ).trim().toLowerCase();
+		var mode = options.mode || 'nested';
+
+		function labelFromMklItem( $item ) {
+			var $listLabel = $item.find( '.layer-label-container' ).first();
+			if ( !$listLabel.length ) {
+				$listLabel = $item.find( '.choice-label-container' ).first();
+			}
+			if ( $listLabel.length ) {
+				var lbl = ( $listLabel.text() || '' ).trim();
+				if ( lbl ) {
+					return lbl.toLowerCase();
+				}
+			}
+			var $bodyHeading = $item.find( '.mkl-pc-admin-list-row__body h3' ).first();
+			if ( $bodyHeading.length ) {
+				var headingText = ( $bodyHeading.text() || '' ).trim();
+				if ( headingText ) {
+					return headingText.toLowerCase();
+				}
+			}
+			var $b = $item.find( '> .mkl-pc-admin-list-row__inner > button.mkl-pc-admin-list-row__hit' ).first();
+			if ( !$b.length ) {
+				$b = $item.find( '> button' ).first();
+			}
+			if ( !$b.length ) {
+				return '';
+			}
+			var h = $b.find( 'h3' ).text() || '';
+			var n = $b.find( '.name' ).first().text() || '';
+			var t = ( h || n || $b.text() || '' ).trim();
+			return t.toLowerCase();
+		}
+
+		function walkNested( $item ) {
+			var $group = $item.children( '.group-list' );
+			var childVisible = false;
+			if ( $group.length ) {
+				$group.first().children( '.mkl-list-item' ).each( function() {
+					if ( walkNested( $( this ) ) ) {
+						childVisible = true;
+					}
+				} );
+			}
+			var selfMatch = q && labelFromMklItem( $item ).indexOf( q ) !== -1;
+			var show = ! q || selfMatch || childVisible;
+			$item.toggleClass( 'mkl-list-item--filtered-out', ! show );
+			if ( show ) {
+				$item.removeAttr( 'aria-hidden' );
+			} else {
+				$item.attr( 'aria-hidden', 'true' );
+			}
+			return show;
+		}
+
+		if ( mode === 'flat-li' ) {
+			$listRoot.children( 'li' ).each( function() {
+				var $li = $( this );
+				var text = ( $li.find( 'button.layer .name' ).text() || '' ).trim().toLowerCase();
+				var show = ! q || text.indexOf( q ) !== -1;
+				$li.toggleClass( 'mkl-list-item--filtered-out', ! show );
+				if ( show ) {
+					$li.removeAttr( 'aria-hidden' );
+				} else {
+					$li.attr( 'aria-hidden', 'true' );
+				}
+			} );
+			return;
+		}
+
+		$listRoot.children( '.mkl-list-item' ).each( function() {
+			walkNested( $( this ) );
+		} );
+	};
 
 
 } ) ( jQuery, PC._us || window._ );

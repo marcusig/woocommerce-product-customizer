@@ -76,6 +76,7 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'images.php';
 		include_once MKL_PC_INCLUDE_PATH . 'functions.php';
 		include_once MKL_PC_INCLUDE_PATH . 'settings.php';
+		require_once MKL_PC_INCLUDE_PATH . 'global-layers/bootstrap.php';
 		
 		include_once MKL_PC_INCLUDE_PATH . 'base/product.php';
 		include_once MKL_PC_INCLUDE_PATH . 'base/layer.php';
@@ -84,6 +85,9 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'base/configuration.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'cache.php';
+		require_once MKL_PC_INCLUDE_PATH . 'global-configurators/bootstrap.php';
+		include_once MKL_PC_INCLUDE_PATH . 'class-data-sanitizer.php';
+		include_once MKL_PC_INCLUDE_PATH . 'class-editor-menu.php';
 		include_once MKL_PC_INCLUDE_PATH . 'db.php';
 		include_once MKL_PC_INCLUDE_PATH . 'themes.php';
 		include_once MKL_PC_INCLUDE_PATH . 'ajax.php';
@@ -95,6 +99,8 @@ class Plugin {
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
+		// Always loaded: its attachment cleanup must run wherever media is deleted.
+		include_once MKL_PC_INCLUDE_PATH . 'admin/product-3d.php';
 		include_once MKL_PC_INCLUDE_PATH . 'compatibility/compatibility-general.php';
 		
 		if( is_admin() ) {
@@ -171,7 +177,24 @@ class Plugin {
 		$this->ajax = new Ajax();
 		$this->frontend_security = new Frontend_Security();
 
+		add_action( 'mkl_pc_cleanup_3d_cart_screenshots', array( $this->frontend->cart, 'cleanup_old_3d_screenshots' ) );
+		add_action( 'delete_attachment', array( Admin_Product_3D::class, 'delete_extracted_zip' ) );
+		add_action( 'init', array( $this, 'schedule_3d_screenshot_cleanup' ), 20 );
+
 		do_action( 'mkl_pc_is_loaded' );
+	}
+
+	/**
+	 * Schedule daily cleanup of old 3D cart screenshot temp files (if not already scheduled).
+	 */
+	public function schedule_3d_screenshot_cleanup() {
+		// Not conditional on showing images in the cart: the pass also sweeps the placeholders
+		// a lazy render leaves behind and the merges cached for the on-the-fly mode, both of
+		// which a shop accumulates whatever that setting says.
+		if ( wp_next_scheduled( 'mkl_pc_cleanup_3d_cart_screenshots' ) ) {
+			return;
+		}
+		wp_schedule_event( time(), 'daily', 'mkl_pc_cleanup_3d_cart_screenshots' );
 	}
 }
 

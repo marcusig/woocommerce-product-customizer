@@ -1,0 +1,1156 @@
+/* global PC_lang, __webpack_public_path__ */
+
+import { settings_3d_preview_mixin } from './3d/3d-preview-view.js';
+import { initFieldGroups, syncFieldGroups } from './3d/3d-field-groups.js';
+// Imports nothing from three, so it can load eagerly without pulling three into this entry.
+import { apply_shader_fixes } from '../../../js/source/3d-viewer/3d-shader-fixes.js';
+
+// Ensure dynamic imports (async chunks) are loaded from the plugin's admin build URL,
+// not from wp-includes or TinyMCE paths inferred at runtime.
+if ( typeof PC_lang !== 'undefined' && PC_lang.admin_js_build_url ) {
+	// Webpack runtime uses this as base URL for import() chunks.
+	__webpack_public_path__ = PC_lang.admin_js_build_url;
+}
+
+let THREE;
+let OrbitControls;
+let loadEnvMap;
+let setSceneEnvironment;
+let FakeShadow;
+let createPostprocessingLayer;
+let hideObjectsByName;
+let getHiddenObjectNamesList;
+let findObject;
+let findObjectByCompositeId;
+let getObjectTargetPosition;
+let getBoundingBoxFromObjectIds;
+let removeLightsFromScene;
+let registerSceneMaterials;
+let getHdrUrlFromEnv;
+let getOrbitLimitsFromEnv;
+let getToneMapping;
+let getPixelRatio;
+let ORBIT_PIXEL_RATIO_SCALE;
+let disposeScene;
+let applySettingsToScene;
+let resolveShadowMode;
+let SHADOW_MODES;
+let RectAreaLightHelper = null;
+let TransformControls = null;
+let cameraFit = null;
+
+let threeDepsPromise = null;
+
+/**
+ * Resolve postprocessing creator from 3D Premium (or other add-ons) via wp.hooks.
+ * @returns {Function|null}
+ */
+function resolve_create_postprocessing_layer() {
+	if ( window.wp && window.wp.hooks && typeof window.wp.hooks.applyFilters === 'function' ) {
+		const creator = window.wp.hooks.applyFilters( 'PC.3d.createPostprocessingLayer', null );
+		if ( typeof creator === 'function' ) {
+			return creator;
+		}
+	}
+	return null;
+}
+
+function ensureThreeDepsLoaded() {
+	if ( threeDepsPromise ) return threeDepsPromise;
+
+	threeDepsPromise = ( async () => {
+		const [
+			threeModule,
+			controlsModule,
+			fakeShadowModule,
+			sceneUtilsModule,
+			applySettingsModule,
+			rectAreaLightHelperModule,
+			transformControlsModule,
+			baseComposerModule,
+			loaderFactoryModule,
+			anchorPlacementModule,
+			cameraFitModule,
+		] = await Promise.all( [
+			import( 'three' ),
+			import( 'three/addons/controls/OrbitControls.js' ),
+			import( '../../../js/source/3d-viewer/3d-fake-shadow.js' ),
+			import( '../../../js/source/3d-viewer/3d-scene-utils.js' ),
+			import( '../../../js/source/3d-viewer/3d-apply-preview-settings.js' ),
+			import( 'three/addons/helpers/RectAreaLightHelper.js' ),
+			// The preview's light gizmo.
+			import( 'three/addons/controls/TransformControls.js' ),
+			// Everything that imports three stays behind this import(), including what
+			// the preview view uses: one static import of these from 3d-preview-view.js
+			// is enough to pull three and every loader into this eager entry.
+			import( '../../../js/source/3d-viewer/3d-base-composer.js' ),
+			import( '../../../js/source/3d-viewer/3d-loader-factory.js' ),
+			import( '../../../js/source/3d-viewer/3d-anchor-placement.js' ),
+			import( '../../../js/source/3d-viewer/3d-camera-fit.js' ),
+		] );
+
+		// Side-effect modules: loader/store/lights/object selector (attach to PC.threeD)
+		await Promise.all( [
+			import( './3d/3d-loader.js' ),
+			import( './3d/3d-store.js' ),
+			import( './3d/3d-lights.js' ),
+			import( './3d/3d-object-selector-view.js' ),
+		] );
+
+		THREE = threeModule;
+		apply_shader_fixes( THREE.ShaderChunk );
+		if ( typeof window !== 'undefined' ) {
+			window.THREE = threeModule;
+		}
+		OrbitControls = controlsModule.OrbitControls;
+		loadEnvMap = sceneUtilsModule.loadEnvMap;
+		setSceneEnvironment = sceneUtilsModule.setSceneEnvironment;
+		FakeShadow = fakeShadowModule.FakeShadow;
+		applySettingsToScene = applySettingsModule.applySettingsToScene;
+		createPostprocessingLayer = resolve_create_postprocessing_layer();
+		RectAreaLightHelper = rectAreaLightHelperModule.RectAreaLightHelper;
+		TransformControls = transformControlsModule.TransformControls;
+		cameraFit = cameraFitModule;
+
+		( {
+			hideObjectsByName,
+			getHiddenObjectNamesList,
+			findObject,
+			findObjectByCompositeId,
+			getObjectTargetPosition,
+			getBoundingBoxFromObjectIds,
+			removeLightsFromScene,
+			registerSceneMaterials,
+			getHdrUrlFromEnv,
+			getOrbitLimitsFromEnv,
+			getToneMapping,
+			getPixelRatio,
+			ORBIT_PIXEL_RATIO_SCALE,
+			disposeScene,
+			resolveShadowMode,
+			SHADOW_MODES,
+		} = sceneUtilsModule );
+		PC.threeD = PC.threeD || {};
+		PC.threeD.getTHREE = function () { return THREE; };
+		PC.threeD.getThreeDeps = function () {
+			return {
+				THREE,
+				OrbitControls,
+				loadEnvMap,
+				setSceneEnvironment,
+				FakeShadow,
+				createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
+				hideObjectsByName,
+				getHiddenObjectNamesList,
+				findObject,
+				findObjectByCompositeId,
+				getObjectTargetPosition,
+				getBoundingBoxFromObjectIds,
+				removeLightsFromScene,
+				registerSceneMaterials,
+				getHdrUrlFromEnv,
+				getOrbitLimitsFromEnv,
+				getToneMapping,
+				getPixelRatio,
+				ORBIT_PIXEL_RATIO_SCALE,
+				disposeScene,
+				applySettingsToScene,
+				RectAreaLightHelper,
+				TransformControls,
+				resolveShadowMode,
+				SHADOW_MODES,
+				create_base_composer: baseComposerModule.create_base_composer,
+				setKtx2Renderer: loaderFactoryModule.setKtx2Renderer,
+				anchorPlacement: anchorPlacementModule,
+				cameraFit: cameraFitModule,
+			};
+		};
+		if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
+			window.wp.hooks.doAction( 'PC.admin.3d_settings.three_ready', {
+				THREE,
+				OrbitControls,
+				loadEnvMap,
+				setSceneEnvironment,
+				FakeShadow,
+				createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
+			} );
+		}
+
+		return {
+			THREE,
+			OrbitControls,
+			loadEnvMap,
+			setSceneEnvironment,
+			FakeShadow,
+			createPostprocessingLayer: createPostprocessingLayer || resolve_create_postprocessing_layer(),
+			hideObjectsByName,
+			getHiddenObjectNamesList,
+			findObject,
+			findObjectByCompositeId,
+			getObjectTargetPosition,
+			getBoundingBoxFromObjectIds,
+		};
+	} )();
+
+	return threeDepsPromise;
+}
+
+const $ = window.jQuery;
+const _ = window.PC._us || window._;
+PC = window.PC || {};
+PC.views = window.PC.views || {};
+
+( function ( $, _ ) {
+
+	// -------------------------------------------------------------------------
+	// Shared helpers (DRY) for 3D model media selection
+	// -------------------------------------------------------------------------
+	PC.threeD = PC.threeD || {};
+	PC.threeD.ensureReady = ensureThreeDepsLoaded;
+	PC.actions = PC.actions || {};
+
+	// Stub actions so "Select from list" / "Select 3D objects" work from Layers/Choices/Angles
+	// before the user has opened the 3D settings tab. First click loads store + loader + real actions.
+	if ( ! PC.actions.select_3d_object ) {
+		PC.actions.select_3d_object = function ( el, context ) {
+			ensureThreeDepsLoaded().then( function () {
+				if ( PC.actions.select_3d_object ) PC.actions.select_3d_object( el, context );
+			} );
+		};
+	}
+	if ( ! PC.actions.select_3d_objects ) {
+		PC.actions.select_3d_objects = function ( el, context ) {
+			ensureThreeDepsLoaded().then( function () {
+				if ( PC.actions.select_3d_objects ) PC.actions.select_3d_objects( el, context );
+			} );
+		};
+	}
+	[ 'select_3d_anchor', 'clear_3d_anchor' ].forEach( function ( name ) {
+		if ( PC.actions[ name ] ) return;
+		PC.actions[ name ] = function ( el, context ) {
+			ensureThreeDepsLoaded().then( function () {
+				if ( PC.actions[ name ] ) PC.actions[ name ]( el, context );
+			} );
+		};
+	} );
+
+	// -------------------------------------------------------------------------
+	// 3D inheritance hints for layer and choice forms
+	//
+	// A choice inherits its layer's 3D model and object, and the anchor settings
+	// move whichever object that resolves to. None of that was visible in the
+	// form: the choice's model select read "None / Inherit" whatever the layer
+	// had. These fill in what is actually inherited and what will move.
+	// -------------------------------------------------------------------------
+
+	function lang( key, fallback ) {
+		return ( window.PC_lang && PC_lang[ key ] ) ? PC_lang[ key ] : fallback;
+	}
+
+	function find_object3d( source_id ) {
+		const objects3d = PC.app && typeof PC.app.get_collection === 'function' ? PC.app.get_collection( 'objects3d' ) : null;
+		if ( ! objects3d || source_id == null || source_id === '' ) return null;
+		const s = String( source_id );
+		return objects3d.find( function ( o ) {
+			const gltf = o.get( 'gltf' );
+			return String( o.get( '_id' ) != null ? o.get( '_id' ) : o.id ) === s
+				|| ( gltf && gltf.attachment_id != null && String( gltf.attachment_id ) === s );
+		} ) || null;
+	}
+
+	function object3d_label( source_id ) {
+		const o = find_object3d( source_id );
+		return o ? ( o.get( 'name' ) || o.get( 'filename' ) || ( '#' + source_id ) ) : ( '#' + source_id );
+	}
+
+	/**
+	 * "2:Suzanne" → "Suzanne (Chair model)"; a bare name is returned as is.
+	 *
+	 * @param {string} id
+	 * @returns {string}
+	 */
+	function describe_object_id( id ) {
+		const s = String( id == null ? '' : id );
+		const sep = s.indexOf( ':' );
+		if ( sep === -1 ) return s;
+		const name = s.slice( sep + 1 );
+		return find_object3d( s.slice( 0, sep ) ) ? name + ' (' + object3d_label( s.slice( 0, sep ) ) + ')' : name;
+	}
+
+	/**
+	 * Layer and choice forms: a choice shows what it inherits from its layer
+	 * ("Inherit from layer: …") in its model select and object field.
+	 */
+	function update_3d_hints( view, is_choice ) {
+		const model = view.model;
+		if ( ! model || ! view.$ || ! is_choice ) return;
+		const layer_id = model.get( 'layerId' );
+		const layer = ( layer_id != null && PC.app && PC.app.admin && PC.app.admin.layers ) ? PC.app.admin.layers.get( layer_id ) : null;
+		const layer_model_id = layer ? layer.get( 'object_3d_id' ) : null;
+		const layer_target = layer ? layer.get( 'target_object_id' ) : null;
+		view.$( 'select[data-setting="object_3d_id"] option[value=""]' ).text(
+			layer_model_id ? lang( 'threed_inherit_from_layer', 'Inherit from layer: %s' ).replace( '%s', object3d_label( layer_model_id ) ) : lang( 'threed_none', 'None' )
+		);
+		view.$( 'input[data-setting="target_object_id"]' ).attr( 'placeholder',
+			layer_target ? lang( 'threed_inherit_from_layer', 'Inherit from layer: %s' ).replace( '%s', describe_object_id( layer_target ) ) : lang( 'threed_whole_model', 'Whole model' )
+		);
+	}
+
+	function bind_3d_hints( view, is_choice ) {
+		if ( ! view || ! view.model ) return;
+		update_3d_hints( view, is_choice );
+		if ( view._pc3dHintsBound ) return;
+		view._pc3dHintsBound = true;
+		view.listenTo( view.model, 'change:object_3d_id change:target_object_id', function () {
+			update_3d_hints( view, is_choice );
+		} );
+	}
+
+	/**
+	 * What "this choice's object" resolves to, for the Move to anchor action:
+	 * the choice's object, else the layer's, else the choice's or layer's model.
+	 *
+	 * @param {Backbone.Model} choice
+	 * @returns {string} Readable description, or '' when nothing resolves
+	 */
+	function describe_choice_target( choice ) {
+		if ( ! choice ) return '';
+		const layer_id = choice.get( 'layerId' );
+		const layer = ( layer_id != null && PC.app && PC.app.admin && PC.app.admin.layers ) ? PC.app.admin.layers.get( layer_id ) : null;
+		const target = choice.get( 'target_object_id' ) || ( layer ? layer.get( 'target_object_id' ) : '' );
+		if ( target ) return describe_object_id( target );
+		const model_id = choice.get( 'object_3d_id' ) || ( layer ? layer.get( 'object_3d_id' ) : '' );
+		return model_id ? lang( 'threed_whole_model_of', 'Whole model: %s' ).replace( '%s', object3d_label( model_id ) ) : '';
+	}
+
+	PC.threeD.describeObjectId = describe_object_id;
+	PC.threeD.object3dLabel = object3d_label;
+	PC.threeD.describeChoiceTarget = describe_choice_target;
+	PC.threeD.updateHints = update_3d_hints;
+	window.wp.hooks.addAction( 'PC.admin.layer_form.render', 'MKL/PC/3D/hints', function ( view ) {
+		// The 3D Objects form is a layer form too; it has no layer hints.
+		if ( view && view.collectionName === 'objects3d' ) return;
+		bind_3d_hints( view, false );
+	} );
+	window.wp.hooks.addAction( 'PC.admin.choiceDetails.render', 'MKL/PC/3D/hints', function ( view ) {
+		bind_3d_hints( view, true );
+		// The model select is filled after render, sometimes once the 3D modules
+		// load; the placeholder option survives that, but set it again to be safe.
+		if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+			PC.threeD.ensureReady().then( function () {
+				update_3d_hints( view, true );
+			} );
+		}
+	} );
+
+	/**
+	 * Opens a WP media frame restricted to GLB/GLTF/ZIP (same as 3D settings).
+	 *
+	 * @param {Object} opts
+	 * @param {number|null} [opts.selectedId]
+	 * @param {string} [opts.title]
+	 * @param {string} [opts.buttonText]
+	 * @param {Function} opts.onSelect - called with attachment.toJSON()
+	 * @returns {wp.media.view.MediaFrame}
+	 */
+	PC.threeD.openModelMediaFrame = function ( opts = {} ) {
+		const selectedId = opts.selectedId != null ? opts.selectedId : null;
+		const title = opts.title || 'Upload 3D Model';
+		const buttonText = opts.buttonText || 'Use this file';
+		const onSelect = typeof opts.onSelect === 'function' ? opts.onSelect : null;
+
+		const frame = wp.media( {
+			title: title,
+			button: { text: buttonText },
+			multiple: false,
+			selected: selectedId,
+			library: {
+				type: ['model/gltf-binary', 'model/gltf+json', 'application/zip'],
+			},
+		} );
+
+		// Maybe select existing item
+		frame.on( 'open', function () {
+			const selection = frame.state().get( 'selection' );
+			if ( selectedId ) {
+				const attachment = wp.media.attachment( selectedId );
+				selection.add( attachment ? [attachment] : [] );
+			} else {
+				selection.reset( null );
+			}
+		} );
+
+		// Set context for custom upload location (matches 3D settings)
+		if ( frame.uploader?.options?.uploader?.params ) {
+			frame.uploader.options.uploader.params.context = 'configurator_assets';
+		}
+
+		if ( onSelect ) {
+			frame.on( 'select', () => {
+				const attachment = frame.state().get( 'selection' ).first().toJSON();
+				if ( PC.threeD.refuse_unusable_zip && PC.threeD.refuse_unusable_zip( attachment ) ) return;
+				onSelect( attachment );
+			} );
+		}
+
+		frame.open();
+		return frame;
+	};
+
+	PC.views.settings_3d = Backbone.View.extend( Object.assign( {}, settings_3d_preview_mixin, {
+		tagName: 'div',
+		className: 'state settings-3d-state',
+		template: wp.template( 'mkl-pc-3d-models' ),
+		events: {
+			'click .pc-3d-reset-settings': 'on_reset_settings',
+			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
+			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
+			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
+			'click .pc-3d-import-gltf-cameras': 'import_cameras_from_gltf',
+			'click .pc-3d-poster-select': 'on_poster_select',
+			'click .pc-3d-poster-remove': 'on_poster_remove',
+			'change .pc-3d-angle-select': 'on_angle_select_change',
+			'change .pc-3d-env-source': 'on_env_source_change',
+			'change .pc-3d-bg-mode': 'on_bg_mode_change',
+			'change .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth, .pc-3d-orbit-zoom-limits-enabled, .pc-3d-bg-color, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-offset, .pc-3d-shadow-catcher, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth': 'on_setting_change',
+			'input .pc-3d-env-intensity, .pc-3d-env-rotation, .pc-3d-env-blur, .pc-3d-shadow-opacity, .pc-3d-shadow-blur, .pc-3d-shadow-general, .pc-3d-shadow-contact, .pc-3d-shadow-elevation, .pc-3d-shadow-azimuth, .pc-3d-exposure, .pc-3d-orbit-min-polar, .pc-3d-orbit-max-polar, .pc-3d-orbit-min-azimuth, .pc-3d-orbit-max-azimuth': 'on_slider_input',
+			'change .pc-3d-shadow-mode': 'on_shadow_mode_change',
+			'change .pc-3d-shadow-light': 'on_shadow_light_change',
+			'change .pc-3d-tone-mapping, .pc-3d-exposure, .pc-3d-alpha, .pc-3d-extend-under-toolbar, .pc-3d-orbit-hint': 'on_setting_change',
+			'change .pc-3d-hidden-object-names': 'on_setting_change',
+			'input .pc-3d-hidden-object-names': 'on_hidden_names_input',
+			'change .pc-3d-postprocess': 'on_setting_change',
+			// Postprocessing effects are contributed by add-ons, so bind their sliders
+			// generically rather than enumerating fields the host does not own.
+			'input .pc-3d-pp-slider': 'on_slider_input',
+			'change .pc-3d-pp-slider': 'on_setting_change',
+		},
+		remove: function () {
+			this.on_remove();
+			return Backbone.View.prototype.remove.call( this );
+		},
+		on_remove: function () {
+			if ( PC.app && PC.app.exitSettings3dSidebarFocus ) {
+				PC.app.exitSettings3dSidebarFocus( this.options && this.options.main_view );
+			}
+			clearTimeout( this._hidden_names_timer );
+			this.maybe_cleanup();
+		},
+		collectionName: 'settings_3d',
+		/**
+		 * Mark a collection dirty and enable the sidebar Save button.
+		 * @param {string} [collection_name='settings_3d']
+		 */
+		mark_dirty: function ( collection_name ) {
+			const key = collection_name || this.collectionName || 'settings_3d';
+			if ( PC.app && PC.app.is_modified ) {
+				PC.app.is_modified[ key ] = true;
+			}
+			if ( PC.app && PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+		},
+		initialize: function ( options ) {
+			this.options = options || {};
+			this.admin = PC.app.get_admin();
+			this.product = PC.app.get_product();
+			this.col = this.admin.settings_3d;
+
+			PC.selection.reset();
+
+			if ( PC.app && PC.app.enterSettings3dSidebarFocus ) {
+				PC.app.enterSettings3dSidebarFocus( this.options && this.options.main_view );
+			}
+
+			this._three = this._three || {};
+			// Kick off async loading of Three.js and related modules; cached across instances.
+			this._threeDepsPromise = ensureThreeDepsLoaded();
+			this.render();
+		},
+		save: function ( e, f ) {
+			if ( !PC.app.is_modified[this.collectionName] ) return;
+			const state = PC.app.state;
+			if ( state && state.$save_button ) state.$save_button.addClass( 'disabled' );
+			if ( state && state.$save_all_button ) state.$save_all_button.addClass( 'disabled' );
+			if ( state && state.$toolbar ) state.$toolbar.addClass( 'saving' );
+			PC.app.save( this.collectionName, this.col, {
+				success: () => { if ( state && state.state_saved ) state.state_saved(); },
+				error: ( r, s ) => { if ( state && state.error_saving ) state.error_saving( r, s ); },
+				// A save on its own: its last request rebuilds the frontend config file.
+				data: { saveCache: true },
+			} );
+		},
+		render: function () {
+			const s = PC.app.admin.settings_3d;
+			this.ensure_settings_defaults( s );
+			// Every section panel is rebuilt from the static template, which always
+			// marks the first one active — preserve whichever section the user had
+			// open (e.g. re-rendering after a media-library selection on a later tab).
+			// A fresh view (leaving 3D settings and coming back) has no panels yet, but the
+			// sidebar tabs survive the round trip — fall back to whichever tab is still active.
+			const active_section_id = this.$( '.pc-3d-section-panel.active' ).data( 'section-id' )
+				|| this.get_sidebar_sections().find( '.pc-3d-section-tab.active' ).data( 'section-tab' );
+			this.$el.empty();
+			this.$el.append( this.template( s ) );
+			if ( active_section_id && this.$( '#pc-3d-section-panel-' + active_section_id ).length ) {
+				this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
+				this.$( '#pc-3d-section-panel-' + active_section_id ).addClass( 'active' ).removeAttr( 'hidden' );
+			}
+			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
+				window.wp.hooks.doAction( 'PC.admin.3d_settings.render', this );
+			}
+			this.toggle_env_and_bg_visibility();
+			this.toggle_shadow_visibility();
+			this.bind_value_displays();
+			// Open/close every disclosure group, including ones contributed by add-ons.
+			initFieldGroups();
+			syncFieldGroups( this.$el );
+			this._populateEnvSource();
+			this.update_zoom_buttons_state();
+			this.populate_angle_select();
+			// Load preview when there is at least one model to show (from objects3d)
+			const modelEntries = this.get_model_entries();
+			if ( modelEntries.length > 0 ) {
+				this.render_preview( null );
+			} else {
+				this._three = this._three || {};
+			}
+			// After the preview call, which drops the old scene: the list is filled
+			// again once the new one has loaded.
+			this._bind_lights_panel();
+			this._render_lights_panel();
+			if ( PC.app && PC.app.syncSidebarFocusChrome ) {
+				PC.app.syncSidebarFocusChrome( this.options && this.options.main_view );
+			}
+		},
+		ensure_settings_defaults: function ( s ) {
+			if ( s.hidden_object_names === undefined ) s.hidden_object_names = '';
+			if ( !s.poster ) s.poster = { attachment_id: null, url: '' };
+			if ( s.poster.attachment_id === undefined ) s.poster.attachment_id = null;
+			if ( s.poster.url === undefined ) s.poster.url = '';
+			if ( !s.environment ) s.environment = { mode: 'preset', preset: 'outdoor', object_id: '', intensity: 1, rotation: 0, orbit_min_polar_angle: 0, orbit_max_polar_angle: 90, orbit_min_azimuth_angle: -180, orbit_max_azimuth_angle: 180, orbit_min_distance: null, orbit_max_distance: null, orbit_zoom_limits_enabled: true };
+			if ( !s.background ) s.background = { mode: 'environment', color: '#ffffff' };
+			if ( !s.ground ) s.ground = { enabled: true, size: 10, shadow_opacity: 0.5, shadow_blur: 0 };
+			// Added after the two-layer shadow split; products saved before it have
+			// a ground object without these, and would otherwise save them back out
+			// as missing rather than as the defaults the viewer is falling back to.
+			if ( s.ground.shadow_general === undefined ) s.ground.shadow_general = 1;
+			if ( s.ground.shadow_contact === undefined ) s.ground.shadow_contact = 1;
+			if ( s.ground.shadow_offset === undefined ) s.ground.shadow_offset = 0;
+			if ( s.ground.shadow_catcher === undefined ) s.ground.shadow_catcher = false;
+			if ( s.ground.shadow_light === undefined ) s.ground.shadow_light = true;
+			if ( s.ground.shadow_elevation === undefined ) s.ground.shadow_elevation = 55;
+			if ( s.ground.shadow_azimuth === undefined ) s.ground.shadow_azimuth = 135;
+			// The dropdown replaced two checkboxes; derive it once for anything saved
+			// before, so the control opens on what the product is actually doing.
+			if ( s.ground.shadow_mode === undefined ) {
+				s.ground.shadow_mode = s.enable_shadows
+					? 'realtime'
+					: ( s.ground.enabled === false ? 'none' : 'fake' );
+			}
+			if ( s.enable_shadows === undefined ) s.enable_shadows = false;
+			if ( s.extend_under_toolbar === undefined ) s.extend_under_toolbar = false;
+			// On by default: a shopper who cannot tell the viewer is interactive
+			// is the problem it exists to solve, and it costs one gesture to clear.
+			if ( s.orbit_hint === undefined ) s.orbit_hint = true;
+			if ( !s.renderer ) s.renderer = { tone_mapping: 'aces', exposure: 1, output_color_space: 'srgb', alpha: false };
+			if ( !s.lighting ) s.lighting = {};
+			// Postprocessing defaults belong to whichever add-on provides the effects;
+			// the host only guarantees the container exists.
+			if ( !s.postprocessing ) s.postprocessing = {};
+		},
+		on_poster_select: function ( e ) {
+			e.preventDefault();
+			if ( ! window.wp || ! window.wp.media ) return;
+			const view = this;
+			const current = ( PC.app.admin.settings_3d && PC.app.admin.settings_3d.poster ) || {};
+			const frame = window.wp.media( {
+				title: ( typeof PC_lang !== 'undefined' && PC_lang.select_poster_image ) ? PC_lang.select_poster_image : 'Select poster image',
+				button: { text: ( typeof PC_lang !== 'undefined' && PC_lang.use_this_image ) ? PC_lang.use_this_image : 'Use this image' },
+				multiple: false,
+				library: { type: 'image' },
+			} );
+			frame.on( 'open', function () {
+				if ( ! current.attachment_id ) return;
+				const selection = frame.state().get( 'selection' );
+				const attachment = window.wp.media.attachment( current.attachment_id );
+				selection.reset( attachment ? [ attachment ] : [] );
+			} );
+			frame.on( 'select', function () {
+				const attachment = frame.state().get( 'selection' ).first();
+				if ( ! attachment ) return;
+				const data = attachment.toJSON();
+				PC.app.admin.settings_3d.poster = {
+					attachment_id: data.id || null,
+					url: data.url || '',
+				};
+				view.mark_dirty( 'settings_3d' );
+				view.render();
+			} );
+			frame.open();
+		},
+		on_poster_remove: function ( e ) {
+			e.preventDefault();
+			PC.app.admin.settings_3d.poster = { attachment_id: null, url: '' };
+			this.mark_dirty( 'settings_3d' );
+			this.render();
+		},
+		on_reset_settings: function ( e ) {
+			e.preventDefault();
+			const msg = ( typeof PC_lang !== 'undefined' && PC_lang.reset_settings_3d_confirm ) ? PC_lang.reset_settings_3d_confirm : 'This will restore all 3D viewer settings to their defaults. Continue?';
+			if ( !confirm( msg ) ) return;
+			const defaults = ( typeof PC_lang !== 'undefined' && PC_lang.default_settings_3d ) ? PC_lang.default_settings_3d : {};
+			const admin = PC.app.get_admin();
+			admin.settings_3d = Object.assign( {}, defaults );
+			this.col = admin.settings_3d;
+			this.mark_dirty( 'settings_3d' );
+			this.render();
+			if ( this.apply_preview_settings ) this.apply_preview_settings();
+		},
+		on_section_tab_click: function ( e ) {
+			e.preventDefault();
+			const tab = $( e.currentTarget ).data( 'section-tab' );
+			if ( !tab ) return;
+			const $sidebar_sections = this.get_sidebar_sections();
+			$sidebar_sections.find( '.pc-3d-section-tab' ).removeClass( 'active' ).attr( 'aria-selected', 'false' );
+			$sidebar_sections.find( '.pc-3d-section-tab[data-section-tab="' + tab + '"]' ).addClass( 'active' ).attr( 'aria-selected', 'true' );
+			this.$( '.pc-3d-section-panel' ).removeClass( 'active' ).attr( 'hidden', 'hidden' );
+			this.$( '#pc-3d-section-panel-' + tab ).addClass( 'active' ).removeAttr( 'hidden' );
+			// Light helpers and the gizmo belong to the Environment section only.
+			this._sync_light_editing();
+		},
+		/**
+		 * Show only the settings that belong to the selected shadow type.
+		 *
+		 * Each block declares the modes it belongs to in data-shadow-modes, so a mode
+		 * gaining a control is a template change and nothing else.
+		 */
+		toggle_shadow_visibility: function () {
+			const ground = PC.app.admin.settings_3d.ground || {};
+			let mode = ground.shadow_mode;
+			if ( mode !== 'none' && mode !== 'fake' && mode !== 'realtime' ) {
+				mode = PC.app.admin.settings_3d.enable_shadows
+					? 'realtime'
+					: ( ground.enabled === false ? 'none' : 'fake' );
+			}
+			this.$( '.pc-3d-shadow-settings' ).each( function () {
+				const modes = String( jQuery( this ).data( 'shadow-modes' ) || '' ).split( /\s+/ );
+				jQuery( this ).toggle( modes.indexOf( mode ) !== -1 );
+			} );
+
+			const useShadowLight = ground.shadow_light !== false;
+			this.$( '.pc-3d-shadow-light-settings' ).toggle( useShadowLight );
+			// Nothing left to cast: the dedicated light is off and no light in the
+			// product is set to cast either, so real-time shadows would draw nothing.
+			this.$( '.pc-3d-shadow-light-warning' ).toggle(
+				mode === 'realtime' && ! useShadowLight && ! this.has_shadow_casting_light()
+			);
+		},
+		toggle_env_and_bg_visibility: function () {
+			// Falls back to transparent, matching the stored default now that drawing
+			// the environment as the backdrop is no longer an option.
+			const bg_mode = ( PC.app.admin.settings_3d.background && PC.app.admin.settings_3d.background.mode ) || 'transparent';
+			const env_mode = ( PC.app.admin.settings_3d.environment && PC.app.admin.settings_3d.environment.mode ) || 'preset';
+			this.$( '.pc-3d-bg-color-row' ).toggle( bg_mode === 'solid' );
+			this.$( '.pc-3d-env-map-controls' ).toggle( env_mode !== 'none' );
+		},
+		/**
+		 * Populate .pc-3d-env-source: None, built-in presets, then environment objects from objects3d.
+		 * Set select value from env.mode + env.preset or env.object_id.
+		 */
+		_populateEnvSource: function () {
+			const $sel = this.$( '.pc-3d-env-source' );
+			if ( !$sel.length ) return;
+			const env = ( PC.app.admin.settings_3d && PC.app.admin.settings_3d.environment ) || {};
+			const opts = [];
+			opts.push( { value: 'none', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_none ) ? PC_lang.env_none : 'None' } );
+			opts.push( { value: 'preset_outdoor', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_preset_outdoor ) ? PC_lang.env_preset_outdoor : 'Preset: Outdoor' } );
+			opts.push( { value: 'preset_studio', label: ( typeof PC_lang !== 'undefined' && PC_lang.env_preset_studio ) ? PC_lang.env_preset_studio : 'Preset: Studio' } );
+			const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
+			if ( col ) {
+				col.where( { object_type: 'environment' } ).forEach( function ( m ) {
+					const id = m.get( '_id' );
+					const name = m.get( 'name' ) || m.get( 'label' ) || ( 'Environment ' + id );
+					opts.push( { value: 'object_' + id, label: name } );
+				} );
+			}
+			$sel.empty();
+			opts.forEach( function ( o ) {
+				$sel.append( $( '<option></option>' ).attr( 'value', o.value ).text( o.label ) );
+			} );
+			const mode = env.mode || 'preset';
+			const preset = env.preset || 'outdoor';
+			const objectId = env.object_id || '';
+			let selected = 'preset_outdoor';
+			if ( mode === 'none' ) {
+				selected = 'none';
+			} else if ( mode === 'object' && objectId ) {
+				selected = 'object_' + objectId;
+			} else {
+				selected = 'preset_' + preset;
+			}
+			$sel.val( opts.some( function ( o ) { return o.value === selected; } ) ? selected : 'preset_outdoor' );
+		},
+		on_env_source_change: function () {
+			const val = this.$( '.pc-3d-env-source' ).val() || 'preset_outdoor';
+			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
+			if ( val === 'none' ) {
+				PC.app.admin.settings_3d.environment.mode = 'none';
+				PC.app.admin.settings_3d.environment.object_id = '';
+			} else if ( val.indexOf( 'preset_' ) === 0 ) {
+				PC.app.admin.settings_3d.environment.mode = 'preset';
+				PC.app.admin.settings_3d.environment.preset = val === 'preset_studio' ? 'studio' : 'outdoor';
+				PC.app.admin.settings_3d.environment.object_id = '';
+			} else if ( val.indexOf( 'object_' ) === 0 ) {
+				PC.app.admin.settings_3d.environment.mode = 'object';
+				PC.app.admin.settings_3d.environment.object_id = val.slice( 7 );
+				PC.app.admin.settings_3d.environment.preset = 'outdoor';
+			}
+			this.toggle_env_and_bg_visibility();
+			this.mark_dirty( 'settings_3d' );
+			this.apply_preview_settings();
+		},
+		bind_value_displays: function () {
+			const sync = ( sel, val_sel ) => {
+				const input_el = this.$( sel );
+				const value_el = this.$( val_sel );
+				if ( input_el.length && value_el.length ) value_el.text( input_el.val() );
+			};
+			sync( '.pc-3d-env-intensity', '.pc-3d-env-intensity-value' );
+			sync( '.pc-3d-env-rotation', '.pc-3d-env-rotation-value' );
+			sync( '.pc-3d-env-blur', '.pc-3d-env-blur-value' );
+			sync( '.pc-3d-shadow-opacity', '.pc-3d-shadow-opacity-value' );
+			sync( '.pc-3d-shadow-blur', '.pc-3d-shadow-blur-value' );
+			sync( '.pc-3d-shadow-general', '.pc-3d-shadow-general-value' );
+			sync( '.pc-3d-shadow-contact', '.pc-3d-shadow-contact-value' );
+			sync( '.pc-3d-shadow-elevation', '.pc-3d-shadow-elevation-value' );
+			sync( '.pc-3d-shadow-azimuth', '.pc-3d-shadow-azimuth-value' );
+			sync( '.pc-3d-exposure', '.pc-3d-exposure-value' );
+			sync( '.pc-3d-orbit-min-polar', '.pc-3d-orbit-min-polar-value' );
+			sync( '.pc-3d-orbit-max-polar', '.pc-3d-orbit-max-polar-value' );
+			sync( '.pc-3d-orbit-min-azimuth', '.pc-3d-orbit-min-azimuth-value' );
+			sync( '.pc-3d-orbit-max-azimuth', '.pc-3d-orbit-max-azimuth-value' );
+			// Add-on postprocessing sliders pair each input with the value display
+			// that immediately follows it, matching on_slider_input.
+			this.$( '.pc-3d-pp-slider' ).each( function () {
+				const input_el = $( this );
+				const value_el = input_el.next( '.pc-3d-value-display' );
+				if ( value_el.length ) value_el.text( input_el.val() );
+			} );
+		},
+		set_nested: function ( obj, path, value ) {
+			const parts = path.split( '.' );
+			let o = obj;
+			for ( let i = 0; i < parts.length - 1; i++ ) {
+				const k = parts[i];
+				if ( !o[k] ) o[k] = {};
+				o = o[k];
+			}
+			o[parts[parts.length - 1]] = value;
+		},
+		on_shadow_mode_change: function () {
+			const mode = this.$( '.pc-3d-shadow-mode' ).val();
+			PC.app.admin.settings_3d.ground = PC.app.admin.settings_3d.ground || {};
+			PC.app.admin.settings_3d.ground.shadow_mode = mode;
+			// The two booleans this dropdown replaced are still what older saved
+			// products carry, and resolveShadowMode falls back to them. Keeping them in
+			// step means a product saved now reads the same either way round.
+			PC.app.admin.settings_3d.ground.enabled = mode !== 'none';
+			PC.app.admin.settings_3d.enable_shadows = mode === 'realtime';
+			this.mark_dirty( 'settings_3d' );
+			this.toggle_shadow_visibility();
+			this.apply_preview_settings();
+		},
+		on_shadow_light_change: function () {
+			const on = this.$( '.pc-3d-shadow-light' ).is( ':checked' );
+			PC.app.admin.settings_3d.ground = PC.app.admin.settings_3d.ground || {};
+			PC.app.admin.settings_3d.ground.shadow_light = on;
+			this.mark_dirty( 'settings_3d' );
+			this.toggle_shadow_visibility();
+			this.apply_preview_settings();
+		},
+
+		/**
+		 * Whether anything in the product is set up to cast a shadow.
+		 *
+		 * Having a light is not enough — a light only casts when "Cast shadows" is
+		 * ticked on it, so that is what decides whether turning the dedicated light
+		 * off leaves the product with no caster at all.
+		 *
+		 * @returns {boolean}
+		 */
+		has_shadow_casting_light: function () {
+			const objects3d = PC.app.get_collection && PC.app.get_collection( 'objects3d' );
+			if ( ! objects3d || typeof objects3d.each !== 'function' ) return false;
+			let found = false;
+			objects3d.each( function ( obj ) {
+				if ( found ) return;
+				if ( obj.get( 'object_type' ) !== 'light' ) return;
+				if ( obj.get( 'cast_shadows' ) === true ) found = true;
+			} );
+			return found;
+		},
+		on_bg_mode_change: function () {
+			const val = this.$( '.pc-3d-bg-mode' ).val();
+			PC.app.admin.settings_3d.background = PC.app.admin.settings_3d.background || {};
+			PC.app.admin.settings_3d.background.mode = val;
+			this.mark_dirty( 'settings_3d' );
+			this.toggle_env_and_bg_visibility();
+			this.apply_preview_settings();
+		},
+		on_slider_input: function ( e ) {
+			const el = $( e.currentTarget );
+			const key = el.data( 'key' );
+			const val = el.attr( 'type' ) === 'range' ? parseFloat( el.val() ) : el.val();
+			if ( key ) {
+				this.set_nested( PC.app.admin.settings_3d, key, val );
+				this.mark_dirty( 'settings_3d' );
+			}
+			const val_sel = el.attr( 'type' ) === 'range' && el.next( '.pc-3d-value-display' ).length ? el.next( '.pc-3d-value-display' ) : null;
+			if ( val_sel && val_sel.length ) val_sel.text( val );
+			this.apply_preview_settings();
+		},
+		on_setting_change: function ( e ) {
+			const el = $( e.currentTarget );
+			const key = el.data( 'key' );
+			let val = el.val();
+			if ( el.attr( 'type' ) === 'checkbox' ) val = el.is( ':checked' );
+			else if ( el.attr( 'type' ) === 'number' ) val = parseFloat( val ) || 0;
+			else if ( el.attr( 'type' ) === 'range' ) val = parseFloat( val );
+			if ( key ) {
+				this.set_nested( PC.app.admin.settings_3d, key, val );
+				this.mark_dirty( 'settings_3d' );
+			}
+			if ( key === 'hidden_object_names' ) {
+				clearTimeout( this._hidden_names_timer );
+				this.apply_preview_hidden_objects();
+			}
+			this.apply_preview_settings();
+		},
+		/**
+		 * Apply the hidden-objects list while it is typed, once typing pauses:
+		 * names match exactly, so a half-typed one hides nothing, and a pass per
+		 * keystroke would walk the whole model for no visible change.
+		 */
+		on_hidden_names_input: function ( e ) {
+			clearTimeout( this._hidden_names_timer );
+			const el = e.currentTarget;
+			this._hidden_names_timer = setTimeout( () => {
+				if ( ! this._three ) return;
+				this.on_setting_change( { currentTarget: el } );
+			}, 300 );
+		},
+		set_min_zoom_from_view: function ( e ) {
+			e.preventDefault();
+			if ( !this._three || !this._three.controls ) return;
+			const distance = this._three.controls.getDistance();
+			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
+			PC.app.admin.settings_3d.environment.orbit_min_distance = distance;
+			this.mark_dirty( 'settings_3d' );
+			this._three.controls.minDistance = distance;
+			this.$( '.pc-3d-orbit-min-distance-value' ).text( distance.toFixed( 2 ) );
+			this.apply_preview_settings();
+		},
+		set_max_zoom_from_view: function ( e ) {
+			e.preventDefault();
+			if ( !this._three || !this._three.controls ) return;
+			const distance = this._three.controls.getDistance();
+			PC.app.admin.settings_3d.environment = PC.app.admin.settings_3d.environment || {};
+			PC.app.admin.settings_3d.environment.orbit_max_distance = distance;
+			this.mark_dirty( 'settings_3d' );
+			this._three.controls.maxDistance = distance;
+			this.$( '.pc-3d-orbit-max-distance-value' ).text( distance.toFixed( 2 ) );
+			this.apply_preview_settings();
+		},
+		update_zoom_buttons_state: function () {
+			const disabled = !this._three || !this._three.controls;
+			this.$( '.pc-3d-set-min-zoom, .pc-3d-set-max-zoom' ).prop( 'disabled', disabled );
+		},
+		get_sidebar_sections: function () {
+			const main_view = this.options && this.options.main_view;
+			return main_view && main_view.$el
+				? main_view.$el.find( '.mkl-pc-admin-ui__sidebar-3d-sections' )
+				: $( '.pc-modal.mkl-pc-admin-ui' ).find( '.mkl-pc-admin-ui__sidebar-3d-sections' );
+		},
+		/**
+		 * The angles collection, created from the loaded data if no state has built it yet.
+		 * Only the Views state used to create it, so until it was visited the import,
+		 * angle select and preview camera all saw nothing. Mirrors views/layers.js.
+		 */
+		get_angles: function () {
+			if ( !this.admin ) return null;
+			if ( !this.admin.angles ) {
+				const loaded_data = this.admin.model.get( 'angles' );
+				this.admin.angles = loaded_data != false ? new PC.angles( loaded_data ) : new PC.angles();
+			}
+			return this.admin.angles;
+		},
+		populate_angle_select: function () {
+			const $sel = this.$( '.pc-3d-angle-select' );
+			if ( !$sel.length ) return;
+			$sel.empty().append( '<option value="">— ' + ( ( typeof PC_lang !== 'undefined' && PC_lang.select_angle ) ? PC_lang.select_angle : 'Select angle' ) + ' —</option>' );
+			const angles = this.get_angles();
+			if ( angles && angles.length ) {
+				angles.each( function ( m ) {
+					const name = m.get( 'name' ) || ( 'View ' + ( m.get( '_id' ) || m.id || m.cid ) );
+					$sel.append( $( '<option></option>' ).val( m.id ).text( name ) );
+				} );
+			}
+		},
+		_resolveAngleTarget: function ( angle, root ) {
+			if ( !angle || !root ) return null;
+			const focusIds = angle.get( 'camera_focus_object_ids' );
+			if ( Array.isArray( focusIds ) && focusIds.length > 0 && typeof getBoundingBoxFromObjectIds === 'function' ) {
+				const result = getBoundingBoxFromObjectIds( root, focusIds );
+				return result ? result.center : null;
+			}
+			const id = angle.get( 'camera_target_object_id' );
+			if ( !id || typeof id !== 'string' ) return null;
+			const obj = findObject( root, id.trim() );
+			return obj ? getObjectTargetPosition( obj ) : null;
+		},
+		on_angle_select_change: function () {
+			if ( !this._three || !this._three.camera || !this._three.controls ) return;
+			const angleId = this.$( '.pc-3d-angle-select' ).val();
+			const angles = this.get_angles();
+			if ( !angles || !angles.length ) return;
+			const angle = angleId ? angles.get( angleId ) : angles.first();
+			if ( !angle ) return;
+			this._applyAngleToPreview( angle );
+		},
+		/**
+		 * Point the preview camera the way an angle does on the frontend.
+		 *
+		 * Goes through the frontend's fit_angle_camera, so an angle that fits its
+		 * target is shown at the distance and centring the customer will get,
+		 * rather than at the distance its camera position happens to be saved at.
+		 *
+		 * @param {Backbone.Model} angle
+		 * @param {Object} [fallback]
+		 * @param {THREE.Vector3} [fallback.target]   - Orbit target when the angle resolves none (origin by default)
+		 * @param {THREE.Vector3} [fallback.position] - Camera position when the angle has none and does not fit
+		 *        (the camera stays where it is by default)
+		 */
+		_applyAngleToPreview: function ( angle, fallback ) {
+			const t = this._three;
+			if ( !t || !t.camera || !t.controls || !angle || !THREE ) return;
+			fallback = fallback || {};
+			const isVec = ( v ) => v && typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number';
+			const pos = angle.get( 'camera_position' );
+			let tgt = angle.get( 'camera_target' );
+			const targetFromObject = this._resolveAngleTarget( angle, t.model_root );
+			if ( targetFromObject ) tgt = targetFromObject;
+			const target = isVec( tgt )
+				? new THREE.Vector3( tgt.x, tgt.y, tgt.z )
+				: ( fallback.target ? fallback.target.clone() : new THREE.Vector3() );
+			const from = isVec( pos ) && isVec( tgt ) ? new THREE.Vector3( pos.x, pos.y, pos.z ) : null;
+
+			// Editing how the angle frames re-frames the preview straight away.
+			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_fit_max_width change:camera_fit_max_height change:camera_focus_object_ids change:camera_target_object_id';
+			if ( this._previewAngle !== angle ) {
+				if ( this._previewAngle ) this.stopListening( this._previewAngle, framingEvents );
+				this.listenTo( angle, framingEvents, () => {
+					if ( this._previewAngle === angle ) this._applyAngleToPreview( angle );
+				} );
+			}
+			this._previewAngle = angle;
+			this._previewFramingTouched = false;
+			const fit = cameraFit.fit_angle_camera( {
+				angle,
+				root: t.model_root,
+				camera: t.camera,
+				from: from || fallback.position || null,
+				target,
+				aspect: t.camera.aspect,
+				size: t.container ? { width: t.container.clientWidth, height: t.container.clientHeight } : null,
+				distanceLimits: { min: t.controls.minDistance, max: t.controls.maxDistance },
+			} );
+			t.controls.target.copy( target );
+			if ( fit ) {
+				t.camera.position.copy( fit.position );
+			} else if ( from ) {
+				t.camera.position.copy( from );
+			} else if ( fallback.position ) {
+				t.camera.position.copy( fallback.position );
+			}
+			t.camera.lookAt( target );
+			this._setPreviewFramingShift( fit ? fit.shift : null );
+			t.controls.update();
+		},
+		/**
+		 * Refit the previewed angle to a new canvas shape, unless the camera has
+		 * been moved since the angle was applied: the merchant may be lining up a
+		 * new view, and a resize must not throw that away.
+		 */
+		_refitPreviewAngle: function () {
+			if ( this._previewFramingTouched || !this._previewAngle || !cameraFit ) return;
+			if ( !cameraFit.angle_fits_target( this._previewAngle ) ) return;
+			this._applyAngleToPreview( this._previewAngle );
+		},
+		set_current_view_to_angle: function ( e ) {
+			e.preventDefault();
+			if ( !this._three || !this._three.controls || !this._three.camera ) return;
+			const angleId = this.$( '.pc-3d-angle-select' ).val();
+			if ( !angleId ) return;
+			const angles = this.get_angles();
+			if ( !angles ) return;
+			const angle = angles.get( angleId );
+			if ( !angle ) return;
+			const pos = this._three.camera.position;
+			const target = this._three.controls.target;
+			angle.set( {
+				camera_position: { x: pos.x, y: pos.y, z: pos.z },
+				camera_target: { x: target.x, y: target.y, z: target.z }
+			} );
+			this.mark_dirty( 'angles' );
+			// A fitted angle keeps only the direction just set: show the distance and
+			// centring the frontend will use, rather than leave the merchant believing
+			// their zoom was saved.
+			if ( cameraFit && cameraFit.angle_fits_target( angle ) ) this._applyAngleToPreview( angle );
+		},
+		import_cameras_from_gltf: function ( e ) {
+			e.preventDefault();
+			this.$( '.pc-3d-import-cameras-status' ).prop( 'hidden', true );
+			// Collect cameras from the loaded models. There is no single "main" glTF
+			// any more — the preview mounts every objects3d entry under model_root —
+			// so this walks what is actually in the scene.
+			const cameras = [];
+			const root = this._three && this._three.model_root;
+			if ( root ) {
+				root.traverse( ( obj ) => { if ( obj.isCamera ) cameras.push( obj ); } );
+			}
+			if ( !cameras.length ) {
+				alert( ( typeof PC_lang !== 'undefined' && PC_lang.no_cameras_in_gltf ) ? PC_lang.no_cameras_in_gltf : 'No cameras found in the main GLTF file.' );
+				return;
+			}
+			const angles = this.get_angles();
+			if ( !angles ) return;
+			// Cameras are often nested under transformed nodes, and model_root itself
+			// can be offset, so read world-space values — that is the space the preview
+			// camera and orbit controls live in.
+			const pos = new THREE.Vector3();
+			const quat = new THREE.Quaternion();
+			const dir = new THREE.Vector3();
+			const box = new THREE.Box3().setFromObject( root );
+			const center = box.isEmpty() ? null : box.getCenter( new THREE.Vector3() );
+			const imported = [];
+			cameras.forEach( ( cam, i ) => {
+				cam.updateWorldMatrix( true, false );
+				cam.getWorldPosition( pos );
+				cam.getWorldQuaternion( quat );
+				dir.set( 0, 0, -1 ).applyQuaternion( quat );
+				// The target becomes the orbit pivot, so place it level with the model
+				// along the camera's line of sight rather than a fixed unit ahead.
+				let dist = center ? dir.dot( center.clone().sub( pos ) ) : 0;
+				if ( !( dist > 0.01 ) ) dist = 1;
+				const name = ( cam.name && cam.name.trim() ) || ( 'Camera ' + ( i + 1 ) );
+				// Each mounted model scene is tagged with its objects3d id; the nearest
+				// tagged ancestor is the model this camera came from.
+				let source = cam;
+				while ( source && ( !source.userData || source.userData.object_id == null ) ) source = source.parent;
+				// Angles share the layer model (idAttribute `_id`, default 0): without an
+				// explicit id every imported camera collides on 0 and can't be told apart.
+				const attrs = {
+					_id: PC.app.get_new_id( angles ),
+					name: name,
+					order: angles.nextOrder(),
+					image_order: angles.nextOrder(),
+					active: true,
+					camera_position: { x: pos.x, y: pos.y, z: pos.z },
+					camera_target: { x: pos.x + dir.x * dist, y: pos.y + dir.y * dist, z: pos.z + dir.z * dist },
+					image: { url: '', id: '' }
+				};
+				if ( source ) attrs.camera_target_model = String( source.userData.object_id );
+				if ( !angles.length ) attrs.has_thumbnails = true;
+				imported.push( angles.add( attrs ) );
+			} );
+			this.mark_dirty( 'angles' );
+			this.populate_angle_select();
+			this.$( '.pc-3d-angle-select' ).val( imported[ 0 ].id );
+			this.on_angle_select_change();
+			// Report next to the button rather than as a corner toast: the eye is on
+			// the Camera positions panel, and the toast went unnoticed there.
+			const lang = typeof PC_lang !== 'undefined' ? PC_lang : {};
+			const msg = imported.length === 1
+				? ( lang.camera_imported_from_gltf || '1 camera imported as a new view.' )
+				: ( lang.cameras_imported_from_gltf || '%d cameras imported as new views.' ).replace( '%d', imported.length );
+			const $status = this.$( '.pc-3d-import-cameras-status' );
+			$status.empty().append( '<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>', document.createTextNode( ' ' + msg ) );
+			$status[ 0 ].hidden = false;
+		},
+	} ) );
+
+
+	/**
+	 * Action: open a media modal to select/upload a 3D model for a layer setting.
+	 * Expects `context.model` to be the edited layer model.
+	 */
+	PC.actions.edit_model_upload = function ( $el, context ) {
+		if ( !context || !context.model ) return;
+		var setting = $el ? $el.data( 'setting' ) : null;
+		setting = setting || 'model_upload_3d';
+		var selectedId = context.model.get( 'model_upload_3d' );
+		PC.threeD.openModelMediaFrame( {
+			selectedId: selectedId,
+			onSelect: function ( attachment ) {
+				var previousUrl = context.model.get( 'model_upload_3d_url' );
+				var url = attachment.gltf_url || attachment.url;
+				if ( previousUrl && previousUrl !== url && PC.threeD.store && PC.threeD.store.remove ) {
+					PC.threeD.store.remove( previousUrl );
+				}
+				var filename = attachment.gltf_filename || attachment.filename;
+				context.model.set( {
+					model_upload_3d: attachment.id,
+					model_upload_3d_url: url,
+					model_upload_3d_filename: filename,
+				} );
+				PC.app.is_modified.layers = true;
+				if ( context.$el && setting ) {
+					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
+				}
+			},
+		} );
+	};
+
+	/**
+	 * Action: clear the uploaded 3D model for a layer or choice.
+	 */
+	$( document ).on( 'click', '.add-on-placeholder .hide-addon-placeholder', function( event ) {
+		event.preventDefault();
+		const $link = $( event.currentTarget );
+		const setting = $link.data( 'setting' ) || 'ar_placeholder';
+		const section = $link.data( 'section' );
+		wp.ajax.post( {
+			action: 'mkl_pc_hide_addon_setting',
+			setting,
+			security: PC_lang.user_preferences_nonce,
+		} ).done( function() {
+			if ( ! section ) {
+				return;
+			}
+			$( '.pc-3d-section-panel[data-section-id="' + section + '"]' ).remove();
+			$( '.pc-3d-section-tab[data-section-tab="' + section + '"]' ).remove();
+		} );
+	} );
+
+	PC.actions.remove_model_upload = function ( $el, context ) {
+		if ( !context || !context.model ) return;
+		var url = context.model.get( 'model_upload_3d_url' );
+		context.model.set( {
+			model_upload_3d: null,
+			model_upload_3d_url: null,
+			model_upload_3d_filename: null,
+		} );
+		if ( url && PC.threeD.store && PC.threeD.store.remove ) {
+			PC.threeD.store.remove( url );
+		}
+		PC.app.is_modified.layers = true;
+		if ( context.$el ) {
+			var setting = $el ? $el.data( 'setting' ) : null;
+			setting = setting || 'model_upload_3d';
+			context.$el.find( '[data-setting="' + setting + '"]' ).val( '' );
+		}
+		context.render();
+	};
+
+} )( jQuery, PC._us || window._ );

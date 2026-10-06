@@ -53,65 +53,128 @@ TODO:
 		single_view: function() { return PC.views.layer; },
 		events: {
 			'click .add-layer': 'create',
-			'click .order-toolbar button': 'change_order_type',
-			'keypress .structure-toolbar input': 'create',
+			'click .import-layer': 'import_global_layer',
+			'click .mkl-pc-toolbar-more': 'on_toolbar_more_click',
+			'keypress .structure-toolbar h4 input': 'create',
+			'input .mkl-pc-list-filter-input': 'on_list_filter',
+			'click .mkl-pc-mobile-back-to-structure-list': 'on_mobile_back_to_structure_list',
 			'remove': 'cleanup_on_remove', 
 			'save-state': 'save_layers',
 
 		}, 
 		cleanup_on_remove: function() {
+			if ( this.mobile_stack_router && typeof this.mobile_stack_router.destroy === 'function' ) {
+				this.mobile_stack_router.destroy();
+				this.mobile_stack_router = null;
+			}
+			if ( this.collectionName === 'layers' && this.cid ) {
+				$( document ).off( '.mklPcToolbarDD' + this.cid );
+			}
 			_.each( this.items, this.remove_item );
 			this.stopListening();
 		},
 		render: function( ) {
 			this.col.orderBy = 'order';
 			this.col.sort();
-			this.$el.append( this.template({ input_placeholder: PC.lang[this.collectionName +'_new_placeholder'], collectionName: this.collectionName }) );
+			this.$el.append( this.template( _.extend( {}, this.model.attributes, {
+				input_placeholder: PC.lang[this.collectionName + '_new_placeholder'],
+				filter_placeholder: PC.lang.list_filter_placeholder || '',
+				collectionName: this.collectionName,
+			} ) ) );
 			this.$list = this.$('.layers'); 
 			this.$form = this.$('.pc-sidebar'); 
-			this.$new_input = this.$('.structure-toolbar input'); 
+			this.$new_input = this.$('.structure-toolbar h4 input'); 
+			this.$list_filter = this.$('.structure-toolbar .mkl-pc-list-filter-input'); 
 			this.floating_add = new PC.views.floating_add_button( { el: this.$( '.floating-add' ).first(), list: this.$list, parent: this } );
+			this.bind_toolbar_dropdown_document_listeners();
+			if ( ! this.mobile_stack_router && this.$( '.mkl-pc-admin-ui__content.structure' ).length && PC.admin && PC.admin.mobile_stack_router ) {
+				this.mobile_stack_router = PC.admin.mobile_stack_router.install_structure_router( this );
+			}
 			this.add_all(); 
 			return this;
 		},
-		mark_collection_as_modified: function() {
-			PC.app.is_modified[this.collectionName] = true;
+		bind_toolbar_dropdown_document_listeners: function() {
+			if ( this.collectionName !== 'layers' ) {
+				return;
+			}
+			var self = this;
+			var ns = 'mklPcToolbarDD' + this.cid;
+			$( document ).off( '.' + ns );
+			$( document ).on( 'click.' + ns, function( e ) {
+				if ( ! $( e.target ).closest( '.mkl-pc-toolbar-dropdown' ).length ) {
+					self.closeToolbarDropdown();
+				}
+			} );
+			$( document ).on( 'keydown.' + ns, function( e ) {
+				if ( e.keyCode === 27 ) {
+					self.closeToolbarDropdown();
+				}
+			} );
 		},
-		removed_model: function( m ){
-			// remove 
-			this.admin.remove_relationships( this.collectionName, m );
-			this.mark_collection_as_modified();
+		closeToolbarDropdown: function() {
+			var $menu = this.$( '.mkl-pc-toolbar-dropdown__menu' );
+			var $btn = this.$( '.mkl-pc-toolbar-more' );
+			if ( ! $menu.length ) {
+				return;
+			}
+			$menu.attr( 'hidden', true );
+			$btn.attr( 'aria-expanded', 'false' );
+			this.$el.find( '.structure-content' ).first().removeClass( 'mkl-pc-structure-content--toolbar-menu-open' );
 		},
-		change_order_type: function( e ) {
-			var $e = $( e.currentTarget );
-			var selection = $e.data( 'order_type' );
-
-			// check if it's the first time
-			if ( 'image_order' == selection ) {
-				var orders = this.col.pluck( 'image_order' );
-				if ( orders.length && ! _.max( orders ) ) {
-					this.col.each( function( m ) {
-						m.set( 'image_order', m.get( 'order' ) );
-					} );
+		on_toolbar_more_click: function( e ) {
+			e.preventDefault();
+			e.stopPropagation();
+			var $menu = this.$( '.mkl-pc-toolbar-dropdown__menu' );
+			var $btn = this.$( '.mkl-pc-toolbar-more' );
+			if ( ! $menu.length || ! $btn.length ) {
+				return;
+			}
+			var isHidden = $menu.prop( 'hidden' ) === true || $menu.is( '[hidden]' );
+			if ( ! isHidden ) {
+				this.closeToolbarDropdown();
+			} else {
+				$menu.removeAttr( 'hidden' );
+				$btn.attr( 'aria-expanded', 'true' );
+				this.$el.find( '.structure-content' ).first().addClass( 'mkl-pc-structure-content--toolbar-menu-open' );
+				if ( this.floating_add ) {
+					this.floating_add.hideTransient();
 				}
 			}
-
-			if ( selection && this.orderAttr != selection ) {
-				$e.closest( '.button-group' ).find( 'button' ).removeClass( 'button-primary' );
-				$e.addClass( 'button-primary' );
-				this.orderAttr = selection;
-				this.col.orderBy = selection;
-
-				this.col.sort({silent: true});
-				this.add_all();
+		},
+		mark_collection_as_modified: function( model ) {
+			PC.app.is_modified[this.collectionName] = true;
+			if ( this.collectionName === 'layers' && model ) {
+				var id = model.get && model.get( '_id' ) || model.id;
+				if ( id ) PC.app.modified_layer_ids[ id ] = true;
 			}
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+		},
+		removed_model: function( m ) {
+			if ( this.collectionName === 'layers' && m ) {
+				var id = m.get && m.get( '_id' ) || m.id;
+				if ( id ) {
+					PC.app.deleted_layer_ids = PC.app.deleted_layer_ids || [];
+					PC.app.deleted_layer_ids.push( id );
+				}
+			}
+			this.admin.remove_relationships( this.collectionName, m );
+			this.mark_collection_as_modified( m );
 		},
 		add_one: function( layer ) {
 			// Skip groups when reordering images
 			//if ( 'image_order' == this.orderAttr && 'group' == layer.get( 'type' ) ) return;
 
 			var singleView = this.single_view();
-			var new_layer = new singleView({ model: layer, form_target: this.$form, collection: this.col, orderAttr: this.orderAttr });
+			var new_layer = new singleView( _.extend( {}, {
+				model: layer,
+				form_target: this.$form,
+				collection: this.col,
+				collectionName: this.collectionName,
+				orderAttr: this.orderAttr,
+				structure_state: this,
+			} ) );
 			this.items.push( new_layer );
 			this.$list.append( new_layer.render().el );
 		},
@@ -165,6 +228,16 @@ TODO:
 				}.bind( this )
 				
 			} );
+			this.apply_list_filter();
+		},
+		on_list_filter: function( e ) {
+			if ( typeof PC.applyAdminListFilter !== 'function' ) return;
+			PC.applyAdminListFilter( this.$list, $( e.target ).val(), {} );
+		},
+		apply_list_filter: function() {
+			if ( typeof PC.applyAdminListFilter !== 'function' || ! this.$list || ! this.$list.length ) return;
+			var val = this.$list_filter && this.$list_filter.length ? this.$list_filter.val() : '';
+			PC.applyAdminListFilter( this.$list, val, {} );
 		},
 		create: function( event ) {
 			
@@ -180,14 +253,35 @@ TODO:
 			this.col.create( this.new_attributes( this.$new_input.val().trim() ) ); 
 			
 
-			this.$new_input.val(''); 			
-			
+			this.$new_input.val( '' );
+			this.apply_list_filter();
 		},
-		layers_changed: function(e) {
-			if ( 1 === _.keys( e.changed ).length && e.changed.hasOwnProperty( 'active' ) ) return;
-			// if something has changed in the layers collection
-			PC.app.is_modified[this.collectionName] = true; 
-
+		import_global_layer: function( e ) {
+			e.preventDefault();
+			this.closeToolbarDropdown();
+			if ( ! PC.views.import_global_layer ) {
+				console.error( 'Import global layer view not found. Make sure import-global-layer.js is loaded.' );
+				return;
+			}
+			var modal = new PC.views.import_global_layer();
+			modal.open();
+		},
+		layers_changed: function( model ) {
+			var changed = model.changedAttributes && model.changedAttributes();
+			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
+				return;
+			}
+			if ( model.get( 'is_global' ) && model.get( 'global_id' ) && PC.app.get_global_layers &&
+					PC.app.get_global_layers().is_editing_layer( model.get( 'global_id' ) ) ) {
+				if ( PC.app.markGlobalSessionDirty ) {
+					PC.app.markGlobalSessionDirty();
+				}
+				return;
+			}
+			PC.app.is_modified[this.collectionName] = true;
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 		layers_loaded: function( e ) {
 			this.render();
@@ -197,7 +291,9 @@ TODO:
 				_id: PC.app.get_new_id( this.col ),
 				name: name,
 				order: this.col.nextOrder(),
-				image_order: this.col.nextOrder(),
+				image_order: this.col.next_image_order ? this.col.next_image_order() : this.col.nextOrder( 'image_order' ),
+				is_global: false,
+				global_id: null,
 				active: true,
 				// completed: false
 			};
@@ -210,11 +306,54 @@ TODO:
 			if ( this.col.where( { active: true } ).length ) {
 				this.edit_multiple_items_form = new PC.views.multiple_edit_form( { collection: this.col, view: this } );
 				this.$form.append( this.edit_multiple_items_form.$el );
+				if ( this.mobile_stack_router ) {
+					this.mobile_stack_router.set_structure_stack( PC.admin.STRUCTURE_STACK_DETAIL );
+				}
 			}
 		},
 		edit_simple: function() {
 			if ( this.edit_multiple_items_form ) this.edit_multiple_items_form = null;
 			PC.selection.reset();
+		},
+		on_mobile_back_to_structure_list: function( e ) {
+			e.preventDefault();
+			if ( PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				if ( PC.app.requestLeaveGlobalLayerFocus && ! PC.app.requestLeaveGlobalLayerFocus() ) {
+					return;
+				}
+			}
+			this.clear_structure_detail_panel();
+		},
+		clear_structure_detail_panel: function() {
+			if ( this.mobile_stack_router ) {
+				this.mobile_stack_router.set_structure_stack( PC.admin.STRUCTURE_STACK_LIST );
+			}
+			if ( this.edit_multiple_items_form ) {
+				this.edit_multiple_items_form.remove();
+				this.edit_multiple_items_form = null;
+			}
+			_.each( this.items, function( item ) {
+				if ( item.form ) {
+					item.form.remove();
+					item.form = null;
+				}
+			} );
+			if ( this.$form && this.$form.length ) {
+				this.$form.children().not( '.mkl-pc-content-placeholder' ).remove();
+			}
+			if ( this.col ) {
+				this.col.each( function( model ) {
+					model.set( 'active', false );
+				} );
+			}
+			this.edit_simple();
+			var $hit = this.$list.find( '.mkl-list-item.active .mkl-pc-admin-list-row__hit' ).first();
+			if ( ! $hit.length ) {
+				$hit = this.$list.find( '.mkl-pc-admin-list-row__hit' ).first();
+			}
+			if ( $hit.length ) {
+				$hit.trigger( 'focus' );
+			}
 		},
 		update_sorting: function() {
 			this.$( '.layers .mkl-list-item' ).each( function( i, listItem ) {
@@ -231,6 +370,8 @@ TODO:
 		on_paste( json ) {
 			
 			if ( !json || json.type !== this.collectionName || !json.models ) return;
+			// A global layer's own screen holds exactly one layer: there is no list to paste into.
+			if ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() ) return;
 
 			const id_map = []; // { original_id, new_id }
 			const new_layers = [];
@@ -266,25 +407,101 @@ TODO:
 
 	} );
 
-	
+	/**
+	 * LAYER DETAILS STATE
+	 *
+	 * A global layer edited on its own screen is a single layer, not a structure: there is no list
+	 * to browse, filter, reorder, add to or paste into. This state drops the two-column structure
+	 * layout and shows the layer form alone.
+	 *
+	 * The list row view is still created — off-screen — because it owns the collection wiring the
+	 * form relies on: dirty marking, label sync, active state and destroy.
+	 */
+	PC.views.layer_details = PC.views.layers.extend( {
+		className: 'state layer-details-state',
+		template: wp.template( 'mkl-pc-layer-details' ),
+		events: {
+			'remove': 'cleanup_on_remove',
+		},
+		render: function() {
+			this.col.orderBy = 'order';
+			this.col.sort();
+			this.$el.append( this.template( {} ) );
+			this.$list = this.$( '.mkl-pc-layer-details__rows' );
+			this.$form = this.$( '.pc-sidebar' );
+			this.add_all();
+			return this;
+		},
+		add_all: function() {
+			this.$list.empty();
+			_.each( this.items, this.remove_item );
+			this.items = [];
+			this.col.each( this.add_one, this );
+			this.open_edited_layer();
+			return this;
+		},
+		/** Open the form for the layer this screen edits. */
+		open_edited_layer: function() {
+			var ctx = PC.app.getStandaloneGlobalLayerContext && PC.app.getStandaloneGlobalLayerContext();
+			var model = ctx && ctx.layerModel ? ctx.layerModel : this.col.first();
+			if ( ! model ) return;
+			var row = _.find( this.items, function( item ) {
+				return item.model === model;
+			} );
+			// edit() without an event only builds the form when the row has none, so this is idempotent.
+			if ( row ) row.edit();
+		},
+		// No list means nothing to filter and nothing to paste into.
+		apply_list_filter: function() {},
+		on_list_filter: function() {},
+		on_paste: function() {},
+	} );
 
 	// SINGLE LAYER VIEW (List item)
 	PC.views.layer = Backbone.View.extend({
 		tagName: 'div',
 		className: 'layer mkl-list-item',
 		template: wp.template('mkl-pc-structure-layer'),
+		object_type: 'layer',
 		edit_view: function(){ return PC.views.layer_form; },
 		// formTemplate: wp.template('mkl-pc-structure-layer-form'),
 
 		initialize: function( options ) {
-			this.options = options || {}; 
-			this.form_target = options.form_target; 
-			this.listenTo( this.model, 'change:active', this.activate ); 
+			this.options = options || {};
+			this.form_target = options.form_target;
+			this.structure_state = options.structure_state || null;
+			this.collectionName = options.collectionName || this.collectionName || 'layers';
+			this.listenTo( this.model, 'change:active', this.activate );
 			this.listenTo( this.model, 'change:name change:admin_label change:image', this.update_label );
-			this.listenTo( this.model, 'destroy', this.remove ); 
+			this.listenTo( this.model, 'change', this.mark_layer_modified );
+			this.listenTo( this.model, 'change:is_global', this.on_change_global );
+			this.listenTo( this.model, 'destroy', this.remove );
+		},
+		mark_layer_modified: function() {
+			var changed = this.model.changedAttributes && this.model.changedAttributes();
+			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
+				return;
+			}
+			// Global layer attribute edits are persisted via "Save changes to global layer", not the product save.
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) && PC.app.get_global_layers &&
+					PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) ) ) {
+				if ( PC.app.markGlobalSessionDirty ) {
+					PC.app.markGlobalSessionDirty();
+				}
+				return;
+			}
+			var collection_name = this.collectionName || 'layers';
+			if ( collection_name === 'layers' ) {
+				var id = this.model.get( '_id' );
+				if ( id ) PC.app.modified_layer_ids[ id ] = true;
+			}
+			PC.app.is_modified[ collection_name ] = true;
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		},
 		events: {
-			'click > button' : 'edit',
+			'click .mkl-pc-admin-list-row__hit' : 'edit',
 			'drop': 'drop',
 			'update-sort': 'update_sort',
 			'update_order': 'update_order',
@@ -293,17 +510,49 @@ TODO:
 			this.$el.data( 'view', this );
 			this.$el.html( this.template( _.extend( {}, this.model.attributes, { orderAttr: this.options.orderAttr } ) ) );
 			if ( ! this.label ) {
-				this.label = new PC.views.layerLabel( { model: this.model } );
-				this.$( 'h3' ).append( this.label.$el );
+				this.label = new PC.views.layerLabel( { model: this.model, object_type: this.object_type } );
 			}
+			// Re-append after every render — this.$el.html() detaches the label view from the DOM.
+			this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
+			this.label.render();
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
+		},
+		sync_structure_mobile_stack: function() {
+			if ( this.structure_state && this.structure_state.mobile_stack_router && this.form && this.form.$el && this.form.$el.hasClass( 'layer-form' ) ) {
+				this.structure_state.mobile_stack_router.set_structure_stack( PC.admin.STRUCTURE_STACK_DETAIL );
+			}
 		},
 		update_label: function() {
 			this.label.render();
 		},
+		on_change_global: function() {
+			this.$el.toggleClass( 'is-global', this.model.get( 'is_global' ) );
+			this.render();
+		},
 		edit: function( event ) {
 			if ( PC.selection.adding_group ) return;
+			// Only guard layer-structure rows, not content choice rows (choice models carry layerId).
+			var isChoiceOrNonStructureRow = this.model && this.model.get( 'layerId' ) != null;
+			if ( event && ! isChoiceOrNonStructureRow && PC.app && PC.app.isGlobalLayerFocusActive && PC.app.isGlobalLayerFocusActive() ) {
+				var ctx = PC.app.getGlobalLayerFocusContext();
+				if ( ctx && ctx.layerModel && this.model !== ctx.layerModel ) {
+					if ( ! PC.app.requestLeaveGlobalLayerFocus() ) {
+						if ( event.preventDefault ) {
+							event.preventDefault();
+						}
+						return;
+					}
+				}
+			}
+			// Nested group rows live inside a parent .mkl-list-item; delegated hit clicks would match
+			// every ancestor view unless we only handle the row that actually owns the hit target.
+			if ( event && event.currentTarget ) {
+				var row = $( event.currentTarget ).closest( '.mkl-list-item' )[ 0 ];
+				if ( row !== this.el ) {
+					return;
+				}
+			}
 			if ( event && ( event.shiftKey || event.metaKey || event.ctrlKey ) ) {
 
 				// Multiple select
@@ -334,7 +583,7 @@ TODO:
 							item.set( 'active', item.collection.last_clicked.model.get( 'active' ) );
 						}.bind( this ) );
 					}
-					this.form_target.empty();
+					this.form_target.children().not( '.mkl-pc-content-placeholder' ).remove();
 					this.model.collection.last_clicked = this;
 					this.model.collection.trigger( 'multiple-selection' );
 					return;
@@ -354,7 +603,8 @@ TODO:
 					this.model.set( 'active' , true );
 					this.activate();
 					this.form = new editView( this.options );
-					this.form_target.html( this.form.render().el );
+					this.form_target.children().not( '.mkl-pc-content-placeholder' ).remove();
+					this.form_target.append( this.form.render().el );
 				}
 			} else {
 				if( this.model.get( 'active' ) == false || this.model.get('active') == 'false' || this.model.collection.where( { active: true } ).length > 1 ) {
@@ -365,10 +615,12 @@ TODO:
 
 					if( this.form ) this.form.remove();
 					this.form = new editView( this.options );
-					this.form_target.html( this.form.render().el );
+					this.form_target.children().not( '.mkl-pc-content-placeholder' ).remove();
+					this.form_target.append( this.form.render().el );
 				}
 			}
 			this.model.collection.last_clicked = this;
+			this.sync_structure_mobile_stack();
 		},
 		activate: function(){
 			if (this.model.get('active') === true) {
@@ -393,23 +645,36 @@ TODO:
 		update_sort: function( e ) {
 			e.stopPropagation();
 			this.model.set( this.model.collection.orderBy, $( e.currentTarget ).index() );
+			this.mark_layers_modified_for_order();
 		},
 		update_order: function( event, index, parent ) {
 			event.stopPropagation();
 			if ( parent && parent == this.model.id ) return;
 			this.model.set( { order: index, parent: parent } );
+			this.mark_layers_modified_for_order();
+		},
+		mark_layers_modified_for_order: function() {
+			PC.app.is_modified.layers = true;
+			if ( this.model.collection ) {
+				this.model.collection.each( function( m ) {
+					var id = m.get( '_id' );
+					if ( id ) PC.app.modified_layer_ids[ id ] = true;
+				} );
+			}
 		},
 		
 	});
 
 	PC.views.layerLabel = Backbone.View.extend( {
-		tagName: 'span',
+		tagName: 'div',
+		className: 'mkl-pc-admin-list-row__label',
 		template: wp.template('mkl-pc-content-layer-list-item--label'),
-		initialize: function() {
+		initialize: function( options ) {
+			this.options = options || {};
 			this.render();
 		},
 		render: function() {
-			this.$el.html( this.template( this.model.attributes ) );
+			this.$el.html( this.template( _.extend( {}, this.model.attributes, { _pc_list_kind: this.options.object_type } ) ) );
 		}
 	} );
 
@@ -435,8 +700,14 @@ TODO:
 			if ( this.pre_init ) this.pre_init( options );
 			this.toggled_status.init();
 			this.collection = this.model.collection;
+			// Initialize edit state from global collection if layer is global
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				this.global_editing = PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) );
+			} else {
+				this.global_editing = false;
+			}
 			this.listenTo( this.model, 'destroy', this.remove ); 
-			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode' ), this.render );
+			this.listenTo( this.model, wp.hooks.applyFilters( 'PC.admin.layer_form.render.on.change.events', 'change:not_a_choice change:type change:required change:display_mode change:object_3d_id change:target_object_id' ), this.render );
 		},
 		events: {
 			// 'click' : 'edit',
@@ -445,6 +716,11 @@ TODO:
 			'click .cancel-delete': 'delete_layer',
 			'click .duplicate-item': 'duplicate_layer',
 			'click .copy-item': 'copy_layer',
+			'click .make-global': 'on_make_global',
+			'click .unlink-global': 'on_unlink_global',
+			'click .edit-global': 'edit_global',
+			// 'click .save-global': 'save_global',
+			'click .cancel-global': 'cancel_global',
 			// instant update of the inputs
 			'keyup .setting input': 'form_change',
 			'keyup .setting textarea': 'form_change',
@@ -460,6 +736,10 @@ TODO:
 			'click button.components-panel__body-toggle': 'toggle_section',
 		},
 		render: function() {
+			// Sync edit state with global collection for global layers
+			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
+				this.global_editing = PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) );
+			}
 			var data = this.model.attributes;
 			
 			if ( 
@@ -472,7 +752,12 @@ TODO:
 				data = _.extend( {}, data, { maybe_step: true } );
 			}
 
-			data = _.extend( {}, data, { toggled_status: this.toggled_status.statuses } );
+			data = _.extend( {}, data, {
+				toggled_status: this.toggled_status.statuses,
+				is_editing_global_layer: this.global_editing,
+				// On the layer's own screen there is no original to open or disconnect from: this is it.
+				standalone_global: !! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() ),
+			} );
 			this.$el.html( this.template( data ) );
 			this.delete_btns = {
 				prompt: this.$('.delete-item'),
@@ -482,6 +767,7 @@ TODO:
 			// Hide empty groups
 			this.$( '.section-fields:empty' ).closest( '.setting-section' ).hide();
 			this.populate_angles_list();
+			this.populate_object_3d_id();
 			PC.currentEditedItem = this.model;
 			if ( this.current_focus ) {
 				var focus_to = this.$( '[data-setting="'+ this.current_focus + '"]' );
@@ -491,8 +777,186 @@ TODO:
 					if ( 1 === focus_to.length ) focus_to.trigger( 'focus' );
 				}
 			}
+			// Lock/unlock UI for global layers
+			this.update_global_lock_state();
 			wp.hooks.doAction( 'PC.admin.layer_form.render', this );
 			return this;
+		},
+		update_global_lock_state: function() {
+			// Standalone editing never locks: the layer is the document, not a borrowed copy.
+			var is_global = !! this.model.get( 'is_global' ) &&
+				! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
+			var locked = is_global && ! this.global_editing;
+			this.$el.toggleClass( 'is-global', is_global );
+			this.$el.toggleClass( 'is-global-locked', locked );
+			// Disable inputs when locked
+			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"]' );
+			inputs.prop( 'disabled', locked );
+		},
+		on_make_global: function( e ) {
+			e.preventDefault();
+			var self = this;
+			
+			// Allow external handlers to hook in (for custom implementations)
+			var handled = false;
+			try {
+				wp.hooks.doAction( 'PC.admin.layer.makeGlobal', this.model, this, function() {
+					handled = true;
+				} );
+			} catch(e) {}
+			
+			if ( handled ) {
+				// External handler took care of it
+				return;
+			}
+			
+			// Get layer data + choices (same shape as save_global)
+			var payload = PC.app.buildGlobalLayerSavePayloadFromModel( this.model );
+			var layer_data = payload.layer_data;
+			var content_data = payload.choices_data;
+
+			// Save to server immediately (creating new global layer with global_id = 0)
+			PC.app.setDataMigrationOverlay( 'make_global' );
+			var saveXhr = PC.app.get_global_layers().save_global_layer( 0, layer_data, content_data, {
+				success: function( model, response ) {
+					// wp.ajax.post automatically unwraps the response, so response is the data object
+					if ( response && response.global_id ) {
+						var global_id = response.global_id;
+						
+						// Set global_id on the layer model
+						self.model.set( {
+							is_global: true,
+							global_id: global_id
+						} );
+						
+						// Mark layers as modified (so the global_id gets saved with the product)
+						PC.app.is_modified['layers'] = true;
+
+						// The choices belong to the global layer from now on, so the product's
+						// content row becomes a reference to it. Without this the product keeps a
+						// private copy and silently stops tracking the global layer.
+						PC.app.setContentRowGlobalId( self.model, global_id );
+						
+						// Add to global layers collection
+						var global_model = PC.app.get_global_layers().get_or_create( global_id );
+						global_model.set( {
+							layer: layer_data,
+							content: content_data
+						} );
+						
+						// Enter edit mode for the global layer
+						PC.app.get_global_layers().set_editing_layer( global_id, true );
+						self.global_editing = true;
+						
+						// Update UI
+						self.render();
+					} else {
+						alert( 'Error creating global layer. Please try again.' );
+						console.error( 'Save global layer error:', response );
+					}
+				},
+				error: function( model, error ) {
+					alert( 'Error creating global layer: ' + PC.app.formatLayerAjaxErrorMessage( error ) );
+					console.error( 'Save global layer error:', error );
+				}
+			} );
+			PC.app.afterJqXHR( saveXhr, function() {
+				PC.app.setDataMigrationOverlay();
+			} );
+		},
+		on_unlink_global: function( e ) {
+			e.preventDefault();
+			// External handler can clone global data back if needed
+			wp.hooks.doAction( 'PC.admin.layer.unlinkGlobal', this.model, this );
+			// Clear edit state in global collection
+			var global_id = this.model.get( 'global_id' );
+			if ( global_id ) {
+				PC.app.get_global_layers().set_editing_layer( global_id, false );
+			}
+			// Local toggle off by default; persistence handled on save
+			this.model.set( { is_global: false, global_id: null } );
+			PC.app.is_modified['layers'] = true;
+			// The choices were being served from the global layer; the product needs its own copy
+			// now, or the layer keeps reading from a layer it is no longer connected to.
+			PC.app.setContentRowGlobalId( this.model, null );
+			// Re-render header to reflect buttons/badge change
+			this.render();
+		},
+		edit_global: function( e ) {
+			if ( e ) e.preventDefault();
+			this.global_editing = true;
+			// Store edit state in global collection
+			if ( this.model.get( 'global_id' ) ) {
+				if ( PC.app.clearGlobalSessionDirty ) {
+					PC.app.clearGlobalSessionDirty();
+				}
+				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), true );
+			}
+			this.update_global_lock_state();
+			this.render();
+		},
+		save_global: function( e ) {
+			if ( e ) e.preventDefault();
+			var self = this;
+			var global_id = this.model.get( 'global_id' );
+			if ( ! global_id ) {
+				return null;
+			}
+
+			try {
+				wp.hooks.doAction( 'PC.admin.layer.saveGlobal', this.model, this );
+			} catch ( err ) {}
+
+			if ( typeof wp !== 'undefined' && wp.hooks && typeof wp.hooks.applyFilters === 'function' ) {
+				if ( ! wp.hooks.applyFilters( 'mkl_pc_layer_save_global_use_default', true, this.model, this ) ) {
+					return null;
+				}
+			}
+
+			var payload = PC.app.buildGlobalLayerSavePayloadFromModel( this.model );
+
+			PC.app.setDataMigrationOverlay( 'save_global_layer' );
+			this.$el.addClass( 'is-saving' );
+
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, payload.layer_data, payload.choices_data, {
+				success: function( model, response ) {
+					self.global_editing = false;
+					PC.app.get_global_layers().set_editing_layer( global_id, false );
+					if ( response && response.layer ) {
+						var global_model = PC.app.get_global_layers().get_or_create( global_id );
+						global_model.set( { layer: response.layer, content: response.content } );
+					}
+					if ( PC.app.clearDirtyStateForLayer ) {
+						PC.app.clearDirtyStateForLayer( self.model );
+					}
+					if ( PC.app.clearGlobalSessionDirty ) {
+						PC.app.clearGlobalSessionDirty();
+					}
+					self.update_global_lock_state();
+					self.render();
+					wp.hooks.doAction( 'PC.admin.layer.savedGlobal', self.model, self, response );
+				},
+				error: function( model, error ) {
+					window.alert( 'Error saving global layer: ' + PC.app.formatLayerAjaxErrorMessage( error ) );
+				}
+			} );
+
+			var finishUi = function() {
+				PC.app.setDataMigrationOverlay();
+				self.$el.removeClass( 'is-saving' );
+			};
+			PC.app.afterJqXHR( xhr, finishUi );
+			return xhr;
+		},
+		cancel_global: function( e ) {
+			if ( e ) e.preventDefault();
+			this.global_editing = false;
+			// Clear edit state in global collection
+			if ( this.model.get( 'global_id' ) ) {
+				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), false );
+			}
+			this.update_global_lock_state();
+			this.render();
 		},
 		on_change_not_a_choice: function( event ) {
 			var input = $(event.currentTarget);
@@ -601,6 +1065,17 @@ TODO:
 				angles.each( function( model ) {
 					this.$( 'select[data-setting="angle_switch"]' ).append('<option '+ ( selected == model.id ? 'selected ' : '' ) + 'value="' + model.id + '">Switch to ' + model.get( 'name' ) + '</option>' );
 				}, this );
+			}
+		},
+		populate_object_3d_id: function() {
+			var self = this;
+			var populate = function() {
+				PC.threeD.populateObjects3dSettingSelect( self, 'object_3d_id', { types: [ 'gltf' ] } );
+			};
+			if ( PC.threeD && typeof PC.threeD.populateObjects3dSettingSelect === 'function' ) {
+				populate();
+			} else if ( PC.threeD && typeof PC.threeD.ensureReady === 'function' ) {
+				PC.threeD.ensureReady().then( populate );
 			}
 		},
 		trigger_custom_action: function( event ) {
@@ -783,59 +1258,82 @@ TODO:
 		initialize: function( options ) {
 			this.list = options.list;
 			this.parent = options.parent;
+			this.listHoverActive = false;
+
 			this.$el.on( 'mouseenter', function() {
 				this.active = true;
 			}.bind( this ) );
 			this.$el.on( 'mouseleave', function() {
 				this.active = false;
 			}.bind( this ) );
+
+			this._onListMouseMove = _.debounce( function( e ) {
+				if ( ! this.listHoverActive ) {
+					return;
+				}
+				var $item = $( e.target ).closest( '.mkl-list-item' );
+				if ( ! $item.length ) {
+					return;
+				}
+				var item_dimensions = $item[0].getBoundingClientRect();
+				var list_position = this.list[0].getBoundingClientRect();
+				var pos = item_dimensions.y - list_position.y + this.list.position().top;
+				this.list_item = $item;
+				if ( e.clientY < item_dimensions.y + 20 ) {
+					this.where = 'before';
+					this.$el.css( {
+						'transform': 'translateY(' + pos + 'px)',
+						'width': item_dimensions.width,
+						'left': item_dimensions.x - list_position.x
+					} );
+					this.$el.addClass( 'showing' );
+				} else if ( e.clientY > ( item_dimensions.y + item_dimensions.height - 20 ) ) {
+					this.where = 'after';
+					this.$el.css( {
+						'transform': 'translateY(' + ( pos + item_dimensions.height ) + 'px)',
+						'width': item_dimensions.width,
+						'left': item_dimensions.x - list_position.x
+					} );
+					this.$el.addClass( 'showing' );
+					this.$el.css( 'width', item_dimensions.width );
+				} else {
+					if ( ! this.active ) {
+						this.$el.removeClass( 'showing' );
+					}
+				}
+			}.bind( this ), 100 );
+
 			this.render();
 		},
 		render: function() {
-			this.list.on( 'mouseenter', function( e ) {
-				this.list.on( 'mousemove', this.calculate_position.bind( this ) );
+			this.list.off( '.mklPcFloatingAdd' );
+
+			this.list.on( 'mouseenter.mklPcFloatingAdd', function() {
+				this.listHoverActive = true;
+				this.list.on( 'mousemove.mklPcFloatingAdd', this._onListMouseMove );
 			}.bind( this ) );
 
-			this.list.on( 'mouseleave', function( e ) {
-				this.list.off( 'mousemove', this.calculate_position );
+			this.list.on( 'mouseleave.mklPcFloatingAdd', function() {
+				this.listHoverActive = false;
+				this.list.off( 'mousemove.mklPcFloatingAdd' );
+				if ( this._onListMouseMove && _.isFunction( this._onListMouseMove.cancel ) ) {
+					this._onListMouseMove.cancel();
+				}
+				var self = this;
 				setTimeout( function() {
-					if ( ! this.active ) this.$el.removeClass( 'showing' );
-				}.bind( this ), 60 );
+					if ( ! self.active ) {
+						self.$el.removeClass( 'showing' );
+					}
+				}, 60 );
 			}.bind( this ) );
 
-			this.list.on( 'scroll', function( e ) {
+			this.list.on( 'scroll.mklPcFloatingAdd', function() {
 				this.$el.removeClass( 'showing' );
 			}.bind( this ) );
 		},
-		calculate_position: _.debounce( function( e ) {
-			var $el = $( e.target ).closest( '.mkl-list-item' );
-			if ( ! $el.length ) return;
-			var item_dimensions = $el[0].getBoundingClientRect();
-			var list_position = this.list[0].getBoundingClientRect();
-			var pos = item_dimensions.y - list_position.y + this.list.position().top;
-			this.list_item = $el;
-			if ( e.clientY < item_dimensions.y + 20 ) {
-				this.$el.css( {
-					'transform': 'translateY(' + pos + 'px)',
-					'width': item_dimensions.width,
-					'left': item_dimensions.x - list_position.x
-				} );
-				this.where = 'before';
-				this.$el.addClass( 'showing' );
-			} else if ( e.clientY > ( item_dimensions.y + item_dimensions.height - 20 ) ) {
-				this.where = 'after';
-				this.$el.css( {
-					'transform': 'translateY(' + ( pos + item_dimensions.height ) + 'px)',
-					'width': item_dimensions.width,
-					'left': item_dimensions.x - list_position.x
-				} );
-
-				this.$el.addClass( 'showing' );
-				this.$el.css( 'width', item_dimensions.width );
-			} else {
-				if ( ! this.active ) this.$el.removeClass( 'showing' );
-			}
-		}, 100 ),
+		hideTransient: function() {
+			this.$el.removeClass( 'showing' );
+		},
 		events: {
 			'click .mkl-floating-add-item': 'create',
 		},
@@ -912,6 +1410,9 @@ TODO:
 			} );
 
 			PC.app.is_modified[ 'content' ] = true;
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
 		}
 
 		return new_layer;

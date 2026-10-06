@@ -23,6 +23,16 @@ class Frontend_Woocommerce {
 	public $product_variable = NULL;
 	public $cart = NULL;
 	public $order = NULL;
+
+	/** @var int Product whose eager 3D models should be preloaded, set in load_scripts(). */
+	public $preload_product_id = 0;
+
+	/** @var array<int, true> 3D products an inline [mkl_configurator] has rendered so far. */
+	private $inline_3d_products = array();
+
+	/** @var string URL of the product's cached async-mode JSON config file to preload, set in load_scripts(). */
+	public $async_config_preload_url = '';
+
 	public function __construct() {
 		// Plugin::instance()->db;	
 		$this->_hooks();
@@ -116,7 +126,18 @@ class Frontend_Woocommerce {
 			$content[] = [ 'image' => $image ];
 		}
 		$configuration = new Configuration( NULL, array( 'product_id' => $product_id, 'content' => json_encode( $content ) ) );
-		$configuration->serve_image();
+
+		// The size travels in the query string. Passing it on names the cached file for the
+		// size it holds, so the next render can link to it directly.
+		$size = null;
+		if ( isset( $_REQUEST['width'] ) || isset( $_REQUEST['height'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional dimensions of a public image request.
+			$size = array(
+				'width'  => isset( $_REQUEST['width'] ) ? absint( wp_unslash( $_REQUEST['width'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional dimensions of a public image request.
+				'height' => isset( $_REQUEST['height'] ) ? absint( wp_unslash( $_REQUEST['height'] ) ) : 0, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Optional dimensions of a public image request.
+			);
+		}
+
+		$configuration->serve_image( $size );
 	}
 
 	/**
@@ -145,9 +166,11 @@ class Frontend_Woocommerce {
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
 
+		$this->enqueue_3d_viewer( $product );
+
 		$date_modified = $product->get_date_modified();
-		
-		if ( !mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+
+		if ( ! mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = mkl_pc( 'settings' )->get_label( 'mkl_pc__button_label', __( 'Configure', 'product-configurator-for-woocommerce' ) );
 
@@ -184,7 +207,7 @@ class Frontend_Woocommerce {
 	 * @return array
 	 */
 	public function get_configurator_element_attributes( $product ) {
-		$data_attributes = array( 
+		$data_attributes = array(
 			'product_id' => $product->get_id(),
 			'price' => $this->product->get_product_price( $product->get_id() ),
 			'regular_price' => $this->product->get_product_price( $product->get_id(), 'regular_price' ),
@@ -193,6 +216,23 @@ class Frontend_Woocommerce {
 				'convert_base_price' => apply_filters( 'configurator_convert_base_price', false, $product ),
 			]
 		);
+
+		// Cached JSON config URL for the async data-loading path (see PC.fe.open in
+		// pc-fe-main.js). Carried on the trigger element itself - shared with every
+		// [mkl_configurator_button]/[mkl_configurator] shortcode on the page via this
+		// same method - rather than a page-wide JS global, so it can't be dropped by
+		// a JS optimization plugin (defer/async/combine) rewriting <script> tags.
+		if ( mkl_pc( 'settings' )->get( 'async_data' ) ) {
+			// get_config_file_url(), not get_config_file(): building the payload here would
+			// happen before a byte of HTML is sent, so a shopper landing on a product whose
+			// cache was just purged would wait for the whole rebuild before the page renders.
+			// The URL is emitted whether or not the file exists yet - check_and_regenerate_js_file()
+			// rebuilds it when the preload in <head> asks for it.
+			$config_data_url = mkl_pc( 'cache' )->get_config_file_url( $product->get_id(), 'json' );
+			if ( $config_data_url ) {
+				$data_attributes['config_data_url'] = $config_data_url;
+			}
+		}
 		/**
 		 * Filters the list of attributes added to the configurator trigger element.
 		 *
@@ -233,7 +273,7 @@ class Frontend_Woocommerce {
 				if ( is_string( $product ) && $post ) {
 					$product = wc_get_product( $post );
 				}				
-				if ( ! is_a( $product, 'WC_Product' ) ) return __( 'The global product variable is not a WC_Product instance', 'product-configurator-for-woocommerce' ) . ' - ' . print_r( $product, true );
+				if ( ! is_a( $product, 'WC_Product' ) ) return __( 'The global product variable is not a WC_Product instance', 'product-configurator-for-woocommerce' );
 			}
 			$product_id = $product->get_id();
 		} else {
@@ -250,9 +290,14 @@ class Frontend_Woocommerce {
 
 		if ( ! $product || ! mkl_pc_is_configurable( $product_id ) ) return __( 'The provided ID is not a valid product.', 'product-configurator-for-woocommerce' );
 
+		$this->enqueue_3d_viewer( $product );
+		// Inline: it opens by itself, so its models are worth preloading from <head>
+		// when this runs first, as it does in a block theme.
+		$this->inline_3d_products[ $product->get_parent_id() ? $product->get_parent_id() : $product->get_id() ] = true;
+
 		$date_modified = $product->get_date_modified();
-		
-		if ( !mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
+
+		if ( ! mkl_pc( 'settings')->get( 'async_data' ) ) wp_enqueue_script( 'mkl_pc/js/fe_data_'.$product_id, Plugin::instance()->cache->get_config_file($product_id), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 
 		if ( ! trim( $content ) ) $content = __( 'Configure', 'product-configurator-for-woocommerce' );
 
@@ -348,6 +393,121 @@ class Frontend_Woocommerce {
 		// If true, save the value
 		if ( $maybe_load_it ) $load_it = $maybe_load_it;
 		return $maybe_load_it;
+	}
+
+	/**
+	 * The eager glTF models of a 3D product: the ones worth fetching before the viewer asks.
+	 *
+	 * Only eager models are listed: lazy ones are deliberately deferred until a
+	 * choice needs them, and preloading those would undo the setting.
+	 *
+	 * @param int $product_id Parent product ID.
+	 * @return string[]
+	 */
+	public function get_3d_preload_urls( $product_id ) {
+		$objects = mkl_pc( 'db' )->get( 'objects3d', $product_id );
+		if ( ! is_array( $objects ) ) {
+			return array();
+		}
+
+		$urls = array();
+		foreach ( $objects as $object ) {
+			if ( ! is_array( $object ) || ! isset( $object['object_type'] ) || 'gltf' !== $object['object_type'] ) {
+				continue;
+			}
+			// Absent loading_strategy means eager, matching the viewer's default.
+			$strategy = isset( $object['loading_strategy'] ) && '' !== $object['loading_strategy']
+				? $object['loading_strategy']
+				: 'eager';
+			if ( 'eager' !== $strategy ) {
+				continue;
+			}
+			$url = '';
+			if ( isset( $object['gltf']['url'] ) ) {
+				$url = $object['gltf']['url'];
+			} elseif ( isset( $object['url'] ) ) {
+				$url = $object['url'];
+			}
+			if ( $url ) {
+				$urls[ $url ] = true;
+			}
+		}
+
+		return array_values( (array) apply_filters( 'mkl_pc_3d_preload_urls', array_keys( $urls ), $product_id ) );
+	}
+
+	/**
+	 * Start the eager 3D model downloads from <head>, when the configurator opens by itself.
+	 *
+	 * The poster and loading overlay appear immediately, but the glTF request
+	 * cannot start until the viewer chunk has parsed and its pipeline reaches
+	 * phase 3. Preloading overlaps the model download — the largest asset on
+	 * the page, often several MB — with that JS, which is otherwise dead time.
+	 *
+	 * Only when the viewer is going to open without being asked: an inline
+	 * configurator already rendered (a block theme renders its template before
+	 * wp_head), or a request to open it. A configurator behind a button is warmed
+	 * up on the shopper's intent instead (see fe-3d-viewer-entry.js), so a visitor
+	 * who never opens it does not download the model.
+	 */
+	public function print_3d_preload_links() {
+		$product_id = (int) $this->preload_product_id;
+		if ( ! $product_id ) {
+			return;
+		}
+
+		$opens_by_itself = isset( $this->inline_3d_products[ $product_id ] ) || isset( $_REQUEST['open_configurator'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only display flag.
+		/**
+		 * Whether the eager 3D models are preloaded from <head>, before any intent to configure.
+		 *
+		 * @param bool $preload    True when the configurator opens without being asked.
+		 * @param int  $product_id Parent product ID.
+		 */
+		if ( ! apply_filters( 'mkl_pc_3d_preload_in_head', $opens_by_itself, $product_id ) ) {
+			return;
+		}
+
+		foreach ( $this->get_3d_preload_urls( $product_id ) as $url ) {
+			$extension = strtolower( pathinfo( wp_parse_url( $url, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+			$mime      = 'gltf' === $extension ? 'model/gltf+json' : 'model/gltf-binary';
+			// as="fetch" with crossorigin="anonymous" matches the request three's
+			// FileLoader makes (fetch, credentials: 'same-origin'). A mismatch
+			// here would not fail — it would quietly download the file twice.
+			// fe-3d-viewer-entry.js adds the same link on intent.
+			printf(
+				'<link rel="preload" href="%s" as="fetch" type="%s" crossorigin="anonymous">' . "\n",
+				esc_url( $url ),
+				esc_attr( $mime )
+			);
+		}
+	}
+
+	/**
+	 * Preload the product's cached async-mode JSON config file from <head> (see
+	 * load_scripts(), which resolves and stores the URL, and only when it's the real
+	 * static file - not the uncached admin-ajax.php fallback).
+	 *
+	 * Otherwise the download only starts when the shopper clicks "Configure"
+	 * (PC.fe.open() in pc-fe-main.js reads the same URL off the button's
+	 * data-config_data_url attribute); preloading lets it overlap with the rest of
+	 * page load instead.
+	 *
+	 * fetchpriority="low": this file can be multi-MB for a large configurator, and
+	 * most visitors haven't clicked "Configure" yet - it shouldn't compete with
+	 * images/CSS/fonts for bandwidth on the visible page. It still gets a head start
+	 * over waiting for the click.
+	 */
+	public function print_async_config_preload_link() {
+		if ( ! $this->async_config_preload_url ) {
+			return;
+		}
+		// as="fetch" with crossorigin="anonymous" matches the plain `fetch(url)` call
+		// in pc-fe-main.js (default credentials: 'same-origin'). A mismatch here would
+		// not fail — it would quietly download the file twice.
+		printf(
+			'<link rel="preload" href="%s" as="fetch" type="application/json" crossorigin="anonymous" fetchpriority="low">' . "\n",
+			esc_url( $this->async_config_preload_url )
+		);
 	}
 
 	public function load_scripts() {
@@ -454,6 +614,18 @@ class Frontend_Woocommerce {
 			$configurator_deps[] = 'wc-add-to-cart';
 		}
 
+		$is_3d_configurator = $prod && '3d' === mkl_pc_get_configurator_type( $prod->get_parent_id() ? $prod->get_parent_id() : $prod->get_id() );
+		if ( $is_3d_configurator ) {
+			$this->preload_product_id = $prod->get_parent_id() ? $prod->get_parent_id() : $prod->get_id();
+			// Priority 2, not 1: wp_enqueue_scripts is itself fired from wp_head
+			// at priority 1, so anything registered here at 1 has already been
+			// passed over. 2 still lands ahead of styles (8) and scripts (9).
+			add_action( 'wp_head', array( $this, 'print_3d_preload_links' ), 2 );
+		}
+		if ( $is_3d_configurator && $this->register_3d_viewer_script() ) {
+			$configurator_deps[] = 'mkl_pc/fe_3d_viewer';
+		}
+
 		wp_enqueue_script( 'mkl_pc/js/views/configurator', MKL_PC_ASSETS_URL.'js/views/configurator' . $file_suffix . '.js', $configurator_deps, filemtime( MKL_PC_ASSETS_PATH . 'js/views/configurator' . $file_suffix . '.js' ) , true );
 		wp_enqueue_script( 'mkl_pc/js/product_configurator', MKL_PC_ASSETS_URL.'js/product_configurator' . $file_suffix . '.js', $deps, filemtime( MKL_PC_ASSETS_PATH . 'js/product_configurator' . $file_suffix . '.js' ) , true );
 
@@ -469,6 +641,7 @@ class Frontend_Woocommerce {
 			'image_endpoint' => get_rest_url() . 'mkl_pc/v1/merge/',
 			'frontend_action_token_url' => esc_url_raw( rest_url( 'mkl_pc/v1/frontend-action-token' ) ),
 			'rest_nonce' => is_user_logged_in() ? wp_create_nonce( 'wp_rest' ) : '',
+			'assets_url' => MKL_PC_ASSETS_URL,
 			'update_nonce' => ( $prod && 'publish' !== $prod->get_status() && current_user_can( 'edit_post', $prod->get_id() ) ) ? wp_create_nonce( 'update-pc-post_' . $prod->get_id() ) : '',
 			'lang' => array(
 				'money_precision' => wc_get_price_decimals(),
@@ -502,6 +675,18 @@ class Frontend_Woocommerce {
 				'inline_region_aria_label' => __( 'Product configurator', 'product-configurator-for-woocommerce' ),
 				/* translators: %1$s: step number, %2$s: total steps, %3$s: step name */
 				'steps_progress_current_step' => _x( 'Current step %1$s of %2$s: %3$s', 'Screen reader text, current step label template. %1$s: step number, %2$s: total steps, %3$s: step name', 'product-configurator-for-woocommerce' ),
+				'loading_viewer' => __( 'Loading…', 'product-configurator-for-woocommerce' ),
+				'loading_viewer_preparing' => __( 'Preparing 3D…', 'product-configurator-for-woocommerce' ),
+				'loading_model' => __( 'Loading 3D model…', 'product-configurator-for-woocommerce' ),
+				'loading_viewer_setup' => __( 'Setting up scene…', 'product-configurator-for-woocommerce' ),
+				'model_load_failed' => __( 'The 3D model could not be loaded.', 'product-configurator-for-woocommerce' ),
+				'viewer_load_failed' => __( 'The 3D view could not be started.', 'product-configurator-for-woocommerce' ),
+				'no_3d_model_configured' => __( 'No 3D model configured.', 'product-configurator-for-woocommerce' ),
+				'webgl_unavailable' => __( '3D view is not supported by this browser.', 'product-configurator-for-woocommerce' ),
+				'context_lost' => _x( '3D view interrupted', 'Shown over the 3D viewer after the browser dropped its graphics context', 'product-configurator-for-woocommerce' ),
+				'context_lost_retry' => _x( 'Reload 3D view', 'Button restarting the 3D viewer after the graphics context was lost', 'product-configurator-for-woocommerce' ),
+				'orbit_hint' => _x( 'Drag to rotate', 'Hint shown over the 3D viewer on pointer devices', 'product-configurator-for-woocommerce' ),
+				'orbit_hint_touch' => _x( 'Swipe to rotate', 'Hint shown over the 3D viewer on touch devices', 'product-configurator-for-woocommerce' ),
 			),
 			'config' => apply_filters( 'mkl_pc_js_config', array(
 				'inline' => false,
@@ -513,6 +698,8 @@ class Frontend_Woocommerce {
 				'close_choices_when_selecting_choice_desktop' => ( bool ) mkl_pc( 'settings')->get( 'close_choices_when_selecting_choice_desktop' ),
 				'choice_description_no_tooltip' => mkl_pc( 'settings')->get( 'choice_description_no_tooltip', false ),
 				'image_loading_mode' => mkl_pc( 'settings')->get( 'image_loading_mode', 'lazy' ),
+				// Render an image per selection instead of one per choice.
+				'viewer_active_images_only' => (bool) mkl_pc( 'settings' )->get( 'viewer_active_images_only' ),
 				'show_choice_description' => (bool) mkl_pc( 'settings')->get( 'show_choice_description' ),
 				'show_layer_description' => (bool) mkl_pc( 'settings')->get( 'show_layer_description' ),
 				'show_active_choice_in_layer' => (bool) mkl_pc( 'settings')->get( 'show_active_choice_in_layer' ),
@@ -540,7 +727,14 @@ class Frontend_Woocommerce {
 					'show_image' => mkl_pc( 'settings')->get( 'show_angle_image' ),
 					'show_name' => mkl_pc( 'settings')->get( 'show_angle_name' ),
 					'save_current' => mkl_pc( 'settings')->get( 'use_current_angle_in_cart_image' ),
-				]
+				],
+				'fe_3d_use_draco_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_draco_loader' ),
+				'fe_3d_use_meshopt_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_meshopt_loader' ),
+				'fe_3d_use_ktx2_loader' => ( bool ) mkl_pc( 'settings' )->get( 'fe_3d_use_ktx2_loader' ),
+				'fe_3d_draco_decoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/draco/gltf/',
+				'fe_3d_ktx2_transcoder_path' => MKL_PC_ASSETS_URL . 'js/vendor/basis/',
+				'show_image_in_cart' => ( bool ) mkl_pc( 'settings' )->get( 'show_image_in_cart' ),
+				'cart_screenshot_size' => $this->cart->get_3d_screenshot_dimensions(),
 			) ),
 		);
 
@@ -551,12 +745,12 @@ class Frontend_Woocommerce {
 		if ( $saved_configuration_content = $this->get_saved_configuration_content() ) {
 			$args['config']['load_config_content'] = $saved_configuration_content;
 
-			if ( isset( $_REQUEST['edit_config_from_cart'] ) ) {
+			if ( isset( $_REQUEST['edit_config_from_cart'] ) && isset( $_REQUEST['load_config_from_cart'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flags to attach the cart item key when editing from cart.
 				$args['config']['cart_item_key'] = esc_attr( esc_html( sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) ) ) );
 			}
 		} 
 
-		if ( isset( $_REQUEST['open_configurator'] ) ) {
+		if ( isset( $_REQUEST['open_configurator'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flag to auto-open the configurator.
 			$args['config']['open_configurator'] = true;
 		}
 
@@ -573,6 +767,21 @@ class Frontend_Woocommerce {
 			// 	wp_enqueue_script( 'mkl_pc/js/fe_data_weglot_'.$post->ID, admin_url( 'admin-ajax.php?action=pc_get_data&data=init&view=json&fe=1&id=' . $post->ID ), array(), ( $date_modified ? $date_modified->getTimestamp() : MKL_PC_VERSION ), true );
 			// }
 
+		} elseif ( $prod && mkl_pc( 'settings' )->get( 'async_data' ) ) {
+			// Only preload when this resolves to the actual cached static file, not the
+			// admin-ajax.php fallback (see Cache::should_serve_live_data()) - that endpoint
+			// isn't cacheable, so preloading it would force a full postmeta rebuild on
+			// every single page view instead of only when the shopper opens the configurator.
+			//
+			// The static URL is returned whether or not the file exists yet, and nothing is
+			// built here: on a cold cache the preload request itself 404s into
+			// Cache::check_and_regenerate_js_file(), which rebuilds and serves it. That keeps
+			// the rebuild off the critical path of the HTML response.
+			$preload_url = mkl_pc( 'cache' )->get_config_file_url( $prod->get_id(), 'json' );
+			if ( $preload_url && false === strpos( $preload_url, 'admin-ajax.php' ) ) {
+				$this->async_config_preload_url = $preload_url;
+				add_action( 'wp_head', array( $this, 'print_async_config_preload_link' ), 2 );
+			}
 		}
 
 		$theme_id = mkl_pc( 'settings' )->get_theme();
@@ -584,12 +793,73 @@ class Frontend_Woocommerce {
 			wp_enqueue_style( 'mlk_pc/css' );
 		}
 
+		if ( $is_3d_configurator ) {
+			$this->enqueue_3d_viewer( $prod );
+		}
+
 		// to include potential other scripts AFTER the main configurator one
 		do_action( 'mkl_pc_scripts_product_page_after' );
 	}
 
 	/**
-	 * Prevent Understore conflict. 
+	 * Register the 3D viewer entry. The Draco, Meshopt and KTX2 decoders are not
+	 * scripts of their own: the viewer's loader factory imports them when the
+	 * settings ask for them.
+	 *
+	 * @return bool False when the viewer bundle has not been built.
+	 */
+	private function register_3d_viewer_script() {
+		if ( wp_script_is( 'mkl_pc/fe_3d_viewer', 'registered' ) ) {
+			return true;
+		}
+		$fe_3d_viewer_path = MKL_PC_ASSETS_PATH . 'build/fe-3d-viewer-entry.js';
+		if ( ! file_exists( $fe_3d_viewer_path ) ) {
+			return false;
+		}
+		wp_register_script( 'mkl_pc/fe_3d_viewer', MKL_PC_ASSETS_URL . 'build/fe-3d-viewer-entry.js', array( 'jquery', 'backbone', 'wp-util', 'wp-hooks' ), filemtime( $fe_3d_viewer_path ), true );
+		return true;
+	}
+
+	/**
+	 * Put the 3D viewer on the page for a 3D product.
+	 *
+	 * Called for the product page, and by the shortcodes, which can show a 3D product on any page:
+	 * the global post is then not the product, so nothing in load_scripts() knows it is 3D. The
+	 * configurator itself only picks the 3D viewer at mount time, so a script enqueued from a
+	 * shortcode, and printed in the footer after it, still arrives in time.
+	 *
+	 * @param \WC_Product $product Product or variation.
+	 * @return void
+	 */
+	public function enqueue_3d_viewer( $product ) {
+		static $done = array();
+		$product_id = $product->get_parent_id() ? $product->get_parent_id() : $product->get_id();
+		if ( isset( $done[ $product_id ] ) || '3d' !== mkl_pc_get_configurator_type( $product_id ) || ! $this->register_3d_viewer_script() ) {
+			return;
+		}
+		$done[ $product_id ] = true;
+		wp_enqueue_script( 'mkl_pc/fe_3d_viewer' );
+		// What fe-3d-viewer-entry.js fetches when the shopper reaches for this configurator.
+		wp_add_inline_script(
+			'mkl_pc/fe_3d_viewer',
+			sprintf( '( window.mkl_pc_3d_warmup = window.mkl_pc_3d_warmup || {} )[ %d ] = %s;', $product_id, wp_json_encode( $this->get_3d_preload_urls( $product_id ) ) ),
+			'before'
+		);
+
+		/**
+		 * Fires when the 3D viewer is enqueued for a product: on its product page, or for a
+		 * shortcode showing it on any other page. Once per product and request.
+		 *
+		 * Add-ons enqueue their 3D scripts here, for the product given, rather than reading
+		 * the global post, which is not the product on a shortcode page.
+		 *
+		 * @param int $product_id Parent product ID.
+		 */
+		do_action( 'mkl_pc_3d_viewer_enqueued', $product_id );
+	}
+
+	/**
+	 * Prevent Understore conflict.
 	 * Based on what The Events Calendar does
 	 * 
 	 * @param string $tag
@@ -624,7 +894,7 @@ class Frontend_Woocommerce {
 	 */
 	private function get_saved_configuration_content() {
 		$configuration_to_load = [];
-		if ( isset( $_REQUEST['load_config_from_cart'] ) ) {
+		if ( isset( $_REQUEST['load_config_from_cart'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Query flag to preload a cart item configuration.
 
 			$item_id = sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_cart'] ) );
 			$wc_cart = WC()->cart;
@@ -645,7 +915,7 @@ class Frontend_Woocommerce {
 
 		}
 
-		if ( isset( $_REQUEST['load_config_from_order'] ) ) {
+		if ( isset( $_REQUEST['load_config_from_order'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Order item ID is authorized via manage_woocommerce or order customer match below.
 			$current_user_can_view_config = current_user_can( 'manage_woocommerce' );
 			if ( ! $current_user_can_view_config ) {
 				$order_id = wc_get_order_id_by_order_item_id( sanitize_text_field( wp_unslash( $_REQUEST['load_config_from_order'] ) ) );
@@ -667,7 +937,7 @@ class Frontend_Woocommerce {
 			}
 		}
 
-		if ( isset( $_REQUEST['load-preset'] ) ) {
+		if ( isset( $_REQUEST['load-preset'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public preset IDs only; unpublished presets are rejected below.
 			$p = get_post( (int) sanitize_text_field( wp_unslash( $_REQUEST['load-preset'] ) ) );
 			if ( $p && 'mkl_pc_configuration' === $p->post_type && 'preset' === $p->post_status ) {
 				$configuration_to_load = json_decode( $p->post_content );
@@ -702,10 +972,21 @@ class Frontend_Woocommerce {
 		$img_size_mobile =  mkl_pc( 'settings' )->get( 'preview_image_size_mobile', 'inherit' );
 		$img_size_large =  mkl_pc( 'settings' )->get( 'preview_image_size_large', 'inherit' );
 		$thumbnail_size = mkl_pc( 'settings' )->get( 'thumbnail_size', 'medium' );
+
+		// Resolve which of the referenced attachments still exist, once, before the loop below.
+		//
+		// wp_get_attachment_image_url() costs two get_post() calls, and WP_Post::get_instance()
+		// does not cache a lookup that found nothing - so an id whose media has since been deleted
+		// is re-queried on every single call, and a configurator that references a few hundred dead
+		// ids turns one payload build into thousands of queries. Priming does not help: it only
+		// caches rows that exist. Skipping the ids that are known to be gone does, and the value
+		// was never going to be anything but false for them anyway.
+		$known_attachments = self::filter_existing_attachment_ids( self::collect_attachment_ids( $data['content'] ) );
+
 		foreach( $data['content'] as $lin => $layer ) {
 			foreach( $layer['choices'] as $cin => $choice ) {
 				foreach( $choice['images'] as $imin => $image ) {
-					if ( $image['image']['id'] ) {
+					if ( $image['image']['id'] && isset( $known_attachments[ (int) $image['image']['id'] ] ) ) {
 						if ( $new_image_url = wp_get_attachment_image_url( $image['image']['id'], $img_size ) ) {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url'] = $new_image_url;
 						}
@@ -716,7 +997,7 @@ class Frontend_Woocommerce {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['image']['url_large'] = $large_image_url;
 						}
 					}
-					if ( $image['thumbnail']['id'] ) {
+					if ( $image['thumbnail']['id'] && isset( $known_attachments[ (int) $image['thumbnail']['id'] ] ) ) {
 						if ( $new_thumbnail_url = wp_get_attachment_image_url( $image['thumbnail']['id'], $thumbnail_size ) ) {
 							$data['content'][$lin]['choices'][$cin]['images'][$imin]['thumbnail']['url'] = $new_thumbnail_url;
 						}
@@ -725,6 +1006,56 @@ class Frontend_Woocommerce {
 			}
 		}
 		return $data;
+	}
+
+	/**
+	 * Every attachment id referenced by the images of a configurator's choices.
+	 *
+	 * @param array $content
+	 * @return int[]
+	 */
+	private static function collect_attachment_ids( $content ) {
+		$ids = array();
+		foreach ( (array) $content as $layer ) {
+			if ( empty( $layer['choices'] ) || ! is_array( $layer['choices'] ) ) continue;
+			foreach ( $layer['choices'] as $choice ) {
+				if ( empty( $choice['images'] ) || ! is_array( $choice['images'] ) ) continue;
+				foreach ( $choice['images'] as $image ) {
+					if ( ! empty( $image['image']['id'] ) ) $ids[] = (int) $image['image']['id'];
+					if ( ! empty( $image['thumbnail']['id'] ) ) $ids[] = (int) $image['thumbnail']['id'];
+				}
+			}
+		}
+		return array_values( array_unique( array_filter( $ids ) ) );
+	}
+
+	/**
+	 * Which of the given attachment ids actually exist, as a lookup keyed by id.
+	 *
+	 * One query for the whole payload, and the rows it finds are primed for the callers that are
+	 * about to read them. Anything unexpected - no ids, or a query that fails - reports every id as
+	 * present, so a problem here can only cost the old behaviour, never a missing image.
+	 *
+	 * @param int[] $ids
+	 * @return array<int, true>
+	 */
+	private static function filter_existing_attachment_ids( $ids ) {
+		if ( empty( $ids ) ) return array();
+
+		global $wpdb;
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$found = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE ID IN ( $placeholders )", $ids ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Placeholders are generated from the id count and the ids are bound; the result primes the loop below.
+
+		if ( null === $found || ! is_array( $found ) ) {
+			return array_fill_keys( $ids, true );
+		}
+
+		$known = array();
+		foreach ( $found as $id ) $known[ (int) $id ] = true;
+
+		if ( ! empty( $known ) ) _prime_post_caches( array_keys( $known ), false, true );
+
+		return $known;
 	}
 
 	public function add_sku_to_meta_cart( $meta, $layer, $product ) {

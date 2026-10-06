@@ -2,6 +2,9 @@
 
 namespace MKL\PC;
 
+use MKL\PC\Global_Configurators\Owner_Resolver;
+use MKL\PC\Global_Configurators\Schema;
+
 /**
  * Product functions
  *
@@ -14,6 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Ajax {
+	/** Post meta holding the token of the last configurator save. See set_configurator_data(). */
+	const EDIT_TOKEN_META = '_mkl_pc_edit_token';
+
 	private $db = NULL;
 
 	public function __construct() {
@@ -39,9 +45,16 @@ class Ajax {
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids', array( $this, 'fix_image_ids' ) );
 		add_action( 'wp_ajax_mkl_pc_fix_image_ids_config', array( $this, 'fix_image_ids_from_configurator' ) );
 		add_action( 'wp_ajax_mkl_pc_get_configurable_products', array( $this, 'get_configurable_products' ) );
+		add_action( 'wp_ajax_mkl_pc_preview_sources', array( $this, 'get_preview_sources' ) );
 		add_filter( 'weglot_js-data_treat_page', array( $this, 'weglot_compat' ), 20, 4 );
 		add_action( 'wp_ajax_pc_add_to_cart', array( $this, 'add_to_cart' ) );
 		add_action( 'wp_ajax_nopriv_pc_add_to_cart', array( $this, 'add_to_cart' ) );
+		add_action( 'wp_ajax_mkl_pc_finalize_chunked_storage', array( $this, 'finalize_chunked_storage' ) );
+		
+		// Global layers handlers
+		add_action( 'wp_ajax_mkl_pc_get_global_layer', array( $this, 'get_global_layer' ) );
+		add_action( 'wp_ajax_mkl_pc_save_global_layer', array( $this, 'save_global_layer' ) );
+		add_action( 'wp_ajax_mkl_pc_list_global_layers', array( $this, 'list_global_layers' ) );
 	}
 
 	/**
@@ -72,8 +85,7 @@ class Ajax {
 	 * @return void
 	 */
 	public function get_configurator_data() {
-
-		// check_ajax_referer( 'config-ajax', 'security' );
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public read of published configurator data; access is gated by user_can_view_configurator_data().
 
 		if ( ! isset( $_REQUEST['data'], $_REQUEST['id'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) ], 400 );
@@ -89,10 +101,17 @@ class Ajax {
 		}
 
 		if ( ! $this->user_can_view_configurator_data( $id ) ) {
-			$product = $this->get_configurator_product( $id );
 			$message = __( 'You are not allowed to view this product.', 'product-configurator-for-woocommerce' );
-			if ( $product && 'publish' !== $product->get_status() && is_user_logged_in() && current_user_can( 'edit_post', $product->get_id() ) ) {
-				$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+			if ( class_exists( Schema::class ) && Schema::is_global_configurator_id( $id ) ) {
+				$message = __( 'You are not allowed to edit this global configurator.', 'product-configurator-for-woocommerce' );
+				if ( is_user_logged_in() && current_user_can( 'edit_post', $id ) ) {
+					$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+				}
+			} else {
+				$product = $this->get_configurator_product( $id );
+				if ( $product && 'publish' !== $product->get_status() && is_user_logged_in() && current_user_can( 'edit_post', $product->get_id() ) ) {
+					$message = __( 'Error getting the configurator data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' );
+				}
 			}
 			wp_send_json_error( [ 'message' => $message ], 403 );
 		}
@@ -130,12 +149,32 @@ class Ajax {
 					}
 
 				} else {
-					$data = $this->db->get_init_data( $id );
-					$data = $this->db->escape( $data );
+					$variation_id_for_storage = isset( $_REQUEST['variation_id'] ) ? absint( $_REQUEST['variation_id'] ) : 0;
+					$data                     = $this->db->get_init_data( $id, $variation_id_for_storage );
+					$pc_storage               = isset( $data['pc_storage'] ) ? $data['pc_storage'] : null;
+					$data                     = $this->db->escape( $data );
+					if ( null !== $pc_storage && is_array( $pc_storage ) ) {
+						$data['pc_storage'] = $pc_storage;
+					}
+					// The revision this editor starts from. See set_configurator_data().
+					if ( is_array( $data ) ) {
+						$data['edit_token'] = (string) get_post_meta( $this->get_edit_token_owner_id( $id ), self::EDIT_TOKEN_META, true );
+					}
+					// Saving a global layer goes to the layer post, which has a token of its own. See save_global_layer().
+					if ( is_array( $data ) && ! empty( $data['layers'] ) && is_array( $data['layers'] ) ) {
+						$global_layer_edit_tokens = array();
+						foreach ( $data['layers'] as $layer ) {
+							if ( is_array( $layer ) && ! empty( $layer['global_id'] ) ) {
+								$global_layer_edit_tokens[ (int) $layer['global_id'] ] = (string) get_post_meta( (int) $layer['global_id'], self::EDIT_TOKEN_META, true );
+							}
+						}
+						$data['global_layer_edit_tokens'] = (object) $global_layer_edit_tokens;
+					}
 				}
 				break;
 			case 'menu' :
-				$data = $this->db->get_menu();
+
+				$data = $this->db->get_menu( $id );
 				break;
 			case 'angles' :
 				$data = $this->db->get_angles( $id );
@@ -153,6 +192,15 @@ class Ajax {
 		}
 
 		$data = apply_filters( 'mkl_pc_get_configurator_data', $data, $id );
+
+		/**
+		 * Engine-only consumers can request a payload without image URLs.
+		 * Applied after cache read so the full UI transient stays intact.
+		 * Wired from `PC.fe.initEngine( id, { omitImages: true } )`.
+		 */
+		if ( ! empty( $_REQUEST['omit_images'] ) ) {
+			$data = $this->omit_configurator_image_urls( $data );
+		}
 
 
 		$view = isset( $_REQUEST['view'] ) ? sanitize_key( wp_unslash( $_REQUEST['view'] ) ) : '';
@@ -198,6 +246,36 @@ class Ajax {
 		} else { 
 			wp_send_json( $data );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+	}
+
+	/**
+	 * Strip image URL fields from configurator payload, keeping attachment IDs.
+	 *
+	 * Applied after cache read so the full UI transient stays intact.
+	 *
+	 * @param mixed $data
+	 * @return mixed
+	 */
+	private function omit_configurator_image_urls( $data ) {
+		if ( ! is_array( $data ) ) {
+			return $data;
+		}
+
+		$url_keys = array( 'url', 'url_mobile', 'url_large', 'src' );
+
+		foreach ( $data as $key => $value ) {
+			if ( is_array( $value ) ) {
+				$data[ $key ] = $this->omit_configurator_image_urls( $value );
+				continue;
+			}
+
+			if ( in_array( $key, $url_keys, true ) && is_string( $value ) ) {
+				$data[ $key ] = '';
+			}
+		}
+
+		return $data;
 	}
 
 	/**
@@ -239,15 +317,35 @@ class Ajax {
 	}
 
 	/**
-	 * Check whether the current user can view configurator data for a product.
+	 * Check whether the current user can view configurator data for a product or global CPT.
 	 *
 	 * Published products are available to everyone, including those hidden from the catalog.
 	 * Draft, private, or otherwise non-published products require a logged-in user with edit capability and a valid nonce.
+	 * Global configurator CPTs are admin-only and always require edit capability and a valid nonce.
 	 *
 	 * @param int $product_id
 	 * @return bool
 	 */
 	private function user_can_view_configurator_data( $product_id ) {
+		$product_id = (int) $product_id;
+		if ( $product_id <= 0 ) {
+			return false;
+		}
+
+		if ( class_exists( Schema::class ) && Schema::is_global_configurator_id( $product_id ) ) {
+			if ( ! is_user_logged_in() || ! current_user_can( 'edit_post', $product_id ) ) {
+				return false;
+			}
+			return $this->verify_configurator_data_nonce( $product_id );
+		}
+
+		if ( Global_Layers::is_global_layer_id( $product_id ) ) {
+			if ( ! is_user_logged_in() || ! current_user_can( 'edit_post', $product_id ) ) {
+				return false;
+			}
+			return $this->verify_configurator_data_nonce( $product_id );
+		}
+
 		$product = $this->get_configurator_product( $product_id );
 
 		if ( ! $product ) {
@@ -273,14 +371,18 @@ class Ajax {
 	public function set_configurator_data() {
 
 		// CHECK IF THE REQUIRED FIELDS WERE SENT
-		if ( ! isset( $_REQUEST['id'] ) ) wp_send_json_error();
+		if ( ! isset( $_REQUEST['id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Product ID is required to select the matching nonce action below.
+			wp_send_json_error();
+		}
 
-		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) wp_send_json_error();
+		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Same as above.
+			wp_send_json_error();
+		}
 
 		// CHECK IF THE USER IS ALLOWED TO EDIT 
 		$ref_id = $id;
 
-		if ( isset( $_REQUEST['parent_id'] ) ) {
+		if ( isset( $_REQUEST['parent_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Parent ID is required to select the matching nonce action below.
 			$ref_id = absint( wp_unslash( $_REQUEST['parent_id'] ) );
 		}
 
@@ -291,6 +393,15 @@ class Ajax {
 		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) ) {
 			wp_send_json_error( [ 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
+
+		$owner_id = class_exists( Owner_Resolver::class ) ? (int) Owner_Resolver::resolve_storage_owner_id( (int) $ref_id, (int) $id !== (int) $ref_id ? (int) $id : 0 ) : (int) $ref_id;
+		if ( $owner_id > 0 && $owner_id !== (int) $id && $owner_id !== (int) $ref_id && ! current_user_can( 'edit_post', $owner_id ) ) {
+			wp_send_json_error( [ 'message' => __( 'You are not allowed to edit the linked global configurator.', 'product-configurator-for-woocommerce' ) ], 403 );
+		}
+
+		// Revision check: do not overwrite a save made elsewhere since this editor loaded its data.
+		$edit_token_owner_id = $this->get_edit_token_owner_id( $ref_id );
+		$this->refuse_save_on_edit_conflict( $edit_token_owner_id, __( 'This configuration was saved from somewhere else since you opened it, so nothing was saved.', 'product-configurator-for-woocommerce' ) );
 
 		if ( !isset( $_REQUEST['data'] ) ) {
 			wp_send_json_error( [ 'message' => __( 'Expecting a data type', 'product-configurator-for-woocommerce' ) ], 400 );
@@ -306,8 +417,10 @@ class Ajax {
 		$raw_component_data = wp_unslash( $_REQUEST[ $component ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is decoded then sanitized via db->sanitize(); nonce was verified above.
 
 		/**
-		 * Decode the payload. A value that does not decode to an array must never be stored: a
-		 * non-JSON string would be kept as-is, wrapped by the meta API, then unserialized on read.
+		 * Decode the payload. A payload that does not decode to an array must never reach DB::set():
+		 * the chunked writers read a non-array as "this component has no data" and purge the stored
+		 * chunks, so a truncated POST (post_max_size, max_input_vars, a proxy cutting the body) used
+		 * to delete the whole layer structure instead of failing the request.
 		 *
 		 * 'empty' is the explicit "the user removed everything" sentinel sent by the admin app.
 		 */
@@ -333,7 +446,13 @@ class Ajax {
 
 		$modified_choices = false;
 		if ( isset( $_REQUEST['modified_choices'] ) ) {
-			$modified_choices = wp_unslash( $_REQUEST['modified_choices'] );
+			// Form-encoded JS array of "layerId_choiceId" strings (not JSON).
+			$modified_choices = wp_unslash( $_REQUEST['modified_choices'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized as text fields below.
+			if ( is_array( $modified_choices ) ) {
+				$modified_choices = array_map( 'sanitize_text_field', $modified_choices );
+			} else {
+				$modified_choices = sanitize_text_field( $modified_choices );
+			}
 		}
 
 		$result = $this->db->set( $id, $ref_id, $component, $data, $modified_choices );
@@ -344,6 +463,8 @@ class Ajax {
 		if ( false === $result ) {
 			wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ) . ' ' . __( 'The data could not be stored, so nothing was changed. Please try again.', 'product-configurator-for-woocommerce' ) ], 500 );
 		}
+
+		$this->store_edit_token( $edit_token_owner_id );
 
 		/**
 		 * Action mkl_pc_saved_configurator_data, triggered when an item is saved
@@ -362,6 +483,124 @@ class Ajax {
 			delete_transient( 'mkl_pc_data_init_' . $ref_id );
 		}
 
+		// The editor flags the last request of a save. Rebuilding on every request was wasted work:
+		// the invalidation above deleted the file again straight after.
+		if ( isset( $_REQUEST['saveCache'] ) && wp_validate_boolean( sanitize_text_field( wp_unslash( $_REQUEST['saveCache'] ) ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified above.
+			$this->rebuild_config_files( array( $ref_id, $id ) );
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * The post holding a configurator's edit token: its storage owner, so every product sharing a
+	 * global configurator checks against the same one.
+	 *
+	 * @param int $ref_id Product or global configurator being edited.
+	 * @return int
+	 */
+	private function get_edit_token_owner_id( $ref_id ) {
+		$owner_id = class_exists( Owner_Resolver::class ) ? (int) Owner_Resolver::resolve_storage_owner_id( (int) $ref_id ) : 0;
+		return $owner_id > 0 ? $owner_id : (int) $ref_id;
+	}
+
+	/**
+	 * Read an edit token from the request.
+	 *
+	 * @param string $key Request key.
+	 * @return string Letters, digits and dashes only; empty when absent.
+	 */
+	private function read_edit_token_param( $key ) {
+		if ( ! isset( $_REQUEST[ $key ] ) || ! is_string( $_REQUEST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only called after a nonce check.
+			return '';
+		}
+		return substr( preg_replace( '/[^A-Za-z0-9\-]/', '', wp_unslash( $_REQUEST[ $key ] ) ), 0, 64 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reduced to a token charset here.
+	}
+
+	/**
+	 * Refuse a save that would overwrite one made elsewhere since the editor loaded its data.
+	 *
+	 * The editor sends the token of the last save it knows about, and of its last unconfirmed attempt
+	 * (a save that landed but whose response was lost). Anyone saving since - another user, another
+	 * tab, another product using the same global configurator or layer - replaced it. Requests
+	 * without a token (other callers) are not refused, and force_save skips the check once the user
+	 * chose to overwrite.
+	 *
+	 * @param int    $owner_id Post holding the token.
+	 * @param string $message  Error shown when the save is refused.
+	 * @return void Sends a 409 and exits on a conflict.
+	 */
+	private function refuse_save_on_edit_conflict( $owner_id, $message ) {
+		if ( '' === $this->read_edit_token_param( 'edit_token' ) || ! empty( $_REQUEST['force_save'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only called after a nonce check.
+			return;
+		}
+		$stored_edit_token = (string) get_post_meta( $owner_id, self::EDIT_TOKEN_META, true );
+		$known_edit_tokens = array_filter( array( $this->read_edit_token_param( 'expected_edit_token' ), $this->read_edit_token_param( 'attempted_edit_token' ) ) );
+		if ( '' !== $stored_edit_token && ! in_array( $stored_edit_token, $known_edit_tokens, true ) ) {
+			wp_send_json_error( [ 'code' => 'mkl_pc_edit_conflict', 'message' => $message ], 409 );
+		}
+	}
+
+	/**
+	 * Record a successful save: the editor's token, or a new one for callers that send none, so that
+	 * open editors notice the change.
+	 *
+	 * @param int $owner_id Post holding the token.
+	 * @return string The stored token.
+	 */
+	private function store_edit_token( $owner_id ) {
+		$token = $this->read_edit_token_param( 'edit_token' );
+		if ( '' === $token ) {
+			$token = wp_generate_uuid4();
+		}
+		update_post_meta( $owner_id, self::EDIT_TOKEN_META, $token );
+		return $token;
+	}
+
+	/**
+	 * Rebuild the static frontend config files once a save is complete.
+	 *
+	 * Saving invalidates them (see Cache_Invalidator), and otherwise they only come back through
+	 * Cache::check_and_regenerate_js_file() or an uncached page render. A host that does not route
+	 * a missing upload to WordPress never runs the former, so in the async data mode every shopper
+	 * would go through admin-ajax until the file is rebuilt here.
+	 *
+	 * @param int[] $product_ids Products whose configuration was saved. Anything not configurable is skipped.
+	 * @return void
+	 */
+	private function rebuild_config_files( $product_ids ) {
+		if ( mkl_pc( 'settings' )->get( 'disable_caching' ) ) {
+			return;
+		}
+		foreach ( array_unique( array_map( 'absint', $product_ids ) ) as $product_id ) {
+			if ( $product_id && mkl_pc_is_configurable( $product_id ) ) {
+				Plugin::instance()->cache->save_config_file( $product_id );
+			}
+		}
+	}
+
+	/**
+	 * Verify chunked storage, remove legacy blobs when safe, set storage format version.
+	 */
+	public function finalize_chunked_storage() {
+		if ( ! isset( $_REQUEST['id'], $_REQUEST['nonce'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Missing parameters.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		$parent_id    = absint( $_REQUEST['id'] );
+		$variation_id = isset( $_REQUEST['variation_id'] ) ? absint( $_REQUEST['variation_id'] ) : 0;
+		if ( ! $parent_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid product.', 'product-configurator-for-woocommerce' ) ), 400 );
+		}
+		if ( ! check_ajax_referer( 'update-pc-post_' . $parent_id, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		if ( ! current_user_can( 'edit_post', $parent_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this product.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+		$result = $this->db->maybe_finalize_chunked_storage( $parent_id, $variation_id );
+		// Runs after the editor's last save request and invalidates the caches again, so the file
+		// that request rebuilt is gone.
+		$this->rebuild_config_files( array( $parent_id ) );
 		wp_send_json_success( $result );
 	}
 
@@ -399,7 +638,7 @@ class Ajax {
 				'attachment',
 				$like
 			)
-		);
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bulk status update of generated config images; no object cache group for this.
 
 		$settings = mkl_pc( 'settings' )->set( 'show_config_images_in_the_library', ! $mode );
 
@@ -416,7 +655,10 @@ class Ajax {
 	public function fix_image_ids() {
 		$security = isset( $_REQUEST['security'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['security'] ) ) : '';
 		if ( ! current_user_can( 'manage_woocommerce' ) || ! wp_verify_nonce( $security, 'mlk_pc_settings-options' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to fix the image ids.', 'product-configurator-for-woocommerce' ) ], 403 );
-		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) wp_send_json_error();
+		$id = isset( $_REQUEST['id'] ) ? absint( wp_unslash( $_REQUEST['id'] ) ) : 0;
+		if ( ! $id ) {
+			wp_send_json_error();
+		}
 		delete_transient( 'mkl_pc_data_init_' . $id );
 		wp_send_json_success( [ 'changed_items' => $this->db->scan_product_images( $id ) ] );
 	}
@@ -426,7 +668,10 @@ class Ajax {
 	 */
 	public function fix_image_ids_from_configurator() {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) wp_send_json_error( [ 'message' => __( 'You are not allowed to fix the image ids from the configurator.', 'product-configurator-for-woocommerce' ) ], 403 );
-		if ( ! $id = absint( wp_unslash( $_REQUEST['id'] ) ) ) wp_send_json_error();
+		$id = isset( $_REQUEST['id'] ) ? absint( wp_unslash( $_REQUEST['id'] ) ) : 0;
+		if ( ! $id ) {
+			wp_send_json_error();
+		}
 		if ( ! check_ajax_referer( 'update-pc-post_' . $id, 'security', false ) ) {
 			wp_send_json_error( [ 'message' => __( 'Error processing the request:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
@@ -463,13 +708,28 @@ class Ajax {
 		// Exit if the file name doesn't contain a valid nonce
 		if ( ! $nonce || ! wp_verify_nonce( $nonce, 'generate-image-from-temp-file' ) ) wp_send_json_error( [ 'message' => __( 'Unauthorized action', 'product-configurator-for-woocommerce' ) ], 403 );
 		
+		// The name before the suffix is the image to generate. `rtrim()` would strip
+		// characters rather than the suffix, and can eat into the extension.
+		$image_name = sanitize_file_name( substr( $data_param, 0, $temp_offset ) );
+
+		// The name carries the product, so the image names are derived exactly as they were
+		// when the placeholder was written. Pinning `image_name` instead would force every file
+		// this request writes under that one name - in the library mode, the full size image
+		// would be saved and registered under the placeholder's sized name.
 		$config = new Configuration();
-		$config->image_name = sanitize_file_name( rtrim( $data_param, '-temp-' . $nonce ) );
-		$image_id = $config->save_image( $data_param );
-		if ( $image_id ) {
-			$image = wp_get_attachment_image_url( $image_id, 'woocommerce_thumbnail' );
-			if ( $image ) wp_send_json_success( [ 'url' => $image ] );
+		if ( preg_match( '/^product_(\d+)-conf/', $image_name, $product_match ) ) {
+			$config->product_id = (int) $product_match[1];
 		}
+
+		// The name carries the size it was requested at, so the file that gets written is
+		// the one the placeholder is waiting for.
+		$size = null;
+		if ( preg_match( '/-(\d+)x(\d+)\.[a-z]+$/i', $image_name, $matches ) ) {
+			$size = array( 'width' => (int) $matches[1], 'height' => (int) $matches[2] );
+		}
+
+		$image = $config->generate_image_from_temp_file( $data_param, $size );
+		if ( $image ) wp_send_json_success( [ 'url' => $image ] );
 		if ( isset( $_REQUEST['product_id'] ) ) {
 			$product = wc_get_product( absint( wp_unslash( $_REQUEST['product_id'] ) ) );
 			if ( $product ) {
@@ -485,6 +745,73 @@ class Ajax {
 	 *
 	 * @return array
 	 */
+	/**
+	 * Resolve attachment ids to a scaled image URL for the editor's stack preview.
+	 *
+	 * The editor's `content` payload carries whatever URL was stored when the image
+	 * was picked, which is the full-size one - 3840x2160 is not unusual for a layer.
+	 * Compositing a hundred of those to fill a panel a few hundred pixels wide means
+	 * downloading and decoding gigabytes to throw almost all of it away.
+	 *
+	 * The size is the one the shop already serves (`preview_image_size`), so the
+	 * preview is built from the same pixels a customer gets.
+	 *
+	 * Ids that do not resolve are simply absent from the response - an attachment can
+	 * be missing, or the stored URL can point somewhere this site has no attachment
+	 * for at all (common after a migration). The caller falls back to the stored URL.
+	 *
+	 * @return void
+	 */
+	public function get_preview_sources() {
+		$security = isset( $_REQUEST['security'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['security'] ) ) : '';
+		if ( ! wp_verify_nonce( $security, 'mkl_pc_preview_sources' ) ) {
+			wp_send_json_error( array( 'message' => __( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ), 401 );
+		}
+
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to view this product.', 'product-configurator-for-woocommerce' ) ), 403 );
+		}
+
+		$raw = isset( $_REQUEST['ids'] ) ? wp_unslash( $_REQUEST['ids'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cast to ints below.
+		if ( ! is_array( $raw ) ) {
+			$raw = explode( ',', (string) $raw );
+		}
+
+		$ids = array_values( array_unique( array_filter( array_map( 'absint', $raw ) ) ) );
+		if ( empty( $ids ) ) {
+			wp_send_json_success( array( 'sources' => array(), 'size' => '' ) );
+		}
+
+		// A cap, so a malformed request cannot turn into thousands of lookups.
+		$max = (int) apply_filters( 'mkl_pc_preview_sources_max', 500 );
+		if ( count( $ids ) > $max ) {
+			$ids = array_slice( $ids, 0, $max );
+		}
+
+		$size = mkl_pc( 'settings' )->get( 'preview_image_size', 'large' );
+		if ( ! $size || 'full' === $size ) {
+			$size = 'large';
+		}
+
+		/**
+		 * Filter the image size the editor's stack preview is built from.
+		 *
+		 * @param string $size
+		 * @param array  $ids  Attachment ids being resolved.
+		 */
+		$size = apply_filters( 'mkl_pc_preview_sources_size', $size, $ids );
+
+		$sources = array();
+		foreach ( $ids as $id ) {
+			$url = wp_get_attachment_image_url( $id, $size );
+			if ( $url ) {
+				$sources[ (string) $id ] = $url;
+			}
+		}
+
+		wp_send_json_success( array( 'sources' => $sources, 'size' => $size ) );
+	}
+
 	private function get_http_headers() {
 		static $headers;
 	
@@ -519,7 +846,8 @@ class Ajax {
 	 */
 	private function gzip_accepted() {
 		$headers = $this->get_http_headers();
-		return isset($headers['Accept-Encoding']) && preg_match('/gzip/i', $headers['Accept-Encoding']) && false === strpos( $_SERVER['SERVER_SOFTWARE'], 'LiteSpeed' );
+		$server_software = isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '';
+		return isset( $headers['Accept-Encoding'] ) && preg_match( '/gzip/i', $headers['Accept-Encoding'] ) && false === strpos( $server_software, 'LiteSpeed' );
 	}
 
 	public function get_configurable_products() {
@@ -538,15 +866,38 @@ class Ajax {
 		 );
 		 
 		$products = wc_get_products( $args );
+		$data = [];
 		if ( $products ) {
-			$data = [];
 			foreach( $products as $product ) {
-				$data[] = [
+				$data[ $product->get_id() ] = [
 					'id' => $product->get_id(),
 					'name' => $product->get_name(),
 				];
 			}
 		}
+
+		if ( class_exists( '\\MKL\\PC\\Global_Configurators\\Assignment' ) && class_exists( '\\MKL\\PC\\Global_Configurators\\Owner_Resolver' ) ) {
+			$index = \MKL\PC\Global_Configurators\Assignment::get_category_index();
+			if ( ! empty( $index['global_ids'] ) && is_array( $index['global_ids'] ) ) {
+				foreach ( $index['global_ids'] as $global_id ) {
+					foreach ( \MKL\PC\Global_Configurators\Owner_Resolver::get_consumer_product_ids( (int) $global_id ) as $product_id ) {
+						if ( isset( $data[ $product_id ] ) ) {
+							continue;
+						}
+						$product = wc_get_product( $product_id );
+						if ( ! $product ) {
+							continue;
+						}
+						$data[ $product_id ] = [
+							'id' => $product_id,
+							'name' => $product->get_name(),
+						];
+					}
+				}
+			}
+		}
+
+		$data = array_values( $data );
 
 		// Cache the data for 5 min
 		set_transient( 'mkl_get_configurable_products', $data, 300 );
@@ -558,6 +909,7 @@ class Ajax {
 	 */
 	public function add_to_cart() {
 		ob_start();
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Storefront AJAX add-to-cart matches WooCommerce's own wc_ajax_add_to_cart; the cart session cookie is the CSRF surface and payload is sanitized below.
 		if ( ! isset( $_POST['product_id'] ) ) {
 			$data = array(
 				'error'       => true,
@@ -569,7 +921,8 @@ class Ajax {
 		$product_id        = isset( $_POST['variation_id'] ) && absint( wp_unslash( $_POST['variation_id'] ) ) ? absint( wp_unslash( $_POST['variation_id'] ) ) : absint( wp_unslash( $_POST['product_id'] ) );
 		$product_id        = apply_filters( 'woocommerce_add_to_cart_product_id', $product_id );
 		$product           = wc_get_product( $product_id );
-		$quantity          = empty( $_POST['quantity'] ) ? 1 : wc_stock_amount( wp_unslash( $_POST['quantity'] ) );
+		$raw_quantity      = isset( $_POST['quantity'] ) ? sanitize_text_field( wp_unslash( $_POST['quantity'] ) ) : '';
+		$quantity          = ( '' === $raw_quantity || '0' === $raw_quantity ) ? 1 : wc_stock_amount( $raw_quantity );
 		$passed_validation = apply_filters( 'woocommerce_add_to_cart_validation', true, $product_id, $quantity );
 		$product_status    = get_post_status( $product_id );
 		$variation_id      = 0;
@@ -621,5 +974,237 @@ class Ajax {
 
 			wp_send_json( $data );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 	}
+
+	/**
+	 * Verify the global layers AJAX nonce.
+	 *
+	 * @return void Sends JSON error and exits on failure.
+	 */
+	private function verify_global_layers_nonce() {
+		$nonce = isset( $_REQUEST['nonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $nonce, 'mkl_pc_global_layers' ) ) {
+			wp_send_json_error( 'Security check failed', 403 );
+		}
+	}
+
+	/**
+	 * Get a global layer (layer + content) from CPT
+	 */
+	public function get_global_layer() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		$this->verify_global_layers_nonce();
+
+		if ( ! isset( $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( 'Missing global_id parameter' );
+		}
+
+		$global_id = absint( wp_unslash( $_REQUEST['global_id'] ) );
+		if ( $global_id <= 0 ) {
+			wp_send_json_error( 'Invalid global_id' );
+		}
+
+		if ( ! Global_Layers::is_global_layer_id( $global_id ) ) {
+			wp_send_json_error( 'Global layer not found' );
+		}
+
+		$data = Global_Layers::get( $global_id );
+		
+		if ( false === $data['layer'] && false === $data['content'] ) {
+			wp_send_json_error( 'Global layer not found' );
+		}
+
+		// Sanitize/escape the data
+		$data['layer'] = $this->db->escape( $data['layer'] );
+		$data['content'] = $this->db->escape( $data['content'] );
+		$data['edit_token'] = (string) get_post_meta( $global_id, self::EDIT_TOKEN_META, true );
+
+		wp_send_json_success( $data );
+	}
+
+	/**
+	 * Save/update a global layer (layer + content) to CPT
+	 */
+	public function save_global_layer() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		$this->verify_global_layers_nonce();
+
+		if ( ! isset( $_REQUEST['global_id'] ) ) {
+			wp_send_json_error( 'Missing global_id parameter' );
+		}
+
+		$global_id = absint( wp_unslash( $_REQUEST['global_id'] ) );
+		
+		// The nonce is shared by every global layer and handed to anyone with edit_posts, so the
+		// capability has to be checked against the post itself - as pc_set_data does for products.
+		if ( $global_id > 0 ) {
+			// Global_Layers::save() would otherwise turn any post id it is given into a global layer.
+			if ( ! Global_Layers::is_global_layer_id( $global_id ) ) {
+				wp_send_json_error( 'Global layer not found', 404 );
+			}
+			if ( ! current_user_can( 'edit_post', $global_id ) ) {
+				wp_send_json_error( 'Insufficient permissions', 403 );
+			}
+			$this->refuse_save_on_edit_conflict( $global_id, __( 'This global layer was saved from somewhere else since you opened it, so nothing was saved.', 'product-configurator-for-woocommerce' ) );
+		} else {
+			// New global layers are published straight away.
+			$post_type_object = get_post_type_object( \MKL\PC\Global_Layer\Schema::CPT_SLUG );
+			if ( ! $post_type_object || ! current_user_can( $post_type_object->cap->create_posts ) || ! current_user_can( $post_type_object->cap->publish_posts ) ) {
+				wp_send_json_error( 'Insufficient permissions', 403 );
+			}
+		}
+
+		// Parse layer data
+		$layer = null;
+		if ( isset( $_REQUEST['layer'] ) && ! empty( $_REQUEST['layer'] ) ) {
+			$layer = json_decode( wp_unslash( $_REQUEST['layer'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is sanitized via db->sanitize() after decode.
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( 'Invalid layer JSON data' );
+			}
+			$layer = $this->db->sanitize( $layer );
+		}
+
+		// Parse content data
+		$content = null;
+		if ( isset( $_REQUEST['content'] ) && ! empty( $_REQUEST['content'] ) ) {
+			$content = json_decode( wp_unslash( $_REQUEST['content'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is sanitized via db->sanitize() after decode.
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( 'Invalid content JSON data' );
+			}
+			$content = $this->db->sanitize( $content );
+		}
+
+		// Views snapshot from the editing product, so the layer can be edited on its own later.
+		$angles = null;
+		if ( isset( $_REQUEST['angles'] ) && ! empty( $_REQUEST['angles'] ) ) {
+			$angles = json_decode( wp_unslash( $_REQUEST['angles'] ), true ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON payload is sanitized via db->sanitize() after decode.
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				wp_send_json_error( 'Invalid angles JSON data' );
+			}
+			$angles = $this->db->sanitize( $angles );
+		}
+
+		// Configurator type of the product the layer is being saved from, so the layer can later be
+		// edited on its own with the right settings. Standalone editing sends nothing, which leaves
+		// the stored type alone - same reasoning as the views snapshot above.
+		$type = null;
+		if ( isset( $_REQUEST['configurator_type'] ) && ! empty( $_REQUEST['configurator_type'] ) ) {
+			$type = sanitize_key( wp_unslash( $_REQUEST['configurator_type'] ) );
+			if ( ! mkl_pc_is_valid_configurator_type( $type ) ) {
+				wp_send_json_error( 'Invalid configurator type' );
+			}
+		}
+
+		// At least one of layer or content must be provided
+		if ( null === $layer && null === $content ) {
+			wp_send_json_error( 'No data provided' );
+		}
+
+		// If global_id is 0 or new, create new post
+		$result_id = $global_id;
+		if ( $global_id <= 0 ) {
+			$result_id = null;
+		}
+
+		// If updating, fetch existing data to merge
+		if ( $result_id ) {
+			$existing = Global_Layers::get( $result_id );
+			if ( null === $layer && $existing['layer'] ) {
+				$layer = $existing['layer'];
+			}
+			if ( null === $content && $existing['content'] ) {
+				$content = $existing['content'];
+			}
+		}
+
+		// Ensure we have both layer and content for saving
+		if ( ! $layer ) {
+			$layer = array( 'name' => 'Global Layer' );
+		}
+		if ( ! $content ) {
+			$content = array();
+		}
+
+		$result = Global_Layers::save( $layer, $content, $result_id, $angles, $type );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( $result->get_error_message() );
+		}
+
+		$edit_token = $this->store_edit_token( (int) $result );
+
+		/**
+		 * Action mkl_pc_saved_global_layer, triggered when a global layer is saved
+		 *
+		 * `$result` rather than `$result_id`, which is null for a layer that was just created.
+		 *
+		 * @param int    $result  - The global layer CPT post ID
+		 * @param array  $layer   - The layer data
+		 * @param array  $content - The content/choices data
+		 */
+		do_action( 'mkl_pc_saved_global_layer', $result, $layer, $content );
+
+		wp_send_json_success( array(
+			'global_id' => $result,
+			'layer' => $layer,
+			'content' => $content,
+			'edit_token' => $edit_token,
+		) );
+	}
+
+	/**
+	 * List all global layers (without content)
+	 */
+	public function list_global_layers() {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			wp_send_json_error( 'Insufficient permissions', 403 );
+		}
+
+		$this->verify_global_layers_nonce();
+
+		// Configurator the dialog is importing into, so each layer can be told apart as one that
+		// will render there or one that will not. Absent (or unknown) means no compatibility
+		// claim is made and nothing is flagged.
+		$destination_type = '';
+		if ( isset( $_REQUEST['configurator_type'] ) && ! empty( $_REQUEST['configurator_type'] ) ) {
+			$requested = sanitize_key( wp_unslash( $_REQUEST['configurator_type'] ) );
+			if ( mkl_pc_is_valid_configurator_type( $requested ) ) {
+				$destination_type = $requested;
+			}
+		}
+
+		$global_ids = Global_Layers::list();
+		$layers = array();
+		$labels = Global_Layers::get_capability_labels();
+
+		foreach ( $global_ids as $global_id ) {
+			$data = Global_Layers::get( $global_id );
+			if ( $data['layer'] && is_array( $data['layer'] ) ) {
+				// Include only layer data, not content
+				$layer_info = $data['layer'];
+				$layer_info['global_id'] = $global_id;
+				$layer_info = $this->db->escape( $layer_info );
+
+				// Added after escaping: these are generated here, not stored layer data, and
+				// db->escape() would walk them looking for keys it knows.
+				$capabilities                    = Global_Layers::derive_capabilities( $data['layer'], Global_Layers::normalize_choices( $data['content'] ) );
+				$layer_info['capabilities']      = $capabilities;
+				$layer_info['capability_labels'] = array_values( array_intersect_key( $labels, array_flip( $capabilities ) ) );
+				$layer_info['compatible']        = $destination_type ? Global_Layers::is_compatible_with( $capabilities, $destination_type ) : true;
+				$layer_info['import_warning']    = $destination_type ? Global_Layers::get_import_warning( $capabilities, $destination_type ) : '';
+
+				$layers[] = $layer_info;
+			}
+		}
+
+		wp_send_json_success( array( 'layers' => $layers ) );
+	}
+
 }
