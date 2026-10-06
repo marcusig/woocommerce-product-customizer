@@ -525,4 +525,5 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
+* 2.0.0 Major update: 3D configurator, global layers and global configurators. Configurator data moves to a new storage format, converted automatically. Back up your site before updating.
 * 1.7.6 Security fix. Please update.
