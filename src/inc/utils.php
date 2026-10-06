@@ -669,5 +669,31 @@ if ( ! class_exists( 'MKL\PC\Utils' ) ) {
 
 			return wp_kses( $svg, self::allowed_svg_tags() );
 		}
+
+		/**
+		 * Unserialize a stored configurator value without ever instantiating an object.
+		 *
+		 * Drop-in replacement for maybe_unserialize() on configurator data. The meta API already
+		 * unserializes what it serialized, so a serialized string reaching this point was stored as a
+		 * string - possibly crafted - and must not be able to trigger PHP object injection.
+		 * Object / class / enum payloads are refused; legacy serialized arrays and scalars still decode,
+		 * so callers keep their own JSON fallback for strings.
+		 *
+		 * @param mixed $data
+		 * @return mixed The unserialized value, the value unchanged when it is not serialized, or false.
+		 */
+		public static function safe_unserialize( $data ) {
+			if ( ! is_string( $data ) || ! is_serialized( $data ) ) {
+				return $data;
+			}
+
+			$trimmed = trim( $data );
+			if ( isset( $trimmed[0] ) && in_array( $trimmed[0], array( 'O', 'C', 'E' ), true ) ) {
+				return false;
+			}
+
+			$unserialized = @unserialize( $trimmed, array( 'allowed_classes' => false ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize, WordPress.PHP.NoSilencedErrors.Discouraged -- Legacy PHP-serialized arrays only; objects are rejected above.
+			return $unserialized;
+		}
 	}
 }

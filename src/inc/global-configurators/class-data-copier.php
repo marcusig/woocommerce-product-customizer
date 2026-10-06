@@ -306,7 +306,7 @@ final class Data_Copier {
 		if ( '' === $raw || null === $raw || false === $raw ) {
 			return array();
 		}
-		$value = maybe_unserialize( $raw );
+		$value = \MKL\PC\Utils::safe_unserialize( $raw );
 		if ( is_array( $value ) ) {
 			return $value;
 		}
@@ -384,7 +384,7 @@ final class Data_Copier {
 			return array();
 		}
 
-		$index = maybe_unserialize( $raw );
+		$index = \MKL\PC\Utils::safe_unserialize( $raw );
 		if ( is_array( $index ) ) {
 			return $index;
 		}

@@ -185,7 +185,7 @@ final class Legacy_Blob_Storage {
 		if ( '' === $data || false === $data ) {
 			return false;
 		}
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			// Try the value as-is first: correctly stored JSON keeps escapes that stripslashes would eat.
 			$decoded = json_decode( $data, true );
@@ -206,7 +206,7 @@ final class Legacy_Blob_Storage {
 		if ( '' === $data || false === $data ) {
 			return false;
 		}
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			// Try the value as-is first: correctly stored JSON keeps escapes that stripslashes would eat.
 			$decoded = json_decode( $data, true );

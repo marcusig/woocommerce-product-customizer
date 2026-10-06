@@ -235,7 +235,7 @@ class DB {
 		if ( '' === $data || false === $data ) {
 			return array();
 		}
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			$data = $this->decode_stored_json( $data );
 		}
@@ -254,7 +254,7 @@ class DB {
 		if ( '' === $data || false === $data ) {
 			return array();
 		}
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			$data = $this->decode_stored_json( $data );
 		}
@@ -361,7 +361,7 @@ class DB {
 			return false;
 		}
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-		$index = maybe_unserialize( $index );
+		$index = \MKL\PC\Utils::safe_unserialize( $index );
 		if ( is_string( $index ) ) {
 			$index = $this->decode_stored_json( $index );
 		}
@@ -463,7 +463,7 @@ class DB {
 	 */
 	private function get_legacy_meta( $product, $meta_key ) {
 		$data = $product->get_meta( $meta_key );
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			$data = $this->decode_stored_json( $data );
 		}
@@ -479,7 +479,7 @@ class DB {
 	 */
 	private function get_layers_chunked( $product_id, $product ) {
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-		$index = maybe_unserialize( $index );
+		$index = \MKL\PC\Utils::safe_unserialize( $index );
 		if ( is_string( $index ) ) {
 			$index = $this->decode_stored_json( $index );
 		}
@@ -494,7 +494,7 @@ class DB {
 		$layers        = array();
 		foreach ( $index as $layer_id ) {
 			$chunk = $product->get_meta( '_mkl_product_configurator_layer_' . $layer_id );
-			$chunk = maybe_unserialize( $chunk );
+			$chunk = \MKL\PC\Utils::safe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
 				$chunk = $this->decode_stored_json( $chunk );
 			}
@@ -525,7 +525,7 @@ class DB {
 	 */
 	private function get_content_chunked( $product_id, $product ) {
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-		$index = maybe_unserialize( $index );
+		$index = \MKL\PC\Utils::safe_unserialize( $index );
 		if ( is_string( $index ) ) {
 			$index = $this->decode_stored_json( $index );
 		}
@@ -543,7 +543,7 @@ class DB {
 		$content = array();
 		foreach ( $index as $layer_id ) {
 			$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
-			$chunk = maybe_unserialize( $chunk );
+			$chunk = \MKL\PC\Utils::safe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
 				$chunk = $this->decode_stored_json( $chunk );
 			}
@@ -647,7 +647,7 @@ class DB {
 		$dirty_owners = array();
 		foreach ( $targets as $target ) {
 			list( $owner, $meta_key ) = $target;
-			$raw = maybe_unserialize( $owner->get_meta( $meta_key, true ) );
+			$raw = \MKL\PC\Utils::safe_unserialize( $owner->get_meta( $meta_key, true ) );
 			// Strings are already JSON; anything not a non-empty array has nothing to rewrite.
 			if ( ! is_array( $raw ) || empty( $raw ) ) {
 				continue;
@@ -721,7 +721,7 @@ class DB {
 		$targets = $this->get_structured_meta_targets( $parent, $content_product, $this->read_layers_index_array( $parent ) );
 		foreach ( $targets as $target ) {
 			list( $owner, $meta_key ) = $target;
-			$raw = maybe_unserialize( $owner->get_meta( $meta_key, true ) );
+			$raw = \MKL\PC\Utils::safe_unserialize( $owner->get_meta( $meta_key, true ) );
 			if ( is_array( $raw ) && ! empty( $raw ) ) {
 				return true;
 			}
@@ -742,7 +742,7 @@ class DB {
 			return array();
 		}
 		$index = $product->get_meta( '_mkl_product_configurator_layers_index', true );
-		$index = maybe_unserialize( $index );
+		$index = \MKL\PC\Utils::safe_unserialize( $index );
 		if ( is_string( $index ) ) {
 			$index = $this->decode_stored_json( $index );
 		}
@@ -770,7 +770,7 @@ class DB {
 		if ( '' === $data || false === $data ) {
 			return false;
 		}
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			$data = $this->decode_stored_json( $data );
 		}
@@ -791,7 +791,7 @@ class DB {
 		if ( '' === $data || false === $data ) {
 			return false;
 		}
-		$data = maybe_unserialize( $data );
+		$data = \MKL\PC\Utils::safe_unserialize( $data );
 		if ( is_string( $data ) ) {
 			$data = $this->decode_stored_json( $data );
 		}
@@ -1048,7 +1048,7 @@ class DB {
 			$layers_status = ( false !== $layers_chunked_data && ! empty( $parent_index ) ) ? 'mixed' : 'legacy';
 			foreach ( $parent_index as $layer_id ) {
 				$raw = $parent->get_meta( '_mkl_product_configurator_layer_' . $layer_id, true );
-				$raw = maybe_unserialize( $raw );
+				$raw = \MKL\PC\Utils::safe_unserialize( $raw );
 				if ( is_string( $raw ) ) {
 					$raw = $this->decode_stored_json( $raw );
 				}
@@ -1101,7 +1101,7 @@ class DB {
 					}
 					foreach ( $content_index as $layer_id ) {
 						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
-						$raw = maybe_unserialize( $raw );
+						$raw = \MKL\PC\Utils::safe_unserialize( $raw );
 						if ( is_string( $raw ) ) {
 							$raw = $this->decode_stored_json( $raw );
 						}
@@ -1140,7 +1140,7 @@ class DB {
 							continue; // Layer deleted since; its content is legitimately gone.
 						}
 						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
-						$raw = maybe_unserialize( $raw );
+						$raw = \MKL\PC\Utils::safe_unserialize( $raw );
 						if ( is_string( $raw ) ) {
 							$raw = $this->decode_stored_json( $raw );
 						}
@@ -1484,7 +1484,7 @@ class DB {
 		// Reached only for a deliberate empty save ('empty' sentinel or a genuinely empty array).
 		if ( empty( $data ) ) {
 			$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-			$old_index = maybe_unserialize( $old_index );
+			$old_index = \MKL\PC\Utils::safe_unserialize( $old_index );
 			if ( is_string( $old_index ) ) {
 				$old_index = $this->decode_stored_json( $old_index );
 			}
@@ -1512,7 +1512,7 @@ class DB {
 		}
 
 		$old_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-		$old_index = maybe_unserialize( $old_index );
+		$old_index = \MKL\PC\Utils::safe_unserialize( $old_index );
 		if ( is_string( $old_index ) ) {
 			$old_index = $this->decode_stored_json( $old_index );
 		}
@@ -1726,7 +1726,7 @@ class DB {
 		}
 
 		$current_index = $product->get_meta( '_mkl_product_configurator_layers_index' );
-		$current_index = maybe_unserialize( $current_index );
+		$current_index = \MKL\PC\Utils::safe_unserialize( $current_index );
 		if ( is_string( $current_index ) ) {
 			$current_index = $this->decode_stored_json( $current_index );
 		}
@@ -1903,7 +1903,7 @@ class DB {
 		}
 		$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
 		if ( '' !== $chunk ) {
-			$chunk = maybe_unserialize( $chunk );
+			$chunk = \MKL\PC\Utils::safe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
 				$chunk = $this->decode_stored_json( $chunk );
 			}
@@ -2570,7 +2570,7 @@ class DB {
 					}
 				}
 			} else {
-				$chunk = maybe_unserialize( $chunk );
+				$chunk = \MKL\PC\Utils::safe_unserialize( $chunk );
 				if ( is_string( $chunk ) ) {
 					$chunk = $this->decode_stored_json( $chunk );
 				}

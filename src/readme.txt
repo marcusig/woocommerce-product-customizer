@@ -4,7 +4,7 @@ Tags: woocommerce,customize,product addons,custom product, product builder
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.7.5
+Stable tag: 1.7.6
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -190,6 +190,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 = 2.0.0 - unreleased =
 
+* SECURITY: The 1.7.6 object-injection hardening now covers every configurator data read, including chunked layer storage, global layers and global configurators
 * FEATURE: Added a "Configuration meta data" setting, to store the configuration as one meta per layer instead of a single meta holding every choice. Individual metas are plain text, so exports, invoices and ERP integrations can read them without parsing markup
 * TWEAK: The classic cart and checkout list one row per layer when the configuration is stored individually, to match the cart and checkout blocks
 * DEV: Added `mkl_pc_get_configuration_meta_mode()` and the filter `mkl_pc/configuration_meta_mode`, to set the mode per product
@@ -203,6 +204,10 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FIX: Configurations now save the order their layers are composited in, so the stacking of the configuration image survives the product's layers being reordered. Configurations saved before this update keep the order the configurator saved them in, rather than having their layers scattered through the stack
 * DEV: Added `MKL\PC\Choice::get_saved_image_id()`, `get_saved()` and `get_image_order()`, and the filters `mkl_pc/choice/image_id`, `mkl_pc/choice/source`, `mkl_pc/choice/saved_value` and `mkl_pc/choice/verify_saved_image`
 * DEV: Added `MKL\PC\Utils::sort_layers_for_merging()`, replacing the three copies of the private `_order_images()` comparator, and the JS filter `PC.fe.save_data.parse_choices.image_order`
+
+= 1.7.6 - 5/Oct/2026 =
+
+* SECURITY: Prevent PHP object injection via configurator data — reject non-JSON saves and do not unserialize objects on read
 
 = 1.7.5 - 11/Aug/2026 =
 
@@ -517,4 +522,4 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 
 == Upgrade Notice ==
 
-* 1.7.5 Various fixes and improvements. See changelog for details.
+* 1.7.6 Security fix. Please update.

@@ -42,7 +42,7 @@ final class Linker {
 	 * @return mixed
 	 */
 	private static function decode_chunk( $value ) {
-		$value = maybe_unserialize( $value );
+		$value = \MKL\PC\Utils::safe_unserialize( $value );
 		if ( is_string( $value ) ) {
 			$db = self::db();
 			if ( $db ) {

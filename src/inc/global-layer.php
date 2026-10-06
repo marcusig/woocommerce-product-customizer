@@ -86,8 +86,8 @@ class Global_Layers {
 		}
 		$layer   = get_post_meta( $global_id, Schema::META_LAYER, true );
 		$content = get_post_meta( $global_id, Schema::META_CONTENT, true );
-		$layer   = maybe_unserialize( $layer );
-		$content = maybe_unserialize( $content );
+		$layer   = \MKL\PC\Utils::safe_unserialize( $layer );
+		$content = \MKL\PC\Utils::safe_unserialize( $content );
 		return array( 'layer' => $layer, 'content' => $content );
 	}
 
@@ -126,7 +126,7 @@ class Global_Layers {
 			return array();
 		}
 
-		$stored = maybe_unserialize( get_post_meta( $global_id, Schema::META_ANGLES, true ) );
+		$stored = \MKL\PC\Utils::safe_unserialize( get_post_meta( $global_id, Schema::META_ANGLES, true ) );
 		if ( is_array( $stored ) && ! empty( $stored ) ) {
 			$angles = array_values( $stored );
 		} else {
@@ -596,7 +596,7 @@ class Global_Layers {
 			return array();
 		}
 		$ids = get_post_meta( $global_id, self::CONSUMERS_META, true );
-		$ids = maybe_unserialize( $ids );
+		$ids = \MKL\PC\Utils::safe_unserialize( $ids );
 		if ( ! is_array( $ids ) ) {
 			return array();
 		}
