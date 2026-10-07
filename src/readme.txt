@@ -1,6 +1,6 @@
 === Product Configurator for WooCommerce ===
 Contributors: mklacroix, marcusig
-Tags: woocommerce,customize,product addons,custom product, product builder
+Tags: 3D configurator, product customizer, product builder, woocommerce, product addons
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
@@ -9,50 +9,59 @@ Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Allow your customers to create configurable products with a live preview of the result. Works using a layer-based system.
+Build 2D and 3D product configurators for WooCommerce. Customers design their product with a live visual preview, then add it to the cart.
 
 == Description ==
 
-**Product Configurator for WooCommerce** lets customers visually customize products using image layers, colors, swatches, conditional logic, pricing rules, file uploads and linked WooCommerce products. Perfect for bicycles, furniture, industrial products and most made-to-order products.
+**Product Configurator for WooCommerce** turns any WooCommerce product into an interactive product builder. Every option a customer picks updates a live preview, so they see exactly what they are buying before they add it to the cart — in **2D** or in **3D**.
 
-Give your customers an interactive experience and eliminate the need for hundreds of product variations and images. Export image layers from Photoshop, 3D renders, or other sources, and let the user assemble their product dynamically: no need for technical skills or bulky setups
+* **2D product configurator** – Stack transparent image layers exported from Photoshop, 3D renders or product photography, across several views (front, side, back…).
+* **3D product configurator** – Upload a glTF / GLB model and let customers rotate, zoom and configure it in real time: show or hide parts, swap materials and colors, move components.
 
-**V2 is Coming soon, with 3D viewer**, global configurators and more. [Read more about v2 here](https://wc-product-configurator.com/2026/08/03/whats-new-in-product-configurator-v2/)
+Add colors and swatches, conditional logic, pricing rules, form fields, file uploads and linked WooCommerce products, and replace hundreds of product variations and images with a single configurable product. Build a configurator once and share it across your whole catalog with **global configurators** and **global layers**.
+
+No coding and no bulky setup: the configurator works with any WooCommerce theme, and everything is managed from a visual editor in the WordPress admin.
+
+**New in version 2:** 3D configurator, global configurators and global layers. [Read what's new in v2](https://wc-product-configurator.com/2026/08/03/whats-new-in-product-configurator-v2/)
 
 **Perfect for:**
 
-* Custom jewelry, 
-* Watches, 
-* Clothing, 
-* Furniture, 
-* Electronics, computers and simulators,
-* Bikes, Bicycles an other vehicles,
-* Industrial or enterprise products,
-* Your custom products!
+* Bikes, bicycles and other vehicles
+* Furniture, sofas and lighting
+* Custom jewelry and watches
+* Clothing, shoes and accessories
+* Electronics, computers and simulators
+* Industrial, B2B and made-to-order products
+* Any product you sell in many combinations
 
-This plugin lets you offer flexible configuration options while keeping your store simple and manageable.
-
-Easily add a product configurator to WordPress, with the plugin Product Configurator for Woo!
-
-🎮 [Check out the live demos](http://demos.mklacroix.com/)  
-🛠️ [Set up a sandbox with admin access](http://demos.mklacroix.com/wp-signup.php)
+🎮 [Check out the live demos](https://demos.mklacroix.com/)  
+🛠️ [Set up a sandbox with admin access](https://demos.mklacroix.com/wp-signup.php)
 
 Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.com/marcusig/woocommerce-product-customizer/issues) or use the [support forum](https://wordpress.org/support/plugin/product-configurator-for-woocommerce/).
 
 === Features ===
 
-==== Build visual product configurators ====
+==== 2D and 3D visual configurators ====
 
-* **Layered Image Rendering** – Compose product previews using transparent PNG layers—no need to create images for every combination.
-* **Multiple Views** – Show multiple angles or perspectives (e.g., front, side, back) of the product.
-* **Live preview**
+* **2D Layered Images** – Compose product previews from transparent PNG layers—no need to create an image for every combination.
+* **3D Models** – Configure glTF / GLB models in real time. Each choice can show, hide or move a part of the model, or change its material.
+* **Multiple Views** – Show several angles of a 2D product, or saved camera views of a 3D model, each framing the part that matters.
+* **Realistic 3D Scenes** – HDRI or cubemap environments, six light types, and soft or real-time shadows.
+* **Fast Loading** – 3D scripts only load on products that use them, and secondary models can load on demand.
+* **Configuration Image in the Cart** – The cart, orders and quotes show a picture of the configured product, in 2D or 3D.
 * **Live Text Overlay** *(via add-on)* – Let customers preview custom text with your fonts and colors—ideal for engraving, embroidery, and personalization.
+* **3D Premium** *(via add-on)* – Clickable hotspots, model animations, augmented reality ("View in your space"), parts that snap onto anchors, and photo-style postprocessing.
+
+==== Reuse configurators across your catalog ====
+
+* **Global Configurators** – Share one configurator between many products. Edit it once and every product using it is updated. Assign it product by product or to whole categories, and detach a single product with "Make local copy" when it needs to differ.
+* **Global Layers** – Build a layer once, such as a fabric range or a color palette, and import it into any configurator. Changes reach every product using it, and any product can disconnect to customize its own copy.
 
 ==== Create smart configuration flows ====
 
 * **Multi-Step Configurator** – Split complex product builds into multiple steps to streamline user experience.
+* **Required Selections** – Make sure customers choose an option before they can add the product to the cart.
 * **Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections. Perfect for complex logic flows.
-* **Required selections**
 * **Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
 
 ==== Connect to WooCommerce ====
@@ -66,12 +75,14 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
   * Support ERP/warehouse integration
   * Build composite/bundled products
   * Use or override linked product pricing
+* **Order Data Your Tools Can Read** – Store the configuration as one plain-text order meta per layer, ready for exports, invoices and ERP integrations.
 
 ==== Ready for your shop ====
 
 * **No development required** — works out of the box on any Woo store
-* **Developer Friendly** – Includes hooks, filters, and a clean, commented codebase to adapt it to your needs.
-* **Accessible** – Full keyboard use, screen-reader friendly labels and live announcements, validation errors shown in-page with links to each field
+* **Multilingual** – Compatible with WPML and Polylang, with translatable layers and choices.
+* **Developer Friendly** – Includes hooks, filters, a JavaScript API, and a clean, commented codebase to adapt it to your needs.
+* **Accessible** – Full keyboard use, including the 3D view, screen-reader friendly labels and live announcements, validation errors shown in-page with links to each field
 
 === Shortcodes ===
 
@@ -193,7 +204,6 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FEATURE: 3D configurator. Set a product's Configurator type to "3D configurator" to configure a glTF / GLB model: layers and choices are bound to named objects in the model, and show, hide, move or change the material of them. The scene supports HDRI and cubemap environments, six light types, eager or lazy model loading, and a camera position per view, which can be imported from the model's own cameras. Customers can rotate and zoom the model, including with the keyboard, and the cart, orders and quotes show a screenshot of the configured model
 * FEATURE: Global layers. Turn any layer into a global layer with "Make Global", then import it into other products with "Import global layer". Products link to the shared layer, so a change made once with "Edit original" reaches every product using it, and "Disconnect from global layer" turns it back into a local layer on one product. Global layers are listed under Product Configurator > Global Layers
 * FEATURE: Global configurators. A product's Configurator source can now be Local or Global: products set to Global share one configurator, stored under Product Configurator > Global configurators, so a change applies to all of them at once. Create one from scratch or with "Turn into global configurator", assign it per product or by product category (subcategories included), and use "Make local copy" to detach a single product
-* SECURITY: The 1.7.6 object-injection hardening now covers every configurator data read, including chunked layer storage, global layers and global configurators
 * FEATURE: Added a "Configuration meta data" setting, to store the configuration as one meta per layer instead of a single meta holding every choice. Individual metas are plain text, so exports, invoices and ERP integrations can read them without parsing markup
 * TWEAK: The classic cart and checkout list one row per layer when the configuration is stored individually, to match the cart and checkout blocks
 * DEV: Added `mkl_pc_get_configuration_meta_mode()` and the filter `mkl_pc/configuration_meta_mode`, to set the mode per product
