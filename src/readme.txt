@@ -161,7 +161,7 @@ There are 3 different ways to install this plugin, as with any other wordpress.o
 = I just found the plugin, how do I use the configurator? =
 Watch the get started video on Youtube:
 
-[youtube https://www.youtube.com/watch?v=qz8L-hMJnKs]
+[youtube https://www.youtube.com/watch?v=G29aEMy-PwY]
 Not enough? Ask your questions <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">on the support forum</a>
 
 = How can I create a custom theme for the configurator? =
