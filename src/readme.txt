@@ -104,6 +104,7 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 
 The core plugin is fully functional. Extend it with these premium modules:
 
+* [**3D Premium**](https://wc-product-configurator.com/product/3d-premium-for-3d-product-configurator/) – Hotspots, animations, augmented reality, parts that snap onto anchors and photo-quality rendering for 3D configurators
 * [**Extra Price**](https://wc-product-configurator.com/product/extra-price/) – Add custom pricing to options  
 * [**Save Your Design**](https://wc-product-configurator.com/product/save-your-design/) – Let users save and share their designs, create configuration presets
 * [**Multiple Choice**](https://wc-product-configurator.com/product/multiple-choice/) – Enable multi-select per layer  
@@ -113,20 +114,6 @@ The core plugin is fully functional. Extend it with these premium modules:
 * [**Text Overlay**](https://wc-product-configurator.com/product/text-overlay/) – Let users preview personalized text in real time
 
 💬 For custom development or tailored integrations, [contact me here](https://wc-product-configurator.com/contact/).
-
-=== Credits ===
-
-The product configurator plugin uses other Open Source libraries:
-* PixiJS
-* Three.js
-* tippy and popper.js
-* html2canvas.js
-* download.js by dandavis
-* Intervention/Image
-
-Open Source SVG icons: 
-* Blender.org UI icons
-* WordPress Gutenberg icons
 
 == Installation ==
 
@@ -164,6 +151,29 @@ Watch the get started video on Youtube:
 [youtube https://www.youtube.com/watch?v=G29aEMy-PwY]
 Not enough? Ask your questions <a href="https://wordpress.org/support/plugin/product-configurator-for-woocommerce/">on the support forum</a>
 
+= Can I use 3D models? Which formats are supported? =
+Yes. Set the product's Configurator type to "3D configurator" and upload a glTF model, as a `.glb` file, a `.gltf` file, or a `.zip` containing the `.gltf` file and its textures. Models compressed with Draco or Meshopt, and KTX2 textures, are supported through options in the settings.
+
+The parts customers can configure must be separate, named objects in the model: choices are linked to those objects by name, and can show, hide or move them, or change their material.
+
+= Do I still need product variations? =
+No. A single product with a configurator replaces the variations and the images for every combination: customers pick their options and the preview is built from your layers or your 3D model. Prices, stock and SKUs per option are available with the Extra Price and Linked Products & Stock Management add-ons.
+
+Variable products are supported too, if you need them: their variations can share one configurator or each have their own.
+
+= Can several products share the same configurator? =
+Yes, with global configurators. Build a configurator once under Product Configurator > Global configurators, or turn an existing product's configurator into a global one, then assign it to products or to whole product categories. A change made to a global configurator applies to every product using it, and any product can be detached with "Make local copy".
+
+To share only part of a configurator, such as a fabric range, make a layer global and import it into other products.
+
+= Does it work with my theme or page builder? =
+Yes. By default the configurator opens from a "Configure" button that replaces the Add to cart button, which works with any WooCommerce theme. To embed the configurator in the product page, or anywhere else, use the `[mkl_configurator]` and `[mkl_configurator_button]` shortcodes in a block theme template, Elementor, Divi or any other page builder.
+
+The configurator's look comes from its own themes, which you can pick and adjust in the settings and the WordPress Customizer.
+
+= Can customers see the product in augmented reality? =
+Yes, with the [3D Premium](https://wc-product-configurator.com/product/3d-premium-for-3d-product-configurator/) add-on. Customers on a phone or tablet get a "View in your space" button that places the product, as they configured it, in their room through the camera. It uses AR Quick Look on iPhone and iPad, and WebXR in Chrome on ARCore Android devices. The site must be served over HTTPS.
+
 = How can I create a custom theme for the configurator? =
 Use the starter theme, which you can find on <a href="https://github.com/marcusig/product-configurator-custom-theme">github</a> with simple instructions to get started.
 
@@ -173,6 +183,21 @@ Yes, the plugin is compatible with both, and will add localization for the layer
 = How can I optimize the layers in the configurator? =
 We recommend using a plugin such as WP-Optimize for all-round performance improvements:
 [vimeo https://vimeo.com/333705073]
+
+= Which open source libraries does the plugin use? =
+The product configurator plugin uses other Open Source libraries:
+
+* PixiJS
+* Three.js
+* tippy and popper.js
+* html2canvas.js
+* download.js by dandavis
+* Intervention/Image
+
+Open Source SVG icons:
+
+* Blender.org UI icons
+* WordPress Gutenberg icons
 
 == Screenshots ==
 
@@ -205,6 +230,7 @@ We recommend using a plugin such as WP-Optimize for all-round performance improv
 * FEATURE: Global layers. Turn any layer into a global layer with "Make Global", then import it into other products with "Import global layer". Products link to the shared layer, so a change made once with "Edit original" reaches every product using it, and "Disconnect from global layer" turns it back into a local layer on one product. Global layers are listed under Product Configurator > Global Layers
 * FEATURE: Global configurators. A product's Configurator source can now be Local or Global: products set to Global share one configurator, stored under Product Configurator > Global configurators, so a change applies to all of them at once. Create one from scratch or with "Turn into global configurator", assign it per product or by product category (subcategories included), and use "Make local copy" to detach a single product
 * FEATURE: Added a "Configuration meta data" setting, to store the configuration as one meta per layer instead of a single meta holding every choice. Individual metas are plain text, so exports, invoices and ERP integrations can read them without parsing markup
+* PERFORMANCE: Added performance settings, grouping the caching, asynchronous loading and GZIP options in a new Performance section with two new options. "Only render the images the configurator is showing" keeps one image per layer in the viewer instead of one per choice, which makes large configurations lighter and angle changes faster (on for new installs, off for existing stores). "Clear cached configurations when a page cache is cleared" makes the purge triggered by WP Rocket, LiteSpeed Cache and WP-Optimize optional: it stays on, and turning it off avoids rebuilding every configuration at once when the page cache is cold
 * TWEAK: The classic cart and checkout list one row per layer when the configuration is stored individually, to match the cart and checkout blocks
 * DEV: Added `mkl_pc_get_configuration_meta_mode()` and the filter `mkl_pc/configuration_meta_mode`, to set the mode per product
 * DEV: Added the filters `mkl_pc/order_created/individual_meta/key`, `mkl_pc/order_created/individual_meta/value` and `mkl_pc/order_created/individual_meta/keep_html`
