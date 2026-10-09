@@ -25,7 +25,12 @@
 		return false;
 	} );
 
-	wp.hooks.addFilter( 'PC.fe.close_choices_after_selection', 'MKL/PC/Themes/ev', function() {
+	wp.hooks.addFilter( 'PC.fe.close_choices_after_selection', 'MKL/PC/Themes/ev', function( close_choices, choice ) {
+		var layer = choice && PC.fe.layers ? PC.fe.layers.get( choice.get( 'layerId' ) ) : null;
+		// A dropdown uses "active" as its open state. Other layers stay open after a choice.
+		if ( layer && 'dropdown' === layer.get( 'display_mode' ) ) {
+			return close_choices;
+		}
 		return false;
 	} );
 
@@ -42,6 +47,14 @@
 		bind_scroll_activation( view );
 	}, 30 );
 
+	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/ev/viewer-actions', function( view ) {
+		place_viewer_actions( view );
+	}, 40 );
+
+	wp.hooks.addAction( 'PC.fe.syd.modal.init', 'MKL/PC/Themes/ev', function( view ) {
+		if ( view && view.open ) view.open();
+	} );
+
 	wp.hooks.addAction( 'PC.fe.layers_list.layers.added', 'MKL/PC/Themes/ev', function() {
 		schedule_update();
 	} );
@@ -52,6 +65,11 @@
 
 	wp.hooks.addAction( 'PC.fe.layer.render', 'MKL/PC/Themes/ev', function( layer ) {
 		bind_dropdown( layer );
+		if ( layer && layer.el ) polish_radio_prices( layer.el );
+	} );
+
+	wp.hooks.addAction( 'PC.fe.configurator.choice-item-form.render', 'MKL/PC/Themes/ev', function( view ) {
+		if ( view && view.el ) polish_radio_prices( view.el );
 	} );
 
 	wp.hooks.addAction( 'PC.fe.layer.activate', 'MKL/PC/Themes/ev', function( view ) {
@@ -72,9 +90,46 @@
 	wp.hooks.addAction( 'PC.fe.choice.set_choice', 'MKL/PC/Themes/ev', function( model, choice_view, details ) {
 		if ( ! details || 'user' !== details.origin || ! model || ! PC.fe.layers ) return;
 		var layer = PC.fe.layers.get( model.get( 'layerId' ) );
-		if ( ! layer ) return;
+		if ( ! layer || 'dropdown' === layer.get( 'display_mode' ) ) return;
 		activate_model( layer );
 	} );
+
+	/**
+	 * Park save, share, PDF and reset on the viewer as icon buttons.
+	 *
+	 * Reset's click is delegated from the footer, so it is wired again after the move.
+	 *
+	 * @param {Backbone.View} view Configurator view.
+	 */
+	function place_viewer_actions( view ) {
+		var actions = view.$( '.footer__section-center' );
+		var viewer = view.$( '.mkl_pc_viewer' );
+		if ( ! actions.length || ! viewer.length || ! actions.children().length ) return;
+
+		viewer.append( actions );
+
+		actions.on( 'click', '.reset-configuration', function( event ) {
+			if ( view.footer && view.footer.reset_configurator ) {
+				view.footer.reset_configurator( event );
+			}
+		} );
+
+		if ( ! window.tippy ) return;
+
+		actions.find( '.mkl-footer--action-button' ).each( function( index, button ) {
+			if ( button._tippy ) return;
+			var label = button.getAttribute( 'aria-label' );
+			if ( ! label ) {
+				label = $( button ).find( 'span' ).first().text();
+			}
+			if ( ! label ) return;
+			window.tippy( button, {
+				content: label,
+				placement: 'top',
+				zIndex: 100001
+			} );
+		} );
+	}
 
 	/**
 	 * Watch the scrollport and mark the layer that has reached the activation line.
@@ -166,6 +221,45 @@
 	}
 
 	/**
+	 * Keep the menu clear of the sticky footer.
+	 *
+	 * @return {{top: number, right: number, bottom: number, left: number}}
+	 */
+	function menu_boundary_padding() {
+		var footer = document.querySelector( '.mkl_pc.ev .mkl_pc_footer' );
+		var bottom = 8;
+		if ( footer ) {
+			bottom = Math.round( footer.getBoundingClientRect().height ) + 8;
+		}
+		return { top: 8, right: 8, bottom: bottom, left: 8 };
+	}
+
+	/**
+	 * Move a radio option's trailing price into its own element so it can sit on the right.
+	 *
+	 * @param {HTMLElement} root
+	 */
+	function polish_radio_prices( root ) {
+		var labels = root.querySelectorAll( '.mkl-pc-radio-field-label' );
+		var index;
+		for ( index = 0; index < labels.length; index++ ) {
+			var label = labels[ index ];
+			if ( label.querySelector( '.ev-radio-price' ) ) continue;
+			var node = label.lastChild;
+			while ( node && node.nodeType === 3 && ! node.textContent.trim() ) {
+				node = node.previousSibling;
+			}
+			if ( ! node || node.nodeType !== 3 ) continue;
+			var text = node.textContent.replace( /^\s*\(/, '' ).replace( /\)\s*$/, '' ).trim();
+			if ( ! text ) continue;
+			var price = document.createElement( 'span' );
+			price.className = 'ev-radio-price';
+			price.textContent = text;
+			label.replaceChild( price, node );
+		}
+	}
+
+	/**
 	 * Place a dropdown layer's choices above or below its button.
 	 *
 	 * @param {Backbone.View} layer Layer view.
@@ -174,7 +268,7 @@
 		if ( ! layer || ! layer.model || 'dropdown' !== layer.model.get( 'display_mode' ) ) return;
 		if ( layer.popper || ! window.Popper ) return;
 
-		var reference = layer.$( '> button.layer-item' ).get( 0 );
+		var reference = layer.el;
 		var menu = layer.$( '> .layer_choices' ).get( 0 );
 		if ( ! reference || ! menu ) return;
 
@@ -185,20 +279,57 @@
 			modifiers: [
 				{
 					name: 'offset',
-					options: { offset: [ 0, 4 ] }
+					options: { offset: [ 0, 0 ] }
+				},
+				{
+					name: 'matchReferenceWidth',
+					enabled: true,
+					phase: 'beforeWrite',
+					requires: [ 'computeStyles' ],
+					fn: function( data ) {
+						data.state.styles.popper.width = Math.round( data.state.rects.reference.width ) + 'px';
+					}
+				},
+				{
+					name: 'clearFooter',
+					enabled: true,
+					phase: 'main',
+					fn: function( data ) {
+						var stored = data.state.modifiersData.clearFooter;
+						if ( stored && stored._skip ) return;
+
+						var footer = document.querySelector( '.mkl_pc.ev .mkl_pc_footer' );
+						if ( ! footer ) return;
+
+						var reference_rect = data.state.elements.reference.getBoundingClientRect();
+						var footer_top = footer.getBoundingClientRect().top;
+						var menu_height = data.state.rects.popper.height;
+						var gap = 8;
+						var space_below = footer_top - gap - reference_rect.bottom;
+						var space_above = reference_rect.top - gap;
+						var next = 'bottom-start';
+
+						if ( menu_height > space_below && space_above > space_below ) {
+							next = 'top-start';
+						}
+
+						if ( data.state.placement === next ) return;
+
+						data.state.placement = next;
+						data.state.reset = true;
+						data.state.modifiersData.clearFooter = { _skip: true };
+					}
 				},
 				{
 					name: 'flip',
-					options: {
-						fallbackPlacements: [ 'top-start' ],
-						boundary: boundary
-					}
+					enabled: false
 				},
 				{
 					name: 'preventOverflow',
 					options: {
 						boundary: boundary,
-						padding: 8
+						padding: menu_boundary_padding,
+						altAxis: true
 					}
 				},
 				{
@@ -288,9 +419,11 @@
 	function activate_model( model ) {
 		if ( ! model || model.get( 'active' ) || model.get( 'not_a_choice' ) || model.get( 'is_step' ) ) return;
 		model.collection.each( function( other ) {
-			if ( other !== model && other.get( 'active' ) ) {
-				other.set( 'active', false );
-			}
+			if ( other === model || ! other.get( 'active' ) ) return;
+			// The open step stays active. Turning it off hides the whole step.
+			if ( other.get( 'is_step' ) ) return;
+			if ( model.get( 'parent' ) && String( other.id ) === String( model.get( 'parent' ) ) ) return;
+			other.set( 'active', false );
 		} );
 		model.set( 'active', true );
 		PC.fe.current_layer = model;
