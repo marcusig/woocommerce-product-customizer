@@ -48,8 +48,20 @@
 	}, 30 );
 
 	wp.hooks.addAction( 'PC.fe.start', 'MKL/PC/Themes/ev/viewer-actions', function( view ) {
+		// The 3D viewer empties its root when the real view replaces the placeholder.
+		// Moving the actions before that deletes them, so wait for the real view.
+		var viewer = view.$( '.mkl_pc_viewer--3d' );
+		if ( viewer.length && viewer.find( '.mkl_pc_3d_loading' ).length ) {
+			return;
+		}
 		place_viewer_actions( view );
 	}, 40 );
+
+	wp.hooks.addAction( 'PC.fe.viewer.render', 'MKL/PC/Themes/ev/viewer-actions', function( viewer_view ) {
+		if ( ! viewer_view || ! viewer_view.el || ! viewer_view.el.classList.contains( 'mkl_pc_viewer--3d' ) ) return;
+		if ( ! PC.fe || ! PC.fe.modal ) return;
+		place_viewer_actions( PC.fe.modal );
+	} );
 
 	wp.hooks.addAction( 'PC.fe.syd.modal.init', 'MKL/PC/Themes/ev', function( view ) {
 		if ( view && view.open ) view.open();
@@ -105,6 +117,7 @@
 		var actions = view.$( '.footer__section-center' );
 		var viewer = view.$( '.mkl_pc_viewer' );
 		if ( ! actions.length || ! viewer.length || ! actions.children().length ) return;
+		if ( actions.parent().is( viewer ) ) return;
 
 		viewer.append( actions );
 

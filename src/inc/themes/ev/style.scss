@@ -25,6 +25,11 @@ $border-radius: 10px;
 	--ev-line: #{$line};
 	--ev-viewer-element-background: #{$viewer-element-background};
 	--ev-border-radius: #{$border-radius};
+	--ev-viewer-inset: 0px;
+	--ev-viewer-inset-mobile: 0px;
+	--ev-viewer-radius: 0px;
+	--ev-viewer-radius-mobile: 0px;
+	--ev-viewer-aspect-ratio: 4 / 3;
 }
 
 .mkl_pc.ev,
@@ -131,7 +136,9 @@ body.configurator_is_inline .mkl_pc.ev {
 
 		.mkl_pc_layers {
 			position: absolute;
-			inset: 24px 16px 72px;
+			inset: var(--ev-viewer-inset, 0px);
+			border-radius: var(--ev-viewer-radius, 0px);
+			overflow: hidden;
 			text-align: center;
 
 			img {
@@ -140,6 +147,7 @@ body.configurator_is_inline .mkl_pc.ev {
 				top: 50%;
 				max-width: 100%;
 				max-height: 100%;
+				border-radius: inherit;
 				transform: translate(-50%, -50%);
 				user-select: none;
 				-webkit-user-drag: none;
@@ -154,6 +162,12 @@ body.configurator_is_inline .mkl_pc.ev {
 		.mkl_pc_3d_canvas_container {
 			position: absolute;
 			inset: 0;
+			overflow: hidden;
+			border-radius: inherit;
+
+			canvas {
+				border-radius: inherit;
+			}
 		}
 
 		.angles-select {
@@ -1387,11 +1401,6 @@ body.configurator_is_inline .mkl_pc.ev {
 body.admin-bar:not(.configurator_is_inline) .mkl_pc.ev .mkl_pc_viewer {
 	height: calc(100vh - 32px);
 	min-height: calc(100vh - 32px);
-
-	@media (max-width: 782px) {
-		height: calc(100vh - 46px);
-		min-height: calc(100vh - 46px);
-	}
 }
 
 body.admin-bar:not(.configurator_is_inline) .mkl_pc.ev .mkl_pc_toolbar > header .cancel {
@@ -1412,8 +1421,14 @@ body.admin-bar.configurator_is_inline .mkl_pc.ev .mkl_pc_viewer {
 	.mkl_pc.ev .mkl_pc_container {
 		.mkl_pc_viewer {
 			width: 100%;
-			height: 52vh;
-			min-height: 52vh;
+			height: auto;
+			min-height: 0;
+			aspect-ratio: var(--ev-viewer-aspect-ratio, 4 / 3);
+
+			.mkl_pc_layers {
+				inset: var(--ev-viewer-inset-mobile, 0px);
+				border-radius: var(--ev-viewer-radius-mobile, 0px);
+			}
 
 			.angles-select {
 				bottom: 64px;
@@ -1430,8 +1445,9 @@ body.admin-bar.configurator_is_inline .mkl_pc.ev .mkl_pc_viewer {
 
 	body.admin-bar:not(.configurator_is_inline) .mkl_pc.ev .mkl_pc_viewer,
 	body.admin-bar.configurator_is_inline .mkl_pc.ev .mkl_pc_viewer {
-		height: 46vh;
-		min-height: 46vh;
+		height: auto;
+		min-height: 0;
+		aspect-ratio: var(--ev-viewer-aspect-ratio, 4 / 3);
 	}
 }
 
