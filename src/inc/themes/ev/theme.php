@@ -382,11 +382,12 @@ function mkl_pc_ev_customizer_css() {
 	$inset_mobile  = mkl_pc_ev_sanitize_viewer_inset( get_option( 'mkl_pc_theme_ev_viewer_inset_mobile', 0 ) );
 	$viewer_radius = mkl_pc_ev_sanitize_viewer_radius( get_option( 'mkl_pc_theme_ev_viewer_radius', 10 ) );
 	$aspect_ratio  = mkl_pc_ev_aspect_ratio_css( get_option( 'mkl_pc_theme_ev_viewer_aspect_ratio', '4/3' ) );
-	$footer        = mkl_pc_ev_sanitize_footer_position( get_option( 'mkl_pc_theme_ev_footer_position', 'sticky' ) );
+	$footer         = mkl_pc_ev_sanitize_footer_position( get_option( 'mkl_pc_theme_ev_footer_position', 'sticky' ) );
 	$radius_desktop = $inset > 0 ? $viewer_radius : 0;
 	$radius_mobile  = $inset_mobile > 0 ? $viewer_radius : 0;
+	$end_space      = 'static' === $footer ? '0px' : '42vh';
 
-	$css = '.mkl_pc.ev { --ev-border-radius: ' . $radius . 'px; --ev-viewer-inset: ' . $inset . 'px; --ev-viewer-inset-mobile: ' . $inset_mobile . 'px; --ev-viewer-radius: ' . $radius_desktop . 'px; --ev-viewer-radius-mobile: ' . $radius_mobile . 'px; --ev-viewer-aspect-ratio: ' . $aspect_ratio . '; }';
+	$css = '.mkl_pc.ev { --ev-border-radius: ' . $radius . 'px; --ev-viewer-inset: ' . $inset . 'px; --ev-viewer-inset-mobile: ' . $inset_mobile . 'px; --ev-viewer-radius: ' . $radius_desktop . 'px; --ev-viewer-radius-mobile: ' . $radius_mobile . 'px; --ev-viewer-aspect-ratio: ' . $aspect_ratio . '; --ev-choices-end-space: ' . $end_space . '; }';
 
 	if ( 'static' === $footer ) {
 		$css .= ' .mkl_pc.ev .mkl_pc_container .mkl_pc_footer { position: static; }';

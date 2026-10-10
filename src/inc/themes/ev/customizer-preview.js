@@ -105,10 +105,15 @@
 
 	api( 'mkl_pc_theme_ev_footer_position', function( value ) {
 		value.bind( function( new_value ) {
+			var root = document.querySelector( '.mkl_pc.ev' );
 			var footer = document.querySelector( '.mkl_pc.ev .mkl_pc_footer' );
+			var is_static = 'static' === new_value;
 
+			if ( root ) {
+				root.style.setProperty( '--ev-choices-end-space', is_static ? '0px' : '42vh' );
+			}
 			if ( footer ) {
-				footer.style.position = 'static' === new_value ? 'static' : 'sticky';
+				footer.style.position = is_static ? 'static' : 'sticky';
 			}
 		} );
 	} );
