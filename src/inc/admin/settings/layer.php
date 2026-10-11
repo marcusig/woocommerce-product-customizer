@@ -299,7 +299,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 12,
-					'help'      => __( 'Optional. Narrows the layer to one object of the model: its choices show, hide, recolour or move this object instead of the whole model. Choices can pick their own.', 'product-configurator-for-woocommerce' ),
+					'help'      => __( 'Optional. Narrows the layer to one object of the model: its choices show, hide, recolour or move this object instead of the whole model. Choices can pick their own. On a layer without choices, the object is shown while the layer is shown: use conditional logic to show or hide it.', 'product-configurator-for-woocommerce' ),
 					'html'      => '<div class="mkl-pc-setting--container">'
 						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Whole model', 'product-configurator-for-woocommerce' ) . '"> '
 						. ' <button type="button" class="button mkl-pc--action" data-action="select_3d_object" data-setting="target_object_id">' . esc_html__( 'Select from list', 'product-configurator-for-woocommerce' ) . '</button>'
