@@ -1101,6 +1101,9 @@ IMPORT / EXPORT
 		<h3><?php esc_html_e( 'Preview', 'product-configurator-for-woocommerce' ); ?></h3>
 		<p><?php esc_html_e( 'Review the data and press Import data to import it to this product.', 'product-configurator-for-woocommerce' ); ?></p>
 		<p><strong><?php esc_html_e( 'Note that any existing configuration will be overriden.', 'product-configurator-for-woocommerce' ); ?></strong></p>
+		<# if ( data.has_3d_data && ! data.destination_is_3d ) { #>
+			<div class="notice notice-warning inline"><p><?php esc_html_e( 'This file comes from a 3D configurator, but this product uses a 2D configurator. Its 3D objects and settings will not be imported. To import them, switch the configurator type to 3D, save the product, then import the file again.', 'product-configurator-for-woocommerce' ); ?></p></div>
+		<# } #>
 		<button class="import-selected button button-primary" type="button"><?php esc_html_e( 'Import data', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 	<div class="preview-content">
@@ -1133,6 +1136,20 @@ IMPORT / EXPORT
 					<# PC._us.each( data.angles, function( angle ) { #>
 						<li>{{angle.name}}</li>
 					<# }); #>
+				</ul>
+			</div>
+		<# } #>
+
+		<# if ( data.has_3d_data && data.destination_is_3d ) { #>
+			<div class="preview-content--collection">
+				<h4><?php esc_html_e( '3D objects and settings:', 'product-configurator-for-woocommerce' ); ?></h4>
+				<ul class="ul-disc">
+					<# PC._us.each( data.objects3d, function( object3d ) { #>
+						<li>{{object3d.name || object3d.object_type}}</li>
+					<# }); #>
+					<# if ( data.settings_3d ) { #>
+						<li><?php esc_html_e( '3D settings', 'product-configurator-for-woocommerce' ); ?></li>
+					<# } #>
 				</ul>
 			</div>
 		<# } #>

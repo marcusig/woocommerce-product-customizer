@@ -92,37 +92,19 @@ PC.import.views = PC.import.views || {};
 			this.current_tool.remove();
 		},
 		export: function() {
-			// exportToJsonFile
-			var data = {};
-			data.layers = PC.app.get_collection( 'layers' );
-			data.angles = PC.app.get_collection( 'angles' );
-			data.content = PC.app.get_collection( 'content' );
-			if ( PC.views.conditional ) {
-				// maybe fetch the conditions, then run the export again
-				var product = PC.app.get_product(); 
-
-				if( ! product.get( 'conditions' ) ) {
-					var conditions = new PC.conditionsCollection();
-					
-					product.set( 'conditions' , conditions );
-					console.log('fetching conditions');
-					conditions.fetch({
-						url: conditions.url() + '&id=' + product.id,
-						success: function( a, b ) {
-							this.export();
-						}.bind( this ),
-						error: function( a, b ) {
-							console.log('error', a, b);
-						}
-					});
-					return;
-				}
-
-				data.conditions = PC.app.get_collection( 'conditions' );
-			}
-
-			exportToJsonFile( data );
-			
+			// Same component list as copying to a global configurator, so the 3D settings and
+			// objects (and anything an add-on registers) travel with the file.
+			PC.app.ensureConditionsLoaded( function() {
+				var data = {};
+				_.each( PC.app.getTransferableComponents(), function( key ) {
+					// Layers, angles and content are always written, empty or not: the importer
+					// reads them unconditionally.
+					if ( _.contains( [ 'layers', 'angles', 'content' ], key ) || PC.app.componentHasData( key ) ) {
+						data[ key ] = PC.app.get_collection( key );
+					}
+				} );
+				exportToJsonFile( data );
+			} );
 		},
 	});
 
@@ -344,7 +326,10 @@ PC.import.views = PC.import.views || {};
 			this.render();
 		},
 		render: function() {
-			this.$el.append( this.template( Import.imported_data.collections ) );
+			this.$el.append( this.template( _.extend( {}, Import.imported_data.collections, {
+				has_3d_data: has_3d_data( Import.imported_data.collections ),
+				destination_is_3d: destination_is_3d(),
+			} ) ) );
 		},
 		open_json_file: function( ef ) {
 			console.log( ef );
@@ -358,6 +343,8 @@ PC.import.views = PC.import.views || {};
 			PC.app.admin_data.set( 'layers', Import.imported_data.collections.layers );
 			// Add the angles
 			PC.app.admin_data.set( 'angles', Import.imported_data.collections.angles );
+			// Add the 3D settings and objects
+			import_3d_data( Import.imported_data.collections );
 			// Parse those
 			PC.app.admin.set_data();
 
@@ -645,6 +632,55 @@ PC.import.views = PC.import.views || {};
 			this.model.set( 'selected', ! this.model.get( 'selected' ) );
 		}
 	} );
+
+	/**
+	 * Whether an export file carries 3D settings or objects.
+	 *
+	 * @param {Object} collections Parsed export file.
+	 * @return {boolean}
+	 */
+	var has_3d_data = function( collections ) {
+		return !! ( collections && ( ( collections.objects3d && collections.objects3d.length ) || ( collections.settings_3d && ! _.isEmpty( collections.settings_3d ) ) ) );
+	};
+
+	/**
+	 * Whether the editor is open on a 3D configurator.
+	 *
+	 * The 3D components are only loaded for one (see DB::get_init_data), so their presence is the test.
+	 *
+	 * @return {boolean}
+	 */
+	var destination_is_3d = function() {
+		return !! ( PC.app.admin && PC.app.admin.settings_3d );
+	};
+
+	/**
+	 * Stage the 3D components of an export file in admin_data, ready for set_data().
+	 *
+	 * A 2D configurator cannot edit or render them, so they are left out there (the preview says so).
+	 *
+	 * @param {Object} collections Parsed export file.
+	 * @return {void}
+	 */
+	var import_3d_data = function( collections ) {
+		if ( ! destination_is_3d() ) return;
+
+		if ( has_3d_data( collections ) ) {
+			// Files from an older version can miss keys the 3D views expect.
+			var defaults = ( typeof PC_lang !== 'undefined' && PC_lang.default_settings_3d ) ? PC_lang.default_settings_3d : {};
+			PC.app.admin_data.set( 'settings_3d', $.extend( true, {}, defaults, collections.settings_3d || {} ) );
+			PC.app.admin_data.set( 'objects3d', collections.objects3d || [] );
+			PC.app.is_modified[ 'settings_3d' ] = true;
+			PC.app.is_modified[ 'objects3d' ] = true;
+			return;
+		}
+
+		// A 2D file keeps the current 3D setup. set_data() rebuilds it from admin_data, which still
+		// holds what the editor loaded, so hand it the current state or unsaved edits are lost.
+		var objects3d = PC.app.get_collection( 'objects3d' );
+		if ( objects3d ) PC.app.admin_data.set( 'objects3d', objects3d.toJSON() );
+		PC.app.admin_data.set( 'settings_3d', PC.app.admin.settings_3d );
+	};
 
 	var exportToJsonFile = function ( jsonData ) {
 		var dataStr = JSON.stringify( jsonData );
