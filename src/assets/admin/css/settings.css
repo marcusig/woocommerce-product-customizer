@@ -269,62 +269,87 @@ body.mkl-pc-settings h1 span.version {
 }
 
 .mkl-pc-themes {
-	position: absolute;
-	min-height: 60vh;
-	min-width: 60vw;
-	background: #eaeaea;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: min(92vw, 1180px);
+	height: min(86vh, 820px);
+	background: #f0f0f1;
+	border-radius: 4px;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+	overflow: hidden;
+}
+
+.mkl-pc-themes__layout {
+	display: flex;
+	flex: 1;
+	min-height: 0;
 }
 
 .themes-list {
 	display: flex;
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: calc(100% - 80px);
-	padding: 1em;
-	align-items: start;
-    align-content: flex-start;
-	box-sizing: border-box;	
+	flex-direction: column;
+	flex-wrap: nowrap;
+	align-items: stretch;
+	gap: 8px;
+	position: relative;
+	flex: 0 0 300px;
+	width: 300px;
+	height: auto;
+	min-height: 0;
+	padding: 12px;
+	box-sizing: border-box;
 	overflow-y: auto;
-	flex-wrap: wrap;
 }
 
 .mkl-pc-themes footer {
 	display: flex;
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	height: 80px;
-	border-top: 1px solid #CCC;
+	position: relative;
+	flex: 0 0 auto;
+	justify-content: flex-end;
 	align-items: center;
+	width: 100%;
+	height: auto;
+	padding: 12px 16px;
+	border-top: 1px solid #dcdcde;
+	background: #fff;
+	box-sizing: border-box;
 }
 
 .mkl-pc-themes .actions {
-	justify-self: right;
-	padding-right: 1.5em;
-	padding-left: 1em;
+	display: flex;
+	gap: 8px;
+	padding: 0;
 }
 
-.mkl-pc-themes .selection {
-	flex: 1;
+.mkl-pc-themes .actions .button {
+	margin: 0;
 }
 
 .themes-list .mkl-pc__theme {
-	width: calc(33% - 1em);
+	display: flex;
+	flex: 0 0 auto;
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin: 0;
+	padding: 8px;
 	box-sizing: border-box;
-	background: #FFF;
-	margin-right: 1em;
-	margin-bottom: 1em;
-	padding: 2px;
-	border-radius: 6px;
+	background: #fff;
+	border-radius: 4px;
 	position: relative;
 	overflow: hidden;
 }
 
-.themes-list .mkl-pc__theme.selected {
-	box-shadow: 0 0 0 3px #eaeaea, 0 0 0 5px #2271b1;
+.themes-list .mkl-pc__theme:hover {
+	background: #f6f7f7;
+}
+
+.themes-list .mkl-pc__theme.selected,
+.themes-list .mkl-pc__theme:focus-within {
+	background: #f0f6fc;
+	box-shadow: inset 0 0 0 2px #2271b1;
 }
 
 .themes-list .mkl-pc__theme .trigger {
@@ -337,100 +362,148 @@ body.mkl-pc-settings h1 span.version {
 	appearance: none;
 	background: transparent;
 	border: none;
+	padding: 0;
+	cursor: pointer;
 	z-index: 3;
+}
+
+.themes-list .mkl-pc__theme .trigger:focus {
+	outline: none;
+}
+
+.themes-list .mkl-pc__theme .theme-preview {
+	flex: 0 0 108px;
+	width: 108px;
+	background: #f0f0f1;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	overflow: hidden;
 }
 
 .themes-list .mkl-pc__theme .theme-preview img {
 	display: block;
-	max-width: 100%;
+	width: 100%;
+	height: 64px;
+	max-width: none;
+	object-fit: cover;
+	object-position: center top;
 }
 
 .themes-list .mkl-pc__theme .text {
-	position: absolute;
-	visibility: hidden;
-	transition: .2s all ease-out;
-	top: 100%;
-	height: 100%;
-	width: 100%;
-	background: #fffffff2;
-	left: 0;
-	border-radius: 6px;
-	padding: 1.7em;
-	box-sizing: border-box;
-	opacity: 0;
-	z-index: 2;
-}
-
-.themes-list .mkl-pc__theme:hover .text {
-	top: 0;
+	position: static;
 	visibility: visible;
 	opacity: 1;
+	height: auto;
+	width: auto;
+	background: transparent;
+	padding: 0;
 }
 
-.themes-list .mkl-pc__theme span.no-preview {
-	display: block;
-	height: 0;
-	padding-bottom: 65%;
+.themes-list .mkl-pc__theme .text h4 {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.3;
+	font-weight: 600;
+}
+
+.themes-list .mkl-pc__theme .theme-preview .no-preview {
+	display: flex;
 	align-items: center;
 	justify-content: center;
-	line-height: 7;
-	text-align: center;
+	height: 64px;
+	padding: 0;
+}
+
+.themes-list .mkl-pc__theme .no-preview--label {
+	position: static;
+	transform: none;
+	width: auto;
+	font-size: 10px;
+	line-height: 1.2;
+	letter-spacing: 0.04em;
 	text-transform: uppercase;
-	font-weight: 500;
-	color: #CCC;
-	font-size: 1.4em;
-}
-
-.themes-list .mkl-pc__theme span.no-preview--label {
-	display: block;
-	position: absolute;
-	top: 50%;
-	left: 0;
-	width: 100%;
-	transform: translateY(-50%);
+	font-weight: 600;
 	text-align: center;
-	text-transform: uppercase;
-	font-weight: 500;
-	font-size: 1.4em;
-	color: #CCC;
-	z-index: 1;
+	color: #a7aaad;
 }
 
-.mkl-pc-themes .selection .mkl-pc__theme img {
-	height: 60px;
-	display: block;
-	margin-left: 10px;
-   
-}
-
-.mkl-pc-themes .selection .mkl-pc__theme {
+.theme-detail {
 	display: flex;
-	flex-direction: row-reverse;
-	justify-self:start;
-	align-self: left;
-	float: left;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	background: #fff;
+	border-left: 1px solid #dcdcde;
+}
+
+.theme-detail__empty {
+	margin: auto;
+	color: #646970;
+}
+
+.theme-detail__preview {
+	display: flex;
 	align-items: center;
+	justify-content: center;
+	flex: 1;
+	min-height: 0;
+	margin: 16px 16px 0;
+	padding: 12px;
+	box-sizing: border-box;
+	background: #f0f0f1;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
 }
 
-.mkl-pc-themes .selection .mkl-pc__theme button.trigger {
-	display: none;
+.theme-detail__preview img {
+	display: block;
+	max-width: 100%;
+	max-height: 100%;
+	width: auto;
+	height: auto;
+	object-fit: contain;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-.mkl-pc-themes .selection .mkl-pc__theme .text {
-	margin-left: 1em;
+.theme-detail__preview .no-preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-height: 240px;
 }
 
-.mkl-pc-themes .selection .mkl-pc__theme .text h4 {
-	margin-top: 0;
-	margin-bottom: 0;
+.theme-detail__preview .no-preview--label {
+	font-size: 14px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #a7aaad;
 }
 
-.mkl-pc-themes .mkl-pc__theme .text .tags {
-	color: #afafaf;
+.theme-detail__meta {
+	flex: 0 0 auto;
+	padding: 14px 20px 16px;
 }
 
-.mkl-pc-themes .selection .mkl-pc__theme span.no-preview {
-	display: none;
+.theme-detail__meta h4 {
+	margin: 0 0 6px;
+	font-size: 16px;
+}
+
+.theme-detail__meta .desc {
+	color: #50575e;
+	font-size: 13px;
+}
+
+.theme-detail__meta .desc p {
+	margin: 0;
+}
+
+.theme-detail__meta .tags {
+	margin-top: 6px;
+	color: #a7aaad;
+	font-size: 12px;
 }
 
 .configurable-products-list.loading {
@@ -520,41 +593,45 @@ body.mkl-pc-settings tr.heading th {
 	display: block
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
 	.mkl-pc-themes {
-		min-height: 90vh;
-		min-width: 90vw;
-	}
-	.themes-list .mkl-pc__theme {
-		width: calc(50% - 1em);
+		width: 96vw;
+		height: 94vh;
 	}
 
-}
-
-@media (max-width: 500px) {
-	.mkl-pc-themes {
-		min-height: 98vh;
-		min-width: 98vw;
-	}
-	.themes-list .mkl-pc__theme {
-		width: 100%;
-		margin-right: 0;
-	}
-	.mkl-pc-themes footer {
+	.mkl-pc-themes__layout {
 		flex-direction: column;
-		height: auto;
-		max-height: 30vh;
-		background: #eaeaea;
-		padding: .5em;
-		z-index: 3;
 	}
-	.mkl-pc-themes footer .selection,
-	.mkl-pc-themes footer .actions {
-		flex: auto;
+
+	.themes-list {
+		flex: 0 0 auto;
+		flex-direction: row;
+		width: 100%;
+		min-width: 0;
+		max-height: none;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+
+	.themes-list .mkl-pc__theme {
+		flex: 0 0 168px;
+		width: 168px;
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.themes-list .mkl-pc__theme .theme-preview {
+		flex-basis: auto;
 		width: 100%;
 	}
-	.mkl-pc-themes footer .actions {
-		text-align: center;
-		padding-top: 10px;
+
+	.themes-list .mkl-pc__theme .theme-preview img,
+	.themes-list .mkl-pc__theme .theme-preview .no-preview {
+		height: 84px;
+	}
+
+	.theme-detail {
+		border-left: 0;
+		border-top: 1px solid #dcdcde;
 	}
 }

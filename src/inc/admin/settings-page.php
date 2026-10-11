@@ -1530,9 +1530,13 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			</script>
 			<script type="template/html" id="tmpl-mkl-pc-themes">
 				<div class="mkl-pc-themes">
-					<div class="themes-list"></div>
+					<div class="mkl-pc-themes__layout">
+						<div class="themes-list"></div>
+						<div class="theme-detail">
+							<p class="theme-detail__empty"><?php esc_html_e( 'Select a theme to preview it.', 'product-configurator-for-woocommerce' ); ?></p>
+						</div>
+					</div>
 					<footer>
-						<div class="selection"></div>
 						<div class="actions">
 							<button type="button" class="button button-primary select-theme"><?php esc_html_e( 'Select the theme', 'product-configurator-for-woocommerce' ); ?></button>
 							<button type="button" class="button cancel"><?php esc_html_e( 'Cancel', 'product-configurator-for-woocommerce' ); ?></button>
@@ -1541,19 +1545,33 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				</div>
 			</script>
 			<script type="template/html" id="tmpl-mkl-pc-theme-item">
-				<div class="text">
-					<h4>{{data.Name}}</h4>
-					<div class="desc">{{{data.Description}}}</div>
-					<div class="tags">{{data.Tags}}</div>
-				</div>
 				<div class="theme-preview">
 					<# if ( data.img ) { #>
-						<img src="{{data.img}}" alt="<?php echo esc_attr( esc_html__( 'Theme preview', 'product-configurator-for-woocommerce' ) ); ?>">
+						<img src="{{data.img}}" alt="">
 					<# } else { #>
 						<span class="no-preview"><span class="no-preview--label"><?php esc_html_e( 'No preview', 'product-configurator-for-woocommerce' ); ?></span></span>
 					<# } #>
 				</div>
-				<button class="trigger"></button>
+				<div class="text" aria-hidden="true">
+					<h4>{{data.Name}}</h4>
+				</div>
+				<button type="button" class="trigger" aria-label="{{data.Name}}"></button>
+			</script>
+			<script type="template/html" id="tmpl-mkl-pc-theme-detail">
+				<div class="theme-detail__preview">
+					<# if ( data.img ) { #>
+						<img src="{{data.img}}" alt="{{data.Name}}">
+					<# } else { #>
+						<span class="no-preview"><span class="no-preview--label"><?php esc_html_e( 'No preview', 'product-configurator-for-woocommerce' ); ?></span></span>
+					<# } #>
+				</div>
+				<div class="theme-detail__meta">
+					<h4>{{data.Name}}</h4>
+					<div class="desc">{{{data.Description}}}</div>
+					<# if ( data.Tags ) { #>
+						<div class="tags">{{data.Tags}}</div>
+					<# } #>
+				</div>
 			</script>
 		<?php }
 

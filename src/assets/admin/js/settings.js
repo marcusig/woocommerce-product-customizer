@@ -67,12 +67,17 @@
 			},
 			initialize: function( options ) {
 				this.options = options;
-				this.listenTo( Themes.data, 'change:selected', this.selection_changed ); 
+				this.detail_template = wp.template( 'mkl-pc-theme-detail' );
+				this.listenTo( Themes.data, 'change:selected', this.selection_changed );
 				this.render();
 			},
 			render: function() {
 				this.$el.html( this.template() );
 				this.add_themes( Themes.data );
+				var current = Themes.data.findWhere( { selected: true } );
+				if ( current ) {
+					this.render_detail( current );
+				}
 			},
 			add_themes: function( themes_list ) {
 				themes_list.each( this.add_one, this );
@@ -94,11 +99,11 @@
 			},
 			selection_changed: function( model ) {
 				if ( ! model.get( 'selected' ) ) return;
+				this.render_detail( model );
+			},
+			render_detail: function( model ) {
 				this.current_selection = model;
-				var th = new Themes.themeView( { model: model } );
-				if ( this.selection_preview ) this.selection_preview.remove();
-				this.selection_preview = th;
-				th.$el.appendTo( this.$el.find( 'footer .selection' ) );
+				this.$el.find( '.theme-detail' ).html( this.detail_template( model.attributes ) );
 			}
 		}),
 		themeView: Backbone.View.extend({
@@ -116,9 +121,11 @@
 			render: function() {
 				this.$el.html( this.template( this.model.attributes ) );
 			},
-			select_theme: function( event ) {
-				var current = this.model.collection.findWhere( 'selected', true );
-				if ( current ) current.set( 'selected', false );
+			select_theme: function() {
+				var current = this.model.collection.findWhere( { selected: true } );
+				if ( current && current !== this.model ) {
+					current.set( 'selected', false );
+				}
 				this.model.set( 'selected', true );
 			},
 			set_selected: function() {
