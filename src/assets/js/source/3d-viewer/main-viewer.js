@@ -47,7 +47,7 @@ import {
 import { start_animation_loop } from './3d-animation-loop.js';
 import { angle_fits_target, fit_angle_camera, framing_shift_to_pixels } from './3d-camera-fit.js';
 import { angle_turn_direction, plan_orbit_move } from './3d-camera-move.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent , isObjectDisplayLayer, objectDisplayLayerVisibility } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 import { clone as cloneWithSkeletons } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -2080,10 +2080,39 @@ export default Backbone.View.extend({
 				if ( scene ) scene.visible = shown.has( scene );
 			} );
 		}
+		this._apply_object_display_layers();
 		this.invalidate_fake_shadow();
 		// Keep active-angle framing in sync with current visibility state.
 		this._requestAngleReframe();
 		this._refreshPostprocessingSceneScale();
+	},
+
+	/**
+	 * Layers without choices that display one object ("Object in the model"):
+	 * the object follows the layer's visibility, shown while any layer that
+	 * displays it is shown. Runs after the whole-model pass, on every layer
+	 * visibility change and every model load.
+	 *
+	 * A shown layer whose model is lazy and not loaded yet loads it: nothing
+	 * else would, since such a layer has no choices to ask for it.
+	 */
+	_apply_object_display_layers() {
+		const layers = window.PC && window.PC.fe && window.PC.fe.layers;
+		if ( ! layers || ! this._three || ! this._three.model_root ) return;
+		const display_layers = layers.filter( isObjectDisplayLayer );
+		if ( ! display_layers.length ) return;
+		objectDisplayLayerVisibility( display_layers ).forEach( ( visible, id ) => {
+			const obj = this._findObjectById( id );
+			if ( obj ) {
+				obj.visible = visible;
+				return;
+			}
+			if ( ! visible ) return;
+			// Not in the scene: load the model it belongs to, if that is still pending.
+			const oid = this._resolveObject3dIdForCompositeId( id );
+			const scene_model = oid && this._scene_models ? this._scene_models.get( oid ) : null;
+			if ( scene_model && scene_model.get( 'state' ) === 'unloaded' ) this._ensureObjects3dSceneLoadedById( oid );
+		} );
 	},
 
 	/**
@@ -2127,6 +2156,8 @@ export default Backbone.View.extend({
 				const targetId = layer_model.get( 'target_object_id' );
 				const object3dId = layer_model.get( 'object_3d_id' );
 				if ( ! targetId && object3dId ) layerModels.add( layer_model );
+				// A layer without choices drives its object's visibility.
+				if ( isObjectDisplayLayer( layer_model ) ) layerModels.add( layer_model );
 			} );
 		}
 		layerModels.forEach( ( layer_model ) => {

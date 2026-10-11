@@ -15,6 +15,8 @@ import {
 	getDefaultHdrPresetFilename,
 	findObjectByCompositeId,
 	findObjectsByCompositeId,
+	isObjectDisplayLayer,
+	objectDisplayLayerVisibility,
 	findObject,
 	getPixelRatio,
 	MAX_PIXEL_RATIO,
@@ -376,5 +378,34 @@ describe( 'texture anisotropy', () => {
 		expect( material.normalMap.anisotropy ).toBe( 8 );
 		expect( material.clearcoatRoughnessMap.anisotropy ).toBe( 8 );
 		expect( material.envMap.anisotropy ).toBe( 1 );
+	} );
+} );
+
+describe( 'layers without choices that display an object', () => {
+	const layer = ( attrs ) => ( { get: ( k ) => attrs[ k ] } );
+
+	it( 'are recognised by "no choices" plus an object, whatever form the flag takes', () => {
+		expect( isObjectDisplayLayer( layer( { not_a_choice: true, target_object_id: '1:hooks' } ) ) ).toBe( true );
+		expect( isObjectDisplayLayer( layer( { not_a_choice: '1', target_object_id: '1:hooks' } ) ) ).toBe( true );
+		expect( isObjectDisplayLayer( layer( { not_a_choice: '', target_object_id: '1:hooks' } ) ) ).toBe( false );
+		expect( isObjectDisplayLayer( layer( { not_a_choice: true, target_object_id: '' } ) ) ).toBe( false );
+		// A layer of options never hides the part it configures.
+		expect( isObjectDisplayLayer( layer( { target_object_id: '1:tires' } ) ) ).toBe( false );
+		expect( isObjectDisplayLayer( null ) ).toBe( false );
+	} );
+
+	it( "follow the layer's visibility, shown while any layer displaying the object is shown", () => {
+		const visibility = objectDisplayLayerVisibility( [
+			layer( { not_a_choice: true, target_object_id: '1:front_hooks', cshow: false } ),
+			layer( { not_a_choice: true, target_object_id: '1:back_hooks' } ),
+			layer( { not_a_choice: true, target_object_id: '1:support', cshow: false } ),
+			layer( { not_a_choice: true, target_object_id: '1:support', cshow: true } ),
+			layer( { target_object_id: '1:tires', cshow: false } ),
+		] );
+		expect( Array.from( visibility.entries() ) ).toEqual( [
+			[ '1:front_hooks', false ],
+			[ '1:back_hooks', true ],
+			[ '1:support', true ],
+		] );
 	} );
 } );

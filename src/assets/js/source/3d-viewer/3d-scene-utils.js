@@ -1889,3 +1889,45 @@ export function buildObjectTreeFromScene( root, skipTypes = OBJECT_TREE_SKIP_TYP
 	}
 	return list;
 }
+
+// -------------------------------------------------------------------------
+// Layers without choices that display an object
+// -------------------------------------------------------------------------
+
+/**
+ * Whether a layer is a "layer without choices" that displays one object of a
+ * model: "This layer does not have choices" on, and "Object in the model" set.
+ * Such a layer exists only to show that object, so the object follows the
+ * layer's visibility (conditional logic). Other layers never toggle their
+ * object: hiding a layer of options must not remove the part it configures.
+ *
+ * @param {{ get: function(string): * }} layer - Backbone layer model
+ * @returns {boolean}
+ */
+export function isObjectDisplayLayer( layer ) {
+	if ( ! layer || typeof layer.get !== 'function' ) return false;
+	const flag = layer.get( 'not_a_choice' );
+	// Stored as a boolean in the admin; reaches the page as "1" / "".
+	const no_choices = flag === true || flag === 1 || flag === '1' || flag === 'true' || flag === 'on';
+	const target = layer.get( 'target_object_id' );
+	return no_choices && target != null && String( target ).trim() !== '';
+}
+
+/**
+ * Visibility of every object displayed by layers without choices: an object
+ * is shown while any layer displaying it is shown, so several such layers can
+ * share one part. One pass over the layers.
+ *
+ * @param {Array<{ get: function(string): * }>} layers - Backbone layer models
+ * @returns {Map<string, boolean>} Object id → visible
+ */
+export function objectDisplayLayerVisibility( layers ) {
+	const out = new Map();
+	( Array.isArray( layers ) ? layers : [] ).forEach( ( layer ) => {
+		if ( ! isObjectDisplayLayer( layer ) ) return;
+		const id = String( layer.get( 'target_object_id' ) ).trim();
+		const shown = false !== layer.get( 'cshow' );
+		out.set( id, out.get( id ) === true || shown );
+	} );
+	return out;
+}
