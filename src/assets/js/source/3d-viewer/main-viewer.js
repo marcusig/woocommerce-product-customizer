@@ -124,6 +124,10 @@ export default Backbone.View.extend({
 	// True once the customer has orbited or zoomed since the angle was applied.
 	// Until then a fitted angle is refitted on resize; after, the camera is theirs.
 	_framingTouched: false,
+	// True between OrbitControls 'start' and 'end': the customer's hand is on the camera.
+	_cameraHeld: false,
+	// The camera move in flight, if any; see _moveCameraTo.
+	_cameraMove: null,
 	_sceneReady: false,
 	_container: null,
 	_contextLost: false,
@@ -153,6 +157,8 @@ export default Backbone.View.extend({
 		this._hiddenObjectNames = [];
 		this._angleReframeFrame = null;
 		this._framingTouched = false;
+		this._cameraHeld = false;
+		this._cameraMove = null;
 		this._sceneReady = false;
 		this._container = null;
 		this._contextLost = false;
@@ -404,6 +410,14 @@ export default Backbone.View.extend({
 	 * @param {number} [opts.duration=850] - Milliseconds
 	 * @param {'cw'|'ccw'|'shortest'} [opts.turn] - Which way round, seen from above
 	 * @param {{x: number, y: number}} [opts.shift] - Framing lens shift to ease into
+	 *
+	 * Once the customer grabs the model (or already holds it when the move
+	 * starts), the move stops driving the turn, tilt and distance, which are
+	 * theirs now: writing them every frame dragged the camera back towards the
+	 * planned pose until the tween ran out. It still finishes sliding the pivot,
+	 * carrying the camera along with it so their orbit is untouched, and easing
+	 * the lens shift; otherwise the product would keep turning around a point
+	 * part-way between its old and new centre.
 	 */
 	_moveCameraTo( position, target, opts = {} ) {
 		const t = this._three;
@@ -419,6 +433,7 @@ export default Backbone.View.extend({
 			cancelAnimationFrame( t._cameraAnimId );
 			t._cameraAnimId = null;
 		}
+		this._cameraMove = null;
 
 		if ( immediate || duration === 0 ) {
 			if ( position ) camera.position.copy( position );
@@ -438,12 +453,24 @@ export default Backbone.View.extend({
 		const endShift = opts.shift || startShift;
 		const startTs = performance.now();
 		const easeInOutCubic = ( x ) => ( x < 0.5 ? 4 * x * x * x : 1 - Math.pow( -2 * x + 2, 3 ) / 2 );
+		const state = { handedOver: this._cameraHeld };
+		const plannedPos = new THREE.Vector3();
+		const plannedTarget = new THREE.Vector3();
+		const pivotSlide = new THREE.Vector3();
+		this._cameraMove = state;
 
 		const step = ( now ) => {
 			const elapsed = now - startTs;
 			const ratio = Math.min( 1, elapsed / duration );
 			const k = easeInOutCubic( ratio );
-			move( ratio < 1 ? k : 1, camera.position, controls.target );
+			move( ratio < 1 ? k : 1, plannedPos, plannedTarget );
+			if ( state.handedOver ) {
+				pivotSlide.subVectors( plannedTarget, controls.target );
+				camera.position.add( pivotSlide );
+			} else {
+				camera.position.copy( plannedPos );
+			}
+			controls.target.copy( plannedTarget );
 			if ( opts.shift ) {
 				this._setFramingShift(
 					startShift.x + ( endShift.x - startShift.x ) * k,
@@ -456,6 +483,7 @@ export default Backbone.View.extend({
 				t._cameraAnimId = requestAnimationFrame( step );
 			} else {
 				t._cameraAnimId = null;
+				if ( this._cameraMove === state ) this._cameraMove = null;
 			}
 		};
 		t._cameraAnimId = requestAnimationFrame( step );
@@ -510,10 +538,21 @@ export default Backbone.View.extend({
 	 * 'start' covers pointer, touch and wheel; the arrow keys orbit through
 	 * bind_keyboard_orbit, which does not emit it, so they are caught on the
 	 * canvas. Not 'change': the viewer's own camera moves fire that too.
+	 *
+	 * Taking the camera over also hands it any move in flight; see _moveCameraTo.
 	 */
 	_bindFramingInteraction( controls, canvas ) {
-		const touched = () => { this._framingTouched = true; };
-		if ( controls ) controls.addEventListener( 'start', touched );
+		const touched = () => {
+			this._framingTouched = true;
+			if ( this._cameraMove ) this._cameraMove.handedOver = true;
+		};
+		if ( controls ) {
+			controls.addEventListener( 'start', () => {
+				this._cameraHeld = true;
+				touched();
+			} );
+			controls.addEventListener( 'end', () => { this._cameraHeld = false; } );
+		}
 		if ( canvas ) {
 			canvas.addEventListener( 'keydown', ( event ) => {
 				if ( /^Arrow/.test( event.key ) ) touched();
@@ -2486,6 +2525,8 @@ export default Backbone.View.extend({
 			cancelAnimationFrame( this._three._cameraAnimId );
 			this._three._cameraAnimId = null;
 		}
+		this._cameraMove = null;
+		this._cameraHeld = false;
 		if ( this._three ) this._emitRuntimeAction( 'PC.fe.viewer.runtime.dispose', [ this, this._three, this._runtimeApi ] );
 		this._emitRuntimeEvent( 'runtime:dispose', {} );
 		if ( this._runtimeBus ) this._runtimeBus.off();
