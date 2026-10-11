@@ -63,11 +63,11 @@ class Themes {
 				'wsb' => MKL_PC_INCLUDE_PATH . 'themes/wsb',
 				'la-pomme' => MKL_PC_INCLUDE_PATH . 'themes/la-pomme',
 				'lebolide' => MKL_PC_INCLUDE_PATH . 'themes/lebolide',
+				'ev' => MKL_PC_INCLUDE_PATH . 'themes/ev',
 				'clean' => MKL_PC_INCLUDE_PATH . 'themes/clean',
 				'dark-mode' => MKL_PC_INCLUDE_PATH . 'themes/dark-mode',
 				'h' => MKL_PC_INCLUDE_PATH . 'themes/h',
 				'old-default' => MKL_PC_INCLUDE_PATH . 'themes/old-default',
-				'ev' => MKL_PC_INCLUDE_PATH . 'themes/ev',
 			];
 		}
 		return apply_filters( 'mkl_pc_installed_themes', $this->themes );
