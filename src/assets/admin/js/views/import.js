@@ -428,6 +428,9 @@ PC.import.views = PC.import.views || {};
 				PC.app.admin_data.set( 'layers', response.layers );
 				// Add the angles
 				PC.app.admin_data.set( 'angles', response.angles );
+				// Add the relinked 3D files (only sent for a 3D configurator)
+				if ( response.settings_3d ) PC.app.admin_data.set( 'settings_3d', response.settings_3d );
+				if ( response.objects3d ) PC.app.admin_data.set( 'objects3d', response.objects3d );
 				// Parse those
 				PC.app.admin.set_data();
 	

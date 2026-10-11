@@ -686,7 +686,10 @@ class Ajax {
 		$content = $this->db->get( 'content', $id );
 		$content = $this->db->escape( $content );
 
-		wp_send_json_success( [ 'layers' => $layers, 'angles' => $angles, 'content' => $content, 'changed_items' => $changed_items ] );
+		// settings_3d and objects3d when it is a 3D configurator, so the editor reloads the relinked files.
+		$response = array_merge( [ 'layers' => $layers, 'angles' => $angles, 'content' => $content ], $this->db->get_3d_data( $id ) );
+		$response['changed_items'] = $changed_items;
+		wp_send_json_success( $response );
 	}
 
 	/**

@@ -2066,6 +2066,25 @@ class DB {
 		return apply_filters( 'mkl_pc_3d_default_hidden_object_names', $defaults );
 	}
 
+	/**
+	 * The 3D components the editor loads, for a 3D configurator.
+	 *
+	 * @param int $owner_id Product or global configurator ID.
+	 * @return array `settings_3d` (merged over the defaults) and `objects3d`, or nothing for a 2D configurator.
+	 */
+	public function get_3d_data( $owner_id ) {
+		if ( '3d' !== mkl_pc_get_configurator_type( $owner_id ) ) {
+			return array();
+		}
+		$stored         = $this->get( 'settings_3d', $owner_id );
+		$defaults       = self::get_default_settings_3d();
+		$stored_objects = $this->get( 'objects3d', $owner_id );
+		return array(
+			'settings_3d' => is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults,
+			'objects3d'   => is_array( $stored_objects ) ? $stored_objects : array(),
+		);
+	}
+
 	public static function get_default_settings_3d() {
 		return array(
 			'hidden_object_names' => '',
@@ -2166,13 +2185,7 @@ class DB {
 			'global_configurator' => $this->get_global_configurator_info( $parent_id ),
 		);
 		
-		if ( '3d' === mkl_pc_get_configurator_type( $parent_id ) ) {
-			$stored = $this->get( 'settings_3d', $parent_id );
-			$defaults = self::get_default_settings_3d();
-			$init_data['settings_3d'] = is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults;
-			$stored_objects = $this->get( 'objects3d', $parent_id );
-			$init_data['objects3d'] = is_array( $stored_objects ) ? $stored_objects : array();
-		}
+		$init_data = array_merge( $init_data, $this->get_3d_data( $parent_id ) );
 
 		if ( 'variable' === $product->get_type()) {
 			$init_data['product_info']['mode'] = $product->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );
@@ -2231,13 +2244,7 @@ class DB {
 		// Same 3D data a product editor loads. The configurator type is stored on this post, and
 		// its layers reference entries in `objects3d` by id, so both components are read from
 		// here rather than from whichever product happens to be linked to it.
-		if ( '3d' === mkl_pc_get_configurator_type( $cpt_id ) ) {
-			$stored                   = $this->get( 'settings_3d', $cpt_id );
-			$defaults                 = self::get_default_settings_3d();
-			$init_data['settings_3d'] = is_array( $stored ) ? array_replace_recursive( $defaults, $stored ) : $defaults;
-			$stored_objects           = $this->get( 'objects3d', $cpt_id );
-			$init_data['objects3d']   = is_array( $stored_objects ) ? $stored_objects : array();
-		}
+		$init_data = array_merge( $init_data, $this->get_3d_data( $cpt_id ) );
 
 		return apply_filters( 'mkl_product_configurator_init_data', $init_data, $post );
 	}
@@ -2590,7 +2597,118 @@ class DB {
 			}
 		}
 
+		$this->scan_3d_files( $product_id );
+
 		return $this->changed_items_count;
+	}
+
+	/**
+	 * Remap the files a 3D configurator points at: models, environment maps, light cookies, poster,
+	 * and whatever add-ons register through the filters below.
+	 *
+	 * The image scan above, for 3D data imported from another site. The viewer loads every file by
+	 * its stored URL, so the URL is what has to come out right, not only the attachment ID.
+	 *
+	 * @param int $product_id
+	 * @return void
+	 */
+	private function scan_3d_files( $product_id ) {
+		if ( '3d' !== mkl_pc_get_configurator_type( $product_id ) ) {
+			return;
+		}
+
+		/**
+		 * Filter the 3D object fields that hold a file reference (`{attachment_id, url}`).
+		 *
+		 * @param string[] $file_keys
+		 */
+		$file_keys = apply_filters( 'mkl_pc_3d_object_file_keys', array( 'gltf', 'light_cookie', 'env_hdri_file', 'env_cubemap_px', 'env_cubemap_nx', 'env_cubemap_py', 'env_cubemap_ny', 'env_cubemap_pz', 'env_cubemap_nz' ) );
+		$objects   = $this->get( 'objects3d', $product_id );
+		if ( is_array( $objects ) ) {
+			$changed = false;
+			foreach ( $objects as $key => $object ) {
+				if ( ! is_array( $object ) ) continue;
+				foreach ( $file_keys as $file_key ) {
+					if ( isset( $object[ $file_key ] ) && $this->remap_3d_file( $objects[ $key ][ $file_key ] ) ) {
+						$changed = true;
+					}
+				}
+			}
+			if ( $changed ) {
+				$this->set( $product_id, $product_id, 'objects3d', $objects );
+			}
+		}
+
+		/**
+		 * Filter the 3D settings that hold a file reference (`{attachment_id, url}`), as dot paths.
+		 *
+		 * Add-ons that add an image or file to the 3D settings register it here, so it is relinked too.
+		 *
+		 * @param string[] $paths E.g. `background.image`.
+		 */
+		$setting_paths = apply_filters( 'mkl_pc_3d_settings_file_paths', array( 'poster' ) );
+		$settings      = $this->get( 'settings_3d', $product_id );
+		if ( is_array( $settings ) ) {
+			$changed = false;
+			foreach ( $setting_paths as $path ) {
+				$file = &$settings;
+				foreach ( explode( '.', $path ) as $key ) {
+					if ( ! is_array( $file ) || ! isset( $file[ $key ] ) ) {
+						unset( $file );
+						continue 2;
+					}
+					$file = &$file[ $key ];
+				}
+				if ( $this->remap_3d_file( $file ) ) {
+					$changed = true;
+				}
+				unset( $file );
+			}
+			if ( $changed ) {
+				$this->set( $product_id, $product_id, 'settings_3d', $settings );
+			}
+		}
+	}
+
+	/**
+	 * Point a 3D file reference (`attachment_id` + `url`) at the matching file on this site.
+	 *
+	 * Left alone when nothing matches: unlike an image, a wrong model is worse than a missing one,
+	 * and the original ID can belong to an unrelated attachment here.
+	 *
+	 * @param array $file Passed by reference, updated when a match is found.
+	 * @return bool Whether the reference changed.
+	 */
+	private function remap_3d_file( &$file ) {
+		if ( ! is_array( $file ) || empty( $file['url'] ) || ! is_string( $file['url'] ) ) {
+			return false;
+		}
+		$url         = $file['url'];
+		$original_id = isset( $file['attachment_id'] ) ? (int) $file['attachment_id'] : 0;
+
+		if ( preg_match( '#/configurator_assets/zips/\d+/(.+)$#', $url, $matches ) ) {
+			// A model uploaded as a ZIP is stored as the entry file inside its extract folder, which
+			// is named after the ZIP's ID. Match the ZIP by that entry path instead of the file name.
+			if ( $original_id && Admin_Product_3D::get_entry_url( $original_id ) === $url ) {
+				return false;
+			}
+			$new_id  = Admin_Product_3D::find_zip_by_entry_file( $matches[1] );
+			$new_url = $new_id ? Admin_Product_3D::get_entry_url( $new_id ) : false;
+		} else {
+			if ( $original_id && wp_get_attachment_url( $original_id ) === $url ) {
+				return false;
+			}
+			$new_id  = (int) $this->_attachment_filename_to_postid( $url );
+			$new_url = $new_id ? wp_get_attachment_url( $new_id ) : false;
+		}
+
+		if ( ! $new_url || ( $new_id === $original_id && $new_url === $url ) ) {
+			return false;
+		}
+		$file['attachment_id'] = $new_id;
+		$file['url']           = $new_url;
+		$this->changed_items_count++;
+		return true;
 	}
 
 	/**

@@ -439,6 +439,18 @@ class Admin_Product_3D {
 	 * @return string|false
 	 */
 	public function pc_get_configurator_entry_url( $attachment_id ) {
+		return self::get_entry_url( $attachment_id );
+	}
+
+	/**
+	 * Get the public URL of the GLTF/GLB entry file inside an extracted ZIP.
+	 *
+	 * Static so it can be used without an instance: the constructor registers upload hooks.
+	 *
+	 * @param int $attachment_id
+	 * @return string|false
+	 */
+	public static function get_entry_url( $attachment_id ) {
 		$attachment_id = absint( $attachment_id );
 		if ( ! $attachment_id ) {
 			return false;
@@ -449,7 +461,7 @@ class Admin_Product_3D {
 			return false;
 		}
 
-		$entry_file = $this->sanitize_relative_entry_path( $entry_file );
+		$entry_file = self::sanitize_relative_entry_path( $entry_file );
 		if ( ! $entry_file ) {
 			return false;
 		}
@@ -458,7 +470,7 @@ class Admin_Product_3D {
 		$base_dir   = trailingslashit( wp_normalize_path( $upload_dir['basedir'] ) ) . 'configurator_assets/zips/' . $attachment_id . '/';
 		$full_path  = $base_dir . $entry_file;
 
-		if ( ! $this->is_path_inside_directory( $full_path, $base_dir ) ) {
+		if ( ! self::is_path_inside_directory( $full_path, $base_dir ) ) {
 			return false;
 		}
 
@@ -467,6 +479,29 @@ class Admin_Product_3D {
 		}
 
 		return trailingslashit( $upload_dir['baseurl'] ) . 'configurator_assets/zips/' . $attachment_id . '/' . str_replace( '\\', '/', $entry_file );
+	}
+
+	/**
+	 * Find the configurator ZIP whose extracted entry file has this relative path.
+	 *
+	 * Used to relink a model after a configuration moves between sites, where the ZIP has a new ID.
+	 *
+	 * @param string $entry_file Path inside the ZIP, e.g. `model/scene.gltf`.
+	 * @return int The ZIP's attachment ID, or 0 when none or several match (a guess could load the wrong model).
+	 */
+	public static function find_zip_by_entry_file( $entry_file ) {
+		global $wpdb;
+		$entry_file = self::sanitize_relative_entry_path( $entry_file );
+		if ( '' === $entry_file ) {
+			return 0;
+		}
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT post_id FROM $wpdb->postmeta WHERE meta_key = '_configurator_entry_file' AND meta_value = %s",
+				$entry_file
+			)
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Lookup by meta value after a site migration.
+		return 1 === count( $ids ) ? (int) $ids[0] : 0;
 	}
 
 	/**
@@ -731,7 +766,7 @@ class Admin_Product_3D {
 	 * @param string $relative
 	 * @return string Sanitized relative path or empty string.
 	 */
-	private function sanitize_relative_entry_path( $relative ) {
+	private static function sanitize_relative_entry_path( $relative ) {
 		$relative = str_replace( '\\', '/', (string) $relative );
 		$relative = ltrim( $relative, '/' );
 
@@ -889,7 +924,7 @@ class Admin_Product_3D {
 	 * @param string $directory
 	 * @return bool
 	 */
-	private function is_path_inside_directory( $path, $directory ) {
+	private static function is_path_inside_directory( $path, $directory ) {
 		$real_dir = realpath( $directory );
 		if ( false === $real_dir ) {
 			// Directory may not exist yet during checks of intended paths — use normalized string compare.
