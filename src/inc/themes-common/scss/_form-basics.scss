@@ -1,0 +1,77 @@
+// Basic styles for the add to cart / quote buttons and the quantity input.
+// For themes which do not style them and would otherwise inherit everything from the WordPress theme.
+// Include it at the end of the theme's stylesheet, so it wins over earlier rules of equal specificity.
+@mixin form-basics(
+	$button-bg: var(--mkl_pc_color-primary),
+	$button-bg-hover: var(--mkl_pc_color-primary_hover),
+	$button-text: #fff,
+	$input-bg: #fff,
+	$input-text: inherit,
+	$input-border: #d3d3d3,
+	$radius: 4px,
+	$height: 44px
+) {
+	.mkl_pc .mkl_pc_container .pc_configurator_form {
+		gap: 6px;
+
+		button.configurator-add-to-cart,
+		button.add-to-quote {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			box-sizing: border-box;
+			min-height: $height;
+			margin: 0;
+			padding: 0 1.25em;
+			border: none;
+			border-radius: $radius;
+			background: $button-bg;
+			color: $button-text;
+			font-size: 1rem;
+			font-weight: 500;
+			line-height: 1.2;
+			text-transform: none;
+			letter-spacing: normal;
+			box-shadow: none;
+			cursor: pointer;
+			transition: background-color .2s;
+
+			&:hover,
+			&:focus {
+				background: $button-bg-hover;
+				color: $button-text;
+			}
+
+			&:focus-visible {
+				outline: 2px solid $button-bg;
+				outline-offset: 2px;
+			}
+
+			&:disabled {
+				opacity: .5;
+				cursor: not-allowed;
+			}
+		}
+
+		.quantity {
+			display: inline-flex;
+			align-items: center;
+
+			input.qty {
+				box-sizing: border-box;
+				width: 4em;
+				height: $height;
+				margin: 0;
+				padding: 0 .5em;
+				border: 1px solid $input-border;
+				border-radius: $radius;
+				background: $input-bg;
+				color: $input-text;
+				font-size: 1rem;
+				line-height: 1;
+				text-align: center;
+				box-shadow: none;
+			}
+		}
+	}
+}

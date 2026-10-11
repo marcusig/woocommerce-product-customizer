@@ -1804,14 +1804,6 @@ nav.mkl-pc--steps {
     margin-left: 6px;
 }
 
-.theme-twentytwentyfive .mkl_pc .mkl_pc_container footer .form input.qty {
-    font-size: 1rem;
-    padding: 1rem;
-    line-height: inherit;
-	background: var(--mkl_pc_color-ll4);
-    color: var(--mkl_pc_color-ll1);
-    border: 1px solid var(--mkl_pc_color-dark);
-}
 
 .theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar section.choices .layer_choices.text-overlay,
 .theme-twentytwentyfive .mkl_pc .mkl_pc_container .mkl_pc_toolbar .layer_choices li.choices-list li.form-item {
@@ -1864,3 +1856,14 @@ nav.mkl-pc--steps {
 .et_divi_theme:not(.configurator_is_inline) .mkl_pc {
 	z-index: 100000;
 }
+
+// Add to cart button and quantity input
+@import '../../themes-common/scss/form-basics';
+@include form-basics(
+	$button-bg: color(ll1),
+	$button-bg-hover: color(ll2),
+	$button-text: color(darkest),
+	$input-bg: color(ll4),
+	$input-text: color(ll1),
+	$input-border: color(dark)
+);
