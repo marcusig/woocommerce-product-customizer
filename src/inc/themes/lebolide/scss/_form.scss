@@ -34,9 +34,21 @@ form.cart {
 	display: inline-flex;
 	align-items: center;
 	input.qty {
+		box-sizing: border-box;
+		width: 4em;
+		height: auto;
+		margin: 0;
 		background: #fff;
-		@media (max-width: $small_screen_width) {
-			border: 2px solid #36383a;
+		color: inherit;
+		font-size: 1rem;
+		line-height: 1.5;
+		text-align: center;
+		padding: 10px;
+		border: 1px solid color(border);
+		border-radius: 0;
+		box-shadow: none;
+		&:focus {
+			border-color: color(border_active);
 		}
 	}
 }
