@@ -154,6 +154,10 @@ class Editor_Menu {
 		
 		if ( $id && '3d' === mkl_pc_get_configurator_type( $id ) ) {
 			$default_menu[] = array(
+				'type' 	=> 'separator',
+				'order' => 45,
+			);
+			$default_menu[] = array(
 				'type' 	=> 'part',
 				'menu_id' 	=> 'objects3d',
 				'label' => __( '3D Objects', 'product-configurator-for-woocommerce' ),
