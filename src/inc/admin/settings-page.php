@@ -866,7 +866,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'general_settings',
 					[ 
 						'setting_name' => 'use_steps',
-						'description'  => '<a href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/general-usage/using-the-steps-feature/" target="_blank">' . __( 'Check the documentation on how to use the steps feature', 'product-configurator-for-woocommerce' ) . '</a>',
+						'description'  => '<a href="https://docs.wc-product-configurator.com/docs/product-configurator-for-woocommerce/general-usage/using-the-steps-feature/" target="_blank">' . __( 'Check the documentation on how to use the steps feature', 'product-configurator-for-woocommerce' ) . '</a>',
 					]
 				);
 				add_settings_field(

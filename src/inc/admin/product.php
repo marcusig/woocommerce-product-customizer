@@ -911,8 +911,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 		public function home_documentation_content() {
 			?>
-			<a class="button button-hero" nofollow noreferrer noopener href="https://wc-product-configurator.com/docs/product-configurator-for-woocommerce/getting-started/" target="_blank"><?php esc_html_e( 'Getting started', 'product-configurator-for-woocommerce' ); ?></a>
-			<a class="button button-hero" nofollow noreferrer noopener href="https://wc-product-configurator.com/docs/" target="_blank"><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ); ?></a>
+			<a class="button button-hero" nofollow noreferrer noopener href="https://docs.wc-product-configurator.com/docs/product-configurator-for-woocommerce/getting-started/" target="_blank"><?php esc_html_e( 'Getting started', 'product-configurator-for-woocommerce' ); ?></a>
+			<a class="button button-hero" nofollow noreferrer noopener href="https://docs.wc-product-configurator.com/docs/" target="_blank"><?php esc_html_e( 'Documentation', 'product-configurator-for-woocommerce' ); ?></a>
 			<?php
 		}
 
