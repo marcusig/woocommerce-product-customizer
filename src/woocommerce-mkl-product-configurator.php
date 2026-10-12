@@ -3,14 +3,14 @@
 /**
 * Plugin Name: Product Configurator for WooCommerce
 * Plugin URI: http://wc-product-configurator.com
-* Description: Allow customers to configure and customize their products using a live preview powered by a system of layers
+* Description: Allow customers to configure and customize their products with a live 2D or 3D preview, built from image layers or 3D models
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
 * Version: 2.0.0
 * Requires PHP: 7.4
 * Requires Plugins: woocommerce
 * WC requires at least: 8
-* WC tested up to: 10
+* WC tested up to: 11.2
 *
 * Text Domain: product-configurator-for-woocommerce
 * Domain Path: /languages/
