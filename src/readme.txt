@@ -4,7 +4,7 @@ Tags: 3D configurator, product customizer, product builder, woocommerce, product
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 1.7.6
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -224,7 +224,7 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.0.0 - unreleased =
+= 2.0.0 - 12/Oct/2026 =
 
 * FEATURE: 3D configurator. Set a product's Configurator type to "3D configurator" to configure a glTF / GLB model: layers and choices are bound to named objects in the model, and show, hide, move or change the material of them. The scene supports HDRI and cubemap environments, six light types, eager or lazy model loading, and a camera position per view, which can be imported from the model's own cameras. Customers can rotate and zoom the model, including with the keyboard, and the cart, orders and quotes show a screenshot of the configured model
 * FEATURE: Global layers. Turn any layer into a global layer with "Make Global", then import it into other products with "Import global layer". Products link to the shared layer, so a change made once with "Edit original" reaches every product using it, and "Disconnect from global layer" turns it back into a local layer on one product. Global layers are listed under Product Configurator > Global Layers
