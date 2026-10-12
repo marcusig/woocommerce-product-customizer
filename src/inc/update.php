@@ -142,7 +142,7 @@ class Update {
 		if ( ! is_array( $options ) ) {
 			$options = array();
 		}
-		$options['fe_3d_use_draco_loader'] = true;
+		$options['fe_3d_use_draco_loader'] = 'on';
 		$options['purge_with_page_cache']  = 'on';
 		update_option( 'mkl_pc__settings', $options );
 	}
