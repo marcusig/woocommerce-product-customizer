@@ -105,7 +105,7 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				$meta_mode = mkl_pc_get_configuration_meta_mode( $item->get_product() );
 
 				/**
-				 * Build the per-layer choices once, and derive both outputs from them.
+				 * Build the per-layer choices once, and derive the meta the mode calls for from them.
 				 * `get_configuration_choices_for_display()` must not run twice for the same
 				 * item: add-ons use the item counter to detect a new item, and treat a second
 				 * pass over the same one as a repeated layer (the Form builder blanks the
@@ -113,7 +113,9 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 				 */
 				$configuration_choices = $this->prepare_configuration_choices( $configurator_data, $item );
 
-				if ( 'individual' !== $meta_mode ) {
+				if ( 'individual' === $meta_mode ) {
+					$this->add_individual_layer_meta( $item, $configuration_choices );
+				} else {
 					$item->add_meta_data( 
 						apply_filters( 'mkl_pc/order_created/saved_data/label', esc_html( mkl_pc( 'settings' )->get_label( 'configuration_cart_meta_label', esc_html_x( 'Configuration', 'Label for the configuration meta data', 'product-configurator-for-woocommerce' ) ) ), $item ),
 						! empty( $configuration_choices ) ? $this->get_choices_html( $configuration_choices ) : '', 
@@ -121,9 +123,6 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 					);
 				}
 
-				if ( 'single' !== $meta_mode ) {
-					$this->add_individual_layer_meta( $item, $configuration_choices );
-				}
 				if ( $sku = $this->get_sku( $configurator_data ) ) {
 					$item->add_meta_data(
 						esc_html( mkl_pc( 'settings')->get_label( 'sku_label', esc_html_x( 'SKU', 'Label for the SKU meta data', 'product-configurator-for-woocommerce' ) ) ),

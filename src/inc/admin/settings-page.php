@@ -571,7 +571,6 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 					'options' => [
 						'single' => __( 'A single meta containing all the choices', 'product-configurator-for-woocommerce' ),
 						'individual' => __( 'One meta per layer (easier to extract, no thumbnails)', 'product-configurator-for-woocommerce' ),
-						'both' => __( 'Both: a single meta for display, plus one meta per layer', 'product-configurator-for-woocommerce' ),
 					],
 					'default' => 'single',
 					'setting_name' => 'configuration_meta_mode',

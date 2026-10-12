@@ -224,6 +224,10 @@ Open Source SVG icons:
 
 == Changelog ==
 
+= 2.0.1 - unreleased =
+
+* TWEAK: Removed option `Both` in setting `Configuration meta data`
+
 = 2.0.0 - 12/Oct/2026 =
 
 * FEATURE: 3D configurator. Set a product's Configurator type to "3D configurator" to configure a glTF / GLB model: layers and choices are bound to named objects in the model, and show, hide, move or change the material of them. The scene supports HDRI and cubemap environments, six light types, eager or lazy model loading, and a camera position per view, which can be imported from the model's own cameras. Customers can rotate and zoom the model, including with the keyboard, and the cart, orders and quotes show a screenshot of the configured model

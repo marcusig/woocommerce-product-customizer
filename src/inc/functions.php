@@ -337,7 +337,6 @@ if ( ! function_exists( 'mkl_pc_get_configuration_price' ) ) {
  *
  * - `single`     : one meta holding every choice (default, the historical behaviour)
  * - `individual` : one meta per layer
- * - `both`       : the single meta for display, plus one meta per layer
  *
  * @param \WC_Product|false $product Optional product, to allow filtering the mode per product.
  * @return string
@@ -345,18 +344,18 @@ if ( ! function_exists( 'mkl_pc_get_configuration_price' ) ) {
 function mkl_pc_get_configuration_meta_mode( $product = false ) {
 	$mode = mkl_pc( 'settings' )->get( 'configuration_meta_mode', 'single' );
 
-	if ( ! in_array( $mode, [ 'single', 'individual', 'both' ], true ) ) {
+	if ( ! in_array( $mode, [ 'single', 'individual' ], true ) ) {
 		$mode = 'single';
 	}
 
 	/**
 	 * Filter mkl_pc/configuration_meta_mode - the configuration meta mode
 	 *
-	 * @param string            $mode    One of `single`, `individual` or `both`
+	 * @param string            $mode    One of `single` or `individual`
 	 * @param \WC_Product|false $product The product, when available
 	 * @return string
 	 */
 	$mode = apply_filters( 'mkl_pc/configuration_meta_mode', $mode, $product );
 
-	return in_array( $mode, [ 'single', 'individual', 'both' ], true ) ? $mode : 'single';
+	return in_array( $mode, [ 'single', 'individual' ], true ) ? $mode : 'single';
 }

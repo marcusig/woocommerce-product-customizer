@@ -18,6 +18,7 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 		}
 		private function _hooks() {
 			add_filter( 'woocommerce_order_item_display_meta_value', array( $this, 'format_meta' ), 30, 3 );
+			add_action( 'woocommerce_after_order_itemmeta', array( $this, 'maybe_add_view_link' ), 20, 3 );
 			// add_action( 'woocommerce_after_order_itemmeta', array( $this, 'wc_admin_order_item_display_configurator_data' ), 100, 3 );
 		}
 
@@ -60,9 +61,50 @@ if ( ! class_exists('MKL\PC\Admin_Order') ) {
 			}
 			
 			$display_value = apply_filters( 'mkl/order/admin_meta/display_value', $display_value, $order_item, $configurator_data );
+
+			return $display_value . $this->get_view_link( $order_item );
+		}
+
+		/**
+		 * Add the view configuration link under the item's metas, when there is no combined
+		 * configuration meta to append it to (configuration stored as one meta per layer).
+		 *
+		 * @param int                 $item_id
+		 * @param \WC_Order_Item      $item
+		 * @param \WC_Product|null    $product
+		 * @return void
+		 */
+		public function maybe_add_view_link( $item_id, $item, $product ) {
+			if ( ! is_a( $item, 'WC_Order_Item_Product' ) || ! $item->get_meta( '_configurator_data' ) ) return;
+			if ( $this->has_combined_meta( $item ) ) return;
+
+			$link = $this->get_view_link( $item );
+			if ( $link ) echo '<div class="configuration-link--container">' . $link . '</div>';
+		}
+
+		/**
+		 * Whether the item holds the combined configuration meta, which {@see format_meta()} appends the link to.
+		 *
+		 * @param \WC_Order_Item $item
+		 * @return boolean
+		 */
+		private function has_combined_meta( $item ) {
+			foreach ( $item->get_meta_data() as $meta ) {
+				if ( is_string( $meta->value ) && strpos( $meta->value, 'order-configuration' ) ) return true;
+			}
+			return false;
+		}
+
+		/**
+		 * The view configuration link, opening the configurator with the item's configuration loaded
+		 *
+		 * @param \WC_Order_Item $order_item
+		 * @return string - Empty when the configuration cannot be loaded
+		 */
+		private function get_view_link( $order_item ) {
 			$view_link = $order_item->get_meta( '_configurator_data_raw' ) ? get_permalink( $order_item->get_product_id() ) : false;
-			
-			return $display_value . ( $view_link ? '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>' : '' );
+			if ( ! $view_link ) return '';
+			return '<a class="configuration-link" href="' . esc_url( add_query_arg( array( 'load_config_from_order' => $order_item->get_id(), 'open_configurator'=> 1 ), $view_link ) ) . '" target="_blank">' . mkl_pc( 'settings' )->get_label( 'view_configuration', __( 'View configuration', 'product-configurator-for-woocommerce' ) ) . '</a>';
 		}
 
 		public function wc_admin_order_item_display_configurator_data( $item_id, $item, $_product ) {
