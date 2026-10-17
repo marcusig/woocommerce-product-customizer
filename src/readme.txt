@@ -218,8 +218,8 @@ Open Source SVG icons:
 15. WooCommerce product settings
 16. Editing a configuration - home screen
 17. Editing a configuration - Layers screen
-18. Editing a configuration - Contents screen 
-19. Editing a configuration - Contents screen editing
+18. Editing a configuration - Contents screen
+19. Editing a configuration - 3D settings 
 
 
 == Changelog ==
