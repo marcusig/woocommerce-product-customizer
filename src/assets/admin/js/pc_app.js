@@ -182,6 +182,11 @@ if ( ! PC.threeD.openModelMediaFrame ) {
 }
 
 // 3D Objects upload actions (used by Object3D settings fields). Store only { attachment_id, url } at gltf.
+//
+// The "3D file" field uses this rather than the generic pc_file_select: the model frame
+// lists only models and ZIPs, refuses a ZIP with no model in it, and sends the
+// configurator_assets upload context. The light import offer is not here: the 3D object
+// form makes it on change:gltf, whichever way the model was set.
 if ( ! PC.actions.edit_object3d_upload ) {
 	PC.actions.edit_object3d_upload = function ( $el, context ) {
 		if ( ! context || ! context.model || ! PC.threeD.openModelMediaFrame ) return;
@@ -190,10 +195,9 @@ if ( ! PC.actions.edit_object3d_upload ) {
 		PC.threeD.openModelMediaFrame( {
 			selectedId: selectedId,
 			onSelect: function ( attachment ) {
-				const url = attachment.gltf_url || attachment.url || '';
 				context.model.set( 'gltf', {
 					attachment_id: attachment.id,
-					url: url,
+					url: attachment.gltf_url || attachment.url || '',
 				} );
 				if ( window.PC && window.PC.app && window.PC.app.is_modified ) {
 					window.PC.app.is_modified[ 'objects3d' ] = true;
@@ -201,43 +205,9 @@ if ( ! PC.actions.edit_object3d_upload ) {
 						window.PC.app.syncSidebarSaveButtonState();
 					}
 				}
-				if ( context.$el && $el && $el.data ) {
-					const setting = $el.data( 'setting' ) || 'gltf';
-					context.$el.find( '[data-setting="' + setting + '"]' ).val( attachment.id );
-				}
-				// If GLTF contains lights, offer to import them as objects3d of type Light
-				if ( url && window.PC.threeD && window.PC.threeD.store && typeof window.PC.threeD.store.get === 'function' && window.PC.threeD.getLightsFromSceneForImport ) {
-					window.PC.threeD.store.get( url, function ( err, data ) {
-						if ( err || ! data || ! data.gltf || ! data.gltf.scene ) return;
-						const lights = window.PC.threeD.getLightsFromSceneForImport( data.gltf.scene );
-						if ( ! lights.length ) return;
-						const n = lights.length;
-						const msg = ( typeof PC_lang !== 'undefined' && PC_lang.import_lights_from_gltf )
-							? PC_lang.import_lights_from_gltf.replace( '%d', String( n ) )
-							: 'This model contains ' + n + ' light(s). Import them as 3D Objects?';
-						if ( ! window.confirm( msg ) ) return;
-						const col = context.model && context.model.collection;
-						if ( ! col || ! col.create_object ) return;
-						lights.forEach( function ( light ) {
-							const attrs = col.create_object( {
-								object_type: 'light',
-								name: light.name,
-								light_position: light.position,
-								light_type: light.type,
-								light_color: light.color,
-								light_intensity: light.intensity,
-								cast_shadows: light.cast_shadows === true,
-								light_target: light.target,		
-							} );
-							col.add( attrs );
-						} );
-						if ( window.PC.app && window.PC.app.is_modified ) {
-							window.PC.app.is_modified.objects3d = true;
-							if ( window.PC.app.syncSidebarSaveButtonState ) {
-								window.PC.app.syncSidebarSaveButtonState();
-							}
-						}
-					} );
+				// Show the new file name and the "Select new model" label.
+				if ( context.render ) {
+					context.render();
 				}
 			},
 		} );

@@ -103,6 +103,8 @@ if ( ! class_exists( 'MKL\PC\Object3D_Settings' ) ) {
 					'button_select_label' => \__( 'Select model', 'product-configurator-for-woocommerce' ),
 					'button_select_label_has_file' => \__( 'Select new model', 'product-configurator-for-woocommerce' ),
 					'button_remove_label' => \__( 'Remove', 'product-configurator-for-woocommerce' ),
+					// The model frame: models and ZIPs only, and uploads go to configurator_assets.
+					'action_select' => 'edit_object3d_upload',
 				),
 				'loading_strategy' => array(
 					'label'   => \__( 'Loading', 'product-configurator-for-woocommerce' ),

@@ -56,9 +56,24 @@ class Admin_Product_3D {
 		'.htaccess', '.htpasswd', '.user.ini', 'php.ini', 'web.config',
 	);
 
+	/**
+	 * @var array Extensions routed into configurator_assets/3D whichever uploader sent them.
+	 *
+	 * Only a 3D configurator uses these, so the file name is enough to know where
+	 * it belongs. ZIPs are not here: other plugins upload ZIPs too, so those still
+	 * need the configurator_assets context. Filterable via mkl_pc_3d_routed_extensions.
+	 */
+	const DEFAULT_ROUTED_EXTENSIONS = array( 'glb', 'gltf', 'bin', 'hdr', 'exr' );
+
+	/** @var bool Whether the upload being handled is a 3D file, decided from its name. */
+	private $is_3d_file_upload = false;
+
 	public function __construct() {
 		add_filter( 'upload_mimes', array( $this, 'filter_upload_mimes' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( $this, 'filter_check_filetype_and_ext' ), 10, 4 );
+		add_filter( 'wp_handle_upload_prefilter', array( $this, 'flag_3d_file_upload' ) );
+		add_filter( 'wp_handle_sideload_prefilter', array( $this, 'flag_3d_file_upload' ) );
+		add_filter( 'wp_handle_upload', array( $this, 'clear_3d_file_upload_flag' ) );
 		add_filter( 'upload_dir', array( $this, 'filter_upload_dir' ) );
 		add_action( 'add_attachment', array( $this, 'maybe_unzip_configurator_attachment' ) );
 		add_filter( 'wp_prepare_attachment_for_js', array( $this, 'prepare_attachment_for_js' ), 10, 3 );
@@ -217,13 +232,63 @@ class Admin_Product_3D {
 	}
 
 	/**
+	 * Note whether the file about to be uploaded is a 3D file, so filter_upload_dir() routes it.
+	 *
+	 * The upload context is only sent by the 3D model pickers. Files that came in any
+	 * other way (the generic file field, the HDRI picker, Media > Add New) used to land
+	 * in the dated folders, outside the folder the 3D assets are meant to live in.
+	 *
+	 * Decided afresh for every upload, so a failed upload cannot leave the flag on for
+	 * the next one.
+	 *
+	 * @param array $file An entry of $_FILES.
+	 * @return array Unchanged.
+	 */
+	public function flag_3d_file_upload( $file ) {
+		$this->is_3d_file_upload = false;
+		if ( ! empty( $file['error'] ) || empty( $file['name'] ) || ! is_string( $file['name'] ) ) {
+			return $file;
+		}
+		// Same users who may upload these types at all (filter_upload_mimes).
+		if ( ! ( current_user_can( 'manage_options' ) || current_user_can( 'manage_woocommerce' ) ) ) {
+			return $file;
+		}
+
+		/**
+		 * Filter the file extensions routed into configurator_assets/3D, whichever uploader sent them.
+		 *
+		 * @param string[] $extensions Lowercase, without the dot.
+		 */
+		$extensions = (array) apply_filters( 'mkl_pc_3d_routed_extensions', self::DEFAULT_ROUTED_EXTENSIONS );
+		$extension  = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
+
+		$this->is_3d_file_upload = '' !== $extension && in_array( $extension, $extensions, true );
+		return $file;
+	}
+
+	/**
+	 * The upload has been moved into place; later wp_upload_dir() calls in this request
+	 * (thumbnails, other files) must not be routed.
+	 *
+	 * @param array $upload
+	 * @return array Unchanged.
+	 */
+	public function clear_3d_file_upload_flag( $upload ) {
+		$this->is_3d_file_upload = false;
+		return $upload;
+	}
+
+	/**
 	 * Route configurator media uploads into uploads/configurator_assets/3D.
+	 *
+	 * Either the uploader asked for it (the configurator_assets context, which is how
+	 * ZIPs get here) or the file is a 3D type (see flag_3d_file_upload()).
 	 *
 	 * @param array $dirs
 	 * @return array
 	 */
 	public function filter_upload_dir( $dirs ) {
-		if ( $this->is_configurator_assets_request() ) {
+		if ( $this->is_3d_file_upload || $this->is_configurator_assets_request() ) {
 			$subdir         = '/configurator_assets/3D';
 			$dirs['subdir'] = $subdir;
 			$dirs['path']   = $dirs['basedir'] . $subdir;
