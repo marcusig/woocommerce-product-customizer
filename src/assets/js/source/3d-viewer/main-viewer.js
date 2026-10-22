@@ -47,7 +47,7 @@ import {
 import { start_animation_loop } from './3d-animation-loop.js';
 import { angle_fits_target, angle_model_pivot, fit_angle_camera, framing_shift_to_pixels, set_orbit_fitted_distance } from './3d-camera-fit.js';
 import { angle_turn_direction, plan_orbit_move } from './3d-camera-move.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent , isObjectDisplayLayer, objectDisplayLayerVisibility } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent , isObjectDisplayLayer, objectDisplayLayerVisibility, getClipSphere, fitCameraClipRange } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 import { clone as cloneWithSkeletons } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -1300,6 +1300,7 @@ export default Backbone.View.extend({
 				if ( this._shadowsEnabled ) this._refreshShadows();
 				this.invalidate_fake_shadow();
 				this._refreshPostprocessingSceneScale();
+				this._invalidateClipSphere();
 				this._requestAngleReframe();
 				this._requestRender();
 			},
@@ -1848,6 +1849,8 @@ export default Backbone.View.extend({
 		this._emitRuntimeEvent( 'frame', { deltaSeconds } );
 
 		this._quality.frame( () => {
+			// Before every pass that reads the depth range, the effect chain included.
+			this._fitCameraClipRange( t.camera );
 			// No mode check here: update() has already told the instance whether it is
 			// the active shadow, and render() is a no-op when it is not.
 			if ( t.fake_shadow ) {
@@ -1864,6 +1867,25 @@ export default Backbone.View.extend({
 	},
 
 
+
+	/**
+	 * Fit a camera's near/far planes to the model, so models clip the same in any
+	 * unit. See fitCameraClipRange.
+	 *
+	 * @param {THREE.PerspectiveCamera} camera
+	 */
+	_fitCameraClipRange( camera ) {
+		const t = this._three;
+		if ( ! t || ! t.model_root ) return;
+		// Measured on first use after the bounds change, not on every frame.
+		if ( ! t.clip_sphere ) t.clip_sphere = getClipSphere( t.model_root );
+		fitCameraClipRange( camera, t.clip_sphere );
+	},
+
+	/** The model's bounds changed: measure them again before the next fit. */
+	_invalidateClipSphere() {
+		if ( this._three ) this._three.clip_sphere = null;
+	},
 
 	_startRenderLoop() {
 		const t = this._three;
@@ -2026,6 +2048,7 @@ export default Backbone.View.extend({
 					// AO radius and the SSR reflective-mesh list were sized against
 					// whatever was in the scene before this model existed.
 					this._refreshPostprocessingSceneScale();
+					this._invalidateClipSphere();
 					this._emitRuntimeAction( 'PC.fe.viewer.object3d.loaded', [ this, idStr, sceneToAdd, sceneModel.get( 'animations' ) || [], this._runtimeApi ] );
 					this._emitRuntimeEvent( 'object3d:loaded', { object3dId: idStr, scene: sceneToAdd, animations: sceneModel.get( 'animations' ) || [] } );
 					resolve( sceneToAdd );
@@ -2343,6 +2366,15 @@ export default Backbone.View.extend({
 			setShotOffset( cameraForShot );
 		}
 
+		// The shot may stand somewhere other than the live view, so its depth range
+		// is fitted where it stands. A camera authored into the model keeps its own
+		// unless the effect chain has posed the live camera there.
+		const savedNear = baseCamera.near;
+		const savedFar = baseCamera.far;
+		if ( usePostprocessing || shotIsOurs ) {
+			this._fitCameraClipRange( usePostprocessing ? baseCamera : cameraForShot );
+		}
+
 		// Jitter for the capture is expressed against the output size rather than the
 		// container: the toolbar offset has just been cleared and the aspect reset to
 		// the requested dimensions, so half a unit here is half an output pixel.
@@ -2414,6 +2446,13 @@ export default Backbone.View.extend({
 			baseCamera.position.copy( savedPosition );
 			baseCamera.quaternion.copy( savedQuaternion );
 			if ( savedFov != null ) baseCamera.fov = savedFov;
+		}
+		// Idle frames refine the picture without refitting, so the live camera
+		// cannot be left with the shot's range.
+		if ( baseCamera.near !== savedNear || baseCamera.far !== savedFar ) {
+			baseCamera.near = savedNear;
+			baseCamera.far = savedFar;
+			baseCamera.updateProjectionMatrix();
 		}
 		if ( needAspectRestore ) {
 			baseCamera.aspect = savedAspect;

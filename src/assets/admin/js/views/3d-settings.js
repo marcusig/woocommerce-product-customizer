@@ -159,6 +159,8 @@ function ensureThreeDepsLoaded() {
 				TransformControls,
 				resolveShadowMode,
 				SHADOW_MODES,
+				getClipSphere: sceneUtilsModule.getClipSphere,
+				fitCameraClipRange: sceneUtilsModule.fitCameraClipRange,
 				create_base_composer: baseComposerModule.create_base_composer,
 				setKtx2Renderer: loaderFactoryModule.setKtx2Renderer,
 				anchorPlacement: anchorPlacementModule,

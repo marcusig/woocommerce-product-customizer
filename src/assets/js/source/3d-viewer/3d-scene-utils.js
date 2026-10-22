@@ -726,6 +726,81 @@ function fitDirectionalShadowCamera( light, bounds, sphere, radius, ground_exten
 }
 
 /**
+ * Near plane as a fraction of the camera's distance to the model.
+ *
+ * Depth precision at a distance depends on how far that distance is from the near
+ * plane, so a fixed fraction keeps the same precision at any scale. At 1% the
+ * 24-bit depth step at the product is about six millionths of the distance to it.
+ * That is three times coarser than the old fixed 0.1 gave a model in metres seen
+ * from 3m, and still far below anything that shows. That 0.1 cut through a ring modelled in
+ * metres.
+ */
+const CLIP_NEAR_RATIO = 0.01;
+
+/**
+ * How far past the model's centre the far plane reaches, in bounding radii.
+ *
+ * The model is not all there is to draw: the shadow catcher spreads well past
+ * it under a low light (about 15 radii at most, from shadowGroundExtent), and
+ * the admin preview adds light helpers around it. The far plane costs very
+ * little precision, so it is set generously rather than fitted to each of them.
+ */
+const CLIP_FAR_REACH = 24;
+
+/**
+ * Bounding sphere the main camera's depth range is fitted to.
+ *
+ * Hidden objects count: Box3.setFromObject ignores visibility. That makes the
+ * sphere a little larger than it needs to be, which costs nothing here, and it
+ * means hiding a part does not have to refit the camera.
+ *
+ * @param {THREE.Object3D} root - Model root
+ * @returns {THREE.Sphere|null} Null while the root is empty
+ */
+export function getClipSphere( root ) {
+	if ( ! root ) return null;
+	const bounds = new THREE.Box3().setFromObject( root );
+	if ( bounds.isEmpty() ) return null;
+	return bounds.getBoundingSphere( new THREE.Sphere() );
+}
+
+const _clip_position = new THREE.Vector3();
+
+/**
+ * Fit a perspective camera's near and far planes to the model.
+ *
+ * A fixed range only suits one scale. The 0.1–1000 the viewer used to have cut
+ * off the back of a model 300 units across (Fusion 360 exports in millimetres)
+ * as soon as the camera pulled back, and the front of one a few centimetres
+ * across modelled in metres. Both planes follow the camera's distance to the
+ * model instead, so the range holds whatever unit the file was exported in and
+ * wherever the customer orbits or zooms to.
+ *
+ * Cheap enough to call before every render: when nothing changed it compares
+ * two numbers and leaves the projection matrix alone.
+ *
+ * @param {THREE.PerspectiveCamera} camera
+ * @param {THREE.Sphere|null} sphere - From getClipSphere
+ * @returns {boolean} Whether the planes changed
+ */
+export function fitCameraClipRange( camera, sphere ) {
+	if ( ! camera || ! camera.isPerspectiveCamera || ! sphere || ! ( sphere.radius > 0 ) ) return false;
+
+	const radius = sphere.radius;
+	const distance = camera.getWorldPosition( _clip_position ).distanceTo( sphere.center );
+	// Floored for a camera sitting on the centre, where the distance is zero.
+	const near = Math.max( distance * CLIP_NEAR_RATIO, radius * 1e-4 );
+	const far = distance + radius * CLIP_FAR_REACH;
+	if ( camera.near === near && camera.far === far ) return false;
+
+	camera.near = near;
+	camera.far = far;
+	// Keeps any view offset: it lives on camera.view, which this re-reads.
+	camera.updateProjectionMatrix();
+	return true;
+}
+
+/**
  * Fit a light's shadow camera to the model.
  *
  * Three's defaults assume a scene tens of units across (spot/point near 0.5 far 500,

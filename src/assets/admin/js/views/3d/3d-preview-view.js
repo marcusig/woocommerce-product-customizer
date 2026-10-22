@@ -393,6 +393,8 @@ export const settings_3d_preview_mixin = {
 		const THREE = get_three();
 		if ( ! t || ! t.model_root || ! THREE ) return;
 		if ( ! window.wp || ! window.wp.hooks || ! window.wp.hooks.hasAction( 'PC.admin.3d_preview.placement' ) ) return;
+		// Placed models move, so the bounds the depth range is fitted to are stale.
+		t.clip_sphere = null;
 		const col = PC.app.get_collection ? PC.app.get_collection( 'objects3d' ) : null;
 		if ( ! col ) return;
 		if ( t.placement ) t.placement.reset();
@@ -1183,6 +1185,7 @@ export const settings_3d_preview_mixin = {
 
 				viewRef._three.scene.add( rootGroup );
 				viewRef._three.model_root = rootGroup;
+				viewRef._three.clip_sphere = null;
 				viewRef._three.scene_roots = scene_roots;
 				// Real-time shadows: meshes need cast/receive flags.
 				rootGroup.traverse( function( obj ) {
@@ -1345,6 +1348,13 @@ export const settings_3d_preview_mixin = {
 				// but guard rather than rely on the ordering.
 				if ( ! this._three ) return;
 				this._three.quality.frame( () => {
+					// Same depth range as the product page, so a model clips here only
+					// where it would clip there. Measured again after apply_model_positions.
+					const t = this._three;
+					if ( t.model_root && typeof deps.fitCameraClipRange === 'function' ) {
+						if ( ! t.clip_sphere ) t.clip_sphere = deps.getClipSphere( t.model_root );
+						deps.fitCameraClipRange( camera, t.clip_sphere );
+					}
 					const editor = this._three.light_editor;
 					if ( editor ) editor.update();
 					// No mode check: update() has already told the instance whether it
