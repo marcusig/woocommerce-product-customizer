@@ -94,12 +94,13 @@
 		$( 'body' ).on( 'click', '.configure-product-simple', configurator_init );
 		$( 'body' ).on( 'mkl/pc/inline-init', '.mkl-configurator-inline', configurator_init );
 
-		$('form.cart').each(function(index, form) { 
+		PC.fe.get_product_forms().each(function(index, form) {
 
-			if ( $( 'body' ).is( '.is_configurable' ) && ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( form ).find( 'button[name="add-to-cart"]' ).prop( 'disabled', 'disabled' ); 
+			if ( $( 'body' ).is( '.is_configurable' ) && ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( form ).find( 'button[name="add-to-cart"]' ).prop( 'disabled', 'disabled' );
 			$( form ).on( 'submit', function( event ) {
-				$( 'input[name=pc_configurator_data]' ).val( PC.fe.save_data.save() ); 
-				if( $( 'input[name=pc_configurator_data]' ).val() == '' ) {
+				var $data = $( form ).find( 'input[name=pc_configurator_data]' );
+				$data.val( PC.fe.save_data.save() );
+				if( $data.val() == '' ) {
 					event.preventDefault(); 
 					console.log('empty data'); 
 				}
@@ -124,14 +125,14 @@
 
 		wp.hooks.addAction( 'PC.fe.start', 'mkl/product_configurator', function( configurator ) {
 
-			$( 'form.cart button[name="add-to-cart"]' ).prop( 'disabled', false );
+			PC.fe.get_product_forms().find( 'button[name="add-to-cart"]' ).prop( 'disabled', false );
 
 			// Register every quantity input as a view of PC.fe.get_qty(). This
 			// replaces a document-delegated mirror that copied one input's value
 			// into the others: it was re-bound on every start and never removed,
 			// and because .val() fires no change event, a change on the product
 			// form never reached product_info.qty. bind_qty_input is idempotent.
-			PC.fe.bind_qty_input( $( 'form.cart input[name=quantity], .mkl_pc input[name=quantity]' ) );
+			PC.fe.bind_qty_input( PC.fe.get_product_forms().find( 'input[name=quantity]' ).add( '.mkl_pc input[name=quantity]' ) );
 
 			// Blocksy buttons compat
 			if ( 'object' === typeof ctFrontend && ctFrontend.hasOwnProperty( 'handleEntryPoints' ) && ctFrontend.hasOwnProperty( 'allFrontendEntryPoints' ) ) ctFrontend.handleEntryPoints( ctFrontend.allFrontendEntryPoints );
@@ -654,7 +655,7 @@
 		// listening yet, and this is the starting value rather than a change.
 		// (This used to read the configurator's own input, which does not exist
 		// yet at this point, so it always fell back to 1.)
-		var $page_qty = $( 'form.cart input[name=quantity]' ).first();
+		var $page_qty = PC.fe.get_product_forms().find( 'input[name=quantity]' ).first();
 		PC.fe.set_qty( $page_qty.length ? $page_qty.val() : this.currentProductData.product_info.qty, { silent: true } );
 
 		if ( ( 'simple' === PC.fe.product_type && PC.productData['prod_' + product_id] ) || ( 'variation' === PC.fe.product_type && PC.productData['prod_' + product_id] ) ) {
@@ -839,8 +840,23 @@
 	}
 	
 	PC.fe.fetchedContent = function( model, response, options ){
-		console.log('fetched content'); 
+		console.log('fetched content');
 	}
+
+	/**
+	 * The add to cart forms the configurator is responsible for.
+	 *
+	 * A product page can hold other form.cart elements - related products,
+	 * upsells, quick views, a sticky bar from the theme - and the body classes
+	 * describe the page, not the form. Only a form that carries the hidden
+	 * pc_configurator_data field (printed for configurable products on
+	 * woocommerce_after_add_to_cart_button) is ours to disable or guard.
+	 *
+	 * @return {jQuery}
+	 */
+	PC.fe.get_product_forms = function() {
+		return $( 'input[name=pc_configurator_data]' ).closest( 'form.cart' );
+	};
 
 	/*
 	 * QUANTITY

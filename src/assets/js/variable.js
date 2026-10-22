@@ -11,11 +11,15 @@ PC.fe = PC.fe || {};
 
 		if ( ! $( 'body' ).is( '.is_configurable' ) ) return;
 		
-		if ( typeof wc_add_to_cart_variation_params !== 'undefined' ) {
+		// Only the form carrying the configurator's hidden field: related
+		// products, upsells or quick views can add their own variation forms,
+		// and load the variation script on a simple product's page.
+		var $form = $( 'input[name=pc_configurator_data]' ).closest( '.variations_form' );
+
+		if ( typeof wc_add_to_cart_variation_params !== 'undefined' && $form.length ) {
 
 			is_variation = true;
 			PC.fe.product_type = 'variable';
-			var $form = $( '.variations_form' );
 			var productData;
 			var current_variation;
 			var loadedAtStartup = false;
@@ -23,7 +27,7 @@ PC.fe = PC.fe || {};
 			$form.on( 'hide_variation', function( event ) { 
 				//event.preventDefault();
 				$( 'body' ).removeClass( 'current-variation-is-configurable' );
-				if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( '.variations_button' ).addClass('disabled');
+				if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $form.find( '.variations_button' ).addClass('disabled');
 				$( '.configure-product' ).hide(); 
 				$( '.configure-product' ).attr( 'disabled', 'disabled' ); 
 				PC.fe.close();
@@ -35,7 +39,7 @@ PC.fe = PC.fe || {};
 				current_variation = variation;
 				
 				var product_id = variation.variation_id; 
-				var parent_id = $('input[name="product_id"]').val();
+				var parent_id = $form.find( 'input[name="product_id"]' ).val();
 
 				// Reset the configuration field, to prevent adding the same twice
 				$('input[name=pc_configurator_data]').val( '' );
@@ -49,10 +53,10 @@ PC.fe = PC.fe || {};
 				if ( variation.is_configurable ) {
 					$( 'body' ).addClass( 'current-variation-is-configurable' );
 					if ( PC.fe.opened == true ) {
-						if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( '.variations_button' ).removeClass('disabled'); 
+						if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $form.find( '.variations_button' ).removeClass('disabled'); 
 						$( '.configure-product' ).hide(); 
 					} else {
-						if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( '.variations_button' ).addClass('disabled');
+						if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $form.find( '.variations_button' ).addClass('disabled');
 						$( '.configure-product' ).show(); 
 						$( '.configure-product' ).prop( 'disabled', false ); 
 					}
@@ -62,8 +66,8 @@ PC.fe = PC.fe || {};
 				} else {
 					$( 'body' ).removeClass( 'current-variation-is-configurable' );
 					$( '.configure-product' ).hide(); 
-					if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( '.variations_button' ).removeClass('disabled'); 
-					if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $( '.variations_button button' ).prop( 'disabled', false ); 
+					if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $form.find( '.variations_button' ).removeClass('disabled'); 
+					if ( ! $( 'body' ).is( '.enable-add-to-cart' ) ) $form.find( '.variations_button button' ).prop( 'disabled', false ); 
 				}
 			} );
 		}
@@ -74,8 +78,9 @@ PC.fe = PC.fe || {};
 				PC.fe.lang = PC.fe.config.current_language;
 				PC.utils.add_language_filters( PC.fe.lang );
 			}
-			var product_id = $( 'input[name="variation_id"]' ).val();
-			var parent_id = $( 'input[name="product_id"]' ).val();
+			var $scope = $form.length ? $form : $( document );
+			var product_id = $scope.find( 'input[name="variation_id"]' ).val();
+			var parent_id = $scope.find( 'input[name="product_id"]' ).val();
 			if ( ! product_id || ! parent_id ) {
 				alert( 'No variation found...' );
 				return;
