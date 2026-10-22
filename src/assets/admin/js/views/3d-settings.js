@@ -978,10 +978,10 @@ PC.views = window.PC.views || {};
 			}
 			t.camera.lookAt( target );
 			this._setPreviewFramingShift( fit ? fit.shift : null );
-			t.controls.update();
-		},
 			// The fit may stand past the zoom-out limit, as on the frontend.
 			cameraFit.set_orbit_fitted_distance( t.controls, fit ? fit.distance : 0 );
+			t.controls.update();
+		},
 		/**
 		 * Refit the previewed angle to a new canvas shape, unless the camera has
 		 * been moved since the angle was applied: the merchant may be lining up a
