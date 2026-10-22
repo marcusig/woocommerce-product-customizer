@@ -155,6 +155,24 @@ describe( 'framing_shift_to_pixels', () => {
 } );
 
 describe( 'collect_fit_points', () => {
+	it( 'keeps the tips a stride would step over', () => {
+		// A dense rod along x with its far end made of three vertices next to
+		// each other, as a tube end is: a stride of 12 lands on none of them.
+		const count = 12000;
+		const positions = new Float32Array( count * 3 );
+		for ( let i = 0; i < count; i++ ) positions[ i * 3 ] = ( i % 1000 ) / 1000;
+		for ( const i of [ 5, 6, 7 ] ) positions[ i * 3 ] = 3;
+		const geometry = new THREE.BufferGeometry();
+		geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+		const mesh = new THREE.Mesh( geometry );
+		mesh.position.set( 1, 0, 0 );
+		const points = collect_fit_points( [ mesh ], 1000 );
+		let maxX = -Infinity;
+		for ( let i = 0; i < points.length; i += 3 ) maxX = Math.max( maxX, points[ i ] );
+		expect( maxX ).toBe( 4 );
+		expect( points.length / 3 ).toBeLessThanOrEqual( 1000 + 26 );
+	} );
+
 	it( 'samples visible meshes in world space and skips hidden ones', () => {
 		const root = new THREE.Group();
 		const shown = new THREE.Mesh( new THREE.BoxGeometry( 2, 2, 2 ) );
@@ -177,7 +195,8 @@ describe( 'collect_fit_points', () => {
 	it( 'stays within the budget on heavy geometry', () => {
 		const mesh = new THREE.Mesh( new THREE.SphereGeometry( 1, 256, 256 ) );
 		const points = collect_fit_points( [ mesh ], 1000 );
-		expect( points.length / 3 ).toBeLessThanOrEqual( 1000 );
+		// The budget bounds the sample; each mesh adds its few outline vertices.
+		expect( points.length / 3 ).toBeLessThanOrEqual( 1000 + 26 );
 		expect( points.length / 3 ).toBeGreaterThan( 500 );
 	} );
 } );

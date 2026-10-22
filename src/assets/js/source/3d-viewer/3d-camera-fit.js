@@ -23,7 +23,10 @@
 import * as THREE from 'three';
 import { findObject, findObjectByCompositeId, findModelRoots } from './3d-scene-utils.js';
 
-/** Upper bound on the vertices sampled per fit; plenty for an outline. */
+/**
+ * Upper bound on the vertices sampled per fit; plenty for an outline. Each
+ * mesh adds up to 26 outline vertices on top (see outline_vertex_indices).
+ */
 export const FIT_POINT_BUDGET = 6000;
 
 /**
@@ -296,13 +299,69 @@ export function visible_bounds( roots ) {
 	return box.isEmpty() ? null : box;
 }
 
+// The 13 axes of a 26-sided bounding volume: the 3 axes, the 6 face diagonals
+// and the 4 body diagonals. Unnormalised: only the order along each matters.
+const OUTLINE_AXES = [
+	[ 1, 0, 0 ], [ 0, 1, 0 ], [ 0, 0, 1 ],
+	[ 1, 1, 0 ], [ 1, -1, 0 ], [ 1, 0, 1 ], [ 1, 0, -1 ], [ 0, 1, 1 ], [ 0, 1, -1 ],
+	[ 1, 1, 1 ], [ 1, 1, -1 ], [ 1, -1, 1 ], [ 1, -1, -1 ],
+];
+
+// Geometry → { version, indices } of its outline vertices, for meshes drawn as
+// stored. A deformed mesh moves its vertices, so it is measured on every fit.
+const OUTLINE_VERTICES = new WeakMap();
+
+/**
+ * The vertices furthest out along each OUTLINE_AXES axis, both ways: at most 26
+ * that hold the mesh's outline from any side.
+ *
+ * Measured in the mesh's own space. Any transform keeps the furthest vertex
+ * along a direction the furthest along the transformed direction, so these
+ * stay extremes in the world.
+ *
+ * @param {THREE.Mesh} mesh
+ * @returns {Int32Array}
+ */
+function outline_vertex_indices( mesh ) {
+	const geometry = mesh.geometry;
+	const position = geometry.attributes.position;
+	const deformed = mesh.isSkinnedMesh || ( Array.isArray( mesh.morphTargetInfluences ) && mesh.morphTargetInfluences.some( ( w ) => w !== 0 ) );
+	if ( ! deformed ) {
+		const cached = OUTLINE_VERTICES.get( geometry );
+		if ( cached && cached.version === position.version && cached.count === position.count ) return cached.indices;
+	}
+	const best = new Float64Array( OUTLINE_AXES.length * 2 ).fill( -Infinity );
+	const found = new Int32Array( OUTLINE_AXES.length * 2 );
+	const v = new THREE.Vector3();
+	for ( let i = 0; i < position.count; i++ ) {
+		mesh.getVertexPosition( i, v );
+		for ( let a = 0; a < OUTLINE_AXES.length; a++ ) {
+			const axis = OUTLINE_AXES[ a ];
+			const d = axis[ 0 ] * v.x + axis[ 1 ] * v.y + axis[ 2 ] * v.z;
+			if ( d > best[ 2 * a ] ) {
+				best[ 2 * a ] = d;
+				found[ 2 * a ] = i;
+			}
+			if ( -d > best[ 2 * a + 1 ] ) {
+				best[ 2 * a + 1 ] = -d;
+				found[ 2 * a + 1 ] = i;
+			}
+		}
+	}
+	const indices = position.count ? Int32Array.from( new Set( found ) ) : new Int32Array( 0 );
+	if ( ! deformed ) OUTLINE_VERTICES.set( geometry, { version: position.version, count: position.count, indices } );
+	return indices;
+}
+
 /**
  * Sample the world-space vertices of the visible meshes under `roots`.
  *
  * Vertices rather than bounding-box corners: the corners of a box sit in empty
  * space around a rounded product, and fitting to them leaves a visibly larger
  * margin than the one set, differently on every angle. Striding keeps the cost
- * flat on heavy models; the margin absorbs the few extremes a stride can skip.
+ * flat on heavy models. A stride can step over the few vertices that make a
+ * tip or a tube end, which then poked out past the margin, so each mesh's
+ * outline vertices are always added (see outline_vertex_indices).
  *
  * getVertexPosition applies morph targets and skinning, so a posed or animated
  * mesh is fitted as it is drawn.
@@ -337,6 +396,7 @@ export function collect_fit_points( roots, budget = FIT_POINT_BUDGET ) {
 	meshes.forEach( ( mesh ) => {
 		const count = mesh.geometry.attributes.position.count;
 		const instances = mesh.isInstancedMesh ? mesh.count : 1;
+		const outline = stride > 1 ? outline_vertex_indices( mesh ) : [];
 		for ( let k = 0; k < instances; k++ ) {
 			if ( mesh.isInstancedMesh ) {
 				mesh.getMatrixAt( k, instanceMatrix );
@@ -348,6 +408,10 @@ export function collect_fit_points( roots, budget = FIT_POINT_BUDGET ) {
 				mesh.getVertexPosition( i, v ).applyMatrix4( world );
 				out.push( v.x, v.y, v.z );
 			}
+			outline.forEach( ( i ) => {
+				mesh.getVertexPosition( i, v ).applyMatrix4( world );
+				out.push( v.x, v.y, v.z );
+			} );
 		}
 	} );
 	return new Float32Array( out );

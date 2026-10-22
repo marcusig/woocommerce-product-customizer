@@ -229,8 +229,10 @@ Open Source SVG icons:
 * FEATURE: 3D views: added a "Visible objects" option to "Camera target (model)". The view turns around and frames the whole product as the customer has configured it, and follows along when a choice adds or removes a part. New views use it by default; the empty option, now labelled "Saved camera target", still turns around the point saved with the view
 * TWEAK: Removed option `Both` in setting `Configuration meta data`
 * TWEAK: A 3D view that fits its target may now start further out than the maximum zoom distance, so it always shows the whole target, on narrow screens too. The customer can zoom back out as far as the view started, but no further
+* TWEAK: 3D settings > Saved views: "Set current view to selected angle" is now "Save current view", next to a new "Back to saved view" button that shows the selected view again as customers see it. The preview names the view on show, its framing and camera target, and whether the camera has moved since
 * FIX: Only Block related Add to cart button (Other add to cart buttons would be disabled on the page, if they were inside a form.cart element)
 * FIX: A 3D view with a "Camera target (model)" but no object or camera focus turned around the point saved with the view, often the floor or the origin, so the product sat off-centre. It now turns around and frames that model, or everything shown while the model is not part of the configuration
+* FIX: A 3D view set to fit its target could crop the thin end of a part, such as the end of a tube, past the edge of the view. The fit now always includes the outermost points of every part
 * FIX: 3D models are no longer clipped when they are much larger or smaller than a few metres, such as a model exported from Fusion 360 in millimetres. The camera's visible depth range now follows the model's size and distance, on the product page, in cart and quote images, and in the admin preview
 * FIX: 3D models loaded asynchronously, or moved into place by an anchor, now cast the fake ground shadow. The shadow only covered the models loaded at start-up
 
