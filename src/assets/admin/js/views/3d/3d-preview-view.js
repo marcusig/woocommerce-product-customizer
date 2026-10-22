@@ -1127,7 +1127,10 @@ export const settings_3d_preview_mixin = {
 			// Orbiting or zooming hands the camera to the merchant: a resize stops
 			// refitting the angle, so a view being lined up is not thrown away.
 			controls.addEventListener( 'start', () => {
+				if ( this._previewFramingTouched ) return;
 				this._previewFramingTouched = true;
+				// The Saved views status says the preview no longer shows the view.
+				if ( typeof this.update_angle_status === 'function' ) this.update_angle_status();
 			} );
 
 			// Catch-all for anything in the panel that mutates the scene without

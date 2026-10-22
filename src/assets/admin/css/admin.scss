@@ -5012,6 +5012,23 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 			min-width: 2.5em;
 			margin-left: 0.25em;
 		}
+		.pc-3d-angle-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px;
+			margin: 0 0 0.5em;
+			.button {
+				flex: 1 1 0;
+				justify-content: center;
+				text-align: center;
+				white-space: nowrap;
+			}
+		}
+		.pc-3d-angle-save-note {
+			margin: 0 0 1em;
+			font-size: .9em;
+			opacity: .7;
+		}
 		.pc-3d-import-cameras-status {
 			margin: -0.25em 0 1em;
 			padding: 0.5em 0.75em;
@@ -5116,6 +5133,54 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
 		.pc-3d-preview-error__list {
 			margin: 0;
 			padding-left: 1.2em;
+		}
+	}
+	// The angle on show: how it frames, what it turns around, and whether the
+	// camera has moved since. Top left, clear of the light gizmo bottom left.
+	.pc-3d-view-overlay {
+		position: absolute;
+		left: 12px;
+		top: 12px;
+		z-index: 5;
+		max-width: calc(100% - 24px);
+		padding: 6px 10px;
+		background: rgba(255, 255, 255, 0.85);
+		border-radius: 4px;
+		color: #50575e;
+		font-size: 12px;
+		line-height: 1.5;
+		pointer-events: none;
+		.pc-3d-view-overlay__head {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			gap: 4px 8px;
+			strong {
+				color: #1d2327;
+			}
+		}
+		.pc-3d-view-overlay__state {
+			padding: 0 6px;
+			border-radius: 2px;
+			background: #edfaef;
+			color: #00702a;
+		}
+		&.is-moved .pc-3d-view-overlay__state {
+			background: #fcf9e8;
+			color: #8a5b00;
+		}
+		dl {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			gap: 0 8px;
+			margin: 2px 0 0;
+		}
+		dt {
+			color: #646970;
+		}
+		dd {
+			margin: 0;
+			color: #1d2327;
 		}
 	}
 	// Light gizmo: a hint while nothing is selected, the selection's controls while something is.

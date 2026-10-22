@@ -408,6 +408,7 @@ PC.views = window.PC.views || {};
 			'click .pc-3d-set-min-zoom': 'set_min_zoom_from_view',
 			'click .pc-3d-set-max-zoom': 'set_max_zoom_from_view',
 			'click .pc-3d-set-view-to-angle': 'set_current_view_to_angle',
+			'click .pc-3d-back-to-angle': 'back_to_saved_view',
 			'click .pc-3d-import-gltf-cameras': 'import_cameras_from_gltf',
 			'click .pc-3d-poster-select': 'on_poster_select',
 			'click .pc-3d-poster-remove': 'on_poster_remove',
@@ -510,6 +511,7 @@ PC.views = window.PC.views || {};
 			this._populateEnvSource();
 			this.update_zoom_buttons_state();
 			this.populate_angle_select();
+			this.update_angle_status();
 			// Load preview when there is at least one model to show (from objects3d)
 			const modelEntries = this.get_model_entries();
 			if ( modelEntries.length > 0 ) {
@@ -913,6 +915,7 @@ PC.views = window.PC.views || {};
 			return cameraFit ? cameraFit.angle_model_pivot( root, angle ) : null;
 		},
 		on_angle_select_change: function () {
+			this.update_angle_status();
 			if ( !this._three || !this._three.camera || !this._three.controls ) return;
 			const angleId = this.$( '.pc-3d-angle-select' ).val();
 			const angles = this.get_angles();
@@ -920,6 +923,111 @@ PC.views = window.PC.views || {};
 			const angle = angleId ? angles.get( angleId ) : angles.first();
 			if ( !angle ) return;
 			this._applyAngleToPreview( angle );
+		},
+		/** The angle picked in the Saved views select, or null. */
+		get_selected_angle: function () {
+			const angleId = this.$( '.pc-3d-angle-select' ).val();
+			const angles = this.get_angles();
+			return angleId && angles ? angles.get( angleId ) || null : null;
+		},
+		/**
+		 * Show the selected angle again as the customer gets it, after orbiting
+		 * the preview. Picking it again in the select does nothing: the value
+		 * has not changed.
+		 */
+		back_to_saved_view: function ( e ) {
+			e.preventDefault();
+			const angle = this.get_selected_angle();
+			if ( angle ) this._applyAngleToPreview( angle );
+		},
+		/**
+		 * Say what the preview is showing, and what saving it would keep.
+		 *
+		 * Under the buttons, a note on what "Save current view" keeps for the
+		 * selected angle: a fitted one keeps only the direction. On the preview,
+		 * the angle on show, how it frames, what it turns around, and whether
+		 * the camera has moved since. Framing and target are set in the view's
+		 * own form, out of sight from here; read-only on purpose, so there is
+		 * one place to change them.
+		 */
+		update_angle_status: function () {
+			const angle = this.get_selected_angle();
+			const t = this._three;
+			const ready = !!( t && t.controls );
+			const lang = typeof PC_lang !== 'undefined' ? PC_lang : {};
+			// As angle_fits_target, which may not be loaded yet.
+			const fits_of = ( a ) => a.get( 'camera_framing' ) !== 'fixed';
+			this.$( '.pc-3d-back-to-angle' ).prop( 'disabled', !angle || !ready );
+			this.$( '.pc-3d-angle-save-note' )
+				.text( !angle ? '' : fits_of( angle )
+					? ( lang.threed_framing_fit_note || 'Saves the direction only: the distance adapts to each screen.' )
+					: ( lang.threed_framing_fixed_note || 'Saves the camera position as it is.' ) )
+				.prop( 'hidden', !angle );
+
+			const container = t && t.container;
+			if ( !container ) return;
+			let overlay = container.querySelector( '.pc-3d-view-overlay' );
+			const shown = ready ? this._previewAngle : null;
+			if ( !shown ) {
+				if ( overlay ) overlay.remove();
+				return;
+			}
+			if ( !overlay ) {
+				overlay = document.createElement( 'div' );
+				overlay.className = 'pc-3d-view-overlay';
+				overlay.innerHTML = '<div class="pc-3d-view-overlay__head"><strong class="pc-3d-view-overlay__name"></strong>'
+					+ ' <span class="pc-3d-view-overlay__state" role="status" aria-live="polite"></span></div>'
+					+ '<dl><dt></dt><dd class="pc-3d-view-overlay__framing"></dd><dt></dt><dd class="pc-3d-view-overlay__target"></dd></dl>';
+				const dts = overlay.querySelectorAll( 'dt' );
+				dts[ 0 ].textContent = lang.threed_framing_label || 'Framing';
+				dts[ 1 ].textContent = lang.threed_target_label || 'Camera target';
+				container.appendChild( overlay );
+			}
+			const fits = fits_of( shown );
+			overlay.querySelector( '.pc-3d-view-overlay__name' ).textContent = shown.get( 'name' ) || '';
+			overlay.querySelector( '.pc-3d-view-overlay__framing' ).textContent = fits
+				? ( lang.threed_framing_fit || 'Fit the target in view' )
+				: ( lang.threed_framing_fixed || 'Camera position as set' );
+			overlay.querySelector( '.pc-3d-view-overlay__target' ).textContent = this._angle_target_label( shown, fits, lang );
+			const moved = !!this._previewFramingTouched;
+			const state = moved
+				? ( lang.threed_view_moved || 'Moved, not saved' )
+				: ( lang.threed_view_saved || 'Saved view' );
+			const $state = overlay.querySelector( '.pc-3d-view-overlay__state' );
+			// Only on a change: it is a live region.
+			if ( $state.textContent !== state ) $state.textContent = state;
+			overlay.classList.toggle( 'is-moved', moved );
+		},
+		/**
+		 * What the angle turns around, in the order the viewer resolves it.
+		 *
+		 * @param {Backbone.Model} angle
+		 * @param {boolean} fits
+		 * @param {Object} lang
+		 * @returns {string}
+		 */
+		_angle_target_label: function ( angle, fits, lang ) {
+			const name_of = ( id ) => {
+				const s = String( id );
+				const sep = s.indexOf( ':' );
+				return sep === -1 ? s : s.slice( sep + 1 );
+			};
+			const focus = ( angle.get( 'camera_focus_object_ids' ) || [] ).filter( ( id ) => id != null && String( id ).trim() !== '' );
+			if ( focus.length > 2 ) return ( lang.threed_target_focus_count || 'Focus: %d objects' ).replace( '%d', focus.length );
+			if ( focus.length ) return ( lang.threed_target_focus || 'Focus: %s' ).replace( '%s', focus.map( name_of ).join( ', ' ) );
+			const objectId = angle.get( 'camera_target_object_id' );
+			if ( objectId ) return ( lang.threed_target_object || 'Object: %s' ).replace( '%s', name_of( objectId ) );
+			// A fixed angle turns around its saved target unless an object or
+			// focus is set (see angle_model_pivot).
+			const model = angle.get( 'camera_target_model' );
+			if ( fits && model === 'visible' ) return lang.threed_visible_objects || 'Visible objects';
+			if ( fits && model != null && model !== '' ) {
+				const objects3d = PC.app && typeof PC.app.get_collection === 'function' ? PC.app.get_collection( 'objects3d' ) : null;
+				const entry = objects3d ? objects3d.get( model ) : null;
+				const label = entry ? ( entry.get( 'name' ) || entry.get( 'filename' ) || model ) : model;
+				return ( lang.threed_target_model || 'Model: %s' ).replace( '%s', label );
+			}
+			return lang.threed_target_saved || 'Saved camera target';
 		},
 		/**
 		 * Point the preview camera the way an angle does on the frontend.
@@ -950,6 +1058,9 @@ PC.views = window.PC.views || {};
 
 			// Editing how the angle frames re-frames the preview straight away.
 			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_fit_max_width change:camera_fit_max_height change:camera_focus_object_ids change:camera_target_object_id change:camera_target_model';
+			// The select names the angle on show, so the status line and the
+			// buttons act on what the merchant is looking at.
+			this.$( '.pc-3d-angle-select' ).val( angle.id );
 			if ( this._previewAngle !== angle ) {
 				if ( this._previewAngle ) this.stopListening( this._previewAngle, framingEvents );
 				this.listenTo( angle, framingEvents, () => {
@@ -981,6 +1092,7 @@ PC.views = window.PC.views || {};
 			// The fit may stand past the zoom-out limit, as on the frontend.
 			cameraFit.set_orbit_fitted_distance( t.controls, fit ? fit.distance : 0 );
 			t.controls.update();
+			this.update_angle_status();
 		},
 		/**
 		 * Refit the previewed angle to a new canvas shape, unless the camera has
@@ -1008,10 +1120,11 @@ PC.views = window.PC.views || {};
 				camera_target: { x: target.x, y: target.y, z: target.z }
 			} );
 			this.mark_dirty( 'angles' );
-			// A fitted angle keeps only the direction just set: show the distance and
-			// centring the frontend will use, rather than leave the merchant believing
-			// their zoom was saved.
-			if ( cameraFit && cameraFit.angle_fits_target( angle ) ) this._applyAngleToPreview( angle );
+			// Show the view as the frontend will: a fitted angle keeps only the
+			// direction just set, so the merchant must not believe their zoom was
+			// saved. A fixed one stays put, but turns around its object or focus
+			// when it has one. Either way the preview then shows the saved view.
+			this._applyAngleToPreview( angle );
 		},
 		import_cameras_from_gltf: function ( e ) {
 			e.preventDefault();
@@ -1025,7 +1138,7 @@ PC.views = window.PC.views || {};
 				root.traverse( ( obj ) => { if ( obj.isCamera ) cameras.push( obj ); } );
 			}
 			if ( !cameras.length ) {
-				alert( ( typeof PC_lang !== 'undefined' && PC_lang.no_cameras_in_gltf ) ? PC_lang.no_cameras_in_gltf : 'No cameras found in the main GLTF file.' );
+				alert( ( typeof PC_lang !== 'undefined' && PC_lang.no_cameras_in_gltf ) ? PC_lang.no_cameras_in_gltf : 'No cameras found in the loaded 3D models.' );
 				return;
 			}
 			const angles = this.get_angles();
