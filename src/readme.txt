@@ -227,6 +227,7 @@ Open Source SVG icons:
 = 2.0.1 - unreleased =
 
 * TWEAK: Removed option `Both` in setting `Configuration meta data`
+* FIX: Only Block related Add to cart button (Other add to cart buttons would be disabled on the page, if they were inside a form.cart element)
 
 = 2.0.0 - 12/Oct/2026 =
 
