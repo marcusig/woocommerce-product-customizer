@@ -21,10 +21,17 @@
  * dragging, and that reads as the model sliding.
  */
 import * as THREE from 'three';
-import { findObject, findObjectByCompositeId } from './3d-scene-utils.js';
+import { findObject, findObjectByCompositeId, findModelRoots } from './3d-scene-utils.js';
 
 /** Upper bound on the vertices sampled per fit; plenty for an outline. */
 export const FIT_POINT_BUDGET = 6000;
+
+/**
+ * Camera target (model) value meaning "whatever is shown" rather than one
+ * model. Model values are objects3d ids, which are numeric, so it cannot
+ * collide with one. Mirrored in the admin's angles.js.
+ */
+export const CAMERA_TARGET_VISIBLE = 'visible';
 
 /** Margin used when an angle sets none, as a fraction of the half-frame. */
 export const DEFAULT_FIT_MARGIN = 0.05;
@@ -78,7 +85,8 @@ export function angle_fit_max_size( angle ) {
 
 /**
  * The objects an angle frames: its focus objects, else its camera target
- * object, else the whole model.
+ * object, else its camera target model while it shows something, else
+ * everything loaded.
  *
  * @param {THREE.Object3D} root - Scene root holding the models
  * @param {Backbone.Model} angle
@@ -101,7 +109,51 @@ export function angle_fit_objects( root, angle ) {
 		const obj = findObject( root, String( targetObjectId ).trim() );
 		if ( obj ) return [ obj ];
 	}
+	const modelRoots = angle_target_model_roots( root, angle );
+	if ( modelRoots.length && visible_bounds( modelRoots ) ) return modelRoots;
 	return [ root ];
+}
+
+/**
+ * The loaded model an angle names as its camera target (the model, not an
+ * object inside it). None for "Visible objects", which names no model.
+ *
+ * @param {THREE.Object3D} root - Scene root holding the models
+ * @param {Backbone.Model} angle
+ * @returns {THREE.Object3D[]}
+ */
+export function angle_target_model_roots( root, angle ) {
+	if ( ! root || ! angle ) return [];
+	const id = angle.get( 'camera_target_model' );
+	if ( id == null || String( id ).trim() === '' || String( id ).trim() === CAMERA_TARGET_VISIBLE ) return [];
+	return findModelRoots( root, String( id ).trim() );
+}
+
+/**
+ * Orbit target of a fitted angle that names a model but no object or focus:
+ * the centre of that model as it is shown. "Visible objects" turns around
+ * everything shown.
+ *
+ * The stored target is only where the preview's orbit happened to be when the
+ * view was saved (often the origin, or the floor), so turning around it put
+ * the product off-centre. A fixed angle keeps its stored target: it is the
+ * camera exactly as set, and an imported glTF camera names its model too.
+ *
+ * The model may not be part of the current configuration (a "Base" view
+ * while the base choice is None), or not loaded yet. The angle then turns
+ * around everything shown, as angle_fit_objects frames it, and moves onto the
+ * model once a choice brings it in.
+ *
+ * @param {THREE.Object3D} root - Scene root holding the models
+ * @param {Backbone.Model} angle
+ * @returns {THREE.Vector3|null} null when the angle names no model, or nothing is shown
+ */
+export function angle_model_pivot( root, angle ) {
+	if ( ! root || ! angle || ! angle_fits_target( angle ) ) return null;
+	const id = angle.get( 'camera_target_model' );
+	if ( id == null || String( id ).trim() === '' ) return null;
+	const box = visible_bounds( angle_target_model_roots( root, angle ) ) || visible_bounds( [ root ] );
+	return box ? box.getCenter( new THREE.Vector3() ) : null;
 }
 
 /**
@@ -122,9 +174,10 @@ export function angle_fit_objects( root, angle ) {
  * @param {{width: number, height: number}} [args.size] - Output size in CSS pixels, which the
  *        angle's maximum size is measured against. Left out, the maximum does not apply: a
  *        capture fills its own image rather than copying the on-screen cap.
- * @param {{min: number, max: number}} [args.distanceLimits] - The orbit's zoom limits, which
- *        win over the fit
- * @returns {{ position: THREE.Vector3, target: THREE.Vector3, shift: {x: number, y: number} }|null}
+ * @param {{min: number, max: number}} [args.distanceLimits] - The orbit's zoom limits. Only
+ *        the zoom-in limit wins over the fit: the zoom-out limit gives way, so the angle
+ *        always shows its whole target (see set_orbit_fitted_distance).
+ * @returns {{ position: THREE.Vector3, target: THREE.Vector3, shift: {x: number, y: number}, distance: number }|null}
  *          null when the angle does not fit, or there is nothing to fit
  */
 export function fit_angle_camera( { angle, root, camera, from, target, aspect, size, distanceLimits } ) {
@@ -143,14 +196,67 @@ export function fit_angle_camera( { angle, root, camera, from, target, aspect, s
 		maxWidth: max.width && size && size.width > 0 ? max.width / size.width : null,
 		maxHeight: max.height && size && size.height > 0 ? max.height / size.height : null,
 		minDistance: distanceLimits ? distanceLimits.min : 0,
-		maxDistance: distanceLimits ? distanceLimits.max : Infinity,
 	} );
 	if ( ! fit ) return null;
 	return {
 		position: target.clone().addScaledVector( direction, -fit.distance ),
 		target: target.clone(),
 		shift: fit.shift,
+		distance: fit.distance,
 	};
+}
+
+// OrbitControls → { limit, fitted }: the merchant's zoom-out limit, and the
+// distance the angle on screen was fitted at.
+const ORBIT_ZOOM_OUT = new WeakMap();
+
+const zoom_out_state = ( controls ) => {
+	let state = ORBIT_ZOOM_OUT.get( controls );
+	if ( ! state ) {
+		state = { limit: controls.maxDistance, fitted: 0 };
+		ORBIT_ZOOM_OUT.set( controls, state );
+	}
+	return state;
+};
+
+const apply_zoom_out = ( controls, state ) => {
+	controls.maxDistance = Math.max( state.limit, state.fitted );
+};
+
+/**
+ * Set the merchant's zoom-out limit on the orbit.
+ *
+ * Settings are re-applied at any time (an environment map finishing loading,
+ * the admin changing a field), so the limit goes through here rather than
+ * straight onto controls.maxDistance: written directly, it would undo
+ * set_orbit_fitted_distance and OrbitControls would pull the camera in.
+ *
+ * @param {OrbitControls} controls
+ * @param {number} limit - Infinity for none
+ */
+export function set_orbit_max_distance( controls, limit ) {
+	if ( ! controls ) return;
+	const state = zoom_out_state( controls );
+	state.limit = limit > 0 ? limit : Infinity;
+	apply_zoom_out( controls, state );
+}
+
+/**
+ * Let the orbit zoom out as far as the fitted angle on screen stands.
+ *
+ * A fitted angle may need the camera further back than the merchant's maximum
+ * zoom distance, typically on a narrow canvas, and it always shows its whole
+ * target. While it is on screen the limit gives way: the customer can zoom
+ * back out to where the angle put them, but no further.
+ *
+ * @param {OrbitControls} controls
+ * @param {number} distance - The fitted distance; 0 when the view on screen is not fitted
+ */
+export function set_orbit_fitted_distance( controls, distance ) {
+	if ( ! controls ) return;
+	const state = zoom_out_state( controls );
+	state.fitted = distance > 0 ? distance : 0;
+	apply_zoom_out( controls, state );
 }
 
 const isEffectivelyVisible = ( obj ) => {
@@ -159,6 +265,36 @@ const isEffectivelyVisible = ( obj ) => {
 	}
 	return true;
 };
+
+/**
+ * World bounds of the visible meshes under `roots`. Choices hidden in the
+ * current configuration are left out, as they are from the fit.
+ *
+ * @param {THREE.Object3D[]} roots
+ * @returns {THREE.Box3|null} null when nothing under them is visible
+ */
+export function visible_bounds( roots ) {
+	const box = new THREE.Box3();
+	const meshBox = new THREE.Box3();
+	( roots || [] ).forEach( ( root ) => {
+		if ( ! root ) return;
+		root.updateWorldMatrix( true, true );
+		root.traverse( ( obj ) => {
+			if ( ! obj.isMesh || ! obj.geometry || ! isEffectivelyVisible( obj ) ) return;
+			// Instanced and skinned meshes keep their own box, spanning their
+			// instances or pose; others use the geometry's.
+			const own = obj.isInstancedMesh || obj.isSkinnedMesh;
+			if ( own ) {
+				if ( ! obj.boundingBox ) obj.computeBoundingBox();
+			} else if ( ! obj.geometry.boundingBox ) {
+				obj.geometry.computeBoundingBox();
+			}
+			meshBox.copy( own ? obj.boundingBox : obj.geometry.boundingBox ).applyMatrix4( obj.matrixWorld );
+			box.union( meshBox );
+		} );
+	} );
+	return box.isEmpty() ? null : box;
+}
 
 /**
  * Sample the world-space vertices of the visible meshes under `roots`.

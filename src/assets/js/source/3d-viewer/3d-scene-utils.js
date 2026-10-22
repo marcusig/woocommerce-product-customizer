@@ -1565,7 +1565,7 @@ function findObjectSkippingCopies( root, objectId ) {
  * Model roots under `modelRoot` (itself included) whose objects3d id or
  * attachment id is `sourceId`, in tree order. Copies are never model roots.
  */
-function findModelRoots( modelRoot, sourceId ) {
+export function findModelRoots( modelRoot, sourceId ) {
 	const roots = [];
 	const stack = [ modelRoot ];
 	while ( stack.length ) {

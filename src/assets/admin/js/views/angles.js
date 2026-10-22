@@ -1,6 +1,9 @@
 var PC = PC || {};
 PC.views = PC.views || {};
 
+// Camera target (model) value for "Visible objects"; mirrors CAMERA_TARGET_VISIBLE in 3d-camera-fit.js.
+var CAMERA_TARGET_VISIBLE = 'visible';
+
 
 PC.views.angles = PC.views.layers.extend({
 	collectionName: 'angles',
@@ -17,6 +20,11 @@ PC.views.angles = PC.views.layers.extend({
 		};
 		if ( !this.col.length ) {
 			attributes.has_thumbnails = true;
+		}
+		// A new 3D view turns around and frames whatever is shown, until a model
+		// or objects are picked. Only the 3D editor loads settings_3d.
+		if ( PC.app.admin && PC.app.admin.settings_3d ) {
+			attributes.camera_target_model = CAMERA_TARGET_VISIBLE;
 		}
 
 		return attributes;
@@ -53,7 +61,17 @@ PC.views.angle_form = PC.views.layer_form.extend({
 	on_camera_target_model_change: function() {
 		this.model.set( 'camera_target_object_id', '' );
 		this.$( 'input[data-setting="camera_target_object_id"]' ).val( '' );
+		this.toggle_camera_target_object();
 		if ( window.PC.app && window.PC.app.is_modified ) window.PC.app.is_modified.angles = true;
+	},
+	/**
+	 * "Visible objects" names no model, so there is no object to pick in it.
+	 * Toggled here rather than by a field condition: those are only read when
+	 * the form renders.
+	 */
+	toggle_camera_target_object: function() {
+		var visible = this.$( 'select[data-setting="camera_target_model"]' ).val() === CAMERA_TARGET_VISIBLE;
+		this.$( '.setting-id-camera_target_object_id' ).toggle( ! visible );
 	},
 	render: function() {
 		var ret = PC.views.layer_form.prototype.render.apply( this, arguments );
@@ -64,8 +82,14 @@ PC.views.angle_form = PC.views.layer_form.extend({
 	},
 	populate_camera_target_model: function() {
 		var self = this;
+		var lang = window.PC_lang || {};
 		var populate = function() {
-			PC.threeD.populateObjects3dSettingSelect( self, 'camera_target_model', { types: [ 'gltf' ] } );
+			PC.threeD.populateObjects3dSettingSelect( self, 'camera_target_model', {
+				types: [ 'gltf' ],
+				placeholder: lang.threed_saved_camera_target || '— Saved camera target —',
+				extra: [ { value: CAMERA_TARGET_VISIBLE, label: lang.threed_visible_objects || 'Visible objects' } ],
+			} );
+			self.toggle_camera_target_object();
 		};
 		if ( PC.threeD && typeof PC.threeD.populateObjects3dSettingSelect === 'function' ) {
 			populate();

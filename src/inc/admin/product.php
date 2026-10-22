@@ -594,6 +594,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['threed_no_layouts']         = esc_html__( 'No layouts yet. Add one in 3D Objects.', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_new_variant']        = esc_html__( 'Variant', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_no_model_for_choice'] = esc_html__( 'No 3D model is set on this choice or its layer.', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_visible_objects']    = esc_html__( 'Visible objects', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_saved_camera_target'] = esc_html__( '— Saved camera target —', 'product-configurator-for-woocommerce' );
 				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu( (int) $this->ID );
 
 				wp_localize_script( 'mkl_pc/js/admin/backbone/app', 'PC_lang', apply_filters( 'PC_lang', $pc_lang ) );

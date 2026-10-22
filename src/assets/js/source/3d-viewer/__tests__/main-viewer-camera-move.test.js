@@ -142,3 +142,26 @@ describe( 'camera move handed to the customer', () => {
 		expect( camera.position.distanceTo( endPos ) ).toBeLessThan( 1e-9 );
 	} );
 } );
+
+describe( 'camera move and the zoom-out limit', () => {
+	it( 'holds the start distance until a move to a nearer fitted view lands', () => {
+		const { view, controls } = makeView();
+		// Leaving a view fitted 10 away, past a merchant limit of 4.
+		controls.maxDistance = 4;
+		view._moveCameraTo( new THREE.Vector3( 0, 0, 3 ), new THREE.Vector3(), { duration: 1000, fittedDistance: 3 } );
+		expect( controls.maxDistance ).toBe( 10 );
+		frameAt( 500 );
+		expect( controls.maxDistance ).toBe( 10 );
+		frameAt( 1000 );
+		expect( controls.maxDistance ).toBe( 4 );
+	} );
+
+	it( 'lets the limit give way to a view fitted further out, and leaves it alone otherwise', () => {
+		const { view, controls } = makeView();
+		controls.maxDistance = 4;
+		view._moveCameraTo( new THREE.Vector3( 0, 0, 6 ), new THREE.Vector3(), { immediate: true, fittedDistance: 6 } );
+		expect( controls.maxDistance ).toBe( 6 );
+		view._moveCameraTo( new THREE.Vector3( 0, 0, 5 ), new THREE.Vector3(), { immediate: true } );
+		expect( controls.maxDistance ).toBe( 6 );
+	} );
+} );

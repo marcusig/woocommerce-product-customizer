@@ -12,7 +12,13 @@ import {
 	angle_fits_target,
 	angle_fit_margin,
 	angle_fit_max_size,
+	angle_fit_objects,
+	angle_model_pivot,
+	CAMERA_TARGET_VISIBLE,
 	collect_fit_points,
+	fit_angle_camera,
+	set_orbit_fitted_distance,
+	set_orbit_max_distance,
 	fit_points_in_view,
 	framing_shift_to_pixels,
 	DEFAULT_FIT_MARGIN,
@@ -198,5 +204,118 @@ describe( 'angle settings', () => {
 		expect( angle_fit_margin( { camera_fit_margin: 0 } ) ).toBe( 0 );
 		expect( angle_fit_margin( { camera_fit_margin: '10' } ) ).toBeCloseTo( 0.1 );
 		expect( angle_fit_margin( { camera_fit_margin: 90 } ) ).toBeCloseTo( 0.45 );
+	} );
+} );
+
+describe( 'an angle that names a model but no object', () => {
+	const angle = ( attrs ) => ( { get: ( key ) => attrs[ key ] } );
+	const box_mesh = ( name, x ) => {
+		const mesh = new THREE.Mesh( new THREE.BoxGeometry( 2, 2, 2 ) );
+		mesh.name = name;
+		mesh.position.set( x, 1, 0 );
+		return mesh;
+	};
+	// Two loaded models, tagged as the viewer mounts them: the stored target
+	// (the origin) is in neither.
+	const scene = () => {
+		const root = new THREE.Group();
+		const car = new THREE.Group();
+		car.userData.object_id = 9;
+		car.add( box_mesh( 'Body', 10 ), box_mesh( 'Spoiler', 14 ) );
+		const shed = new THREE.Group();
+		shed.userData.object_id = 8;
+		shed.add( box_mesh( 'Shed', -10 ) );
+		root.add( car, shed );
+		return { root, car };
+	};
+
+	it( 'frames and turns around that whole model', () => {
+		const { root, car } = scene();
+		const a = angle( { camera_target_model: '9', camera_target_object_id: '', camera_focus_object_ids: [] } );
+		expect( angle_fit_objects( root, a ) ).toEqual( [ car ] );
+		expect( angle_model_pivot( root, a ).toArray() ).toEqual( [ 12, 1, 0 ] );
+	} );
+
+	it( 'centres on what is shown, leaving hidden choices out', () => {
+		const { root, car } = scene();
+		car.getObjectByName( 'Spoiler' ).visible = false;
+		const pivot = angle_model_pivot( root, angle( { camera_target_model: '9' } ) );
+		expect( pivot.toArray() ).toEqual( [ 10, 1, 0 ] );
+	} );
+
+	it( 'keeps the stored target for a fixed angle, or one naming no model', () => {
+		const { root } = scene();
+		expect( angle_model_pivot( root, angle( { camera_target_model: '9', camera_framing: 'fixed' } ) ) ).toBeNull();
+		expect( angle_model_pivot( root, angle( {} ) ) ).toBeNull();
+		expect( angle_fit_objects( root, angle( {} ) ) ).toEqual( [ root ] );
+	} );
+
+	it( 'turns around everything shown while the model is hidden or not loaded', () => {
+		const { root, car } = scene();
+		const hidden = angle( { camera_target_model: '9' } );
+		car.visible = false;
+		expect( angle_fit_objects( root, hidden ) ).toEqual( [ root ] );
+		expect( angle_model_pivot( root, hidden ).toArray() ).toEqual( [ -10, 1, 0 ] );
+		car.visible = true;
+		expect( angle_model_pivot( root, angle( { camera_target_model: '42' } ) ).toArray() ).toEqual( [ 2, 1, 0 ] );
+	} );
+
+	it( 'frames and turns around everything shown for "Visible objects"', () => {
+		const { root, car } = scene();
+		const a = angle( { camera_target_model: CAMERA_TARGET_VISIBLE } );
+		expect( angle_fit_objects( root, a ) ).toEqual( [ root ] );
+		expect( angle_model_pivot( root, a ).toArray() ).toEqual( [ 2, 1, 0 ] );
+		car.visible = false;
+		expect( angle_model_pivot( root, a ).toArray() ).toEqual( [ -10, 1, 0 ] );
+		expect( angle_model_pivot( root, angle( { camera_target_model: CAMERA_TARGET_VISIBLE, camera_framing: 'fixed' } ) ) ).toBeNull();
+	} );
+
+	it( 'still prefers a target object or focus objects', () => {
+		const { root, car } = scene();
+		const body = car.getObjectByName( 'Body' );
+		expect( angle_fit_objects( root, angle( { camera_target_model: '9', camera_target_object_id: 'Shed' } ) ) ).toEqual( [ root.getObjectByName( 'Shed' ) ] );
+		expect( angle_fit_objects( root, angle( { camera_target_model: '8', camera_focus_object_ids: [ '9:Body' ] } ) ) ).toEqual( [ body ] );
+	} );
+} );
+
+describe( 'the zoom-out limit and a fitted angle', () => {
+	const angle = { get: () => undefined };
+	const scene = () => {
+		const root = new THREE.Group();
+		const mesh = new THREE.Mesh( new THREE.BoxGeometry( 4, 1, 1 ) );
+		root.add( mesh );
+		return root;
+	};
+	const camera = () => new THREE.PerspectiveCamera( 45, 0.6, 0.01, 1000 );
+
+	it( 'fits past the zoom-out limit, but not inside the zoom-in one', () => {
+		const args = { angle, root: scene(), camera: camera(), from: new THREE.Vector3( 0, 0, 10 ), target: new THREE.Vector3(), aspect: 0.6 };
+		const free = fit_angle_camera( args ).distance;
+		const limited = fit_angle_camera( { ...args, distanceLimits: { min: 0, max: free / 2 } } );
+		expect( limited.distance ).toBeCloseTo( free );
+		expect( limited.position.distanceTo( limited.target ) ).toBeCloseTo( free );
+		const near = fit_angle_camera( { ...args, distanceLimits: { min: free * 2, max: Infinity } } );
+		expect( near.distance ).toBeCloseTo( free * 2 );
+	} );
+
+	it( 'gives way to the fitted distance, and returns once the view is not fitted', () => {
+		const controls = { maxDistance: 1.1 };
+		set_orbit_fitted_distance( controls, 1.7 );
+		expect( controls.maxDistance ).toBe( 1.7 );
+		set_orbit_fitted_distance( controls, 0.8 );
+		expect( controls.maxDistance ).toBe( 1.1 );
+		set_orbit_fitted_distance( controls, 0 );
+		expect( controls.maxDistance ).toBe( 1.1 );
+	} );
+
+	it( 'keeps the fitted distance when the settings set the limit again', () => {
+		const controls = { maxDistance: 1.1 };
+		set_orbit_fitted_distance( controls, 1.7 );
+		set_orbit_max_distance( controls, 1.1 );
+		expect( controls.maxDistance ).toBe( 1.7 );
+		set_orbit_max_distance( controls, 2.5 );
+		expect( controls.maxDistance ).toBe( 2.5 );
+		set_orbit_max_distance( controls, Infinity );
+		expect( controls.maxDistance ).toBe( Infinity );
 	} );
 } );

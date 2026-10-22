@@ -15,6 +15,7 @@ import {
 	resolveShadowMode,
 	SHADOW_MODES,
 } from './3d-scene-utils.js';
+import { set_orbit_max_distance } from './3d-camera-fit.js';
 
 /**
  * Apply settings_3d to scene, renderer, controls, lights, and optional fake shadow / default light.
@@ -137,7 +138,7 @@ export function applySettingsToScene( scene, renderer, controls, s, options = {}
 		controls.minAzimuthAngle = limits.minAzimuthAngle;
 		controls.maxAzimuthAngle = limits.maxAzimuthAngle;
 		controls.minDistance = limits.minDistance;
-		controls.maxDistance = limits.maxDistance;
+		set_orbit_max_distance( controls, limits.maxDistance );
 	}
 
 	const g = s.ground || {};

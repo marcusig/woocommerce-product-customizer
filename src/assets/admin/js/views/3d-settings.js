@@ -905,9 +905,10 @@ PC.views = window.PC.views || {};
 				return result ? result.center : null;
 			}
 			const id = angle.get( 'camera_target_object_id' );
-			if ( !id || typeof id !== 'string' ) return null;
-			const obj = findObject( root, id.trim() );
-			return obj ? getObjectTargetPosition( obj ) : null;
+			const obj = id && typeof id === 'string' ? findObject( root, id.trim() ) : null;
+			if ( obj ) return getObjectTargetPosition( obj );
+			// A model without an object: turn around that model, as the frontend does.
+			return cameraFit ? cameraFit.angle_model_pivot( root, angle ) : null;
 		},
 		on_angle_select_change: function () {
 			if ( !this._three || !this._three.camera || !this._three.controls ) return;
@@ -946,7 +947,7 @@ PC.views = window.PC.views || {};
 			const from = isVec( pos ) && isVec( tgt ) ? new THREE.Vector3( pos.x, pos.y, pos.z ) : null;
 
 			// Editing how the angle frames re-frames the preview straight away.
-			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_fit_max_width change:camera_fit_max_height change:camera_focus_object_ids change:camera_target_object_id';
+			const framingEvents = 'change:camera_framing change:camera_fit_margin change:camera_fit_max_width change:camera_fit_max_height change:camera_focus_object_ids change:camera_target_object_id change:camera_target_model';
 			if ( this._previewAngle !== angle ) {
 				if ( this._previewAngle ) this.stopListening( this._previewAngle, framingEvents );
 				this.listenTo( angle, framingEvents, () => {
@@ -977,6 +978,8 @@ PC.views = window.PC.views || {};
 			this._setPreviewFramingShift( fit ? fit.shift : null );
 			t.controls.update();
 		},
+			// The fit may stand past the zoom-out limit, as on the frontend.
+			cameraFit.set_orbit_fitted_distance( t.controls, fit ? fit.distance : 0 );
 		/**
 		 * Refit the previewed angle to a new canvas shape, unless the camera has
 		 * been moved since the angle was applied: the merchant may be lining up a

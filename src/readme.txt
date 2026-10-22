@@ -226,8 +226,11 @@ Open Source SVG icons:
 
 = 2.0.1 - unreleased =
 
+* FEATURE: 3D views: added a "Visible objects" option to "Camera target (model)". The view turns around and frames the whole product as the customer has configured it, and follows along when a choice adds or removes a part. New views use it by default; the empty option, now labelled "Saved camera target", still turns around the point saved with the view
 * TWEAK: Removed option `Both` in setting `Configuration meta data`
+* TWEAK: A 3D view that fits its target may now start further out than the maximum zoom distance, so it always shows the whole target, on narrow screens too. The customer can zoom back out as far as the view started, but no further
 * FIX: Only Block related Add to cart button (Other add to cart buttons would be disabled on the page, if they were inside a form.cart element)
+* FIX: A 3D view with a "Camera target (model)" but no object or camera focus turned around the point saved with the view, often the floor or the origin, so the product sat off-centre. It now turns around and frames that model, or everything shown while the model is not part of the configuration
 
 = 2.0.0 - 12/Oct/2026 =
 

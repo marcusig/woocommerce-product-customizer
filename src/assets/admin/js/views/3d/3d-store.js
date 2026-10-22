@@ -253,6 +253,10 @@ function populateObjects3dSelect( $, $sel, currentVal, options ) {
 	const objects3d = get3DObjectsCollection();
 	ensure_objects3d_select_placeholder( $, $sel, options.placeholder );
 	$sel.find( 'option:not(:first)' ).remove();
+	// Choices that are not a model, listed first.
+	( options.extra || [] ).forEach( function( choice ) {
+		$sel.append( $( '<option></option>' ).attr( 'value', choice.value ).text( choice.label ) );
+	} );
 	if ( objects3d && objects3d.length ) {
 		objects3d.each( function( obj ) {
 			if ( ! object_matches_type_filter( obj, types ) ) {
