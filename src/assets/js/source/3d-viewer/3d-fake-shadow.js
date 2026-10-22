@@ -348,6 +348,10 @@ export class FakeShadow extends THREE.Object3D {
 		this._camera.add(this._quad);
 
 		this._boundingBox = new THREE.Box3();
+		// Scratch box for render()'s check that the model has not grown or moved.
+		this._measuredBox = new THREE.Box3();
+		// What the last update() fitted to, so render() can refit with the same.
+		this._fitArgs = null;
 		this._size = new THREE.Vector3();
 		this._intensity = 0;
 		this._contactStrength = 1;
@@ -361,7 +365,8 @@ export class FakeShadow extends THREE.Object3D {
 	}
 
 	/**
-	 * Mark the passes dirty so the next render() rebuilds the shadow texture.
+	 * Mark the passes dirty so the next render() rebuilds the shadow texture, and
+	 * refits the plane first if the model's bounds have changed.
 	 * Call when model visibility, transforms, or ground settings change — not every frame.
 	 */
 	invalidate() {
@@ -383,6 +388,7 @@ export class FakeShadow extends THREE.Object3D {
 	update(modelRoot, ground, enabled) {
 		if (!modelRoot) return;
 
+		this._fitArgs = { modelRoot, ground, enabled };
 		this._boundingBox.setFromObject(modelRoot);
 		this._size.copy(this._boundingBox.getSize(new THREE.Vector3()));
 		const center = this._boundingBox.getCenter(new THREE.Vector3());
@@ -533,6 +539,17 @@ export class FakeShadow extends THREE.Object3D {
 		if (!this._needs_render) {
 			this._setIntensity();
 			return;
+		}
+
+		// The plane is only fitted when settings are applied. A model that loads
+		// lazily, or an anchor placement that moves one, comes later and lands
+		// partly or wholly outside the captured area, where it casts nothing. Each
+		// of those already invalidates, so the bounds are checked here, once per
+		// rebuild, instead of every caller having to know the settings to refit.
+		if (this._fitArgs) {
+			const { modelRoot, ground, enabled } = this._fitArgs;
+			this._measuredBox.setFromObject(modelRoot);
+			if (!this._measuredBox.equals(this._boundingBox)) this.update(modelRoot, ground, enabled);
 		}
 
 		const initialClearAlpha = renderer.getClearAlpha();

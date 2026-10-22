@@ -437,6 +437,8 @@ export const settings_3d_preview_mixin = {
 				if ( this._three && this._three.model_root ) this.apply_model_positions();
 			},
 		} );
+		// Placed models may stand outside the area the shadow was fitted to.
+		if ( t.fake_shadow ) t.fake_shadow.invalidate();
 		this.request_preview_render();
 	},
 

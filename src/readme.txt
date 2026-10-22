@@ -232,6 +232,7 @@ Open Source SVG icons:
 * FIX: Only Block related Add to cart button (Other add to cart buttons would be disabled on the page, if they were inside a form.cart element)
 * FIX: A 3D view with a "Camera target (model)" but no object or camera focus turned around the point saved with the view, often the floor or the origin, so the product sat off-centre. It now turns around and frames that model, or everything shown while the model is not part of the configuration
 * FIX: 3D models are no longer clipped when they are much larger or smaller than a few metres, such as a model exported from Fusion 360 in millimetres. The camera's visible depth range now follows the model's size and distance, on the product page, in cart and quote images, and in the admin preview
+* FIX: 3D models loaded asynchronously, or moved into place by an anchor, now cast the fake ground shadow. The shadow only covered the models loaded at start-up
 
 = 2.0.0 - 12/Oct/2026 =
 
