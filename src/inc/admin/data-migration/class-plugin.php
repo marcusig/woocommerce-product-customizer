@@ -70,7 +70,11 @@ final class Plugin {
 
 		// Not needs_format_finalize: a new product needs that too, only to be stamped, and has nothing to migrate.
 		$pending_migration = ! empty( $storage['needs_migration_banner'] );
+		// The version stamp sits on the parent, so it does not prove this context migrated: a
+		// variation not saved since can carry the stamp while its legacy blob is its only copy.
+		// Offering "Delete legacy data" there would delete its choices, so it needs a passing check.
 		$legacy_still      = (int) $storage['storage_format_version'] === DB::STORAGE_FORMAT_CHUNKED_VERIFIED
+			&& ! empty( $storage['integrity_ok'] )
 			&& Legacy_Blob_Storage::has_legacy_blobs( $parent_id, $variation_id );
 
 		// Verified chunked storage with leftover legacy blobs: mixed state still sets needs_batch_migration;

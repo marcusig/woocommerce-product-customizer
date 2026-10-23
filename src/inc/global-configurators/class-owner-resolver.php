@@ -182,7 +182,9 @@ final class Owner_Resolver {
 		}
 
 		// Local storage: keep existing variable-mode rules for content vs. layers/angles.
-		if ( 'content' === $component ) {
+		// Conditions follow the choices they act on, so they stay on the variation that was
+		// asked for, as in 1.x. Sending them to the parent hid every variation's own conditions.
+		if ( 'content' === $component || 'conditions' === $component ) {
 			$parent = function_exists( 'wc_get_product' ) ? wc_get_product( $product_id ) : null;
 			if ( $parent && is_a( $parent, 'WC_Product' ) ) {
 				$mode = $parent->get_meta( MKL_PC_PREFIX . '_variable_configuration_mode', true );

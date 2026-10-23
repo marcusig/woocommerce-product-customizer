@@ -209,6 +209,27 @@ class DB {
 	}
 
 	/**
+	 * Whether the integrity cache can vouch for this editor context.
+	 *
+	 * The cache is one flag on the layer structure's owner. Content kept per variation lives on
+	 * each variation, and one variation verifying says nothing about the next: trusting the flag
+	 * let every variation after the first skip its check, and with it the migration banner.
+	 * Checking a single variation is cheap, so those contexts always verify and leave the flag alone.
+	 *
+	 * @param int $parent_id
+	 * @param int $variation_id
+	 * @return bool
+	 */
+	private function integrity_cache_applies( $parent_id, $variation_id ) {
+		if ( ! $variation_id ) {
+			return true;
+		}
+		$owner_parent_id  = $this->resolve_storage_owner_id( $parent_id, 0, 'layers' );
+		$content_owner_id = $this->resolve_storage_owner_id( $this->get_product_id_for_content( $parent_id, $variation_id ), $variation_id, 'content' );
+		return (int) $content_owner_id === (int) $owner_parent_id;
+	}
+
+	/**
 	 * @param int $parent_id
 	 * @param int $value      1 = ok cache, 0 = invalidate / recompute.
 	 * @return void
@@ -540,12 +561,28 @@ class DB {
 				return false;
 			}
 		}
-		$content = array();
+		// A missing chunk is taken from the legacy blob when that still holds the layer, as
+		// get_layers_chunked() does for layers. A variation not yet saved since the migration has
+		// no chunks at all while its parent already has an index: without this it read as one empty
+		// row per layer, in the editor and on the frontend, and its 1.x choices looked gone.
+		$legacy_content = null;
+		$content        = array();
 		foreach ( $index as $layer_id ) {
 			$chunk = $product->get_meta( '_mkl_product_configurator_content_' . $layer_id );
 			$chunk = \MKL\PC\Utils::safe_unserialize( $chunk );
 			if ( is_string( $chunk ) ) {
 				$chunk = $this->decode_stored_json( $chunk );
+			}
+			if ( ! is_array( $chunk ) ) {
+				if ( null === $legacy_content ) {
+					$legacy_content = $this->get_legacy_content_blob_array( $product );
+				}
+				foreach ( $legacy_content as $legacy_row ) {
+					if ( is_array( $legacy_row ) && isset( $legacy_row['layerId'] ) && (int) $legacy_row['layerId'] === (int) $layer_id ) {
+						$chunk = $legacy_row;
+						break;
+					}
+				}
 			}
 			if ( ! is_array( $chunk ) ) {
 				$chunk = array( 'layerId' => (int) $layer_id, 'choices' => array() );
@@ -997,8 +1034,9 @@ class DB {
 			);
 		}
 
+		$cache_applies   = $this->integrity_cache_applies( $parent_id, $variation_id );
 		$integrity_cache = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
-		if ( ! $force_refresh && $integrity_cache >= 1 ) {
+		if ( ! $force_refresh && $cache_applies && $integrity_cache >= 1 ) {
 			$statuses = $this->classify_storage_statuses_for_cache_hit( $parent_id, $variation_id );
 			$cached   = array(
 				'ok'             => true,
@@ -1073,89 +1111,77 @@ class DB {
 			$content_ok = false;
 			$issues[]   = 'missing_content_product';
 		} else {
-			$content_index  = $this->read_layers_index_array( $content_product );
-			$content_data   = $this->get_content_chunked( $content_owner_id, $content_product );
-			$index_mismatch = false;
-			if ( $content_product_id !== $parent_id ) {
-				$parent_sorted  = $parent_index;
-				$content_sorted = $content_index;
-				sort( $parent_sorted );
-				sort( $content_sorted );
-				if ( $parent_sorted !== $content_sorted && ( count( $parent_sorted ) || count( $content_sorted ) ) ) {
-					$index_mismatch   = true;
-					$content_ok       = false;
-					$issues[]         = 'content_layers_index_mismatch_parent';
-					$content_status   = 'mixed';
-				}
-			}
+			// The index describes the layer structure and is only written where that structure lives.
+			// Per-variation content has no index of its own, so it is checked against the parent's:
+			// comparing the variation's (always empty) index with it failed every variation for good.
+			$content_index = $parent_index;
+			$content_data  = $this->get_content_chunked( $content_owner_id, $content_product );
 
-			if ( ! $index_mismatch ) {
-				if ( ! $has_legacy_c ) {
-					$content_ok = true;
-					if ( false !== $content_data ) {
-						$content_status = 'chunked';
-					} elseif ( ! empty( $content_index ) ) {
-						$content_status = 'chunked';
-					} else {
-						$content_status = 'empty';
-					}
-					foreach ( $content_index as $layer_id ) {
-						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
-						$raw = \MKL\PC\Utils::safe_unserialize( $raw );
-						if ( is_string( $raw ) ) {
-							$raw = $this->decode_stored_json( $raw );
-						}
-						if ( is_array( $raw ) ) {
-							if ( ! isset( $raw['layerId'] ) || (int) $raw['layerId'] !== (int) $layer_id ) {
-								$content_ok = false;
-								$issues[]   = 'content_layerId_mismatch:' . (int) $layer_id;
-							}
-						}
-					}
-				} elseif ( false === $content_data && empty( $content_index ) ) {
-					$content_status = 'legacy';
-					$content_ok     = false;
-					$issues[]       = 'legacy_content_blob_present';
+			if ( ! $has_legacy_c ) {
+				$content_ok = true;
+				if ( false !== $content_data ) {
+					$content_status = 'chunked';
+				} elseif ( ! empty( $content_index ) ) {
+					$content_status = 'chunked';
 				} else {
-					$content_status = ( false !== $content_data && ! empty( $content_index ) ) ? 'mixed' : 'legacy';
-					// Conservation, not validation: the only thing a migration can get wrong is losing a
-					// content row that existed in the legacy blob. Whether a layer *ought* to have content
-					// is not derivable from its type -- `not_a_choice` layers keep their static image in a
-					// one-choice row, and a layer retyped to `group` keeps the choices it already had -- so
-					// the layer definition is not consulted at all here.
-					//
-					// A layer with no legacy content row is not missing data: it is an unfinished layer, a
-					// summary, or a static element. The frontend skips it, and get_content_chunked() already
-					// reads it back as an empty { layerId, choices: [] } row.
-					$indexed_layer_ids = array_map( 'intval', $content_index );
-					foreach ( $legacy_c_array as $legacy_row ) {
-						if ( ! is_array( $legacy_row ) || ! isset( $legacy_row['layerId'] ) ) {
-							continue;
-						}
-						$layer_id = (int) $legacy_row['layerId'];
-						if ( empty( $legacy_row['choices'] ) ) {
-							continue; // Nothing to lose.
-						}
-						if ( ! in_array( $layer_id, $indexed_layer_ids, true ) ) {
-							continue; // Layer deleted since; its content is legitimately gone.
-						}
-						$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
-						$raw = \MKL\PC\Utils::safe_unserialize( $raw );
-						if ( is_string( $raw ) ) {
-							$raw = $this->decode_stored_json( $raw );
-						}
-						if ( is_array( $raw ) && isset( $raw['layerId'] ) && (int) $raw['layerId'] === $layer_id ) {
-							continue;
-						}
-						$content_ok = false;
-						$issues[]   = 'invalid_content_chunk:' . $layer_id;
+					$content_status = 'empty';
+				}
+				foreach ( $content_index as $layer_id ) {
+					$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
+					$raw = \MKL\PC\Utils::safe_unserialize( $raw );
+					if ( is_string( $raw ) ) {
+						$raw = $this->decode_stored_json( $raw );
 					}
-					if ( $content_ok && false !== $content_data ) {
-						$orphans_c = $this->find_orphan_chunk_meta_keys( $content_owner_id, $content_index, '_mkl_product_configurator_content_' );
-						if ( count( $orphans_c ) > 0 ) {
+					if ( is_array( $raw ) ) {
+						if ( ! isset( $raw['layerId'] ) || (int) $raw['layerId'] !== (int) $layer_id ) {
 							$content_ok = false;
-							$issues[]   = 'orphan_content_chunk_metas:' . implode( ',', array_slice( $orphans_c, 0, 20 ) );
+							$issues[]   = 'content_layerId_mismatch:' . (int) $layer_id;
 						}
+					}
+				}
+			} elseif ( false === $content_data && empty( $content_index ) ) {
+				$content_status = 'legacy';
+				$content_ok     = false;
+				$issues[]       = 'legacy_content_blob_present';
+			} else {
+				$content_status = ( false !== $content_data && ! empty( $content_index ) ) ? 'mixed' : 'legacy';
+				// Conservation, not validation: the only thing a migration can get wrong is losing a
+				// content row that existed in the legacy blob. Whether a layer *ought* to have content
+				// is not derivable from its type -- `not_a_choice` layers keep their static image in a
+				// one-choice row, and a layer retyped to `group` keeps the choices it already had -- so
+				// the layer definition is not consulted at all here.
+				//
+				// A layer with no legacy content row is not missing data: it is an unfinished layer, a
+				// summary, or a static element. The frontend skips it, and get_content_chunked() already
+				// reads it back as an empty { layerId, choices: [] } row.
+				$indexed_layer_ids = array_map( 'intval', $content_index );
+				foreach ( $legacy_c_array as $legacy_row ) {
+					if ( ! is_array( $legacy_row ) || ! isset( $legacy_row['layerId'] ) ) {
+						continue;
+					}
+					$layer_id = (int) $legacy_row['layerId'];
+					if ( empty( $legacy_row['choices'] ) ) {
+						continue; // Nothing to lose.
+					}
+					if ( ! in_array( $layer_id, $indexed_layer_ids, true ) ) {
+						continue; // Layer deleted since; its content is legitimately gone.
+					}
+					$raw = $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id, true );
+					$raw = \MKL\PC\Utils::safe_unserialize( $raw );
+					if ( is_string( $raw ) ) {
+						$raw = $this->decode_stored_json( $raw );
+					}
+					if ( is_array( $raw ) && isset( $raw['layerId'] ) && (int) $raw['layerId'] === $layer_id ) {
+						continue;
+					}
+					$content_ok = false;
+					$issues[]   = 'invalid_content_chunk:' . $layer_id;
+				}
+				if ( $content_ok && false !== $content_data ) {
+					$orphans_c = $this->find_orphan_chunk_meta_keys( $content_owner_id, $content_index, '_mkl_product_configurator_content_' );
+					if ( count( $orphans_c ) > 0 ) {
+						$content_ok = false;
+						$issues[]   = 'orphan_content_chunk_metas:' . implode( ',', array_slice( $orphans_c, 0, 20 ) );
 					}
 				}
 			}
@@ -1173,7 +1199,9 @@ class DB {
 			'issues'         => $issues,
 		);
 
-		$this->set_integrity_cache_value( $parent_id, $ok ? 1 : 0 );
+		if ( $cache_applies ) {
+			$this->set_integrity_cache_value( $parent_id, $ok ? 1 : 0 );
+		}
 
 		return apply_filters( 'mkl_pc_verify_chunked_storage_integrity', $result, $parent_id, $variation_id, $force_refresh );
 	}
@@ -1220,7 +1248,8 @@ class DB {
 		// products that were already verified under the old encoding still get converted.
 		$this->maybe_convert_storage_to_json( $parent, $content_product, $parent_index );
 
-		if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version && $integrity_cached >= 1 && $this->storage_encoding_is_json( $parent ) ) {
+		if ( self::STORAGE_FORMAT_CHUNKED_VERIFIED === $current_version && $integrity_cached >= 1 && $this->storage_encoding_is_json( $parent )
+			&& $this->integrity_cache_applies( $parent_id, $variation_id ) ) {
 			$verify = array(
 				'ok'             => true,
 				'layers_ok'      => true,
@@ -1283,7 +1312,8 @@ class DB {
 		$parent          = $this->get_owner( $owner_parent_id );
 		$version         = $parent ? (int) $parent->get_meta( self::META_STORAGE_FORMAT_VERSION, true ) : 0;
 
-		if ( $skip_deep_verify && self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $parent && $this->storage_encoding_is_json( $parent ) ) {
+		if ( $skip_deep_verify && self::STORAGE_FORMAT_CHUNKED_VERIFIED === $version && $parent && $this->storage_encoding_is_json( $parent )
+			&& $this->integrity_cache_applies( $parent_id, $variation_id ) ) {
 			$integrity_cached = (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true );
 			if ( $integrity_cached >= 1 ) {
 				$statuses = $this->classify_storage_statuses_for_cache_hit( $parent_id, $variation_id );

@@ -235,6 +235,8 @@ Open Source SVG icons:
 * FIX: A 3D view set to fit its target could crop the thin end of a part, such as the end of a tube, past the edge of the view. The fit now always includes the outermost points of every part
 * FIX: 3D models are no longer clipped when they are much larger or smaller than a few metres, such as a model exported from Fusion 360 in millimetres. The camera's visible depth range now follows the model's size and distance, on the product page, in cart and quote images, and in the admin preview
 * FIX: 3D models loaded asynchronously, or moved into place by an anchor, now cast the fake ground shadow. The shadow only covered the models loaded at start-up
+* FIX: Variable products in "Variations share the same layers, choices are set per variation" mode: each variation's conditional logic is read from and saved to the variation again, as before 2.0.0. Every variation used the parent's conditions, usually none, so the layers they hide were all shown and added to the cart, and the variation's Conditional settings were empty
+* FIX: Same mode: the data migration now completes for every variation. A variation's configurator asked for the migration again after each save, and once the parent was migrated, a variation not yet saved since the update showed no choices, in the editor and on the product page. It now shows its existing choices until it is saved, gets the migration notice, and is only offered "Delete legacy data" once its migration has been verified
 
 = 2.0.0 - 12/Oct/2026 =
 
