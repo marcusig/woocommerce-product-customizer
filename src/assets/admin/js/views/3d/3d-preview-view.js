@@ -835,7 +835,7 @@ export const settings_3d_preview_mixin = {
 			} );
 			model.set( 'active', true );
 		}
-		$( '.pc-modal.mkl-pc-admin-ui .mkl-pc-admin-ui__nav-item[data-menu-id="objects3d"]' ).first().trigger( 'click' );
+		PC.app.get_current_editor_modal().find( '.mkl-pc-admin-ui__nav-item[data-menu-id="objects3d"]' ).first().trigger( 'click' );
 	},
 
 	maybe_cleanup: function () {

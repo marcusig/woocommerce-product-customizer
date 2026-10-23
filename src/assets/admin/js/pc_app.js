@@ -419,6 +419,47 @@ PC.toJSON = function( item ) {
 				this.syncSidebarSaveButtonState();
 			}
 		},
+		/**
+		 * Change flags that belong to one product's editor: the components get_collection() reads
+		 * from the product. Layers, angles and 3D data are one structure shared by every variation,
+		 * so their flags stay shared.
+		 */
+		product_change_keys: [ 'content', 'conditions' ],
+		/**
+		 * Keep a closing editor's unsaved choices on its product. The flags are shared by every
+		 * editor (one per variation), so without this the next variation opened already dirty, and
+		 * a save there sent the first variation's pending layer ids against its own choices.
+		 *
+		 * @param {Backbone.Model} product
+		 */
+		stash_product_changes: function( product ) {
+			if ( ! product ) return;
+			var app = this;
+			var flags = {};
+			_.each( this.product_change_keys, function( key ) {
+				flags[ key ] = !! app.is_modified[ key ];
+			} );
+			product.pending_changes = {
+				is_modified: flags,
+				modified_content_layer_ids: this.modified_content_layer_ids,
+				modified_choices: this.modified_choices,
+			};
+		},
+		/**
+		 * Take back a product's unsaved choices when its editor opens, or start clean.
+		 *
+		 * @param {Backbone.Model} product
+		 */
+		restore_product_changes: function( product ) {
+			var pending = product && product.pending_changes;
+			var app = this;
+			_.each( this.product_change_keys, function( key ) {
+				app.is_modified[ key ] = !! ( pending && pending.is_modified[ key ] );
+			} );
+			this.modified_content_layer_ids = pending ? pending.modified_content_layer_ids : {};
+			this.modified_choices = pending ? pending.modified_choices : [];
+			if ( product ) product.pending_changes = null;
+		},
 		clearGlobalSessionDirty: function() {
 			this.global_layer_session_dirty = false;
 			if ( this.syncSidebarSaveButtonState ) {
@@ -519,11 +560,25 @@ PC.toJSON = function( item ) {
 			}
 			return { title: fallback_title, description: fallback_description };
 		},
+		/**
+		 * The open editor's modal.
+		 *
+		 * Every product (each variation) gets its own editor, and a closed one stays in the page, so
+		 * a document-wide `.first()` found the first editor opened, hidden or not: on a second
+		 * variation the save button, the sidebar and the nav all acted on the first one. An editor
+		 * still being built is not assigned yet, which returns an empty set.
+		 *
+		 * @return {jQuery}
+		 */
+		get_current_editor_modal: function() {
+			var editor = this.admin && this.admin.get_current_product() ? this.admin.get_current_modal() : null;
+			return editor && editor.$el ? editor.$el.find( '.pc-modal.mkl-pc-admin-ui' ).first() : $();
+		},
 		getSidebarShellElements: function( main_view ) {
-			var $main = main_view && main_view.$el && main_view.$el.length ? main_view.$el : $( '.mkl-pc-admin-ui__main' ).first();
+			var $main = main_view && main_view.$el && main_view.$el.length ? main_view.$el : this.get_current_editor_modal().find( '.mkl-pc-admin-ui__main' ).first();
 			var $modal = $main.closest( '.pc-modal.mkl-pc-admin-ui' );
 			if ( ! $modal.length ) {
-				$modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+				$modal = this.get_current_editor_modal();
 			}
 			var $sidebar = $main.find( '.mkl-pc-admin-ui__sidebar' ).first();
 			if ( ! $sidebar.length ) {
@@ -625,7 +680,7 @@ PC.toJSON = function( item ) {
 				this.exitSettings3dSidebarFocus( PC.app && PC.app.states_view );
 				return;
 			}
-			var $modal = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			var $modal = this.get_current_editor_modal();
 			var $btn = $modal.find( '.mkl-pc-admin-ui__nav-item[data-menu-id="' + return_id + '"]' ).first();
 			if ( $btn.length ) {
 				$btn.trigger( 'click' );
@@ -639,7 +694,7 @@ PC.toJSON = function( item ) {
 				return null;
 			}
 			var found = null;
-			var $scope = $( '.pc-modal.mkl-pc-admin-ui' ).first();
+			var $scope = this.get_current_editor_modal();
 			if ( ! $scope.length ) {
 				$scope = $( document );
 			}
@@ -727,7 +782,7 @@ PC.toJSON = function( item ) {
 			var editingLayer = gl.is_editing_layer( gid );
 			var editingChoices = gl.is_editing_choices( gid );
 			var self = this;
-			var $footer = $( '.mkl-pc-admin-ui__sidebar-footer' ).first();
+			var $footer = this.get_current_editor_modal().find( '.mkl-pc-admin-ui__sidebar-footer' ).first();
 			var finishFooter = function() {
 				$footer.removeClass( 'saving' );
 				if ( self.syncSidebarSaveButtonState ) {
@@ -2001,7 +2056,9 @@ PC.toJSON = function( item ) {
 		 * Site-editor-like sidebar save control: aria-disabled + checkmark when clean (still focusable), Save when dirty, loading on the button while saving.
 		 */
 		syncSidebarSaveButtonState: function() {
-			var $btn = $( '.mkl-pc-admin-ui .mkl-pc-admin-ui__sidebar-primary-save' ).first();
+			// The open editor's own button: an editor still being built finds none, and its template
+			// already shows the clean state.
+			var $btn = this.get_current_editor_modal().find( '.mkl-pc-admin-ui__sidebar-primary-save' ).first();
 			if ( ! $btn.length ) {
 				return;
 			}

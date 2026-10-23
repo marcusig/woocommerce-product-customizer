@@ -874,7 +874,7 @@ PC.views = window.PC.views || {};
 			const main_view = this.options && this.options.main_view;
 			return main_view && main_view.$el
 				? main_view.$el.find( '.mkl-pc-admin-ui__sidebar-3d-sections' )
-				: $( '.pc-modal.mkl-pc-admin-ui' ).find( '.mkl-pc-admin-ui__sidebar-3d-sections' );
+				: PC.app.get_current_editor_modal().find( '.mkl-pc-admin-ui__sidebar-3d-sections' );
 		},
 		/**
 		 * The angles collection, created from the loaded data if no state has built it yet.

@@ -239,6 +239,7 @@ Open Source SVG icons:
 * FIX: Same mode: the data migration now completes for every variation. A variation's configurator asked for the migration again after each save, and once the parent was migrated, a variation not yet saved since the update showed no choices, in the editor and on the product page. It now shows its existing choices until it is saved, gets the migration notice, and is only offered "Delete legacy data" once its migration has been verified
 * FIX: Clicking the configure button again while the configurator's data is still loading no longer throws "Cannot read properties of null (reading 'open')", and a load that failed can be retried with another click
 * FIX: The "Start product's configurator" button in the Configurator tab is only shown when variations share the same configuration. When they don't, each variation is configured from its own row in Variations
+* FIX: Editing several variations: the Save button now appears in the second variation's configurator, which updated the first variation's hidden one. Each variation keeps its own unsaved choices and conditions when its configurator is closed, to be saved when it is opened again, and no longer opens another variation with them marked as changed. Unsaved layer edits are no longer lost when another variation's configurator is opened
 
 = 2.0.0 - 12/Oct/2026 =
 

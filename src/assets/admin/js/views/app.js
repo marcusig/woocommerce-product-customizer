@@ -65,19 +65,28 @@ PC.views = PC.views || {};
 			this.get_current_modal().close();
 		},
 
-		set_data: function() {
+		/**
+		 * Build the shared structure (layers, angles, 3D data) from admin_data.
+		 *
+		 * @param {Object}  [options]
+		 * @param {boolean} [options.keep_loaded] Keep components already built. Every variation's
+		 *        editor loads the same structure again; replacing it dropped unsaved layer edits made
+		 *        in another variation, and left reopened editors editing a collection saves no longer read.
+		 */
+		set_data: function( options ) {
 			var productId = this.current_product ? this.current_product.id : null;
+			var keep = !! ( options && options.keep_loaded );
 
-			if( PC.app.admin_data.get('settings_3d') != false ) {
+			if( PC.app.admin_data.get('settings_3d') != false && ! ( keep && this.settings_3d ) ) {
 				this.settings_3d = PC.app.admin_data.get('settings_3d');
 			}
-			if( PC.app.admin_data.get('layers') != false ) {
+			if( PC.app.admin_data.get('layers') != false && ! ( keep && this.layers ) ) {
 				this.layers = new PC.layers( PC.app.admin_data.get('layers'), productId ? { product_id: productId } : {} );
 			}
-			if( PC.app.admin_data.get('angles') != false ) {
+			if( PC.app.admin_data.get('angles') != false && ! ( keep && this.angles ) ) {
 				this.angles = new PC.angles( PC.app.admin_data.get('angles'), { parse: true } );
 			}
-			if( PC.app.admin_data.get('objects3d') != false ) {
+			if( PC.app.admin_data.get('objects3d') != false && ! ( keep && this.objects3d ) ) {
 				this.objects3d = new PC.objects3d( PC.app.admin_data.get('objects3d') || [], productId ? { product_id: productId } : {} );
 			}
 
@@ -176,7 +185,7 @@ PC.views = PC.views || {};
 			var configurator_source = PC.app.admin_data.get( 'configurator_source' ) || 'local';
 			this.$el.addClass( 'mkl-pc-configurator-is-' + configurator_source );
 
-			this.admin.set_data();
+			this.admin.set_data( { keep_loaded: true } );
 
 			this.fetched( model, res, options );
 
@@ -328,6 +337,14 @@ PC.views = PC.views || {};
 			// States: menu elements`
 			this.opened = true;
 
+			// Reopening an editor (back to an earlier variation) creates no new states view, so point
+			// the app at this one again, take back its own unsaved choices, and redraw its save button.
+			PC.app.states_view = this.statesView;
+			PC.app.restore_product_changes( this.product );
+			if ( PC.app.syncSidebarSaveButtonState ) {
+				PC.app.syncSidebarSaveButtonState();
+			}
+
 			$('body').addClass('pc-modal-opened');
 
 		},
@@ -349,6 +366,10 @@ PC.views = PC.views || {};
 			this.modal.hide();
 			this.backdrop.hide();
 			$('body').removeClass('pc-modal-opened');
+
+			// Unsaved choices stay with this editor, to be saved when it is opened again; the next
+			// editor (another variation) starts from its own.
+			PC.app.stash_product_changes( this.product );
 		},
 		refresh: function() {
 			
