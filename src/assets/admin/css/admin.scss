@@ -64,6 +64,12 @@
 	}
 }
 
+// Variations hold their own configurations: each one is edited from its row in Variations.
+// A class rather than .hide(), which WooCommerce undoes whenever it re-shows .show_if_variable.
+#woocommerce-product-data.mkl-pc-configured-per-variation #mkl_pc_configurator_product_data .start_button_container {
+	display: none !important;
+}
+
 #woocommerce-product-data .notice.configurator-type-change-warning {
     margin: 0px 15px;
 }

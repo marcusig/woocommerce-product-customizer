@@ -15,17 +15,15 @@ var PC = PC || {};
 		// Set the product type value when changing
 		$( document.body ).on( 'woocommerce-product-type-change', function ( e, select_val, $el ) {
 			product_type = select_val;
+			$( '#_mkl_pc__variable_configuration_mode' ).trigger( 'change' );
 		} );
 
 		$( '#_mkl_pc__variable_configuration_mode' ).on( 'change', function () {
 			var mode = $( this ).val();
-			if ( 'share_all_config' === mode || 'simple' === product_type ) {
-				$( '#general_product_data .start_button_container' ).show();
-				$( '#variable_product_options .start-configuration' ).hide();
-			} else {
-				$( '#general_product_data .start_button_container' ).hide();
-				$( '#variable_product_options .start-configuration' ).show();
-			}
+			var per_variation = 'variable' === product_type && 'share_all_config' !== mode;
+			// The product-level button sits in the Configurator panel; CSS hides it from this class.
+			$( '#woocommerce-product-data' ).toggleClass( 'mkl-pc-configured-per-variation', per_variation );
+			$( '#variable_product_options .start-configuration' ).toggle( per_variation );
 
 			$( '._mkl_pc__all_variations_are_configurable_field' ).toggle( 'share_all_config' === mode && 'variable' === product_type );
 		} );
