@@ -237,6 +237,7 @@ Open Source SVG icons:
 * FIX: 3D models loaded asynchronously, or moved into place by an anchor, now cast the fake ground shadow. The shadow only covered the models loaded at start-up
 * FIX: Variable products in "Variations share the same layers, choices are set per variation" mode: each variation's conditional logic is read from and saved to the variation again, as before 2.0.0. Every variation used the parent's conditions, usually none, so the layers they hide were all shown and added to the cart, and the variation's Conditional settings were empty
 * FIX: Same mode: the data migration now completes for every variation. A variation's configurator asked for the migration again after each save, and once the parent was migrated, a variation not yet saved since the update showed no choices, in the editor and on the product page. It now shows its existing choices until it is saved, gets the migration notice, and is only offered "Delete legacy data" once its migration has been verified
+* FIX: Clicking the configure button again while the configurator's data is still loading no longer throws "Cannot read properties of null (reading 'open')", and a load that failed can be retried with another click
 
 = 2.0.0 - 12/Oct/2026 =
 

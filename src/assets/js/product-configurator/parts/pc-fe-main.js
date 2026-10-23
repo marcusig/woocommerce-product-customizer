@@ -691,7 +691,9 @@
 
 		// variations: if product_id is different from active, we remove the modal to create a new one.
 		if( product_id == PC.fe.active_product ) {
-			this.modal.open(); 
+			// No modal yet: this product's data is still loading, and boot_ui() opens it when it arrives.
+			if ( ! this.modal ) return;
+			this.modal.open();
 			if ( reset && PC.fe.modal ) {
 				PC.fe.modal.resetConfig();
 			}
@@ -727,6 +729,15 @@
 				}
 			}
 			boot_ui();
+		}, function() {
+			// Load failures only - an error inside boot_ui() still surfaces as uncaught.
+			// ensureProductData() has logged the error. Forget the product so the next click
+			// retries the load, instead of finding it "active" with no modal to open.
+			if ( product_id == PC.fe.active_product && ! PC.fe.modal ) {
+				PC.fe.active_product = false;
+				PC.fe.opened = false;
+				$( 'body' ).removeClass( 'configurator_is_opened configurator_is_inline' );
+			}
 		} );
 
 	};
