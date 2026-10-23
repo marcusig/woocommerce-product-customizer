@@ -356,6 +356,10 @@ TODO:
 			}
 		},
 		update_sorting: function() {
+			// A closed editor (another variation) stays in the page with its list bound to the same
+			// layers. Its DOM still holds the order from before the change, so only the open editor's
+			// list may write order and parent back.
+			if ( ! this.$el.closest( '.pc-modal.mkl-pc-admin-ui' ).is( PC.app.get_current_editor_modal() ) ) return;
 			this.$( '.layers .mkl-list-item' ).each( function( i, listItem ) {
 				var parent = false;
 				if ( $( listItem ).closest( '.group-list' ).length ) {

@@ -338,8 +338,16 @@ PC.views = PC.views || {};
 			this.opened = true;
 
 			// Reopening an editor (back to an earlier variation) creates no new states view, so point
-			// the app at this one again, take back its own unsaved choices, and redraw its save button.
+			// the app at this one and its active screen again, take back its own unsaved choices, and
+			// redraw its save button. PC.app.state still held the other editor's screen, which a global
+			// layer choices save and the 3D section tabs act on.
 			PC.app.states_view = this.statesView;
+			var active_item = _.find( this.statesView.items || [], function( item ) {
+				return item && item.model && item.model.get( 'active' ) && item.state && item.state.state;
+			} );
+			if ( active_item ) {
+				PC.app.state = active_item.state.state;
+			}
 			PC.app.restore_product_changes( this.product );
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();

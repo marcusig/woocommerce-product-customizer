@@ -443,10 +443,14 @@ PC.toJSON = function( item ) {
 				is_modified: flags,
 				modified_content_layer_ids: this.modified_content_layer_ids,
 				modified_choices: this.modified_choices,
+				// The storage state is per variation too, but admin_data holds the last one loaded:
+				// reopened after another variation, this editor decided its migration from that one.
+				pc_storage: this.admin_data ? this.admin_data.get( 'pc_storage' ) : null,
 			};
 		},
 		/**
-		 * Take back a product's unsaved choices when its editor opens, or start clean.
+		 * Take back a product's unsaved choices and storage state when its editor opens, or start
+		 * clean. A first open has nothing to take back: its storage state arrives with its data.
 		 *
 		 * @param {Backbone.Model} product
 		 */
@@ -458,6 +462,9 @@ PC.toJSON = function( item ) {
 			} );
 			this.modified_content_layer_ids = pending ? pending.modified_content_layer_ids : {};
 			this.modified_choices = pending ? pending.modified_choices : [];
+			if ( pending && pending.pc_storage && this.admin_data ) {
+				this.admin_data.set( 'pc_storage', pending.pc_storage );
+			}
 			if ( product ) product.pending_changes = null;
 		},
 		clearGlobalSessionDirty: function() {
