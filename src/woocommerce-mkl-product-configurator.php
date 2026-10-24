@@ -6,7 +6,7 @@
 * Description: Allow customers to configure and customize their products with a live 2D or 3D preview, built from image layers or 3D models
 * Author: Marc Lacroix
 * Author URI: http://mklacroix.com
-* Version: 2.0.0
+* Version: 2.0.1
 * Requires PHP: 7.4
 * Requires Plugins: woocommerce
 * WC requires at least: 8
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
-define( 'MKL_PC_VERSION', '2.0.0' );
+define( 'MKL_PC_VERSION', '2.0.1' );
 define( 'MKL_PC_PREFIX', '_mkl_pc_' );
 define( 'MKL_PC_EXTENDS', 'woocommerce' ); 
 define( 'MKL_PC_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );

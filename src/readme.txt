@@ -4,7 +4,7 @@ Tags: 3D configurator, product customizer, product builder, woocommerce, product
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.0.0
+Stable tag: 2.0.1
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -224,12 +224,14 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.0.1 - unreleased =
+= 2.0.1 - 24/Oct/2026 =
 
 * FEATURE: 3D views: added a "Visible objects" option to "Camera target (model)". The view turns around and frames the whole product as the customer has configured it, and follows along when a choice adds or removes a part. New views use it by default; the empty option, now labelled "Saved camera target", still turns around the point saved with the view
 * TWEAK: Removed option `Both` in setting `Configuration meta data`
 * TWEAK: A 3D view that fits its target may now start further out than the maximum zoom distance, so it always shows the whole target, on narrow screens too. The customer can zoom back out as far as the view started, but no further
 * TWEAK: 3D settings > Saved views: "Set current view to selected angle" is now "Save current view", next to a new "Back to saved view" button that shows the selected view again as customers see it. The preview names the view on show, its framing and camera target, and whether the camera has moved since
+* TWEAK: Added 3D Premium to the Add-ons tab, and the documentation links now point to docs.wc-product-configurator.com
+* DEV: Added the filter `mkl_pc_3d_routed_extensions`, to change which file types are stored in the configurator_assets/3D folder
 * FIX: Only Block related Add to cart button (Other add to cart buttons would be disabled on the page, if they were inside a form.cart element)
 * FIX: A 3D view with a "Camera target (model)" but no object or camera focus turned around the point saved with the view, often the floor or the origin, so the product sat off-centre. It now turns around and frames that model, or everything shown while the model is not part of the configuration
 * FIX: A 3D view set to fit its target could crop the thin end of a part, such as the end of a tube, past the edge of the view. The fit now always includes the outermost points of every part
@@ -240,6 +242,9 @@ Open Source SVG icons:
 * FIX: Clicking the configure button again while the configurator's data is still loading no longer throws "Cannot read properties of null (reading 'open')", and a load that failed can be retried with another click
 * FIX: The "Start product's configurator" button in the Configurator tab is only shown when variations share the same configuration. When they don't, each variation is configured from its own row in Variations
 * FIX: Editing several variations: the Save button now appears in the second variation's configurator, which updated the first variation's hidden one. Each variation keeps its own unsaved choices and conditions when its configurator is closed, to be saved when it is opened again, and no longer opens another variation with them marked as changed. Unsaved layer edits are no longer lost when another variation's configurator is opened
+* FIX: 3D models and environment maps (glb, gltf, bin, hdr and exr files) are stored in the configurator_assets/3D folder from every uploader, including "Select new model", the HDRI picker and Media > Add New. They went to the dated upload folders unless they were uploaded from the two model pickers. "Select new model" now opens the model picker, which only accepts models and ZIP files containing one
+* FIX: Upgrading to 2.0 stored the "Enable Draco compression support" default in a form the settings page shows as unchecked, so the next save of the settings turned Draco off. The same applied to "Show the selected label in the layer header", "Automatically scroll to the top of the opened layer", "Show Edit configuration link in the cart and checkout" and "Show view configuration link in the order details", set by earlier upgrades. Updating to 2.0.1 stores all of them as checked, on stores that have not saved their settings since
+* FIX: Updating to 2.0.1 clears the cached configurations, so the variation fixes above reach the product page without saving each product again
 
 = 2.0.0 - 12/Oct/2026 =
 

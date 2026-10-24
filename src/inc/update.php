@@ -23,6 +23,7 @@ class Update {
 			'1.3.00' => [ [ $this, 'set_default_setting_value_v1_3_00' ] ],
 			'1.5.10' => [ [ $this, 'set_default_setting_value_v1_5_10' ] ],
 			'2.0.0' => [ [ $this, 'set_default_setting_value_v2_0_0' ], [ $this, 'migrate_image_mode_v2_0_0' ] ],
+			'2.0.1' => [ [ $this, 'normalize_checkbox_settings_v2_0_1' ], [ mkl_pc( 'cache' ), 'purge' ] ],
 		];
 
 		$saved_version = get_option( 'mkl_pc_version' );
@@ -145,6 +146,44 @@ class Update {
 		$options['fe_3d_use_draco_loader'] = 'on';
 		$options['purge_with_page_cache']  = 'on';
 		update_option( 'mkl_pc__settings', $options );
+	}
+
+	/**
+	 * Store the checkbox defaults of earlier upgrades as 'on'
+	 *
+	 * The routines above for 1.2.17, 1.2.35, 1.5.10 and, until 2.0.1, 2.0.0 stored PHP
+	 * `true`. The frontend reads it as on, but callback_checkbox() compares with 'on', so
+	 * the box renders unchecked and the next settings save turns the feature off. Only a
+	 * stored `true` is changed: a store that saved its settings since then already has
+	 * 'on' or nothing, and nothing is a choice this routine cannot tell from an accident.
+	 *
+	 * Runs after those routines on an upgrade from before them, as the list is in order.
+	 *
+	 * @return void
+	 */
+	private function normalize_checkbox_settings_v2_0_1() {
+		$options = get_option( 'mkl_pc__settings' );
+		if ( ! is_array( $options ) ) return;
+
+		$keys = array(
+			'show_active_choice_in_layer',
+			'auto_scroll',
+			'show_edit_configuration_link',
+			'show_view_configuration_link',
+			'fe_3d_use_draco_loader',
+		);
+
+		$changed = false;
+		foreach ( $keys as $key ) {
+			if ( isset( $options[ $key ] ) && true === $options[ $key ] ) {
+				$options[ $key ] = 'on';
+				$changed = true;
+			}
+		}
+
+		if ( $changed ) {
+			update_option( 'mkl_pc__settings', $options );
+		}
 	}
 
 	/**
