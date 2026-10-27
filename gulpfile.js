@@ -6,7 +6,6 @@ const uglify = require('gulp-uglify');
 const rename = require('gulp-rename');
 const colorize = require('chalk');
 const clean = require('gulp-clean');
-const gutil = require('gulp-util');
 const concat = require('gulp-concat-util');
 const { exec, spawn } = require('child_process');
 const path = require('path');
@@ -370,7 +369,7 @@ var get_relative_file_path = function (path) {
 const reportError = function(error) {
 	const lineNumber = (error.lineNumber) ? 'LINE ' + error.lineNumber + ' -- ' : ''
 	let report = ''
-	const chalk = gutil.colors.white.bgRed
+	const chalk = colorize.white.bgRed
 
 	// Shows a pop when errors
 	// notify({
