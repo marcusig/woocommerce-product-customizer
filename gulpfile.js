@@ -1,5 +1,4 @@
 const gulp = require('gulp')
-// const runSequence = require('run-sequence')
 const zip = require('gulp-zip')
 const sass = require('gulp-sass')(require('sass'));
 const uglify = require('gulp-uglify');
@@ -161,21 +160,21 @@ gulp.task('move_src', function(done) {
 		[
 			'src/**',
 			'!src/assets/js/product-configurator/parts/**',
-		].concat(excludeFromPackage))
+		].concat(excludeFromPackage), { encoding: false })
 		.pipe(plumber(reportError))
 		.pipe(gulp.dest('dist'))
 		.on('end', done)
 })
 
 gulp.task('vendor', function(done){
-	return gulp.src('vendor/**')
+	return gulp.src('vendor/**', { encoding: false })
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest('dist/vendor'))
 	.on('end', done);
 });
 
 gulp.task('composer', function(done) {
-	return gulp.src('composer.json', { allowEmpty: true })
+	return gulp.src('composer.json', { allowEmpty: true, encoding: false })
 		.pipe(plumber(reportError))
 		.pipe(gulp.dest('dist'))
 		.on('end', done);
@@ -258,7 +257,7 @@ gulp.task('copy-draco-libs', (done) => {
 	gulp.src([
 		'node_modules/three/examples/jsm/libs/draco/gltf/*',
 		'!node_modules/three/examples/jsm/libs/draco/gltf/draco_encoder.js',
-	])
+	], { encoding: false })
 		.pipe(gulp.dest('src/assets/js/vendor/draco/gltf'))
 		.on('end', done);
 });
@@ -340,7 +339,7 @@ gulp.task('watch', function() {
 				return;
 			}
 			console.log('File ' + colorize.cyan(rel) + ' was modified');
-			return gulp.src(path, {base: 'src'})
+			return gulp.src(path, {base: 'src', encoding: false})
 				.pipe(plumber(reportError))
 				.pipe(gulp.dest('dist'));
 		})
@@ -389,7 +388,7 @@ const reportError = function(error) {
 
 //for normal build
 gulp.task('copy_for_zip', function(done) {
-	return gulp.src('dist/**')
+	return gulp.src('dist/**', { encoding: false })
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest(folder_name))
 	.on('end', done);
@@ -397,7 +396,7 @@ gulp.task('copy_for_zip', function(done) {
 });
 
 gulp.task('build_zip', function(done) {
-	return gulp.src(folder_name + '/**/*', { base : "." })
+	return gulp.src(folder_name + '/**/*', { base : ".", encoding: false })
 	.pipe(plumber(reportError))
 	.pipe(zip(folder_name + '.zip'))
 	.pipe(gulp.dest('.'))
@@ -428,7 +427,7 @@ gulp.task('clean_svn', function(done) {
 });
 
 gulp.task('copy_to_svn', function(done) {
-	return gulp.src('dist/**/*')
+	return gulp.src('dist/**/*', { encoding: false })
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest('../../repository/product-configurator-for-woocommerce/trunk'))
 	.on('end', done);	
