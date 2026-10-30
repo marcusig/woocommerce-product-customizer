@@ -440,3 +440,36 @@
 	PC.fe.clear_validation_errors = PC.fe.validation.clear_errors;
 	PC.fe.show_validation_errors = PC.fe.validation.show_errors;
 	PC.fe.get_choice_validation_target = PC.fe.validation.get_choice_target;
+
+	/**
+	 * Check the current configuration and get its payload, with or without the configurator's views.
+	 *
+	 * The add to cart form and the quote request both go through this. Headless clients pass
+	 * `show_errors: false` and read the errors from the result.
+	 *
+	 * @param {Object}  [options]
+	 * @param {boolean} [options.show_errors=true] Show the errors in the configurator, when it is displayed.
+	 * @param {string}  [options.context='cart']   What the configuration is checked for ('cart', 'quote'). Passed to the filter.
+	 * @return {Promise<{valid: boolean, data: (string|null), errors: Array}>}
+	 */
+	PC.fe.validate_configuration = async function( options ) {
+		options = _.extend( { show_errors: true, context: 'cart' }, options || {} );
+		var data = await PC.fe.save_data.getSaveDataAsync();
+		/**
+		 * Filter PC.fe.validate_configuration: the errors that block the configuration.
+		 *
+		 * @param {Array}  errors
+		 * @param {string} context 'cart', 'quote'...
+		 */
+		var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors, options.context );
+		if ( errors.length ) {
+			if ( options.show_errors && PC.fe.show_validation_errors ) {
+				PC.fe.show_validation_errors( errors );
+			}
+			return { valid: false, data: null, errors: errors };
+		}
+		if ( options.show_errors && PC.fe.clear_validation_errors ) {
+			PC.fe.clear_validation_errors();
+		}
+		return { valid: true, data: data, errors: [] };
+	};

@@ -79,18 +79,8 @@ PC.fe.views.form = Backbone.View.extend({
 	},
 
 	validate_configuration: async function() {
-		var data = await PC.fe.save_data.getSaveDataAsync();
-		var errors = wp.hooks.applyFilters( 'PC.fe.validate_configuration', PC.fe.errors );
-		if ( errors.length ) {
-			if ( PC.fe.show_validation_errors ) {
-				PC.fe.show_validation_errors( errors );
-			}
-			return false;
-		}
-		if ( PC.fe.clear_validation_errors ) {
-			PC.fe.clear_validation_errors();
-		}
-		return data;
+		var result = await PC.fe.validate_configuration( { context: 'cart' } );
+		return result.valid ? result.data : false;
 	},
 	
 	populate_form_input: function( data, e ) {

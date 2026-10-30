@@ -183,20 +183,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @return array|null The list of choices (possibly empty), or null when the payload is not a JSON array.
 		 */
 		public function decode_configurator_payload( $raw_configurator_data ) {
-			if ( ! is_string( $raw_configurator_data ) || '' === $raw_configurator_data ) {
-				return null;
-			}
-			$data = json_decode( $raw_configurator_data );
-			// A payload carrying one level of slashes too many only decodes once they are stripped.
-			if ( ! is_array( $data ) ) {
-				$data = json_decode( stripcslashes( $raw_configurator_data ) );
-			}
-			// YITH Request a Quote Premium posts the form through FormData with encodeURIComponent()
-			// on every field, so its payload arrives still URL-encoded.
-			if ( ! is_array( $data ) ) {
-				$data = json_decode( urldecode( $raw_configurator_data ) );
-			}
-			return is_array( $data ) ? $data : null;
+			return Utils::decode_configurator_payload( $raw_configurator_data );
 		}
 
 		// Filter data that's saved in the cart, and add the configurator data

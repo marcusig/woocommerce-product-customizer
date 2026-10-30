@@ -129,6 +129,7 @@ const productConfiguratorParts = [
 	'src/assets/js/product-configurator/parts/pc-fe-validation.js',
 	'src/assets/js/product-configurator/parts/pc-fe-a11y.js',
 	'src/assets/js/product-configurator/parts/pc-fe-main.js',
+	'src/assets/js/product-configurator/parts/pc-fe-quote.js',
 	'src/assets/js/product-configurator/parts/pc-iife-close.js',
 	'src/assets/js/product-configurator/parts/pc-utils.js',
 ];
