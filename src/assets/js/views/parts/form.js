@@ -10,7 +10,8 @@ PC.fe.views.form = Backbone.View.extend({
 	},
 	events: {
 		'click .configurator-add-to-cart': 'add_to_cart',
-		'click .add-to-quote': 'add_to_quote'
+		// The native quote request shares the class for its styles, and handles its own clicks.
+		'click .add-to-quote:not(.mkl-pc-request-quote)': 'add_to_quote'
 	},
 	render: function() {
 		if ( ! PC.fe.config.cart_item_key ) {
@@ -50,10 +51,10 @@ PC.fe.views.form = Backbone.View.extend({
 		// The YITH button is printed only for a product YITH would quote, and sends its own request, so it
 		// does not depend on YITH's markup being on the page. The other quote plugins still do.
 		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
-			this.$( '.add-to-quote' ).not( '.yith-raq' ).remove();
+			this.$( '.add-to-quote' ).not( '.yith-raq, .mkl-pc-request-quote' ).remove();
 		}
 		if ( ! this.$cart.find( '.afrfqbt_single_page' ).length ) {
-			this.$( '.add-to-quote' ).not( '.yith-raq' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
+			this.$( '.add-to-quote' ).not( '.yith-raq, .mkl-pc-request-quote' ).html( this.$cart.find( '.afrfqbt_single_page' ).html() );
 		}
 		if ( this.$( '.yith-raq.add-to-quote' ).length && PC_config.config.ywraq_hide_add_to_cart ) {
 			this.$( '.configurator-add-to-cart' ).remove();

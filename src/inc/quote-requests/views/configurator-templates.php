@@ -2,8 +2,9 @@
 /**
  * Templates of the quote request in the configurator, used by assets/js/quote-request.js
  *
- * The form, the sending and the result screens are shown in the add to cart modal, so they take the
- * configurator theme's modal styles.
+ * The button has the add-to-quote class the configurator themes style for the quote plugins. The form,
+ * the sending and the result screens are shown in the add to cart modal, so they take the theme's
+ * modal styles.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,7 +18,7 @@ $form_title   = $settings->get_label( 'quote_request_form_title', __( 'Request a
 $submit_label = $settings->get_label( 'quote_request_submit_label', __( 'Send my request', 'product-configurator-for-woocommerce' ) );
 ?>
 <script type="text/html" id="tmpl-mkl-pc-quote-request-button" data-wg-notranslate>
-	<button type="button" class="<?php echo esc_attr( $button_class ); ?> mkl-pc-request-quote">
+	<button type="button" class="<?php echo esc_attr( $button_class ); ?> add-to-quote mkl-pc-request-quote">
 		<span><?php echo esc_html( $button_label ); ?></span>
 	</button>
 </script>
