@@ -56,8 +56,7 @@ class Quote_Requests {
 
 		add_filter( 'mkl_pc_frontend_action_token_purposes', [ $this, 'add_token_purpose' ] );
 		add_filter( 'mkl_pc_rate_limit_rule', [ $this, 'rate_limit_rule' ], 10, 2 );
-		add_filter( 'mkl_pc_js_config', [ $this, 'js_config' ] );
-		add_filter( 'mkl_pc_frontend_js_config', [ $this, 'js_strings' ] );
+		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		add_action( 'mkl_pc/register_settings', [ $this, 'register_settings' ], 30 );
 	}
 
@@ -153,41 +152,36 @@ class Quote_Requests {
 	}
 
 	/**
-	 * What the browser needs to send a request
+	 * Load PC.fe.quote after the configurator's script, when quote requests are on
 	 *
 	 * The fields themselves come from the schema endpoint: they can depend on the product.
 	 *
-	 * @param array $config
-	 * @return array
+	 * @return void
 	 */
-	public function js_config( $config ) {
-		$config['quote_request'] = [
-			'enabled'       => $this->is_enabled(),
+	public function enqueue_scripts() {
+		if ( ! $this->is_enabled() ) return;
+
+		$file = 'js/quote-request' . ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min' ) . '.js';
+		wp_enqueue_script(
+			'mkl_pc/js/quote_request',
+			MKL_PC_ASSETS_URL . $file,
+			[ 'jquery', 'wp-hooks', 'mkl_pc/js/product_configurator' ],
+			filemtime( MKL_PC_ASSETS_PATH . $file ),
+			true
+		);
+		wp_localize_script( 'mkl_pc/js/quote_request', 'PC_quote_request', [
 			'schema_url'    => esc_url_raw( rest_url( 'mkl_pc/v1/quote-requests/schema' ) ),
 			'submit_url'    => esc_url_raw( rest_url( 'mkl_pc/v1/quote-requests' ) ),
 			'token_purpose' => self::TOKEN_PURPOSE,
-		];
-		return $config;
-	}
-
-	/**
-	 * Messages used by PC.fe.quote
-	 *
-	 * @param array $args The localized PC_config.
-	 * @return array
-	 */
-	public function js_strings( $args ) {
-		if ( ! isset( $args['lang'] ) || ! is_array( $args['lang'] ) ) return $args;
-		$args['lang'] = array_merge( $args['lang'], [
-			/* translators: %s: field label */
-			'quote_field_too_long'        => __( '%s is too long', 'product-configurator-for-woocommerce' ),
-			/* translators: %s: field label */
-			'quote_field_invalid'         => __( '%s is not valid', 'product-configurator-for-woocommerce' ),
-			'quote_disabled'              => __( 'Quote requests are not available.', 'product-configurator-for-woocommerce' ),
-			'quote_configuration_invalid' => __( 'Please check your configuration.', 'product-configurator-for-woocommerce' ),
-			'quote_fields_invalid'        => __( 'Some fields need your attention.', 'product-configurator-for-woocommerce' ),
+			'lang'          => [
+				/* translators: %s: field label */
+				'field_too_long'        => __( '%s is too long', 'product-configurator-for-woocommerce' ),
+				/* translators: %s: field label */
+				'field_invalid'         => __( '%s is not valid', 'product-configurator-for-woocommerce' ),
+				'configuration_invalid' => __( 'Please check your configuration.', 'product-configurator-for-woocommerce' ),
+				'fields_invalid'        => __( 'Some fields need your attention.', 'product-configurator-for-woocommerce' ),
+			],
 		] );
-		return $args;
 	}
 
 	/**

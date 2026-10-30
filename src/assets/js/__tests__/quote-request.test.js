@@ -4,7 +4,7 @@
 const fs = require( 'fs' );
 const path = require( 'path' );
 
-const source = fs.readFileSync( path.join( __dirname, '../pc-fe-quote.js' ), 'utf8' );
+const source = fs.readFileSync( path.join( __dirname, '../quote-request.js' ), 'utf8' );
 
 const schema = {
 	product_id: 12,
@@ -54,16 +54,14 @@ function load( { valid = true } = {} ) {
 			doAction: ( ...args ) => actions.push( args ),
 		},
 	};
+	global.PC_quote_request = {
+		schema_url: '/wp-json/mkl_pc/v1/quote-requests/schema',
+		submit_url: '/wp-json/mkl_pc/v1/quote-requests',
+		token_purpose: 'quote_request_send',
+		lang: {},
+	};
 	global.PC = {
 		fe: {
-			config: {
-				quote_request: {
-					enabled: true,
-					schema_url: '/wp-json/mkl_pc/v1/quote-requests/schema',
-					submit_url: '/wp-json/mkl_pc/v1/quote-requests',
-					token_purpose: 'quote_request_send',
-				},
-			},
 			active_product: 12,
 			lang: 'fr',
 			get_qty: () => 2,
@@ -73,12 +71,13 @@ function load( { valid = true } = {} ) {
 			) ),
 		},
 	};
-	const _ = {
+	global.jQuery = null;
+	global.PC._us = {
 		extend: Object.assign,
 		isEmpty: ( object ) => ! object || ! Object.keys( object ).length,
 	};
-	// The part is concatenated inside the bundle's IIFE, which provides $ and _.
-	new Function( '$', '_', source )( null, _ );
+	// Run as a classic script would, in the global scope, where `var PC` is the existing global.
+	( 0, eval )( source );
 	return { quote: global.PC.fe.quote, actions };
 }
 

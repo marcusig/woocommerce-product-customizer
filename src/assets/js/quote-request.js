@@ -1,3 +1,13 @@
+var PC = PC || {};
+PC.fe = PC.fe || {};
+
+/**
+ * Loaded only when quote requests are enabled, after the configurator's main script:
+ * a page can test for PC.fe.quote before offering a quote request.
+ */
+!( function( $, _ ) {
+	'use strict';
+
 	/**
 	 * Quote requests, without any view.
 	 *
@@ -15,11 +25,13 @@
 	var quote_schemas = {};
 
 	var quote_config = function() {
-		return ( PC.fe.config && PC.fe.config.quote_request ) || {};
+		return window.PC_quote_request || {};
 	};
 
 	var quote_lang = function( key, fallback ) {
-		return ( PC_config && PC_config.lang && PC_config.lang[ key ] ) || fallback;
+		var own = quote_config().lang || {};
+		var core = ( 'undefined' !== typeof PC_config && PC_config.lang ) || {};
+		return own[ key ] || core[ key ] || fallback;
 	};
 
 	var rest_headers = function() {
@@ -53,7 +65,7 @@
 	 * @return {boolean}
 	 */
 	PC.fe.quote.is_enabled = function() {
-		return !! quote_config().enabled;
+		return !! quote_config().submit_url;
 	};
 
 	/**
@@ -110,9 +122,9 @@
 				return;
 			}
 			if ( field.maxlength && String( value ).length > field.maxlength ) {
-				errors[ field.id ] = quote_lang( 'quote_field_too_long', '%s is too long' ).replace( '%s', field.label );
+				errors[ field.id ] = quote_lang( 'field_too_long', '%s is too long' ).replace( '%s', field.label );
 			} else if ( 'email' === field.type && ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test( String( value ).trim() ) ) {
-				errors[ field.id ] = quote_lang( 'quote_field_invalid', '%s is not valid' ).replace( '%s', field.label );
+				errors[ field.id ] = quote_lang( 'field_invalid', '%s is not valid' ).replace( '%s', field.label );
 			}
 		} );
 		/**
@@ -197,18 +209,18 @@
 		}, options || {} );
 
 		if ( ! PC.fe.quote.is_enabled() ) {
-			throw PC.fe.quote.error( 'mkl_pc_quote_disabled', quote_lang( 'quote_disabled', 'Quote requests are not available.' ) );
+			throw PC.fe.quote.error( 'mkl_pc_quote_disabled', quote_lang( 'disabled', 'Quote requests are not available.' ) );
 		}
 
 		var check = await PC.fe.validate_configuration( { show_errors: options.show_errors, context: 'quote' } );
 		if ( ! check.valid ) {
-			throw PC.fe.quote.error( 'mkl_pc_quote_invalid_configuration', quote_lang( 'quote_configuration_invalid', 'Please check your configuration.' ), { configuration_errors: check.errors } );
+			throw PC.fe.quote.error( 'mkl_pc_quote_invalid_configuration', quote_lang( 'configuration_invalid', 'Please check your configuration.' ), { configuration_errors: check.errors } );
 		}
 
 		var schema = await PC.fe.quote.get_schema();
 		var field_errors = PC.fe.quote.validate_fields( options.fields, schema );
 		if ( ! _.isEmpty( field_errors ) ) {
-			throw PC.fe.quote.error( 'mkl_pc_quote_invalid_fields', quote_lang( 'quote_fields_invalid', 'Some fields need your attention.' ), { field_errors: field_errors } );
+			throw PC.fe.quote.error( 'mkl_pc_quote_invalid_fields', quote_lang( 'fields_invalid', 'Some fields need your attention.' ), { field_errors: field_errors } );
 		}
 
 		var image = schema.capture_image ? await PC.fe.quote.get_image( options.image ) : '';
@@ -253,3 +265,5 @@
 		wp.hooks.doAction( 'PC.fe.quote.sent', result, body );
 		return result;
 	};
+
+} )( jQuery, PC._us || window._ );
