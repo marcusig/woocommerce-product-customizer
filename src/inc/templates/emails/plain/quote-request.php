@@ -27,6 +27,9 @@ echo "\n\n----------------------------------------\n\n";
 if ( $quote_request ) {
 	/* translators: %s: quote request reference */
 	echo esc_html( sprintf( __( 'Quote request %s', 'product-configurator-for-woocommerce' ), $quote_request->reference ) ) . "\n\n";
+	if ( $sent_to_admin && ( $admin_url = $quote_request->get_admin_url() ) ) {
+		echo esc_html__( 'Open the request in your dashboard:', 'product-configurator-for-woocommerce' ) . ' ' . esc_url( $admin_url ) . "\n\n";
+	}
 	echo esc_html( $quote_request->get_product_name() ) . ' x ' . esc_html( $quote_request->quantity ) . "\n";
 	foreach ( $quote_request->get_summary() as $row ) {
 		echo esc_html( wp_strip_all_tags( $row['label'] ) ) . ( $row['label'] ? ': ' : '' ) . esc_html( wp_strip_all_tags( $row['value'] ) ) . "\n";

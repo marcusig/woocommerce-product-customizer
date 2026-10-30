@@ -22,6 +22,10 @@ $summary = $quote_request->get_summary();
 	echo esc_html( sprintf( __( 'Quote request %s', 'product-configurator-for-woocommerce' ), $quote_request->reference ) );
 ?></h2>
 
+<?php if ( $sent_to_admin && ( $admin_url = $quote_request->get_admin_url() ) ) : ?>
+	<p><a href="<?php echo esc_url( $admin_url ); ?>"><?php esc_html_e( 'Open the request in your dashboard', 'product-configurator-for-woocommerce' ); ?></a></p>
+<?php endif; ?>
+
 <table class="td" cellspacing="0" cellpadding="6" border="1" style="width: 100%; margin-bottom: 24px;">
 	<tbody>
 		<tr>

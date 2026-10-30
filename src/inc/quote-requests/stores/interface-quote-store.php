@@ -60,4 +60,12 @@ interface Quote_Store {
 	 * @return true|\WP_Error
 	 */
 	public function save( Quote_Request $request );
+
+	/**
+	 * Where the merchant sees a stored request, or ''
+	 *
+	 * @param Quote_Request $request
+	 * @return string
+	 */
+	public function get_admin_url( Quote_Request $request );
 }

@@ -122,6 +122,13 @@ class Quote_Request {
 	public $created = 0;
 
 	/**
+	 * Summary frozen when the request was stored, or null to build it from the configuration.
+	 *
+	 * @var array[]|null
+	 */
+	public $summary = null;
+
+	/**
 	 * Free-form data for add-ons (e.g. a PDF path).
 	 *
 	 * @var array
@@ -181,7 +188,18 @@ class Quote_Request {
 	 * @return array[] Rows of label / value (HTML) / layer.
 	 */
 	public function get_summary() {
+		if ( is_array( $this->summary ) ) return $this->summary;
 		return $this->configuration ? $this->configuration->get_summary( 'quote' ) : [];
+	}
+
+	/**
+	 * Where the merchant sees this request, or '' when it was only emailed
+	 *
+	 * @return string
+	 */
+	public function get_admin_url() {
+		$stores = mkl_pc( 'quotes' )->get_stores();
+		return isset( $stores[ $this->store ] ) ? $stores[ $this->store ]->get_admin_url( $this ) : '';
 	}
 
 	/**

@@ -11,6 +11,8 @@ require_once __DIR__ . '/class-quote-service.php';
 require_once __DIR__ . '/class-quote-rest.php';
 require_once __DIR__ . '/stores/interface-quote-store.php';
 require_once __DIR__ . '/stores/class-email-only-store.php';
+require_once __DIR__ . '/stores/class-cpt-store.php';
+require_once __DIR__ . '/class-quote-privacy.php';
 
 /**
  * Native quote requests: a customer asks for a quote on what they configured
@@ -18,7 +20,7 @@ require_once __DIR__ . '/stores/class-email-only-store.php';
  * Available as mkl_pc( 'quotes' ). The pieces:
  * - Quote_Fields: the form, as a schema;
  * - Quote_Service: validates, stores and sends a request;
- * - Quote_Store: what happens to it (email only for now; a post type and WooCommerce orders next);
+ * - Quote_Store: what happens to it (emailed only, or also kept as a mkl_pc_quote post);
  * - Quote_REST: the API the configurator's form and headless clients use.
  */
 class Quote_Requests {
@@ -41,14 +43,31 @@ class Quote_Requests {
 	public $rest;
 
 	/**
+	 * @var CPT_Store
+	 */
+	public $cpt_store;
+
+	/**
+	 * @var Quote_Privacy
+	 */
+	public $privacy;
+
+	/**
 	 * @var Quote_Store[]|null
 	 */
 	private $stores = null;
 
 	public function __construct() {
-		$this->fields  = new Quote_Fields();
-		$this->service = new Quote_Service();
-		$this->rest    = new Quote_REST();
+		$this->fields    = new Quote_Fields();
+		$this->service   = new Quote_Service();
+		$this->rest      = new Quote_REST();
+		$this->cpt_store = new CPT_Store();
+		$this->privacy   = new Quote_Privacy();
+
+		if ( is_admin() ) {
+			require_once __DIR__ . '/admin/class-quote-requests-admin.php';
+			new Quote_Requests_Admin( $this->cpt_store );
+		}
 
 		$mailer = mkl_pc( 'mailer' );
 		$mailer->register( 'mkl_pc_quote_request_admin', '\MKL\PC\Quote_Request_Admin_Email', __DIR__ . '/emails/class-quote-request-admin-email.php' );
@@ -100,13 +119,16 @@ class Quote_Requests {
 	 */
 	public function get_stores() {
 		if ( null === $this->stores ) {
-			$store = new Email_Only_Store();
+			$email = new Email_Only_Store();
 			/**
 			 * Filter the places a quote request can be kept
 			 *
 			 * @param Quote_Store[] $stores Keyed by id.
 			 */
-			$stores = apply_filters( 'mkl_pc/quote_request/stores', [ $store->get_id() => $store ] );
+			$stores = apply_filters( 'mkl_pc/quote_request/stores', [
+				$email->get_id()           => $email,
+				$this->cpt_store->get_id() => $this->cpt_store,
+			] );
 			$this->stores = array_filter( (array) $stores, function( $store ) {
 				return $store instanceof Quote_Store;
 			} );
@@ -115,17 +137,32 @@ class Quote_Requests {
 	}
 
 	/**
-	 * The store chosen in the settings, or email only when it cannot be used
+	 * The store chosen in the settings
+	 *
+	 * When it cannot be used (WooCommerce orders without WooCommerce), requests are kept as posts
+	 * rather than only emailed: the merchant chose to keep them.
 	 *
 	 * @return Quote_Store
 	 */
 	public function get_store() {
 		$stores = $this->get_stores();
-		$id = mkl_pc( 'settings' )->get( 'quote_request_storage', 'email', true );
+		$id = $this->get_store_setting();
 		if ( isset( $stores[ $id ] ) && $stores[ $id ]->is_available() ) {
 			return $stores[ $id ];
 		}
+		if ( 'email' !== $id && $this->cpt_store->is_available() ) {
+			return $this->cpt_store;
+		}
 		return isset( $stores['email'] ) ? $stores['email'] : new Email_Only_Store();
+	}
+
+	/**
+	 * The store chosen in the settings, whether or not it can be used
+	 *
+	 * @return string
+	 */
+	public function get_store_setting() {
+		return (string) mkl_pc( 'settings' )->get( 'quote_request_storage', 'email', true );
 	}
 
 	/**
@@ -258,6 +295,26 @@ class Quote_Requests {
 			'quote_requests',
 			[
 				'setting_name' => 'quote_request_show_prices',
+			]
+		);
+
+		add_settings_field(
+			'quote_request_retention',
+			__( 'Keep stored quote requests for', 'product-configurator-for-woocommerce' ),
+			[ $settings_page, 'callback_select' ],
+			'mlk_pc_settings',
+			'quote_requests',
+			[
+				'setting_name' => 'quote_request_retention',
+				'options'      => [
+					'0'   => __( 'Until deleted', 'product-configurator-for-woocommerce' ),
+					'90'  => __( '3 months', 'product-configurator-for-woocommerce' ),
+					'180' => __( '6 months', 'product-configurator-for-woocommerce' ),
+					'365' => __( 'One year', 'product-configurator-for-woocommerce' ),
+					'730' => __( 'Two years', 'product-configurator-for-woocommerce' ),
+				],
+				'default'      => '0',
+				'description'  => __( 'Requests kept in Product Configurator > Quote requests are deleted, with their images, once they are this old.', 'product-configurator-for-woocommerce' ),
 			]
 		);
 	}
