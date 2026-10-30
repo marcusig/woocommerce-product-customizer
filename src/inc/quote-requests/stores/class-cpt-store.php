@@ -163,6 +163,7 @@ class CPT_Store implements Quote_Store {
 				'label'   => $field['label'],
 				'type'    => $field['type'],
 				'options' => $field['options'],
+				'maps_to' => isset( $field['maps_to'] ) ? $field['maps_to'] : '',
 			];
 		}
 		$summary = [];
@@ -233,7 +234,7 @@ class CPT_Store implements Quote_Store {
 		$request->summary           = (array) $get( 'summary', [] );
 
 		foreach ( (array) $get( 'field_definitions', [] ) as $field_id => $field ) {
-			$request->field_definitions[ $field_id ] = wp_parse_args( $field, [ 'label' => $field_id, 'type' => 'text', 'options' => [] ] );
+			$request->field_definitions[ $field_id ] = wp_parse_args( $field, [ 'label' => $field_id, 'type' => 'text', 'options' => [], 'maps_to' => '' ] );
 		}
 
 		$image = (string) $get( 'image' );

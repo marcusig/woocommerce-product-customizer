@@ -12,6 +12,7 @@ require_once __DIR__ . '/class-quote-rest.php';
 require_once __DIR__ . '/stores/interface-quote-store.php';
 require_once __DIR__ . '/stores/class-email-only-store.php';
 require_once __DIR__ . '/stores/class-cpt-store.php';
+require_once __DIR__ . '/stores/class-woo-order-store.php';
 require_once __DIR__ . '/class-quote-privacy.php';
 
 /**
@@ -20,7 +21,8 @@ require_once __DIR__ . '/class-quote-privacy.php';
  * Available as mkl_pc( 'quotes' ). The pieces:
  * - Quote_Fields: the form, as a schema;
  * - Quote_Service: validates, stores and sends a request;
- * - Quote_Store: what happens to it (emailed only, or also kept as a mkl_pc_quote post);
+ * - Quote_Store: what happens to it (emailed only, also kept as a mkl_pc_quote post, or also created
+ *   as a WooCommerce order);
  * - Quote_REST: the API the configurator's form and headless clients use.
  */
 class Quote_Requests {
@@ -48,6 +50,11 @@ class Quote_Requests {
 	public $cpt_store;
 
 	/**
+	 * @var Woo_Order_Store
+	 */
+	public $woo_order_store;
+
+	/**
 	 * @var Quote_Privacy
 	 */
 	public $privacy;
@@ -62,6 +69,7 @@ class Quote_Requests {
 		$this->service   = new Quote_Service();
 		$this->rest      = new Quote_REST();
 		$this->cpt_store = new CPT_Store();
+		$this->woo_order_store = new Woo_Order_Store();
 		$this->privacy   = new Quote_Privacy();
 
 		if ( is_admin() ) {
@@ -77,6 +85,7 @@ class Quote_Requests {
 		add_filter( 'mkl_pc_rate_limit_rule', [ $this, 'rate_limit_rule' ], 10, 2 );
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		add_action( 'mkl_pc/register_settings', [ $this, 'register_settings' ], 30 );
+		add_action( 'admin_notices', [ $this, 'store_unavailable_notice' ] );
 	}
 
 	/**
@@ -126,8 +135,9 @@ class Quote_Requests {
 			 * @param Quote_Store[] $stores Keyed by id.
 			 */
 			$stores = apply_filters( 'mkl_pc/quote_request/stores', [
-				$email->get_id()           => $email,
-				$this->cpt_store->get_id() => $this->cpt_store,
+				$email->get_id()                 => $email,
+				$this->cpt_store->get_id()       => $this->cpt_store,
+				$this->woo_order_store->get_id() => $this->woo_order_store,
 			] );
 			$this->stores = array_filter( (array) $stores, function( $store ) {
 				return $store instanceof Quote_Store;
@@ -154,6 +164,27 @@ class Quote_Requests {
 			return $this->cpt_store;
 		}
 		return isset( $stores['email'] ) ? $stores['email'] : new Email_Only_Store();
+	}
+
+	/**
+	 * Tell the merchant their requests are not going where they asked
+	 *
+	 * @return void
+	 */
+	public function store_unavailable_notice() {
+		if ( ! $this->is_enabled() || ! current_user_can( mkl_pc_get_admin_menu_capability() ) ) return;
+		$screen = get_current_screen();
+		if ( ! $screen || ! ( mkl_pc_is_settings_page() || 'dashboard' === $screen->id || CPT_Store::POST_TYPE === $screen->post_type ) ) return;
+		$setting = $this->get_store_setting();
+		$store = $this->get_store();
+		if ( $setting === $store->get_id() ) return;
+		$stores = $this->get_stores();
+		echo '<div class="notice notice-warning"><p>' . esc_html( sprintf(
+			/* translators: 1: chosen option, 2: option used instead */
+			__( 'Quote requests are set to be "%1$s", which this site cannot do at the moment. They are "%2$s" instead.', 'product-configurator-for-woocommerce' ),
+			isset( $stores[ $setting ] ) ? $stores[ $setting ]->get_label() : $setting,
+			$store->get_label()
+		) ) . '</p></div>';
 	}
 
 	/**

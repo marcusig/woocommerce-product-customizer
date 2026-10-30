@@ -12,7 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * and the schema returned to headless clients. Each field is:
  *
  *     id, type, label, description, placeholder, required, enabled, locked, order,
- *     options (select / radio: value => label), autocomplete, maxlength, source
+ *     options (select / radio: value => label), autocomplete, maxlength, source,
+ *     maps_to (where a WooCommerce order keeps the value: full_name, billing_email, billing_phone,
+ *     billing_company, customer_note; other fields are kept as order meta)
  *
  * Name and email are locked: whatever the settings or filters say, they stay enabled and required,
  * since the request cannot be answered without them.
@@ -43,6 +45,7 @@ class Quote_Fields {
 				'autocomplete' => 'name',
 				'required'     => true,
 				'order'        => 10,
+				'maps_to'      => 'full_name',
 			],
 			'email' => [
 				'type'         => 'email',
@@ -50,12 +53,14 @@ class Quote_Fields {
 				'autocomplete' => 'email',
 				'required'     => true,
 				'order'        => 20,
+				'maps_to'      => 'billing_email',
 			],
 			'phone' => [
 				'type'         => 'tel',
 				'label'        => __( 'Phone', 'product-configurator-for-woocommerce' ),
 				'autocomplete' => 'tel',
 				'order'        => 30,
+				'maps_to'      => 'billing_phone',
 			],
 			'company' => [
 				'type'         => 'text',
@@ -63,12 +68,14 @@ class Quote_Fields {
 				'autocomplete' => 'organization',
 				'enabled'      => false,
 				'order'        => 40,
+				'maps_to'      => 'billing_company',
 			],
 			'message' => [
 				'type'      => 'textarea',
 				'label'     => __( 'Message', 'product-configurator-for-woocommerce' ),
 				'maxlength' => 5000,
 				'order'     => 50,
+				'maps_to'   => 'customer_note',
 			],
 			'consent' => [
 				'type'        => 'checkbox',
@@ -236,6 +243,7 @@ class Quote_Fields {
 			'autocomplete' => '',
 			'maxlength'    => 0,
 			'source'       => 'core',
+			'maps_to'      => '',
 		] );
 		$field['id']       = $field_id;
 		$field['required'] = (bool) $field['required'];
