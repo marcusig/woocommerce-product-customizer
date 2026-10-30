@@ -154,13 +154,13 @@ class Quote_Service {
 	}
 
 	/**
-	 * Find the product and variation from what the configurator posts
+	 * Find the product and variation from what the configurator posts, if it can be quoted
 	 *
 	 * @param int $product_id
 	 * @param int $variation_id
 	 * @return array|\WP_Error product_id / variation_id
 	 */
-	private function resolve_product( $product_id, $variation_id ) {
+	public function resolve_product( $product_id, $variation_id = 0 ) {
 		$not_found = new \WP_Error( 'mkl_pc_quote_invalid_product', __( 'This product cannot be quoted.', 'product-configurator-for-woocommerce' ), [ 'status' => 404 ] );
 		if ( ! $product_id ) return $not_found;
 

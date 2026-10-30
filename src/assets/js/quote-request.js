@@ -266,4 +266,274 @@ PC.fe = PC.fe || {};
 		return result;
 	};
 
+	/*
+	 * The configurator's own quote request: a button next to, or instead of, Add to cart, and a form
+	 * shown in the add to cart modal. Headless pages use PC.fe.quote.request() instead.
+	 */
+
+	/**
+	 * Where the quote request goes for the active product
+	 *
+	 * @return {string} 'alongside' or 'replace' (from the settings), 'quote_only' or 'off' (set on the product)
+	 */
+	PC.fe.quote.get_mode = function() {
+		var info = ( PC.fe.currentProductData && PC.fe.currentProductData.product_info ) || {};
+		if ( 'off' === info.quote_request || 'quote_only' === info.quote_request ) return info.quote_request;
+		return 'replace' === quote_config().placement ? 'replace' : 'alongside';
+	};
+
+	/**
+	 * Put the button in the configurator's form. Safe to call again.
+	 *
+	 * @param {jQuery} $form The footer's form element.
+	 */
+	PC.fe.quote.add_button = function( $form ) {
+		if ( ! $form || ! $form.length ) return;
+		var mode = PC.fe.quote.get_mode();
+		$form.find( '.mkl-pc-request-quote' ).remove();
+		$form.closest( '.mkl_pc_footer' ).toggleClass( 'mkl-pc-quote-only', 'quote_only' === mode );
+		if ( 'off' === mode || ! document.getElementById( 'tmpl-mkl-pc-quote-request-button' ) ) return;
+
+		if ( 'alongside' !== mode ) {
+			$form.find( '.configurator-add-to-cart' ).remove();
+		}
+		var $button = $( wp.template( 'mkl-pc-quote-request-button' )() );
+		var $atc = $form.find( '.configurator-add-to-cart' ).last();
+		if ( $atc.length ) {
+			$atc.after( $button );
+		} else if ( $form.find( '.pc_configurator_form' ).length ) {
+			$form.find( '.pc_configurator_form' ).append( $button );
+		} else {
+			$form.append( $button );
+		}
+
+		$form.off( 'click.mklPcQuote' ).on( 'click.mklPcQuote', '.mkl-pc-request-quote', function( event ) {
+			event.preventDefault();
+			PC.fe.quote.open_form( event.currentTarget );
+		} );
+
+		// The form opens without waiting for its fields.
+		PC.fe.quote.get_schema().catch( function() {} );
+
+		/**
+		 * Action PC.fe.quote.button_added: the quote request button is in the configurator.
+		 *
+		 * @param {jQuery} $button
+		 * @param {string} mode
+		 */
+		wp.hooks.doAction( 'PC.fe.quote.button_added', $button, mode );
+	};
+
+	wp.hooks.addAction( 'PC.fe.render_form', 'mkl/pc/quote-request', function( form ) {
+		PC.fe.quote.add_button( form.$el );
+	} );
+
+	// The footer is mounted before PC.fe.start, including when its form returned before PC.fe.render_form.
+	wp.hooks.addAction( 'PC.fe.start', 'mkl/pc/quote-request', function( configurator ) {
+		var modal = PC.fe.modal || configurator;
+		if ( modal && modal.footer && modal.footer.form ) {
+			PC.fe.quote.add_button( modal.footer.form.$el );
+		}
+	} );
+
+	/**
+	 * Open the request form
+	 *
+	 * The configuration is checked first, so a customer does not fill the form in for nothing.
+	 *
+	 * @param {Element} [trigger] Gets the focus back when the form closes.
+	 * @return {Promise}
+	 */
+	PC.fe.quote.open_form = async function( trigger ) {
+		var check = await PC.fe.validate_configuration( { show_errors: true, context: 'quote' } );
+		if ( ! check.valid ) return;
+		if ( ! PC.fe.add_to_cart_modal ) PC.fe.add_to_cart_modal = new PC.fe.views.add_to_cart_modal();
+		if ( ! PC.fe.quote.form_view ) PC.fe.quote.form_view = new PC.fe.quote.Form_View();
+		return PC.fe.quote.form_view.open( PC.fe.add_to_cart_modal, trigger );
+	};
+
+	if ( window.Backbone ) {
+		/**
+		 * The request form, shown in the add to cart modal
+		 */
+		PC.fe.quote.Form_View = Backbone.View.extend( {
+			className: 'mkl-pc-quote-request',
+			events: {
+				'submit form': 'submit',
+				'click .mkl-pc-quote-back': 'back_to_form',
+				'click .continue-shopping': 'closed',
+				'keydown': 'keydown'
+			},
+			initialize: function() {
+				this.values = {};
+				this.errors = {};
+				this.message = '';
+				this.schema = null;
+			},
+
+			/**
+			 * @param {Backbone.View} modal   The add to cart modal.
+			 * @param {Element}       trigger
+			 * @return {Promise}
+			 */
+			open: async function( modal, trigger ) {
+				this.modal = modal;
+				this.trigger = trigger || null;
+				try {
+					this.schema = await PC.fe.quote.get_schema();
+				} catch ( error ) {
+					this.show( 'mkl-pc-quote-request-error', { message: error.message || quote_lang( 'send_failed', 'Your request could not be sent.' ), can_retry: false } );
+					return;
+				}
+				this.errors = {};
+				this.message = '';
+				this.render();
+				this.focus_field();
+			},
+
+			/**
+			 * Show a template in the modal
+			 *
+			 * @param {string} template_id
+			 * @param {Object} data
+			 */
+			show: function( template_id, data ) {
+				$( document.body ).addClass( 'show-add-to-cart-modal' );
+				// Emptied by the modal's own messages, which also drops this view's events.
+				this.modal.$el.children().not( this.$el ).remove();
+				if ( ! $.contains( this.modal.$el[0], this.el ) ) this.modal.$el.append( this.$el );
+				this.$el.html( wp.template( template_id )( data || {} ) );
+				this.delegateEvents();
+			},
+
+			render: function() {
+				this.show( 'mkl-pc-quote-request-form', {
+					fields: this.schema.fields || [],
+					values: this.values,
+					errors: this.errors,
+					message: this.message
+				} );
+				this.$( 'form' ).attr( 'aria-labelledby', 'mkl-pc-quote-form-title' );
+				return this;
+			},
+
+			/**
+			 * The values in the form
+			 *
+			 * @return {Object}
+			 */
+			collect: function() {
+				var view = this;
+				var values = {};
+				_.each( this.schema.fields || [], function( field ) {
+					var $input = view.$( '[name="' + field.id + '"]' );
+					if ( 'checkbox' === field.type ) {
+						values[ field.id ] = $input.is( ':checked' );
+					} else if ( 'radio' === field.type ) {
+						values[ field.id ] = $input.filter( ':checked' ).val() || '';
+					} else {
+						values[ field.id ] = $input.val() || '';
+					}
+				} );
+				return values;
+			},
+
+			submit: async function( event ) {
+				event.preventDefault();
+				this.values = this.collect();
+				var honeypot = this.$( '[name=website]' ).val() || '';
+				var errors = PC.fe.quote.validate_fields( this.values, this.schema );
+				if ( ! _.isEmpty( errors ) ) {
+					this.show_errors( errors, quote_lang( 'fields_invalid', 'Some fields need your attention.' ) );
+					return;
+				}
+
+				this.show( 'mkl-pc-quote-request-sending' );
+				try {
+					var result = await PC.fe.quote.request( { fields: this.values, honeypot: honeypot, show_errors: true } );
+					this.sent( result );
+				} catch ( error ) {
+					this.failed( error );
+				}
+			},
+
+			/**
+			 * @param {Object} result
+			 */
+			sent: function( result ) {
+				if ( result.redirect ) {
+					window.location.href = result.redirect;
+					return;
+				}
+				this.show( 'mkl-pc-quote-request-sent', { message: result.message || '', reference: result.reference || '' } );
+				this.$( 'button' ).first().trigger( 'focus' );
+			},
+
+			/**
+			 * @param {Error} error From PC.fe.quote.request().
+			 */
+			failed: function( error ) {
+				if ( 'mkl_pc_quote_invalid_fields' === error.code && ! _.isEmpty( error.field_errors ) ) {
+					this.show_errors( error.field_errors, error.message );
+					return;
+				}
+				if ( 'mkl_pc_quote_invalid_configuration' === error.code ) {
+					// The configurator shows what to fix.
+					this.close();
+					return;
+				}
+				this.show( 'mkl-pc-quote-request-error', {
+					message: error.message || quote_lang( 'send_failed', 'Your request could not be sent.' ),
+					can_retry: true
+				} );
+				this.$( '.mkl-pc-quote-back' ).trigger( 'focus' );
+			},
+
+			/**
+			 * @param {Object} errors  Messages keyed by field id.
+			 * @param {string} message
+			 */
+			show_errors: function( errors, message ) {
+				this.errors = errors;
+				this.message = message || '';
+				this.render();
+				this.focus_field( _.keys( errors )[0] );
+			},
+
+			back_to_form: function() {
+				this.render();
+				this.focus_field();
+			},
+
+			/**
+			 * @param {string} [field_id] Defaults to the first field.
+			 */
+			focus_field: function( field_id ) {
+				var $field = field_id ? this.$( '[data-field="' + field_id + '"]' ) : this.$( '.mkl-pc-quote-field' ).first();
+				$field.find( 'input, textarea, select' ).first().trigger( 'focus' );
+			},
+
+			keydown: function( event ) {
+				if ( 'Escape' === event.key ) {
+					this.close();
+				}
+			},
+
+			close: function() {
+				if ( this.modal ) this.modal.close();
+				this.closed();
+			},
+
+			/**
+			 * The modal closes itself on its .continue-shopping buttons; give the focus back
+			 */
+			closed: function() {
+				var trigger = this.trigger;
+				if ( trigger && document.body.contains( trigger ) ) {
+					setTimeout( function() { trigger.focus(); }, 0 );
+				}
+			}
+		} );
+	}
+
 } )( jQuery, PC._us || window._ );

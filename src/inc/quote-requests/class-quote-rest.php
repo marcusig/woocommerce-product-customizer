@@ -93,14 +93,10 @@ class Quote_REST {
 		if ( ! $quotes->is_enabled() ) {
 			return new \WP_Error( 'mkl_pc_quote_disabled', __( 'Quote requests are not available.', 'product-configurator-for-woocommerce' ), [ 'status' => 403 ] );
 		}
-		$product_id = (int) $request->get_param( 'product_id' );
-		$parent_id  = $product_id;
-		if ( function_exists( 'wc_get_product' ) && ( $product = wc_get_product( $product_id ) ) && $product->is_type( 'variation' ) ) {
-			$parent_id = $product->get_parent_id();
-		}
-		if ( ! mkl_pc_is_configurable( $parent_id ) || ( 'publish' !== get_post_status( $parent_id ) && ! current_user_can( 'edit_post', $parent_id ) ) ) {
-			return new \WP_Error( 'mkl_pc_quote_invalid_product', __( 'This product cannot be quoted.', 'product-configurator-for-woocommerce' ), [ 'status' => 404 ] );
-		}
+		// The same check as sending: a product that cannot be quoted has no form.
+		$ids = $quotes->service->resolve_product( (int) $request->get_param( 'product_id' ) );
+		if ( is_wp_error( $ids ) ) return $ids;
+		$parent_id = $ids['product_id'];
 
 		$context = [
 			'product_id'      => $parent_id,

@@ -48,10 +48,12 @@ function load( { valid = true } = {} ) {
 		rest_nonce: '',
 		lang: { required_error_message: '%s is required' },
 	};
+	const listeners = {};
 	global.wp = {
 		hooks: {
 			applyFilters: ( name, value ) => value,
 			doAction: ( ...args ) => actions.push( args ),
+			addAction: ( name, namespace, callback ) => { listeners[ name ] = callback; },
 		},
 	};
 	global.PC_quote_request = {
@@ -78,7 +80,7 @@ function load( { valid = true } = {} ) {
 	};
 	// Run as a classic script would, in the global scope, where `var PC` is the existing global.
 	( 0, eval )( source );
-	return { quote: global.PC.fe.quote, actions };
+	return { quote: global.PC.fe.quote, actions, listeners };
 }
 
 describe( 'PC.fe.quote', () => {
@@ -156,6 +158,27 @@ describe( 'PC.fe.quote', () => {
 			status: 400,
 			field_errors: { email: 'Email is not valid.' },
 		} );
+	} );
+
+	it( 'places the request by product, then by setting', () => {
+		const { quote, listeners } = load();
+		const product = ( mode ) => {
+			global.PC.fe.currentProductData = { product_info: mode ? { quote_request: mode } : {} };
+		};
+
+		product( undefined );
+		expect( quote.get_mode() ).toBe( 'alongside' );
+		global.PC_quote_request.placement = 'replace';
+		expect( quote.get_mode() ).toBe( 'replace' );
+		product( 'default' );
+		expect( quote.get_mode() ).toBe( 'replace' );
+		product( 'quote_only' );
+		expect( quote.get_mode() ).toBe( 'quote_only' );
+		product( 'off' );
+		expect( quote.get_mode() ).toBe( 'off' );
+
+		// The button follows the footer, however it was rendered.
+		expect( Object.keys( listeners ).sort() ).toEqual( [ 'PC.fe.render_form', 'PC.fe.start' ] );
 	} );
 
 	it( 'fetches a schema once, and again after a failure', async () => {

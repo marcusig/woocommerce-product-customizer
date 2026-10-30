@@ -14,6 +14,7 @@ require_once __DIR__ . '/stores/class-email-only-store.php';
 require_once __DIR__ . '/stores/class-cpt-store.php';
 require_once __DIR__ . '/stores/class-woo-order-store.php';
 require_once __DIR__ . '/class-quote-privacy.php';
+require_once __DIR__ . '/class-quote-ui.php';
 
 /**
  * Native quote requests: a customer asks for a quote on what they configured
@@ -60,6 +61,16 @@ class Quote_Requests {
 	public $privacy;
 
 	/**
+	 * @var Quote_UI
+	 */
+	public $ui;
+
+	/**
+	 * @var Quote_Fields_Settings|null Admin only.
+	 */
+	public $fields_settings = null;
+
+	/**
 	 * @var Quote_Store[]|null
 	 */
 	private $stores = null;
@@ -71,10 +82,13 @@ class Quote_Requests {
 		$this->cpt_store = new CPT_Store();
 		$this->woo_order_store = new Woo_Order_Store();
 		$this->privacy   = new Quote_Privacy();
+		$this->ui        = new Quote_UI();
 
 		if ( is_admin() ) {
 			require_once __DIR__ . '/admin/class-quote-requests-admin.php';
 			new Quote_Requests_Admin( $this->cpt_store );
+			require_once __DIR__ . '/admin/class-quote-fields-settings.php';
+			$this->fields_settings = new Quote_Fields_Settings( $this->fields );
 		}
 
 		$mailer = mkl_pc( 'mailer' );
@@ -233,14 +247,16 @@ class Quote_Requests {
 		wp_enqueue_script(
 			'mkl_pc/js/quote_request',
 			MKL_PC_ASSETS_URL . $file,
-			[ 'jquery', 'wp-hooks', 'mkl_pc/js/product_configurator' ],
+			[ 'jquery', 'backbone', 'wp-util', 'wp-hooks', 'mkl_pc/js/product_configurator' ],
 			filemtime( MKL_PC_ASSETS_PATH . $file ),
 			true
 		);
+		wp_enqueue_style( 'mkl_pc/css/quote_request', MKL_PC_ASSETS_URL . 'css/quote-request.css', [], filemtime( MKL_PC_ASSETS_PATH . 'css/quote-request.css' ) );
 		wp_localize_script( 'mkl_pc/js/quote_request', 'PC_quote_request', [
 			'schema_url'    => esc_url_raw( rest_url( 'mkl_pc/v1/quote-requests/schema' ) ),
 			'submit_url'    => esc_url_raw( rest_url( 'mkl_pc/v1/quote-requests' ) ),
 			'token_purpose' => self::TOKEN_PURPOSE,
+			'placement'     => $this->get_placement(),
 			'lang'          => [
 				/* translators: %s: field label */
 				'field_too_long'        => __( '%s is too long', 'product-configurator-for-woocommerce' ),
@@ -248,8 +264,18 @@ class Quote_Requests {
 				'field_invalid'         => __( '%s is not valid', 'product-configurator-for-woocommerce' ),
 				'configuration_invalid' => __( 'Please check your configuration.', 'product-configurator-for-woocommerce' ),
 				'fields_invalid'        => __( 'Some fields need your attention.', 'product-configurator-for-woocommerce' ),
+				'send_failed'           => __( 'Your request could not be sent. Please try again later.', 'product-configurator-for-woocommerce' ),
 			],
 		] );
+	}
+
+	/**
+	 * Where the button goes, unless the product says otherwise
+	 *
+	 * @return string alongside (next to Add to cart) or replace (instead of it)
+	 */
+	public function get_placement() {
+		return 'replace' === mkl_pc( 'settings' )->get( 'quote_request_placement' ) ? 'replace' : 'alongside';
 	}
 
 	/**
@@ -302,6 +328,35 @@ class Quote_Requests {
 		);
 
 		add_settings_field(
+			'quote_request_placement',
+			__( 'Quote request button', 'product-configurator-for-woocommerce' ),
+			[ $settings_page, 'callback_select' ],
+			'mlk_pc_settings',
+			'quote_requests',
+			[
+				'setting_name' => 'quote_request_placement',
+				'options'      => [
+					'alongside' => __( 'Next to Add to cart', 'product-configurator-for-woocommerce' ),
+					'replace'   => __( 'Instead of Add to cart', 'product-configurator-for-woocommerce' ),
+				],
+				'default'      => 'alongside',
+				'description'  => __( 'Products can override this in their Configurator tab, to be quote only or to have no quote request.', 'product-configurator-for-woocommerce' ),
+			]
+		);
+
+		add_settings_field(
+			'quote_request_button_label',
+			__( 'Quote request button label', 'product-configurator-for-woocommerce' ),
+			[ $settings_page, 'callback_text_field' ],
+			'mlk_pc_settings',
+			'quote_requests',
+			[
+				'setting_name' => 'quote_request_button_label',
+				'placeholder'  => __( 'Request a quote', 'product-configurator-for-woocommerce' ),
+			]
+		);
+
+		add_settings_field(
 			'quote_request_image',
 			__( 'Configuration image', 'product-configurator-for-woocommerce' ),
 			[ $settings_page, 'callback_select' ],
@@ -348,5 +403,16 @@ class Quote_Requests {
 				'description'  => __( 'Requests kept in Product Configurator > Quote requests are deleted, with their images, once they are this old.', 'product-configurator-for-woocommerce' ),
 			]
 		);
+
+		if ( $this->fields_settings ) {
+			$this->fields_settings->register();
+			add_settings_field(
+				'quote_request_fields',
+				__( 'Request form', 'product-configurator-for-woocommerce' ),
+				[ $this->fields_settings, 'render' ],
+				'mlk_pc_settings',
+				'quote_requests'
+			);
+		}
 	}
 }

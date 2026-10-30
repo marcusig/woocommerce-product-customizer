@@ -1,0 +1,169 @@
+/**
+ * Quote request in the configurator. Loaded only when quote requests are enabled.
+ *
+ * The form and its messages are shown in the add to cart modal and take its styles; this only adds
+ * what a form needs.
+ */
+
+// A quote-only product has no price to show.
+.mkl-pc-quote-only {
+	.pc-total-price,
+	.pc-total--regular-price {
+		display: none !important;
+	}
+}
+
+.mkl-pc-request-quote {
+	cursor: pointer;
+}
+
+.adding-to-cart--modal .mkl-pc-quote-request {
+	display: flex;
+	justify-content: center;
+	width: 100%;
+	max-height: 100%;
+	padding: 16px;
+	box-sizing: border-box;
+
+	.has-box {
+		width: 100%;
+		max-width: 560px;
+		max-height: calc(100vh - 32px);
+		overflow-y: auto;
+		box-sizing: border-box;
+	}
+
+	.mkl-pc-quote-sending {
+		text-align: center;
+	}
+}
+
+.mkl-pc-quote-form {
+	text-align: left;
+
+	&.has-box {
+		padding: 32px;
+
+		@media (max-width: 600px) {
+			padding: 20px;
+		}
+	}
+
+	.header {
+		padding-bottom: 20px !important;
+	}
+
+	.mkl-pc-quote-form__notice {
+		margin-bottom: 16px;
+		padding: 10px 14px !important;
+		border-left: 3px solid #b32d2e;
+		background: #fcf0f1;
+	}
+
+	.mkl-pc-quote-field {
+		margin-bottom: 16px;
+
+		> label,
+		legend {
+			display: block;
+			margin-bottom: 4px;
+			font-weight: 600;
+		}
+
+		input[type="text"],
+		input[type="email"],
+		input[type="tel"],
+		input[type="number"],
+		input[type="date"],
+		textarea,
+		select {
+			display: block;
+			width: 100%;
+			box-sizing: border-box;
+			// Some configurator themes reset form controls to nothing.
+			min-height: 40px;
+			padding: 8px 10px;
+			border: 1px solid rgba(0, 0, 0, 0.25);
+			border-radius: 4px;
+			background: #fff;
+			color: inherit;
+			font: inherit;
+		}
+
+		textarea {
+			min-height: 90px;
+			resize: vertical;
+		}
+
+		fieldset {
+			margin: 0;
+			padding: 0;
+			border: 0;
+
+			label {
+				display: block;
+				font-weight: normal;
+			}
+		}
+
+		.required {
+			color: #b32d2e;
+		}
+
+		&.has-error {
+			input,
+			textarea,
+			select {
+				border-color: #b32d2e;
+			}
+		}
+	}
+
+	.mkl-pc-quote-field--checkbox > label {
+		font-weight: normal;
+
+		input {
+			margin-right: 6px;
+		}
+	}
+
+	.mkl-pc-quote-field__description {
+		margin-top: 4px;
+		font-size: 0.9em;
+		opacity: 0.8;
+	}
+
+	.mkl-pc-quote-field__error {
+		margin-top: 4px;
+		color: #b32d2e;
+		font-size: 0.9em;
+	}
+
+	// Filled in by bots only.
+	.mkl-pc-quote-field--website {
+		position: absolute !important;
+		left: -10000px !important;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	.adding-to-cart--adding-cta {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 10px;
+		margin-top: 8px;
+	}
+}
+
+.mkl-pc-quote-sent .mkl-pc-quote-reference {
+	margin-top: 8px;
+}
+
+.mkl-pc-quote-error .adding-to-cart--adding-cta {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 10px;
+}
