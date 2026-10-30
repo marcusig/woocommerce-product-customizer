@@ -94,6 +94,11 @@ PC.fe = PC.fe || {};
 			} ).then( function( response ) {
 				return response.json().then( function( body ) {
 					if ( ! response.ok ) throw PC.fe.quote.error( body.code, body.message, body.data );
+					// Labels in the page's language: the REST request may not have known it.
+					var labels = quote_config().labels || {};
+					_.each( body.fields || [], function( field ) {
+						if ( labels[ field.id ] ) field.label = labels[ field.id ];
+					} );
 					return body;
 				} );
 			} ).catch( function( error ) {

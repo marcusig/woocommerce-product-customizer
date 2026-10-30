@@ -97,6 +97,7 @@ class Quote_Requests {
 
 		add_filter( 'mkl_pc_frontend_action_token_purposes', [ $this, 'add_token_purpose' ] );
 		add_filter( 'mkl_pc_rate_limit_rule', [ $this, 'rate_limit_rule' ], 10, 2 );
+		add_filter( 'mkl_pc_translatable_settings_defaults', [ $this, 'translatable_settings' ] );
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		add_action( 'mkl_pc/register_settings', [ $this, 'register_settings' ], 30 );
 		add_action( 'admin_notices', [ $this, 'store_unavailable_notice' ] );
@@ -257,6 +258,8 @@ class Quote_Requests {
 			'submit_url'    => esc_url_raw( rest_url( 'mkl_pc/v1/quote-requests' ) ),
 			'token_purpose' => self::TOKEN_PURPOSE,
 			'placement'     => $this->get_placement(),
+			// Rendered in the page's language, which the schema's REST request may not know.
+			'labels'        => wp_list_pluck( $this->fields->get_all_fields(), 'label' ),
 			'lang'          => [
 				/* translators: %s: field label */
 				'field_too_long'        => __( '%s is too long', 'product-configurator-for-woocommerce' ),
@@ -267,6 +270,17 @@ class Quote_Requests {
 				'send_failed'           => __( 'Your request could not be sent. Please try again later.', 'product-configurator-for-woocommerce' ),
 			],
 		] );
+	}
+
+	/**
+	 * The button label is translated like the configurator's other labels (WPML, Polylang)
+	 *
+	 * @param array $defaults
+	 * @return array
+	 */
+	public function translatable_settings( $defaults ) {
+		$defaults['quote_request_button_label'] = __( 'Request a quote', 'product-configurator-for-woocommerce' );
+		return $defaults;
 	}
 
 	/**

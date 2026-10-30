@@ -34,7 +34,7 @@ function mock_server( { submit = json_response( { id: 0, reference: 'Q-1', messa
 	const calls = [];
 	global.fetch = jest.fn( ( url, init = {} ) => {
 		calls.push( { url, init } );
-		if ( url.indexOf( '/schema' ) !== -1 ) return json_response( schema );
+		if ( url.indexOf( '/schema' ) !== -1 ) return json_response( JSON.parse( JSON.stringify( schema ) ) );
 		if ( url.indexOf( 'frontend-action-token' ) !== -1 ) return json_response( { token: 'tok', expires_in: 600 } );
 		return submit;
 	} );
@@ -77,6 +77,7 @@ function load( { valid = true } = {} ) {
 	global.PC._us = {
 		extend: Object.assign,
 		isEmpty: ( object ) => ! object || ! Object.keys( object ).length,
+		each: ( list, callback ) => ( list || [] ).forEach( callback ),
 	};
 	// Run as a classic script would, in the global scope, where `var PC` is the existing global.
 	( 0, eval )( source );
@@ -179,6 +180,17 @@ describe( 'PC.fe.quote', () => {
 
 		// The button follows the footer, however it was rendered.
 		expect( Object.keys( listeners ).sort() ).toEqual( [ 'PC.fe.render_form', 'PC.fe.start' ] );
+	} );
+
+	it( 'labels the fields in the page language', async () => {
+		const { quote } = load();
+		global.PC_quote_request.labels = { name: 'Nom', email: 'Courriel' };
+		mock_server();
+
+		const fields = ( await quote.get_schema() ).fields;
+
+		expect( fields.map( ( field ) => field.label ) ).toEqual( [ 'Nom', 'Courriel', 'Consent', 'Message' ] );
+		expect( quote.validate_fields( {}, { fields } ).name ).toBe( 'Nom is required' );
 	} );
 
 	it( 'fetches a schema once, and again after a failure', async () => {

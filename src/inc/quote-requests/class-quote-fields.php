@@ -32,6 +32,90 @@ class Quote_Fields {
 	const LOCKED = [ 'name', 'email' ];
 
 	/**
+	 * WPML string context of the labels set in the field list
+	 */
+	const STRING_CONTEXT = 'Product Configurator quote request form';
+
+	public function __construct() {
+		add_action( 'add_option_' . self::OPTION, [ $this, 'register_wpml_strings' ], 10, 2 );
+		add_action( 'update_option_' . self::OPTION, [ $this, 'register_wpml_strings' ], 10, 2 );
+		add_action( 'init', [ $this, 'register_polylang_strings' ], 20 );
+	}
+
+	/**
+	 * Labels typed in the field list, keyed by field id
+	 *
+	 * Default labels are not here: they are translated with the plugin.
+	 *
+	 * @param mixed $stored The option's value.
+	 * @return string[]
+	 */
+	private function get_custom_labels( $stored ) {
+		$labels = [];
+		foreach ( (array) $stored as $field_id => $settings ) {
+			if ( is_array( $settings ) && isset( $settings['label'] ) && '' !== $settings['label'] ) {
+				$labels[ sanitize_key( $field_id ) ] = (string) $settings['label'];
+			}
+		}
+		return $labels;
+	}
+
+	/**
+	 * Offer the labels to WPML String Translation when the field list is saved
+	 *
+	 * @param mixed $old_value Or the option name, on add_option.
+	 * @param mixed $value
+	 * @return void
+	 */
+	public function register_wpml_strings( $old_value, $value ) {
+		foreach ( $this->get_custom_labels( $value ) as $field_id => $label ) {
+			do_action( 'wpml_register_single_string', self::STRING_CONTEXT, $this->get_string_name( $field_id ), $label );
+		}
+	}
+
+	/**
+	 * Offer the labels to Polylang's string translations
+	 *
+	 * @return void
+	 */
+	public function register_polylang_strings() {
+		if ( ! function_exists( 'pll_register_string' ) ) return;
+		foreach ( $this->get_custom_labels( get_option( self::OPTION, [] ) ) as $field_id => $label ) {
+			pll_register_string( $this->get_string_name( $field_id ), $label, 'Product Configurator', false );
+		}
+	}
+
+	/**
+	 * A label typed in the field list, in the current language
+	 *
+	 * @param string $field_id
+	 * @param string $label
+	 * @return string
+	 */
+	public function translate_label( $field_id, $label ) {
+		$translated = apply_filters( 'wpml_translate_single_string', $label, self::STRING_CONTEXT, $this->get_string_name( $field_id ) );
+		if ( $translated === $label && function_exists( 'pll__' ) ) {
+			$translated = pll__( $label );
+		}
+		/**
+		 * Filter a label typed in the quote request field list, for other translation plugins
+		 *
+		 * @param string $translated
+		 * @param string $label      As typed.
+		 * @param string $field_id
+		 */
+		return apply_filters( 'mkl_pc/quote_request/field_label', $translated, $label, $field_id );
+	}
+
+	/**
+	 * @param string $field_id
+	 * @return string
+	 */
+	private function get_string_name( $field_id ) {
+		return 'Field label: ' . $field_id;
+	}
+
+	/**
 	 * Default fields
 	 *
 	 * @return array
@@ -102,6 +186,9 @@ class Quote_Fields {
 			foreach ( $stored as $field_id => $settings ) {
 				if ( ! is_array( $settings ) ) continue;
 				$field_id = sanitize_key( $field_id );
+				if ( isset( $settings['label'] ) && '' !== $settings['label'] ) {
+					$settings['label'] = $this->translate_label( $field_id, $settings['label'] );
+				}
 				$fields[ $field_id ] = isset( $fields[ $field_id ] ) ? array_merge( $fields[ $field_id ], $settings ) : $settings;
 			}
 		}

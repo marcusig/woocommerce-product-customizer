@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * only holds what the admin changed: an untouched label keeps following the translation.
  *
  * Add-ons add rows by adding fields through `mkl_pc/quote_request/fields` (or to the option).
+ * Typed labels are offered to WPML and Polylang for translation (see Quote_Fields::translate_label()).
  */
 class Quote_Fields_Settings {
 
@@ -86,8 +87,13 @@ class Quote_Fields_Settings {
 			<tbody>
 				<?php foreach ( $this->fields->get_all_fields() as $field_id => $field ) :
 					$is_core = isset( $defaults[ $field_id ] );
-					// Core labels are only stored once changed, so they keep following translations.
-					$label_value = $is_core ? ( isset( $stored[ $field_id ]['label'] ) ? $stored[ $field_id ]['label'] : '' ) : $field['label'];
+					// Core labels are only stored once changed, so they keep following translations. What was
+					// typed is shown, never its translation, or saving would make the translation the source.
+					if ( isset( $stored[ $field_id ]['label'] ) ) {
+						$label_value = $stored[ $field_id ]['label'];
+					} else {
+						$label_value = $is_core ? '' : $field['label'];
+					}
 					$row = $name . '[' . $field_id . ']';
 					?>
 					<tr>
