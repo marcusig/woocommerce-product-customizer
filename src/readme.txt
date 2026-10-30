@@ -1,4 +1,4 @@
-=== Product Configurator for WooCommerce ===
+=== MKL Product Configurator for WooCommerce – 2D & 3D Live Preview ===
 Contributors: mklacroix, marcusig
 Tags: 3D configurator, product customizer, product builder, woocommerce, product addons
 Donate link: https://paypal.me/marclacro1x
@@ -59,8 +59,9 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 
 ==== Create smart configuration flows ====
 
-* **Multi-Step Configurator** – Split complex product builds into multiple steps to streamline user experience.
+* **Multi-Step Configurator** – Split complex product builds into multiple steps for a guided product selection experience.
 * **Required Selections** – Make sure customers choose an option before they can add the product to the cart.
+* **B2B** – Compatible with quote plugins, tiered pricing and wholesale prices. A configured product keeps its choices, price and preview image in the quote, the cart and the order.
 * **Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections. Perfect for complex logic flows.
 * **Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
 
@@ -94,24 +95,29 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 * **Inline Configurator:**  
   `[mkl_configurator product_id=1 classes="your-css-class"]`
 
-=== Themes ===
+=== Configurator templates ===
 
-* Includes several built-in high quality themes (see Screenshots)
-* Easily create your own theme for full control  
+* Includes 9 built-in high quality themes (see Screenshots)
+* Easily create your own theme for full control
 * Supports WordPress Customizer (Appearance > Customize) to change visual styles
 
 === Premium features ===
 
-The core plugin is fully functional. Extend it with these premium modules:
+The core plugin is fully functional. Extend it with these premium features:
 
 * [**3D Premium**](https://wc-product-configurator.com/product/3d-premium-for-3d-product-configurator/) – Hotspots, animations, augmented reality, parts that snap onto anchors and photo-quality rendering for 3D configurators
 * [**Extra Price**](https://wc-product-configurator.com/product/extra-price/) – Add custom pricing to options  
-* [**Save Your Design**](https://wc-product-configurator.com/product/save-your-design/) – Let users save and share their designs, create configuration presets
+* [**Save Your Design - Save feature**](https://wc-product-configurator.com/product/save-your-design/) – Let users save their designs
+* [**Save Your Design - Share feature**](https://wc-product-configurator.com/product/save-your-design/) – Let users share their designs, copy a link or email their configuration
+* [**Save Your Design - Presets feature**](https://wc-product-configurator.com/product/save-your-design/) – Create configuration presets for direct access
+* [**Save Your Design - PDF download**](https://wc-product-configurator.com/product/save-your-design/) – Users can download their configuration as PDF
 * [**Multiple Choice**](https://wc-product-configurator.com/product/multiple-choice/) – Enable multi-select per layer  
 * [**Linked Products & Stock Management**](https://wc-product-configurator.com/product/stock-management-and-linked-product/) – Link options to WooCommerce products, track inventory, sync with ERP  
-* [**Conditional Logic**](https://wc-product-configurator.com/product/conditional-logic/) – Dynamically show, hide, or auto-select items based on conditions  
-* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, and perform price calculations  
+* [**Conditional Logic**](https://wc-product-configurator.com/product/conditional-logic/) – Build complex products: dynamically show, hide, or auto-select items based on conditions  
+* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, upload filesß and perform price calculations  
 * [**Text Overlay**](https://wc-product-configurator.com/product/text-overlay/) – Let users preview personalized text in real time
+
+[Compare plans](https://wc-product-configurator.com/shop/#compare)
 
 💬 For custom development or tailored integrations, [contact me here](https://wc-product-configurator.com/contact/).
 
