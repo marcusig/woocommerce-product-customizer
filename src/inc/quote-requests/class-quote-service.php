@@ -26,7 +26,9 @@ class Quote_Service {
 	 *     @type array        $fields        Form values keyed by field id.
 	 *     @type string       $image         Optional PNG data URL of the viewer (3D configurators).
 	 *     @type string       $lang          Optional language code.
-	 *     @type array        $files         Optional uploaded files, as PHP gives them. See Quote_Uploads.
+	 *     @type array        $files         Optional uploaded files, as PHP gives them. Core keeps none: add-ons
+	 *                                       that ask for files check them on `mkl_pc/quote_request/validate`
+	 *                                       and keep them on `mkl_pc/quote_request/stored`.
 	 * }
 	 * @return Quote_Request|\WP_Error
 	 */
@@ -90,12 +92,6 @@ class Quote_Service {
 		$request->price             = $this->get_price( $request );
 		$request->meta['image_data_url'] = is_string( $args['image'] ) ? $args['image'] : '';
 
-		$uploads = mkl_pc( 'quotes' )->uploads->accept( $request, $args['files'], $args );
-		if ( is_wp_error( $uploads ) ) {
-			$uploads->add_data( [ 'status' => 400 ] );
-			return $uploads;
-		}
-
 		/**
 		 * Validate a quote request before it is sent. Add errors to refuse it.
 		 *
@@ -127,17 +123,9 @@ class Quote_Service {
 		$this->attach_image( $request, $store->get_files_folder() );
 		unset( $request->meta['image_data_url'] );
 
-		$uploads = mkl_pc( 'quotes' )->uploads;
-		$files_saved = $uploads->save( $request );
-		if ( is_wp_error( $files_saved ) ) {
-			$this->delete_owned_image( $request );
-			return $files_saved;
-		}
-
 		$saved = $store->save( $request );
 		if ( is_wp_error( $saved ) ) {
 			$this->delete_owned_image( $request );
-			$uploads->delete( $request->files );
 			return $saved;
 		}
 
@@ -153,11 +141,6 @@ class Quote_Service {
 		$mailer = mkl_pc( 'mailer' );
 		$admin_sent = $mailer->send( 'mkl_pc_quote_request_admin', $request );
 		$mailer->send( 'mkl_pc_quote_request_customer', $request );
-
-		// Kept nowhere else: the files went with the merchant's email.
-		if ( ! $store->is_persistent() ) {
-			$uploads->delete( $request->files );
-		}
 
 		if ( ! $admin_sent && ! $store->is_persistent() ) {
 			$this->delete_owned_image( $request );

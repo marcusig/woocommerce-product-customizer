@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/class-quote-request.php';
 require_once __DIR__ . '/class-quote-fields.php';
 require_once __DIR__ . '/class-quote-service.php';
-require_once __DIR__ . '/class-quote-uploads.php';
 require_once __DIR__ . '/class-quote-rest.php';
 require_once __DIR__ . '/stores/interface-quote-store.php';
 require_once __DIR__ . '/stores/class-email-only-store.php';
@@ -40,11 +39,6 @@ class Quote_Requests {
 	 * @var Quote_Service
 	 */
 	public $service;
-
-	/**
-	 * @var Quote_Uploads
-	 */
-	public $uploads;
 
 	/**
 	 * @var Quote_REST
@@ -84,7 +78,6 @@ class Quote_Requests {
 	public function __construct() {
 		$this->fields    = new Quote_Fields();
 		$this->service   = new Quote_Service();
-		$this->uploads   = new Quote_Uploads();
 		$this->rest      = new Quote_REST();
 		$this->cpt_store = new CPT_Store();
 		$this->woo_order_store = new Woo_Order_Store();

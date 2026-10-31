@@ -187,7 +187,6 @@ class CPT_Store implements Quote_Store {
 			'_mkl_pc_quote_price'             => $request->price,
 			'_mkl_pc_quote_image'             => self::to_relative_path( $request->image_path ),
 			'_mkl_pc_quote_owns_image'        => ! empty( $request->meta['owns_image'] ),
-			'_mkl_pc_quote_files'             => mkl_pc( 'quotes' )->uploads->to_storage( $request->files ),
 			'_mkl_pc_quote_lang'              => $request->lang,
 			'_mkl_pc_quote_meta'              => array_diff_key( $request->meta, [ 'owns_image' => 1, 'image_data_url' => 1 ] ),
 		];
@@ -233,7 +232,6 @@ class CPT_Store implements Quote_Store {
 		$request->created           = (int) get_post_time( 'U', true, $post );
 		$request->meta              = (array) $get( 'meta', [] );
 		$request->summary           = (array) $get( 'summary', [] );
-		$request->files             = mkl_pc( 'quotes' )->uploads->from_storage( $get( 'files', [] ) );
 
 		foreach ( (array) $get( 'field_definitions', [] ) as $field_id => $field ) {
 			$request->field_definitions[ $field_id ] = wp_parse_args( $field, [ 'label' => $field_id, 'type' => 'text', 'options' => [], 'maps_to' => '' ] );
@@ -267,17 +265,6 @@ class CPT_Store implements Quote_Store {
 		return $request->id ? admin_url( 'post.php?post=' . (int) $request->id . '&action=edit' ) : '';
 	}
 
-	public function get_files( $id ) {
-		$post = get_post( $id );
-		if ( ! $post || self::POST_TYPE !== $post->post_type ) return [];
-		return mkl_pc( 'quotes' )->uploads->from_storage( get_post_meta( $id, '_mkl_pc_quote_files', true ) );
-	}
-
-	public function user_can_view( $id ) {
-		$post = get_post( $id );
-		return $post && self::POST_TYPE === $post->post_type && current_user_can( mkl_pc_get_admin_menu_capability() );
-	}
-
 	/**
 	 * Delete the files a request owns when it is deleted for good
 	 *
@@ -299,12 +286,6 @@ class CPT_Store implements Quote_Store {
 		$meta = get_post_meta( $post_id, '_mkl_pc_quote_meta', true );
 		if ( is_array( $meta ) && ! empty( $meta['files'] ) && is_array( $meta['files'] ) ) {
 			$files = array_merge( $files, $meta['files'] );
-		}
-
-		// An order created from the request uses the same files.
-		$order_id = (int) get_post_meta( $post_id, '_mkl_pc_quote_order_id', true );
-		if ( ! $order_id || ! function_exists( 'wc_get_order' ) || ! wc_get_order( $order_id ) ) {
-			mkl_pc( 'quotes' )->uploads->delete( $this->get_files( $post_id ) );
 		}
 
 		$base = wp_upload_dir()['basedir'] . '/mkl-pc-config-images/' . self::FOLDER . '/';

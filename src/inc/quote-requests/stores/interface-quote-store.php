@@ -68,20 +68,4 @@ interface Quote_Store {
 	 * @return string
 	 */
 	public function get_admin_url( Quote_Request $request );
-
-	/**
-	 * Files the customer sent with a stored request, with absolute paths
-	 *
-	 * @param int $id Request id in this store.
-	 * @return array[]
-	 */
-	public function get_files( $id );
-
-	/**
-	 * Whether the current user may see a stored request (and download its files)
-	 *
-	 * @param int $id
-	 * @return boolean
-	 */
-	public function user_can_view( $id );
 }

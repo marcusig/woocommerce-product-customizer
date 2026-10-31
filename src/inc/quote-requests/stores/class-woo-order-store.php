@@ -31,7 +31,6 @@ class Woo_Order_Store implements Quote_Store {
 		add_action( 'woocommerce_admin_order_data_after_billing_address', [ $this, 'show_request_details' ] );
 		add_action( 'mkl_pc/admin/quote_request/status_box', [ $this, 'create_order_button' ] );
 		add_action( 'admin_post_mkl_pc_quote_create_order', [ $this, 'create_order_from_post' ] );
-		add_action( 'woocommerce_before_delete_order', [ $this, 'delete_files' ], 10, 2 );
 	}
 
 	public function get_id() {
@@ -70,31 +69,6 @@ class Woo_Order_Store implements Quote_Store {
 		if ( ! $request->id ) return '';
 		$order = wc_get_order( $request->id );
 		return $order ? $order->get_edit_order_url() : '';
-	}
-
-	public function get_files( $id ) {
-		$order = $this->is_available() ? wc_get_order( $id ) : null;
-		if ( ! $order ) return [];
-		return mkl_pc( 'quotes' )->uploads->from_storage( $order->get_meta( '_mkl_pc_quote_files' ) );
-	}
-
-	public function user_can_view( $id ) {
-		return $this->is_available() && wc_get_order( $id ) && current_user_can( 'edit_shop_orders' );
-	}
-
-	/**
-	 * Delete the files sent with a request when its order is deleted for good
-	 *
-	 * Files of a request kept as a post stay: they are the post's.
-	 *
-	 * @param int       $order_id
-	 * @param \WC_Order $order
-	 * @return void
-	 */
-	public function delete_files( $order_id, $order = null ) {
-		$order = $order ? $order : wc_get_order( $order_id );
-		if ( ! $order || ! $order->get_meta( '_mkl_pc_quote_reference' ) || $order->get_meta( '_mkl_pc_quote_request_id' ) ) return;
-		mkl_pc( 'quotes' )->uploads->delete( $this->get_files( $order->get_id() ) );
 	}
 
 	/**
@@ -146,9 +120,6 @@ class Woo_Order_Store implements Quote_Store {
 			$order->update_meta_data( '_mkl_pc_quote_reference', $request->reference );
 			$order->update_meta_data( '_mkl_pc_quote_fields', $request->fields );
 			$order->update_meta_data( '_mkl_pc_quote_field_definitions', $this->get_definitions( $request ) );
-			if ( $request->files ) {
-				$order->update_meta_data( '_mkl_pc_quote_files', mkl_pc( 'quotes' )->uploads->to_storage( $request->files ) );
-			}
 			if ( $request->lang ) {
 				$order->update_meta_data( '_mkl_pc_quote_lang', $request->lang );
 			}
@@ -378,12 +349,6 @@ class Woo_Order_Store implements Quote_Store {
 			<?php foreach ( $request->get_field_rows() as $row ) : ?>
 				<p><strong><?php echo esc_html( wp_strip_all_tags( $row['label'] ) ); ?>:</strong> <?php echo wp_kses_post( nl2br( esc_html( $row['value'] ) ) ); ?></p>
 			<?php endforeach; ?>
-			<?php
-			$request->id = $order->get_id();
-			$request->store = $this->get_id();
-			$request->files = $this->get_files( $order->get_id() );
-			mkl_pc( 'quotes' )->uploads->render_list( $request );
-			?>
 		</div>
 		<?php
 	}

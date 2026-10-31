@@ -73,9 +73,6 @@ $summary = $quote_request->get_summary();
 <?php endif; ?>
 
 <?php
-// Names only: download links work for the user who displays them. The merchant finds them in the dashboard, or attached when nothing stores the request.
-mkl_pc( 'quotes' )->uploads->render_list( $quote_request, false );
-
 /**
  * After the details of a quote request in an email
  *
