@@ -46,6 +46,13 @@ if ( $quote_request ) {
 		}
 	}
 
+	if ( ! empty( $quote_request->files ) ) {
+		echo "\n" . esc_html__( 'Files sent:', 'product-configurator-for-woocommerce' ) . "\n\n";
+		foreach ( $quote_request->files as $file ) {
+			echo esc_html( ( $file['label'] ? $file['label'] . ': ' : '' ) . $file['name'] ) . "\n";
+		}
+	}
+
 	/** This action is documented in templates/emails/quote-request-details.php */
 	do_action( 'mkl_pc/email/quote_request/after_details', $quote_request, $sent_to_admin, true, $email );
 

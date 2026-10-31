@@ -37,4 +37,12 @@ class Email_Only_Store implements Quote_Store {
 	public function get_admin_url( Quote_Request $request ) {
 		return '';
 	}
+
+	public function get_files( $id ) {
+		return [];
+	}
+
+	public function user_can_view( $id ) {
+		return false;
+	}
 }

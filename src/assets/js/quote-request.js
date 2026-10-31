@@ -189,13 +189,43 @@ PC.fe = PC.fe || {};
 	};
 
 	/**
+	 * Values of the fields filled in outside the request form, such as Form builder layers holding contact fields
+	 *
+	 * @return {Object} Values keyed by field id.
+	 */
+	PC.fe.quote.get_hosted_values = function() {
+		/**
+		 * Filter PC.fe.quote.field_values: values of request fields shown outside the request form.
+		 *
+		 * @param {Object} values Keyed by field id.
+		 */
+		return wp.hooks.applyFilters( 'PC.fe.quote.field_values', {} ) || {};
+	};
+
+	/**
+	 * Fields the request form shows: the schema's, minus those shown elsewhere
+	 *
+	 * @param {Object} schema
+	 * @return {Array}
+	 */
+	PC.fe.quote.get_form_fields = function( schema ) {
+		/**
+		 * Filter PC.fe.quote.form_fields: the fields shown in the request form.
+		 *
+		 * @param {Array}  fields
+		 * @param {Object} schema
+		 */
+		return wp.hooks.applyFilters( 'PC.fe.quote.form_fields', ( schema && schema.fields ) || [], schema ) || [];
+	};
+
+	/**
 	 * Send a quote request for the current configuration
 	 *
 	 * Rejects with an Error carrying `code`, and `field_errors` / `configuration_errors` when the form or
 	 * the configuration need fixing.
 	 *
 	 * @param {Object}  options
-	 * @param {Object}  options.fields         Form values keyed by field id.
+	 * @param {Object}  options.fields         Form values keyed by field id, over the values of fields shown outside the form.
 	 * @param {number}  [options.quantity]     Defaults to the configurator's quantity.
 	 * @param {string|Blob|boolean} [options.image='auto'] Picture of the configuration (3D only).
 	 * @param {Object}  [options.captcha]      Captcha response, when one is required.
@@ -223,7 +253,8 @@ PC.fe = PC.fe || {};
 		}
 
 		var schema = await PC.fe.quote.get_schema();
-		var field_errors = PC.fe.quote.validate_fields( options.fields, schema );
+		var fields = _.extend( {}, PC.fe.quote.get_hosted_values(), options.fields );
+		var field_errors = PC.fe.quote.validate_fields( fields, schema );
 		if ( ! _.isEmpty( field_errors ) ) {
 			throw PC.fe.quote.error( 'mkl_pc_quote_invalid_fields', quote_lang( 'fields_invalid', 'Some fields need your attention.' ), { field_errors: field_errors } );
 		}
@@ -235,7 +266,7 @@ PC.fe = PC.fe || {};
 			product_id: PC.fe.active_product,
 			quantity: options.quantity || ( PC.fe.get_qty ? PC.fe.get_qty() : 1 ),
 			configuration: check.data,
-			fields: options.fields,
+			fields: fields,
 			image: image,
 			lang: PC.fe.lang || '',
 			token: token,
@@ -250,11 +281,30 @@ PC.fe = PC.fe || {};
 		 */
 		body = wp.hooks.applyFilters( 'PC.fe.quote.request_body', body, options );
 
+		/**
+		 * Filter PC.fe.quote.request_files: files sent with the request.
+		 *
+		 * @param {Array}  files { name, file } objects. The name is the form field the server reads them from, ending in [] for several.
+		 * @param {Object} body
+		 */
+		var files = wp.hooks.applyFilters( 'PC.fe.quote.request_files', [], body ) || [];
+		var headers = rest_headers();
+		var payload = JSON.stringify( body );
+		if ( files.length ) {
+			// Multipart: the request itself travels as JSON in one field.
+			delete headers[ 'Content-Type' ];
+			payload = new FormData();
+			payload.append( 'request', JSON.stringify( body ) );
+			_.each( files, function( item ) {
+				payload.append( item.name, item.file, item.file.name );
+			} );
+		}
+
 		var response = await fetch( schema.submit_url || quote_config().submit_url, {
 			method: 'POST',
-			headers: rest_headers(),
+			headers: headers,
 			credentials: 'same-origin',
-			body: JSON.stringify( body )
+			body: payload
 		} );
 		var result = await response.json();
 		if ( ! response.ok ) {
@@ -342,7 +392,7 @@ PC.fe = PC.fe || {};
 	} );
 
 	/**
-	 * Open the request form
+	 * Open the request form, or send the request when there is nothing left to ask in it
 	 *
 	 * The configuration is checked first, so a customer does not fill the form in for nothing.
 	 *
@@ -397,6 +447,19 @@ PC.fe = PC.fe || {};
 				}
 				this.errors = {};
 				this.message = '';
+				this.form_fields = PC.fe.quote.get_form_fields( this.schema );
+				/**
+				 * Filter PC.fe.quote.needs_form: whether the request form is shown before sending.
+				 * Without fields to show, the request is sent straight away.
+				 *
+				 * @param {boolean} needs_form
+				 * @param {Object}  schema
+				 */
+				this.needs_form = wp.hooks.applyFilters( 'PC.fe.quote.needs_form', this.form_fields.length > 0, this.schema );
+				if ( ! this.needs_form ) {
+					this.values = {};
+					return this.send( '' );
+				}
 				this.render();
 				this.focus_field();
 			},
@@ -413,6 +476,13 @@ PC.fe = PC.fe || {};
 				// Emptied by the modal's own messages, which also drops this view's events.
 				this.modal.$el.children().not( this.$el ).remove();
 				if ( ! $.contains( this.modal.$el[0], this.el ) ) this.modal.$el.append( this.$el );
+				/**
+				 * Action PC.fe.quote.form.before_show: the view's content is about to be replaced.
+				 * Detach elements added on PC.fe.quote.form.render, or they lose their events.
+				 *
+				 * @param {Backbone.View} view
+				 */
+				wp.hooks.doAction( 'PC.fe.quote.form.before_show', this );
 				this.$el.html( wp.template( template_id )( data || {} ) );
 				this.$el.attr( 'aria-labelledby', this.$( '.mkl-pc-quote-title' ).first().attr( 'id' ) || null );
 				this.delegateEvents();
@@ -420,12 +490,19 @@ PC.fe = PC.fe || {};
 
 			render: function() {
 				this.show( 'mkl-pc-quote-request-form', {
-					fields: this.schema.fields || [],
+					fields: this.form_fields,
 					values: this.values,
 					errors: this.errors,
 					message: this.message
 				} );
 				this.$( 'form' ).attr( 'aria-labelledby', 'mkl-pc-quote-form-title' );
+				/**
+				 * Action PC.fe.quote.form.render: the request form is displayed.
+				 * Add-ons add their sections to .mkl-pc-quote-form__fields.
+				 *
+				 * @param {Backbone.View} view
+				 */
+				wp.hooks.doAction( 'PC.fe.quote.form.render', this );
 				return this;
 			},
 
@@ -437,7 +514,7 @@ PC.fe = PC.fe || {};
 			collect: function() {
 				var view = this;
 				var values = {};
-				_.each( this.schema.fields || [], function( field ) {
+				_.each( this.form_fields || [], function( field ) {
 					var $input = view.$( '[name="' + field.id + '"]' );
 					if ( 'checkbox' === field.type ) {
 						values[ field.id ] = $input.is( ':checked' );
@@ -453,13 +530,26 @@ PC.fe = PC.fe || {};
 			submit: async function( event ) {
 				event.preventDefault();
 				this.values = this.collect();
-				var honeypot = this.$( '[name=website]' ).val() || '';
-				var errors = PC.fe.quote.validate_fields( this.values, this.schema );
-				if ( ! _.isEmpty( errors ) ) {
+				var errors = PC.fe.quote.validate_fields( this.values, { fields: this.form_fields } );
+				/**
+				 * Filter PC.fe.quote.form.valid: whether the sections added to the form are filled in.
+				 * Add-ons show their own errors.
+				 *
+				 * @param {boolean}       valid
+				 * @param {Backbone.View} view
+				 */
+				var sections_valid = wp.hooks.applyFilters( 'PC.fe.quote.form.valid', true, this );
+				if ( ! _.isEmpty( errors ) || ! sections_valid ) {
 					this.show_errors( errors, quote_lang( 'fields_invalid', 'Some fields need your attention.' ) );
 					return;
 				}
+				return this.send( this.$( '[name=website]' ).val() || '' );
+			},
 
+			/**
+			 * @param {string} honeypot Value of the form's trap field.
+			 */
+			send: async function( honeypot ) {
 				this.show( 'mkl-pc-quote-request-sending' );
 				this.modal.set_busy( true );
 				// Keeps the focus in the dialog while the form is gone.
@@ -490,7 +580,20 @@ PC.fe = PC.fe || {};
 			 */
 			failed: function( error ) {
 				if ( 'mkl_pc_quote_invalid_fields' === error.code && ! _.isEmpty( error.field_errors ) ) {
-					this.show_errors( error.field_errors, error.message );
+					var form_ids = _.pluck( this.form_fields || [], 'id' );
+					var own = _.pick( error.field_errors, form_ids );
+					var elsewhere = _.omit( error.field_errors, form_ids );
+					if ( ! this.needs_form ) this.close();
+					if ( ! _.isEmpty( elsewhere ) ) {
+						/**
+						 * Action PC.fe.quote.field_errors: errors of fields shown outside the request form.
+						 *
+						 * @param {Object}        errors  Messages keyed by field id.
+						 * @param {Backbone.View} view
+						 */
+						wp.hooks.doAction( 'PC.fe.quote.field_errors', elsewhere, this );
+					}
+					if ( this.needs_form ) this.show_errors( own, error.message );
 					return;
 				}
 				if ( 'mkl_pc_quote_invalid_configuration' === error.code ) {
@@ -513,10 +616,25 @@ PC.fe = PC.fe || {};
 				this.errors = errors;
 				this.message = message || '';
 				this.render();
-				this.focus_field( _.keys( errors )[0] );
+				if ( ! _.isEmpty( errors ) ) {
+					this.focus_field( _.keys( errors )[0] );
+					return;
+				}
+				// An error in a section added by an add-on.
+				var $invalid = this.$( '[aria-invalid="true"], .has-error :input' ).filter( ':visible' ).first();
+				if ( $invalid.length ) {
+					$invalid.trigger( 'focus' );
+				} else {
+					this.focus_field();
+				}
 			},
 
 			back_to_form: function() {
+				// Sent without the form: the fields to correct are in the configurator.
+				if ( ! this.needs_form ) {
+					this.close();
+					return;
+				}
 				this.render();
 				this.focus_field();
 			},
@@ -525,8 +643,8 @@ PC.fe = PC.fe || {};
 			 * @param {string} [field_id] Defaults to the first field.
 			 */
 			focus_field: function( field_id ) {
-				var $field = field_id ? this.$( '[data-field="' + field_id + '"]' ) : this.$( '.mkl-pc-quote-field' ).first();
-				$field.find( 'input, textarea, select' ).first().trigger( 'focus' );
+				var $field = field_id ? this.$( '[data-field="' + field_id + '"]' ) : this.$( '.mkl-pc-quote-form__fields' );
+				$field.find( 'input, textarea, select' ).not( '[tabindex="-1"]' ).filter( ':visible' ).first().trigger( 'focus' );
 			},
 
 			/**

@@ -5,6 +5,28 @@
  * what a form needs.
  */
 
+// Some configurator themes reset form controls to nothing.
+@mixin quote-request-control {
+	input[type="text"],
+	input[type="email"],
+	input[type="tel"],
+	input[type="number"],
+	input[type="date"],
+	textarea,
+	select {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+		min-height: 40px;
+		padding: 8px 10px;
+		border: 1px solid rgba(0, 0, 0, 0.25);
+		border-radius: 4px;
+		background: #fff;
+		color: inherit;
+		font: inherit;
+	}
+}
+
 // A quote-only product has no price to show.
 .mkl-pc-quote-only {
 	.pc-total-price,
@@ -75,25 +97,7 @@
 			font-weight: 600;
 		}
 
-		input[type="text"],
-		input[type="email"],
-		input[type="tel"],
-		input[type="number"],
-		input[type="date"],
-		textarea,
-		select {
-			display: block;
-			width: 100%;
-			box-sizing: border-box;
-			// Some configurator themes reset form controls to nothing.
-			min-height: 40px;
-			padding: 8px 10px;
-			border: 1px solid rgba(0, 0, 0, 0.25);
-			border-radius: 4px;
-			background: #fff;
-			color: inherit;
-			font: inherit;
-		}
+		@include quote-request-control;
 
 		textarea {
 			min-height: 90px;
@@ -121,6 +125,15 @@
 			select {
 				border-color: #b32d2e;
 			}
+		}
+	}
+
+	// Sections added by add-ons, such as Form builder layers.
+	.mkl-pc-quote-form__fields > :not(.mkl-pc-quote-field) {
+		@include quote-request-control;
+
+		textarea {
+			min-height: 90px;
 		}
 	}
 

@@ -184,6 +184,7 @@ class Quote_Requests_Admin {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		<?php mkl_pc( 'quotes' )->uploads->render_list( $request ); ?>
 		<?php if ( $request->get_email() ) : ?>
 			<p><a class="button" href="<?php echo esc_url( 'mailto:' . $request->get_email() . '?subject=' . rawurlencode( $request->reference ) ); ?>"><?php esc_html_e( 'Reply by email', 'product-configurator-for-woocommerce' ); ?></a></p>
 		<?php endif;

@@ -136,6 +136,20 @@ class Quote_Request {
 	public $meta = [];
 
 	/**
+	 * Files the customer sent, once saved: key (the form field), label, name, type, size, path.
+	 *
+	 * @var array[]
+	 */
+	public $files = [];
+
+	/**
+	 * Files accepted while the request is prepared, not saved yet. See Quote_Uploads.
+	 *
+	 * @var array[]
+	 */
+	public $uploads = [];
+
+	/**
 	 * A form value
 	 *
 	 * @param string $field_id

@@ -454,7 +454,7 @@
 	 */
 	PC.fe.validate_configuration = async function( options ) {
 		options = _.extend( { show_errors: true, context: 'cart' }, options || {} );
-		var data = await PC.fe.save_data.getSaveDataAsync();
+		var data = await PC.fe.save_data.getSaveDataAsync( true, options.context );
 		/**
 		 * Filter PC.fe.validate_configuration: the errors that block the configuration.
 		 *

@@ -4,7 +4,12 @@ PC.fe.errors = PC.fe.validation.errors;
 
 PC.fe.save_data = {
 	choices: [],
-	save: function( reset_errors ) {
+	/**
+	 * What the data is saved for, read by add-ons while choices are parsed: 'cart', 'quote', or '' (steps, designs...).
+	 */
+	context: '',
+	save: function( reset_errors, context ) {
+		this.context = context || '';
 		if ( false !== reset_errors ) this.reset_errors();
 		this.choices = [];
 		PC.fe.layers.each( this.parse_choices, this ); 
@@ -22,10 +27,10 @@ PC.fe.save_data = {
 	 * Async variant: runs "before save" promises (plugins inject via PC.fe.save_data.before_save.promises),
 	 * then calls save(). Use for add-to-cart / add-to-quote so plugins can e.g. export base64 first.
 	 */
-	getSaveDataAsync: async function( reset_errors ) {
+	getSaveDataAsync: async function( reset_errors, context ) {
 		var promises = wp.hooks.applyFilters( 'PC.fe.save_data.before_save.promises', [] );
 		await Promise.all( promises );
-		return this.save( reset_errors );
+		return this.save( reset_errors, context );
 	},
 	get_choices: function( reset_errors ) {
 		this.save( reset_errors );
@@ -53,6 +58,7 @@ PC.fe.save_data = {
 		}
 	},
 	is_layer_valid: function( layer ) {
+		this.context = '';
 		this.reset_errors();
 		this.validate_layer( layer );
 		return ! PC.fe.validation.errors.length;

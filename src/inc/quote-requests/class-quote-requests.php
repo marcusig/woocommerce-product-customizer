@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/class-quote-request.php';
 require_once __DIR__ . '/class-quote-fields.php';
 require_once __DIR__ . '/class-quote-service.php';
+require_once __DIR__ . '/class-quote-uploads.php';
 require_once __DIR__ . '/class-quote-rest.php';
 require_once __DIR__ . '/stores/interface-quote-store.php';
 require_once __DIR__ . '/stores/class-email-only-store.php';
@@ -39,6 +40,11 @@ class Quote_Requests {
 	 * @var Quote_Service
 	 */
 	public $service;
+
+	/**
+	 * @var Quote_Uploads
+	 */
+	public $uploads;
 
 	/**
 	 * @var Quote_REST
@@ -78,6 +84,7 @@ class Quote_Requests {
 	public function __construct() {
 		$this->fields    = new Quote_Fields();
 		$this->service   = new Quote_Service();
+		$this->uploads   = new Quote_Uploads();
 		$this->rest      = new Quote_REST();
 		$this->cpt_store = new CPT_Store();
 		$this->woo_order_store = new Woo_Order_Store();
@@ -260,6 +267,8 @@ class Quote_Requests {
 			'placement'     => $this->get_placement(),
 			// Rendered in the page's language, which the schema's REST request may not know.
 			'labels'        => wp_list_pluck( $this->fields->get_all_fields(), 'label' ),
+			// For fields drawn before the schema is fetched, such as Form builder's contact fields.
+			'fields'        => $this->fields->get_public_schema( [ 'product_id' => get_queried_object_id() ] ),
 			'lang'          => [
 				/* translators: %s: field label */
 				'field_too_long'        => __( '%s is too long', 'product-configurator-for-woocommerce' ),

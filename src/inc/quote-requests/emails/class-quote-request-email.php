@@ -104,6 +104,12 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Email', false ) ) :
 			if ( $this->object instanceof Quote_Request && 'attach' === mkl_pc( 'quotes' )->get_image_mode() && $this->object->image_path && is_file( $this->object->image_path ) ) {
 				$attachments[] = $this->object->image_path;
 			}
+			// Nothing keeps the request: the files go to the merchant with the email, and are deleted after.
+			if ( $this->object instanceof Quote_Request && ! $this->customer_email && ! mkl_pc( 'quotes' )->get_store()->is_persistent() ) {
+				foreach ( $this->object->files as $file ) {
+					if ( is_file( $file['path'] ) ) $attachments[] = $file['path'];
+				}
+			}
 			return $attachments;
 		}
 

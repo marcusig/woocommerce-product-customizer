@@ -41,7 +41,7 @@ function mock_server( { submit = json_response( { id: 0, reference: 'Q-1', messa
 	return calls;
 }
 
-function load( { valid = true } = {} ) {
+function load( { valid = true, filters = {} } = {} ) {
 	const actions = [];
 	global.PC_config = {
 		frontend_action_token_url: '/wp-json/mkl_pc/v1/frontend-action-token',
@@ -51,7 +51,7 @@ function load( { valid = true } = {} ) {
 	const listeners = {};
 	global.wp = {
 		hooks: {
-			applyFilters: ( name, value ) => value,
+			applyFilters: ( name, value, ...args ) => ( filters[ name ] ? filters[ name ]( value, ...args ) : value ),
 			doAction: ( ...args ) => actions.push( args ),
 			addAction: ( name, namespace, callback ) => { listeners[ name ] = callback; },
 		},
@@ -142,6 +142,41 @@ describe( 'PC.fe.quote', () => {
 		expect( JSON.parse( calls[ 1 ].init.body ) ).toEqual( { purpose: 'quote_request_send', product_id: 12 } );
 		expect( global.PC.fe.validate_configuration ).toHaveBeenCalledWith( { show_errors: false, context: 'quote' } );
 		expect( actions ).toEqual( [ [ 'PC.fe.quote.sent', result, JSON.parse( submit.init.body ) ] ] );
+	} );
+
+	it( 'adds the values of fields shown outside the form, under the form values', async () => {
+		const { quote } = load( { filters: {
+			'PC.fe.quote.field_values': () => ( { name: 'From the layer', email: 'ada@example.com', consent: true } ),
+		} } );
+		const calls = mock_server();
+
+		await quote.request( { fields: { name: 'Ada' } } );
+
+		expect( JSON.parse( calls[ calls.length - 1 ].init.body ).fields ).toEqual( { name: 'Ada', email: 'ada@example.com', consent: true } );
+	} );
+
+	it( 'sends files as multipart, with the request as JSON', async () => {
+		const file = new File( [ 'logo' ], 'logo.png', { type: 'image/png' } );
+		const { quote } = load( { filters: {
+			'PC.fe.quote.request_files': () => [ { name: 'mklpc_upload_1_2[]', file } ],
+		} } );
+		const calls = mock_server();
+
+		await quote.request( { fields: valid_fields } );
+
+		const submit = calls[ calls.length - 1 ].init;
+		expect( submit.body ).toBeInstanceOf( FormData );
+		expect( submit.headers[ 'Content-Type' ] ).toBeUndefined();
+		expect( JSON.parse( submit.body.get( 'request' ) ).fields ).toEqual( valid_fields );
+		expect( submit.body.getAll( 'mklpc_upload_1_2[]' ).map( ( item ) => item.name ) ).toEqual( [ 'logo.png' ] );
+	} );
+
+	it( 'lets add-ons take fields out of the form', () => {
+		const { quote } = load( { filters: {
+			'PC.fe.quote.form_fields': ( fields ) => fields.filter( ( field ) => 'email' !== field.id ),
+		} } );
+
+		expect( quote.get_form_fields( schema ).map( ( field ) => field.id ) ).toEqual( [ 'name', 'consent', 'message' ] );
 	} );
 
 	it( 'passes the server errors on, field errors included', async () => {

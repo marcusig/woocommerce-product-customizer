@@ -40,9 +40,12 @@ class Quote_REST {
 			'methods'             => \WP_REST_Server::CREATABLE,
 			'callback'            => [ $this, 'create' ],
 			'permission_callback' => '__return_true',
+			// With files the request is multipart, and these come as JSON in `request`. The service checks them.
 			'args'                => [
+				'request'       => [
+					'type'    => 'string',
+				],
 				'product_id'    => [
-					'required' => true,
 					'type'     => 'integer',
 				],
 				'variation_id'  => [
@@ -55,7 +58,6 @@ class Quote_REST {
 					'minimum' => 1,
 				],
 				'configuration' => [
-					'required' => true,
 					'type'     => [ 'string', 'array' ],
 				],
 				'fields'        => [
@@ -136,24 +138,27 @@ class Quote_REST {
 		$success_message = __( 'Your request was sent. We will get back to you shortly.', 'product-configurator-for-woocommerce' );
 
 		// Bots fill every field they find. Look like it worked, and send nothing.
-		if ( '' !== trim( (string) $request->get_param( 'honeypot' ) ) ) {
+		if ( '' !== trim( (string) $this->get_request_params( $request )['honeypot'] ) ) {
 			return new \WP_REST_Response( [ 'message' => $success_message ], 201 );
 		}
 
-		$fields = $request->get_param( 'fields' );
-		$quote = mkl_pc( 'quotes' )->service->prepare( [
-			'product_id'    => $request->get_param( 'product_id' ),
-			'variation_id'  => $request->get_param( 'variation_id' ),
-			'quantity'      => $request->get_param( 'quantity' ),
-			'configuration' => $request->get_param( 'configuration' ),
-			'fields'        => is_array( $fields ) ? $fields : [],
-			'image'         => $request->get_param( 'image' ),
-			'lang'          => $request->get_param( 'lang' ),
-		] );
+		$params = $this->get_request_params( $request );
+		$quote = mkl_pc( 'quotes' )->service->prepare( array_filter( [
+			'product_id'    => $params['product_id'],
+			'variation_id'  => $params['variation_id'],
+			'quantity'      => $params['quantity'],
+			'configuration' => $params['configuration'],
+			'fields'        => is_array( $params['fields'] ) ? $params['fields'] : [],
+			'image'         => $params['image'],
+			'lang'          => $params['lang'],
+			'files'         => $request->get_file_params(),
+		], function( $value ) {
+			return null !== $value;
+		} ) );
 		if ( is_wp_error( $quote ) ) return $quote;
 
 		// Checked once the data is valid, so a customer fixing a field does not need a new token.
-		$token = $security->consume_action_token( (string) $request->get_param( 'token' ), Quote_Requests::TOKEN_PURPOSE, [ 'product_id' => $quote->product_id ] );
+		$token = $security->consume_action_token( (string) $params['token'], Quote_Requests::TOKEN_PURPOSE, [ 'product_id' => $quote->product_id ] );
 		if ( is_wp_error( $token ) ) return $token;
 
 		$quote = mkl_pc( 'quotes' )->service->submit( $quote );
@@ -168,5 +173,22 @@ class Quote_REST {
 		 * @param Quote_Request $quote
 		 */
 		return new \WP_REST_Response( apply_filters( 'mkl_pc/quote_request/response', $response, $quote ), 201 );
+	}
+
+	/**
+	 * The submitted values. With files, the request is multipart and its values come as JSON in `request`.
+	 *
+	 * @param \WP_REST_Request $request
+	 * @return array
+	 */
+	private function get_request_params( $request ) {
+		$keys = [ 'product_id', 'variation_id', 'quantity', 'configuration', 'fields', 'image', 'lang', 'token', 'honeypot' ];
+		$json = $request->get_param( 'request' );
+		$values = is_string( $json ) ? json_decode( $json, true ) : null;
+		$params = [];
+		foreach ( $keys as $key ) {
+			$params[ $key ] = is_array( $values ) ? ( isset( $values[ $key ] ) ? $values[ $key ] : null ) : $request->get_param( $key );
+		}
+		return $params;
 	}
 }
