@@ -62,6 +62,8 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 		public function hide_configuration_order_item_meta( $hidden ) {
 			$hidden[] = 'pc_configurator_data_raw';
 			$hidden[] = '_pc_configurator_data_raw';
+			// The line's picture, shown as its thumbnail.
+			$hidden[] = '_configurator_3d_screenshot_path';
 			return $hidden;
 		}
 

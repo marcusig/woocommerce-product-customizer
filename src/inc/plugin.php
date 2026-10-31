@@ -30,6 +30,14 @@ class Plugin {
 	 * @var Quote_Requests
 	 */
 	public $quotes = null;
+	/**
+	 * @var Configurator_Frame
+	 */
+	public $frame = null;
+	/**
+	 * @var Configuration_Editor
+	 */
+	public $configuration_editor = null;
 
 	/**
 	 * @var Extensions
@@ -106,6 +114,9 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'security/class-frontend-security.php';
 		include_once MKL_PC_INCLUDE_PATH . 'mailer/class-mailer.php';
 		include_once MKL_PC_INCLUDE_PATH . 'quote-requests/class-quote-requests.php';
+		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-configurator-frame.php';
+		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-configuration-editor.php';
+		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-order-item-configuration.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';
 		include_once MKL_PC_INCLUDE_PATH . 'admin/customizer.php';
@@ -188,6 +199,8 @@ class Plugin {
 		$this->frontend_security = new Frontend_Security();
 		$this->mailer = new Mailer();
 		$this->quotes = new Quote_Requests();
+		$this->frame = new Configurator_Frame();
+		$this->configuration_editor = new Configuration_Editor();
 
 		add_action( 'mkl_pc_cleanup_3d_cart_screenshots', array( $this->frontend->cart, 'cleanup_old_3d_screenshots' ) );
 		add_action( 'delete_attachment', array( Admin_Product_3D::class, 'delete_extracted_zip' ) );
