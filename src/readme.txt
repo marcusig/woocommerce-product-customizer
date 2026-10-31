@@ -114,7 +114,7 @@ The core plugin is fully functional. Extend it with these premium features:
 * [**Multiple Choice**](https://wc-product-configurator.com/product/multiple-choice/) – Enable multi-select per layer  
 * [**Linked Products & Stock Management**](https://wc-product-configurator.com/product/stock-management-and-linked-product/) – Link options to WooCommerce products, track inventory, sync with ERP  
 * [**Conditional Logic**](https://wc-product-configurator.com/product/conditional-logic/) – Build complex products: dynamically show, hide, or auto-select items based on conditions  
-* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, upload filesß and perform price calculations  
+* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, upload files and perform price calculations  
 * [**Text Overlay**](https://wc-product-configurator.com/product/text-overlay/) – Let users preview personalized text in real time
 
 [Compare plans](https://wc-product-configurator.com/shop/#compare)
