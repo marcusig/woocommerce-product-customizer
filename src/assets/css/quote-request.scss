@@ -1,9 +1,16 @@
 /**
  * Quote request in the configurator. Loaded only when quote requests are enabled.
  *
- * The form and its messages are shown in the add to cart modal and take its styles; this only adds
- * what a form needs.
+ * The form and its messages are shown in the add to cart modal and keep its look (box, buttons); this
+ * makes the form a dialog: a head and actions that stay in view, and the fields scrolling between them.
+ * The accent follows the configurator theme's primary colour.
  */
+
+$quote-error: #b32d2e;
+$quote-border: rgba(0, 0, 0, 0.14);
+$quote-control-border: rgba(0, 0, 0, 0.22);
+$quote-muted: rgba(0, 0, 0, 0.6);
+$quote-accent: var(--mkl_pc_color-primary, #2a2a2a);
 
 // Some configurator themes reset form controls to nothing.
 @mixin quote-request-control {
@@ -17,13 +24,76 @@
 		display: block;
 		width: 100%;
 		box-sizing: border-box;
-		min-height: 40px;
-		padding: 8px 10px;
-		border: 1px solid rgba(0, 0, 0, 0.25);
-		border-radius: 4px;
+		min-height: 44px;
+		margin: 0;
+		padding: 10px 12px;
+		border: 1px solid $quote-control-border;
+		border-radius: 8px;
 		background: #fff;
+		box-shadow: none;
 		color: inherit;
 		font: inherit;
+		line-height: 1.4;
+		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+		&::placeholder {
+			color: $quote-muted;
+			opacity: 1;
+		}
+
+		&:hover {
+			border-color: rgba(0, 0, 0, 0.4);
+		}
+
+		&:focus {
+			border-color: $quote-accent;
+			outline: 2px solid $quote-accent;
+			outline-offset: -1px;
+		}
+
+		&[aria-invalid="true"] {
+			border-color: $quote-error;
+		}
+	}
+
+	textarea {
+		min-height: 110px;
+		resize: vertical;
+	}
+
+	input[type="checkbox"],
+	input[type="radio"] {
+		width: 18px;
+		height: 18px;
+		accent-color: $quote-accent;
+	}
+}
+
+// Labels, as the request form and Form builder's fields write them.
+@mixin quote-request-label {
+	display: block;
+	margin: 0 0 6px;
+	font-size: 0.95em;
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+// A checkbox or radio with its text: the box hangs on the first line, the text (and its required
+// mark) wraps beside it.
+@mixin quote-request-choice-label {
+	display: block;
+	position: relative;
+	padding-left: 28px;
+	font-weight: normal;
+	line-height: 1.4;
+	cursor: pointer;
+
+	input[type="checkbox"],
+	input[type="radio"] {
+		position: absolute;
+		top: 1px;
+		left: 0;
+		margin: 0;
 	}
 }
 
@@ -41,120 +111,177 @@
 
 .adding-to-cart--modal .mkl-pc-quote-request {
 	display: flex;
+	align-items: center;
 	justify-content: center;
 	width: 100%;
-	max-height: 100%;
+	height: 100%;
 	padding: 16px;
 	box-sizing: border-box;
 
 	.has-box {
 		width: 100%;
 		max-width: 560px;
-		max-height: calc(100vh - 32px);
+		max-height: 100%;
 		overflow-y: auto;
 		box-sizing: border-box;
-	}
-
-	.mkl-pc-quote-sending {
-		text-align: center;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+		border-radius: 14px;
+		box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
 	}
 
 	// Focused by script to keep the focus in the dialog; not a control.
 	[tabindex="-1"]:focus {
 		outline: none;
 	}
+
+	@media (max-width: 600px) {
+		align-items: flex-end;
+		padding: 8px;
+
+		.has-box {
+			margin: 0;
+		}
+	}
 }
 
-.mkl-pc-quote-form {
+/**
+ * The form
+ */
+
+.adding-to-cart--modal .mkl-pc-quote-form.has-box {
+	display: flex;
+	flex-direction: column;
+	padding: 0;
+	overflow: hidden;
 	text-align: left;
+}
 
-	&.has-box {
-		padding: 32px;
+.adding-to-cart--modal .mkl-pc-quote-form {
+	.mkl-pc-quote-form__head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+		flex: 0 0 auto;
+		padding: 24px 28px 18px;
+		border-bottom: 1px solid $quote-border;
 
-		@media (max-width: 600px) {
-			padding: 20px;
+		.header {
+			padding: 0 !important;
+			font-size: 24px;
+			font-weight: 600;
+			line-height: 1.25;
+			text-align: left;
 		}
 	}
 
-	.header {
-		padding-bottom: 20px !important;
+	.mkl-pc-quote-close {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: 0 0 auto;
+		width: 36px;
+		height: 36px;
+		margin: -4px -8px 0 0;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+		opacity: 0.7;
+		transition: background-color 0.15s ease, opacity 0.15s ease;
+
+		&:hover {
+			background: rgba(0, 0, 0, 0.06);
+			opacity: 1;
+		}
+
+		&:focus-visible {
+			outline: 2px solid $quote-accent;
+			outline-offset: 0;
+			opacity: 1;
+		}
+
+		svg {
+			max-width: none;
+		}
+
+		// Not the modal's animated tick.
+		svg * {
+			fill: none;
+			stroke: currentColor;
+			stroke-width: 2px;
+			stroke-linecap: round;
+			animation: none;
+		}
+	}
+
+	.mkl-pc-quote-form__body {
+		flex: 1 1 auto;
+		min-height: 0;
+		padding: 22px 28px 6px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 
 	.mkl-pc-quote-form__notice {
-		margin-bottom: 16px;
-		padding: 10px 14px !important;
-		border-left: 3px solid #b32d2e;
+		margin-bottom: 18px;
+		padding: 12px 14px !important;
+		border: 1px solid rgba(179, 45, 46, 0.25);
+		border-radius: 8px;
 		background: #fcf0f1;
+		color: #8a1f20;
 	}
 
 	.mkl-pc-quote-field {
-		margin-bottom: 16px;
+		margin-bottom: 18px;
 
 		> label,
 		legend {
-			display: block;
-			margin-bottom: 4px;
-			font-weight: 600;
+			@include quote-request-label;
 		}
 
 		@include quote-request-control;
-
-		textarea {
-			min-height: 90px;
-			resize: vertical;
-		}
 
 		fieldset {
 			margin: 0;
 			padding: 0;
 			border: 0;
+			min-width: 0;
 
 			label {
-				display: block;
-				font-weight: normal;
+				@include quote-request-choice-label;
+				margin-bottom: 8px;
 			}
 		}
 
 		.required {
-			color: #b32d2e;
+			color: $quote-error;
 		}
+	}
 
-		&.has-error {
-			input,
-			textarea,
-			select {
-				border-color: #b32d2e;
-			}
-		}
+	.mkl-pc-quote-field--checkbox > label {
+		@include quote-request-choice-label;
 	}
 
 	// Sections added by add-ons, such as Form builder layers.
 	.mkl-pc-quote-form__fields > :not(.mkl-pc-quote-field) {
 		@include quote-request-control;
-
-		textarea {
-			min-height: 90px;
-		}
-	}
-
-	.mkl-pc-quote-field--checkbox > label {
-		font-weight: normal;
-
-		input {
-			margin-right: 6px;
-		}
 	}
 
 	.mkl-pc-quote-field__description {
-		margin-top: 4px;
-		font-size: 0.9em;
-		opacity: 0.8;
+		margin-top: 6px;
+		color: $quote-muted;
+		font-size: 0.875em;
+		line-height: 1.45;
 	}
 
 	.mkl-pc-quote-field__error {
-		margin-top: 4px;
-		color: #b32d2e;
-		font-size: 0.9em;
+		margin-top: 6px;
+		color: $quote-error;
+		font-size: 0.875em;
+		font-weight: 500;
 	}
 
 	// Filled in by bots only.
@@ -169,19 +296,140 @@
 	.adding-to-cart--adding-cta {
 		display: flex;
 		flex-wrap: wrap;
+		align-items: center;
 		justify-content: flex-end;
 		gap: 10px;
-		margin-top: 8px;
+		flex: 0 0 auto;
+		margin: 0;
+		padding: 16px 28px;
+		border-top: 1px solid $quote-border;
+		background: rgba(0, 0, 0, 0.025);
+
+		button.button {
+			min-height: 44px;
+		}
+
+		// The way out is quieter than the way forward.
+		button.mkl-pc-quote-cancel {
+			background: transparent;
+			color: inherit;
+			box-shadow: inset 0 0 0 1px $quote-control-border;
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.05);
+			}
+		}
+	}
+
+	@media (max-width: 600px) {
+		.mkl-pc-quote-form__head {
+			padding: 18px 20px 14px;
+
+			.header {
+				font-size: 20px;
+			}
+		}
+
+		.mkl-pc-quote-form__body {
+			padding: 18px 20px 4px;
+		}
+
+		.adding-to-cart--adding-cta {
+			flex-direction: column-reverse;
+			align-items: stretch;
+			padding: 14px 20px;
+
+			button.button {
+				width: 100%;
+			}
+		}
 	}
 }
 
-.mkl-pc-quote-sent .mkl-pc-quote-reference {
-	margin-top: 8px;
+/**
+ * Sending, sent and error screens
+ */
+
+.adding-to-cart--modal .mkl-pc-quote-sending {
+	width: 100%;
+	max-width: 420px;
+	padding: 36px 32px;
+	box-sizing: border-box;
+	border-radius: 14px;
+	background: #fff;
+	box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+	text-align: center;
+
+	.header {
+		padding-bottom: 18px;
+		font-size: 20px;
+		font-weight: 600;
+	}
+
+	.spinner {
+		margin-top: 0;
+		border-radius: 2px;
+		background: $quote-accent;
+	}
 }
 
-.mkl-pc-quote-error .adding-to-cart--adding-cta {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 10px;
+.adding-to-cart--modal .mkl-pc-quote-sent.has-box,
+.adding-to-cart--modal .mkl-pc-quote-error.has-box {
+	max-width: 460px;
+	padding: 36px 32px 28px;
+	text-align: center;
+
+	.adding-to-cart--adding-cta {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 10px;
+	}
+
+	@media (max-width: 600px) {
+		padding: 28px 20px 20px;
+	}
+}
+
+.adding-to-cart--modal .mkl-pc-quote-sent {
+	.header {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 14px;
+		padding-bottom: 14px !important;
+
+		svg {
+			width: 64px;
+		}
+
+		.title {
+			font-size: 24px;
+			font-weight: 600;
+		}
+	}
+
+	.messages p {
+		margin: 0;
+		color: $quote-muted;
+	}
+
+	.mkl-pc-quote-reference {
+		display: inline-block;
+		margin-top: 14px !important;
+		padding: 6px 12px;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.05);
+		color: inherit !important;
+		font-size: 0.9em;
+	}
+}
+
+.adding-to-cart--modal .mkl-pc-quote-error .error.messages {
+	padding: 14px 16px !important;
+	margin-bottom: 20px;
+	border: 1px solid rgba(179, 45, 46, 0.25);
+	border-radius: 8px;
+	background: #fcf0f1;
+	color: #8a1f20;
 }
