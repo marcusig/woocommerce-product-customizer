@@ -363,11 +363,14 @@ PC.fe = PC.fe || {};
 		 */
 		PC.fe.quote.Form_View = Backbone.View.extend( {
 			className: 'mkl-pc-quote-request',
+			// Escape and Tab are handled by the add to cart modal, through the configurator's keyboard listener.
+			attributes: {
+				role: 'dialog',
+				'aria-modal': 'true'
+			},
 			events: {
 				'submit form': 'submit',
-				'click .mkl-pc-quote-back': 'back_to_form',
-				'click .continue-shopping': 'closed',
-				'keydown': 'keydown'
+				'click .mkl-pc-quote-back': 'back_to_form'
 			},
 			initialize: function() {
 				this.values = {};
@@ -383,11 +386,13 @@ PC.fe = PC.fe || {};
 			 */
 			open: async function( modal, trigger ) {
 				this.modal = modal;
-				this.trigger = trigger || null;
+				// Gets the focus back when the modal closes.
+				this.trigger_el = trigger || null;
 				try {
 					this.schema = await PC.fe.quote.get_schema();
 				} catch ( error ) {
 					this.show( 'mkl-pc-quote-request-error', { message: error.message || quote_lang( 'send_failed', 'Your request could not be sent.' ), can_retry: false } );
+					this.focus_action();
 					return;
 				}
 				this.errors = {};
@@ -403,11 +408,13 @@ PC.fe = PC.fe || {};
 			 * @param {Object} data
 			 */
 			show: function( template_id, data ) {
-				$( document.body ).addClass( 'show-add-to-cart-modal' );
+				this.modal.open( this.trigger_el );
+				this.modal.set_busy( false );
 				// Emptied by the modal's own messages, which also drops this view's events.
 				this.modal.$el.children().not( this.$el ).remove();
 				if ( ! $.contains( this.modal.$el[0], this.el ) ) this.modal.$el.append( this.$el );
 				this.$el.html( wp.template( template_id )( data || {} ) );
+				this.$el.attr( 'aria-labelledby', this.$( '.mkl-pc-quote-title' ).first().attr( 'id' ) || null );
 				this.delegateEvents();
 			},
 
@@ -454,6 +461,9 @@ PC.fe = PC.fe || {};
 				}
 
 				this.show( 'mkl-pc-quote-request-sending' );
+				this.modal.set_busy( true );
+				// Keeps the focus in the dialog while the form is gone.
+				this.$( '.mkl-pc-quote-sending' ).trigger( 'focus' );
 				try {
 					var result = await PC.fe.quote.request( { fields: this.values, honeypot: honeypot, show_errors: true } );
 					this.sent( result );
@@ -471,7 +481,8 @@ PC.fe = PC.fe || {};
 					return;
 				}
 				this.show( 'mkl-pc-quote-request-sent', { message: result.message || '', reference: result.reference || '' } );
-				this.$( 'button' ).first().trigger( 'focus' );
+				// Read first, then the message and the button follow.
+				this.$( '.mkl-pc-quote-title' ).trigger( 'focus' );
 			},
 
 			/**
@@ -491,7 +502,7 @@ PC.fe = PC.fe || {};
 					message: error.message || quote_lang( 'send_failed', 'Your request could not be sent.' ),
 					can_retry: true
 				} );
-				this.$( '.mkl-pc-quote-back' ).trigger( 'focus' );
+				this.focus_action();
 			},
 
 			/**
@@ -518,25 +529,16 @@ PC.fe = PC.fe || {};
 				$field.find( 'input, textarea, select' ).first().trigger( 'focus' );
 			},
 
-			keydown: function( event ) {
-				if ( 'Escape' === event.key ) {
-					this.close();
-				}
+			/**
+			 * Focus the way out of an error: back to the form, or close
+			 */
+			focus_action: function() {
+				var $back = this.$( '.mkl-pc-quote-back' );
+				( $back.length ? $back : this.$( 'button' ) ).first().trigger( 'focus' );
 			},
 
 			close: function() {
 				if ( this.modal ) this.modal.close();
-				this.closed();
-			},
-
-			/**
-			 * The modal closes itself on its .continue-shopping buttons; give the focus back
-			 */
-			closed: function() {
-				var trigger = this.trigger;
-				if ( trigger && document.body.contains( trigger ) ) {
-					setTimeout( function() { trigger.focus(); }, 0 );
-				}
 			}
 		} );
 	}

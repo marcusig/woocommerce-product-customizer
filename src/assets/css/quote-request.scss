@@ -36,6 +36,11 @@
 	.mkl-pc-quote-sending {
 		text-align: center;
 	}
+
+	// Focused by script to keep the focus in the dialog; not a control.
+	[tabindex="-1"]:focus {
+		outline: none;
+	}
 }
 
 .mkl-pc-quote-form {

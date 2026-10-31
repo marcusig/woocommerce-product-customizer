@@ -25,7 +25,7 @@ $submit_label = $settings->get_label( 'quote_request_submit_label', __( 'Send my
 
 <script type="text/html" id="tmpl-mkl-pc-quote-request-form" data-wg-notranslate>
 	<form class="mkl-pc-quote-form has-box" novalidate>
-		<div class="header" id="mkl-pc-quote-form-title"><?php echo esc_html( $form_title ); ?></div>
+		<div class="header mkl-pc-quote-title" id="mkl-pc-quote-form-title"><?php echo esc_html( $form_title ); ?></div>
 		<# if ( data.message ) { #>
 			<div class="mkl-pc-quote-form__notice error messages" role="alert">{{ data.message }}</div>
 		<# } #>
@@ -45,7 +45,7 @@ $submit_label = $settings->get_label( 'quote_request_submit_label', __( 'Send my
 							{{ field.label }}<# if ( field.required ) { #> <span class="required" aria-hidden="true">*</span><# } #>
 						</label>
 					<# } else if ( 'radio' === field.type ) { #>
-						<fieldset <# if ( described.length ) { #>aria-describedby="{{ described.join( ' ' ) }}"<# } #>>
+						<fieldset role="radiogroup" <# if ( field.required ) { #>aria-required="true"<# } #> <# if ( error ) { #>aria-invalid="true"<# } #> <# if ( described.length ) { #>aria-describedby="{{ described.join( ' ' ) }}"<# } #>>
 							<legend>{{ field.label }}<# if ( field.required ) { #> <span class="required" aria-hidden="true">*</span><# } #></legend>
 							<# _.each( field.options, function( option, index ) { #>
 								<label><input type="radio" name="{{ field.id }}" value="{{ option.value }}" <# if ( String( value ) === option.value ) { #>checked<# } #>> {{ option.label }}</label>
@@ -88,8 +88,8 @@ $submit_label = $settings->get_label( 'quote_request_submit_label', __( 'Send my
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-quote-request-sending" data-wg-notranslate>
-	<div class="adding-to-cart--adding mkl-pc-quote-sending" role="status">
-		<div class="header"><?php echo esc_html( $settings->get_label( 'quote_request_sending', __( 'Sending your request', 'product-configurator-for-woocommerce' ) ) ); ?></div>
+	<div class="adding-to-cart--adding mkl-pc-quote-sending" role="status" tabindex="-1">
+		<div class="header mkl-pc-quote-title" id="mkl-pc-quote-sending-title"><?php echo esc_html( $settings->get_label( 'quote_request_sending', __( 'Sending your request', 'product-configurator-for-woocommerce' ) ) ); ?></div>
 		<div class="spinner"></div>
 	</div>
 </script>
@@ -98,7 +98,7 @@ $submit_label = $settings->get_label( 'quote_request_submit_label', __( 'Send my
 	<div class="adding-to-cart--added mkl-pc-quote-sent has-box" role="status">
 		<div class="header">
 			<svg viewBox="0 0 300 300" aria-hidden="true"><circle cx="150" cy="150" r="116.61"/><polyline points="73.61 150 129.81 206.19 223.76 112.24"/></svg>
-			<div class="title"><?php echo esc_html( $settings->get_label( 'quote_request_sent_title', __( 'Request sent', 'product-configurator-for-woocommerce' ) ) ); ?></div>
+			<div class="title mkl-pc-quote-title" id="mkl-pc-quote-sent-title" tabindex="-1"><?php echo esc_html( $settings->get_label( 'quote_request_sent_title', __( 'Request sent', 'product-configurator-for-woocommerce' ) ) ); ?></div>
 		</div>
 		<div class="messages">
 			<p>{{ data.message }}</p>
@@ -115,7 +115,7 @@ $submit_label = $settings->get_label( 'quote_request_submit_label', __( 'Send my
 
 <script type="text/html" id="tmpl-mkl-pc-quote-request-error" data-wg-notranslate>
 	<div class="adding-to-cart--not-added mkl-pc-quote-error has-box" role="alert">
-		<div class="error messages">{{ data.message }}</div>
+		<div class="error messages mkl-pc-quote-title" id="mkl-pc-quote-error-message">{{ data.message }}</div>
 		<div class="adding-to-cart--adding-cta">
 			<button type="button" class="button continue-shopping"><?php esc_html_e( 'Close', 'product-configurator-for-woocommerce' ); ?></button>
 			<# if ( data.can_retry ) { #>
