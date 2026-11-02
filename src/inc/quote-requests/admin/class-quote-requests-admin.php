@@ -383,8 +383,10 @@ class Quote_Requests_Admin {
 				<?php endif; ?>
 				<button type="button" class="button-link mkl-pc-quote-user__clear" <?php echo $user ? '' : 'hidden'; ?>><?php esc_html_e( 'Remove', 'product-configurator-for-woocommerce' ); ?></button>
 			</p>
-			<input type="search" id="mkl_pc_quote_user_field" class="regular-text mkl-pc-quote-user__search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search accounts by name or email…', 'product-configurator-for-woocommerce' ); ?>" aria-describedby="mkl_pc_quote_user_description" />
-			<ul class="mkl-pc-quote-user__results"></ul>
+			<div class="mkl-pc-search-dropdown mkl-pc-quote-user__dropdown">
+				<input type="search" id="mkl_pc_quote_user_field" class="mkl-pc-quote-user__search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search accounts by name or email…', 'product-configurator-for-woocommerce' ); ?>" aria-describedby="mkl_pc_quote_user_description" aria-controls="mkl_pc_quote_user_results" aria-expanded="false" />
+				<ul id="mkl_pc_quote_user_results" class="mkl-pc-quote-user__results mkl-pc-search-dropdown__results"></ul>
+			</div>
 			<p class="mkl-pc-quote-user__status" role="status"></p>
 			<p id="mkl_pc_quote_user_description" class="description">
 				<?php
@@ -734,6 +736,7 @@ class Quote_Requests_Admin {
 		}
 		$file = 'admin/js/quote-request-screen.js';
 		wp_enqueue_script( 'mkl_pc/admin/js/quote_request_screen', MKL_PC_ASSETS_URL . $file, $deps, filemtime( MKL_PC_ASSETS_PATH . $file ), true );
+		wp_enqueue_style( 'mkl_pc/admin/css/search_dropdown' );
 		wp_localize_script( 'mkl_pc/admin/js/quote_request_screen', 'PC_quote_screen', [
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( 'mkl_pc_quote_customer' ),
@@ -770,11 +773,8 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-fields td { padding-top: 8px; padding-bottom: 8px; }
 			.mkl-pc-quote-user__account { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 8px; }
 			.mkl-pc-quote-user__current { font-weight: 600; }
-			.mkl-pc-quote-user__results { max-width: 25em; margin: 4px 0 0; max-height: 240px; overflow-y: auto; }
-			.mkl-pc-quote-user__results:empty { display: none; }
-			.mkl-pc-quote-user__results li { margin: 0; border-bottom: 1px solid #f0f0f1; }
-			.mkl-pc-quote-user__results button.button-link { display: block; width: 100%; padding: 6px 4px; text-align: left; text-decoration: none; }
-			.mkl-pc-quote-user__results button.button-link:hover { background: #f6f7f7; }
+			.mkl-pc-quote-user__dropdown { max-width: 25em; }
+			.mkl-pc-quote-user__search { width: 100%; }
 			.mkl-pc-quote-user__status:empty { display: none; }
 			.mkl-pc-quote-user__status { margin: 4px 0 0; color: #646970; }
 			#mkl_pc_quote_status label { display: block; margin-bottom: 4px; font-weight: 600; }

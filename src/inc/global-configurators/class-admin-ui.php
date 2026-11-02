@@ -123,9 +123,9 @@ final class Admin_Ui {
 					data-current-id="<?php echo esc_attr( (string) $current_global_id ); ?>"
 					data-current-title="<?php echo esc_attr( $global_title ); ?>">
 					<input type="hidden" id="mkl_pc_global_configurator_id" name="<?php echo esc_attr( Schema::META_GLOBAL_ID ); ?>" value="<?php echo esc_attr( (string) $current_global_id ); ?>">
-					<div class="mkl-pc-global-picker-search-wrap">
+					<div class="mkl-pc-global-picker-search-wrap mkl-pc-search-dropdown">
 						<input type="text" id="mkl_pc_global_picker_search" class="mkl-pc-global-picker-search" placeholder="<?php esc_attr_e( 'Search global configurators…', 'product-configurator-for-woocommerce' ); ?>" autocomplete="off" <?php disabled( ! $can_use_global ); ?>>
-						<ul class="mkl-pc-global-picker-results" role="listbox" aria-hidden="true"></ul>
+						<ul class="mkl-pc-global-picker-results mkl-pc-search-dropdown__results" role="listbox" aria-hidden="true"></ul>
 					</div>
 					<div class="mkl-pc-global-picker-summary">
 						<span class="mkl-pc-global-picker-selected">
@@ -553,7 +553,7 @@ final class Admin_Ui {
 			wp_enqueue_script( $slug, $js_url, array( 'jquery' ), filemtime( $js_path ), true );
 		}
 		if ( file_exists( $css_p ) ) {
-			wp_enqueue_style( $slug, $css_u, array(), filemtime( $css_p ) );
+			wp_enqueue_style( $slug, $css_u, array( 'mkl_pc/admin/css/search_dropdown' ), filemtime( $css_p ) );
 		}
 	}
 

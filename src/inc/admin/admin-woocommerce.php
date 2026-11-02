@@ -85,6 +85,9 @@ class Admin_Woocommerce {
 
 		global $pagenow;
 
+		// Shared by the admin's search pickers: screens add it as a dependency.
+		wp_register_style( 'mkl_pc/admin/css/search_dropdown', MKL_PC_ASSETS_URL . 'admin/css/search-dropdown.css', [], filemtime( MKL_PC_ASSETS_PATH . 'admin/css/search-dropdown.css' ) );
+
 		/**
 		 * Enqueue styles and scripts for plugins and update screen
 		 */

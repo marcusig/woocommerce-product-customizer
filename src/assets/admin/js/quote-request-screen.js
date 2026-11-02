@@ -2,8 +2,9 @@
  * Quote request screen (requests kept as posts)
  *
  * - After the configurator dialog saved (configuration-editor-dialog.js), the configuration box is reloaded.
- * - The customer account picker searches the site's users. Picking one fills in the empty details, and
- *   those still holding what the previous pick filled in: never what the merchant typed.
+ * - The customer account picker searches the site's users, in a dropdown (assets/admin/css/search-dropdown.css).
+ *   Picking one fills in the empty details, and those still holding what the previous pick filled in: never
+ *   what the merchant typed.
  *
  * Works without WooCommerce. Config in PC_quote_screen: ajax_url, nonce, lang.
  */
@@ -36,6 +37,25 @@
 		var timer = null;
 		var request = null;
 
+		var $dropdown = $picker.find( '.mkl-pc-quote-user__dropdown' );
+
+		var open = function() {
+			$results.addClass( 'mkl-pc-is-open' );
+			$search.attr( 'aria-expanded', 'true' );
+		};
+
+		var close = function() {
+			if ( request ) request.abort();
+			clearTimeout( timer );
+			$results.removeClass( 'mkl-pc-is-open' ).empty();
+			$search.attr( 'aria-expanded', 'false' );
+		};
+
+		var show_status = function( text ) {
+			$results.empty().append( $( '<li class="mkl-pc-search-dropdown__status" aria-live="polite" />' ).text( text ) );
+			open();
+		};
+
 		var fill = function( user_id ) {
 			$.post( config.ajax_url, { action: 'mkl_pc_quote_customer_details', security: config.nonce, user_id: user_id } ).done( function( response ) {
 				if ( ! response || ! response.success ) return;
@@ -53,7 +73,7 @@
 			$current.text( user_id ? label : lang.guest );
 			$picker.find( '.mkl-pc-quote-user__profile' ).remove();
 			$clear.prop( 'hidden', ! user_id );
-			$results.empty();
+			close();
 			$search.val( '' );
 			$status.text( user_id ? lang.picked : '' );
 			if ( user_id ) fill( user_id );
@@ -62,26 +82,67 @@
 		var search = function() {
 			var term = $.trim( $search.val() );
 			if ( request ) request.abort();
-			$results.empty();
 			if ( term.length < 2 ) {
-				$status.text( '' );
+				close();
 				return;
 			}
-			$status.text( lang.searching );
+			show_status( lang.searching );
 			request = $.getJSON( config.ajax_url, { action: 'mkl_pc_quote_search_customers', security: config.nonce, term: term } ).done( function( users ) {
-				$.each( users || [], function( i, user ) {
+				if ( ! users || ! users.length ) {
+					show_status( lang.no_results );
+					return;
+				}
+				$results.empty();
+				$.each( users, function( i, user ) {
 					$( '<li />' ).append( $( '<button type="button" class="button-link" />' ).attr( 'data-user', user.id ).text( user.label ) ).appendTo( $results );
 				} );
-				$status.text( users && users.length ? '' : lang.no_results );
+				open();
 			} );
+		};
+
+		var focus_result = function( step ) {
+			var $buttons = $results.find( 'button' );
+			if ( ! $buttons.length ) return;
+			var index = $buttons.index( document.activeElement ) + step;
+			if ( index < 0 ) {
+				$search.trigger( 'focus' );
+				return;
+			}
+			$buttons.eq( Math.min( index, $buttons.length - 1 ) ).trigger( 'focus' );
 		};
 
 		$search.on( 'input', function() {
 			clearTimeout( timer );
 			timer = setTimeout( search, 250 );
-		} ).on( 'keydown', function( event ) {
-			// Enter would submit the request's form.
-			if ( 13 === event.which ) event.preventDefault();
+		} );
+
+		$dropdown.on( 'keydown', function( event ) {
+			switch ( event.key ) {
+				case 'Enter':
+					// Would submit the request's form; a focused result is clicked by the browser.
+					if ( event.target === $search[0] ) event.preventDefault();
+					break;
+				case 'ArrowDown':
+					event.preventDefault();
+					focus_result( 1 );
+					break;
+				case 'ArrowUp':
+					event.preventDefault();
+					focus_result( -1 );
+					break;
+				case 'Escape':
+					if ( ! $results.hasClass( 'mkl-pc-is-open' ) ) return;
+					event.preventDefault();
+					close();
+					$search.trigger( 'focus' );
+					break;
+			}
+		} );
+
+		// Keeps the focus in the field: Safari does not focus a clicked button, and the focus leaving the
+		// dropdown would close it before the click.
+		$results.on( 'mousedown', function( event ) {
+			event.preventDefault();
 		} );
 
 		$results.on( 'click', 'button', function() {
@@ -92,6 +153,14 @@
 		$clear.on( 'click', function() {
 			set_user( 0 );
 			$search.trigger( 'focus' );
+		} );
+
+		// Closes when the focus or a click goes elsewhere.
+		$dropdown.on( 'focusout', function( event ) {
+			if ( ! event.relatedTarget || ! $.contains( $dropdown[0], event.relatedTarget ) ) close();
+		} );
+		$( document ).on( 'click', function( event ) {
+			if ( ! $( event.target ).closest( $dropdown ).length ) close();
 		} );
 	} );
 } )( jQuery );

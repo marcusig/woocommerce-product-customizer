@@ -111,7 +111,7 @@
 			showResults();
 			$results.append(
 				$('<li/>')
-					.addClass('mkl-pc-global-picker-status')
+					.addClass('mkl-pc-global-picker-status mkl-pc-search-dropdown__status')
 					.attr('aria-live', 'polite')
 					.text(__('mkl_pc_global_picker_searching', 'Searching…'))
 			);
@@ -138,7 +138,7 @@
 						var err = resp && resp.data && resp.data.message
 							? resp.data.message
 							: __('mkl_pc_global_picker_request_failed', 'Search failed. Please refresh the page and try again.');
-						$results.append($('<li/>').addClass('mkl-pc-global-picker-status empty').text(err));
+						$results.append($('<li/>').addClass('mkl-pc-global-picker-status mkl-pc-search-dropdown__status empty').text(err));
 						return;
 					}
 					if (!resp.data || !resp.data.items || !resp.data.items.length) {
@@ -170,7 +170,7 @@
 					showResults();
 					$results.append(
 						$('<li/>')
-							.addClass('mkl-pc-global-picker-status empty')
+							.addClass('mkl-pc-global-picker-status mkl-pc-search-dropdown__status empty')
 							.text(__('mkl_pc_global_picker_request_failed', 'Search failed. Please refresh the page and try again.'))
 					);
 				});
