@@ -303,6 +303,46 @@ class CPT_Store implements Quote_Store {
 	}
 
 	/**
+	 * Give every request its account meta, so lists can filter on it
+	 *
+	 * Requests stored before the meta have the customer as author. Done once.
+	 *
+	 * @return void
+	 */
+	public function maybe_store_user_ids() {
+		if ( get_option( 'mkl_pc_quote_user_ids_stored' ) ) return;
+		$ids = get_posts( [
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array_merge( array_keys( self::get_statuses() ), [ 'trash', 'draft' ] ),
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_user_id', 'compare' => 'NOT EXISTS' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Once.
+		] );
+		foreach ( $ids as $post_id ) {
+			update_post_meta( $post_id, '_mkl_pc_quote_user_id', $this->get_user_id( $post_id ) );
+		}
+		update_option( 'mkl_pc_quote_user_ids_stored', 1, false );
+	}
+
+	/**
+	 * Number of requests linked to an account
+	 *
+	 * @param int $user_id
+	 * @return int
+	 */
+	public function count_user_requests( $user_id ) {
+		$this->maybe_store_user_ids();
+		$query = new \WP_Query( [
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array_keys( self::get_statuses() ),
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_user_id', 'value' => (int) $user_id, 'type' => 'NUMERIC' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin only.
+		] );
+		return (int) $query->found_posts;
+	}
+
+	/**
 	 * Requests sent as a guest with one of these emails
 	 *
 	 * @param string[] $emails

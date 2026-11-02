@@ -36,6 +36,7 @@ class Quote_Requests_Admin {
 		add_action( "manage_{$type}_posts_custom_column", [ $this, 'render_column' ], 10, 2 );
 		add_filter( 'post_row_actions', [ $this, 'row_actions' ], 10, 2 );
 		add_filter( "bulk_actions-edit-{$type}", [ $this, 'bulk_actions' ] );
+		add_filter( "views_edit-{$type}", [ $this, 'views' ] );
 		add_action( "add_meta_boxes_{$type}", [ $this, 'meta_boxes' ] );
 		add_action( "save_post_{$type}", [ $this, 'save' ], 10, 2 );
 		add_filter( 'post_updated_messages', [ $this, 'updated_messages' ] );
@@ -48,6 +49,9 @@ class Quote_Requests_Admin {
 		add_action( 'edit_user_profile', [ $this, 'profile_section' ] );
 		add_action( 'admin_post_mkl_pc_quote_link_requests', [ $this, 'link_requests' ] );
 		add_action( 'admin_notices', [ $this, 'linked_notice' ] );
+		add_action( 'restrict_manage_posts', [ $this, 'list_filter' ], 10, 2 );
+		add_action( 'pre_get_posts', [ $this, 'filter_list' ] );
+		add_action( 'admin_notices', [ $this, 'customer_filter_notice' ] );
 		add_action( 'admin_head', [ $this, 'styles' ] );
 	}
 
@@ -86,6 +90,15 @@ class Quote_Requests_Admin {
 				if ( ! empty( $fields['email'] ) ) {
 					printf( '<br><a href="mailto:%1$s">%1$s</a>', esc_attr( $fields['email'] ) );
 				}
+				$user = get_userdata( $this->store->get_user_id( $post_id ) );
+				echo '<br><span class="mkl-pc-quote-account">';
+				if ( $user ) {
+					/* translators: %s: user name, linked to the requests of that account */
+					printf( esc_html__( 'Account: %s', 'product-configurator-for-woocommerce' ), '<a href="' . esc_url( $this->get_customer_list_url( $user->ID ) ) . '">' . esc_html( $user->display_name ) . '</a>' );
+				} else {
+					esc_html_e( 'Guest', 'product-configurator-for-woocommerce' );
+				}
+				echo '</span>';
 				break;
 			case 'mkl_pc_quote_product':
 				$product_id = (int) get_post_meta( $post_id, '_mkl_pc_quote_product_id', true );
@@ -128,6 +141,18 @@ class Quote_Requests_Admin {
 	public function bulk_actions( $actions ) {
 		unset( $actions['edit'] );
 		return $actions;
+	}
+
+	/**
+	 * No "Mine": a request's author is its customer, or the merchant who made it in the admin. The
+	 * customer filter and the account links show whose requests they are.
+	 *
+	 * @param array $views
+	 * @return array
+	 */
+	public function views( $views ) {
+		unset( $views['mine'] );
+		return $views;
 	}
 
 	/**
@@ -418,47 +443,151 @@ class Quote_Requests_Admin {
 	}
 
 	/**
-	 * User profile: the quote requests sent as a guest with the account's emails, and a button to link them
+	 * User profile: the account's quote requests, and those sent as a guest with its emails, to link
 	 *
 	 * @param \WP_User $user
 	 * @return void
 	 */
 	public function profile_section( $user ) {
-		if ( ! $this->can_link_requests( $user->ID ) ) return;
-		$ids = $this->store->get_guest_request_ids( $this->get_account_emails( $user ) );
-		if ( ! $ids ) return;
-		$url = wp_nonce_url( admin_url( 'admin-post.php?action=mkl_pc_quote_link_requests&user_id=' . $user->ID ), 'mkl_pc_quote_link_requests_' . $user->ID );
+		if ( ! $this->can_list_customers() ) return;
+		$linked = $this->store->count_user_requests( $user->ID );
+		$guest_ids = $this->can_link_requests( $user->ID ) ? $this->store->get_guest_request_ids( $this->get_account_emails( $user ) ) : [];
+		if ( ! $linked && ! $guest_ids ) return;
 		?>
 		<h2><?php esc_html_e( 'Quote requests', 'product-configurator-for-woocommerce' ); ?></h2>
 		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Sent as a guest', 'product-configurator-for-woocommerce' ); ?></th>
-				<td>
-					<p>
-						<?php
-						/* translators: %d: number of quote requests */
-						echo esc_html( sprintf( _n( '%d quote request was sent as a guest with this account\'s email address:', '%d quote requests were sent as a guest with this account\'s email addresses:', count( $ids ), 'product-configurator-for-woocommerce' ), count( $ids ) ) );
-						?>
-					</p>
-					<ul>
-						<?php foreach ( array_slice( $ids, 0, 10 ) as $post_id ) : ?>
-							<li><a href="<?php echo esc_url( admin_url( 'post.php?post=' . $post_id . '&action=edit' ) ); ?>"><?php echo esc_html( get_the_title( $post_id ) ); ?></a> – <?php echo esc_html( get_the_date( '', $post_id ) ); ?></li>
-						<?php endforeach; ?>
-						<?php if ( count( $ids ) > 10 ) : ?>
-							<li>
-								<?php
-								/* translators: %d: number of quote requests */
-								echo esc_html( sprintf( __( 'and %d more', 'product-configurator-for-woocommerce' ), count( $ids ) - 10 ) );
-								?>
-							</li>
-						<?php endif; ?>
-					</ul>
-					<p><a class="button" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'Link them to this account', 'product-configurator-for-woocommerce' ); ?></a></p>
-					<p class="description"><?php esc_html_e( 'The details on each request stay as they were sent. Its history records the link.', 'product-configurator-for-woocommerce' ); ?></p>
-				</td>
-			</tr>
+			<?php if ( $linked ) : ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Linked to this account', 'product-configurator-for-woocommerce' ); ?></th>
+					<td>
+						<a href="<?php echo esc_url( $this->get_customer_list_url( $user->ID ) ); ?>">
+							<?php
+							/* translators: %d: number of quote requests */
+							echo esc_html( sprintf( _n( '%d quote request', '%d quote requests', $linked, 'product-configurator-for-woocommerce' ), $linked ) );
+							?>
+						</a>
+					</td>
+				</tr>
+			<?php endif; ?>
+			<?php if ( $guest_ids ) : ?>
+				<?php $url = wp_nonce_url( admin_url( 'admin-post.php?action=mkl_pc_quote_link_requests&user_id=' . $user->ID ), 'mkl_pc_quote_link_requests_' . $user->ID ); ?>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Sent as a guest', 'product-configurator-for-woocommerce' ); ?></th>
+					<td>
+						<p>
+							<?php
+							/* translators: %d: number of quote requests */
+							echo esc_html( sprintf( _n( '%d quote request was sent as a guest with this account\'s email address:', '%d quote requests were sent as a guest with this account\'s email addresses:', count( $guest_ids ), 'product-configurator-for-woocommerce' ), count( $guest_ids ) ) );
+							?>
+						</p>
+						<ul>
+							<?php foreach ( array_slice( $guest_ids, 0, 10 ) as $post_id ) : ?>
+								<li><a href="<?php echo esc_url( admin_url( 'post.php?post=' . $post_id . '&action=edit' ) ); ?>"><?php echo esc_html( get_the_title( $post_id ) ); ?></a> – <?php echo esc_html( get_the_date( '', $post_id ) ); ?></li>
+							<?php endforeach; ?>
+							<?php if ( count( $guest_ids ) > 10 ) : ?>
+								<li>
+									<?php
+									/* translators: %d: number of quote requests */
+									echo esc_html( sprintf( __( 'and %d more', 'product-configurator-for-woocommerce' ), count( $guest_ids ) - 10 ) );
+									?>
+								</li>
+							<?php endif; ?>
+						</ul>
+						<p><a class="button" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'Link them to this account', 'product-configurator-for-woocommerce' ); ?></a></p>
+						<p class="description"><?php esc_html_e( 'The details on each request stay as they were sent. Its history records the link.', 'product-configurator-for-woocommerce' ); ?></p>
+					</td>
+				</tr>
+			<?php endif; ?>
 		</table>
 		<?php
+	}
+
+	/**
+	 * Whether the current user sees requests by customer account (list column filter, profile section)
+	 *
+	 * @return boolean
+	 */
+	private function can_list_customers() {
+		$type = get_post_type_object( CPT_Store::POST_TYPE );
+		return $this->can_pick_customer() && $type && current_user_can( $type->cap->edit_posts );
+	}
+
+	/**
+	 * The request list, showing one account's requests
+	 *
+	 * @param int $user_id
+	 * @return string
+	 */
+	private function get_customer_list_url( $user_id ) {
+		return admin_url( 'edit.php?post_type=' . CPT_Store::POST_TYPE . '&mkl_pc_quote_user=' . (int) $user_id );
+	}
+
+	/**
+	 * The list's customer filter: all, guests, with an account
+	 *
+	 * @param string $post_type
+	 * @param string $which
+	 * @return void
+	 */
+	public function list_filter( $post_type, $which = 'top' ) {
+		if ( CPT_Store::POST_TYPE !== $post_type || 'top' !== $which ) return;
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- A list filter.
+		$current = isset( $_GET['mkl_pc_quote_customer'] ) ? sanitize_key( wp_unslash( $_GET['mkl_pc_quote_customer'] ) ) : '';
+		?>
+		<label for="mkl_pc_quote_customer_filter" class="screen-reader-text"><?php esc_html_e( 'Filter by customer', 'product-configurator-for-woocommerce' ); ?></label>
+		<select id="mkl_pc_quote_customer_filter" name="mkl_pc_quote_customer">
+			<option value=""><?php esc_html_e( 'All customers', 'product-configurator-for-woocommerce' ); ?></option>
+			<option value="account" <?php selected( $current, 'account' ); ?>><?php esc_html_e( 'With an account', 'product-configurator-for-woocommerce' ); ?></option>
+			<option value="guest" <?php selected( $current, 'guest' ); ?>><?php esc_html_e( 'Guests', 'product-configurator-for-woocommerce' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Apply the customer filter, and the account of `mkl_pc_quote_user`
+	 *
+	 * @param \WP_Query $query
+	 * @return void
+	 */
+	public function filter_list( $query ) {
+		if ( ! $query->is_main_query() || CPT_Store::POST_TYPE !== $query->get( 'post_type' ) ) return;
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- List filters.
+		$user_id = isset( $_GET['mkl_pc_quote_user'] ) ? absint( $_GET['mkl_pc_quote_user'] ) : 0;
+		$customer = isset( $_GET['mkl_pc_quote_customer'] ) ? sanitize_key( wp_unslash( $_GET['mkl_pc_quote_customer'] ) ) : '';
+		// phpcs:enable
+		if ( $user_id ) {
+			$clause = [ 'key' => '_mkl_pc_quote_user_id', 'value' => $user_id, 'type' => 'NUMERIC' ];
+		} elseif ( 'guest' === $customer ) {
+			$clause = [ 'key' => '_mkl_pc_quote_user_id', 'value' => 0, 'type' => 'NUMERIC' ];
+		} elseif ( 'account' === $customer ) {
+			$clause = [ 'key' => '_mkl_pc_quote_user_id', 'value' => 0, 'compare' => '>', 'type' => 'NUMERIC' ];
+		} else {
+			return;
+		}
+		$this->store->maybe_store_user_ids();
+		$meta_query = (array) $query->get( 'meta_query' );
+		$meta_query[] = $clause;
+		$query->set( 'meta_query', $meta_query );
+	}
+
+	/**
+	 * Says whose requests the list shows
+	 *
+	 * @return void
+	 */
+	public function customer_filter_notice() {
+		$screen = get_current_screen();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- A list filter.
+		if ( ! $screen || 'edit-' . CPT_Store::POST_TYPE !== $screen->id || empty( $_GET['mkl_pc_quote_user'] ) ) return;
+		$user = get_userdata( absint( $_GET['mkl_pc_quote_user'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! $user ) return;
+		printf(
+			'<div class="notice notice-info"><p>%s <a href="%s">%s</a></p></div>',
+			/* translators: %s: user name and email */
+			esc_html( sprintf( __( 'Quote requests of %s.', 'product-configurator-for-woocommerce' ), $this->format_user( $user ) ) ),
+			esc_url( admin_url( 'edit.php?post_type=' . CPT_Store::POST_TYPE ) ),
+			esc_html__( 'Show all requests', 'product-configurator-for-woocommerce' )
+		);
 	}
 
 	/**
@@ -530,6 +659,15 @@ class Quote_Requests_Admin {
 				<span class="mkl-pc-quote-user__current"><?php echo esc_html( $user ? $this->format_user( $user ) : __( 'Guest', 'product-configurator-for-woocommerce' ) ); ?></span>
 				<?php if ( $user && current_user_can( 'edit_user', $user->ID ) ) : ?>
 					<a href="<?php echo esc_url( get_edit_user_link( $user->ID ) ); ?>" class="mkl-pc-quote-user__profile"><?php esc_html_e( 'Profile', 'product-configurator-for-woocommerce' ); ?></a>
+				<?php endif; ?>
+				<?php if ( $user ) : ?>
+					<a href="<?php echo esc_url( $this->get_customer_list_url( $user->ID ) ); ?>" class="mkl-pc-quote-user__profile">
+						<?php
+						$count = $this->store->count_user_requests( $user->ID );
+						/* translators: %d: number of quote requests */
+						echo esc_html( sprintf( _n( '%d request', 'All %d requests', $count, 'product-configurator-for-woocommerce' ), $count ) );
+						?>
+					</a>
 				<?php endif; ?>
 				<button type="button" class="button-link mkl-pc-quote-user__clear" <?php echo $user ? '' : 'hidden'; ?>><?php esc_html_e( 'Remove', 'product-configurator-for-woocommerce' ); ?></button>
 			</p>
@@ -897,6 +1035,7 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-configuration-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
 			.mkl-pc-quote-fields th { width: 30%; padding-top: 14px; padding-bottom: 14px; }
 			.mkl-pc-quote-fields td { padding-top: 8px; padding-bottom: 8px; }
+			.mkl-pc-quote-account { color: #646970; }
 			.mkl-pc-quote-user__account { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 8px; }
 			.mkl-pc-quote-user__current { font-weight: 600; }
 			.mkl-pc-quote-user__dropdown { max-width: 25em; }
