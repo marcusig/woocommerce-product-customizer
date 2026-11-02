@@ -71,7 +71,7 @@
 		var set_user = function( user_id, label ) {
 			$id.val( user_id || 0 );
 			$current.text( user_id ? label : lang.guest );
-			$picker.find( '.mkl-pc-quote-user__profile' ).remove();
+			$picker.find( '.mkl-pc-quote-user__profile, .mkl-pc-quote-user__matches' ).remove();
 			$clear.prop( 'hidden', ! user_id );
 			close();
 			$search.val( '' );
@@ -148,6 +148,12 @@
 
 		$results.on( 'click', 'button', function() {
 			set_user( $( this ).data( 'user' ), $( this ).text() );
+			$search.trigger( 'focus' );
+		} );
+
+		// An account using the request's email, suggested by the screen.
+		$picker.on( 'click', '.mkl-pc-quote-user__link', function() {
+			set_user( $( this ).data( 'user' ), $( this ).data( 'label' ) );
 			$search.trigger( 'focus' );
 		} );
 

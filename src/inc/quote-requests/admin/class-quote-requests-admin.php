@@ -10,7 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * The list shows who asked for what. A request opens with what was configured, which the merchant can
  * configure again in a dialog (Quote_Request_Target), the customer's details, which they can correct
- * or take from a customer account, and a status box to follow it up and send the quote. "Add request"
+ * or take from a customer account (one using the same email is suggested), and a status box to follow
+ * it up and send the quote. A user's profile offers to link the requests they sent as a guest. "Add request"
  * makes one for a customer who did not use the configurator: their details, a product to configure,
  * then Save and send.
  */
@@ -43,6 +44,10 @@ class Quote_Requests_Admin {
 		add_action( 'wp_ajax_mkl_pc_quote_configuration', [ $this, 'ajax_configuration' ] );
 		add_action( 'wp_ajax_mkl_pc_quote_customer_details', [ $this, 'ajax_customer_details' ] );
 		add_action( 'wp_ajax_mkl_pc_quote_search_customers', [ $this, 'ajax_search_customers' ] );
+		add_action( 'show_user_profile', [ $this, 'profile_section' ] );
+		add_action( 'edit_user_profile', [ $this, 'profile_section' ] );
+		add_action( 'admin_post_mkl_pc_quote_link_requests', [ $this, 'link_requests' ] );
+		add_action( 'admin_notices', [ $this, 'linked_notice' ] );
 		add_action( 'admin_head', [ $this, 'styles' ] );
 	}
 
@@ -365,6 +370,151 @@ class Quote_Requests_Admin {
 	}
 
 	/**
+	 * @param \WP_User $user
+	 * @return string
+	 */
+	private function get_account_log( $user ) {
+		/* translators: 1: user name, 2: email address */
+		return sprintf( __( 'Customer account: %1$s (%2$s).', 'product-configurator-for-woocommerce' ), $user->display_name, $user->user_email );
+	}
+
+	/**
+	 * The addresses an account holder set: the account's email, and its WooCommerce billing email
+	 *
+	 * Unlike the email typed in a request form, which anyone can type.
+	 *
+	 * @param \WP_User $user
+	 * @return string[]
+	 */
+	private function get_account_emails( $user ) {
+		return array_values( array_unique( array_filter( [ $user->user_email, (string) get_user_meta( $user->ID, 'billing_email', true ) ] ) ) );
+	}
+
+	/**
+	 * Accounts using an email, as their own or their billing email
+	 *
+	 * @param string $email
+	 * @return \WP_User[]
+	 */
+	private function get_accounts_by_email( $email ) {
+		$email = sanitize_email( $email );
+		if ( ! is_email( $email ) ) return [];
+		$ids = array_merge(
+			get_users( [ 'search' => $email, 'search_columns' => [ 'user_email' ], 'fields' => 'ID', 'number' => 10 ] ),
+			get_users( [ 'meta_key' => 'billing_email', 'meta_value' => $email, 'fields' => 'ID', 'number' => 10 ] ) // phpcs:ignore WordPress.DB.SlowDBQuery -- Admin only.
+		);
+		return array_values( array_filter( array_map( 'get_userdata', array_unique( array_map( 'intval', $ids ) ) ) ) );
+	}
+
+	/**
+	 * Whether the current user may link a user's guest requests to their account
+	 *
+	 * @param int $user_id
+	 * @return boolean
+	 */
+	private function can_link_requests( $user_id ) {
+		$type = get_post_type_object( CPT_Store::POST_TYPE );
+		return $this->can_pick_customer() && current_user_can( 'edit_user', $user_id ) && $type && current_user_can( $type->cap->edit_others_posts );
+	}
+
+	/**
+	 * User profile: the quote requests sent as a guest with the account's emails, and a button to link them
+	 *
+	 * @param \WP_User $user
+	 * @return void
+	 */
+	public function profile_section( $user ) {
+		if ( ! $this->can_link_requests( $user->ID ) ) return;
+		$ids = $this->store->get_guest_request_ids( $this->get_account_emails( $user ) );
+		if ( ! $ids ) return;
+		$url = wp_nonce_url( admin_url( 'admin-post.php?action=mkl_pc_quote_link_requests&user_id=' . $user->ID ), 'mkl_pc_quote_link_requests_' . $user->ID );
+		?>
+		<h2><?php esc_html_e( 'Quote requests', 'product-configurator-for-woocommerce' ); ?></h2>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Sent as a guest', 'product-configurator-for-woocommerce' ); ?></th>
+				<td>
+					<p>
+						<?php
+						/* translators: %d: number of quote requests */
+						echo esc_html( sprintf( _n( '%d quote request was sent as a guest with this account\'s email address:', '%d quote requests were sent as a guest with this account\'s email addresses:', count( $ids ), 'product-configurator-for-woocommerce' ), count( $ids ) ) );
+						?>
+					</p>
+					<ul>
+						<?php foreach ( array_slice( $ids, 0, 10 ) as $post_id ) : ?>
+							<li><a href="<?php echo esc_url( admin_url( 'post.php?post=' . $post_id . '&action=edit' ) ); ?>"><?php echo esc_html( get_the_title( $post_id ) ); ?></a> – <?php echo esc_html( get_the_date( '', $post_id ) ); ?></li>
+						<?php endforeach; ?>
+						<?php if ( count( $ids ) > 10 ) : ?>
+							<li>
+								<?php
+								/* translators: %d: number of quote requests */
+								echo esc_html( sprintf( __( 'and %d more', 'product-configurator-for-woocommerce' ), count( $ids ) - 10 ) );
+								?>
+							</li>
+						<?php endif; ?>
+					</ul>
+					<p><a class="button" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'Link them to this account', 'product-configurator-for-woocommerce' ); ?></a></p>
+					<p class="description"><?php esc_html_e( 'The details on each request stay as they were sent. Its history records the link.', 'product-configurator-for-woocommerce' ); ?></p>
+				</td>
+			</tr>
+		</table>
+		<?php
+	}
+
+	/**
+	 * admin-post handler of the profile's button
+	 *
+	 * The requests are found again here, from the account's emails: never from what the link says.
+	 *
+	 * @return void
+	 */
+	public function link_requests() {
+		$user_id = isset( $_GET['user_id'] ) ? absint( $_GET['user_id'] ) : 0;
+		check_admin_referer( 'mkl_pc_quote_link_requests_' . $user_id );
+		$user = get_userdata( $user_id );
+		if ( ! $user || ! $this->can_link_requests( $user_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'product-configurator-for-woocommerce' ), 403 );
+		}
+		$linked = $this->link_guest_requests( $user );
+		wp_safe_redirect( add_query_arg( 'mkl_pc_quote_linked', $linked, get_edit_user_link( $user_id ) ) );
+		exit;
+	}
+
+	/**
+	 * Link the requests sent as a guest with an account's emails to it
+	 *
+	 * @param \WP_User $user
+	 * @return int Number linked.
+	 */
+	public function link_guest_requests( $user ) {
+		$linked = 0;
+		foreach ( $this->store->get_guest_request_ids( $this->get_account_emails( $user ) ) as $post_id ) {
+			if ( ! current_user_can( 'edit_post', $post_id ) ) continue;
+			$request = $this->store->load( $post_id );
+			if ( ! $request ) continue;
+			$request->user_id = $user->ID;
+			if ( true !== $this->store->save( $request ) ) continue;
+			$this->store->log( $post_id, $this->get_account_log( $user ) );
+			$linked++;
+		}
+		return $linked;
+	}
+
+	/**
+	 * On the profile, after the link
+	 *
+	 * @return void
+	 */
+	public function linked_notice() {
+		$screen = get_current_screen();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- A count to display.
+		if ( ! $screen || ! in_array( $screen->id, [ 'profile', 'user-edit' ], true ) || ! isset( $_GET['mkl_pc_quote_linked'] ) ) return;
+		$linked = absint( $_GET['mkl_pc_quote_linked'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		/* translators: %d: number of quote requests */
+		printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', esc_html( sprintf( _n( '%d quote request linked to this account.', '%d quote requests linked to this account.', $linked, 'product-configurator-for-woocommerce' ), $linked ) ) );
+	}
+
+	/**
 	 * The request's account, and a search among the site's users to change it (quote-request-screen.js)
 	 *
 	 * @param Quote_Request $request
@@ -383,6 +533,22 @@ class Quote_Requests_Admin {
 				<?php endif; ?>
 				<button type="button" class="button-link mkl-pc-quote-user__clear" <?php echo $user ? '' : 'hidden'; ?>><?php esc_html_e( 'Remove', 'product-configurator-for-woocommerce' ); ?></button>
 			</p>
+			<?php $matches = $user ? [] : $this->get_accounts_by_email( $request->get_email() ); ?>
+			<?php if ( $matches ) : ?>
+				<div class="notice notice-info inline mkl-pc-quote-user__matches">
+					<p>
+						<?php echo esc_html( _n( 'An account uses this email:', 'Accounts use this email:', count( $matches ), 'product-configurator-for-woocommerce' ) ); ?>
+						<?php foreach ( $matches as $match ) : ?>
+							<br><button type="button" class="button-link mkl-pc-quote-user__link" data-user="<?php echo (int) $match->ID; ?>" data-label="<?php echo esc_attr( $this->format_user( $match ) ); ?>">
+								<?php
+								/* translators: %s: user name, id and email */
+								echo esc_html( sprintf( __( 'Link to %s', 'product-configurator-for-woocommerce' ), $this->format_user( $match ) ) );
+								?>
+							</button>
+						<?php endforeach; ?>
+					</p>
+				</div>
+			<?php endif; ?>
 			<div class="mkl-pc-search-dropdown mkl-pc-quote-user__dropdown">
 				<input type="search" id="mkl_pc_quote_user_field" class="mkl-pc-quote-user__search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search accounts by name or email…', 'product-configurator-for-woocommerce' ); ?>" aria-describedby="mkl_pc_quote_user_description" aria-controls="mkl_pc_quote_user_results" aria-expanded="false" />
 				<ul id="mkl_pc_quote_user_results" class="mkl-pc-quote-user__results mkl-pc-search-dropdown__results"></ul>
@@ -571,10 +737,7 @@ class Quote_Requests_Admin {
 			$user = $user_id ? get_userdata( $user_id ) : null;
 			if ( ! $user_id || $user ) {
 				if ( $user_id !== $request->user_id ) {
-					$account_log = $user
-						/* translators: 1: user name, 2: email address */
-						? sprintf( __( 'Customer account: %1$s (%2$s).', 'product-configurator-for-woocommerce' ), $user->display_name, $user->user_email )
-						: __( 'Customer account removed: the request is a guest\'s.', 'product-configurator-for-woocommerce' );
+					$account_log = $user ? $this->get_account_log( $user ) : __( 'Customer account removed: the request is a guest\'s.', 'product-configurator-for-woocommerce' );
 				}
 				$request->user_id = $user_id;
 			}
@@ -738,7 +901,7 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-user__current { font-weight: 600; }
 			.mkl-pc-quote-user__dropdown { max-width: 25em; }
 			.mkl-pc-quote-user__search { width: 100%; }
-			.mkl-pc-quote-user__status .notice { max-width: 25em; box-sizing: border-box; margin: 8px 0; }
+			.mkl-pc-quote-user__status .notice, .mkl-pc-quote-user__matches { max-width: 25em; box-sizing: border-box; margin: 8px 0 !important; }
 			#mkl_pc_quote_status label { display: block; margin-bottom: 4px; font-weight: 600; }
 			#mkl_pc_quote_status .description { display: block; margin-top: 4px; }
 			.mkl-pc-quote-actions { display: flex; justify-content: space-between; align-items: center; }

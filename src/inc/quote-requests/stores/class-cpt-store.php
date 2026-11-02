@@ -250,12 +250,7 @@ class CPT_Store implements Quote_Store {
 		$request->fields            = (array) $get( 'fields', [] );
 		$request->price             = $get( 'price', null );
 		$request->lang              = (string) $get( 'lang' );
-		// The customer's account. The author of a post being created in the admin is the merchant.
-		if ( metadata_exists( 'post', $post_id, '_mkl_pc_quote_user_id' ) ) {
-			$request->user_id = (int) $get( 'user_id', 0 );
-		} else {
-			$request->user_id = 'auto-draft' === $post->post_status ? 0 : (int) $post->post_author;
-		}
+		$request->user_id           = $this->get_user_id( $post );
 		$quoted_price               = $get( 'quoted_price', null );
 		$request->quoted_price      = is_numeric( $quoted_price ) ? (float) $quoted_price : null;
 		$request->created           = (int) get_post_time( 'U', true, $post );
@@ -287,6 +282,45 @@ class CPT_Store implements Quote_Store {
 		}
 
 		return $request;
+	}
+
+	/**
+	 * The customer account of a request, 0 for a guest
+	 *
+	 * Kept in its own meta: the author of a request made in the admin is the merchant. Requests stored
+	 * before that meta have the customer as author.
+	 *
+	 * @param \WP_Post|int $post
+	 * @return int
+	 */
+	public function get_user_id( $post ) {
+		$post = get_post( $post );
+		if ( ! $post ) return 0;
+		if ( metadata_exists( 'post', $post->ID, '_mkl_pc_quote_user_id' ) ) {
+			return (int) get_post_meta( $post->ID, '_mkl_pc_quote_user_id', true );
+		}
+		return 'auto-draft' === $post->post_status ? 0 : (int) $post->post_author;
+	}
+
+	/**
+	 * Requests sent as a guest with one of these emails
+	 *
+	 * @param string[] $emails
+	 * @return int[] Post ids.
+	 */
+	public function get_guest_request_ids( $emails ) {
+		$emails = array_values( array_unique( array_filter( array_map( 'sanitize_email', (array) $emails ) ) ) );
+		if ( ! $emails ) return [];
+		$ids = get_posts( [
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array_keys( self::get_statuses() ),
+			'posts_per_page' => 200,
+			'fields'         => 'ids',
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_email', 'value' => $emails, 'compare' => 'IN' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin only.
+		] );
+		return array_values( array_filter( array_map( 'intval', $ids ), function( $post_id ) {
+			return 0 === $this->get_user_id( $post_id );
+		} ) );
 	}
 
 	/**
