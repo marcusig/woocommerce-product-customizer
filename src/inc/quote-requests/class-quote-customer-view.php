@@ -175,7 +175,7 @@ class Quote_Customer_View {
 			'signed_in'   => (bool) $user_id,
 			'login_url'   => wp_login_url( get_permalink() ),
 			'url_for'     => $url_for,
-			'lookup_form' => $user_id ? '' : $this->render( 'quotes/quote-lookup.php', [ 'lookup' => $this->lookup ] ),
+			'lookup_form' => $user_id ? '' : $this->render( 'quotes/quote-lookup.php', [ 'lookup' => $this->lookup, 'button_class' => $this->get_button_class() ] ),
 			'view'        => $this,
 		] );
 	}
@@ -253,6 +253,16 @@ class Quote_Customer_View {
 	}
 
 	/**
+	 * The configurator's button classes (setting), which themes style
+	 *
+	 * @return string
+	 */
+	public function get_button_class() {
+		$classes = mkl_pc( 'settings' )->get( 'mkl_pc__button_classes' );
+		return $classes ? Utils::sanitize_html_classes( $classes ) : 'primary button btn btn-primary wp-element-button';
+	}
+
+	/**
 	 * A request's status, as the customer reads it
 	 *
 	 * @param Quote_Request $request
@@ -322,9 +332,14 @@ class Quote_Customer_View {
 .mkl-pc-quote__price { font-size: 1.15em; margin-top: 1em; }
 .mkl-pc-quote__message { padding: 1em 1.2em; margin: 1.5em 0; border-left: 3px solid currentColor; background: rgba(0,0,0,.03); }
 .mkl-pc-quote__message p:last-child { margin-bottom: 0; }
-.mkl-pc-quote-lookup { margin-top: 2em; }
-.mkl-pc-quote-lookup__row { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; }
-.mkl-pc-quote-lookup__row input[type=email] { flex: 1 1 16em; }
+.mkl-pc-quote-lookup { margin-top: 2em; max-width: 36em; }
+.mkl-pc-quote-lookup label { display: block; margin-bottom: .35em; font-weight: 600; }
+.mkl-pc-quote-lookup__row { display: flex; flex-wrap: wrap; gap: .5em; align-items: stretch; }
+.mkl-pc-quote-lookup__row input[type=email] { flex: 1 1 16em; box-sizing: border-box; min-height: 44px; margin: 0; padding: 10px 12px; border: 1px solid rgba(0,0,0,.22); border-radius: 8px; background: #fff; box-shadow: none; color: inherit; font: inherit; line-height: 1.4; }
+.mkl-pc-quote-lookup__row input[type=email]:hover { border-color: rgba(0,0,0,.4); }
+.mkl-pc-quote-lookup__row input[type=email]:focus { border-color: var(--mkl_pc_color-primary, #2a2a2a); outline: 2px solid var(--mkl_pc_color-primary, #2a2a2a); outline-offset: -1px; }
+.mkl-pc-quote-lookup__row input[aria-invalid=true] { border-color: #b32d2e; }
+.mkl-pc-quote-lookup__row button { min-height: 44px; margin: 0; }
 .mkl-pc-quote-lookup__website { position: absolute; left: -9999px; }
 .mkl-pc-quote-lookup__notice { padding: .8em 1em; margin: 1em 0; background: rgba(0,0,0,.04); }
 .mkl-pc-quote-lookup__notice.is-error { border-left: 3px solid #b32d2e; }' );

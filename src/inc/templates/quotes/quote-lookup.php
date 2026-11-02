@@ -4,7 +4,8 @@
  *
  * This template can be overridden by copying it to yourtheme/product-configurator/quotes/quote-lookup.php.
  *
- * @var array|null $lookup The last submission: status (sent, invalid, limited, expired), email. Null before.
+ * @var array|null $lookup       The last submission: status (sent, invalid, limited, expired), email. Null before.
+ * @var string     $button_class The configurator's button classes.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -36,6 +37,6 @@ $messages = [
 	<label for="mkl-pc-quote-lookup-email"><?php esc_html_e( 'Email address', 'product-configurator-for-woocommerce' ); ?></label>
 	<div class="mkl-pc-quote-lookup__row">
 		<input type="email" id="mkl-pc-quote-lookup-email" name="email" required autocomplete="email" value="<?php echo esc_attr( 'sent' === $status ? '' : ( $lookup ? $lookup['email'] : '' ) ); ?>" <?php echo 'invalid' === $status ? 'aria-invalid="true"' : ''; ?> />
-		<button type="submit" class="button"><?php esc_html_e( 'Email me the links', 'product-configurator-for-woocommerce' ); ?></button>
+		<button type="submit" class="<?php echo esc_attr( $button_class ); ?>"><?php esc_html_e( 'Email me the links', 'product-configurator-for-woocommerce' ); ?></button>
 	</div>
 </form>
