@@ -346,6 +346,70 @@ class Quote_Fields {
 	}
 
 	/**
+	 * A customer account's details, keyed by where fields map them (full_name, billing_email...)
+	 *
+	 * From the account; when WooCommerce keeps a billing address on it, that wins, as on its orders.
+	 *
+	 * @param int $user_id
+	 * @return array
+	 */
+	public function get_account_details( $user_id ) {
+		$user = $user_id ? get_userdata( $user_id ) : null;
+		if ( ! $user ) return [];
+		$name = trim( $user->first_name . ' ' . $user->last_name );
+		$details = [
+			'full_name'       => '' !== $name ? $name : $user->display_name,
+			'billing_email'   => $user->user_email,
+			'billing_phone'   => '',
+			'billing_company' => '',
+		];
+		if ( class_exists( '\WC_Customer' ) ) {
+			$customer = new \WC_Customer( $user->ID );
+			$details = array_merge( $details, array_filter( [
+				'full_name'       => trim( $customer->get_billing_first_name() . ' ' . $customer->get_billing_last_name() ),
+				'billing_email'   => $customer->get_billing_email(),
+				'billing_phone'   => $customer->get_billing_phone(),
+				'billing_company' => $customer->get_billing_company(),
+			] ) );
+		}
+		/**
+		 * The details a customer account gives a quote request, keyed by a field's maps_to
+		 *
+		 * @param array    $details
+		 * @param \WP_User $user
+		 */
+		return apply_filters( 'mkl_pc/quote_request/account_details', $details, $user );
+	}
+
+	/**
+	 * Values of the form's fields from a customer account, keyed by field id
+	 *
+	 * Only text fields that map to a detail: checkboxes (consents, opt-ins) are the customer's to tick.
+	 *
+	 * @param int   $user_id
+	 * @param array $context
+	 * @return array
+	 */
+	public function get_account_values( $user_id, $context = [] ) {
+		$details = $this->get_account_details( $user_id );
+		$values = [];
+		foreach ( $this->get_fields( $context ) as $field_id => $field ) {
+			if ( ! $field['maps_to'] || ! in_array( $field['type'], [ 'text', 'email', 'tel', 'textarea' ], true ) ) continue;
+			if ( isset( $details[ $field['maps_to'] ] ) && '' !== (string) $details[ $field['maps_to'] ] ) {
+				$values[ $field_id ] = (string) $details[ $field['maps_to'] ];
+			}
+		}
+		/**
+		 * The values the request form starts with for a signed-in customer. Return [] to start empty.
+		 *
+		 * @param array $values  Keyed by field id.
+		 * @param int   $user_id
+		 * @param array $context
+		 */
+		return apply_filters( 'mkl_pc/quote_request/account_values', $values, $user_id, $context );
+	}
+
+	/**
 	 * Values typed in the admin, for a customer
 	 *
 	 * Nothing is required: the merchant may not know everything, and the customer did not agree to

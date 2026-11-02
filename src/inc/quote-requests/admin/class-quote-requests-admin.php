@@ -426,50 +426,12 @@ class Quote_Requests_Admin {
 	}
 
 	/**
-	 * A customer account's details, keyed by where quote fields map them (full_name, billing_email...)
-	 *
-	 * From the account; when WooCommerce keeps a billing address on it, that wins, as on its orders.
-	 *
-	 * @param int $user_id
-	 * @return array
-	 */
-	public function get_customer_details( $user_id ) {
-		$user = get_userdata( $user_id );
-		if ( ! $user ) return [];
-		$name = trim( $user->first_name . ' ' . $user->last_name );
-		$details = [
-			'full_name'       => '' !== $name ? $name : $user->display_name,
-			'billing_email'   => $user->user_email,
-			'billing_phone'   => '',
-			'billing_company' => '',
-		];
-		if ( class_exists( '\WC_Customer' ) ) {
-			$customer = new \WC_Customer( $user->ID );
-			$billing_name = trim( $customer->get_billing_first_name() . ' ' . $customer->get_billing_last_name() );
-			$billing = [
-				'full_name'       => $billing_name,
-				'billing_email'   => $customer->get_billing_email(),
-				'billing_phone'   => $customer->get_billing_phone(),
-				'billing_company' => $customer->get_billing_company(),
-			];
-			$details = array_merge( $details, array_filter( $billing ) );
-		}
-		/**
-		 * The details a customer account gives a quote request, keyed by a field's maps_to
-		 *
-		 * @param array    $details
-		 * @param \WP_User $user
-		 */
-		return apply_filters( 'mkl_pc/admin/quote_request/customer_details', $details, $user );
-	}
-
-	/**
 	 * @return void
 	 */
 	public function ajax_customer_details() {
 		check_ajax_referer( 'mkl_pc_quote_customer', 'security' );
 		if ( ! $this->can_pick_customer() ) wp_die( -1 );
-		$details = $this->get_customer_details( isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0 );
+		$details = mkl_pc( 'quotes' )->fields->get_account_details( isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0 );
 		if ( ! $details ) wp_send_json_error();
 		wp_send_json_success( $details );
 	}

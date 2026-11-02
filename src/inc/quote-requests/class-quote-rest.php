@@ -108,6 +108,8 @@ class Quote_REST {
 			'product_id'    => $parent_id,
 			'fields'        => $quotes->fields->get_public_schema( $context ),
 			'capture_image' => '3d' === mkl_pc_get_configurator_type( $parent_id ) && 'none' !== $quotes->get_image_mode(),
+			// What a signed-in customer's account gives the form. Here rather than in the page, which caches can share.
+			'values'        => (object) ( is_user_logged_in() ? $quotes->fields->get_account_values( get_current_user_id(), $context ) : [] ),
 			'submit_url'    => esc_url_raw( rest_url( self::NAMESPACE . '/quote-requests' ) ),
 			'token'         => [
 				'url'     => esc_url_raw( rest_url( self::NAMESPACE . '/frontend-action-token' ) ),
@@ -121,7 +123,11 @@ class Quote_REST {
 		 * @param array $schema
 		 * @param int   $product_id
 		 */
-		return rest_ensure_response( apply_filters( 'mkl_pc/quote_request/schema', $schema, $parent_id ) );
+		$response = rest_ensure_response( apply_filters( 'mkl_pc/quote_request/schema', $schema, $parent_id ) );
+		if ( is_user_logged_in() ) {
+			$response->header( 'Cache-Control', 'no-cache, must-revalidate, max-age=0, no-store, private' );
+		}
+		return $response;
 	}
 
 	/**

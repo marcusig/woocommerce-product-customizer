@@ -79,7 +79,8 @@ PC.fe = PC.fe || {};
 	};
 
 	/**
-	 * The form for a product: fields, whether to capture the viewer, where to send it
+	 * The form for a product: fields, whether to capture the viewer, where to send it, and the values a
+	 * signed-in customer's account gives the fields (`values`, keyed by field id)
 	 *
 	 * @param {number} [product_id] Defaults to the active product.
 	 * @return {Promise<Object>}
@@ -447,6 +448,8 @@ PC.fe = PC.fe || {};
 				}
 				this.errors = {};
 				this.message = '';
+				// A signed-in customer's details, under what they already typed.
+				this.values = _.extend( {}, this.schema.values || {}, this.values );
 				this.form_fields = PC.fe.quote.get_form_fields( this.schema );
 				/**
 				 * Filter PC.fe.quote.needs_form: whether the request form is shown before sending.
