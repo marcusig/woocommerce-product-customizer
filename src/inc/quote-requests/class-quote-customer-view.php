@@ -256,7 +256,7 @@ class Quote_Customer_View {
 .mkl-pc-quotes__table { width: 100%; border-collapse: collapse; }
 .mkl-pc-quotes__table th, .mkl-pc-quotes__table td { padding: .6em .5em; text-align: left; border-bottom: 1px solid rgba(0,0,0,.1); }
 .mkl-pc-quote__meta { opacity: .75; }
-.mkl-pc-quote__status { display: inline-block; padding: .1em .6em; border-radius: 1em; background: rgba(0,0,0,.06); font-size: .9em; }
+.mkl-pc-quote__status { display: inline-block; padding: .1em .6em; border-radius: 1em; background: rgba(0,0,0,.06); font-size: .9em; white-space: nowrap; }
 .mkl-pc-quote__summary { display: flex; flex-wrap: wrap; gap: 1.5em; align-items: flex-start; margin: 1.5em 0; }
 .mkl-pc-quote__image img { width: 200px; max-width: 100%; height: auto; display: block; }
 .mkl-pc-quote__configuration { flex: 1 1 260px; }

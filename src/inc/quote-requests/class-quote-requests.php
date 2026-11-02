@@ -16,6 +16,7 @@ require_once __DIR__ . '/stores/class-woo-order-store.php';
 require_once __DIR__ . '/class-quote-privacy.php';
 require_once __DIR__ . '/class-quote-ui.php';
 require_once __DIR__ . '/class-quote-customer-view.php';
+require_once __DIR__ . '/class-quote-account-tab.php';
 
 /**
  * Native quote requests: a customer asks for a quote on what they configured
@@ -72,6 +73,11 @@ class Quote_Requests {
 	public $customer_view;
 
 	/**
+	 * @var Quote_Account_Tab|null The same, in WooCommerce's My account.
+	 */
+	public $account_tab = null;
+
+	/**
 	 * @var Quote_Fields_Settings|null Admin only.
 	 */
 	public $fields_settings = null;
@@ -90,6 +96,9 @@ class Quote_Requests {
 		$this->privacy   = new Quote_Privacy();
 		$this->ui        = new Quote_UI();
 		$this->customer_view = new Quote_Customer_View( $this->cpt_store );
+		if ( function_exists( 'WC' ) ) {
+			$this->account_tab = new Quote_Account_Tab( $this->customer_view, $this->cpt_store );
+		}
 
 		if ( is_admin() ) {
 			require_once __DIR__ . '/admin/class-quote-requests-admin.php';
