@@ -387,7 +387,8 @@ class Quote_Requests_Admin {
 				<input type="search" id="mkl_pc_quote_user_field" class="mkl-pc-quote-user__search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search accounts by name or email…', 'product-configurator-for-woocommerce' ); ?>" aria-describedby="mkl_pc_quote_user_description" aria-controls="mkl_pc_quote_user_results" aria-expanded="false" />
 				<ul id="mkl_pc_quote_user_results" class="mkl-pc-quote-user__results mkl-pc-search-dropdown__results"></ul>
 			</div>
-			<p class="mkl-pc-quote-user__status" role="status"></p>
+			<?php // The live region stays; the script puts a notice in it (quote-request-screen.js). ?>
+			<div class="mkl-pc-quote-user__status" role="status"></div>
 			<p id="mkl_pc_quote_user_description" class="description">
 				<?php
 				esc_html_e( 'Picking an account fills in the empty details below.', 'product-configurator-for-woocommerce' );
@@ -775,8 +776,7 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-user__current { font-weight: 600; }
 			.mkl-pc-quote-user__dropdown { max-width: 25em; }
 			.mkl-pc-quote-user__search { width: 100%; }
-			.mkl-pc-quote-user__status:empty { display: none; }
-			.mkl-pc-quote-user__status { margin: 4px 0 0; color: #646970; }
+			.mkl-pc-quote-user__status .notice { max-width: 25em; box-sizing: border-box; margin: 8px 0; }
 			#mkl_pc_quote_status label { display: block; margin-bottom: 4px; font-weight: 600; }
 			#mkl_pc_quote_status .description { display: block; margin-top: 4px; }
 			.mkl-pc-quote-actions { display: flex; justify-content: space-between; align-items: center; }

@@ -75,7 +75,8 @@
 			$clear.prop( 'hidden', ! user_id );
 			close();
 			$search.val( '' );
-			$status.text( user_id ? lang.picked : '' );
+			$status.empty();
+			if ( user_id ) $status.append( $( '<div class="notice notice-warning inline" />' ).append( $( '<p />' ).text( lang.picked ) ) );
 			if ( user_id ) fill( user_id );
 		};
 
