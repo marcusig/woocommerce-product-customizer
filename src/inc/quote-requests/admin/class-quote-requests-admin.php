@@ -9,9 +9,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Screens for quote requests kept as posts
  *
  * The list shows who asked for what. A request opens with what was configured, which the merchant can
- * configure again in a dialog (Quote_Request_Target), the customer's details, which they can correct,
- * and a status box to follow it up and send the quote. "Add request" makes one for a customer who did
- * not use the configurator: their details, a product to configure, then Save and send.
+ * configure again in a dialog (Quote_Request_Target), the customer's details, which they can correct
+ * or take from a customer account, and a status box to follow it up and send the quote. "Add request"
+ * makes one for a customer who did not use the configurator: their details, a product to configure,
+ * then Save and send.
  */
 class Quote_Requests_Admin {
 
@@ -40,6 +41,8 @@ class Quote_Requests_Admin {
 		add_action( 'admin_notices', [ $this, 'notices' ] );
 		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue' ] );
 		add_action( 'wp_ajax_mkl_pc_quote_configuration', [ $this, 'ajax_configuration' ] );
+		add_action( 'wp_ajax_mkl_pc_quote_customer_details', [ $this, 'ajax_customer_details' ] );
+		add_action( 'wp_ajax_mkl_pc_quote_search_customers', [ $this, 'ajax_search_customers' ] );
 		add_action( 'admin_head', [ $this, 'styles' ] );
 	}
 
@@ -282,6 +285,12 @@ class Quote_Requests_Admin {
 		<input type="hidden" name="mkl_pc_quote_fields_shown" value="1" />
 		<table class="form-table mkl-pc-quote-fields" role="presentation">
 			<tbody>
+				<?php if ( $this->can_pick_customer() ) : ?>
+					<tr>
+						<th scope="row"><label for="mkl_pc_quote_user_field"><?php esc_html_e( 'Customer account', 'product-configurator-for-woocommerce' ); ?></label></th>
+						<td><?php $this->render_customer_picker( $request ); ?></td>
+					</tr>
+				<?php endif; ?>
 				<?php foreach ( $this->get_field_definitions( $request ) as $field_id => $field ) : ?>
 					<tr>
 						<th scope="row"><label for="mkl_pc_quote_field_<?php echo esc_attr( $field_id ); ?>"><?php echo esc_html( wp_strip_all_tags( $field['label'] ) ); ?></label></th>
@@ -306,10 +315,12 @@ class Quote_Requests_Admin {
 	private function render_field( $field_id, $field, $value ) {
 		$id = 'mkl_pc_quote_field_' . $field_id;
 		$name = 'mkl_pc_quote_fields[' . $field_id . ']';
+		// Filled from a customer account picked above (see enqueue()).
+		$maps_to = ! empty( $field['maps_to'] ) ? ' data-maps-to="' . esc_attr( $field['maps_to'] ) . '"' : '';
 		$options = ! empty( $field['options'] ) && is_array( $field['options'] ) ? $field['options'] : [];
 		switch ( $field['type'] ) {
 			case 'textarea':
-				printf( '<textarea id="%s" name="%s" rows="4" class="large-text">%s</textarea>', esc_attr( $id ), esc_attr( $name ), esc_textarea( (string) $value ) );
+				printf( '<textarea id="%s" name="%s" rows="4" class="large-text"%s>%s</textarea>', esc_attr( $id ), esc_attr( $name ), $maps_to, esc_textarea( (string) $value ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
 				break;
 			case 'checkbox':
 				printf( '<input type="checkbox" id="%s" name="%s" value="1" %s />', esc_attr( $id ), esc_attr( $name ), checked( (bool) $value, true, false ) );
@@ -327,11 +338,137 @@ class Quote_Requests_Admin {
 			case 'tel':
 			case 'number':
 			case 'date':
-				printf( '<input type="%s" id="%s" name="%s" value="%s" class="regular-text" />', esc_attr( $field['type'] ), esc_attr( $id ), esc_attr( $name ), esc_attr( is_scalar( $value ) ? (string) $value : '' ) );
+				printf( '<input type="%s" id="%s" name="%s" value="%s" class="regular-text"%s />', esc_attr( $field['type'] ), esc_attr( $id ), esc_attr( $name ), esc_attr( is_scalar( $value ) ? (string) $value : '' ), $maps_to ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above.
 				break;
 			default:
 				echo wp_kses_post( nl2br( esc_html( is_scalar( $value ) ? (string) $value : '' ) ) );
 		}
+	}
+
+	/**
+	 * Whether the current user may link a request to a customer account
+	 *
+	 * Searching accounts lists the site's users.
+	 *
+	 * @return boolean
+	 */
+	private function can_pick_customer() {
+		return current_user_can( 'list_users' );
+	}
+
+	/**
+	 * @param \WP_User $user
+	 * @return string
+	 */
+	private function format_user( $user ) {
+		return sprintf( '%1$s (#%2$d – %3$s)', $user->display_name, $user->ID, $user->user_email );
+	}
+
+	/**
+	 * The request's account, and a search among the site's users to change it (quote-request-screen.js)
+	 *
+	 * @param Quote_Request $request
+	 * @return void
+	 */
+	private function render_customer_picker( Quote_Request $request ) {
+		$user = $request->user_id ? get_userdata( $request->user_id ) : null;
+		?>
+		<div class="mkl-pc-quote-user">
+			<input type="hidden" name="mkl_pc_quote_user_shown" value="1" />
+			<input type="hidden" name="mkl_pc_quote_user_id" value="<?php echo (int) ( $user ? $user->ID : 0 ); ?>" />
+			<p class="mkl-pc-quote-user__account">
+				<span class="mkl-pc-quote-user__current"><?php echo esc_html( $user ? $this->format_user( $user ) : __( 'Guest', 'product-configurator-for-woocommerce' ) ); ?></span>
+				<?php if ( $user && current_user_can( 'edit_user', $user->ID ) ) : ?>
+					<a href="<?php echo esc_url( get_edit_user_link( $user->ID ) ); ?>" class="mkl-pc-quote-user__profile"><?php esc_html_e( 'Profile', 'product-configurator-for-woocommerce' ); ?></a>
+				<?php endif; ?>
+				<button type="button" class="button-link mkl-pc-quote-user__clear" <?php echo $user ? '' : 'hidden'; ?>><?php esc_html_e( 'Remove', 'product-configurator-for-woocommerce' ); ?></button>
+			</p>
+			<input type="search" id="mkl_pc_quote_user_field" class="regular-text mkl-pc-quote-user__search" autocomplete="off" placeholder="<?php esc_attr_e( 'Search accounts by name or email…', 'product-configurator-for-woocommerce' ); ?>" aria-describedby="mkl_pc_quote_user_description" />
+			<ul class="mkl-pc-quote-user__results"></ul>
+			<p class="mkl-pc-quote-user__status" role="status"></p>
+			<p id="mkl_pc_quote_user_description" class="description">
+				<?php
+				esc_html_e( 'Picking an account fills in the empty details below.', 'product-configurator-for-woocommerce' );
+				if ( mkl_pc( 'quotes' )->woo_order_store->is_available() ) {
+					echo ' ' . esc_html__( 'Orders made from this request belong to it.', 'product-configurator-for-woocommerce' );
+				}
+				?>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Accounts matching a search, for the picker
+	 *
+	 * @return void
+	 */
+	public function ajax_search_customers() {
+		check_ajax_referer( 'mkl_pc_quote_customer', 'security' );
+		if ( ! $this->can_pick_customer() ) wp_die( -1 );
+		$term = isset( $_GET['term'] ) ? sanitize_text_field( wp_unslash( $_GET['term'] ) ) : '';
+		if ( mb_strlen( $term ) < 2 ) wp_send_json( [] );
+		$args = [ 'number' => 20, 'orderby' => 'display_name', 'fields' => 'ID' ];
+		$ids = array_merge(
+			get_users( $args + [ 'search' => '*' . $term . '*', 'search_columns' => [ 'user_login', 'user_email', 'user_nicename', 'display_name' ] ] ),
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- An admin search, 20 results.
+			get_users( $args + [ 'meta_query' => [ 'relation' => 'OR', [ 'key' => 'first_name', 'value' => $term, 'compare' => 'LIKE' ], [ 'key' => 'last_name', 'value' => $term, 'compare' => 'LIKE' ] ] ] )
+		);
+		$found = [];
+		foreach ( array_slice( array_unique( array_map( 'intval', $ids ) ), 0, 20 ) as $user_id ) {
+			$user = get_userdata( $user_id );
+			if ( $user ) $found[] = [ 'id' => $user->ID, 'label' => $this->format_user( $user ) ];
+		}
+		wp_send_json( $found );
+	}
+
+	/**
+	 * A customer account's details, keyed by where quote fields map them (full_name, billing_email...)
+	 *
+	 * From the account; when WooCommerce keeps a billing address on it, that wins, as on its orders.
+	 *
+	 * @param int $user_id
+	 * @return array
+	 */
+	public function get_customer_details( $user_id ) {
+		$user = get_userdata( $user_id );
+		if ( ! $user ) return [];
+		$name = trim( $user->first_name . ' ' . $user->last_name );
+		$details = [
+			'full_name'       => '' !== $name ? $name : $user->display_name,
+			'billing_email'   => $user->user_email,
+			'billing_phone'   => '',
+			'billing_company' => '',
+		];
+		if ( class_exists( '\WC_Customer' ) ) {
+			$customer = new \WC_Customer( $user->ID );
+			$billing_name = trim( $customer->get_billing_first_name() . ' ' . $customer->get_billing_last_name() );
+			$billing = [
+				'full_name'       => $billing_name,
+				'billing_email'   => $customer->get_billing_email(),
+				'billing_phone'   => $customer->get_billing_phone(),
+				'billing_company' => $customer->get_billing_company(),
+			];
+			$details = array_merge( $details, array_filter( $billing ) );
+		}
+		/**
+		 * The details a customer account gives a quote request, keyed by a field's maps_to
+		 *
+		 * @param array    $details
+		 * @param \WP_User $user
+		 */
+		return apply_filters( 'mkl_pc/admin/quote_request/customer_details', $details, $user );
+	}
+
+	/**
+	 * @return void
+	 */
+	public function ajax_customer_details() {
+		check_ajax_referer( 'mkl_pc_quote_customer', 'security' );
+		if ( ! $this->can_pick_customer() ) wp_die( -1 );
+		$details = $this->get_customer_details( isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0 );
+		if ( ! $details ) wp_send_json_error();
+		wp_send_json_success( $details );
 	}
 
 	/**
@@ -463,6 +600,21 @@ class Quote_Requests_Admin {
 			}
 		}
 
+		$account_log = '';
+		if ( isset( $_POST['mkl_pc_quote_user_shown'] ) && $this->can_pick_customer() ) {
+			$user_id = isset( $_POST['mkl_pc_quote_user_id'] ) ? absint( $_POST['mkl_pc_quote_user_id'] ) : 0;
+			$user = $user_id ? get_userdata( $user_id ) : null;
+			if ( ! $user_id || $user ) {
+				if ( $user_id !== $request->user_id ) {
+					$account_log = $user
+						/* translators: 1: user name, 2: email address */
+						? sprintf( __( 'Customer account: %1$s (%2$s).', 'product-configurator-for-woocommerce' ), $user->display_name, $user->user_email )
+						: __( 'Customer account removed: the request is a guest\'s.', 'product-configurator-for-woocommerce' );
+				}
+				$request->user_id = $user_id;
+			}
+		}
+
 		if ( isset( $_POST['mkl_pc_quote_price'] ) && function_exists( 'wc_format_decimal' ) ) {
 			$price = wc_format_decimal( sanitize_text_field( wp_unslash( $_POST['mkl_pc_quote_price'] ) ) );
 			$request->quoted_price = '' === $price ? null : (float) $price;
@@ -476,6 +628,8 @@ class Quote_Requests_Admin {
 		$saved = $this->store->save( $request );
 		if ( is_wp_error( $saved ) ) {
 			$notices[] = [ 'error', $saved->get_error_message() ];
+		} elseif ( $account_log ) {
+			$this->store->log( $post_id, $account_log );
 		}
 
 		$status = isset( $_POST['mkl_pc_quote_status'] ) ? sanitize_key( wp_unslash( $_POST['mkl_pc_quote_status'] ) ) : '';
@@ -565,29 +719,31 @@ class Quote_Requests_Admin {
 	}
 
 	/**
-	 * The configurator dialog on a request's screen
+	 * The screen's script, and the configurator dialog
 	 *
 	 * @return void
 	 */
 	public function enqueue() {
 		$screen = get_current_screen();
 		if ( ! $screen || CPT_Store::POST_TYPE !== $screen->post_type || 'post' !== $screen->base ) return;
+		$deps = [ 'jquery' ];
 		$editor = mkl_pc( 'configuration_editor' );
-		if ( ! $editor || ! function_exists( 'wc_get_product' ) ) return;
-		$editor->enqueue_dialog( 'quote' );
-		wp_add_inline_script( 'mkl_pc/admin/js/configuration_editor_dialog', "jQuery( function( $ ) {
-	$( document.body ).on( 'mkl_pc_configuration_saved', function() {
-		var box = $( '.mkl-pc-quote-configuration' ), config = window.PC_configuration_editor_dialog;
-		box.css( 'opacity', .5 );
-		$.post( config.ajax_url, { action: 'mkl_pc_quote_configuration', security: config.nonce, post_id: box.data( 'post' ) } ).done( function( response ) {
-			if ( ! response || ! response.success ) return;
-			box.html( response.data.html );
-			$( '#mkl_pc_quote_price_field' ).attr( 'placeholder', response.data.price );
-		} ).always( function() {
-			box.css( 'opacity', '' );
-		} );
-	} );
-} );" );
+		if ( $editor && function_exists( 'wc_get_product' ) ) {
+			$editor->enqueue_dialog( 'quote' );
+			$deps[] = 'mkl_pc/admin/js/configuration_editor_dialog';
+		}
+		$file = 'admin/js/quote-request-screen.js';
+		wp_enqueue_script( 'mkl_pc/admin/js/quote_request_screen', MKL_PC_ASSETS_URL . $file, $deps, filemtime( MKL_PC_ASSETS_PATH . $file ), true );
+		wp_localize_script( 'mkl_pc/admin/js/quote_request_screen', 'PC_quote_screen', [
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'mkl_pc_quote_customer' ),
+			'lang'     => [
+				'guest'      => __( 'Guest', 'product-configurator-for-woocommerce' ),
+				'searching'  => __( 'Searching…', 'product-configurator-for-woocommerce' ),
+				'no_results' => __( 'No account found.', 'product-configurator-for-woocommerce' ),
+				'picked'     => __( 'Account picked. Save the request to keep it.', 'product-configurator-for-woocommerce' ),
+			],
+		] );
 	}
 
 	/**
@@ -612,6 +768,15 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-configuration-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
 			.mkl-pc-quote-fields th { width: 30%; padding-top: 14px; padding-bottom: 14px; }
 			.mkl-pc-quote-fields td { padding-top: 8px; padding-bottom: 8px; }
+			.mkl-pc-quote-user__account { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 8px; }
+			.mkl-pc-quote-user__current { font-weight: 600; }
+			.mkl-pc-quote-user__results { max-width: 25em; margin: 4px 0 0; max-height: 240px; overflow-y: auto; }
+			.mkl-pc-quote-user__results:empty { display: none; }
+			.mkl-pc-quote-user__results li { margin: 0; border-bottom: 1px solid #f0f0f1; }
+			.mkl-pc-quote-user__results button.button-link { display: block; width: 100%; padding: 6px 4px; text-align: left; text-decoration: none; }
+			.mkl-pc-quote-user__results button.button-link:hover { background: #f6f7f7; }
+			.mkl-pc-quote-user__status:empty { display: none; }
+			.mkl-pc-quote-user__status { margin: 4px 0 0; color: #646970; }
 			#mkl_pc_quote_status label { display: block; margin-bottom: 4px; font-weight: 600; }
 			#mkl_pc_quote_status .description { display: block; margin-top: 4px; }
 			.mkl-pc-quote-actions { display: flex; justify-content: space-between; align-items: center; }
