@@ -291,22 +291,31 @@ class Quote_Service {
 	}
 
 	/**
-	 * Short reference, e.g. Q-20261030-7F3K
+	 * Short reference, e.g. Q-20261030-7F3K, not used by a stored request
+	 *
+	 * Random rather than counted: it does not tell how many requests the shop gets. Customers' pages
+	 * find a request by its reference, so one already stored is drawn again.
 	 *
 	 * @return string
 	 */
 	public function generate_reference() {
 		$chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-		$suffix = '';
-		for ( $i = 0; $i < 4; $i++ ) {
-			$suffix .= $chars[ wp_rand( 0, strlen( $chars ) - 1 ) ];
+		for ( $attempt = 0; $attempt < 10; $attempt++ ) {
+			$suffix = '';
+			for ( $i = 0; $i < 4; $i++ ) {
+				$suffix .= $chars[ wp_rand( 0, strlen( $chars ) - 1 ) ];
+			}
+			/**
+			 * Filter a quote request reference
+			 *
+			 * A reference already stored is drawn again, up to 10 times.
+			 *
+			 * @param string $reference
+			 */
+			$reference = apply_filters( 'mkl_pc/quote_request/reference', 'Q-' . wp_date( 'Ymd' ) . '-' . $suffix );
+			if ( ! mkl_pc( 'quotes' )->cpt_store->reference_exists( $reference ) ) break;
 		}
-		/**
-		 * Filter a quote request reference
-		 *
-		 * @param string $reference
-		 */
-		return apply_filters( 'mkl_pc/quote_request/reference', 'Q-' . wp_date( 'Ymd' ) . '-' . $suffix );
+		return $reference;
 	}
 
 	/**

@@ -473,6 +473,24 @@ class CPT_Store implements Quote_Store {
 	}
 
 	/**
+	 * Whether a stored request has this reference, trashed or still being made in the admin included
+	 *
+	 * @param string $reference
+	 * @return boolean
+	 */
+	public function reference_exists( $reference ) {
+		if ( '' === (string) $reference ) return false;
+		$ids = get_posts( [
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array_merge( array_keys( self::get_statuses() ), [ 'trash', 'draft', 'auto-draft' ] ),
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_reference', 'value' => (string) $reference ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- One new reference.
+		] );
+		return ! empty( $ids );
+	}
+
+	/**
 	 * The requests linked to an account, newest first
 	 *
 	 * @param int $user_id
