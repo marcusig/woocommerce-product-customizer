@@ -40,21 +40,6 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Admin_Email', false ) ) :
 		public function get_default_additional_content() {
 			return __( 'Reply to this email to answer the customer.', 'product-configurator-for-woocommerce' );
 		}
-
-		/**
-		 * Replies go to the customer
-		 *
-		 * @return string
-		 */
-		public function get_headers() {
-			$headers = parent::get_headers();
-			if ( $this->object instanceof Quote_Request && is_email( $this->object->get_email() ) ) {
-				$name = str_replace( [ "\r", "\n", '"', '<', '>' ], '', $this->object->get_name() );
-				$headers = preg_replace( '/^Reply-to:.*\r\n/mi', '', $headers );
-				$headers .= 'Reply-to: ' . ( $name ? '"' . $name . '" ' : '' ) . '<' . $this->object->get_email() . ">\r\n";
-			}
-			return $headers;
-		}
 	}
 
 endif;

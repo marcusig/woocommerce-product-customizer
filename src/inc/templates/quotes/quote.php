@@ -12,6 +12,7 @@
  * @var string                      $price_label
  * @var bool                        $show_image
  * @var string                      $back_url     The list it was opened from, or ''.
+ * @var string                      $answer_form  Accept, decline, ask for a change (quotes/quote-answer.php), or ''.
  * @var \MKL\PC\Quote_Customer_View $view
  */
 
@@ -60,6 +61,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php endif; ?>
 		</div>
 	</div>
+
+	<?php echo $answer_form; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in its template. ?>
 
 	<?php $rows = $request->get_field_rows(); ?>
 	<?php if ( $rows ) : ?>

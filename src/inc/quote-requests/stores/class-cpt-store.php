@@ -61,6 +61,8 @@ class CPT_Store implements Quote_Store {
 			'mkl_quote_new'      => _x( 'New', 'Quote request status', 'product-configurator-for-woocommerce' ),
 			'mkl_quote_progress' => _x( 'In progress', 'Quote request status', 'product-configurator-for-woocommerce' ),
 			'mkl_quote_answered' => _x( 'Answered', 'Quote request status', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_accepted' => _x( 'Accepted', 'Quote request status', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_declined' => _x( 'Declined', 'Quote request status', 'product-configurator-for-woocommerce' ),
 			'mkl_quote_closed'   => _x( 'Closed', 'Quote request status', 'product-configurator-for-woocommerce' ),
 		];
 	}
@@ -78,6 +80,10 @@ class CPT_Store implements Quote_Store {
 			'mkl_quote_progress' => _n_noop( 'In progress <span class="count">(%s)</span>', 'In progress <span class="count">(%s)</span>', 'product-configurator-for-woocommerce' ),
 			/* translators: %s: number of quote requests */
 			'mkl_quote_answered' => _n_noop( 'Answered <span class="count">(%s)</span>', 'Answered <span class="count">(%s)</span>', 'product-configurator-for-woocommerce' ),
+			/* translators: %s: number of quote requests */
+			'mkl_quote_accepted' => _n_noop( 'Accepted <span class="count">(%s)</span>', 'Accepted <span class="count">(%s)</span>', 'product-configurator-for-woocommerce' ),
+			/* translators: %s: number of quote requests */
+			'mkl_quote_declined' => _n_noop( 'Declined <span class="count">(%s)</span>', 'Declined <span class="count">(%s)</span>', 'product-configurator-for-woocommerce' ),
 			/* translators: %s: number of quote requests */
 			'mkl_quote_closed'   => _n_noop( 'Closed <span class="count">(%s)</span>', 'Closed <span class="count">(%s)</span>', 'product-configurator-for-woocommerce' ),
 		];

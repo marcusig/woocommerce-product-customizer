@@ -867,10 +867,11 @@ class Quote_Requests_Admin {
 	public function render_log( $post ) {
 		echo '<ul class="mkl-pc-quote-log">';
 		foreach ( array_reverse( $this->store->get_log( $post->ID ) ) as $entry ) {
+			// Customers' messages keep their line breaks.
 			$user = ! empty( $entry['user_id'] ) ? get_userdata( $entry['user_id'] ) : null;
 			printf(
 				'<li><span class="mkl-pc-quote-log__message">%s</span><span class="mkl-pc-quote-log__meta">%s</span></li>',
-				esc_html( $entry['message'] ),
+				nl2br( esc_html( $entry['message'] ) ),
 				esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $entry['time'] ) . ( $user ? ' · ' . $user->display_name : '' ) )
 			);
 		}
@@ -1074,6 +1075,8 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-status.status-mkl_quote_new { background: #c6e1c6; color: #2c4700; }
 			.mkl-pc-quote-status.status-mkl_quote_progress { background: #f8dda7; color: #573b00; }
 			.mkl-pc-quote-status.status-mkl_quote_answered { background: #c8d7e1; color: #003d66; }
+			.mkl-pc-quote-status.status-mkl_quote_accepted { background: #b8e6bf; color: #00450c; }
+			.mkl-pc-quote-status.status-mkl_quote_declined { background: #eba3a3; color: #761919; }
 			.mkl-pc-quote-reference { padding: 0 !important; font-size: 1.3em !important; }
 			.mkl-pc-quote-configuration { transition: opacity .15s; }
 			.mkl-pc-quote-request { display: flex; gap: 16px; align-items: flex-start; }

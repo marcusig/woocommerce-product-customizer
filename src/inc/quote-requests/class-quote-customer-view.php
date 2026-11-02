@@ -154,7 +154,7 @@ class Quote_Customer_View {
 			if ( ! $request || ! $this->can_view( $request, $key ) ) {
 				return $this->render( 'quotes/quote-not-found.php', [ 'list_url' => is_user_logged_in() ? get_permalink( $this->get_page_id() ) : '' ] );
 			}
-			return $this->render_request( $request, is_user_logged_in() && $request->user_id === get_current_user_id() ? get_permalink( $this->get_page_id() ) : '' );
+			return $this->render_request( $request, is_user_logged_in() && $request->user_id === get_current_user_id() ? get_permalink( $this->get_page_id() ) : '', $key );
 		}
 
 		return $this->render_list( get_current_user_id(), function( $request ) {
@@ -185,9 +185,10 @@ class Quote_Customer_View {
 	 *
 	 * @param Quote_Request $request
 	 * @param string        $back_url The list it was opened from, or ''.
+	 * @param string        $key      The request's key, when the visitor came with its link.
 	 * @return string
 	 */
-	public function render_request( Quote_Request $request, $back_url = '' ) {
+	public function render_request( Quote_Request $request, $back_url = '', $key = '' ) {
 		$sent = (int) get_post_meta( $request->id, '_mkl_pc_quote_sent', true );
 		$price = null;
 		$price_label = '';
@@ -209,6 +210,7 @@ class Quote_Customer_View {
 			'price_label'  => $price_label,
 			'show_image'   => 'none' !== mkl_pc( 'quotes' )->get_image_mode(),
 			'back_url'     => $back_url,
+			'answer_form'  => mkl_pc( 'quotes' )->customer_actions->render( $request, $key, $this ),
 			'view'         => $this,
 		] );
 	}
@@ -273,6 +275,8 @@ class Quote_Customer_View {
 			'mkl_quote_new'      => _x( 'Received', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
 			'mkl_quote_progress' => _x( 'In progress', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
 			'mkl_quote_answered' => _x( 'Answered', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_accepted' => _x( 'Accepted', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_declined' => _x( 'Declined', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
 			'mkl_quote_closed'   => _x( 'Closed', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
 		];
 		/**
@@ -342,6 +346,18 @@ class Quote_Customer_View {
 .mkl-pc-quote-lookup__row button { min-height: 44px; margin: 0; }
 .mkl-pc-quote-lookup__website { position: absolute; left: -9999px; }
 .mkl-pc-quote-lookup__notice { padding: .8em 1em; margin: 1em 0; background: rgba(0,0,0,.04); }
-.mkl-pc-quote-lookup__notice.is-error { border-left: 3px solid #b32d2e; }' );
+.mkl-pc-quote-lookup__notice.is-error { border-left: 3px solid #b32d2e; }
+.mkl-pc-quote-answer { margin: 2em 0; max-width: 36em; }
+.mkl-pc-quote-answer form { margin: 0 0 1em; }
+.mkl-pc-quote-answer__more { margin: 1em 0; }
+.mkl-pc-quote-answer__more summary { cursor: pointer; font-weight: 600; }
+.mkl-pc-quote-answer__more form { margin-top: .75em; }
+.mkl-pc-quote-answer label { display: block; margin-bottom: .35em; }
+.mkl-pc-quote-answer textarea { display: block; width: 100%; box-sizing: border-box; margin: 0 0 .75em; padding: 10px 12px; border: 1px solid rgba(0,0,0,.22); border-radius: 8px; background: #fff; color: inherit; font: inherit; line-height: 1.4; }
+.mkl-pc-quote-answer textarea:focus { border-color: var(--mkl_pc_color-primary, #2a2a2a); outline: 2px solid var(--mkl_pc_color-primary, #2a2a2a); outline-offset: -1px; }
+.mkl-pc-quote-answer textarea[aria-invalid=true] { border-color: #b32d2e; }
+.mkl-pc-quote-answer button, .mkl-pc-quote-answer .button { min-height: 44px; margin: 0; }
+.mkl-pc-quote-answer__notice { padding: .8em 1em; margin: 0 0 1em; background: rgba(0,0,0,.04); }
+.mkl-pc-quote-answer__notice.is-error { border-left: 3px solid #b32d2e; }' );
 	}
 }

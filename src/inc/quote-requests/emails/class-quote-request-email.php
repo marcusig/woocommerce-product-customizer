@@ -95,6 +95,21 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Email', false ) ) :
 		}
 
 		/**
+		 * Replies to the shop's emails go to the customer
+		 *
+		 * @return string
+		 */
+		public function get_headers() {
+			$headers = parent::get_headers();
+			if ( ! $this->customer_email && $this->object instanceof Quote_Request && is_email( $this->object->get_email() ) ) {
+				$name = str_replace( [ "\r", "\n", '"', '<', '>' ], '', $this->object->get_name() );
+				$headers = preg_replace( '/^Reply-to:.*\r\n/mi', '', $headers );
+				$headers .= 'Reply-to: ' . ( $name ? '"' . $name . '" ' : '' ) . '<' . $this->object->get_email() . ">\r\n";
+			}
+			return $headers;
+		}
+
+		/**
 		 * Attach the configuration image when the settings ask for it
 		 *
 		 * @return array
