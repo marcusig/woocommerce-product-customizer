@@ -9,7 +9,7 @@ Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Build 2D and 3D product configurators for WooCommerce. Customers design their product with a live visual preview, then add it to the cart.
+Build 2D and 3D product configurators for WooCommerce. Customers design their product with a live preview, then buy it or request a quote.
 
 == Description ==
 
@@ -20,7 +20,11 @@ Build 2D and 3D product configurators for WooCommerce. Customers design their pr
 
 Add colors and swatches, conditional logic, pricing rules, form fields, file uploads and linked WooCommerce products, and replace hundreds of product variations and images with a single configurable product. Build a configurator once and share it across your whole catalog with **global configurators** and **global layers**.
 
+**Sell made-to-order products on quote.** Customers can request a quote for exactly what they configured, picture included. You price it and send it from the admin, and they accept and pay online. No separate quote plugin needed.
+
 No coding and no bulky setup: the configurator works with any WooCommerce theme, and everything is managed from a visual editor in the WordPress admin.
+
+**New in version 2.1:** request a quote, and configure orders from the admin.
 
 **New in version 2:** 3D configurator, global configurators and global layers. [Read what's new in v2](https://wc-product-configurator.com/2026/08/03/whats-new-in-product-configurator-v2/)
 
@@ -57,11 +61,21 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 * **Global Configurators** – Share one configurator between many products. Edit it once and every product using it is updated. Assign it product by product or to whole categories, and detach a single product with "Make local copy" when it needs to differ.
 * **Global Layers** – Build a layer once, such as a fabric range or a color palette, and import it into any configurator. Changes reach every product using it, and any product can disconnect to customize its own copy.
 
+==== Request a quote ====
+
+* **Request a Quote Button** – Next to Add to cart or instead of it, site-wide or per product, with a request form you can reorder, relabel and translate.
+* **Quotes Your Way** – Receive requests by email, keep them in their own list in the admin, or create them as WooCommerce orders.
+* **Price and Send Quotes** – Adjust the configuration, set your price, add a message and email the quote, with a full history of each request.
+* **Quotes for Phone and Email Leads** – Configure a product for a customer from the admin and send them the quote.
+* **Customer Quote Page** – Customers follow their requests from a private link or from My account, and accept and pay, decline, or ask for a change.
+* **Quote PDF** *(via add-on)* – Attach a branded PDF of the quote to the emails, and let customers download it.
+* **Edit Orders from the Admin** – Change the configuration of an order line, or add a configured product to an order.
+
 ==== Create smart configuration flows ====
 
 * **Multi-Step Configurator** – Split complex product builds into multiple steps for a guided product selection experience.
 * **Required Selections** – Make sure customers choose an option before they can add the product to the cart.
-* **B2B** – Compatible with quote plugins, tiered pricing and wholesale prices. A configured product keeps its choices, price and preview image in the quote, the cart and the order.
+* **B2B** – Built-in quote requests, and compatible with quote plugins, tiered pricing and wholesale prices. A configured product keeps its choices, price and preview image in the quote, the cart and the order.
 * **Conditional Logic** *(via add-on)* – Show/hide options dynamically depending on user selections. Perfect for complex logic flows.
 * **Form Fields** *(via add-on)* – Let users enter text, numbers, or upload files—ideal for personalized orders.
 
@@ -110,11 +124,11 @@ The core plugin is fully functional. Extend it with these premium features:
 * [**Save Your Design - Save feature**](https://wc-product-configurator.com/product/save-your-design/) – Let users save their designs
 * [**Save Your Design - Share feature**](https://wc-product-configurator.com/product/save-your-design/) – Let users share their designs, copy a link or email their configuration
 * [**Save Your Design - Presets feature**](https://wc-product-configurator.com/product/save-your-design/) – Create configuration presets for direct access
-* [**Save Your Design - PDF download**](https://wc-product-configurator.com/product/save-your-design/) – Users can download their configuration as PDF
+* [**Save Your Design - PDF download**](https://wc-product-configurator.com/product/save-your-design/) – Users can download their configuration as PDF, and quotes come with a PDF
 * [**Multiple Choice**](https://wc-product-configurator.com/product/multiple-choice/) – Enable multi-select per layer  
 * [**Linked Products & Stock Management**](https://wc-product-configurator.com/product/stock-management-and-linked-product/) – Link options to WooCommerce products, track inventory, sync with ERP  
 * [**Conditional Logic**](https://wc-product-configurator.com/product/conditional-logic/) – Build complex products: dynamically show, hide, or auto-select items based on conditions  
-* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, upload files and perform price calculations  
+* [**Form Fields**](https://wc-product-configurator.com/product/form-fields/) – Add forms to collect extra input, upload files and perform price calculations, in the configurator or the quote request form  
 * [**Text Overlay**](https://wc-product-configurator.com/product/text-overlay/) – Let users preview personalized text in real time
 
 [Compare plans](https://wc-product-configurator.com/shop/#compare)
@@ -171,6 +185,14 @@ Variable products are supported too, if you need them: their variations can shar
 Yes, with global configurators. Build a configurator once under Product Configurator > Global configurators, or turn an existing product's configurator into a global one, then assign it to products or to whole product categories. A change made to a global configurator applies to every product using it, and any product can be detached with "Make local copy".
 
 To share only part of a configurator, such as a fabric range, make a layer global and import it into other products.
+
+= Can customers request a quote instead of buying? =
+Yes. Enable quote requests in Product Configurator > Settings, and a "Request a quote" button appears next to Add to cart, or instead of it for products you only sell on quote. Customers send their configuration with a short form; you receive it by email and, if you choose, in a list in the admin where you price it and send the quote. Customers then accept and pay online, decline, or ask for a change.
+
+Requests can also be created as WooCommerce orders, and the configurator stays compatible with quote plugins such as YITH WooCommerce Request a Quote.
+
+= Can I change a customer's configuration after they ordered? =
+Yes, while WooCommerce lets the order be edited (pending payment, on hold, or a quote): each configured line gets an "Edit the configuration" button, and "Add a configured product" adds a new one. The price is recalculated, and an order note records the change.
 
 = Does it work with my theme or page builder? =
 Yes. By default the configurator opens from a "Configure" button that replaces the Add to cart button, which works with any WooCommerce theme. To embed the configurator in the product page, or anywhere else, use the `[mkl_configurator]` and `[mkl_configurator_button]` shortcodes in a block theme template, Elementor, Divi or any other page builder.
@@ -229,6 +251,19 @@ Open Source SVG icons:
 
 
 == Changelog ==
+
+= 2.1.0 =
+
+* FEATURE: Request a quote: customers request a quote for their configuration, with a form you can customize
+* FEATURE: Quote requests sent by email only, kept in Product Configurator > Quote requests, or created as WooCommerce orders
+* FEATURE: "Quote only" or no quote requests, per product
+* FEATURE: Quote request screen: edit the configuration, price and send the quote, link a customer account, see the history
+* FEATURE: Create quote requests for your customers from the admin
+* FEATURE: Customer page and My account tab to follow quote requests, with "Find my requests" for lost links
+* FEATURE: Customers accept and pay, decline, or ask for a change to a quote
+* FEATURE: Edit the configuration of order lines, and add configured products to orders, from the admin
+* DEV: Quote request REST API, `PC.fe.quote` and `mkl_pc_create_quote_request()`
+* DEV: Hooks for quote requests (`mkl_pc/quote_request/…`) and for configuring orders (`mkl_pc/configuration_editor/…`)
 
 = 2.0.1 - 24/Oct/2026 =
 
