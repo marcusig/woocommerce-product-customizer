@@ -7,7 +7,8 @@
  * @var \MKL\PC\Quote_Request[]       $requests
  * @var bool                          $signed_in
  * @var string                        $login_url
- * @var callable                      $url_for   The link to a request: $url_for( $request ).
+ * @var callable                      $url_for     The link to a request: $url_for( $request ).
+ * @var string                        $lookup_form "Find my requests", for visitors (HTML).
  * @var \MKL\PC\Quote_Customer_View   $view
  */
 
@@ -19,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php if ( ! $signed_in ) : ?>
 		<p><?php esc_html_e( 'To see a quote request, open the link in the email we sent you about it.', 'product-configurator-for-woocommerce' ); ?></p>
 		<p><a href="<?php echo esc_url( $login_url ); ?>"><?php esc_html_e( 'Have an account? Sign in to see all your requests.', 'product-configurator-for-woocommerce' ); ?></a></p>
+		<?php echo $lookup_form; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in its template. ?>
 	<?php elseif ( empty( $requests ) ) : ?>
 		<p><?php esc_html_e( 'You have no quote requests yet.', 'product-configurator-for-woocommerce' ); ?></p>
 	<?php else : ?>

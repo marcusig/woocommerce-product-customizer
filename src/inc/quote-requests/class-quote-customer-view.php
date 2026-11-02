@@ -11,7 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * A page holding the [mkl_pc_quotes] shortcode (the "Customer page" setting, created when first needed)
  * shows:
  * - one request, to whoever has its link: the customer emails carry it, with the request's secret key;
- * - the requests linked to the signed-in customer's account.
+ * - the requests linked to the signed-in customer's account;
+ * - to a visitor, a form that emails the links of the requests sent with an address ("Find my requests").
+ *   It answers the same whether there are requests or not, so nobody learns which addresses sent some.
  * Other places (WooCommerce's My account) show the same templates through render_list() / render_request().
  *
  * The page is personal: never cached, never indexed. Templates can be overridden in
@@ -25,6 +27,18 @@ class Quote_Customer_View {
 
 	const KEY_VAR = 'key';
 
+	const LOOKUP_ACTION = 'mkl_pc_quote_lookup';
+
+	/**
+	 * Requests whose links one address can be sent in an hour, whoever asks.
+	 */
+	const LOOKUP_PER_EMAIL = 3;
+
+	/**
+	 * @var array|null What the lookup form's submission gave: status (sent, invalid, limited), email.
+	 */
+	private $lookup = null;
+
 	/**
 	 * @var CPT_Store
 	 */
@@ -34,6 +48,11 @@ class Quote_Customer_View {
 		$this->store = $store;
 		add_shortcode( self::SHORTCODE, [ $this, 'shortcode' ] );
 		add_action( 'template_redirect', [ $this, 'no_cache' ] );
+		add_action( 'template_redirect', [ $this, 'handle_lookup' ], 20 );
+		// In the head on the customer page; elsewhere (My account) when the view renders.
+		add_action( 'wp_enqueue_scripts', function() {
+			if ( $this->is_customer_page() ) $this->enqueue();
+		} );
 		add_filter( 'wp_robots', [ $this, 'no_robots' ] );
 	}
 
@@ -152,11 +171,12 @@ class Quote_Customer_View {
 	 */
 	public function render_list( $user_id, $url_for ) {
 		return $this->render( 'quotes/quotes.php', [
-			'requests'  => $this->store->get_user_requests( $user_id ),
-			'signed_in' => (bool) $user_id,
-			'login_url' => wp_login_url( get_permalink() ),
-			'url_for'   => $url_for,
-			'view'      => $this,
+			'requests'    => $this->store->get_user_requests( $user_id ),
+			'signed_in'   => (bool) $user_id,
+			'login_url'   => wp_login_url( get_permalink() ),
+			'url_for'     => $url_for,
+			'lookup_form' => $user_id ? '' : $this->render( 'quotes/quote-lookup.php', [ 'lookup' => $this->lookup ] ),
+			'view'        => $this,
 		] );
 	}
 
@@ -191,6 +211,45 @@ class Quote_Customer_View {
 			'back_url'     => $back_url,
 			'view'         => $this,
 		] );
+	}
+
+	/**
+	 * "Find my requests": email the links of the requests sent with an address
+	 *
+	 * Whatever was found, the visitor reads the same answer. A visitor asks a few times an hour, and an
+	 * address gets a few emails an hour, whoever asks.
+	 *
+	 * @return void
+	 */
+	public function handle_lookup() {
+		if ( 'POST' !== ( isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : '' ) || ! isset( $_POST[ self::LOOKUP_ACTION ] ) || ! $this->is_customer_page() ) return; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput, WordPress.Security.NonceVerification.Missing -- Checked below.
+		$email = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked below.
+		$this->lookup = [ 'status' => 'sent', 'email' => $email ];
+
+		if ( ! isset( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['_wpnonce'] ) ), self::LOOKUP_ACTION ) ) {
+			$this->lookup['status'] = 'expired';
+			return;
+		}
+		// Filled by bots only: they read the usual answer.
+		if ( ! empty( $_POST['website'] ) ) return;
+		if ( ! is_email( $email ) ) {
+			$this->lookup['status'] = 'invalid';
+			return;
+		}
+		$security = mkl_pc( 'frontend_security' );
+		if ( $security && is_wp_error( $security->enforce_rate_limit( self::LOOKUP_ACTION ) ) ) {
+			$this->lookup['status'] = 'limited';
+			return;
+		}
+
+		$throttle = 'mkl_pc_quote_lookup_' . md5( strtolower( $email ) );
+		$sent = (int) get_transient( $throttle );
+		if ( $sent >= self::LOOKUP_PER_EMAIL ) return;
+
+		$requests = array_values( array_filter( array_map( [ $this->store, 'load' ], $this->store->get_request_ids_by_email( [ $email ] ) ) ) );
+		if ( ! $requests ) return;
+		set_transient( $throttle, $sent + 1, HOUR_IN_SECONDS );
+		mkl_pc( 'mailer' )->send( 'mkl_pc_quote_request_lookup', $email, [ 'requests' => $requests ] );
 	}
 
 	/**
@@ -262,6 +321,12 @@ class Quote_Customer_View {
 .mkl-pc-quote__configuration { flex: 1 1 260px; }
 .mkl-pc-quote__price { font-size: 1.15em; margin-top: 1em; }
 .mkl-pc-quote__message { padding: 1em 1.2em; margin: 1.5em 0; border-left: 3px solid currentColor; background: rgba(0,0,0,.03); }
-.mkl-pc-quote__message p:last-child { margin-bottom: 0; }' );
+.mkl-pc-quote__message p:last-child { margin-bottom: 0; }
+.mkl-pc-quote-lookup { margin-top: 2em; }
+.mkl-pc-quote-lookup__row { display: flex; flex-wrap: wrap; gap: .5em; align-items: center; }
+.mkl-pc-quote-lookup__row input[type=email] { flex: 1 1 16em; }
+.mkl-pc-quote-lookup__website { position: absolute; left: -9999px; }
+.mkl-pc-quote-lookup__notice { padding: .8em 1em; margin: 1em 0; background: rgba(0,0,0,.04); }
+.mkl-pc-quote-lookup__notice.is-error { border-left: 3px solid #b32d2e; }' );
 	}
 }

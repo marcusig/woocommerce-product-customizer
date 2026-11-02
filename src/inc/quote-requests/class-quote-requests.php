@@ -111,6 +111,7 @@ class Quote_Requests {
 		$mailer->register( 'mkl_pc_quote_request_admin', '\MKL\PC\Quote_Request_Admin_Email', __DIR__ . '/emails/class-quote-request-admin-email.php' );
 		$mailer->register( 'mkl_pc_quote_request_customer', '\MKL\PC\Quote_Request_Customer_Email', __DIR__ . '/emails/class-quote-request-customer-email.php' );
 		$mailer->register( 'mkl_pc_quote_request_quote', '\MKL\PC\Quote_Request_Quote_Email', __DIR__ . '/emails/class-quote-request-quote-email.php' );
+		$mailer->register( 'mkl_pc_quote_request_lookup', '\MKL\PC\Quote_Request_Lookup_Email', __DIR__ . '/emails/class-quote-request-lookup-email.php' );
 
 		add_filter( 'mkl_pc_frontend_action_token_purposes', [ $this, 'add_token_purpose' ] );
 		add_filter( 'mkl_pc_rate_limit_rule', [ $this, 'rate_limit_rule' ], 10, 2 );
@@ -259,6 +260,9 @@ class Quote_Requests {
 	public function rate_limit_rule( $rule, $action ) {
 		if ( self::TOKEN_PURPOSE === $action ) {
 			return [ 'max' => 10, 'window' => HOUR_IN_SECONDS ];
+		}
+		if ( Quote_Customer_View::LOOKUP_ACTION === $action ) {
+			return [ 'max' => 5, 'window' => HOUR_IN_SECONDS ];
 		}
 		return $rule;
 	}

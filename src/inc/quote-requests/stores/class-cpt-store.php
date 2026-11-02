@@ -355,18 +355,31 @@ class CPT_Store implements Quote_Store {
 	 * @return int[] Post ids.
 	 */
 	public function get_guest_request_ids( $emails ) {
+		return array_values( array_filter( $this->get_request_ids_by_email( $emails, 200 ), function( $post_id ) {
+			return 0 === $this->get_user_id( $post_id );
+		} ) );
+	}
+
+	/**
+	 * Requests sent with one of these emails, newest first
+	 *
+	 * @param string[] $emails
+	 * @param int      $limit
+	 * @return int[] Post ids.
+	 */
+	public function get_request_ids_by_email( $emails, $limit = 20 ) {
 		$emails = array_values( array_unique( array_filter( array_map( 'sanitize_email', (array) $emails ) ) ) );
 		if ( ! $emails ) return [];
 		$ids = get_posts( [
 			'post_type'      => self::POST_TYPE,
 			'post_status'    => array_keys( self::get_statuses() ),
-			'posts_per_page' => 200,
+			'posts_per_page' => $limit,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
 			'fields'         => 'ids',
-			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_email', 'value' => $emails, 'compare' => 'IN' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Admin only.
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_email', 'value' => $emails, 'compare' => 'IN' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- One address's requests.
 		] );
-		return array_values( array_filter( array_map( 'intval', $ids ), function( $post_id ) {
-			return 0 === $this->get_user_id( $post_id );
-		} ) );
+		return array_map( 'intval', $ids );
 	}
 
 	/**
