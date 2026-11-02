@@ -72,6 +72,16 @@ class Woo_Order_Store implements Quote_Store {
 	}
 
 	/**
+	 * A quote order is seen with the customer's orders, by WooCommerce
+	 *
+	 * @param Quote_Request $request
+	 * @return string
+	 */
+	public function get_view_url( Quote_Request $request ) {
+		return '';
+	}
+
+	/**
 	 * Create the order for a request
 	 *
 	 * @param Quote_Request $request

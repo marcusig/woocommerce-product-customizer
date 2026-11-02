@@ -1,0 +1,267 @@
+<?php
+namespace MKL\PC;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Where customers see the quote requests kept as posts, without WooCommerce or an account
+ *
+ * A page holding the [mkl_pc_quotes] shortcode (the "Customer page" setting, created when first needed)
+ * shows:
+ * - one request, to whoever has its link: the customer emails carry it, with the request's secret key;
+ * - the requests linked to the signed-in customer's account.
+ * Other places (WooCommerce's My account) show the same templates through render_list() / render_request().
+ *
+ * The page is personal: never cached, never indexed. Templates can be overridden in
+ * yourtheme/product-configurator/quotes/.
+ */
+class Quote_Customer_View {
+
+	const SHORTCODE = 'mkl_pc_quotes';
+
+	const REFERENCE_VAR = 'quote_request';
+
+	const KEY_VAR = 'key';
+
+	/**
+	 * @var CPT_Store
+	 */
+	private $store;
+
+	public function __construct( CPT_Store $store ) {
+		$this->store = $store;
+		add_shortcode( self::SHORTCODE, [ $this, 'shortcode' ] );
+		add_action( 'template_redirect', [ $this, 'no_cache' ] );
+		add_filter( 'wp_robots', [ $this, 'no_robots' ] );
+	}
+
+	/**
+	 * The customer page
+	 *
+	 * @param boolean $create Make it when there is none.
+	 * @return int 0 without one.
+	 */
+	public function get_page_id( $create = false ) {
+		$page_id = (int) mkl_pc( 'settings' )->get( 'quote_request_page' );
+		if ( $page_id && 'publish' === get_post_status( $page_id ) ) return $page_id;
+		if ( ! $create ) return 0;
+
+		$page_id = wp_insert_post( [
+			'post_type'    => 'page',
+			'post_status'  => 'publish',
+			'post_title'   => __( 'Quote request', 'product-configurator-for-woocommerce' ),
+			'post_content' => '<!-- wp:shortcode -->[' . self::SHORTCODE . ']<!-- /wp:shortcode -->',
+			'post_author'  => 0,
+		] );
+		if ( ! $page_id || is_wp_error( $page_id ) ) return 0;
+		mkl_pc( 'settings' )->set( 'quote_request_page', $page_id );
+		return (int) $page_id;
+	}
+
+	/**
+	 * The link to one request, for its customer
+	 *
+	 * @param Quote_Request $request
+	 * @return string
+	 */
+	public function get_request_url( Quote_Request $request ) {
+		$page_id = $this->get_page_id( true );
+		$key = $this->store->get_access_key( $request );
+		if ( ! $page_id || ! $key || ! $request->reference ) return '';
+		return add_query_arg( [
+			self::REFERENCE_VAR => rawurlencode( $request->reference ),
+			self::KEY_VAR       => $key,
+		], get_permalink( $page_id ) );
+	}
+
+	/**
+	 * Whether the current visitor may see a request
+	 *
+	 * With its key, or as the account it is linked to. Merchants who can edit it see it too.
+	 *
+	 * @param Quote_Request $request
+	 * @param string        $key
+	 * @return boolean
+	 */
+	public function can_view( Quote_Request $request, $key = '' ) {
+		if ( '' !== $key && '' !== $request->access_key && hash_equals( $request->access_key, (string) $key ) ) return true;
+		if ( $request->user_id && get_current_user_id() === $request->user_id ) return true;
+		return current_user_can( 'edit_post', $request->id );
+	}
+
+	/**
+	 * @return boolean
+	 */
+	public function is_customer_page() {
+		$page_id = $this->get_page_id();
+		return $page_id && is_page( $page_id );
+	}
+
+	/**
+	 * Requests are personal: caches must not keep the page
+	 *
+	 * @return void
+	 */
+	public function no_cache() {
+		if ( ! $this->is_customer_page() ) return;
+		nocache_headers();
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) define( 'DONOTCACHEPAGE', true );
+	}
+
+	/**
+	 * @param array $robots
+	 * @return array
+	 */
+	public function no_robots( $robots ) {
+		return $this->is_customer_page() ? wp_robots_no_robots( $robots ) : $robots;
+	}
+
+	/**
+	 * [mkl_pc_quotes]: the request of the link, or the signed-in customer's requests
+	 *
+	 * @return string
+	 */
+	public function shortcode() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- The key is the authorization.
+		$reference = isset( $_GET[ self::REFERENCE_VAR ] ) ? sanitize_text_field( wp_unslash( $_GET[ self::REFERENCE_VAR ] ) ) : '';
+		$key = isset( $_GET[ self::KEY_VAR ] ) ? sanitize_text_field( wp_unslash( $_GET[ self::KEY_VAR ] ) ) : '';
+		// phpcs:enable
+		$this->enqueue();
+
+		if ( '' !== $reference ) {
+			$request = $this->store->get_by_reference( $reference );
+			if ( ! $request || ! $this->can_view( $request, $key ) ) {
+				return $this->render( 'quotes/quote-not-found.php', [ 'list_url' => is_user_logged_in() ? get_permalink( $this->get_page_id() ) : '' ] );
+			}
+			return $this->render_request( $request, is_user_logged_in() && $request->user_id === get_current_user_id() ? get_permalink( $this->get_page_id() ) : '' );
+		}
+
+		return $this->render_list( get_current_user_id(), function( $request ) {
+			return add_query_arg( self::REFERENCE_VAR, rawurlencode( $request->reference ), get_permalink( $this->get_page_id() ) );
+		} );
+	}
+
+	/**
+	 * A customer's requests
+	 *
+	 * @param int      $user_id  0 for a visitor: they are told to use the link of their email, or to sign in.
+	 * @param callable $url_for  The link to a request in this list.
+	 * @return string
+	 */
+	public function render_list( $user_id, $url_for ) {
+		return $this->render( 'quotes/quotes.php', [
+			'requests'  => $this->store->get_user_requests( $user_id ),
+			'signed_in' => (bool) $user_id,
+			'login_url' => wp_login_url( get_permalink() ),
+			'url_for'   => $url_for,
+			'view'      => $this,
+		] );
+	}
+
+	/**
+	 * One request
+	 *
+	 * @param Quote_Request $request
+	 * @param string        $back_url The list it was opened from, or ''.
+	 * @return string
+	 */
+	public function render_request( Quote_Request $request, $back_url = '' ) {
+		$sent = (int) get_post_meta( $request->id, '_mkl_pc_quote_sent', true );
+		$price = null;
+		$price_label = '';
+		if ( function_exists( 'wc_price' ) ) {
+			if ( $sent && null !== $request->get_line_price() ) {
+				$price = $request->get_line_price();
+				$price_label = __( 'Price', 'product-configurator-for-woocommerce' );
+			} elseif ( mkl_pc( 'quotes' )->show_prices() && is_array( $request->price ) && isset( $request->price['line_total'] ) ) {
+				$price = (float) $request->price['line_total'];
+				$price_label = __( 'Estimated price', 'product-configurator-for-woocommerce' );
+			}
+		}
+		return $this->render( 'quotes/quote.php', [
+			'request'      => $request,
+			'status'       => $this->get_status_label( $request ),
+			'sent'         => $sent,
+			'sent_message' => $sent ? (string) get_post_meta( $request->id, '_mkl_pc_quote_sent_message', true ) : '',
+			'price'        => $price,
+			'price_label'  => $price_label,
+			'show_image'   => 'none' !== mkl_pc( 'quotes' )->get_image_mode(),
+			'back_url'     => $back_url,
+			'view'         => $this,
+		] );
+	}
+
+	/**
+	 * A request's status, as the customer reads it
+	 *
+	 * @param Quote_Request $request
+	 * @return string
+	 */
+	public function get_status_label( Quote_Request $request ) {
+		$labels = [
+			'mkl_quote_new'      => _x( 'Received', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_progress' => _x( 'In progress', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_answered' => _x( 'Answered', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
+			'mkl_quote_closed'   => _x( 'Closed', 'Quote request status, for the customer', 'product-configurator-for-woocommerce' ),
+		];
+		/**
+		 * The statuses of quote requests, as customers read them
+		 *
+		 * @param array         $labels  Keyed by post status.
+		 * @param Quote_Request $request
+		 */
+		$labels = apply_filters( 'mkl_pc/quote_request/customer_status_labels', $labels, $request );
+		return isset( $labels[ $request->status ] ) ? $labels[ $request->status ] : '';
+	}
+
+	/**
+	 * A template, from the theme (yourtheme/product-configurator/...) or the plugin
+	 *
+	 * @param string $template Path under inc/templates.
+	 * @param array  $args
+	 * @return string
+	 */
+	public function render( $template, $args = [] ) {
+		$file = locate_template( 'product-configurator/' . $template );
+		if ( ! $file ) $file = MKL_PC_INCLUDE_PATH . 'templates/' . $template;
+		/**
+		 * The file of a customer quote template
+		 *
+		 * @param string $file
+		 * @param string $template
+		 * @param array  $args
+		 */
+		$file = apply_filters( 'mkl_pc/quote_request/customer_template', $file, $template, $args );
+		if ( ! is_file( $file ) ) return '';
+		ob_start();
+		( function() use ( $file, $args ) {
+			extract( $args, EXTR_SKIP ); // phpcs:ignore WordPress.PHP.DontExtract.extract_extract -- Template variables.
+			include $file;
+		} )();
+		return ob_get_clean();
+	}
+
+	/**
+	 * A few styles, which themes can override
+	 *
+	 * @return void
+	 */
+	public function enqueue() {
+		if ( wp_style_is( 'mkl_pc/css/quotes', 'enqueued' ) ) return;
+		wp_register_style( 'mkl_pc/css/quotes', false, [], MKL_PC_VERSION );
+		wp_enqueue_style( 'mkl_pc/css/quotes' );
+		wp_add_inline_style( 'mkl_pc/css/quotes', '
+.mkl-pc-quotes__table { width: 100%; border-collapse: collapse; }
+.mkl-pc-quotes__table th, .mkl-pc-quotes__table td { padding: .6em .5em; text-align: left; border-bottom: 1px solid rgba(0,0,0,.1); }
+.mkl-pc-quote__meta { opacity: .75; }
+.mkl-pc-quote__status { display: inline-block; padding: .1em .6em; border-radius: 1em; background: rgba(0,0,0,.06); font-size: .9em; }
+.mkl-pc-quote__summary { display: flex; flex-wrap: wrap; gap: 1.5em; align-items: flex-start; margin: 1.5em 0; }
+.mkl-pc-quote__image img { width: 200px; max-width: 100%; height: auto; display: block; }
+.mkl-pc-quote__configuration { flex: 1 1 260px; }
+.mkl-pc-quote__price { font-size: 1.15em; margin-top: 1em; }
+.mkl-pc-quote__message { padding: 1em 1.2em; margin: 1.5em 0; border-left: 3px solid currentColor; background: rgba(0,0,0,.03); }
+.mkl-pc-quote__message p:last-child { margin-bottom: 0; }' );
+	}
+}

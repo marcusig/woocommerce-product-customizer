@@ -68,4 +68,12 @@ interface Quote_Store {
 	 * @return string
 	 */
 	public function get_admin_url( Quote_Request $request );
+
+	/**
+	 * Where the customer sees a stored request, or ''
+	 *
+	 * @param Quote_Request $request
+	 * @return string
+	 */
+	public function get_view_url( Quote_Request $request );
 }

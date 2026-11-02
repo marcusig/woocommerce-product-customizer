@@ -192,7 +192,11 @@ class CPT_Store implements Quote_Store {
 				'value' => (string) $row['value'],
 			];
 		}
+		if ( ! $request->access_key ) {
+			$request->access_key = self::generate_access_key();
+		}
 		$meta = [
+			'_mkl_pc_quote_key'               => $request->access_key,
 			'_mkl_pc_quote_reference'         => $request->reference,
 			'_mkl_pc_quote_email'             => $request->get_email(),
 			'_mkl_pc_quote_configurator_id'   => $request->configurator_id,
@@ -251,6 +255,8 @@ class CPT_Store implements Quote_Store {
 		$request->price             = $get( 'price', null );
 		$request->lang              = (string) $get( 'lang' );
 		$request->user_id           = $this->get_user_id( $post );
+		$request->status            = $post->post_status;
+		$request->access_key        = (string) $get( 'key' );
 		$quoted_price               = $get( 'quoted_price', null );
 		$request->quoted_price      = is_numeric( $quoted_price ) ? (float) $quoted_price : null;
 		$request->created           = (int) get_post_time( 'U', true, $post );
@@ -389,6 +395,88 @@ class CPT_Store implements Quote_Store {
 	public function get_log( $post_id ) {
 		$log = get_post_meta( $post_id, '_mkl_pc_quote_log', true );
 		return is_array( $log ) ? $log : [];
+	}
+
+	/**
+	 * A secret for a request's customer link
+	 *
+	 * Kept as is, like WooCommerce's order keys: a hash could not be put in the emails sent later.
+	 *
+	 * @return string
+	 */
+	public static function generate_access_key() {
+		return wp_generate_password( 24, false );
+	}
+
+	/**
+	 * The request's key; requests stored before keys existed get one
+	 *
+	 * @param Quote_Request $request
+	 * @return string
+	 */
+	public function get_access_key( Quote_Request $request ) {
+		if ( ! $request->access_key && $request->id ) {
+			$request->access_key = self::generate_access_key();
+			update_post_meta( $request->id, '_mkl_pc_quote_key', $request->access_key );
+		}
+		return $request->access_key;
+	}
+
+	/**
+	 * Give a request a new key: the link the customer had stops working
+	 *
+	 * @param int $post_id
+	 * @return string The new key.
+	 */
+	public function reset_access_key( $post_id ) {
+		$key = self::generate_access_key();
+		update_post_meta( $post_id, '_mkl_pc_quote_key', $key );
+		return $key;
+	}
+
+	/**
+	 * A request by its reference
+	 *
+	 * @param string $reference
+	 * @return Quote_Request|null
+	 */
+	public function get_by_reference( $reference ) {
+		$reference = sanitize_text_field( (string) $reference );
+		if ( '' === $reference ) return null;
+		$ids = get_posts( [
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array_keys( self::get_statuses() ),
+			'posts_per_page' => 1,
+			'fields'         => 'ids',
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_reference', 'value' => $reference ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- One customer's link.
+		] );
+		return $ids ? $this->load( $ids[0] ) : null;
+	}
+
+	/**
+	 * The requests linked to an account, newest first
+	 *
+	 * @param int $user_id
+	 * @param int $limit
+	 * @return Quote_Request[]
+	 */
+	public function get_user_requests( $user_id, $limit = 50 ) {
+		if ( ! $user_id ) return [];
+		$this->maybe_store_user_ids();
+		$ids = get_posts( [
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => array_keys( self::get_statuses() ),
+			'posts_per_page' => $limit,
+			'fields'         => 'ids',
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'meta_query'     => [ [ 'key' => '_mkl_pc_quote_user_id', 'value' => (int) $user_id, 'type' => 'NUMERIC' ] ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- One customer's list.
+		] );
+		return array_values( array_filter( array_map( [ $this, 'load' ], $ids ) ) );
+	}
+
+	public function get_view_url( Quote_Request $request ) {
+		return $request->id ? mkl_pc( 'quotes' )->customer_view->get_request_url( $request ) : '';
 	}
 
 	public function get_admin_url( Quote_Request $request ) {

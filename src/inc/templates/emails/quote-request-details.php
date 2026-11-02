@@ -28,6 +28,8 @@ $is_quote = ! empty( $is_quote );
 
 <?php if ( $sent_to_admin && ( $admin_url = $quote_request->get_admin_url() ) ) : ?>
 	<p><a href="<?php echo esc_url( $admin_url ); ?>"><?php esc_html_e( 'Open the request in your dashboard', 'product-configurator-for-woocommerce' ); ?></a></p>
+<?php elseif ( ! $sent_to_admin && ( $view_url = $quote_request->get_view_url() ) ) : ?>
+	<p><a href="<?php echo esc_url( $view_url ); ?>"><?php echo esc_html( $is_quote ? __( 'View your quote online', 'product-configurator-for-woocommerce' ) : __( 'View your request online', 'product-configurator-for-woocommerce' ) ); ?></a></p>
 <?php endif; ?>
 
 <table class="td" cellspacing="0" cellpadding="6" border="1" style="width: 100%; margin-bottom: 24px;">

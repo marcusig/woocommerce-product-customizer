@@ -91,6 +91,20 @@ class Quote_Request {
 	public $price = null;
 
 	/**
+	 * The store's status for the request (a post status for requests kept as posts), or ''.
+	 *
+	 * @var string
+	 */
+	public $status = '';
+
+	/**
+	 * Secret in the link that shows the request to the customer, without an account. '' when the store has none.
+	 *
+	 * @var string
+	 */
+	public $access_key = '';
+
+	/**
 	 * Line total the merchant set when answering, in place of the configured price. Null when not set.
 	 *
 	 * @var float|null
@@ -217,6 +231,16 @@ class Quote_Request {
 	public function get_admin_url() {
 		$stores = mkl_pc( 'quotes' )->get_stores();
 		return isset( $stores[ $this->store ] ) ? $stores[ $this->store ]->get_admin_url( $this ) : '';
+	}
+
+	/**
+	 * Where the customer sees this request, or '' when the store shows it nowhere
+	 *
+	 * @return string
+	 */
+	public function get_view_url() {
+		$stores = mkl_pc( 'quotes' )->get_stores();
+		return isset( $stores[ $this->store ] ) ? $stores[ $this->store ]->get_view_url( $this ) : '';
 	}
 
 	/**

@@ -35,6 +35,8 @@ if ( $quote_request ) {
 	echo esc_html( sprintf( $is_quote ? __( 'Quote %s', 'product-configurator-for-woocommerce' ) : __( 'Quote request %s', 'product-configurator-for-woocommerce' ), $quote_request->reference ) ) . "\n\n";
 	if ( $sent_to_admin && ( $admin_url = $quote_request->get_admin_url() ) ) {
 		echo esc_html__( 'Open the request in your dashboard:', 'product-configurator-for-woocommerce' ) . ' ' . esc_url( $admin_url ) . "\n\n";
+	} elseif ( ! $sent_to_admin && ( $view_url = $quote_request->get_view_url() ) ) {
+		echo esc_html( $is_quote ? __( 'View your quote online:', 'product-configurator-for-woocommerce' ) : __( 'View your request online:', 'product-configurator-for-woocommerce' ) ) . ' ' . esc_url_raw( $view_url ) . "\n\n";
 	}
 	echo esc_html( $quote_request->get_product_name() ) . ' x ' . esc_html( $quote_request->quantity ) . "\n";
 	foreach ( $quote_request->get_summary() as $row ) {

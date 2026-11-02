@@ -48,6 +48,7 @@ class Quote_Requests_Admin {
 		add_action( 'show_user_profile', [ $this, 'profile_section' ] );
 		add_action( 'edit_user_profile', [ $this, 'profile_section' ] );
 		add_action( 'admin_post_mkl_pc_quote_link_requests', [ $this, 'link_requests' ] );
+		add_action( 'admin_post_mkl_pc_quote_reset_key', [ $this, 'reset_key' ] );
 		add_action( 'admin_notices', [ $this, 'linked_notice' ] );
 		add_action( 'restrict_manage_posts', [ $this, 'list_filter' ], 10, 2 );
 		add_action( 'pre_get_posts', [ $this, 'filter_list' ] );
@@ -332,6 +333,49 @@ class Quote_Requests_Admin {
 		<?php if ( $request->get_email() ) : ?>
 			<p><a class="button" href="<?php echo esc_url( 'mailto:' . $request->get_email() . '?subject=' . rawurlencode( $request->reference ) ); ?>"><?php esc_html_e( 'Reply by email', 'product-configurator-for-woocommerce' ); ?></a></p>
 		<?php endif;
+		$this->render_customer_link( $request );
+	}
+
+	/**
+	 * The link the customer's emails carry, and a way to change it
+	 *
+	 * @param Quote_Request $request
+	 * @return void
+	 */
+	private function render_customer_link( Quote_Request $request ) {
+		// A request being made here gets its link once saved.
+		if ( 'auto-draft' === $request->status || ! $request->reference ) return;
+		$url = $request->get_view_url();
+		if ( ! $url ) return;
+		$reset = wp_nonce_url( admin_url( 'admin-post.php?action=mkl_pc_quote_reset_key&post=' . $request->id ), 'mkl_pc_quote_reset_key_' . $request->id );
+		?>
+		<div class="mkl-pc-quote-customer-link">
+			<label for="mkl_pc_quote_customer_link"><?php esc_html_e( 'Customer link', 'product-configurator-for-woocommerce' ); ?></label>
+			<input type="text" id="mkl_pc_quote_customer_link" class="large-text code" value="<?php echo esc_attr( $url ); ?>" readonly onfocus="this.select();" aria-describedby="mkl_pc_quote_customer_link_description" />
+			<p id="mkl_pc_quote_customer_link_description" class="description">
+				<?php esc_html_e( 'Shows this request to whoever has the link, without an account. The customer emails carry it.', 'product-configurator-for-woocommerce' ); ?>
+				<a href="<?php echo esc_url( $reset ); ?>" onclick="return window.confirm( <?php echo esc_attr( wp_json_encode( __( 'The link the customer has will stop working. Change it?', 'product-configurator-for-woocommerce' ) ) ); ?> );"><?php esc_html_e( 'Change the link', 'product-configurator-for-woocommerce' ); ?></a>
+			</p>
+		</div>
+		<?php
+	}
+
+	/**
+	 * admin-post handler of "Change the link"
+	 *
+	 * @return void
+	 */
+	public function reset_key() {
+		$post_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0;
+		check_admin_referer( 'mkl_pc_quote_reset_key_' . $post_id );
+		if ( CPT_Store::POST_TYPE !== get_post_type( $post_id ) || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to do this.', 'product-configurator-for-woocommerce' ), 403 );
+		}
+		$this->store->reset_access_key( $post_id );
+		$this->store->log( $post_id, __( 'Customer link changed: the previous one no longer works.', 'product-configurator-for-woocommerce' ) );
+		set_transient( self::NOTICES . get_current_user_id(), [ [ 'success', __( 'Customer link changed. Send the customer the new one.', 'product-configurator-for-woocommerce' ) ] ], MINUTE_IN_SECONDS );
+		wp_safe_redirect( admin_url( 'post.php?post=' . $post_id . '&action=edit' ) );
+		exit;
 	}
 
 	/**
@@ -946,6 +990,8 @@ class Quote_Requests_Admin {
 			: sprintf( __( 'Quote sent to %s.', 'product-configurator-for-woocommerce' ), $request->get_email() );
 		$this->store->log( $request->id, $log );
 		update_post_meta( $request->id, '_mkl_pc_quote_sent', time() );
+		// Shown with the quote on the customer's page.
+		update_post_meta( $request->id, '_mkl_pc_quote_sent_message', wp_slash( $message ) );
 
 		/**
 		 * Fires once the quote was emailed to the customer
@@ -1036,6 +1082,8 @@ class Quote_Requests_Admin {
 			.mkl-pc-quote-fields th { width: 30%; padding-top: 14px; padding-bottom: 14px; }
 			.mkl-pc-quote-fields td { padding-top: 8px; padding-bottom: 8px; }
 			.mkl-pc-quote-account { color: #646970; }
+			.mkl-pc-quote-customer-link { margin-top: 16px; padding-top: 12px; border-top: 1px solid #f0f0f1; }
+			.mkl-pc-quote-customer-link label { display: block; margin-bottom: 4px; font-weight: 600; }
 			.mkl-pc-quote-user__account { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin: 0 0 8px; }
 			.mkl-pc-quote-user__current { font-weight: 600; }
 			.mkl-pc-quote-user__dropdown { max-width: 25em; }

@@ -15,6 +15,7 @@ require_once __DIR__ . '/stores/class-cpt-store.php';
 require_once __DIR__ . '/stores/class-woo-order-store.php';
 require_once __DIR__ . '/class-quote-privacy.php';
 require_once __DIR__ . '/class-quote-ui.php';
+require_once __DIR__ . '/class-quote-customer-view.php';
 
 /**
  * Native quote requests: a customer asks for a quote on what they configured
@@ -66,6 +67,11 @@ class Quote_Requests {
 	public $ui;
 
 	/**
+	 * @var Quote_Customer_View Where customers see their requests kept as posts.
+	 */
+	public $customer_view;
+
+	/**
 	 * @var Quote_Fields_Settings|null Admin only.
 	 */
 	public $fields_settings = null;
@@ -83,6 +89,7 @@ class Quote_Requests {
 		$this->woo_order_store = new Woo_Order_Store();
 		$this->privacy   = new Quote_Privacy();
 		$this->ui        = new Quote_UI();
+		$this->customer_view = new Quote_Customer_View( $this->cpt_store );
 
 		if ( is_admin() ) {
 			require_once __DIR__ . '/admin/class-quote-requests-admin.php';
@@ -413,6 +420,24 @@ class Quote_Requests {
 			]
 		);
 
+		$pages = [ '' => __( 'Created when first needed', 'product-configurator-for-woocommerce' ) ];
+		foreach ( get_pages( [ 'post_status' => 'publish' ] ) as $page ) {
+			$pages[ $page->ID ] = $page->post_title ? $page->post_title : '#' . $page->ID;
+		}
+		add_settings_field(
+			'quote_request_page',
+			__( 'Customer page', 'product-configurator-for-woocommerce' ),
+			[ $settings_page, 'callback_select' ],
+			'mlk_pc_settings',
+			'quote_requests',
+			[
+				'setting_name' => 'quote_request_page',
+				'options'      => $pages,
+				'default'      => '',
+				/* translators: %s: shortcode */
+				'description'  => sprintf( __( 'For requests kept in Product Configurator > Quote requests: the page where customers see their request, from the link in their emails, without an account. Signed-in customers see all theirs. It holds the %s shortcode.', 'product-configurator-for-woocommerce' ), '[' . Quote_Customer_View::SHORTCODE . ']' ),
+			]
+		);
 		add_settings_field(
 			'quote_request_retention',
 			__( 'Keep stored quote requests for', 'product-configurator-for-woocommerce' ),
