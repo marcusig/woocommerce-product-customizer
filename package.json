@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "wp-scripts test-unit-js --passWithNoTests",
+    "test:php": "bash tests/php/run.sh",
     "build": "gulp build",
     "tag": "node scripts/release.js",
     "build:svg-icons": "node scripts/build-svg-icon-registry.js",

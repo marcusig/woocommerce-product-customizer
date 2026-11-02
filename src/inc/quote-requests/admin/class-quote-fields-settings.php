@@ -94,6 +94,8 @@ class Quote_Fields_Settings {
 					} else {
 						$label_value = $is_core ? '' : $field['label'];
 					}
+					// The arrows name the field as the row shows it.
+					$row_label = wp_strip_all_tags( '' !== $label_value ? $label_value : ( $is_core ? $defaults[ $field_id ]['label'] : $field['label'] ) );
 					$row = $name . '[' . $field_id . ']';
 					?>
 					<tr>
@@ -101,11 +103,11 @@ class Quote_Fields_Settings {
 							<span class="dashicons dashicons-menu mkl-pc-quote-field-handle" style="cursor: move;" aria-hidden="true"></span>
 							<button type="button" class="button-link mkl-pc-quote-field-move" data-direction="up"><span class="screen-reader-text"><?php
 								/* translators: %s: field label */
-								echo esc_html( sprintf( __( 'Move %s up', 'product-configurator-for-woocommerce' ), wp_strip_all_tags( $field['label'] ) ) );
+								echo esc_html( sprintf( __( 'Move %s up', 'product-configurator-for-woocommerce' ), $row_label ) );
 							?></span><span class="dashicons dashicons-arrow-up-alt2" aria-hidden="true"></span></button>
 							<button type="button" class="button-link mkl-pc-quote-field-move" data-direction="down"><span class="screen-reader-text"><?php
 								/* translators: %s: field label */
-								echo esc_html( sprintf( __( 'Move %s down', 'product-configurator-for-woocommerce' ), wp_strip_all_tags( $field['label'] ) ) );
+								echo esc_html( sprintf( __( 'Move %s down', 'product-configurator-for-woocommerce' ), $row_label ) );
 							?></span><span class="dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span></button>
 							<input type="hidden" class="mkl-pc-quote-field-order" name="<?php echo esc_attr( $row ); ?>[order]" value="<?php echo esc_attr( $field['order'] ); ?>">
 						</td>
