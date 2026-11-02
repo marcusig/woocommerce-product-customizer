@@ -211,8 +211,24 @@ class Quote_Customer_View {
 			'show_image'   => 'none' !== mkl_pc( 'quotes' )->get_image_mode(),
 			'back_url'     => $back_url,
 			'answer_form'  => mkl_pc( 'quotes' )->customer_actions->render( $request, $key, $this ),
+			'pdf_url'      => $this->get_pdf_url( $request, $key ),
 			'view'         => $this,
 		] );
+	}
+
+	/**
+	 * The request's PDF, for a visitor who can download it
+	 *
+	 * @param Quote_Request $request
+	 * @param string        $key
+	 * @return string
+	 */
+	private function get_pdf_url( Quote_Request $request, $key ) {
+		$pdf = mkl_pc( 'quotes' )->pdf;
+		if ( current_user_can( 'edit_post', $request->id ) ) {
+			return $pdf->merchant_can_download( $request ) ? $pdf->get_download_url( $request ) : '';
+		}
+		return $pdf->customer_can_download( $request ) && mkl_pc( 'quotes' )->customer_actions->can_answer( $request, $key ) ? $pdf->get_download_url( $request, $key ) : '';
 	}
 
 	/**
@@ -334,6 +350,7 @@ class Quote_Customer_View {
 .mkl-pc-quote__image img { width: 200px; max-width: 100%; height: auto; display: block; }
 .mkl-pc-quote__configuration { flex: 1 1 260px; }
 .mkl-pc-quote__price { font-size: 1.15em; margin-top: 1em; }
+.mkl-pc-quote__pdf { margin-top: 1em; }
 .mkl-pc-quote__message { padding: 1em 1.2em; margin: 1.5em 0; border-left: 3px solid currentColor; background: rgba(0,0,0,.03); }
 .mkl-pc-quote__message p:last-child { margin-bottom: 0; }
 .mkl-pc-quote-lookup { margin-top: 2em; max-width: 36em; }

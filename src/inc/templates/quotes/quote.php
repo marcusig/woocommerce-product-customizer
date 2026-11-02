@@ -12,6 +12,7 @@
  * @var string                      $price_label
  * @var bool                        $show_image
  * @var string                      $back_url     The list it was opened from, or ''.
+ * @var string                      $pdf_url      The quote as a PDF, when there is one to download.
  * @var string                      $answer_form  Accept, decline, ask for a change (quotes/quote-answer.php), or ''.
  * @var \MKL\PC\Quote_Customer_View $view
  */
@@ -58,6 +59,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php endforeach; ?>
 			<?php if ( null !== $price && function_exists( 'wc_price' ) ) : ?>
 				<p class="mkl-pc-quote__price"><strong><?php echo esc_html( $price_label ); ?>:</strong> <?php echo wp_kses_post( wc_price( $price ) ); ?></p>
+			<?php endif; ?>
+			<?php if ( $pdf_url ) : ?>
+				<p class="mkl-pc-quote__pdf"><a href="<?php echo esc_url( $pdf_url ); ?>"><?php esc_html_e( 'Download the quote (PDF)', 'product-configurator-for-woocommerce' ); ?></a></p>
 			<?php endif; ?>
 		</div>
 	</div>

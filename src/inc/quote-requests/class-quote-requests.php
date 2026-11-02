@@ -17,6 +17,8 @@ require_once __DIR__ . '/class-quote-privacy.php';
 require_once __DIR__ . '/class-quote-ui.php';
 require_once __DIR__ . '/class-quote-customer-view.php';
 require_once __DIR__ . '/class-quote-customer-actions.php';
+require_once __DIR__ . '/interface-quote-pdf-provider.php';
+require_once __DIR__ . '/class-quote-pdf.php';
 require_once __DIR__ . '/class-quote-account-tab.php';
 
 /**
@@ -79,6 +81,11 @@ class Quote_Requests {
 	public $customer_actions;
 
 	/**
+	 * @var Quote_PDF The request's PDF, when an add-on makes one.
+	 */
+	public $pdf;
+
+	/**
 	 * @var Quote_Account_Tab|null The same, in WooCommerce's My account.
 	 */
 	public $account_tab = null;
@@ -103,6 +110,7 @@ class Quote_Requests {
 		$this->ui        = new Quote_UI();
 		$this->customer_view = new Quote_Customer_View( $this->cpt_store );
 		$this->customer_actions = new Quote_Customer_Actions( $this->cpt_store );
+		$this->pdf = new Quote_PDF();
 		if ( function_exists( 'WC' ) ) {
 			$this->account_tab = new Quote_Account_Tab( $this->customer_view, $this->cpt_store );
 		}
@@ -275,6 +283,9 @@ class Quote_Requests {
 		}
 		if ( Quote_Customer_Actions::ACTION === $action ) {
 			return [ 'max' => 10, 'window' => HOUR_IN_SECONDS ];
+		}
+		if ( Quote_PDF::ACTION === $action ) {
+			return [ 'max' => 20, 'window' => HOUR_IN_SECONDS ];
 		}
 		return $rule;
 	}

@@ -858,6 +858,9 @@ class Quote_Requests_Admin {
 			/* translators: %s: date */
 			echo '<p class="description">' . esc_html( sprintf( __( 'Last sent on %s.', 'product-configurator-for-woocommerce' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $sent ) ) ) . '</p>';
 		}
+		if ( $request && mkl_pc( 'quotes' )->pdf->merchant_can_download( $request ) ) {
+			printf( '<p><a href="%s">%s</a></p>', esc_url( mkl_pc( 'quotes' )->pdf->get_download_url( $request ) ), esc_html__( 'Download the quote (PDF)', 'product-configurator-for-woocommerce' ) );
+		}
 	}
 
 	/**

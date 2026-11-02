@@ -18,6 +18,11 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Email', false ) ) :
 		public $object = null;
 
 		/**
+		 * @var string[] Files made for the email being sent (the PDF), deleted once it is.
+		 */
+		protected $temp_files = [];
+
+		/**
 		 * Constructor.
 		 */
 		public function __construct() {
@@ -52,6 +57,10 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Email', false ) ) :
 			}
 			$sent = $this->deliver();
 			$this->restore_locale();
+			foreach ( $this->temp_files as $path ) {
+				mkl_pc( 'quotes' )->pdf->delete_file( $path );
+			}
+			$this->temp_files = [];
 
 			return $sent;
 		}
@@ -110,16 +119,31 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Email', false ) ) :
 		}
 
 		/**
-		 * Attach the configuration image when the settings ask for it
+		 * Attach the configuration image when the settings ask for it, and the PDF when its mode does
 		 *
 		 * @return array
 		 */
 		public function get_attachments() {
 			$attachments = parent::get_attachments();
-			if ( $this->object instanceof Quote_Request && 'attach' === mkl_pc( 'quotes' )->get_image_mode() && $this->object->image_path && is_file( $this->object->image_path ) ) {
+			if ( ! $this->object instanceof Quote_Request ) return $attachments;
+			if ( 'attach' === mkl_pc( 'quotes' )->get_image_mode() && $this->object->image_path && is_file( $this->object->image_path ) ) {
 				$attachments[] = $this->object->image_path;
 			}
+			$pdf = mkl_pc( 'quotes' )->pdf;
+			if ( $pdf->is_attached_to( $this->id, $this->object ) && ( $path = $pdf->write_file( $this->object, $this->get_pdf_args() ) ) ) {
+				$this->temp_files[] = $path;
+				$attachments[] = $path;
+			}
 			return $attachments;
+		}
+
+		/**
+		 * What the attached PDF shows: the message sent with the quote, if any
+		 *
+		 * @return array See Quote_PDF::render().
+		 */
+		protected function get_pdf_args() {
+			return [ 'context' => 'email' ];
 		}
 
 		/**

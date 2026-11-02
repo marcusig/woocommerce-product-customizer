@@ -60,6 +60,15 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Quote_Email', false ) ) :
 			return $sent;
 		}
 
+		/**
+		 * The PDF shows the message being sent, not the last one
+		 *
+		 * @return array
+		 */
+		protected function get_pdf_args() {
+			return [ 'context' => 'email', 'message' => $this->quote_message, 'quote' => true ];
+		}
+
 		protected function get_template_args( $plain_text ) {
 			$args = parent::get_template_args( $plain_text );
 			$args['is_quote'] = true;
