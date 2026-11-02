@@ -29,7 +29,7 @@ class Woo_Order_Store implements Quote_Store {
 		add_filter( 'woocommerce_order_actions', [ $this, 'order_actions' ], 10, 2 );
 		add_action( 'woocommerce_order_action_mkl_pc_send_quote', [ $this, 'send_quote' ] );
 		add_action( 'woocommerce_admin_order_data_after_billing_address', [ $this, 'show_request_details' ] );
-		add_action( 'mkl_pc/admin/quote_request/status_box', [ $this, 'create_order_button' ] );
+		add_action( 'add_meta_boxes_' . CPT_Store::POST_TYPE, [ $this, 'order_meta_box' ] );
 		add_action( 'admin_post_mkl_pc_quote_create_order', [ $this, 'create_order_from_post' ] );
 	}
 
@@ -356,28 +356,40 @@ class Woo_Order_Store implements Quote_Store {
 	}
 
 	/**
-	 * On a request kept as a post: link to its order, or create one
+	 * On a request kept as a post: a box linking to its order, or creating one
+	 *
+	 * Only once the request has a configuration: a request being made in the admin gets it after a save.
 	 *
 	 * @param \WP_Post $post
 	 * @return void
 	 */
-	public function create_order_button( $post ) {
+	public function order_meta_box( $post ) {
 		if ( ! $this->is_available() || ! current_user_can( 'edit_shop_orders' ) ) return;
 		if ( ! get_post_meta( $post->ID, '_mkl_pc_quote_configuration', true ) ) return;
+		add_meta_box( 'mkl_pc_quote_order', __( 'Order', 'product-configurator-for-woocommerce' ), [ $this, 'render_order_box' ], CPT_Store::POST_TYPE, 'side', 'default' );
+	}
+
+	/**
+	 * @param \WP_Post $post
+	 * @return void
+	 */
+	public function render_order_box( $post ) {
 		$order_id = (int) get_post_meta( $post->ID, '_mkl_pc_quote_order_id', true );
 		$order = $order_id ? wc_get_order( $order_id ) : null;
-		echo '<p>';
 		if ( $order ) {
+			echo '<p>';
 			printf(
-				/* translators: %s: link to the order */
-				esc_html__( 'Order: %s', 'product-configurator-for-woocommerce' ),
-				'<a href="' . esc_url( $order->get_edit_order_url() ) . '">#' . esc_html( $order->get_order_number() ) . '</a>'
+				/* translators: 1: link to the order, 2: order status */
+				esc_html__( 'Order %1$s, %2$s.', 'product-configurator-for-woocommerce' ),
+				'<a href="' . esc_url( $order->get_edit_order_url() ) . '">#' . esc_html( $order->get_order_number() ) . '</a>',
+				esc_html( wc_get_order_status_name( $order->get_status() ) )
 			);
-		} else {
-			$url = wp_nonce_url( admin_url( 'admin-post.php?action=mkl_pc_quote_create_order&post=' . $post->ID ), 'mkl_pc_quote_create_order_' . $post->ID );
-			printf( '<a class="button" href="%s">%s</a>', esc_url( $url ), esc_html__( 'Create an order from this request', 'product-configurator-for-woocommerce' ) );
+			echo '</p>';
+			return;
 		}
-		echo '</p>';
+		$url = wp_nonce_url( admin_url( 'admin-post.php?action=mkl_pc_quote_create_order&post=' . $post->ID ), 'mkl_pc_quote_create_order_' . $post->ID );
+		echo '<p class="description">' . esc_html__( 'Make a WooCommerce order of the saved request, with the "Quote request" status, to price it there and send the customer a payment link.', 'product-configurator-for-woocommerce' ) . '</p>';
+		printf( '<p><a class="button" href="%s">%s</a></p>', esc_url( $url ), esc_html__( 'Create an order from this request', 'product-configurator-for-woocommerce' ) );
 	}
 
 	/**
