@@ -51,20 +51,8 @@ class Quote_Service {
 		$ids = $this->resolve_product( (int) $args['product_id'], (int) $args['variation_id'] );
 		if ( is_wp_error( $ids ) ) return $ids;
 
-		$raw = $args['configuration'];
-		if ( is_array( $raw ) ) {
-			$raw = wp_json_encode( $raw );
-		}
-		$data = Utils::decode_configurator_payload( $raw );
-		if ( null === $data ) {
-			return new \WP_Error( 'mkl_pc_quote_invalid_configuration', __( 'The configuration data could not be read.', 'product-configurator-for-woocommerce' ), [ 'status' => 400 ] );
-		}
-		if ( ! empty( $data ) ) {
-			$data = Plugin::instance()->db->sanitize( $data );
-		}
-		if ( empty( $data ) || ! is_array( $data ) ) {
-			return new \WP_Error( 'mkl_pc_quote_empty_configuration', __( 'The configuration is empty.', 'product-configurator-for-woocommerce' ), [ 'status' => 400 ] );
-		}
+		$data = $this->read_configuration( $args['configuration'] );
+		if ( is_wp_error( $data ) ) return $data;
 
 		$context = [
 			'product_id'      => $ids['product_id'],
@@ -158,6 +146,96 @@ class Quote_Service {
 	}
 
 	/**
+	 * Give a stored request a new configuration, from the admin
+	 *
+	 * The price and the summary follow it, and so does the image: a 3D capture replaces the one the
+	 * request owned. The request keeps its reference; a request created in the admin gets one here.
+	 *
+	 * @param Quote_Request $request
+	 * @param \WC_Product   $product  Product or variation configured.
+	 * @param string|array  $payload  The configurator's payload.
+	 * @param array         $args     quantity, image (3D capture, data URL).
+	 * @return Quote_Request|\WP_Error
+	 */
+	public function update_configuration( Quote_Request $request, $product, $payload, $args = [] ) {
+		$args = wp_parse_args( $args, [ 'quantity' => $request->quantity, 'image' => '' ] );
+		$stores = mkl_pc( 'quotes' )->get_stores();
+		$store = isset( $stores[ $request->store ] ) ? $stores[ $request->store ] : null;
+		if ( ! $store || ! $store->is_persistent() || ! $request->id ) {
+			return new \WP_Error( 'mkl_pc_quote_not_found', __( 'Quote request not found.', 'product-configurator-for-woocommerce' ), [ 'status' => 404 ] );
+		}
+		$data = $this->read_configuration( $payload );
+		if ( is_wp_error( $data ) ) return $data;
+
+		$old = clone $request;
+		$old_image = ! empty( $request->meta['owns_image'] ) ? $request->image_path : '';
+		if ( ! $request->reference ) $request->reference = $this->generate_reference();
+		if ( ! $request->created ) $request->created = time();
+
+		$request->product_id        = $product->get_parent_id() ? $product->get_parent_id() : $product->get_id();
+		$request->variation_id      = $product->get_parent_id() ? $product->get_id() : 0;
+		$request->configurator_id   = $request->product_id;
+		$request->quantity          = max( 1, absint( $args['quantity'] ) );
+		$request->configuration_raw = wp_json_encode( $data );
+		$request->configuration     = new Configuration( null, [
+			'product_id'   => $request->product_id,
+			'variation_id' => $request->variation_id,
+			'content'      => $data,
+		] );
+		$request->summary = null;
+		$request->price   = $this->get_price( $request );
+
+		$request->image_path = '';
+		$request->image_url  = '';
+		unset( $request->meta['owns_image'] );
+		$request->meta['image_data_url'] = is_string( $args['image'] ) ? $args['image'] : '';
+		$this->attach_image( $request, $store->get_files_folder() );
+		unset( $request->meta['image_data_url'] );
+
+		$saved = $store->save( $request );
+		if ( is_wp_error( $saved ) ) {
+			$this->delete_owned_image( $request );
+			return $saved;
+		}
+		if ( $old_image && $old_image !== $request->image_path && is_file( $old_image ) ) {
+			wp_delete_file( $old_image );
+		}
+
+		/**
+		 * Fires once a stored quote request got a new configuration from the admin
+		 *
+		 * @param Quote_Request $request
+		 * @param Quote_Request $old     The request as it was.
+		 */
+		do_action( 'mkl_pc/quote_request/configuration_updated', $request, $old );
+
+		return $request;
+	}
+
+	/**
+	 * Decode and sanitize a configurator payload
+	 *
+	 * @param string|array $raw JSON, or its decoded array.
+	 * @return array|\WP_Error
+	 */
+	private function read_configuration( $raw ) {
+		if ( is_array( $raw ) ) {
+			$raw = wp_json_encode( $raw );
+		}
+		$data = Utils::decode_configurator_payload( $raw );
+		if ( null === $data ) {
+			return new \WP_Error( 'mkl_pc_quote_invalid_configuration', __( 'The configuration data could not be read.', 'product-configurator-for-woocommerce' ), [ 'status' => 400 ] );
+		}
+		if ( ! empty( $data ) ) {
+			$data = Plugin::instance()->db->sanitize( $data );
+		}
+		if ( empty( $data ) || ! is_array( $data ) ) {
+			return new \WP_Error( 'mkl_pc_quote_empty_configuration', __( 'The configuration is empty.', 'product-configurator-for-woocommerce' ), [ 'status' => 400 ] );
+		}
+		return $data;
+	}
+
+	/**
 	 * Find the product and variation from what the configurator posts, if it can be quoted
 	 *
 	 * @param int $product_id
@@ -217,7 +295,7 @@ class Quote_Service {
 	 *
 	 * @return string
 	 */
-	private function generate_reference() {
+	public function generate_reference() {
 		$chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 		$suffix = '';
 		for ( $i = 0; $i < 4; $i++ ) {

@@ -346,6 +346,41 @@ class Quote_Fields {
 	}
 
 	/**
+	 * Values typed in the admin, for a customer
+	 *
+	 * Nothing is required: the merchant may not know everything, and the customer did not agree to
+	 * anything. What is filled in must still be valid; an invalid value is left out.
+	 *
+	 * @param array $values      Raw values keyed by field id.
+	 * @param array $definitions The fields, keyed by id (normalised, or as a request stored them).
+	 * @return array Clean values keyed by field id, and `errors` (field id => message).
+	 */
+	public function clean( $values, $definitions ) {
+		$values = is_array( $values ) ? $values : [];
+		$clean = [];
+		$errors = [];
+		foreach ( $definitions as $field_id => $field ) {
+			if ( ! array_key_exists( $field_id, $values ) && 'checkbox' !== $field['type'] ) continue;
+			$field = $this->normalise( $field_id, $field );
+			$value = $this->sanitize_value( $field, isset( $values[ $field_id ] ) ? $values[ $field_id ] : null );
+			if ( $this->is_empty( $field, $value ) ) {
+				$clean[ $field_id ] = 'checkbox' === $field['type'] ? false : '';
+				continue;
+			}
+			$valid = $this->validate_value( $field, $value );
+			if ( is_wp_error( $valid ) ) {
+				$errors[ $field_id ] = $valid->get_error_message();
+				continue;
+			}
+			$clean[ $field_id ] = $value;
+		}
+		return [
+			'values' => $clean,
+			'errors' => $errors,
+		];
+	}
+
+	/**
 	 * @param array $field
 	 * @param mixed $raw
 	 * @return mixed

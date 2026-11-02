@@ -2,12 +2,15 @@
 /**
  * Details of a quote request: the configuration, and what the customer filled in
  *
+ * In the quote sent to the customer: the configuration and its price only.
+ *
  * This template can be overridden by copying it to yourtheme/product-configurator/emails/quote-request-details.php.
  *
  * @var \MKL\PC\Quote_Request $quote_request
  * @var bool                  $sent_to_admin
  * @var bool                  $show_prices
  * @var bool                  $show_image
+ * @var bool                  $is_quote
  * @var \MKL\PC\Email         $email
  */
 
@@ -16,10 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $summary = $quote_request->get_summary();
+$is_quote = ! empty( $is_quote );
 ?>
 <h2><?php
-	/* translators: %s: quote request reference */
-	echo esc_html( sprintf( __( 'Quote request %s', 'product-configurator-for-woocommerce' ), $quote_request->reference ) );
+	/* translators: %s: quote reference */
+	echo esc_html( sprintf( $is_quote ? __( 'Quote %s', 'product-configurator-for-woocommerce' ) : __( 'Quote request %s', 'product-configurator-for-woocommerce' ), $quote_request->reference ) );
 ?></h2>
 
 <?php if ( $sent_to_admin && ( $admin_url = $quote_request->get_admin_url() ) ) : ?>
@@ -46,7 +50,12 @@ $summary = $quote_request->get_summary();
 						<?php endforeach; ?>
 					</div>
 				<?php endif; ?>
-				<?php if ( $show_prices && is_array( $quote_request->price ) && function_exists( 'wc_price' ) ) : ?>
+				<?php if ( $is_quote && $show_prices && null !== $quote_request->get_line_price() ) : ?>
+					<p style="margin: 8px 0 0;">
+						<strong><?php esc_html_e( 'Price:', 'product-configurator-for-woocommerce' ); ?></strong>
+						<?php echo wp_kses_post( wc_price( $quote_request->get_line_price() ) ); ?>
+					</p>
+				<?php elseif ( $show_prices && is_array( $quote_request->price ) && function_exists( 'wc_price' ) ) : ?>
 					<p style="margin: 8px 0 0;">
 						<?php esc_html_e( 'Estimated price:', 'product-configurator-for-woocommerce' ); ?>
 						<?php echo wp_kses_post( wc_price( $quote_request->price['line_total'] ) ); ?>
@@ -57,7 +66,7 @@ $summary = $quote_request->get_summary();
 	</tbody>
 </table>
 
-<?php $rows = $quote_request->get_field_rows(); ?>
+<?php $rows = $is_quote ? [] : $quote_request->get_field_rows(); ?>
 <?php if ( ! empty( $rows ) ) : ?>
 	<h2><?php esc_html_e( 'Contact details', 'product-configurator-for-woocommerce' ); ?></h2>
 	<table class="td" cellspacing="0" cellpadding="6" border="1" style="width: 100%; margin-bottom: 24px;">

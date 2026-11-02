@@ -1,6 +1,6 @@
 <?php
 /**
- * Quote request email (merchant and customer)
+ * Quote request email (merchant and customer), and the quote sent to the customer
  *
  * This template can be overridden by copying it to yourtheme/product-configurator/emails/quote-request.php.
  *
@@ -12,6 +12,8 @@
  * @var bool                       $plain_text
  * @var bool                       $show_prices
  * @var bool                       $show_image
+ * @var bool                       $is_quote      The quote sent to the customer.
+ * @var string                     $quote_message What the merchant wrote, for the quote.
  * @var \MKL\PC\Email              $email
  */
 
@@ -27,6 +29,10 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 <?php echo wp_kses_post( wpautop( wptexturize( make_clickable( $main_content ) ) ) ); ?>
 <?php echo $email_improvements_enabled ? '</div>' : ''; ?>
 
+<?php if ( ! empty( $quote_message ) ) : ?>
+	<?php echo wp_kses_post( wpautop( wptexturize( make_clickable( esc_html( $quote_message ) ) ) ) ); ?>
+<?php endif; ?>
+
 <?php
 if ( $quote_request ) {
 	echo mkl_pc( 'mailer' )->get_template_html( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the template.
@@ -36,6 +42,7 @@ if ( $quote_request ) {
 			'sent_to_admin' => $sent_to_admin,
 			'show_prices'   => $show_prices,
 			'show_image'    => $show_image,
+			'is_quote'      => ! empty( $is_quote ),
 			'email'         => $email,
 		]
 	);

@@ -94,6 +94,7 @@ class Quote_Requests {
 		$mailer = mkl_pc( 'mailer' );
 		$mailer->register( 'mkl_pc_quote_request_admin', '\MKL\PC\Quote_Request_Admin_Email', __DIR__ . '/emails/class-quote-request-admin-email.php' );
 		$mailer->register( 'mkl_pc_quote_request_customer', '\MKL\PC\Quote_Request_Customer_Email', __DIR__ . '/emails/class-quote-request-customer-email.php' );
+		$mailer->register( 'mkl_pc_quote_request_quote', '\MKL\PC\Quote_Request_Quote_Email', __DIR__ . '/emails/class-quote-request-quote-email.php' );
 
 		add_filter( 'mkl_pc_frontend_action_token_purposes', [ $this, 'add_token_purpose' ] );
 		add_filter( 'mkl_pc_rate_limit_rule', [ $this, 'rate_limit_rule' ], 10, 2 );
@@ -101,6 +102,18 @@ class Quote_Requests {
 		add_action( 'mkl_pc_scripts_product_page_after', [ $this, 'enqueue_scripts' ] );
 		add_action( 'mkl_pc/register_settings', [ $this, 'register_settings' ], 30 );
 		add_action( 'admin_notices', [ $this, 'store_unavailable_notice' ] );
+		add_action( 'mkl_pc/configuration_editor/register_targets', [ $this, 'register_editor_target' ] );
+	}
+
+	/**
+	 * Requests kept as posts can be configured from their screen
+	 *
+	 * @param Configuration_Editor $editor
+	 * @return void
+	 */
+	public function register_editor_target( $editor ) {
+		require_once __DIR__ . '/class-quote-request-target.php';
+		$editor->register_target( new Quote_Request_Target( $this->cpt_store ) );
 	}
 
 	/**

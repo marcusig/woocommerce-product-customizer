@@ -115,7 +115,9 @@ class Plugin {
 		include_once MKL_PC_INCLUDE_PATH . 'mailer/class-mailer.php';
 		include_once MKL_PC_INCLUDE_PATH . 'quote-requests/class-quote-requests.php';
 		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-configurator-frame.php';
+		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/interface-configuration-editor-target.php';
 		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-configuration-editor.php';
+		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-order-item-target.php';
 		include_once MKL_PC_INCLUDE_PATH . 'configuration-editor/class-order-item-configuration.php';
 
 		include_once MKL_PC_INCLUDE_PATH . 'frontend/frontend-woocommerce.php';

@@ -21,6 +21,11 @@ class CPT_Store implements Quote_Store {
 
 	const FOLDER = 'quote-requests';
 
+	/**
+	 * Most entries kept in a request's history.
+	 */
+	const LOG_SIZE = 50;
+
 	public function __construct() {
 		add_action( 'init', [ $this, 'register' ] );
 		add_action( 'before_delete_post', [ $this, 'delete_files' ], 10, 2 );
@@ -91,6 +96,8 @@ class CPT_Store implements Quote_Store {
 				'singular_name'      => __( 'Quote request', 'product-configurator-for-woocommerce' ),
 				'menu_name'          => __( 'Quote requests', 'product-configurator-for-woocommerce' ),
 				'all_items'          => __( 'Quote requests', 'product-configurator-for-woocommerce' ),
+				'add_new'            => __( 'Add request', 'product-configurator-for-woocommerce' ),
+				'add_new_item'       => __( 'New quote request', 'product-configurator-for-woocommerce' ),
 				'edit_item'          => __( 'Quote request', 'product-configurator-for-woocommerce' ),
 				'view_item'          => __( 'View quote request', 'product-configurator-for-woocommerce' ),
 				'search_items'       => __( 'Search quote requests', 'product-configurator-for-woocommerce' ),
@@ -112,7 +119,8 @@ class CPT_Store implements Quote_Store {
 			'supports'            => false,
 			'map_meta_cap'        => true,
 			'capabilities'        => [
-				'create_posts'           => 'do_not_allow',
+				// Requests made in the admin, for a customer: they need products to configure.
+				'create_posts'           => function_exists( 'wc_get_product' ) ? $cap : 'do_not_allow',
 				'edit_posts'             => $cap,
 				'edit_others_posts'      => $cap,
 				'edit_published_posts'   => $cap,
@@ -142,20 +150,31 @@ class CPT_Store implements Quote_Store {
 	}
 
 	/**
-	 * Keep the request as a post
+	 * Keep the request as a post, or update the post it was read from
+	 *
+	 * An update leaves the status and the date alone.
 	 *
 	 * @param Quote_Request $request
 	 * @return true|\WP_Error
 	 */
 	public function save( Quote_Request $request ) {
-		$post_id = wp_insert_post( [
-			'post_type'   => self::POST_TYPE,
-			'post_status' => 'mkl_quote_new',
-			'post_title'  => $request->reference,
-			'post_author' => $request->user_id,
-			'post_date'   => wp_date( 'Y-m-d H:i:s', $request->created ),
-		], true );
-		if ( is_wp_error( $post_id ) ) return $post_id;
+		$post = $request->id ? get_post( $request->id ) : null;
+		if ( $post && self::POST_TYPE === $post->post_type ) {
+			$post_id = $post->ID;
+			if ( $request->reference && $request->reference !== $post->post_title ) {
+				$updated = wp_update_post( [ 'ID' => $post_id, 'post_title' => $request->reference ], true );
+				if ( is_wp_error( $updated ) ) return $updated;
+			}
+		} else {
+			$post_id = wp_insert_post( [
+				'post_type'   => self::POST_TYPE,
+				'post_status' => 'mkl_quote_new',
+				'post_title'  => $request->reference,
+				'post_author' => $request->user_id,
+				'post_date'   => wp_date( 'Y-m-d H:i:s', $request->created ),
+			], true );
+			if ( is_wp_error( $post_id ) ) return $post_id;
+		}
 
 		$definitions = [];
 		foreach ( $request->field_definitions as $field_id => $field ) {
@@ -185,6 +204,8 @@ class CPT_Store implements Quote_Store {
 			'_mkl_pc_quote_fields'            => $request->fields,
 			'_mkl_pc_quote_field_definitions' => $definitions,
 			'_mkl_pc_quote_price'             => $request->price,
+			'_mkl_pc_quote_quoted_price'      => null === $request->quoted_price ? '' : (float) $request->quoted_price,
+			'_mkl_pc_quote_user_id'           => (int) $request->user_id,
 			'_mkl_pc_quote_image'             => self::to_relative_path( $request->image_path ),
 			'_mkl_pc_quote_owns_image'        => ! empty( $request->meta['owns_image'] ),
 			'_mkl_pc_quote_lang'              => $request->lang,
@@ -219,7 +240,8 @@ class CPT_Store implements Quote_Store {
 		$request = new Quote_Request();
 		$request->id                = $post->ID;
 		$request->store             = $this->get_id();
-		$request->reference         = $get( 'reference', $post->post_title );
+		// A request being created in the admin has no reference yet, and a placeholder title.
+		$request->reference         = $get( 'reference', 'auto-draft' === $post->post_status ? '' : $post->post_title );
 		$request->configurator_id   = (int) $get( 'configurator_id', 0 );
 		$request->product_id        = (int) $get( 'product_id', 0 );
 		$request->variation_id      = (int) $get( 'variation_id', 0 );
@@ -228,7 +250,14 @@ class CPT_Store implements Quote_Store {
 		$request->fields            = (array) $get( 'fields', [] );
 		$request->price             = $get( 'price', null );
 		$request->lang              = (string) $get( 'lang' );
-		$request->user_id           = (int) $post->post_author;
+		// The customer's account. The author of a post being created in the admin is the merchant.
+		if ( metadata_exists( 'post', $post_id, '_mkl_pc_quote_user_id' ) ) {
+			$request->user_id = (int) $get( 'user_id', 0 );
+		} else {
+			$request->user_id = 'auto-draft' === $post->post_status ? 0 : (int) $post->post_author;
+		}
+		$quoted_price               = $get( 'quoted_price', null );
+		$request->quoted_price      = is_numeric( $quoted_price ) ? (float) $quoted_price : null;
 		$request->created           = (int) get_post_time( 'U', true, $post );
 		$request->meta              = (array) $get( 'meta', [] );
 		$request->summary           = (array) $get( 'summary', [] );
@@ -258,6 +287,34 @@ class CPT_Store implements Quote_Store {
 		}
 
 		return $request;
+	}
+
+	/**
+	 * Add to a request's history
+	 *
+	 * @param int    $post_id
+	 * @param string $message Plain text.
+	 * @return void
+	 */
+	public function log( $post_id, $message ) {
+		$log = $this->get_log( $post_id );
+		$log[] = [
+			'time'    => time(),
+			'user_id' => get_current_user_id(),
+			'message' => (string) $message,
+		];
+		update_post_meta( $post_id, '_mkl_pc_quote_log', wp_slash( array_slice( $log, -self::LOG_SIZE ) ) );
+	}
+
+	/**
+	 * A request's history, oldest first
+	 *
+	 * @param int $post_id
+	 * @return array[] time, user_id, message.
+	 */
+	public function get_log( $post_id ) {
+		$log = get_post_meta( $post_id, '_mkl_pc_quote_log', true );
+		return is_array( $log ) ? $log : [];
 	}
 
 	public function get_admin_url( Quote_Request $request ) {

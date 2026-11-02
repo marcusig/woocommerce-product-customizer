@@ -177,7 +177,7 @@ class Woo_Order_Store implements Quote_Store {
 	}
 
 	/**
-	 * Line total before tax, from the price when the request was made
+	 * Line total before tax, from the price the merchant quoted, or the one when the request was made
 	 *
 	 * @param \WC_Product   $product
 	 * @param Quote_Request $request
@@ -185,7 +185,9 @@ class Woo_Order_Store implements Quote_Store {
 	 */
 	private function get_line_total( $product, Quote_Request $request ) {
 		$args = [ 'qty' => $request->quantity ];
-		if ( is_array( $request->price ) && isset( $request->price['total'] ) ) {
+		if ( null !== $request->quoted_price ) {
+			$args['price'] = (float) $request->quoted_price / max( 1, $request->quantity );
+		} elseif ( is_array( $request->price ) && isset( $request->price['total'] ) ) {
 			$args['price'] = (float) $request->price['total'];
 		}
 		return (float) wc_get_price_excluding_tax( $product, $args );
@@ -361,6 +363,7 @@ class Woo_Order_Store implements Quote_Store {
 	 */
 	public function create_order_button( $post ) {
 		if ( ! $this->is_available() || ! current_user_can( 'edit_shop_orders' ) ) return;
+		if ( ! get_post_meta( $post->ID, '_mkl_pc_quote_configuration', true ) ) return;
 		$order_id = (int) get_post_meta( $post->ID, '_mkl_pc_quote_order_id', true );
 		$order = $order_id ? wc_get_order( $order_id ) : null;
 		echo '<p>';

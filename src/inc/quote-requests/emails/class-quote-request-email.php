@@ -118,6 +118,8 @@ if ( ! class_exists( 'MKL\PC\Quote_Request_Email', false ) ) :
 			$args['quote_request'] = $this->object instanceof Quote_Request ? $this->object : null;
 			$args['show_prices'] = mkl_pc( 'quotes' )->show_prices();
 			$args['show_image'] = 'none' !== mkl_pc( 'quotes' )->get_image_mode();
+			$args['is_quote'] = false;
+			$args['quote_message'] = '';
 			return $args;
 		}
 	}

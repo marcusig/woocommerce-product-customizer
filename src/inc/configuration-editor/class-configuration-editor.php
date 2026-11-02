@@ -6,15 +6,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Configure order lines from the admin
+ * Configure products from the admin, for order lines, quote requests...
  *
- * The configurator runs in a frame (Configurator_Frame) opened from the order screen, preloaded with the
- * line's configuration. Its Add to cart is replaced by Save, which posts the configuration to the REST
- * route here; Order_Item_Configuration writes it to the line. Works on any order WooCommerce lets the
- * admin edit: quote orders, orders made by quote plugins, orders created in the admin.
+ * The configurator runs in a frame (Configurator_Frame) opened in a dialog on the admin screen, preloaded
+ * with the saved configuration. Its Add to cart is replaced by Save, which posts the configuration to the
+ * REST route here; the target writes it where it belongs (Configuration_Editor_Target).
  *
- * A target names what is configured: `order:{id}:item:{item_id}` edits a line, `order:{id}:product:{product_id}`
- * adds one. Frame URLs carry a nonce for their target, for the user who opened them.
+ * A target names what is configured, its type first: `order:{id}:item:{item_id}`, `quote:{id}`... Frame
+ * URLs carry a nonce for their target, for the user who opened them.
  */
 class Configuration_Editor {
 
@@ -23,84 +22,74 @@ class Configuration_Editor {
 	const NONCE_VAR = 'mkl_pc_edit_nonce';
 
 	/**
+	 * @var Configuration_Editor_Target[] Keyed by type.
+	 */
+	private $targets = [];
+
+	/**
 	 * @var array|null|false The target of the current frame request, once read.
 	 */
 	private $frame_target = null;
 
 	public function __construct() {
+		$this->register_target( new Order_Item_Target( $this ) );
+		/**
+		 * Register more targets, with Configuration_Editor::register_target()
+		 *
+		 * @param Configuration_Editor $editor
+		 */
+		do_action( 'mkl_pc/configuration_editor/register_targets', $this );
+
 		add_filter( 'mkl_pc/frame/is_frame_request', [ $this, 'is_editor_request' ], 10, 2 );
 		add_action( 'mkl_pc/frame/setup', [ $this, 'setup_frame' ] );
 		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
-		add_action( 'woocommerce_after_order_itemmeta', [ $this, 'edit_item_button' ], 10, 3 );
-		add_action( 'woocommerce_order_item_add_action_buttons', [ $this, 'add_item_button' ] );
-		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_order_screen' ] );
 		add_action( 'wp_ajax_mkl_pc_configuration_editor_url', [ $this, 'ajax_editor_url' ] );
 		add_action( 'wp_ajax_mkl_pc_search_configurable_products', [ $this, 'ajax_search_products' ] );
 	}
 
 	/**
-	 * Read a target string
-	 *
-	 * @param string $target
-	 * @return array|false order_id, and item_id or product_id.
+	 * @param Configuration_Editor_Target $target
+	 * @return void
 	 */
-	public function parse_target( $target ) {
-		if ( ! is_string( $target ) || ! preg_match( '/^order:(\d+):(item|product):(\d+)$/', $target, $match ) ) return false;
-		return [
-			'order_id'   => (int) $match[1],
-			'item_id'    => 'item' === $match[2] ? (int) $match[3] : 0,
-			'product_id' => 'product' === $match[2] ? (int) $match[3] : 0,
-		];
+	public function register_target( Configuration_Editor_Target $target ) {
+		$this->targets[ $target->get_type() ] = $target;
+	}
+
+	/**
+	 * @param string $type
+	 * @return Configuration_Editor_Target|null
+	 */
+	public function get_target_type( $type ) {
+		return isset( $this->targets[ $type ] ) ? $this->targets[ $type ] : null;
 	}
 
 	/**
 	 * What a target points at, if the current user may configure it
 	 *
 	 * @param string $target
-	 * @return array|\WP_Error order, item (null for a new line), product.
+	 * @return array|\WP_Error What the target type resolved (see Configuration_Editor_Target::resolve()), plus
+	 *                         `target`, `type` and `is_new` (no saved configuration to open).
 	 */
 	public function resolve_target( $target ) {
-		$parsed = $this->parse_target( $target );
-		$not_found = new \WP_Error( 'mkl_pc_editor_target', __( 'This order line cannot be configured.', 'product-configurator-for-woocommerce' ), [ 'status' => 404 ] );
-		if ( ! $parsed || ! function_exists( 'wc_get_order' ) ) return $not_found;
+		$not_found = new \WP_Error( 'mkl_pc_editor_target', __( 'This cannot be configured.', 'product-configurator-for-woocommerce' ), [ 'status' => 404 ] );
+		if ( ! is_string( $target ) || ! preg_match( '/^([a-z_]+):/', $target, $match ) ) return $not_found;
+		$type = $this->get_target_type( $match[1] );
+		if ( ! $type ) return $not_found;
 
-		$order = wc_get_order( $parsed['order_id'] );
-		if ( ! $order || ! $this->user_can_edit( $order ) ) {
-			return new \WP_Error( 'mkl_pc_editor_forbidden', __( 'This order cannot be edited.', 'product-configurator-for-woocommerce' ), [ 'status' => rest_authorization_required_code() ] );
-		}
+		$resolved = $type->resolve( $target );
+		if ( is_wp_error( $resolved ) ) return $resolved;
+		$product = isset( $resolved['product'] ) ? $resolved['product'] : null;
+		if ( ! $product instanceof \WC_Product || ! mkl_pc_is_configurable( $product->get_parent_id() ? $product->get_parent_id() : $product->get_id() ) ) return $not_found;
 
-		$item = null;
-		if ( $parsed['item_id'] ) {
-			$item = $order->get_item( $parsed['item_id'] );
-			if ( ! $item instanceof \WC_Order_Item_Product ) return $not_found;
-			$product = $item->get_product();
-		} else {
-			$product = wc_get_product( $parsed['product_id'] );
-		}
-		if ( ! $product || ! mkl_pc_is_configurable( $product->get_parent_id() ? $product->get_parent_id() : $product->get_id() ) ) return $not_found;
-
-		return [
-			'order'   => $order,
-			'item'    => $item,
-			'product' => $product,
-		];
-	}
-
-	/**
-	 * Whether the current user may configure the lines of an order
-	 *
-	 * @param \WC_Order $order
-	 * @return boolean
-	 */
-	public function user_can_edit( $order ) {
-		if ( ! current_user_can( 'edit_shop_orders' ) ) return false;
-		/**
-		 * Whether an order's lines can be configured from the admin. Default: when WooCommerce lets its items be edited.
-		 *
-		 * @param boolean   $editable
-		 * @param \WC_Order $order
-		 */
-		return (bool) apply_filters( 'mkl_pc/configuration_editor/order_is_editable', $order->is_editable(), $order );
+		$resolved = wp_parse_args( $resolved, [
+			'configuration' => [],
+			'quantity'      => 1,
+			'save_label'    => __( 'Save the configuration', 'product-configurator-for-woocommerce' ),
+		] );
+		$resolved['target'] = $target;
+		$resolved['type'] = $type;
+		$resolved['is_new'] = empty( $resolved['configuration'] );
+		return $resolved;
 	}
 
 	/**
@@ -133,7 +122,6 @@ class Configuration_Editor {
 		if ( ! wp_verify_nonce( $nonce, 'mkl_pc_edit_' . $target ) ) return false;
 		$resolved = $this->resolve_target( $target );
 		if ( is_wp_error( $resolved ) ) return false;
-		$resolved['target'] = $target;
 		return $this->frame_target = $resolved;
 	}
 
@@ -150,7 +138,7 @@ class Configuration_Editor {
 	}
 
 	/**
-	 * In the frame: the line's configuration, and Save instead of Add to cart
+	 * In the frame: the saved configuration, and Save instead of Add to cart
 	 *
 	 * @return void
 	 */
@@ -158,7 +146,7 @@ class Configuration_Editor {
 		$target = $this->get_frame_target();
 		if ( ! $target ) return;
 
-		add_filter( 'mkl_pc_get_saved_configuration_content', [ $this, 'get_item_configuration' ], 20 );
+		add_filter( 'mkl_pc_get_saved_configuration_content', [ $this, 'get_saved_configuration' ], 20 );
 		add_filter( 'body_class', function( $classes ) {
 			$classes[] = 'mkl-pc-configuration-editor';
 			return $classes;
@@ -181,11 +169,10 @@ class Configuration_Editor {
 	 * @param array $configuration
 	 * @return array
 	 */
-	public function get_item_configuration( $configuration ) {
+	public function get_saved_configuration( $configuration ) {
 		$target = $this->get_frame_target();
-		if ( ! $target || ! $target['item'] ) return $configuration;
-		$saved = $target['item']->get_meta( '_configurator_data_raw' );
-		return $saved ? $saved : $configuration;
+		if ( ! $target || $target['is_new'] ) return $configuration;
+		return $target['configuration'];
 	}
 
 	public function enqueue_frame() {
@@ -199,14 +186,14 @@ class Configuration_Editor {
 		wp_add_inline_style( 'mkl_pc/css/configuration_editor', $this->get_frame_css() );
 		wp_localize_script( 'mkl_pc/js/configuration_editor', 'PC_configuration_editor', [
 			'target'        => $target['target'],
-			'is_new'        => ! $target['item'],
-			'quantity'      => $target['item'] ? $target['item']->get_quantity() : 1,
-			'save_url'      => esc_url_raw( rest_url( 'mkl_pc/v1/configuration-editor/order-items' ) ),
+			'is_new'        => $target['is_new'],
+			'quantity'      => $target['quantity'],
+			'save_url'      => esc_url_raw( rest_url( 'mkl_pc/v1/configuration-editor/save' ) ),
 			'nonce'         => wp_create_nonce( 'wp_rest' ),
 			'capture_image' => '3d' === mkl_pc_get_configurator_type( $product->get_parent_id() ? $product->get_parent_id() : $product->get_id() ),
 			'button_class'  => mkl_pc( 'frontend' ) && mkl_pc( 'frontend' )->product ? mkl_pc( 'frontend' )->product->button_class : 'button',
 			'lang'          => [
-				'save'   => $target['item'] ? __( 'Save the configuration', 'product-configurator-for-woocommerce' ) : __( 'Add to the order', 'product-configurator-for-woocommerce' ),
+				'save'   => $target['save_label'],
 				'cancel' => __( 'Cancel', 'product-configurator-for-woocommerce' ),
 				'saving' => __( 'Saving…', 'product-configurator-for-woocommerce' ),
 				'failed' => __( 'The configuration could not be saved.', 'product-configurator-for-woocommerce' ),
@@ -215,7 +202,7 @@ class Configuration_Editor {
 	}
 
 	public function register_routes() {
-		register_rest_route( 'mkl_pc/v1', '/configuration-editor/order-items', [
+		register_rest_route( 'mkl_pc/v1', '/configuration-editor/save', [
 			'methods'             => \WP_REST_Server::CREATABLE,
 			'callback'            => [ $this, 'rest_save' ],
 			'permission_callback' => function( $request ) {
@@ -244,35 +231,26 @@ class Configuration_Editor {
 			wc_load_cart();
 		}
 
-		$writer = new Order_Item_Configuration();
-		$item = $writer->save( $resolved['order'], $resolved['item'] ? $resolved['item'] : $resolved['product'], $request->get_param( 'configuration' ), [
+		$result = $resolved['type']->save( $resolved, $request->get_param( 'configuration' ), [
 			'quantity' => $request->get_param( 'quantity' ),
 			'image'    => $request->get_param( 'image' ),
 		] );
-		if ( is_wp_error( $item ) ) return $item;
-
-		return rest_ensure_response( [
-			'item_id' => $item->get_id(),
-			'total'   => (float) $item->get_total(),
-		] );
+		return is_wp_error( $result ) ? $result : rest_ensure_response( $result );
 	}
 
 	/**
-	 * Order screen: "Configure" on each line of a configurable product
+	 * A button opening the configurator for a target
 	 *
-	 * @param int                    $item_id
-	 * @param \WC_Order_Item         $item
-	 * @param \WC_Product|null|false $product
+	 * @param string      $target
+	 * @param \WC_Product $product
+	 * @param string      $label
+	 * @param string      $class   More classes.
 	 * @return void
 	 */
-	public function edit_item_button( $item_id, $item, $product ) {
-		if ( ! $item instanceof \WC_Order_Item_Product || ! $product ) return;
-		$target = 'order:' . $item->get_order_id() . ':item:' . $item_id;
-		$resolved = $this->resolve_target( $target );
-		if ( is_wp_error( $resolved ) ) return;
-		$label = $item->get_meta( '_configurator_data_raw' ) ? __( 'Edit the configuration', 'product-configurator-for-woocommerce' ) : __( 'Configure', 'product-configurator-for-woocommerce' );
+	public function edit_button( $target, $product, $label, $class = '' ) {
 		printf(
-			'<p class="mkl-pc-configure-item"><button type="button" class="button button-small mkl-pc-open-configuration-editor" data-url="%s" data-title="%s">%s</button></p>',
+			'<button type="button" class="button %s mkl-pc-open-configuration-editor" data-url="%s" data-title="%s">%s</button>',
+			esc_attr( $class ),
 			esc_url( $this->get_editor_url( $target, $product ) ),
 			esc_attr( $product->get_name() ),
 			esc_html( $label )
@@ -280,35 +258,39 @@ class Configuration_Editor {
 	}
 
 	/**
-	 * Order screen: "Add a configured product", next to WooCommerce's "Add product(s)"
+	 * A button asking for a product, then opening its configurator
 	 *
-	 * @param \WC_Order $order
+	 * @param string $base  The target without its product, e.g. `order:12`.
+	 * @param string $label
+	 * @param string $class More classes.
 	 * @return void
 	 */
-	public function add_item_button( $order ) {
-		if ( ! $this->user_can_edit( $order ) ) return;
+	public function add_button( $base, $label, $class = '' ) {
 		printf(
-			'<button type="button" class="button mkl-pc-add-configured-product" data-order="%d">%s</button>',
-			(int) $order->get_id(),
-			esc_html__( 'Add a configured product', 'product-configurator-for-woocommerce' )
+			'<button type="button" class="button %s mkl-pc-add-configured-product" data-target="%s">%s</button>',
+			esc_attr( $class ),
+			esc_attr( $base ),
+			esc_html( $label )
 		);
 	}
 
 	/**
-	 * @param string $hook
+	 * The dialog the configurator opens in, on an admin screen
+	 *
+	 * @param string   $screen 'order' reloads the order items after a save; other screens listen to
+	 *                         `mkl_pc_configuration_saved` on the body.
+	 * @param string[] $deps   Scripts it needs on that screen.
 	 * @return void
 	 */
-	public function enqueue_order_screen( $hook ) {
-		$screen = get_current_screen();
-		if ( ! $screen || ! in_array( $screen->id, [ 'shop_order', 'woocommerce_page_wc-orders' ], true ) ) return;
-		if ( ! current_user_can( 'edit_shop_orders' ) ) return;
-		$file = 'admin/js/order-configuration-editor.js';
-		wp_enqueue_script( 'mkl_pc/admin/js/order_configuration_editor', MKL_PC_ASSETS_URL . $file, [ 'jquery', 'wc-admin-order-meta-boxes' ], filemtime( MKL_PC_ASSETS_PATH . $file ), true );
-		wp_localize_script( 'mkl_pc/admin/js/order_configuration_editor', 'PC_order_configuration_editor', [
+	public function enqueue_dialog( $screen, $deps = [] ) {
+		$file = 'admin/js/configuration-editor-dialog.js';
+		wp_enqueue_script( 'mkl_pc/admin/js/configuration_editor_dialog', MKL_PC_ASSETS_URL . $file, array_merge( [ 'jquery' ], $deps ), filemtime( MKL_PC_ASSETS_PATH . $file ), true );
+		wp_localize_script( 'mkl_pc/admin/js/configuration_editor_dialog', 'PC_configuration_editor_dialog', [
+			'screen'   => $screen,
 			'ajax_url' => admin_url( 'admin-ajax.php' ),
 			'nonce'    => wp_create_nonce( 'mkl_pc_configuration_editor' ),
 			'lang'     => [
-				'choose_product' => __( 'Add a configured product', 'product-configurator-for-woocommerce' ),
+				'choose_product' => __( 'Choose a configurable product', 'product-configurator-for-woocommerce' ),
 				'search'         => __( 'Search for a configurable product…', 'product-configurator-for-woocommerce' ),
 				'searching'      => __( 'Searching…', 'product-configurator-for-woocommerce' ),
 				'no_results'     => __( 'No configurable product found.', 'product-configurator-for-woocommerce' ),
@@ -316,15 +298,15 @@ class Configuration_Editor {
 				'unsaved'        => __( 'Close without saving the configuration?', 'product-configurator-for-woocommerce' ),
 			],
 		] );
-		wp_register_style( 'mkl_pc/admin/css/order_configuration_editor', false, [], MKL_PC_VERSION );
-		wp_enqueue_style( 'mkl_pc/admin/css/order_configuration_editor' );
-		wp_add_inline_style( 'mkl_pc/admin/css/order_configuration_editor', $this->get_order_screen_css() );
+		wp_register_style( 'mkl_pc/admin/css/configuration_editor_dialog', false, [], MKL_PC_VERSION );
+		wp_enqueue_style( 'mkl_pc/admin/css/configuration_editor_dialog' );
+		wp_add_inline_style( 'mkl_pc/admin/css/configuration_editor_dialog', $this->get_dialog_css() );
 	}
 
 	/**
 	 * @return string
 	 */
-	private function get_order_screen_css() {
+	private function get_dialog_css() {
 		return '
 .mkl-pc-configure-item { margin: 6px 0 0; }
 .mkl-pc-editor-dialog { width: calc(100vw - 48px); max-width: 1400px; height: calc(100vh - 48px); padding: 0; border: 0; border-radius: 8px; box-shadow: 0 24px 64px rgba(0,0,0,.3); overflow: hidden; }
@@ -346,13 +328,14 @@ class Configuration_Editor {
 	}
 
 	/**
-	 * The frame URL for a new line of a product
+	 * The frame URL for a product picked for a target
 	 *
 	 * @return void
 	 */
 	public function ajax_editor_url() {
 		check_ajax_referer( 'mkl_pc_configuration_editor', 'security' );
-		$target = sprintf( 'order:%d:product:%d', isset( $_POST['order_id'] ) ? absint( $_POST['order_id'] ) : 0, isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0 );
+		$base = isset( $_POST['target'] ) ? sanitize_text_field( wp_unslash( $_POST['target'] ) ) : '';
+		$target = $base . ':product:' . ( isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0 );
 		$resolved = $this->resolve_target( $target );
 		if ( is_wp_error( $resolved ) ) wp_send_json_error( [ 'message' => $resolved->get_error_message() ] );
 		wp_send_json_success( [
@@ -368,7 +351,11 @@ class Configuration_Editor {
 	 */
 	public function ajax_search_products() {
 		check_ajax_referer( 'mkl_pc_configuration_editor', 'security' );
-		if ( ! current_user_can( 'edit_shop_orders' ) ) wp_die( -1 );
+		$allowed = false;
+		foreach ( $this->targets as $type ) {
+			if ( $type->current_user_can() ) $allowed = true;
+		}
+		if ( ! $allowed || ! function_exists( 'wc_get_product' ) ) wp_die( -1 );
 		$term = isset( $_GET['term'] ) ? wc_clean( wp_unslash( $_GET['term'] ) ) : '';
 		$ids = \WC_Data_Store::load( 'product' )->search_products( $term, '', false, false, 50 );
 		$found = [];

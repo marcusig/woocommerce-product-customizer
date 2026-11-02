@@ -91,6 +91,13 @@ class Quote_Request {
 	public $price = null;
 
 	/**
+	 * Line total the merchant set when answering, in place of the configured price. Null when not set.
+	 *
+	 * @var float|null
+	 */
+	public $quoted_price = null;
+
+	/**
 	 * Absolute path of the configuration image, or ''.
 	 *
 	 * @var string
@@ -190,6 +197,16 @@ class Quote_Request {
 	public function get_summary() {
 		if ( is_array( $this->summary ) ) return $this->summary;
 		return $this->configuration ? $this->configuration->get_summary( 'quote' ) : [];
+	}
+
+	/**
+	 * Price of the line: the one the merchant set, or the configured one
+	 *
+	 * @return float|null Null without a price.
+	 */
+	public function get_line_price() {
+		if ( null !== $this->quoted_price ) return (float) $this->quoted_price;
+		return is_array( $this->price ) && isset( $this->price['line_total'] ) ? (float) $this->price['line_total'] : null;
 	}
 
 	/**

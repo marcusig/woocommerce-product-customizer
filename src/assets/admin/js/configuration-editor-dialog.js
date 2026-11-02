@@ -1,22 +1,18 @@
 /**
- * Order screen: configure lines in the configurator, shown in a frame
+ * Admin screens: configure in the configurator, shown in a frame
  *
- * "Configure" / "Edit the configuration" on a line opens its configurator; "Add a configured product"
- * asks for the product first. The frame tells this screen when it saved (see
- * assets/js/configuration-editor.js), and the order items are reloaded as WooCommerce does after its own
- * edits.
+ * `.mkl-pc-open-configuration-editor` opens a configurator (its data-url); `.mkl-pc-add-configured-product`
+ * asks for the product first, for its data-target. The frame tells this screen when it saved (see
+ * assets/js/configuration-editor.js). On the order screen the order items are then reloaded, as WooCommerce
+ * does after its own edits; other screens listen to `mkl_pc_configuration_saved` on the body.
  *
- * Config in PC_order_configuration_editor: ajax_url, nonce, lang.
+ * Config in PC_configuration_editor_dialog: screen, ajax_url, nonce, lang.
  */
 ( function( $ ) {
-	var config = window.PC_order_configuration_editor || {};
+	var config = window.PC_configuration_editor_dialog || {};
 	var lang = config.lang || {};
 	var dialog = null;
 	var trigger = null;
-
-	var get_order_id = function() {
-		return window.woocommerce_admin_meta_boxes ? woocommerce_admin_meta_boxes.post_id : 0;
-	};
 
 	var get_dialog = function() {
 		if ( dialog ) return dialog;
@@ -64,7 +60,7 @@
 	 *
 	 * Not selectWoo: its dropdown cannot place itself over a modal dialog.
 	 */
-	var open_picker = function() {
+	var open_picker = function( base ) {
 		var $dialog = get_dialog();
 		$dialog.addClass( 'is-picker' );
 		$dialog.find( 'h2' ).text( lang.choose_product );
@@ -102,7 +98,7 @@
 		$results.on( 'click', 'button', function() {
 			var $choice = $( this );
 			$results.find( 'button' ).prop( 'disabled', true );
-			$.post( config.ajax_url, { action: 'mkl_pc_configuration_editor_url', security: config.nonce, order_id: get_order_id(), product_id: $choice.data( 'product' ) } )
+			$.post( config.ajax_url, { action: 'mkl_pc_configuration_editor_url', security: config.nonce, target: base, product_id: $choice.data( 'product' ) } )
 				.done( function( response ) {
 					if ( response && response.success ) {
 						open_frame( response.data.url, response.data.title );
@@ -124,7 +120,7 @@
 		var $box = $( '#woocommerce-order-items' );
 		$box.block( { message: null, overlayCSS: { background: '#fff', opacity: 0.6 } } );
 		$.post( woocommerce_admin_meta_boxes.ajax_url, {
-			order_id: get_order_id(),
+			order_id: woocommerce_admin_meta_boxes.post_id,
 			action: 'woocommerce_load_order_items',
 			security: woocommerce_admin_meta_boxes.order_item_nonce
 		} ).done( function( response ) {
@@ -145,7 +141,7 @@
 	$( document.body ).on( 'click', '.mkl-pc-add-configured-product', function( event ) {
 		event.preventDefault();
 		trigger = event.currentTarget;
-		open_picker();
+		open_picker( $( this ).data( 'target' ) );
 	} );
 
 	window.addEventListener( 'message', function( event ) {
@@ -154,7 +150,8 @@
 		if ( 'saved' === data.event ) {
 			trigger = null;
 			close_dialog( false );
-			reload_items();
+			if ( 'order' === config.screen ) reload_items();
+			$( document.body ).trigger( 'mkl_pc_configuration_saved', [ data ] );
 		} else if ( 'cancel' === data.event ) {
 			close_dialog( false );
 		}

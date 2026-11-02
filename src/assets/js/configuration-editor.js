@@ -1,8 +1,8 @@
 /**
- * The configurator opened from an order in the admin, in a frame
+ * The configurator opened from the admin (an order, a quote request), in a frame
  *
- * Add to cart and Request a quote are replaced by Save, which sends the configuration to the order line
- * (or a new line) and tells the order screen, which closes the frame and reloads the order items.
+ * Add to cart and Request a quote are replaced by Save, which sends the configuration to its target (see
+ * Configuration_Editor) and tells the admin screen, which closes the frame and shows the result.
  *
  * Config in PC_configuration_editor: target, is_new, quantity, save_url, nonce, capture_image, button_class, lang.
  */
@@ -13,7 +13,7 @@
 	var NS = 'mkl/pc/configuration-editor';
 
 	/**
-	 * Tell the order screen
+	 * Tell the admin screen
 	 *
 	 * @param {string} event 'saved' or 'cancel'.
 	 * @param {Object} [data]
