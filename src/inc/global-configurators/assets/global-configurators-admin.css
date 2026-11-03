@@ -16,24 +16,7 @@
 .mkl-pc-global-picker--has-value:not(.mkl-pc-global-picker--picking) .mkl-pc-global-picker-selected { cursor: pointer; }
 .mkl-pc-global-picker-selected a.mkl-pc-global-picker-edit { margin-left: 4px; }
 .mkl-pc-global-picker-change.button { height: auto; }
-.mkl-pc-global-picker-results {
-	/* Do not use the [hidden] attribute on the same element we toggle: UA display:none !important. */
-	display: none;
-	position: absolute;
-	left: 0;
-	right: 0;
-	top: 100%;
-	background: #fff;
-	border: 1px solid #c3c4c7;
-	border-top: none;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-	max-height: 220px;
-	overflow-y: auto;
-	z-index: 100100;
-	box-shadow: 0 8px 18px -10px #0000003d;
-}
+/* The results dropdown: assets/admin/css/search-dropdown.css */
 
 input#mkl_pc_global_picker_search {
     float: none;
@@ -55,23 +38,6 @@ input#mkl_pc_global_picker_search {
     }
 }
 
-.mkl-pc-global-picker-results.mkl-pc-is-open {
-	display: block;
-}
-.mkl-pc-global-picker-results li {
-	padding: 8px 10px;
-	cursor: pointer;
-	border-bottom: 1px solid #f0f0f1;
-	margin: 0;
-}
-.mkl-pc-global-picker-results li:last-child { border-bottom: none; }
-.mkl-pc-global-picker-results li:hover { background: #f6f7f7; }
-.mkl-pc-global-picker-results li.empty { color: #646970; cursor: default; }
-.mkl-pc-global-picker-results li.mkl-pc-global-picker-status {
-	color: #646970;
-	cursor: default;
-	font-size: 13px;
-}
 .mkl-pc-global-picker--searching .mkl-pc-global-picker-search {
 	cursor: progress;
 }

@@ -119,6 +119,7 @@ const excludeFromPackage = [
 	// The directory entry itself and its contents: `src/**` matches both.
 	'!src/**/__tests__',
 	'!src/**/__tests__/**',
+	'!src/**/.DS_Store',
 ];
 
 /** Source fragments concatenated into dist/assets/js/product_configurator.js (order matters). */
@@ -167,7 +168,7 @@ gulp.task('move_src', function(done) {
 })
 
 gulp.task('vendor', function(done){
-	return gulp.src('vendor/**', { encoding: false })
+	return gulp.src( [ 'vendor/**', '!vendor/**/.DS_Store' ], { encoding: false } )
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest('dist/vendor'))
 	.on('end', done);
@@ -388,7 +389,7 @@ const reportError = function(error) {
 
 //for normal build
 gulp.task('copy_for_zip', function(done) {
-	return gulp.src('dist/**', { encoding: false })
+	return gulp.src( [ 'dist/**', '!dist/**/.DS_Store' ], { encoding: false } )
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest(folder_name))
 	.on('end', done);
@@ -427,7 +428,7 @@ gulp.task('clean_svn', function(done) {
 });
 
 gulp.task('copy_to_svn', function(done) {
-	return gulp.src('dist/**/*', { encoding: false })
+	return gulp.src( [ 'dist/**/*', '!dist/**/.DS_Store' ], { encoding: false } )
 	.pipe(plumber(reportError))
 	.pipe(gulp.dest('../../repository/product-configurator-for-woocommerce/trunk'))
 	.on('end', done);	

@@ -1,7 +1,7 @@
 <?php
 
 /**
-* Plugin Name: Product Configurator for WooCommerce
+* Plugin Name: MKL Product Configurator for WooCommerce - 2D & 3D Live Preview
 * Plugin URI: http://wc-product-configurator.com
 * Description: Allow customers to configure and customize their products with a live 2D or 3D preview, built from image layers or 3D models
 * Author: Marc Lacroix

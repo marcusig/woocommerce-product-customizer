@@ -1000,6 +1000,38 @@ class Configuration {
 	}
 
 	/**
+	 * The chosen options, ready to display, without going through WooCommerce
+	 *
+	 * Same rows as an order item's configuration: each choice goes through `mkl_pc_item_meta`, so
+	 * add-ons format their values the same way. Listeners get the WooCommerce product when there is
+	 * one, and null otherwise.
+	 *
+	 * @param string $context Passed to `mkl_pc_item_meta` (e.g. 'quote').
+	 * @return array[] Rows of label / value (HTML) / layer (the Choice).
+	 */
+	public function get_summary( $context = 'summary' ) {
+		$product = null;
+		if ( function_exists( 'wc_get_product' ) ) {
+			$product = wc_get_product( $this->variation_id ? $this->variation_id : $this->product_id );
+		}
+		$key = $context . '-' . md5( $this->product_id . '-' . $this->variation_id );
+		$rows = [];
+		foreach ( $this->get_layers() as $choice ) {
+			if ( ! is_object( $choice ) || ! $choice->is_choice() ) continue;
+			if ( $choice->get_layer( 'hide_in_cart' ) || $choice->get_choice( 'hide_in_cart' ) ) continue;
+			$rows[] = Product::set_layer_item_meta( $choice, $product ? $product : null, $key, $context );
+		}
+		/**
+		 * Filter the summary of a configuration
+		 *
+		 * @param array[]       $rows
+		 * @param Configuration $configuration
+		 * @param string        $context
+		 */
+		return apply_filters( 'mkl_pc/configuration/summary', array_values( array_filter( $rows ) ), $this, $context );
+	}
+
+	/**
 	 * Get the layers
 	 *
 	 * @return array Array of \MKL\PC\Choice instances

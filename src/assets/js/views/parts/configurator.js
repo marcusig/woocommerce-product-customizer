@@ -269,6 +269,11 @@ PC.fe.views.configurator = Backbone.View.extend({
 	},
 	handle_configurator_keydown: function( event ) {
 		if ( ! this.$el.is( ':visible' ) ) return;
+		// The add to cart modal, which also shows the quote request form, is in front of everything but the SYD modals.
+		if ( PC.fe.add_to_cart_modal && PC.fe.add_to_cart_modal.is_open() && ! $( 'body' ).is( '.syd-modal-opened, .syd-share-modal-opened' ) ) {
+			PC.fe.add_to_cart_modal.keydown( event );
+			return;
+		}
 		if ( 'Escape' === event.key ) {
 			// Nested SYD/Share modals handle Escape themselves.
 			if ( $( 'body' ).hasClass( 'syd-modal-opened' ) || $( 'body' ).hasClass( 'syd-share-modal-opened' ) ) {

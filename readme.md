@@ -5,10 +5,10 @@ This is the development repository for https://wordpress.org/plugins/product-con
 # Product Configurator for WooCommerce
 
 - Contributors: mklacroix, marcusig
-- Tags: 3D configurator, product customizer, product builder, woocommerce, product addons
+- Tags: 3D configurator, product customizer, product builder, woocommerce, request a quote
 - ⭐⭐⭐⭐⭐ [Reviews on WordPress.org](https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/?filter=5)
 
-**Build 2D and 3D product configurators for WooCommerce. Customers design their product with a live visual preview, then add it to the cart.**
+**Build 2D and 3D product configurators for WooCommerce. Customers design their product with a live visual preview, then add it to the cart or request a quote.**
 
 <img width="1383" height="851" alt="screenshot-1" src="https://github.com/user-attachments/assets/dacf2c92-cbdf-4b35-aed4-bc893eac43be" />
 
@@ -19,7 +19,21 @@ Product Configurator for WooCommerce turns any WooCommerce product into an inter
 - **2D configurator**: stack transparent image layers (Photoshop exports, 3D renders, product photography) across several views.
 - **3D configurator**: upload a glTF / GLB model and let customers rotate, zoom and configure it in real time.
 
-A single configurable product replaces hundreds of variations and images, and with global configurators and global layers you build it once and share it across your whole catalog.
+A single configurable product replaces hundreds of variations and images, and with global configurators and global layers you build it once and share it across your whole catalog. For made-to-order products, customers can request a quote instead, and accept and pay it online.
+
+## New in 2.1: request a quote
+
+Customers request a quote for exactly what they configured, picture included, from a **Request a quote** button next to Add to cart, or instead of it for products sold on quote only. No quote plugin needed.
+
+- **Where requests go**: by email only, kept in their own list in the admin (no WooCommerce order needed), or created as WooCommerce orders with a "Quote request" status.
+- **Pricing and sending**: edit the configuration, set the price, add a message and email the quote. Each request keeps its history.
+- **Leads by phone or email**: create a request in the admin, configure the product for the customer, and send the quote.
+- **The customer's side**: a private page per request, a **Quote requests** tab in My account, and "Find my requests" for lost links. Customers accept and pay, decline, or ask for a change.
+- **Request form**: reorder, relabel and translate the fields, with prefill for signed-in customers. Add your own fields and file uploads with [Form fields](https://wc-product-configurator.com/product/form-fields/), and a PDF of the quote with [Save your design](https://wc-product-configurator.com/product/save-your-design/).
+- **Edit orders from the admin**: change the configuration of an order line, or add a configured product to an order.
+- **For developers**: a REST API, a `PC.fe.quote` JavaScript API for headless front ends, `mkl_pc_create_quote_request()`, and hooks throughout.
+
+[Quote requests documentation](https://docs.wc-product-configurator.com/docs/product-configurator-for-woocommerce/quote-requests/)
 
 ## New in version 2
 
@@ -67,6 +81,8 @@ The full list, including the new hooks and methods, is in the changelog in [`src
 - **3D models** with real-time configuration (see above)
 - **Multi-step configurator** and **required selections**
 - **Configuration image** in the cart, orders and quotes
+- **Request a quote**: built in, with a customer page, quote acceptance and online payment
+- **Edit orders from the admin**: reconfigure order lines, add configured products
 - **Global configurators** and **global layers**
 - **Accessible**: full keyboard use, screen-reader friendly labels and live announcements, validation errors shown in-page
 - **Multilingual**: compatible with WPML and Polylang, with translatable layers and choices
@@ -81,13 +97,13 @@ Several add-ons are available on [wc-product-configurator.com](https://wc-produc
 - [Extra Price](https://wc-product-configurator.com/product/extra-price/) - Add an extra cost to any of the choices you offer in your configurable products.
 - [Save your design](https://wc-product-configurator.com/product/save-your-design/)
   - Get your customers engaged by enabling them to save the design they’ve made.
-  - Download the configuration as PDF
+  - Download the configuration as PDF, and attach a PDF to quotes
   - Create presets
   - Share the design
 - [Multiple choice](https://wc-product-configurator.com/product/multiple-choice/) - Enables multiple choices per layer. Ideal for a product’s options, or when having several individual options.
 - [Stock management / Linked product](https://wc-product-configurator.com/product/stock-management-and-linked-product/) - Manage the stocks on a choice basis, or link a choice to a product in the shop, with the possibility to use its price and/or add it to the cart. Great for advanced inventory management and exporting to third party software.
 - [Conditional logic](https://wc-product-configurator.com/product/conditional-logic/) - Conditionally display, hide or select items depending on other selections.
-- [Form fields](https://wc-product-configurator.com/product/form-fields/) - Create forms to collect data associated to your configurable products. Perform complex price calculations in combination with the Extra price add-on.
+- [Form fields](https://wc-product-configurator.com/product/form-fields/) - Create forms to collect data associated to your configurable products, in the configurator or in the quote request form. Perform complex price calculations in combination with the Extra price add-on.
 - [Text overlay](https://wc-product-configurator.com/product/text-overlay/) - Customers can add their own custom text and instantly see how it looks on the product. Let them choose from your selection of fonts and colors to match their style. Perfect for engraving, embroidery, monogramming, or any personalized touch.
 - [Advanced description](https://wc-product-configurator.com/product/advanced-description/) - Display additional information in a modal window, when the content is too large to show directly in the configurator.
 
@@ -133,6 +149,7 @@ composer install
 | `pnpm build` | One-off full build into `dist/`. |
 | `npx gulp zip` | Builds and packages `product-configurator-for-woocommerce.zip`. |
 | `pnpm test` | JavaScript unit tests (`wp-scripts test-unit-js`), mostly covering the 3D viewer. |
+| `pnpm test:php` | PHP integration suites, run against the Local site the repo sits in. See [`tests/php/README.md`](tests/php/README.md). |
 
 The 3D viewer (built on Three.js, entry `src/assets/js/source/fe-3d-viewer-entry.js`) and the 3D admin settings (`src/assets/admin/js/views/3d-settings.js`) are bundled with `@wordpress/scripts`. The rest of the front end and admin JavaScript is concatenated by gulp.
 

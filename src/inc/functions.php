@@ -359,3 +359,22 @@ function mkl_pc_get_configuration_meta_mode( $product = false ) {
 
 	return in_array( $mode, [ 'single', 'individual' ], true ) ? $mode : 'single';
 }
+
+/**
+ * Validate, store and send a quote request
+ *
+ * The same path the REST API takes, without its token and rate limit: for integrations that
+ * collect a request their own way (a form plugin, an import...).
+ *
+ * @param array $args See \MKL\PC\Quote_Service::prepare().
+ * @return \MKL\PC\Quote_Request|\WP_Error
+ */
+function mkl_pc_create_quote_request( $args ) {
+	$quotes = mkl_pc( 'quotes' );
+	if ( ! $quotes ) {
+		return new WP_Error( 'mkl_pc_quote_unavailable', __( 'Quote requests are not available.', 'product-configurator-for-woocommerce' ) );
+	}
+	$request = $quotes->service->prepare( $args );
+	if ( is_wp_error( $request ) ) return $request;
+	return $quotes->service->submit( $request );
+}
