@@ -13,6 +13,7 @@
  * @var bool                        $show_image
  * @var string                      $back_url     The list it was opened from, or ''.
  * @var string                      $pdf_url      The quote as a PDF, when there is one to download.
+ * @var string                      $link_form    Add a request sent as a guest to the account (quotes/quote-link.php), or ''.
  * @var string                      $answer_form  Accept, decline, ask for a change (quotes/quote-answer.php), or ''.
  * @var \MKL\PC\Quote_Customer_View $view
  */
@@ -41,6 +42,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			· <span class="mkl-pc-quote__status"><?php echo esc_html( $status ); ?></span>
 		<?php endif; ?>
 	</p>
+
+	<?php echo $link_form; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in its template. ?>
 
 	<?php if ( $sent && '' !== $sent_message ) : ?>
 		<div class="mkl-pc-quote__message">

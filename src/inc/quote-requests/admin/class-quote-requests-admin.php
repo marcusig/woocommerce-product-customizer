@@ -11,9 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The list shows who asked for what. A request opens with what was configured, which the merchant can
  * configure again in a dialog (Quote_Request_Target), the customer's details, which they can correct
  * or take from a customer account (one using the same email is suggested), and a status box to follow
- * it up and send the quote. A user's profile offers to link the requests they sent as a guest. "Add request"
- * makes one for a customer who did not use the configurator: their details, a product to configure,
- * then Save and send.
+ * it up and send the quote. A user's profile offers to link the requests sent as a guest with its email.
+ * Customers set their account's email to any address, so these are hints the merchant checks: customers
+ * who open a request's link signed in add it to their account themselves (Quote_Customer_View). "Add
+ * request" makes one for a customer who did not use the configurator: their details, a product to
+ * configure, then Save and send.
  */
 class Quote_Requests_Admin {
 
@@ -448,31 +450,18 @@ class Quote_Requests_Admin {
 	}
 
 	/**
-	 * The addresses an account holder set: the account's email, and its WooCommerce billing email
+	 * The account using an email as its own
 	 *
-	 * Unlike the email typed in a request form, which anyone can type.
-	 *
-	 * @param \WP_User $user
-	 * @return string[]
-	 */
-	private function get_account_emails( $user ) {
-		return array_values( array_unique( array_filter( [ $user->user_email, (string) get_user_meta( $user->ID, 'billing_email', true ) ] ) ) );
-	}
-
-	/**
-	 * Accounts using an email, as their own or their billing email
+	 * Not its billing email, which its holder types like any other field. Neither proves the requests
+	 * sent with the address are theirs: WooCommerce lets them change the account's email unconfirmed.
 	 *
 	 * @param string $email
-	 * @return \WP_User[]
+	 * @return \WP_User[] One at most.
 	 */
 	private function get_accounts_by_email( $email ) {
 		$email = sanitize_email( $email );
-		if ( ! is_email( $email ) ) return [];
-		$ids = array_merge(
-			get_users( [ 'search' => $email, 'search_columns' => [ 'user_email' ], 'fields' => 'ID', 'number' => 10 ] ),
-			get_users( [ 'meta_key' => 'billing_email', 'meta_value' => $email, 'fields' => 'ID', 'number' => 10 ] ) // phpcs:ignore WordPress.DB.SlowDBQuery -- Admin only.
-		);
-		return array_values( array_filter( array_map( 'get_userdata', array_unique( array_map( 'intval', $ids ) ) ) ) );
+		$user = is_email( $email ) ? get_user_by( 'email', $email ) : false;
+		return $user ? [ $user ] : [];
 	}
 
 	/**
@@ -487,7 +476,7 @@ class Quote_Requests_Admin {
 	}
 
 	/**
-	 * User profile: the account's quote requests, and those sent as a guest with its emails, to link
+	 * User profile: the account's quote requests, and those sent as a guest with its email, to link
 	 *
 	 * @param \WP_User $user
 	 * @return void
@@ -495,7 +484,7 @@ class Quote_Requests_Admin {
 	public function profile_section( $user ) {
 		if ( ! $this->can_list_customers() ) return;
 		$linked = $this->store->count_user_requests( $user->ID );
-		$guest_ids = $this->can_link_requests( $user->ID ) ? $this->store->get_guest_request_ids( $this->get_account_emails( $user ) ) : [];
+		$guest_ids = $this->can_link_requests( $user->ID ) ? $this->store->get_guest_request_ids( [ $user->user_email ] ) : [];
 		if ( ! $linked && ! $guest_ids ) return;
 		?>
 		<h2><?php esc_html_e( 'Quote requests', 'product-configurator-for-woocommerce' ); ?></h2>
@@ -521,7 +510,7 @@ class Quote_Requests_Admin {
 						<p>
 							<?php
 							/* translators: %d: number of quote requests */
-							echo esc_html( sprintf( _n( '%d quote request was sent as a guest with this account\'s email address:', '%d quote requests were sent as a guest with this account\'s email addresses:', count( $guest_ids ), 'product-configurator-for-woocommerce' ), count( $guest_ids ) ) );
+							echo esc_html( sprintf( _n( '%d quote request was sent as a guest with this account\'s email address:', '%d quote requests were sent as a guest with this account\'s email address:', count( $guest_ids ), 'product-configurator-for-woocommerce' ), count( $guest_ids ) ) );
 							?>
 						</p>
 						<ul>
@@ -538,6 +527,7 @@ class Quote_Requests_Admin {
 							<?php endif; ?>
 						</ul>
 						<p><a class="button" href="<?php echo esc_url( $url ); ?>"><?php esc_html_e( 'Link them to this account', 'product-configurator-for-woocommerce' ); ?></a></p>
+						<p class="description"><?php esc_html_e( 'Customers can change their account\'s email to any address without confirming it: link these only if you know they sent them. Customers who open a request\'s link while signed in can add it to their account themselves.', 'product-configurator-for-woocommerce' ); ?></p>
 						<p class="description"><?php esc_html_e( 'The details on each request stay as they were sent. Its history records the link.', 'product-configurator-for-woocommerce' ); ?></p>
 					</td>
 				</tr>
@@ -637,7 +627,7 @@ class Quote_Requests_Admin {
 	/**
 	 * admin-post handler of the profile's button
 	 *
-	 * The requests are found again here, from the account's emails: never from what the link says.
+	 * The requests are found again here, from the account's email: never from what the link says.
 	 *
 	 * @return void
 	 */
@@ -654,14 +644,14 @@ class Quote_Requests_Admin {
 	}
 
 	/**
-	 * Link the requests sent as a guest with an account's emails to it
+	 * Link the requests sent as a guest with an account's email to it
 	 *
 	 * @param \WP_User $user
 	 * @return int Number linked.
 	 */
 	public function link_guest_requests( $user ) {
 		$linked = 0;
-		foreach ( $this->store->get_guest_request_ids( $this->get_account_emails( $user ) ) as $post_id ) {
+		foreach ( $this->store->get_guest_request_ids( [ $user->user_email ] ) as $post_id ) {
 			if ( ! current_user_can( 'edit_post', $post_id ) ) continue;
 			$request = $this->store->load( $post_id );
 			if ( ! $request ) continue;
@@ -719,7 +709,7 @@ class Quote_Requests_Admin {
 			<?php if ( $matches ) : ?>
 				<div class="notice notice-info inline mkl-pc-quote-user__matches">
 					<p>
-						<?php echo esc_html( _n( 'An account uses this email:', 'Accounts use this email:', count( $matches ), 'product-configurator-for-woocommerce' ) ); ?>
+						<?php esc_html_e( 'An account uses this email. Its holder may have set it without owning the address: link it only if you know it is the same customer.', 'product-configurator-for-woocommerce' ); ?>
 						<?php foreach ( $matches as $match ) : ?>
 							<br><button type="button" class="button-link mkl-pc-quote-user__link" data-user="<?php echo (int) $match->ID; ?>" data-label="<?php echo esc_attr( $this->format_user( $match ) ); ?>">
 								<?php

@@ -14,6 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - the requests linked to the signed-in customer's account;
  * - to a visitor, a form that emails the links of the requests sent with an address ("Find my requests").
  *   It answers the same whether there are requests or not, so nobody learns which addresses sent some.
+ * A signed-in customer who opens the link of a request sent as a guest can add it to their account: the
+ * key reached the request's address, which proves it is theirs. An account's email proves nothing, since
+ * customers set it to any address.
  * Other places (WooCommerce's My account) show the same templates through render_list() / render_request().
  *
  * The page is personal: never cached, never indexed. Templates can be overridden in
@@ -28,6 +31,16 @@ class Quote_Customer_View {
 	const KEY_VAR = 'key';
 
 	const LOOKUP_ACTION = 'mkl_pc_quote_lookup';
+
+	/**
+	 * The POST field adding a guest request to the signed-in account, and the nonce action's prefix.
+	 */
+	const LINK_ACTION = 'mkl_pc_quote_link';
+
+	/**
+	 * Query arg telling the page what came of adding it, after the redirect.
+	 */
+	const LINK_RESULT_VAR = 'quote_linked';
 
 	/**
 	 * Requests whose links one address can be sent in an hour, whoever asks.
@@ -49,6 +62,7 @@ class Quote_Customer_View {
 		add_shortcode( self::SHORTCODE, [ $this, 'shortcode' ] );
 		add_action( 'template_redirect', [ $this, 'no_cache' ] );
 		add_action( 'template_redirect', [ $this, 'handle_lookup' ], 20 );
+		add_action( 'template_redirect', [ $this, 'handle_link' ], 20 );
 		// In the head on the customer page; elsewhere (My account) when the view renders.
 		add_action( 'wp_enqueue_scripts', function() {
 			if ( $this->is_customer_page() ) $this->enqueue();
@@ -108,6 +122,19 @@ class Quote_Customer_View {
 		if ( '' !== $key && '' !== $request->access_key && hash_equals( $request->access_key, (string) $key ) ) return true;
 		if ( $request->user_id && get_current_user_id() === $request->user_id ) return true;
 		return current_user_can( 'edit_post', $request->id );
+	}
+
+	/**
+	 * Whether the signed-in visitor may add a request sent as a guest to their account
+	 *
+	 * Only with its key: the link was emailed to the request's address.
+	 *
+	 * @param Quote_Request $request
+	 * @param string        $key
+	 * @return boolean
+	 */
+	public function can_link( Quote_Request $request, $key ) {
+		return ! $request->user_id && is_user_logged_in() && '' !== (string) $key && '' !== $request->access_key && hash_equals( $request->access_key, (string) $key );
 	}
 
 	/**
@@ -210,6 +237,7 @@ class Quote_Customer_View {
 			'price_label'  => $price_label,
 			'show_image'   => 'none' !== mkl_pc( 'quotes' )->get_image_mode(),
 			'back_url'     => $back_url,
+			'link_form'    => $this->render_link_form( $request, $key ),
 			'answer_form'  => mkl_pc( 'quotes' )->customer_actions->render( $request, $key, $this ),
 			'pdf_url'      => $this->get_pdf_url( $request, $key ),
 			'view'         => $this,
@@ -268,6 +296,63 @@ class Quote_Customer_View {
 		if ( ! $requests ) return;
 		set_transient( $throttle, $sent + 1, HOUR_IN_SECONDS );
 		mkl_pc( 'mailer' )->send( 'mkl_pc_quote_request_lookup', $email, [ 'requests' => $requests ] );
+	}
+
+	/**
+	 * The form adding a request sent as a guest to the signed-in account, or what came of it
+	 *
+	 * @param Quote_Request $request
+	 * @param string        $key
+	 * @return string
+	 */
+	private function render_link_form( Quote_Request $request, $key ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Only picks one of the messages.
+		$result = isset( $_GET[ self::LINK_RESULT_VAR ] ) ? sanitize_key( wp_unslash( $_GET[ self::LINK_RESULT_VAR ] ) ) : '';
+		$linked = 'linked' === $result && $request->user_id && get_current_user_id() === $request->user_id;
+		if ( ! $linked && ! $this->can_link( $request, $key ) ) return '';
+		return $this->render( 'quotes/quote-link.php', [
+			'request'      => $request,
+			'result'       => $linked ? 'linked' : $result,
+			'key'          => $key,
+			'button_class' => $this->get_button_class(),
+		] );
+	}
+
+	/**
+	 * The form adding a request to the account, posted to the page it is on, then back with LINK_RESULT_VAR
+	 *
+	 * @return void
+	 */
+	public function handle_link() {
+		if ( 'POST' !== ( isset( $_SERVER['REQUEST_METHOD'] ) ? $_SERVER['REQUEST_METHOD'] : '' ) || ! isset( $_POST[ self::LINK_ACTION ] ) || ! $this->is_customer_page() ) return; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput, WordPress.Security.NonceVerification.Missing -- Checked in link_to_account().
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Checked in link_to_account(), once the request is known.
+		$reference = isset( $_POST['reference'] ) ? sanitize_text_field( wp_unslash( $_POST['reference'] ) ) : '';
+		$key = isset( $_POST['key'] ) ? sanitize_text_field( wp_unslash( $_POST['key'] ) ) : '';
+		$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_key( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+		// phpcs:enable
+		$back = remove_query_arg( self::LINK_RESULT_VAR, isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Redirected through wp_safe_redirect().
+		wp_safe_redirect( add_query_arg( self::LINK_RESULT_VAR, $this->link_to_account( $reference, $key, $nonce ), $back ) . '#mkl-pc-quote-link' );
+		exit;
+	}
+
+	/**
+	 * Add a request sent as a guest to the signed-in account, for a visitor with its key
+	 *
+	 * @param string $reference
+	 * @param string $key
+	 * @param string $nonce
+	 * @return string linked, unavailable, expired, failed.
+	 */
+	public function link_to_account( $reference, $key, $nonce ) {
+		$request = $this->store->get_by_reference( $reference );
+		if ( ! $request || ! $this->can_link( $request, $key ) ) return 'unavailable';
+		if ( ! wp_verify_nonce( $nonce, self::LINK_ACTION . '_' . $request->id ) ) return 'expired';
+		$user = wp_get_current_user();
+		$request->user_id = $user->ID;
+		if ( true !== $this->store->save( $request ) ) return 'failed';
+		/* translators: 1: user name, 2: email address */
+		$this->store->log( $request->id, sprintf( __( 'Added to the customer account %1$s (%2$s) by the customer, from the request\'s link.', 'product-configurator-for-woocommerce' ), $user->display_name, $user->user_email ) );
+		return 'linked';
 	}
 
 	/**
