@@ -5,7 +5,7 @@ This is the development repository for https://wordpress.org/plugins/product-con
 # Product Configurator for WooCommerce
 
 - Contributors: mklacroix, marcusig
-- Tags: 3D configurator, product customizer, product builder, woocommerce, product addons
+- Tags: 3D configurator, product customizer, product builder, woocommerce, request a quote
 - ⭐⭐⭐⭐⭐ [Reviews on WordPress.org](https://wordpress.org/support/plugin/product-configurator-for-woocommerce/reviews/?filter=5)
 
 **Build 2D and 3D product configurators for WooCommerce. Customers design their product with a live visual preview, then add it to the cart or request a quote.**

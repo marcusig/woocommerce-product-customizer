@@ -1,6 +1,6 @@
 === MKL Product Configurator for WooCommerce - 2D & 3D Live Preview ===
 Contributors: mklacroix, marcusig
-Tags: 3D configurator, product customizer, product builder, woocommerce, product addons
+Tags: 3D configurator, product customizer, product builder, woocommerce, request a quote
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
