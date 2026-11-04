@@ -109,3 +109,20 @@ tr.wc-block-cart-items__row.configurator-hidden,
 tr.wc-block-cart-items__row.configurator-linked-product .wc-block-components-product-badge.wc-block-components-sale-badge {
     display: none;
 }
+/* Blocks - Edit configuration link in the item's details: on its own line, without the " / " separator before it */
+.wc-block-components-product-details .mkl-pc-edit-link--container {
+    display: block;
+}
+.wc-block-components-product-details > span:has(+ .mkl-pc-edit-link--container) > span[aria-hidden="true"] {
+    display: none;
+}
+
+/* Cart block - Edit configuration link next to the quantity (added by cart-block-edit-link.js) */
+table.wc-block-cart-items .wc-block-cart-items__row .wc-block-cart-item__quantity > .mkl-pc--edit-configuration {
+    font-size: var(--wp--preset--font-size--small, 0.875em);
+}
+
+/* Once the link is next to the quantity, hide the one in the item's details */
+tr.wc-block-cart-items__row:has(.wc-block-cart-item__quantity > .mkl-pc--edit-configuration) .wc-block-components-product-details .mkl-pc-edit-link--container {
+    display: none;
+}

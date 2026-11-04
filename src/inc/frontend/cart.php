@@ -45,8 +45,13 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 			add_filter( 'wc_stripe_hide_payment_request_on_product_page', array( $this, 'maybe_remove_stripe_express_checkout' ), 10, 2 );
 			add_filter( 'woocommerce_paypal_payments_simulate_cart_enabled', array( $this, 'maybe_disable_ppcp_simulate_cart' ), 10 );
 
-			// Attach short description filter.
-			// add_filter( 'rest_request_after_callbacks', array( $this, 'filter_cart_item_data' ), 10, 3 );
+			// Edit link in the cart block.
+			if ( did_action( 'woocommerce_blocks_loaded' ) ) {
+				$this->register_store_api_data();
+			} else {
+				add_action( 'woocommerce_blocks_loaded', array( $this, 'register_store_api_data' ) );
+			}
+			add_filter( 'render_block_woocommerce/cart', array( $this, 'enqueue_block_cart_edit_link' ) );
 		}
 
 		/**
@@ -729,7 +734,7 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					$choice_rows = $this->_prepare_split_cart_item_data( $choice_rows );
 
 					// There is no combined value to append the edit link to, so it goes after
-					// the last choice. The blocks handle their own edit link.
+					// the last choice. The blocks get a row of their own, below.
 					if ( $edit_link && ! $is_block && ! empty( $choice_rows ) ) {
 						$last_row = count( $choice_rows ) - 1;
 						if ( isset( $choice_rows[ $last_row ]['value'] ) ) {
@@ -738,6 +743,17 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 					}
 
 					$data = array_merge( $data, $choice_rows );
+
+					// Blocks: the link is a row without a label. The blocks keep the row's className and
+					// allow links, so it renders in the item's details in the cart, mini-cart and checkout.
+					// In the cart block, a script also adds it next to the quantity, and the CSS then hides this one.
+					if ( $edit_link && $is_block ) {
+						$data[] = array(
+							'key'       => '',
+							'value'     => $edit_link,
+							'className' => 'mkl-pc-edit-link--container',
+						);
+					}
 				} else {
 					$value = $this->get_choices_html( $choices );
 					if ( $edit_link ) {
@@ -959,6 +975,20 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		 * @return void
 		 */
 		public function get_edit_link( $cart_item ) {
+			$edit_url = $this->get_edit_url( $cart_item );
+			if ( ! $edit_url ) return '';
+			return '<a href="' . esc_url( $edit_url ) . '" class="mkl-pc--edit-configuration">' . $this->get_edit_label() . '</a>';
+		}
+
+		/**
+		 * Get the URL to edit a cart item's configuration
+		 *
+		 * @param array $cart_item
+		 * @return string - Empty when the item cannot be edited
+		 */
+		public function get_edit_url( $cart_item ) {
+			if ( ! isset( $cart_item['data'], $cart_item['product_id'] ) ) return '';
+
 			$cart_item_key = isset( $cart_item['key'] ) ? $cart_item['key'] : '';
 			$_product   = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 			$product_id = apply_filters( 'woocommerce_cart_item_product_id', $cart_item['product_id'], $cart_item, $cart_item_key );
@@ -967,13 +997,21 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 
 			if ( $_product && $_product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 				$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $_product->is_visible() ? $_product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
-				if ( ! $product_permalink ) return;
+				if ( ! $product_permalink ) return '';
 				if ( isset( $cart_item['context'] ) ) $product_permalink = add_query_arg( [ 'context' => esc_attr( $cart_item['context'] ) ], $product_permalink );
-				$product_permalink = add_query_arg( [ 'edit_config_from_cart' => 1 ], $product_permalink );
-				return '<a href="' . esc_url( $product_permalink ) . '" class="mkl-pc--edit-configuration">' . apply_filters( 'mkl_pc_edit_configuration_label', mkl_pc( 'settings' )->get_label( 'edit_configuration_label', __( 'Edit configuration', 'product-configurator-for-woocommerce' ) ) ) . '</a>';
+				return add_query_arg( [ 'edit_config_from_cart' => 1 ], $product_permalink );
 			}
 
 			return '';
+		}
+
+		/**
+		 * Get the label of the edit configuration link
+		 *
+		 * @return string
+		 */
+		public function get_edit_label() {
+			return apply_filters( 'mkl_pc_edit_configuration_label', mkl_pc( 'settings' )->get_label( 'edit_configuration_label', __( 'Edit configuration', 'product-configurator-for-woocommerce' ) ) );
 		}
 
 		/**
@@ -1225,75 +1263,106 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 		// }
 
 		/**
-		 * Filter store API responses to add edit link
-		 * 
-		 * Props to Kathy D who shared this on Slack. Hopefully WooCommerce soon has a proper method to add this type of thing.
+		 * Register the edit link data on the Store API cart items.
 		 *
-		 * @param  $response  WP_REST_Response
-		 * @param  $server    WP_REST_Server
-		 * @param  $request   WP_REST_Request
-		 * @return WP_REST_Response
+		 * The cart blocks render from the Store API, which has no slot for extra markup in a line item.
+		 * The edit URL is exposed as `extensions.mkl_pc` so that the cart block script can add the link
+		 * next to the quantity. This data is part of the schema, so it is also in the cart data that
+		 * is hydrated on page load (which bypasses the REST filters).
+		 *
+		 * @return void
 		 */
-		public function filter_cart_item_data( $response, $server, $request ) {
+		public function register_store_api_data() {
+			if ( ! function_exists( 'woocommerce_store_api_register_endpoint_data' ) || ! class_exists( \Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema::class ) ) return;
 
-			if ( is_wp_error( $response ) ) {
-				return $response;
-			}
-
-			if ( strpos( $request->get_route(), 'wc/store' ) === false ) {
-				return $response;
-			}
-
-			$data = $response->get_data();
-
-			if ( empty( $data['items'] ) ) {
-				return $response;
-			}
-
-			$cart = WC()->cart->get_cart();
-
-			foreach ( $data['items'] as &$item_data ) {
-
-				$cart_item_key = $item_data['key'];
-				$cart_item     = isset( $cart[ $cart_item_key ] ) ? $cart[ $cart_item_key ] : null;
-
-				if ( is_null( $cart_item ) ) {
-					continue;
-				}
-
-				$this->filter_container_cart_item_short_description( $item_data, $cart_item );
-
-			}
-
-			$response->set_data( $data );
-
-			return $response;
+			woocommerce_store_api_register_endpoint_data(
+				array(
+					'endpoint'        => \Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema::IDENTIFIER,
+					'namespace'       => 'mkl_pc',
+					'data_callback'   => array( $this, 'store_api_cart_item_data' ),
+					'schema_callback' => array( $this, 'store_api_cart_item_schema' ),
+					'schema_type'     => ARRAY_A,
+				)
+			);
 		}
 
+		/**
+		 * Store API data for a cart item
+		 *
+		 * @param array $cart_item
+		 * @return array
+		 */
+		public function store_api_cart_item_data( $cart_item ) {
+			$data = array(
+				'edit_url'   => null,
+				'edit_label' => null,
+			);
+
+			if ( ! is_array( $cart_item ) || ! apply_filters( 'mkl_pc_user_can_edit_item_from_cart', mkl_pc( 'settings' )->get( 'show_edit_configuration_link' ) ) ) return $data;
+
+			$edit_url = $this->get_edit_url( $cart_item );
+			if ( $edit_url ) {
+				$data['edit_url']   = esc_url_raw( $edit_url );
+				$data['edit_label'] = $this->get_edit_label();
+			}
+
+			return $data;
+		}
 
 		/**
-		 * Filter container cart item permalink to support cart editing.
+		 * Store API schema for the cart item data
 		 *
-		 *
-		 * @param array  $item_data
-		 * @param array  $cart_item
+		 * @return array
 		 */
-		public function filter_container_cart_item_short_description( &$item_data, $cart_item ) {
+		public function store_api_cart_item_schema() {
+			return array(
+				'edit_url'   => array(
+					'description' => __( 'URL to edit the configuration of the cart item.', 'product-configurator-for-woocommerce' ),
+					'type'        => array( 'string', 'null' ),
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+				'edit_label' => array(
+					'description' => __( 'Label of the edit configuration link.', 'product-configurator-for-woocommerce' ),
+					'type'        => array( 'string', 'null' ),
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+			);
+		}
 
-				$_product = $cart_item['data'];
+		/**
+		 * Load the script which moves the edit link next to the quantity, in the cart block.
+		 *
+		 * Hooked on the cart block's render, so it only loads where that block is used.
+		 *
+		 * @param string $block_content
+		 * @return string
+		 */
+		public function enqueue_block_cart_edit_link( $block_content ) {
+			if ( ! apply_filters( 'mkl_pc_user_can_edit_item_from_cart', mkl_pc( 'settings' )->get( 'show_edit_configuration_link' ) ) ) return $block_content;
 
-				$trimmed_short_description = '';
+			/**
+			 * Filter mkl_pc/cart_block/edit_link_in_quantity - Whether to show the edit link next to the quantity in the cart block.
+			 * When false, the link stays in the item's details.
+			 *
+			 * @param boolean $show
+			 * @return boolean
+			 */
+			if ( ! apply_filters( 'mkl_pc/cart_block/edit_link_in_quantity', true ) ) return $block_content;
 
-				if ( ! $item_data['permalink'] || ! strpos( $item_data['permalink'], 'load_config_from_cart' ) ) return;
+			$file_suffix = ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '' : '.min';
+			$file        = 'js/cart-block-edit-link' . $file_suffix . '.js';
+			if ( ! file_exists( MKL_PC_ASSETS_PATH . $file ) ) return $block_content;
 
-				if ( $item_data['short_description'] ) {
-					$trimmed_short_description = '<p class="wc-block-components-product-metadata__description-text">' . wp_trim_words( $item_data['short_description'], 12 ) . '</p>';
-				}
+			$deps = array( 'wp-data' );
+			foreach ( array( 'wc-blocks-data-store', 'wc-blocks-checkout' ) as $handle ) {
+				if ( wp_script_is( $handle, 'registered' ) ) $deps[] = $handle;
+			}
 
-				$edit_in_cart_link = $item_data['permalink'];
-				$my_button         = '<p class="wc-block-cart-item__edit"><a class="wc-block-components-button mkl-pc-edit-link" href="' . esc_url( $edit_in_cart_link ) . '"><span class="wc-block-components-button__text">' . esc_html__( 'Edit configuration', 'product-configurator-for-woocommerce' ) . '</span></a></p>';
-				
-				$item_data['short_description'] = $trimmed_short_description . $my_button;
+			wp_enqueue_script( 'mkl_pc/cart-block-edit-link', MKL_PC_ASSETS_URL . $file, $deps, filemtime( MKL_PC_ASSETS_PATH . $file ), true );
+
+			return $block_content;
 		}
 	}
 }
