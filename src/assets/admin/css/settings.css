@@ -15,7 +15,9 @@ body.mkl-pc-settings .wrap > header .links {
 	margin-top: 10px;
 	text-align: right;
 }
-
+body.mkl-pc-settings h1 img.mkl-logo {
+	max-width: 200px;
+}
 body.mkl-pc-settings h1 span.by {
 	position: absolute;
 	right: 20px;

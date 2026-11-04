@@ -76,7 +76,7 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			<div class="wrap">
 				<header>
 					<h1>
-						<img src="<?php echo esc_url( MKL_PC_ASSETS_URL . 'admin/images/mkl-product-configurator.svg' ); ?>" alt="<?php echo esc_attr__( 'Product Configurator for WooCommerce', 'product-configurator-for-woocommerce' ); ?>"/>
+						<img class="mkl-logo" src="<?php echo esc_url( MKL_PC_ASSETS_URL . 'admin/images/mkl-product-configurator.svg' ); ?>" alt="<?php echo esc_attr__( 'Product Configurator for WooCommerce', 'product-configurator-for-woocommerce' ); ?>"/>
 						<span class="version"><?php echo esc_html( MKL_PC_VERSION ); ?></span>
 						<span class="by">by <a href="https://mklacroix.com" target="_blank">MKLACROIX</a></span>
 					</h1>
