@@ -357,29 +357,38 @@ Known consumers to adjust:
 
 ## Performance
 
-Measured on a large stress product and on product 613 (real images on disk), against the stack,
-on desktop Chrome and an iPhone. The stress product is a copy of 636 ("Test large data": 155 layers,
-4 angles, 4,711 choices) with its images served locally: 636 hotlinks all 14,696 of its images from
-the customer's live site, so the canvas would fall back on CORS there, and a memory run would pull
-hundreds of megabytes from their server. Local placeholders at the real images' pixel sizes are
-enough, since GPU memory depends on dimensions, not file content.
+Measured against the stack, on desktop Chrome and an iPhone, on local copies of product 636
+("Test large data": 155 layers, 4 angles, 4,711 choices). 636 itself can't be used: it hotlinks all
+14,696 of its images from the customer's live site, so the canvas falls back on CORS there, and a
+memory run would pull hundreds of megabytes from their server. The copies use local placeholders at
+the real images' pixel size (3840×2160 WebP with alpha, 32 MiB each once decoded), which is enough,
+since GPU memory depends on dimensions, not file content. Placeholders live under
+`uploads/pc-stress/`: one coloured stripe per layer position, the colour set by the choice, so a
+wrong stack or a missed swap is visible.
 
-The real images (one sampled per angle, 2026-11-04) are 3840×2160 WebP with alpha, 32 MiB each once
-decoded. Conditional logic hides most layers: the default picture draws 3 of them (150 of 155 layers
-hidden), so one picture is ~95 MiB at full size and under 2 MiB scaled to the drawing box. The
-pressure on this product comes from what the angle stacks keep after many swaps across 4 angles,
-which is what the budget and eviction are for. The copy is product 7859, "Stress test: 636 with
-local images", with placeholders under `uploads/pc-stress/` (one coloured stripe per layer
-position, the colour set by the choice).
-
+What is measured:
 
 - time to first complete picture;
 - choice swap (selection to new pixels), angle switch;
 - GPU memory after visiting every angle (should plateau at the budget);
 - idle CPU (should be zero frames drawn).
 
-Accept when the canvas viewer is no slower than the stack on first picture, faster on angle switch,
-and the iPhone run survives visiting every angle twice.
+Two levels, with different bars:
+
+1. **Realistic: product 7860, "Stress test: 636 with conditions"** (636's 112 conditions kept).
+   Conditional logic hides 150 of the 155 layers at start, so the default picture draws 3 images: ~95 MiB
+   at full size, under 2 MiB scaled to the drawing box. The risk here is not one picture but what the
+   angle stacks keep after many swaps across 4 angles. Plus product 613 (real images on disk).
+   **Accept** when the canvas viewer is no slower than the stack on first picture, faster on angle
+   switch, GPU memory stays flat at the budget after many swaps on every angle, and the iPhone run
+   survives visiting every angle twice.
+2. **Extreme: product 7859, "Stress test: 636 with local images"** (conditions removed on purpose).
+   Every layer shows, so the first picture draws 150 full-size images: ~4.6 GiB of textures, held
+   "only just" by desktop Chrome on the dev Mac in phase 2. No real product is expected to be
+   this large. The `<img>` stack pays the same cost, since the browser decodes each image at full
+   size; the canvas can do better once phase 3 scales textures to the box (150 images at 505×284 is
+   ~85 MiB). **Accept** when it does not crash, on desktop or iPhone. Slow loading and reloads on
+   angle switch are acceptable as long as the picture ends up right.
 
 ## Phasing
 
@@ -407,7 +416,7 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 
 Then the image overlay spec.
 
-**Prove first (before phase 3; it needs the phase 2 viewer to run):** iPhone Safari, the stress product, every angle visited twice, with
+**Prove first (before phase 3; it needs the phase 2 viewer to run):** iPhone Safari, the realistic stress product (7860), many swaps and every angle visited twice, with
 eviction stubbed in crudely. If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
 before anything else is built on it.
