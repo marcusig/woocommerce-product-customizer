@@ -364,6 +364,14 @@ the customer's live site, so the canvas would fall back on CORS there, and a mem
 hundreds of megabytes from their server. Local placeholders at the real images' pixel sizes are
 enough, since GPU memory depends on dimensions, not file content.
 
+The real images (one sampled per angle, 2026-11-04) are 3840×2160 WebP with alpha, 32 MiB each once
+decoded. Conditional logic hides most layers: the default picture draws 3 of them (150 of 155 layers
+hidden), so one picture is ~95 MiB at full size and under 2 MiB scaled to the drawing box. The
+pressure on this product comes from what the angle stacks keep after many swaps across 4 angles,
+which is what the budget and eviction are for. The copy is product 7859, "Stress test: 636 with
+local images", with placeholders under `uploads/pc-stress/` (one coloured stripe per layer
+position, the colour set by the choice).
+
 
 - time to first complete picture;
 - choice swap (selection to new pixels), angle switch;
