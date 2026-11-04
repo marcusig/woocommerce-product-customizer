@@ -48,7 +48,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.current_stack = null;
 		this.target_stack = null;
 		this.angle_wait_timer = null;
+		// Loaded textures by URL: see load_texture().
 		this.textures = {};
+		this.texture_clock = 0;
+		this.url_bucket = null;
+		this.resolution_timer = null;
+		this.background = null;
 		this.html_items = [];
 		this.pending_layers = {};
 		this.sync_scheduled = false;
@@ -167,6 +172,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			this.listenTo( choices, 'change:active change:cshow', function() {
 				this.schedule_sync( layer.id );
 			} );
+			// Hovering or focusing a choice (choice.js).
+			this.listenTo( choices, 'preload-image', this.preload );
 		}, this );
 	},
 
@@ -180,12 +187,35 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	/**
 	 * The image a choice shows at an angle, or '' when it has none there.
 	 *
+	 * The responsive pick is the <img> stack's (viewer_layer.render()), on the
+	 * same width, so both viewers request the same files.
+	 *
 	 * @param {Backbone.Model} choice
 	 * @param {Number|String} angle_id
 	 * @return {String}
 	 */
 	image_url: function( choice, angle_id ) {
+		var bucket = this.image_bucket();
+		if ( 'mobile' === bucket && choice.get_image( 'image', 'url_mobile', angle_id ) ) {
+			return choice.get_image( 'image', 'url_mobile', angle_id );
+		}
+		if ( 'large' === bucket && choice.get_image( 'image', 'url_large', angle_id ) ) {
+			return choice.get_image( 'image', 'url_large', angle_id );
+		}
 		return choice.get_image( 'image', 'url', angle_id ) || '';
+	},
+
+	/**
+	 * Which image size the breakpoints ask for: mobile, default or large.
+	 *
+	 * @return {String}
+	 */
+	image_bucket: function() {
+		var config = PC.fe.config || {};
+		var width = PC.fe.modal && PC.fe.modal.$el ? PC.fe.modal.$el.outerWidth() : 0;
+		if ( width && config.mobile_image_breakpoint && width < config.mobile_image_breakpoint ) return 'mobile';
+		if ( width && config.large_image_breakpoint && width >= config.large_image_breakpoint ) return 'large';
+		return 'default';
 	},
 
 	/**
@@ -304,6 +334,25 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		}
 		this.layout();
 		this.request_render();
+
+		// Crossing a breakpoint changes which file each choice shows: resync, and
+		// the layers swap images the way a selection change does.
+		var bucket = this.image_bucket();
+		if ( null !== this.url_bucket && bucket !== this.url_bucket ) this.schedule_sync_all();
+		this.url_bucket = bucket;
+
+		// A bigger box may need sharper textures. Waits for the resize to settle,
+		// so dragging a window edge does not reload anything along the way.
+		if ( this.resolution_timer ) clearTimeout( this.resolution_timer );
+		var that = this;
+		this.resolution_timer = setTimeout( function() {
+			that.resolution_timer = null;
+			if ( that.is_removed ) return;
+			// Below the mobile breakpoint the budget is smaller.
+			that.enforce_budget();
+			if ( that.current_stack ) that.check_resolution( that.current_stack );
+			if ( that.target_stack && that.target_stack !== that.current_stack ) that.check_resolution( that.target_stack );
+		}, 250 );
 	},
 
 	/*
@@ -368,12 +417,21 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		_.each( state.shown_choices( record.layer ), function( choice ) {
 			if ( ! state.has_drawable( choice ) ) return;
 			var key = this.view_key( choice );
+			var url = this.image_url( choice, stack.angle_id );
 			wanted[ key ] = true;
-			if ( record.shown[ key ] ) return;
+			if ( record.shown[ key ] ) {
+				if ( record.shown[ key ].url === url ) return;
+				// Same choice, another file (a breakpoint was crossed): the old
+				// image stays up until the new one has loaded.
+				this.hold_or_drop( record, record.shown[ key ] );
+				delete record.shown[ key ];
+			}
 			var entry = {
 				key: key,
 				model: choice,
-				url: this.image_url( choice, stack.angle_id ),
+				url: url,
+				stack: stack,
+				record: null,
 				index: choices ? choices.indexOf( choice ) : 0,
 				sprite: null,
 				settled: false,
@@ -442,6 +500,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			entry.sprite.destroy();
 			entry.sprite = null;
 		}
+		if ( entry.record ) {
+			entry.record.entries = _.without( entry.record.entries, entry );
+			entry.record = null;
+		}
 	},
 
 	load_entry: function( stack, record, entry ) {
@@ -451,30 +513,51 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			return;
 		}
 		var that = this;
-		this.load_texture( entry.url ).then( function( texture ) {
+		this.load_texture( entry.url, stack ).then( function( texture_record ) {
 			if ( entry.removed || that.is_removed ) return;
-			if ( texture ) {
+			if ( texture_record ) {
+				var natural = texture_record.natural;
 				if ( ! stack.size ) {
-					stack.size = { width: texture.width, height: texture.height };
+					stack.size = { width: natural.width, height: natural.height };
 					that.add_probe( stack );
 				}
-				var sprite = new PIXI.Sprite( texture );
-				sprite.position.set( ( stack.size.width - texture.width ) / 2, ( stack.size.height - texture.height ) / 2 );
+				var sprite = new PIXI.Sprite( texture_record.texture );
+				that.fit_sprite( sprite, texture_record );
+				sprite.position.set( ( stack.size.width - natural.width ) / 2, ( stack.size.height - natural.height ) / 2 );
 				sprite.zIndex = entry.index;
 				record.node.addChild( sprite );
 				entry.sprite = sprite;
+				entry.record = texture_record;
+				texture_record.entries.push( entry );
+				that.touch( texture_record );
 				wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', entry, that );
 			}
 			entry.settled = true;
 			that.release_held( record );
 			that.after_change();
+			that.enforce_budget();
 		} );
 	},
 
 	/**
-	 * Load a texture once per URL.
+	 * Draw a possibly downscaled texture at its image's natural size, in the
+	 * stack's coordinates (the angle's image size).
+	 */
+	fit_sprite: function( sprite, texture_record ) {
+		sprite.scale.set(
+			texture_record.natural.width / texture_record.texture.width,
+			texture_record.natural.height / texture_record.texture.height
+		);
+	},
+
+	/*
+	 * Textures.
+	 * --------------------------------------------------------------------- */
+
+	/**
+	 * Load an image once, decoded, at its full size.
 	 *
-	 * The viewer loads and owns its textures rather than going through
+	 * The viewer loads and owns its images rather than going through
 	 * PIXI.Assets: that cache is shared by the whole page, and unloading it on
 	 * teardown would race with a viewer mounting again as the modal reopens.
 	 * The browser's HTTP cache still makes a second load cheap.
@@ -484,14 +567,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * the <img> stack can still show it, so the viewer falls back.
 	 *
 	 * @param {String} url
-	 * @return {Promise<PIXI.Texture|null>}
+	 * @return {Promise<HTMLImageElement|null>}
 	 */
-	load_texture: function( url ) {
-		if ( this.textures[ url ] ) return this.textures[ url ].promise;
+	load_image: function( url ) {
 		var that = this;
-		var record = { texture: null, failed: false, promise: null };
 		var cross_origin = this.is_cross_origin( url );
-		record.promise = new Promise( function( resolve ) {
+		return new Promise( function( resolve ) {
 			var image = new Image();
 			// Only for other domains: a same-origin request keeps the mode the
 			// <img> stack used, so it is served from the same cache entry.
@@ -499,20 +580,17 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			image.onload = function() {
 				// decode() moves decoding off the main thread, but it stays pending
 				// while the page is not rendered (a background tab). It is only an
-				// optimisation: past a second the texture is uploaded anyway, so a
+				// optimisation: past a second the image is used anyway, so a
 				// capture asked for in the background still resolves.
 				var decoded = image.decode ? Promise.race( [
 					image.decode().catch( function() {} ),
 					new Promise( function( done ) { setTimeout( done, 1000 ); } ),
 				] ) : Promise.resolve();
 				decoded.then( function() {
-					if ( that.is_removed ) return resolve( null );
-					record.texture = PIXI.Texture.from( image );
-					resolve( record.texture );
+					resolve( that.is_removed || ! image.naturalWidth ? null : image );
 				} );
 			};
 			image.onerror = function( error ) {
-				record.failed = true;
 				if ( cross_origin ) {
 					that.fall_back( 'cors', url );
 				} else {
@@ -522,8 +600,403 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			};
 			image.src = url;
 		} );
+	},
+
+	/**
+	 * The texture for a URL, sharp enough for the stack it is drawn in.
+	 *
+	 * One texture per URL, downscaled to what the box shows (see
+	 * texture_scale()). When a bigger box needs more pixels, the same record is
+	 * upgraded and every sprite using it switches over.
+	 *
+	 * @param {String} url
+	 * @param {Object} stack
+	 * @return {Promise<Object|null>} The texture record, or null.
+	 */
+	load_texture: function( url, stack ) {
+		var record = this.textures[ url ];
+		var that = this;
+		if ( record ) {
+			return record.promise.then( function( loaded ) {
+				if ( ! loaded || that.is_removed ) return null;
+				// Released while this caller waited: load it again.
+				if ( record.destroyed ) return that.load_texture( url, stack );
+				var wanted = that.texture_scale( stack, record.natural );
+				if ( wanted <= record.scale ) return record;
+				return that.upgrade_texture( record, wanted );
+			} );
+		}
+
+		record = {
+			url: url,
+			texture: null,
+			natural: null,
+			scale: 0,
+			bytes: 0,
+			last_used: 0,
+			entries: [],
+			destroyed: false,
+			promise: null,
+			upgrading: null,
+		};
 		this.textures[ url ] = record;
+		record.promise = this.load_image( url ).then( function( image ) {
+			if ( ! image || that.is_removed || record.destroyed ) {
+				if ( that.textures[ url ] === record ) delete that.textures[ url ];
+				return null;
+			}
+			record.natural = { width: image.naturalWidth, height: image.naturalHeight };
+			var scale = that.texture_scale( stack, record.natural );
+			return that.build_texture( image, record.natural, scale ).then( function( built ) {
+				if ( ! built || that.is_removed || record.destroyed ) {
+					that.destroy_built( built );
+					if ( that.textures[ url ] === record ) delete that.textures[ url ];
+					return null;
+				}
+				that.set_texture( record, built, scale );
+				that.touch( record );
+				return record;
+			} );
+		} );
 		return record.promise;
+	},
+
+	/**
+	 * Replace a record's texture with a sharper one, keeping its sprites.
+	 */
+	upgrade_texture: function( record, scale ) {
+		var that = this;
+		if ( record.upgrading && record.upgrading.scale >= scale ) return record.upgrading.promise;
+		var promise = this.load_image( record.url ).then( function( image ) {
+			if ( ! image || that.is_removed || record.destroyed ) return record.destroyed ? null : record;
+			return that.build_texture( image, record.natural, scale ).then( function( built ) {
+				if ( ! built || that.is_removed || record.destroyed ) {
+					that.destroy_built( built );
+					return record.destroyed ? null : record;
+				}
+				if ( scale <= record.scale ) {
+					that.destroy_built( built );
+					return record;
+				}
+				var old = { texture: record.texture, bitmap: record.bitmap };
+				that.set_texture( record, built, scale );
+				_.each( record.entries, function( entry ) {
+					if ( ! entry.sprite ) return;
+					entry.sprite.texture = record.texture;
+					that.fit_sprite( entry.sprite, record );
+				} );
+				that.destroy_built( old );
+				that.request_render();
+				that.enforce_budget();
+				return record;
+			} );
+		} );
+		record.upgrading = { scale: scale, promise: promise };
+		promise.then( function() {
+			if ( record.upgrading && record.upgrading.promise === promise ) record.upgrading = null;
+		} );
+		return promise;
+	},
+
+	set_texture: function( record, built, scale ) {
+		record.texture = built.texture;
+		record.bitmap = built.bitmap;
+		record.scale = scale;
+		record.bytes = built.texture.width * built.texture.height * 4;
+	},
+
+	/**
+	 * A Pixi texture of the image at a scale (1 = its natural size).
+	 *
+	 * Built outside PIXI.Texture.from(), which caches by resource for the whole
+	 * page. A downscaled copy comes from createImageBitmap() where the browser
+	 * resizes off the main thread, else from a 2D canvas. Bitmaps are created
+	 * premultiplied: WebGL ignores the premultiply-on-upload flag Pixi sets for
+	 * them, and Pixi draws premultiplied colour.
+	 *
+	 * @return {Promise<Object|null>} { texture, bitmap }
+	 */
+	build_texture: function( image, natural, scale ) {
+		var width = Math.max( 1, Math.round( natural.width * scale ) );
+		var height = Math.max( 1, Math.round( natural.height * scale ) );
+		var make = function( resource, bitmap ) {
+			return {
+				texture: new PIXI.Texture( { source: new PIXI.ImageSource( { resource: resource } ) } ),
+				bitmap: bitmap || null,
+			};
+		};
+		if ( width >= natural.width && height >= natural.height ) {
+			return Promise.resolve( make( image ) );
+		}
+		var that = this;
+		var canvas_copy = function() {
+			var canvas = that.downscale( image, width, height );
+			return canvas ? make( canvas ) : make( image );
+		};
+		if ( 'function' !== typeof window.createImageBitmap ) return Promise.resolve( canvas_copy() );
+		return window.createImageBitmap( image, {
+			resizeWidth: width,
+			resizeHeight: height,
+			resizeQuality: 'high',
+			premultiplyAlpha: 'premultiply',
+		} ).then( function( bitmap ) {
+			// A browser that ignores the resize options hands back the full image.
+			if ( bitmap.width !== width || bitmap.height !== height ) {
+				bitmap.close();
+				return canvas_copy();
+			}
+			return make( bitmap, bitmap );
+		} ).catch( function() {
+			return canvas_copy();
+		} );
+	},
+
+	/**
+	 * The image redrawn at a size on a 2D canvas, the way the <img> stack's
+	 * capture draws it.
+	 *
+	 * @return {HTMLCanvasElement|null}
+	 */
+	downscale: function( image, width, height ) {
+		var canvas = document.createElement( 'canvas' );
+		canvas.width = width;
+		canvas.height = height;
+		var context = canvas.getContext( '2d' );
+		if ( ! context ) return null;
+		context.drawImage( image, 0, 0, width, height );
+		return canvas;
+	},
+
+	destroy_built: function( built ) {
+		if ( ! built ) return;
+		if ( built.texture ) built.texture.destroy( true );
+		if ( built.bitmap && built.bitmap.close ) built.bitmap.close();
+	},
+
+	/**
+	 * How much of an image's resolution to keep: what one image pixel covers on
+	 * screen, in device pixels, rounded up to a step of √2 and never above 1.
+	 *
+	 * The steps keep a resize from reloading anything until the box has grown
+	 * by a whole step; a texture holds at most twice the pixels the box shows.
+	 *
+	 * @param {Object} stack
+	 * @param {Object} natural { width, height } of the image
+	 * @return {Number}
+	 */
+	texture_scale: function( stack, natural ) {
+		var resolution = this.app ? this.app.renderer.resolution : 1;
+		var shown;
+		if ( stack && stack.size && stack.container ) {
+			shown = stack.container.scale.x;
+		} else {
+			// Nothing laid out yet: assume it fits the viewer without upscaling.
+			var container = this.$layers && this.$layers.get( 0 );
+			var width = container ? container.clientWidth : 0;
+			var height = container ? container.clientHeight : 0;
+			shown = width && height ? Math.min( 1, width / natural.width, height / natural.height ) : 1;
+		}
+		return PC.fe.views.viewer_canvas.scale_step( shown * resolution );
+	},
+
+	/**
+	 * Upgrade the textures a stack draws when its box has outgrown them.
+	 */
+	check_resolution: function( stack ) {
+		_.each( stack.layers, function( record ) {
+			_.each( record.shown, function( entry ) {
+				var texture_record = entry.record;
+				if ( ! texture_record || texture_record.destroyed ) return;
+				var wanted = this.texture_scale( stack, texture_record.natural );
+				if ( wanted > texture_record.scale ) this.upgrade_texture( texture_record, wanted );
+			}, this );
+		}, this );
+	},
+
+	touch: function( record ) {
+		record.last_used = ++this.texture_clock;
+	},
+
+	/**
+	 * The texture memory budget, in bytes (decision F in the spec).
+	 *
+	 * @return {Number}
+	 */
+	texture_budget: function() {
+		var config = PC.fe.config || {};
+		var width = PC.fe.modal && PC.fe.modal.$el ? PC.fe.modal.$el.outerWidth() : 0;
+		var mobile = width && config.mobile_image_breakpoint && width < config.mobile_image_breakpoint;
+		var budget = ( mobile ? 96 : 256 ) * 1024 * 1024;
+		/**
+		 * Filter how much GPU memory the canvas viewer's textures may use.
+		 *
+		 * The picture on screen is always kept, even over budget; textures kept
+		 * for other angles and preloads are released least recently used first.
+		 *
+		 * @param {Number} budget In bytes (width × height × 4 per texture).
+		 * @param {Backbone.View} viewer
+		 */
+		return wp.hooks.applyFilters( 'PC.fe.viewer.canvas.texture_budget', budget, this );
+	},
+
+	/**
+	 * Whether a texture is drawn by the picture on screen, or by the one
+	 * being prepared to replace it (held images included).
+	 */
+	is_pinned: function( record ) {
+		var current = this.current_stack;
+		var target = this.target_stack;
+		return !! _.find( record.entries, function( entry ) {
+			return entry.stack === current || entry.stack === target;
+		} );
+	},
+
+	texture_bytes: function() {
+		var bytes = 0;
+		_.each( this.textures, function( record ) {
+			bytes += record.bytes;
+		} );
+		return bytes;
+	},
+
+	/**
+	 * Release textures, least recently used first, until under budget.
+	 * Pinned textures are never released.
+	 */
+	enforce_budget: function() {
+		if ( this.is_removed ) return;
+		var budget = this.texture_budget();
+		var total = this.texture_bytes();
+		if ( total <= budget ) return;
+		var candidates = _.filter( this.textures, function( record ) {
+			return record.texture && ! record.destroyed && ! this.is_pinned( record );
+		}, this );
+		var evict = PC.fe.views.viewer_canvas.pick_evictions( candidates, total, budget );
+		_.each( evict, this.evict_texture, this );
+		if ( evict.length ) this.request_render();
+	},
+
+	/**
+	 * Destroy a texture and the sprites drawing it. Those sprites belong to
+	 * angles not on screen; showing that angle again loads the image again.
+	 */
+	evict_texture: function( record ) {
+		_.each( record.entries.slice(), function( entry ) {
+			var layer_record = entry.stack && entry.stack.layers[ entry.model.get( 'layerId' ) ];
+			if ( layer_record ) {
+				if ( layer_record.shown[ entry.key ] === entry ) delete layer_record.shown[ entry.key ];
+				layer_record.held = _.without( layer_record.held, entry );
+			}
+			this.drop_entry( entry );
+		}, this );
+		this.destroy_record( record );
+	},
+
+	destroy_record: function( record ) {
+		record.destroyed = true;
+		record.entries = [];
+		this.destroy_built( { texture: record.texture, bitmap: record.bitmap } );
+		record.texture = null;
+		record.bitmap = null;
+		record.bytes = 0;
+		if ( this.textures[ record.url ] === record ) delete this.textures[ record.url ];
+	},
+
+	/**
+	 * Hovering or focusing a choice loads its image for the angle being shown.
+	 * It may release unpinned textures to fit; it never touches the picture.
+	 */
+	preload: function( choice ) {
+		var stack = this.target_stack;
+		if ( ! stack || this.is_removed || choice.get( 'active' ) ) return;
+		var url = this.image_url( choice, stack.angle_id );
+		if ( ! url ) return;
+		var that = this;
+		this.load_texture( url, stack ).then( function( record ) {
+			if ( record ) that.touch( record );
+			that.enforce_budget();
+		} );
+	},
+
+	/**
+	 * Eager mode: once the picture is complete, load every image of the angle
+	 * in the background, two at a time, while they fit in the free budget.
+	 * Never releases anything to make room, and never holds the loading state.
+	 */
+	start_background: function() {
+		this.stop_background();
+		var stack = this.current_stack;
+		if ( ! stack || stack !== this.target_stack || this.is_removed ) return;
+		if ( 'lazy' === ( PC.fe.config && PC.fe.config.image_loading_mode || 'lazy' ) ) return;
+
+		var queue = [];
+		var seen = {};
+		_.each( PC.fe.viewer_state.layers_in_image_order(), function( layer ) {
+			var choices = PC.fe.getLayerContent( layer.id );
+			if ( ! choices ) return;
+			choices.each( function( choice ) {
+				if ( ! PC.fe.viewer_state.has_drawable( choice ) ) return;
+				var url = this.image_url( choice, stack.angle_id );
+				if ( ! url || seen[ url ] || this.textures[ url ] ) return;
+				seen[ url ] = true;
+				queue.push( { url: url, dimensions: choice.get_image( 'image', 'dimensions', stack.angle_id ) } );
+			}, this );
+		}, this );
+		if ( ! queue.length ) return;
+
+		var that = this;
+		var job = { stopped: false };
+		this.background = job;
+		var next = function() {
+			if ( job.stopped || that.is_removed ) return;
+			var item = queue.shift();
+			if ( ! item ) return;
+			if ( that.textures[ item.url ] ) return next();
+			var estimate = that.estimate_bytes( stack, item.dimensions );
+			if ( that.texture_bytes() + estimate > that.texture_budget() ) {
+				job.stopped = true;
+				return;
+			}
+			that.load_texture( item.url, stack ).then( next );
+		};
+		next();
+		next();
+	},
+
+	stop_background: function() {
+		if ( this.background ) this.background.stopped = true;
+		this.background = null;
+	},
+
+	/**
+	 * What a texture will cost before it is loaded, from the stored dimensions.
+	 */
+	estimate_bytes: function( stack, dimensions ) {
+		var width = dimensions && parseInt( dimensions.width );
+		var height = dimensions && parseInt( dimensions.height );
+		if ( ! width || ! height ) {
+			if ( ! stack.size ) return 0;
+			width = stack.size.width;
+			height = stack.size.height;
+		}
+		var scale = this.texture_scale( stack, { width: width, height: height } );
+		return Math.round( width * scale ) * Math.round( height * scale ) * 4;
+	},
+
+	/**
+	 * Texture memory, for measuring (the spec's performance run).
+	 *
+	 * @return {Object} { count, bytes, pinned_bytes, budget }
+	 */
+	texture_stats: function() {
+		var stats = { count: 0, bytes: 0, pinned_bytes: 0, budget: this.texture_budget() };
+		_.each( this.textures, function( record ) {
+			if ( ! record.texture ) return;
+			stats.count++;
+			stats.bytes += record.bytes;
+			if ( this.is_pinned( record ) ) stats.pinned_bytes += record.bytes;
+		}, this );
+		return stats;
 	},
 
 	is_cross_origin: function( url ) {
@@ -574,6 +1047,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.$loading_marker.toggleClass( 'loading', this.is_loading );
 		if ( was_loading && ! this.is_loading ) {
 			wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
+			this.start_background();
 		}
 	},
 
@@ -591,9 +1065,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * loaded, so the customer never sees a half-built view.
 	 */
 	show_angle: function( angle_id ) {
+		this.stop_background();
 		var stack = this.ensure_stack( angle_id );
 		this.target_stack = stack;
 		this.sync_stack( stack );
+		// Laid out while hidden; its kept textures may be too small for the box
+		// now, and they are the most recently used again.
+		this.check_resolution( stack );
+		_.each( stack.layers, function( record ) {
+			_.each( record.shown, function( entry ) {
+				if ( entry.record ) this.touch( entry.record );
+			}, this );
+		}, this );
 
 		if ( this.angle_wait_timer ) {
 			clearTimeout( this.angle_wait_timer );
@@ -624,6 +1107,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		if ( this.current_stack ) this.current_stack.container.visible = false;
 		this.target_stack.container.visible = true;
 		this.current_stack = this.target_stack;
+		// The outgoing angle's textures are no longer pinned.
+		this.enforce_budget();
+		if ( ! this.is_loading ) this.start_background();
 	},
 
 	/*
@@ -727,25 +1213,14 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		}, this );
 		if ( ! urls.length ) return null;
 
-		var that = this;
-		var textures = await Promise.all( _.map( urls, function( url ) {
-			return that.load_texture( url );
-		} ) );
-		if ( this.is_removed || ! this.app ) return null;
-		if ( _.contains( textures, null ) ) {
-			console.log( 'Product configurator: cannot capture the configuration, an image could not be loaded.' );
-			return null;
-		}
-
-		var size = this.angle_size( angle.id );
+		var size = this.angle_size( angle.id ) || ( this.stacks[ angle.id ] && this.stacks[ angle.id ].size );
 		if ( ! size ) {
-			size = { width: 0, height: 0 };
-			_.each( textures, function( texture ) {
-				size.width = Math.max( size.width, texture.width );
-				size.height = Math.max( size.height, texture.height );
-			} );
+			// No stored dimensions and nothing shown yet: the first image decides.
+			var first = await this.load_image( urls[ 0 ] );
+			if ( ! first ) return null;
+			size = { width: first.naturalWidth, height: first.naturalHeight };
 		}
-		if ( ! size.width || ! size.height ) return null;
+		if ( this.is_removed || ! this.app || ! size.width || ! size.height ) return null;
 
 		var width = size.width;
 		var height = size.height;
@@ -765,34 +1240,63 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		}
 		width = Math.round( width );
 		height = Math.round( height );
+		var scale_x = width / size.width;
+		var scale_y = height / size.height;
 
-		var picture = new PIXI.Container();
-		_.each( textures, function( texture ) {
-			var sprite = new PIXI.Sprite( texture );
-			sprite.position.set( ( size.width - texture.width ) / 2, ( size.height - texture.height ) / 2 );
-			picture.addChild( sprite );
-		} );
-		picture.scale.set( width / size.width, height / size.height );
-		var wrapper = new PIXI.Container();
-		wrapper.addChild( picture );
-
-		var canvas = document.createElement( 'canvas' );
-		canvas.width = width;
-		canvas.height = height;
-		var context = canvas.getContext( '2d' );
+		// Drawn a few images at a time into one render texture, each resized
+		// first the way the <img> stack's capture resizes it, so memory stays at
+		// a few output-sized images however many layers the picture has.
+		var renderer = this.app.renderer;
+		var target = PIXI.RenderTexture.create( { width: width, height: height, resolution: 1 } );
+		var batch_size = 6;
+		var drawn = 0;
+		var failed = false;
 		try {
-			var extracted = this.app.renderer.extract.pixels( {
-				target: wrapper,
-				frame: new PIXI.Rectangle( 0, 0, width, height ),
-				resolution: 1,
-				clearColor: [ 0, 0, 0, 0 ],
-			} );
+			for ( var start = 0; start < urls.length && ! failed; start += batch_size ) {
+				var images = await Promise.all( _.map( urls.slice( start, start + batch_size ), this.load_image, this ) );
+				if ( this.is_removed || ! this.app ) return null;
+				if ( _.contains( images, null ) ) {
+					failed = true;
+					break;
+				}
+				var batch = new PIXI.Container();
+				var made = [];
+				_.each( images, function( image ) {
+					var natural = { width: image.naturalWidth, height: image.naturalHeight };
+					var out_width = Math.max( 1, Math.round( natural.width * scale_x ) );
+					var out_height = Math.max( 1, Math.round( natural.height * scale_y ) );
+					var smaller = out_width < natural.width || out_height < natural.height;
+					var resource = smaller ? this.downscale( image, out_width, out_height ) || image : image;
+					var texture = new PIXI.Texture( { source: new PIXI.ImageSource( { resource: resource } ) } );
+					made.push( texture );
+					var sprite = new PIXI.Sprite( texture );
+					sprite.scale.set( natural.width * scale_x / texture.width, natural.height * scale_y / texture.height );
+					sprite.position.set( ( size.width - natural.width ) / 2 * scale_x, ( size.height - natural.height ) / 2 * scale_y );
+					batch.addChild( sprite );
+				}, this );
+				renderer.render( { container: batch, target: target, clear: 0 === drawn, clearColor: [ 0, 0, 0, 0 ] } );
+				drawn += images.length;
+				batch.destroy( { children: true } );
+				_.each( made, function( texture ) {
+					texture.destroy( true );
+				} );
+			}
+			if ( failed ) {
+				console.log( 'Product configurator: cannot capture the configuration, an image could not be loaded.' );
+				return null;
+			}
+
+			var canvas = document.createElement( 'canvas' );
+			canvas.width = width;
+			canvas.height = height;
+			var context = canvas.getContext( '2d' );
+			var extracted = renderer.extract.pixels( { target: target } );
 			context.putImageData( this.unpremultiply( extracted.pixels, extracted.width, extracted.height ), 0, 0 );
 		} catch ( error ) {
 			console.log( 'Product configurator: could not compose the captured image.', error );
 			return null;
 		} finally {
-			wrapper.destroy( { children: true } );
+			target.destroy( true );
 		}
 
 		/** This action is documented in viewer.js (capture). */
@@ -881,6 +1385,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.render_frame = null;
 		if ( this.angle_wait_timer ) clearTimeout( this.angle_wait_timer );
 		if ( this.context_timer ) clearTimeout( this.context_timer );
+		if ( this.resolution_timer ) clearTimeout( this.resolution_timer );
+		this.stop_background();
 		if ( this.resize_observer ) this.resize_observer.disconnect();
 		this.resize_observer = null;
 		this.stopListening();
@@ -902,9 +1408,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 
 		// Textures first, while the renderer can still release their GPU copies;
 		// the sprites go with the stage.
-		_.each( this.textures, function( record ) {
-			if ( record.texture ) record.texture.destroy( true );
-		} );
+		_.each( _.values( this.textures ), this.destroy_record, this );
 		this.textures = {};
 
 		if ( this.app ) {
@@ -924,6 +1428,41 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * mount uses the <img> stack. { reason, detail } or null.
 	 */
 	disabled: null,
+
+	/**
+	 * Round a texture scale up to the next step of √2, capped at 1 (full size).
+	 *
+	 * @param {Number} scale Device pixels per image pixel.
+	 * @return {Number}
+	 */
+	scale_step: function( scale ) {
+		if ( ! ( scale > 0 ) || scale >= 1 ) return 1;
+		// The epsilon keeps an exact step (0.5) from rounding up to the next one.
+		var step = Math.ceil( 2 * Math.log2( scale ) - 1e-9 ) / 2;
+		return Math.min( 1, Math.pow( 2, step ) );
+	},
+
+	/**
+	 * Which textures to release, least recently used first, to get under the
+	 * budget. Over budget with nothing left to release is allowed: the picture
+	 * on screen always shows.
+	 *
+	 * @param {Array}  candidates Unpinned records ({ bytes, last_used }).
+	 * @param {Number} total      Bytes used now.
+	 * @param {Number} budget
+	 * @return {Array} The records to release.
+	 */
+	pick_evictions: function( candidates, total, budget ) {
+		var sorted = candidates.slice().sort( function( a, b ) {
+			return a.last_used - b.last_used;
+		} );
+		var evict = [];
+		for ( var i = 0; i < sorted.length && total > budget; i++ ) {
+			evict.push( sorted[ i ] );
+			total -= sorted[ i ].bytes;
+		}
+		return evict;
+	},
 
 	/**
 	 * The 2D renderer requested for this product: 'dom' or 'canvas'.

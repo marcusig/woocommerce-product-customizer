@@ -210,16 +210,35 @@ second load cheap; `crossOrigin` is set only for other domains, so same-origin r
 is raced against one second, then the texture is uploaded anyway, so a capture asked for in the
 background still resolves.
 
-**Which URL.** Port the responsive pick from `viewer_layer.render()`: `url_mobile` below
-`mobile_image_breakpoint`, `url_large` at or above `large_image_breakpoint`, based on the viewer
-width. Re-picked when a resize crosses a breakpoint.
+**Which URL.** The responsive pick from `viewer_layer.render()`: `url_mobile` below
+`mobile_image_breakpoint`, `url_large` at or above `large_image_breakpoint`. It uses the same width
+as the stack (the modal's), so both viewers request the same files. A resize that crosses a
+breakpoint resyncs every layer; each one swaps to the new file the way a selection change does,
+holding the old image until the new one has loaded.
+
+**How sharp.** A texture keeps only the resolution the box shows: the device pixels one image
+pixel covers (the stack's scale × the renderer's resolution), rounded up to a step of √2 and never
+above full size (`scale_step()`). A texture holds at most twice the pixels on screen, and a resize
+reloads nothing until the box has grown by a whole step. Then the same texture record is upgraded
+and every sprite drawing it switches over (`check_resolution()`, 250 ms after the resize settles).
+Shrinking keeps the sharper textures. Downscaled copies come from `createImageBitmap()` (resized
+off the main thread, created premultiplied: WebGL ignores the premultiply-on-upload flag Pixi sets
+for bitmaps), or a 2D canvas where the browser ignores the resize options. Textures are built with
+`new PIXI.Texture( { source: new PIXI.ImageSource( ... ) } )`, never `PIXI.Texture.from()`, which
+caches by resource for the whole page.
+
+Measured on 7859 (3840×2160 images, a 505 px box at resolution 1): 679×382 textures, the first
+picture of 150 images in 148 MiB instead of 4.6 GiB, loaded in 5 s on desktop Chrome. On-screen
+colour checked: every stripe pixel drawn at full alpha reads back with its placeholder's exact
+colour.
 
 **When.** `image_loading_mode`:
 
 - `lazy` (default): load what the current picture needs; preload on the choice's `preload-image`
-  event (hover), as the pool does.
+  event (hover or focus), as the pool does.
 - otherwise: after the current picture is complete, load every image of the active angle in the
-  background, within the budget.
+  background, two at a time, while each fits in the free budget (estimated from the stored
+  dimensions). Stops at the first that does not fit, or on an angle change.
 
 **Memory budget.** This is the risk the `<img>` stack never had: the browser evicts decoded images
 under pressure, while every GPU texture stays until it is destroyed. Choices × angles × full-size
@@ -230,8 +249,14 @@ images exhausts mobile Safari.
   adjusted by the phase 3 measurements.
 - Textures used by the visible picture, and by the outgoing picture during a transition, are
   pinned. Everything else is least-recently-used and destroyed when over budget.
-- Preloads and background loads never evict pinned textures, and stop when they would exceed the
-  budget.
+- Background loads never release anything to make room; they stop when the next would exceed the
+  budget. A hover preload is one image the customer is about to pick, so it may release unpinned
+  textures like any load. Neither ever touches a pinned texture.
+- Released textures take their sprites with them. They belong to angles not on screen; showing
+  that angle again loads those images again.
+- The budget is checked after each load, after an angle switch (the outgoing angle is no longer
+  pinned) and after a resize (the budget is smaller below the mobile breakpoint).
+- `texture_stats()` on the viewer returns `{ count, bytes, pinned_bytes, budget }` for measuring.
 - The viewer owns what it loads; add-on items own and destroy their own textures.
 
 **Loading state.** `is-loading-image` on the root, `PC.fe.viewer.layer.preload.complete` per item
@@ -277,6 +302,12 @@ keeps the `<img>` stack. Say so in the setting's description.
 `capture( options )` renders the current picture off screen at the requested size
 (`{ width, height, maxDimension }`, default max `PC.fe.pdf.max_dimension`), reads it back with
 `renderer.extract.pixels()` and resolves a PNG blob. It does not touch what the customer sees.
+
+It does not reuse the on-screen textures, which are only as sharp as the box. Each image is loaded
+again (from the HTTP cache), resized to the output size on a 2D canvas the way the stack's capture
+resizes it, and drawn into one render texture six at a time, so memory stays at a few output-sized
+images however many layers the picture has. Checked on 7860 (3840 px images captured at 1200,
+20,400 semi-transparent pixels per picture): identical to the stack's capture on all 4 angles.
 
 **Pixi 8.16 reads back premultiplied colour and does not convert it** (`extract.canvas()` and
 `extract.pixels()` alike: a 200 grey at alpha 74 comes back as 58). Drawn as is, semi-transparent
@@ -386,8 +417,8 @@ Two levels, with different bars:
    Every layer shows, so the first picture draws 150 full-size images: ~4.6 GiB of textures, held
    "only just" by desktop Chrome on the dev Mac in phase 2. No real product is expected to be
    this large. The `<img>` stack pays the same cost, since the browser decodes each image at full
-   size; the canvas can do better once phase 3 scales textures to the box (150 images at 505×284 is
-   ~85 MiB). **Accept** when it does not crash, on desktop or iPhone. Slow loading and reloads on
+   size; the canvas does better since phase 3 scales textures to the box (150 images in 148 MiB at a
+   505 px box, against 4.6 GiB). **Accept** when it does not crash, on desktop or iPhone. Slow loading and reloads on
    angle switch are acceptable as long as the picture ends up right.
 
 ## Phasing
@@ -408,7 +439,18 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    capture pixel-identical to the stack, the C, CORS and both context-loss paths, 25 remounts.
    `__tests__/viewer-canvas.test.js` covers selection, fallbacks and `unpremultiply()`.
    Still loads full-size images on small screens until phase 3.
-3. **Textures.** Responsive URLs, lazy/eager modes, preload, budget and eviction. Performance run.
+3. **Textures.** Responsive URLs, lazy/eager modes, preload, budget and eviction. *Done
+   2026-11-04* on desktop Chrome: textures scaled to the box (above); on 7859, two rounds of all 4
+   angles held 255 MiB against the 256 MiB budget with every picture complete (about 5 s per
+   angle switch, reloading what was released); below the mobile breakpoint the budget dropped to
+   96 MiB and the other angles were released at once; a 2400 px viewport upgraded all 146
+   textures in place. On 7860, 108 random swaps and 12 angle switches drew exactly what the
+   models say (median 32 ms to new pixels, max 226 ms). Eager mode filled the budget in 14 s and
+   stopped; a hover preload loaded without pinning or the loading state. Capture identical to the
+   stack's on 613 and on 7860. 15 remounts released every texture; context restore redraws
+   identically with bitmap sources. `__tests__/viewer-canvas.test.js` covers the scale steps,
+   eviction order, the responsive pick and the budget. **Still to run:** the iPhone part of the
+   performance run (below), and the timing comparison against the stack.
 4. **Polish.** Angle transitions and fades.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
@@ -416,10 +458,11 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 
 Then the image overlay spec.
 
-**Prove first (before phase 3; it needs the phase 2 viewer to run):** iPhone Safari, the realistic stress product (7860), many swaps and every angle visited twice, with
-eviction stubbed in crudely. If memory cannot be held under budget without visible reloading on
+**Prove on an iPhone (outstanding):** Safari, 7860, many swaps and every angle visited twice, now
+with the real budget and eviction instead of the crude stub this was planned with (it moved after
+phase 3, which provides them). If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
-before anything else is built on it.
+before phase 4. `PC.fe.modal.viewer.texture_stats()` from Safari's Web Inspector gives the numbers.
 
 ## What to keep from the draft
 
