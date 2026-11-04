@@ -945,6 +945,23 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			);
 
 			add_settings_field(
+				'viewer_2d_renderer',
+				__( '2D viewer', 'product-configurator-for-woocommerce' ),
+				[ $this, 'callback_select' ],
+				'mlk_pc_settings',
+				'performance',
+				[
+					'setting_name' => 'viewer_2d_renderer',
+					'default'      => 'dom',
+					'options'      => [
+						'dom'    => __( 'Image stack (default) - one image per layer', 'product-configurator-for-woocommerce' ),
+						'canvas' => __( 'Canvas (beta) - every layer drawn in one canvas', 'product-configurator-for-woocommerce' ),
+					],
+					'description'  => __( 'How 2D configurators draw the product. The canvas draws every layer into one picture, which is lighter on large configurations and is needed by features such as image overlays. With the canvas, images must be served from this site or with CORS headers, custom HTML always sits above the images, and stylesheets can no longer target the images of individual layers. When the canvas cannot be used (an older browser, or an add-on that does not support it yet) the image stack is used instead. 3D configurators are not affected.', 'product-configurator-for-woocommerce' ),
+				]
+			);
+
+			add_settings_field(
 				'purge_with_page_cache',
 				__( 'Clear cached configurations when a page cache is cleared', 'product-configurator-for-woocommerce' ),
 				[ $this, 'callback_checkbox' ],

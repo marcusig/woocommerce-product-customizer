@@ -1,6 +1,6 @@
 # Canvas viewer (2D, Pixi)
 
-Status: **phase 1 done (2026-11-04, branch `canvas-viewer`).** All decisions answered
+Status: **phases 1 and 2 done (2026-11-04, branch `canvas-viewer`).** All decisions answered
 ([Decisions](#decisions)). Draft code exists on `origin/v2/add-canvas-view`
 (`src/assets/js/views/parts/viewer-pixi.js`, Oct 2025). It predates the current viewer and is
 written against Pixi v7, so it is reference material, not a base to merge. See
@@ -50,7 +50,12 @@ through all of them for no gain - the data is identical.
 - Wired through the existing seam: a `PC.fe.viewer.main_view` filter returns
   `PC.fe.views.viewer_canvas` when the renderer is `canvas` and the product is not 3D. The 3D
   filter in `3d-viewer.js` keeps precedence.
-- Final say in JS: filter `PC.fe.viewer.renderer` (`'dom'|'canvas'`, product data, viewer options).
+- Final say in JS: filter `PC.fe.viewer.renderer( renderer, product_data )` (`'dom'|'canvas'`;
+  anything else counts as `dom`).
+- Every fallback below fires `PC.fe.viewer.canvas.fallback( reason, detail, viewer|null )` and logs
+  one line naming the reason. Reasons: `pixi_missing`, `webgl`, `dom_item_view`, `cors`,
+  `context_lost`. Pixi is only enqueued for 2D products on the canvas renderer, so `pixi_missing`
+  means a filter asked for canvas where PHP did not.
 
 **Fallback is decided before mounting, then once more at runtime:**
 
@@ -61,7 +66,12 @@ through all of them for no gain - the data is identical.
 | Runtime | An image cannot be uploaded as a texture (cross-origin without CORS headers) | Remount as `<img>` stack for the session; console notice with the URL |
 | Runtime | Context lost and not restored within 3 s | Remount as `<img>` stack |
 
-Remounting uses `PC.fe.mountViewer()`, which already removes the previous viewer.
+A runtime fallback replaces the viewer **in place** (`replaceWith`, so it keeps its position among
+the modal's children; `PC.fe.mountViewer()` would append it at the end), sets `PC.fe.modal.viewer`,
+and moves along anything appended to the old root after it rendered (the empty configurator's
+toolbar, Save your design's loading message). Pixi missing, no WebGL and every runtime reason
+disable the canvas for the rest of the page view; `dom_item_view` belongs to one product and does
+not.
 
 **The CORS row matters more than it looks.** The `<img>` stack displays cross-origin images fine and
 only fails at capture. WebGL cannot even *upload* a cross-origin image without CORS, so a shop
@@ -78,8 +88,13 @@ Same root as the other viewers, so theme layout keeps working:
 div.mkl_pc_viewer.mkl_pc_viewer--canvas      ← template mkl-pc-configurator-viewer
   (angles selector, as today)
   div.mkl_pc_layers                          ← kept: swipe (pc-fe-main.js) and SYD bind to it
-    canvas                                   ← the Pixi canvas, aria-hidden
-    div.mkl_pc_canvas_html                   ← custom HTML of choices, absolutely positioned
+    canvas.mkl_pc_canvas                     ← the Pixi canvas, aria-hidden
+    img.mkl_pc_canvas_probe                  ← one per angle shown, hidden (see Fit)
+    div.custom-html …                        ← custom HTML, direct children as in the stack,
+                                               so theme rules for them still match
+    img.mkl_pc_canvas_marker                 ← hidden; carries `loading` while the picture loads,
+                                               so themes' `img.loading ~ .images-loading` shows
+                                               their indicator
     div.images-loading
 ```
 
@@ -116,6 +131,18 @@ picture does not jump when a larger image arrives. If no dimensions are stored, 
 texture of that angle sets it. Renderer resolution: `min( devicePixelRatio, 2 )`, `autoDensity`.
 Resized through a `ResizeObserver` on `.mkl_pc_layers`.
 
+Where the picture goes is **measured, not computed**. Themes size layer images differently (all
+centre them and cap `max-height: 100%`; some also cap the width; lebolide changes layout on small
+screens), and a store may add its own rules. Each angle gets a hidden probe `<img>` whose source is
+an empty SVG of the angle's size, so the theme lays it out exactly as it would a real layer image;
+the angle's container is placed on the probe's box. If the probe has no box (a stylesheet hides it),
+the fit is "contain, never upscale", centred. On product 613 the canvas lands within a third of a
+pixel of the `<img>` stack on desktop and at 375 px wide.
+
+Every image of an angle is drawn at its natural size, centred on the angle's box, with one scale for
+the angle. The `<img>` stack scales each image on its own; the two only differ for an image whose
+size differs from the rest of its angle, where the canvas keeps the layers registered.
+
 ## What is shown
 
 One rule for every viewer, in `PC.fe.viewer_state` (`views/parts/viewer-state.js`, phase 1). The
@@ -141,9 +168,16 @@ re-syncs a layer at the end of the turn - the same two-step reason as `viewer_la
 a choice change arrives as "old inactive" then "new active", and acting on the first would empty
 the layer.
 
-**Swaps never flash.** The outgoing choice's sprite stays until the incoming texture has loaded or
-failed, or `PC.fe.viewer.swap_timeout` (5000 ms) passes - the pool's hold/incoming behaviour, and
-`PC.fe.viewer.hold_previous_image` is honoured. A cross-fade can be enabled with
+**Swaps never flash.** The outgoing choice's sprite stays, under the incoming one, until everything
+its layer is loading has settled, or `PC.fe.viewer.swap_timeout` (5000 ms) passes - the pool's
+hold/incoming behaviour. `PC.fe.viewer.hold_previous_image( hold, entry, viewer )` is honoured; the
+second argument is the leaving item, whose `model` is its choice. One improvement on the pool: when
+selections change faster than images load (A → B → C), A stays up until C arrives instead of going
+when the never-shown B is dropped.
+
+**Angles never show half a picture.** The current angle stays on screen until the new angle's
+picture has settled (or the swap timeout passes), then they swap. Angles already shown keep their
+sprites, so going back is immediate. A cross-fade can be enabled with
 `PC.fe.viewer.canvas.fade_duration` (default `0`); the DOM viewer reads this from CSS, which the
 canvas does not have.
 
@@ -158,13 +192,23 @@ The resolution ladder from the per-view image order spec, per layer, for the act
 Until the per-view data exists, rung 1 never matches and the canvas viewer orders exactly as the
 `<img>` stack does. Restack on `PC.fe.angles` `change:active`, skipped when a precomputed
 "any per-view override?" flag is false. Unlike the DOM restack (which the per-view spec measured at
-~24,000 comparisons on the 155-layer product, done naively), this is one `zIndex` pass.
+~24,000 comparisons on product 636, 155 layers, done naively), this is one `zIndex` pass.
 
 ## Textures
 
-Pixi v8 rules this design follows: `PIXI.Assets.load()` to load (`Texture.from( url )` is a
-cache lookup only), `TextureSource` instead of `baseTexture`, `await app.init()` before anything
-touches the renderer.
+Pixi v8 rules this design follows: `TextureSource` instead of `baseTexture`, `await app.init()`
+before anything touches the renderer, `app.canvas` rather than `app.view`.
+
+**The viewer loads and owns its images** (`Image` → `img.decode()` → `PIXI.Texture.from( image )`),
+rather than using `PIXI.Assets`. Assets is one cache for the whole page: unloading it on teardown
+races with a viewer mounting again as the modal reopens, which could hand the new viewer a texture
+being destroyed. Owning them is also what eviction (below) needs. The browser's HTTP cache keeps a
+second load cheap; `crossOrigin` is set only for other domains, so same-origin requests reuse the
+`<img>` stack's cache entries.
+
+`img.decode()` stays pending while the page is not rendered (a background tab, a hidden pane). It
+is raced against one second, then the texture is uploaded anyway, so a capture asked for in the
+background still resolves.
 
 **Which URL.** Port the responsive pick from `viewer_layer.render()`: `url_mobile` below
 `mobile_image_breakpoint`, `url_large` at or above `large_image_breakpoint`, based on the viewer
@@ -174,8 +218,8 @@ width. Re-picked when a resize crosses a breakpoint.
 
 - `lazy` (default): load what the current picture needs; preload on the choice's `preload-image`
   event (hover), as the pool does.
-- otherwise: after the current picture is complete, `Assets.backgroundLoad()` every image of the
-  active angle, within the budget.
+- otherwise: after the current picture is complete, load every image of the active angle in the
+  background, within the budget.
 
 **Memory budget.** This is the risk the `<img>` stack never had: the browser evicts decoded images
 under pressure, while every GPU texture stays until it is destroyed. Choices × angles × full-size
@@ -185,7 +229,7 @@ images exhausts mobile Safari.
   256 MB, 96 MB when the viewer is under `mobile_image_breakpoint` (decision F); confirmed or
   adjusted by the phase 3 measurements.
 - Textures used by the visible picture, and by the outgoing picture during a transition, are
-  pinned. Everything else is least-recently-used and unloaded (`Assets.unload()`) when over budget.
+  pinned. Everything else is least-recently-used and destroyed when over budget.
 - Preloads and background loads never evict pinned textures, and stop when they would exceed the
   budget.
 - The viewer owns what it loads; add-on items own and destroy their own textures.
@@ -208,31 +252,43 @@ bound to `.mkl_pc_layers`.
 
 **Context loss.** Listen for `webglcontextlost` / `webglcontextrestored` on the canvas and fire the
 same hooks as the 3D viewer (`PC.fe.viewer.context.lost`, `PC.fe.viewer.context.restored`). On
-restore, re-upload from the Assets cache and redraw. Not restored within 3 s: fall back (table above).
+restore, redraw: Pixi re-uploads the textures from their images (checked on product 613: screen
+and capture identical before the loss and after the restore). Not restored within 3 s: fall back
+(table above).
 
 **Teardown.** `remove()` stops loops, disconnects the `ResizeObserver`, ends waits, destroys
-add-on items, unloads the viewer's textures and calls `app.destroy( true, { children: true } )`.
+add-on items, destroys the viewer's textures (before the renderer, so their GPU copies are
+released) and calls `app.destroy( { removeView: true }, { children: true } )`, which releases the
+WebGL context. Checked: 25 remounts leave one canvas, one probe and no warnings.
 Without it, reopening the configurator modal leaks a WebGL context per open; browsers keep about 16,
 then drop the oldest - a blank viewer after enough opens.
 
 ## Custom HTML
 
-Choices' `custom_html` renders in `div.mkl_pc_canvas_html` above the canvas, in sort order, with the
-`viewer_layer_html` visibility rules. It therefore always sits **above** every image layer; it can
+Choices' `custom_html` renders as `viewer_layer_html` views, direct children of `.mkl_pc_layers`
+after the canvas (as siblings, like in the stack, so theme rules still match), in image order, with
+the `viewer_layer_html` visibility rules; a static layer's HTML is inserted as the stack does it.
+Built in phase 2 rather than 4, so turning the canvas on never loses custom HTML. It therefore always sits **above** every image layer; it can
 no longer sit between two of them. Accepted (decision D): a store that needs HTML between layers
 keeps the `<img>` stack. Say so in the setting's description.
 
 ## Capture
 
-`capture( options )` renders the current picture into a `RenderTexture` at the requested size
-(`{ width, height, maxDimension }`, default max `PC.fe.pdf.max_dimension`), extracts it and resolves
-a PNG blob. It does not touch what the customer sees.
+`capture( options )` renders the current picture off screen at the requested size
+(`{ width, height, maxDimension }`, default max `PC.fe.pdf.max_dimension`), reads it back with
+`renderer.extract.pixels()` and resolves a PNG blob. It does not touch what the customer sees.
+
+**Pixi 8.16 reads back premultiplied colour and does not convert it** (`extract.canvas()` and
+`extract.pixels()` alike: a 200 grey at alpha 74 comes back as 58). Drawn as is, semi-transparent
+edges came out up to 63/255 darker than on screen. `unpremultiply()` restores straight alpha; the
+capture of product 613 is then pixel-identical to the `<img>` stack's capture (459,648 pixels, no
+difference).
 
 - What to draw: `get_capture_models()` / `PC.fe.viewer.capture.models`, as today.
-- `PC.fe.viewer.capture.canvas( ctx, canvas, viewer )` still runs: the extract is drawn to a 2D
+- `PC.fe.viewer.capture.canvas( ctx, canvas, viewer )` still runs: the pixels are put on a 2D
   canvas first, so watermark and background hooks keep working.
-- Resolves `null` when a needed texture is not loaded yet after waiting for the current picture to
-  settle, never a partial picture.
+- Waits for the picture's images to load; resolves `null` when one cannot be loaded, never a
+  partial picture.
 - No cross-origin failure mode: anything on screen was CORS-clean to get there.
 
 ## Cart and order images
@@ -276,7 +332,9 @@ wp.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'my-addon', function( item, choi
 Not fired by the canvas viewer (DOM-only, documented): `PC.fe.viewer.item.tag`,
 `PC.fe.viewer.item.view`, `PC.fe.viewer.layer.classes`, `PC.fe.viewer.layer.render`,
 `PC.fe.viewer.layer.render.after`, `PC.fe.viewer.static_layer.*`, `PC.fe.choice-img.init`.
-`PC.fe.viewer.item.added` and `PC.fe.viewer.html_item.added` fire with the item / HTML view.
+`PC.fe.viewer.html_item.added` fires with the HTML view. `PC.fe.viewer.item.added` waits for
+phase 5: until there are canvas items there is nothing to pass that a listener expecting a view
+could use (nothing listens to it today).
 
 Known consumers to adjust:
 
@@ -299,8 +357,13 @@ Known consumers to adjust:
 
 ## Performance
 
-Measured on the 155-layer test product and on product 613 (real images on disk), against the stack,
-on desktop Chrome and an iPhone:
+Measured on a large stress product and on product 613 (real images on disk), against the stack,
+on desktop Chrome and an iPhone. The stress product is a copy of 636 ("Test large data": 155 layers,
+4 angles, 4,711 choices) with its images served locally: 636 hotlinks all 14,696 of its images from
+the customer's live site, so the canvas would fall back on CORS there, and a memory run would pull
+hundreds of megabytes from their server. Local placeholders at the real images' pixel sizes are
+enough, since GPU memory depends on dimensions, not file content.
+
 
 - time to first complete picture;
 - choice swap (selection to new pixels), angle switch;
@@ -321,16 +384,22 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    (301 pictures, 2,408 pool states, conditions applied after each selection, no mismatch).
 2. **Viewer MVP behind the setting.** Init, fit, visibility, swaps without flash, angles
    (`visibility` transition), loading state and hooks, teardown, `capture()`, and every fallback in
-   the table.
+   the table. *Done 2026-11-04*: `views/parts/viewer-canvas.js`, the setting and
+   `mkl_pc_get_viewer_2d_renderer()`, Pixi enqueued only where used, custom HTML (moved up from
+   phase 4) and context-loss restore (Pixi handles it). Tested on product 613 with text overlay's
+   layer stubbed out: 60 random selections and angle switches drawn exactly as the models say,
+   capture pixel-identical to the stack, the C, CORS and both context-loss paths, 25 remounts.
+   `__tests__/viewer-canvas.test.js` covers selection, fallbacks and `unpremultiply()`.
+   Still loads full-size images on small screens until phase 3.
 3. **Textures.** Responsive URLs, lazy/eager modes, preload, budget and eviction. Performance run.
-4. **Polish.** Angle transitions, fades, context-loss restore, custom HTML layer.
+4. **Polish.** Angle transitions and fades.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
 
 Then the image overlay spec.
 
-**Prove first (before phase 2):** iPhone Safari, 155-layer product, every angle visited twice, with
+**Prove first (before phase 3; it needs the phase 2 viewer to run):** iPhone Safari, the stress product, every angle visited twice, with
 eviction stubbed in crudely. If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
 before anything else is built on it.
@@ -342,8 +411,8 @@ From `viewer-pixi.js` on `origin/v2/add-canvas-view`:
 - **Keep:** one container per angle, the transition code and its directions, contain-and-centre
   fitting, `ResizeObserver` sizing.
 - **Rewrite for Pixi v8:** `new PIXI.Application( options )` → `await app.init()`; `app.view` →
-  `app.canvas`; `Texture.from( url )` / `baseTexture.valid` / `'loaded'` events → `Assets.load()`
-  promises (`baseTexture` is a deprecated getter returning the `TextureSource`).
+  `app.canvas`; `Texture.from( url )` / `baseTexture.valid` / `'loaded'` events → a promise per
+  image (`baseTexture` is a deprecated getter returning the `TextureSource`).
 - **Bugs not to carry over:** unselected choices are never hidden (sprites are created visible and
   only angle visibility is toggled); `getContentBounds()` looks for textures on what are now angle
   containers; no teardown; `PC.fe.viewer.item.view` is not applied; responsive URLs and lazy loading
