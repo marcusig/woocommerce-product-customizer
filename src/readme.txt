@@ -262,6 +262,9 @@ Open Source SVG icons:
 * FEATURE: Customer page and My account tab to follow quote requests, with "Find my requests" for lost links
 * FEATURE: Customers accept and pay, decline, or ask for a change to a quote
 * FEATURE: Edit the configuration of order lines, and add configured products to orders, from the admin
+* TWEAK: 3D views: one "Camera target" setting replaces the target object and camera focus settings
+* TWEAK: 3D views set to "Use the camera exactly as saved" no longer move when choices change
+* FIX: The first 3D view was framed on hidden variants of the model
 * DEV: Quote request REST API, `PC.fe.quote` and `mkl_pc_create_quote_request()`
 * DEV: Hooks for quote requests (`mkl_pc/quote_request/…`) and for configuring orders (`mkl_pc/configuration_editor/…`)
 

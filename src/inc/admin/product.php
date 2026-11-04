@@ -595,22 +595,21 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				$pc_lang['threed_new_variant']        = esc_html__( 'Variant', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_no_model_for_choice'] = esc_html__( 'No 3D model is set on this choice or its layer.', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_visible_objects']    = esc_html__( 'Visible objects', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_specific_objects']   = esc_html__( 'Specific objects…', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_saved_camera_target'] = esc_html__( '— Saved camera target —', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_framing_fit']        = esc_html__( 'Fit the target in view', 'product-configurator-for-woocommerce' );
-				$pc_lang['threed_framing_fixed']      = esc_html__( 'Camera position as set', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_framing_fixed']      = esc_html__( 'Camera exactly as saved', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_framing_fit_note']   = esc_html__( 'Saves the direction only: the distance adapts to each screen.', 'product-configurator-for-woocommerce' );
-				$pc_lang['threed_framing_fixed_note'] = esc_html__( 'Saves the camera position as it is.', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_framing_fixed_note'] = esc_html__( 'Saves the camera exactly as it is.', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_framing_label']      = esc_html__( 'Framing', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_target_label']       = esc_html__( 'Camera target', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_target_saved']       = esc_html__( 'Saved camera target', 'product-configurator-for-woocommerce' );
 				/* translators: %s: 3D model name */
 				$pc_lang['threed_target_model']       = esc_html__( 'Model: %s', 'product-configurator-for-woocommerce' );
-				/* translators: %s: object name in the 3D model */
-				$pc_lang['threed_target_object']      = esc_html__( 'Object: %s', 'product-configurator-for-woocommerce' );
 				/* translators: %s: comma-separated object names */
-				$pc_lang['threed_target_focus']       = esc_html__( 'Focus: %s', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_target_objects']     = esc_html__( 'Objects: %s', 'product-configurator-for-woocommerce' );
 				/* translators: %d: number of objects */
-				$pc_lang['threed_target_focus_count'] = esc_html__( 'Focus: %d objects', 'product-configurator-for-woocommerce' );
+				$pc_lang['threed_target_objects_count'] = esc_html__( 'Objects: %d', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_view_saved']         = esc_html__( 'Saved view', 'product-configurator-for-woocommerce' );
 				$pc_lang['threed_view_moved']         = esc_html__( 'Moved, not saved', 'product-configurator-for-woocommerce' );
 				$pc_lang['admin_menu']                = mkl_pc()->db->get_menu( (int) $this->ID );

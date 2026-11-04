@@ -60,22 +60,32 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 			}
 
 			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
-				$settings = array_merge( $settings, Abstract_Settings::get_3d_model_source_fields( array(
+				// One camera target: what a fitted view turns around and frames. The
+				// select is filled by the admin JS: Visible objects, Specific objects,
+				// then the models. A fixed view is the camera exactly as saved, so the
+				// target and the fit settings only show for a fitted one.
+				$target_fields = Abstract_Settings::get_3d_model_source_fields( array(
 					'can_upload'        => false,
 					'setting_model'     => 'camera_target_model',
 					'setting_upload'    => null,
 					'setting_object_id' => 'camera_target_object_id',
-					'model_label'       => __( 'Camera target (model)', 'product-configurator-for-woocommerce' ),
-					'object_id_label'   => __( 'Camera target (object)', 'product-configurator-for-woocommerce' ),
+					'model_label'       => __( 'Camera target', 'product-configurator-for-woocommerce' ),
 					'section'           => 'threed',
-					'priority'          => 8,
-				) ) );
+					'priority'          => 9,
+					'condition'         => '"fixed" != data.camera_framing',
+				) );
+				// Specific objects replace the single target object; angles saved with
+				// one are read as a one-object list.
+				unset( $target_fields['camera_target_object_id'] );
+				$target_fields['camera_target_model']['help'] = __( 'What the view turns around and frames. Visible objects follows the configuration: the view adapts when a choice adds or removes a part.', 'product-configurator-for-woocommerce' );
+				$settings = array_merge( $settings, $target_fields );
 				$settings['camera_focus_object_ids'] = array(
-					'label'   => __( 'Camera focus (objects for framing)', 'product-configurator-for-woocommerce' ),
-					'type'    => 'html',
-					'section' => 'threed',
-					'priority' => 19,
-					'html'    => '<div class="mkl-pc-setting--container mkl-pc--framing-objects-container">'
+					'label'     => __( 'Objects', 'product-configurator-for-woocommerce' ),
+					'type'      => 'html',
+					'section'   => 'threed',
+					'priority'  => 9.5,
+					'condition' => '"fixed" != data.camera_framing && "objects" == data.camera_target_model',
+					'html'      => '<div class="mkl-pc-setting--container mkl-pc--framing-objects-container">'
 						. '<div class="mkl-pc--framing-objects-list" data-setting="camera_focus_object_ids">'
 						. '<# if ( data.camera_focus_object_ids && data.camera_focus_object_ids.length ) { #>{{ data.camera_focus_object_ids.join(", ") }}<# } else { #><em>' . esc_html__( 'None selected', 'product-configurator-for-woocommerce' ) . '</em><# } #>'
 						. '</div>'
@@ -89,18 +99,18 @@ if ( ! class_exists('MKL\PC\Angle_Settings') ) {
 					'label'    => __( 'Framing', 'product-configurator-for-woocommerce' ),
 					'type'     => 'select',
 					'section'  => 'threed',
-					'priority' => 20,
+					'priority' => 8,
 					'choices'  => array(
 						array(
 							'label' => __( 'Fit the target in view', 'product-configurator-for-woocommerce' ),
 							'value' => 'fit',
 						),
 						array(
-							'label' => __( 'Use the camera position as set', 'product-configurator-for-woocommerce' ),
+							'label' => __( 'Use the camera exactly as saved', 'product-configurator-for-woocommerce' ),
 							'value' => 'fixed',
 						),
 					),
-					'help'     => __( 'Fit keeps the viewing direction you set and adjusts the distance so the whole target is visible, and centred, on any screen size. The camera still orbits around the target.', 'product-configurator-for-woocommerce' ),
+					'help'     => __( 'Fit keeps the viewing direction you saved and adjusts the distance so the whole target is visible, and centred, on any screen size. Exactly as saved keeps the camera where you saved it, for shots such as one from inside a car: choices do not move it.', 'product-configurator-for-woocommerce' ),
 				);
 				$settings['camera_fit_margin'] = array(
 					'label'      => __( 'Margin around the target (%)', 'product-configurator-for-woocommerce' ),

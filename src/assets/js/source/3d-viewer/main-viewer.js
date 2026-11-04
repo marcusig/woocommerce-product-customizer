@@ -45,9 +45,9 @@ import {
 	orbit_hint_done,
 } from './orbit-hint.js';
 import { start_animation_loop } from './3d-animation-loop.js';
-import { angle_fits_target, angle_model_pivot, fit_angle_camera, framing_shift_to_pixels, set_orbit_fitted_distance } from './3d-camera-fit.js';
+import { angle_fits_target, angle_pivot, fit_angle_camera, framing_shift_to_pixels, set_orbit_fitted_distance } from './3d-camera-fit.js';
 import { angle_turn_direction, plan_orbit_move } from './3d-camera-move.js';
-import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, getBoundingBoxFromObjectIds, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent , isObjectDisplayLayer, objectDisplayLayerVisibility, getClipSphere, fitCameraClipRange } from './3d-scene-utils.js';
+import { hideObjectsByName, getHiddenObjectNamesList, getObjectTargetPosition, findObject, findObjectByCompositeId, findObjectsByCompositeId, getAnchorCopies, createLightFromSettings, applyLightCookie, removeLightsFromScene, loadEnvMap, registerSceneMaterials, setSceneEnvironment, blurEnvironmentTexture, getEnvironmentKey, ShadowCatcher, invalidateBakedShadows, createShadowLight, aimShadowLight, applyShadowFlagsToObject, applyShadowSettingsToLight, applyRendererShadowSettings, refreshSceneShadows, supportsLightShadows, resolveShadowMode, SHADOW_MODES, shadowGroundExtent , isObjectDisplayLayer, objectDisplayLayerVisibility, getClipSphere, fitCameraClipRange } from './3d-scene-utils.js';
 import { warn_gltf_load_error } from './3d-gltf-load-error.js';
 import { create_anchor_placement, model_attachment_point, compare_priority, normalize_anchor_ids, read_follow_flag } from './3d-anchor-placement.js';
 import { clone as cloneWithSkeletons } from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -572,10 +572,10 @@ export default Backbone.View.extend({
 	},
 
 	/**
-	 * An angle's camera position as set, and its orbit target resolved against
-	 * the scene: the centre of its visible focus objects, else of its target
-	 * object, else of its target model when it is fitted, else the stored
-	 * target point.
+	 * An angle's camera position as saved, and its orbit target resolved
+	 * against the scene: the centre of its camera target as shown (see
+	 * angle_pivot), or the saved target point for a fixed angle and one set
+	 * to the saved camera target.
 	 *
 	 * @param {Backbone.Model} angle
 	 * @returns {{ position: THREE.Vector3|null, target: THREE.Vector3|null }}
@@ -584,25 +584,8 @@ export default Backbone.View.extend({
 		const t = this._three;
 		const pos = angle.get( 'camera_position' );
 		let tgt = angle.get( 'camera_target' );
-		const focusIds = angle.get( 'camera_focus_object_ids' );
-		const useFocusIds = Array.isArray( focusIds ) && focusIds.length > 0 && t.model_root;
-		if ( useFocusIds ) {
-			const result = getBoundingBoxFromObjectIds( t.model_root, focusIds, { visibleOnly: true } );
-			if ( result ) {
-				tgt = { x: result.center.x, y: result.center.y, z: result.center.z };
-			}
-		}
-		if ( ! useFocusIds || ! tgt ) {
-			const targetObjectId = angle.get( 'camera_target_object_id' );
-			const obj = targetObjectId && t.model_root ? findObject( t.model_root, String( targetObjectId ).trim() ) : null;
-			if ( obj ) {
-				const targetPos = getObjectTargetPosition( obj, new THREE.Vector3() );
-				tgt = { x: targetPos.x, y: targetPos.y, z: targetPos.z };
-			} else if ( ! useFocusIds && t.model_root ) {
-				const modelPivot = angle_model_pivot( t.model_root, angle );
-				if ( modelPivot ) tgt = { x: modelPivot.x, y: modelPivot.y, z: modelPivot.z };
-			}
-		}
+		const pivot = t.model_root ? angle_pivot( t.model_root, angle ) : null;
+		if ( pivot ) tgt = { x: pivot.x, y: pivot.y, z: pivot.z };
 		const isVec = ( v ) => v && typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number';
 		return {
 			position: isVec( pos ) ? new THREE.Vector3( pos.x, pos.y, pos.z ) : null,
@@ -1797,15 +1780,18 @@ export default Backbone.View.extend({
 		// Lights are built before this point, when the bounds are not yet known.
 		this._refreshShadows();
 
-		// Apply project-specific preview/camera settings, then create choice-related view bindings.
 		this.apply_preview_settings();
+		// The choice views first, then the angle: they hide every object a choice
+		// toggles and show the selected ones again, and the angle frames what is
+		// shown. The other way round, the first view was fitted to every variant in
+		// the file, and nothing corrected it, as reframes wait for _sceneReady.
+		this._create_choice_views();
 		this._applyAngleCamera( { immediate: true } );
 		// Capture "initial" camera after applying active angle so screenshot/view reset
 		// uses configured angle camera instead of fallback bbox framing.
 		t.initial_camera_position = t.camera.position.clone();
 		t.initial_controls_target = t.controls.target.clone();
 		t.initial_framing_shift = { x: t.framing_shift.x, y: t.framing_shift.y };
-		this._create_choice_views();
 		this._createRuntimeApi();
 		this._emitRuntimeAction( 'PC.fe.viewer.runtime.ready', [ this, t, this._runtimeApi ] );
 		this._emitRuntimeEvent( 'runtime:ready', { three: t } );

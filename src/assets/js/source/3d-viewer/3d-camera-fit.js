@@ -21,7 +21,7 @@
  * dragging, and that reads as the model sliding.
  */
 import * as THREE from 'three';
-import { findObject, findObjectByCompositeId, findModelRoots } from './3d-scene-utils.js';
+import { findObjectByCompositeId, findModelRoots } from './3d-scene-utils.js';
 
 /**
  * Upper bound on the vertices sampled per fit; plenty for an outline. Each
@@ -35,6 +35,9 @@ export const FIT_POINT_BUDGET = 6000;
  * collide with one. Mirrored in the admin's angles.js.
  */
 export const CAMERA_TARGET_VISIBLE = 'visible';
+
+/** Camera target (model) value for "Specific objects", listed in camera_focus_object_ids. */
+export const CAMERA_TARGET_OBJECTS = 'objects';
 
 /** Margin used when an angle sets none, as a fraction of the half-frame. */
 export const DEFAULT_FIT_MARGIN = 0.05;
@@ -87,9 +90,53 @@ export function angle_fit_max_size( angle ) {
 }
 
 /**
- * The objects an angle frames: its focus objects, else its camera target
- * object, else its camera target model while it shows something, else
- * everything loaded.
+ * What a fitted angle turns around and frames, read from its settings.
+ *
+ * One setting decides both. "Camera target" is Visible objects, a model,
+ * specific objects (listed in camera_focus_object_ids), or the saved camera
+ * target. Angles saved before that had a separate target object and a list
+ * of focus objects, with the focus objects first; they read the same way
+ * here without being rewritten.
+ *
+ * @param {Backbone.Model|Object} angle
+ * @returns {{ kind: 'visible'|'model'|'objects'|'saved', model?: string, ids?: string[] }}
+ */
+export function angle_target( angle ) {
+	const get = ( key ) => ( angle && typeof angle.get === 'function' ? angle.get( key ) : angle && angle[ key ] );
+	const text = ( value ) => ( value == null ? '' : String( value ).trim() );
+	const model = text( get( 'camera_target_model' ) );
+	const listed = get( 'camera_focus_object_ids' );
+	const ids = ( Array.isArray( listed ) ? listed : [] ).map( text ).filter( Boolean );
+	if ( model === CAMERA_TARGET_OBJECTS ) return ids.length ? { kind: 'objects', ids } : { kind: 'visible' };
+	if ( ids.length ) return { kind: 'objects', ids };
+	const object = text( get( 'camera_target_object_id' ) );
+	// A bare name, looked up anywhere: how the old target object was found.
+	if ( object ) return { kind: 'objects', ids: [ object ] };
+	if ( model === CAMERA_TARGET_VISIBLE ) return { kind: 'visible' };
+	if ( model ) return { kind: 'model', model };
+	return { kind: 'saved' };
+}
+
+/**
+ * The scene objects an angle's target names; empty for the saved camera
+ * target, or when none of them is loaded.
+ *
+ * @param {THREE.Object3D} root - Scene root holding the models
+ * @param {Backbone.Model} angle
+ * @returns {THREE.Object3D[]}
+ */
+export function angle_target_objects( root, angle ) {
+	if ( ! root || ! angle ) return [];
+	const target = angle_target( angle );
+	if ( target.kind === 'visible' ) return [ root ];
+	if ( target.kind === 'model' ) return findModelRoots( root, target.model );
+	if ( target.kind === 'objects' ) return target.ids.map( ( id ) => findObjectByCompositeId( root, id ) ).filter( Boolean );
+	return [];
+}
+
+/**
+ * The objects an angle frames: its target while it shows something, else
+ * everything shown.
  *
  * @param {THREE.Object3D} root - Scene root holding the models
  * @param {Backbone.Model} angle
@@ -97,65 +144,30 @@ export function angle_fit_max_size( angle ) {
  */
 export function angle_fit_objects( root, angle ) {
 	if ( ! root || ! angle ) return [];
-	const focusIds = angle.get( 'camera_focus_object_ids' );
-	if ( Array.isArray( focusIds ) && focusIds.length ) {
-		const objects = [];
-		focusIds.forEach( ( id ) => {
-			if ( id == null || String( id ).trim() === '' ) return;
-			const obj = findObjectByCompositeId( root, String( id ).trim() );
-			if ( obj ) objects.push( obj );
-		} );
-		if ( objects.length ) return objects;
-	}
-	const targetObjectId = angle.get( 'camera_target_object_id' );
-	if ( targetObjectId ) {
-		const obj = findObject( root, String( targetObjectId ).trim() );
-		if ( obj ) return [ obj ];
-	}
-	const modelRoots = angle_target_model_roots( root, angle );
-	if ( modelRoots.length && visible_bounds( modelRoots ) ) return modelRoots;
+	const objects = angle_target_objects( root, angle );
+	if ( objects.length && visible_bounds( objects ) ) return objects;
 	return [ root ];
 }
 
 /**
- * The loaded model an angle names as its camera target (the model, not an
- * object inside it). None for "Visible objects", which names no model.
+ * What a fitted angle turns around: the centre of its target as shown, the
+ * same objects angle_fit_objects frames. The pivot has to be the centre of
+ * what is framed: anywhere else, the framed objects slide off-centre as soon
+ * as the customer orbits.
+ *
+ * A target that shows nothing (a model whose choice is None, objects not
+ * loaded yet) turns around everything shown, and moves onto the target once
+ * a choice brings it in.
  *
  * @param {THREE.Object3D} root - Scene root holding the models
  * @param {Backbone.Model} angle
- * @returns {THREE.Object3D[]}
+ * @returns {THREE.Vector3|null} null for the saved camera target: a fixed
+ *          angle (the camera exactly as saved), or a fitted one set to it
  */
-export function angle_target_model_roots( root, angle ) {
-	if ( ! root || ! angle ) return [];
-	const id = angle.get( 'camera_target_model' );
-	if ( id == null || String( id ).trim() === '' || String( id ).trim() === CAMERA_TARGET_VISIBLE ) return [];
-	return findModelRoots( root, String( id ).trim() );
-}
-
-/**
- * Orbit target of a fitted angle that names a model but no object or focus:
- * the centre of that model as it is shown. "Visible objects" turns around
- * everything shown.
- *
- * The stored target is only where the preview's orbit happened to be when the
- * view was saved (often the origin, or the floor), so turning around it put
- * the product off-centre. A fixed angle keeps its stored target: it is the
- * camera exactly as set, and an imported glTF camera names its model too.
- *
- * The model may not be part of the current configuration (a "Base" view
- * while the base choice is None), or not loaded yet. The angle then turns
- * around everything shown, as angle_fit_objects frames it, and moves onto the
- * model once a choice brings it in.
- *
- * @param {THREE.Object3D} root - Scene root holding the models
- * @param {Backbone.Model} angle
- * @returns {THREE.Vector3|null} null when the angle names no model, or nothing is shown
- */
-export function angle_model_pivot( root, angle ) {
+export function angle_pivot( root, angle ) {
 	if ( ! root || ! angle || ! angle_fits_target( angle ) ) return null;
-	const id = angle.get( 'camera_target_model' );
-	if ( id == null || String( id ).trim() === '' ) return null;
-	const box = visible_bounds( angle_target_model_roots( root, angle ) ) || visible_bounds( [ root ] );
+	if ( angle_target( angle ).kind === 'saved' ) return null;
+	const box = visible_bounds( angle_target_objects( root, angle ) ) || visible_bounds( [ root ] );
 	return box ? box.getCenter( new THREE.Vector3() ) : null;
 }
 

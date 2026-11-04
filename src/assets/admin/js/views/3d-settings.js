@@ -901,18 +901,10 @@ PC.views = window.PC.views || {};
 				} );
 			}
 		},
+		/** What the angle turns around, as on the frontend; null for its saved target. */
 		_resolveAngleTarget: function ( angle, root ) {
-			if ( !angle || !root ) return null;
-			const focusIds = angle.get( 'camera_focus_object_ids' );
-			if ( Array.isArray( focusIds ) && focusIds.length > 0 && typeof getBoundingBoxFromObjectIds === 'function' ) {
-				const result = getBoundingBoxFromObjectIds( root, focusIds );
-				return result ? result.center : null;
-			}
-			const id = angle.get( 'camera_target_object_id' );
-			const obj = id && typeof id === 'string' ? findObject( root, id.trim() ) : null;
-			if ( obj ) return getObjectTargetPosition( obj );
-			// A model without an object: turn around that model, as the frontend does.
-			return cameraFit ? cameraFit.angle_model_pivot( root, angle ) : null;
+			if ( !angle || !root || !cameraFit ) return null;
+			return cameraFit.angle_pivot( root, angle );
 		},
 		on_angle_select_change: function () {
 			this.update_angle_status();
@@ -961,7 +953,7 @@ PC.views = window.PC.views || {};
 			this.$( '.pc-3d-angle-save-note' )
 				.text( !angle ? '' : fits_of( angle )
 					? ( lang.threed_framing_fit_note || 'Saves the direction only: the distance adapts to each screen.' )
-					: ( lang.threed_framing_fixed_note || 'Saves the camera position as it is.' ) )
+					: ( lang.threed_framing_fixed_note || 'Saves the camera exactly as it is.' ) )
 				.prop( 'hidden', !angle );
 
 			const container = t && t.container;
@@ -987,7 +979,7 @@ PC.views = window.PC.views || {};
 			overlay.querySelector( '.pc-3d-view-overlay__name' ).textContent = shown.get( 'name' ) || '';
 			overlay.querySelector( '.pc-3d-view-overlay__framing' ).textContent = fits
 				? ( lang.threed_framing_fit || 'Fit the target in view' )
-				: ( lang.threed_framing_fixed || 'Camera position as set' );
+				: ( lang.threed_framing_fixed || 'Camera exactly as saved' );
 			overlay.querySelector( '.pc-3d-view-overlay__target' ).textContent = this._angle_target_label( shown, fits, lang );
 			const moved = !!this._previewFramingTouched;
 			const state = moved
@@ -999,7 +991,9 @@ PC.views = window.PC.views || {};
 			overlay.classList.toggle( 'is-moved', moved );
 		},
 		/**
-		 * What the angle turns around, in the order the viewer resolves it.
+		 * What the angle turns around and frames, read the way the viewer reads
+		 * it (angle_target), so angles saved with the old target object and
+		 * focus objects are described as they behave.
 		 *
 		 * @param {Backbone.Model} angle
 		 * @param {boolean} fits
@@ -1007,24 +1001,24 @@ PC.views = window.PC.views || {};
 		 * @returns {string}
 		 */
 		_angle_target_label: function ( angle, fits, lang ) {
+			// A fixed angle is the camera exactly as saved: no target applies.
+			if ( !fits || !cameraFit ) return lang.threed_target_saved || 'Saved camera target';
+			const target = cameraFit.angle_target( angle );
 			const name_of = ( id ) => {
 				const s = String( id );
 				const sep = s.indexOf( ':' );
 				return sep === -1 ? s : s.slice( sep + 1 );
 			};
-			const focus = ( angle.get( 'camera_focus_object_ids' ) || [] ).filter( ( id ) => id != null && String( id ).trim() !== '' );
-			if ( focus.length > 2 ) return ( lang.threed_target_focus_count || 'Focus: %d objects' ).replace( '%d', focus.length );
-			if ( focus.length ) return ( lang.threed_target_focus || 'Focus: %s' ).replace( '%s', focus.map( name_of ).join( ', ' ) );
-			const objectId = angle.get( 'camera_target_object_id' );
-			if ( objectId ) return ( lang.threed_target_object || 'Object: %s' ).replace( '%s', name_of( objectId ) );
-			// A fixed angle turns around its saved target unless an object or
-			// focus is set (see angle_model_pivot).
-			const model = angle.get( 'camera_target_model' );
-			if ( fits && model === 'visible' ) return lang.threed_visible_objects || 'Visible objects';
-			if ( fits && model != null && model !== '' ) {
+			if ( target.kind === 'objects' ) {
+				return target.ids.length > 2
+					? ( lang.threed_target_objects_count || 'Objects: %d' ).replace( '%d', target.ids.length )
+					: ( lang.threed_target_objects || 'Objects: %s' ).replace( '%s', target.ids.map( name_of ).join( ', ' ) );
+			}
+			if ( target.kind === 'visible' ) return lang.threed_visible_objects || 'Visible objects';
+			if ( target.kind === 'model' ) {
 				const objects3d = PC.app && typeof PC.app.get_collection === 'function' ? PC.app.get_collection( 'objects3d' ) : null;
-				const entry = objects3d ? objects3d.get( model ) : null;
-				const label = entry ? ( entry.get( 'name' ) || entry.get( 'filename' ) || model ) : model;
+				const entry = objects3d ? objects3d.get( target.model ) : null;
+				const label = entry ? ( entry.get( 'name' ) || entry.get( 'filename' ) || target.model ) : target.model;
 				return ( lang.threed_target_model || 'Model: %s' ).replace( '%s', label );
 			}
 			return lang.threed_target_saved || 'Saved camera target';

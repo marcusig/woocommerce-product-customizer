@@ -13,7 +13,9 @@ import {
 	angle_fit_margin,
 	angle_fit_max_size,
 	angle_fit_objects,
-	angle_model_pivot,
+	angle_pivot,
+	angle_target,
+	CAMERA_TARGET_OBJECTS,
 	CAMERA_TARGET_VISIBLE,
 	collect_fit_points,
 	fit_angle_camera,
@@ -226,7 +228,7 @@ describe( 'angle settings', () => {
 	} );
 } );
 
-describe( 'an angle that names a model but no object', () => {
+describe( "an angle's camera target", () => {
 	const angle = ( attrs ) => ( { get: ( key ) => attrs[ key ] } );
 	const box_mesh = ( name, x ) => {
 		const mesh = new THREE.Mesh( new THREE.BoxGeometry( 2, 2, 2 ) );
@@ -248,52 +250,78 @@ describe( 'an angle that names a model but no object', () => {
 		return { root, car };
 	};
 
-	it( 'frames and turns around that whole model', () => {
+	it( 'reads one target from new and old settings alike', () => {
+		expect( angle_target( angle( { camera_target_model: CAMERA_TARGET_VISIBLE } ) ) ).toEqual( { kind: 'visible' } );
+		expect( angle_target( angle( { camera_target_model: '9' } ) ) ).toEqual( { kind: 'model', model: '9' } );
+		expect( angle_target( angle( { camera_target_model: CAMERA_TARGET_OBJECTS, camera_focus_object_ids: [ '9:Body', '' ] } ) ) ).toEqual( { kind: 'objects', ids: [ '9:Body' ] } );
+		// No objects picked yet: as Visible objects, not as the saved target.
+		expect( angle_target( angle( { camera_target_model: CAMERA_TARGET_OBJECTS, camera_focus_object_ids: [] } ) ) ).toEqual( { kind: 'visible' } );
+		expect( angle_target( angle( {} ) ) ).toEqual( { kind: 'saved' } );
+		// Saved before the target was one setting: focus objects first, then the target object.
+		expect( angle_target( angle( { camera_target_model: CAMERA_TARGET_VISIBLE, camera_focus_object_ids: [ '9:Body' ], camera_target_object_id: 'Shed' } ) ) ).toEqual( { kind: 'objects', ids: [ '9:Body' ] } );
+		expect( angle_target( angle( { camera_target_model: '9', camera_target_object_id: 'Shed' } ) ) ).toEqual( { kind: 'objects', ids: [ 'Shed' ] } );
+	} );
+
+	it( 'frames and turns around a whole model', () => {
 		const { root, car } = scene();
-		const a = angle( { camera_target_model: '9', camera_target_object_id: '', camera_focus_object_ids: [] } );
+		const a = angle( { camera_target_model: '9' } );
 		expect( angle_fit_objects( root, a ) ).toEqual( [ car ] );
-		expect( angle_model_pivot( root, a ).toArray() ).toEqual( [ 12, 1, 0 ] );
+		expect( angle_pivot( root, a ).toArray() ).toEqual( [ 12, 1, 0 ] );
 	} );
 
 	it( 'centres on what is shown, leaving hidden choices out', () => {
 		const { root, car } = scene();
 		car.getObjectByName( 'Spoiler' ).visible = false;
-		const pivot = angle_model_pivot( root, angle( { camera_target_model: '9' } ) );
-		expect( pivot.toArray() ).toEqual( [ 10, 1, 0 ] );
+		expect( angle_pivot( root, angle( { camera_target_model: '9' } ) ).toArray() ).toEqual( [ 10, 1, 0 ] );
 	} );
 
-	it( 'keeps the stored target for a fixed angle, or one naming no model', () => {
-		const { root } = scene();
-		expect( angle_model_pivot( root, angle( { camera_target_model: '9', camera_framing: 'fixed' } ) ) ).toBeNull();
-		expect( angle_model_pivot( root, angle( {} ) ) ).toBeNull();
-		expect( angle_fit_objects( root, angle( {} ) ) ).toEqual( [ root ] );
-	} );
-
-	it( 'turns around everything shown while the model is hidden or not loaded', () => {
+	it( 'frames and turns around specific objects, the shown ones only', () => {
 		const { root, car } = scene();
-		const hidden = angle( { camera_target_model: '9' } );
+		const a = angle( { camera_target_model: CAMERA_TARGET_OBJECTS, camera_focus_object_ids: [ '9:Spoiler', '8:Shed' ] } );
+		expect( angle_pivot( root, a ).toArray() ).toEqual( [ 2, 1, 0 ] );
+		car.getObjectByName( 'Spoiler' ).visible = false;
+		expect( angle_pivot( root, a ).toArray() ).toEqual( [ -10, 1, 0 ] );
+	} );
+
+	it( 'turns around everything shown while its target shows nothing', () => {
+		const { root, car } = scene();
 		car.visible = false;
-		expect( angle_fit_objects( root, hidden ) ).toEqual( [ root ] );
-		expect( angle_model_pivot( root, hidden ).toArray() ).toEqual( [ -10, 1, 0 ] );
+		const model = angle( { camera_target_model: '9' } );
+		expect( angle_fit_objects( root, model ) ).toEqual( [ root ] );
+		expect( angle_pivot( root, model ).toArray() ).toEqual( [ -10, 1, 0 ] );
+		const objects = angle( { camera_target_model: CAMERA_TARGET_OBJECTS, camera_focus_object_ids: [ '9:Body' ] } );
+		expect( angle_pivot( root, objects ).toArray() ).toEqual( [ -10, 1, 0 ] );
 		car.visible = true;
-		expect( angle_model_pivot( root, angle( { camera_target_model: '42' } ) ).toArray() ).toEqual( [ 2, 1, 0 ] );
+		expect( angle_pivot( root, angle( { camera_target_model: '42' } ) ).toArray() ).toEqual( [ 2, 1, 0 ] );
 	} );
 
 	it( 'frames and turns around everything shown for "Visible objects"', () => {
 		const { root, car } = scene();
 		const a = angle( { camera_target_model: CAMERA_TARGET_VISIBLE } );
 		expect( angle_fit_objects( root, a ) ).toEqual( [ root ] );
-		expect( angle_model_pivot( root, a ).toArray() ).toEqual( [ 2, 1, 0 ] );
+		expect( angle_pivot( root, a ).toArray() ).toEqual( [ 2, 1, 0 ] );
 		car.visible = false;
-		expect( angle_model_pivot( root, a ).toArray() ).toEqual( [ -10, 1, 0 ] );
-		expect( angle_model_pivot( root, angle( { camera_target_model: CAMERA_TARGET_VISIBLE, camera_framing: 'fixed' } ) ) ).toBeNull();
+		expect( angle_pivot( root, a ).toArray() ).toEqual( [ -10, 1, 0 ] );
 	} );
 
-	it( 'still prefers a target object or focus objects', () => {
-		const { root, car } = scene();
-		const body = car.getObjectByName( 'Body' );
+	it( 'keeps the saved camera for a fixed angle, whatever its target', () => {
+		const { root } = scene();
+		const fixed = { camera_framing: 'fixed' };
+		expect( angle_pivot( root, angle( { ...fixed, camera_target_model: '9' } ) ) ).toBeNull();
+		expect( angle_pivot( root, angle( { ...fixed, camera_target_model: CAMERA_TARGET_VISIBLE } ) ) ).toBeNull();
+		expect( angle_pivot( root, angle( { ...fixed, camera_focus_object_ids: [ '9:Body' ] } ) ) ).toBeNull();
+		expect( angle_pivot( root, angle( { ...fixed, camera_target_object_id: 'Shed' } ) ) ).toBeNull();
+	} );
+
+	it( 'turns around the saved target when set to it, framing everything shown', () => {
+		const { root } = scene();
+		expect( angle_pivot( root, angle( {} ) ) ).toBeNull();
+		expect( angle_fit_objects( root, angle( {} ) ) ).toEqual( [ root ] );
+	} );
+
+	it( 'still finds an old target object by its bare name', () => {
+		const { root } = scene();
 		expect( angle_fit_objects( root, angle( { camera_target_model: '9', camera_target_object_id: 'Shed' } ) ) ).toEqual( [ root.getObjectByName( 'Shed' ) ] );
-		expect( angle_fit_objects( root, angle( { camera_target_model: '8', camera_focus_object_ids: [ '9:Body' ] } ) ) ).toEqual( [ body ] );
 	} );
 } );
 
