@@ -2,7 +2,7 @@ This is the development repository for https://wordpress.org/plugins/product-con
 
 ----
 
-# Product Configurator for WooCommerce
+# MKL Product Configurator for WooCommerce
 
 - Contributors: mklacroix, marcusig
 - Tags: 3D configurator, product customizer, product builder, woocommerce, request a quote
