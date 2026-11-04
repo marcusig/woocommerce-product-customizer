@@ -4,7 +4,7 @@ Tags: 3D configurator, product customizer, product builder, woocommerce, request
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.0.1
+Stable tag: 2.1.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -252,7 +252,7 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.1.0 =
+= 2.1.0 - 04/Nov/2026 =
 
 * FEATURE: Request a quote: customers request a quote for their configuration, with a form you can customize
 * FEATURE: Quote requests sent by email only, kept in Product Configurator > Quote requests, or created as WooCommerce orders
