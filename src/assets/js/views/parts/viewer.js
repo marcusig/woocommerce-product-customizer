@@ -236,55 +236,25 @@ PC.fe.views.viewer = Backbone.View.extend({
 	/**
 	 * Whether a model is hidden by conditional logic.
 	 *
-	 * Reads `cshow` off the models rather than looking for the `cshow-hidden`
-	 * class, so the answer is the same with or without a rendered DOM.
+	 * Kept for callers of the viewer; the rule lives in PC.fe.viewer_state.
 	 */
 	is_hidden_by_conditions: function( choice ) {
-		if ( PC.conditionalLogic && PC.conditionalLogic.item_is_hidden ) {
-			return !! PC.conditionalLogic.item_is_hidden( choice );
-		}
-		// Conditional logic is not installed: fall back to the plain flags.
-		if ( false === choice.get( 'cshow' ) ) return true;
-		var layer = PC.fe.layers.get( choice.get( 'layerId' ) );
-		return !! ( layer && false === layer.get( 'cshow' ) );
+		return PC.fe.viewer_state.is_choice_hidden( choice );
 	},
 
 	/**
 	 * The choice models that make up the current picture, bottom layer first.
 	 *
 	 * Mirrors what add_layers()/add_choices() put on screen, but derived purely
-	 * from the models: layers in image_order, every ACTIVE choice of each
-	 * (multiple-choice layers can have several), minus anything conditional
-	 * logic has hidden. Static (`not_a_choice`) layers are always drawn, as
-	 * viewer_static_layer does.
+	 * from the models (PC.fe.viewer_state.picture()): layers in image_order,
+	 * every ACTIVE choice of each (multiple-choice layers can have several),
+	 * minus anything conditional logic has hidden. Static (`not_a_choice`)
+	 * layers are always drawn, as viewer_static_layer does.
 	 *
 	 * @return {Array} choice models
 	 */
 	get_capture_models: function() {
-		var models = [];
-		var that = this;
-		var ordered = PC.fe.layers.sortBy( function( layer ) {
-			return parseInt( layer.get( 'image_order' ) ) || 0;
-		} );
-
-		_.each( ordered, function( layer ) {
-			var choices = PC.fe.getLayerContent( layer.id );
-			if ( ! choices ) return;
-			if ( that.is_hidden_by_conditions_layer( layer ) ) return;
-
-			if ( layer.get( 'not_a_choice' ) ) {
-				var first = choices.first();
-				if ( first ) models.push( first );
-				return;
-			}
-
-			choices.each( function( choice ) {
-				if ( ! choice.get( 'active' ) ) return;
-				if ( choice.get( 'is_group' ) ) return;
-				if ( that.is_hidden_by_conditions( choice ) ) return;
-				models.push( choice );
-			} );
-		} );
+		var models = PC.fe.viewer_state.picture();
 
 		/**
 		 * Filter the models composited into a captured image.
@@ -332,12 +302,13 @@ PC.fe.views.viewer = Backbone.View.extend({
 		return null;
 	},
 
+	/**
+	 * Whether a layer is hidden by conditional logic, itself or through a group.
+	 *
+	 * Kept for callers of the viewer; the rule lives in PC.fe.viewer_state.
+	 */
 	is_hidden_by_conditions_layer: function( layer ) {
-		if ( false === layer.get( 'cshow' ) ) return true;
-		if ( PC.conditionalLogic && PC.conditionalLogic.parent_is_hidden ) {
-			return !! PC.conditionalLogic.parent_is_hidden( layer );
-		}
-		return false;
+		return PC.fe.viewer_state.is_layer_hidden( layer );
 	},
 
 	/**

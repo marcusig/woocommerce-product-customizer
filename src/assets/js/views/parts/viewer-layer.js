@@ -413,14 +413,9 @@ PC.fe.views.viewer_layer_pool = Backbone.View.extend({
 	 * @return {Array} choice models
 	 */
 	get_visible_choices: function() {
-		if ( this.parent.is_hidden_by_conditions_layer( this.layer ) ) return [];
-
-		var that = this;
-		return this.choices.filter( function( choice ) {
-			if ( ! choice.get( 'active' ) ) return false;
-			if ( choice.get( 'is_group' ) ) return false;
-			if ( that.parent.is_hidden_by_conditions( choice ) ) return false;
-			return choice.has_image() || wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, choice );
+		var state = PC.fe.viewer_state;
+		return _.filter( state.shown_choices( this.layer ), function( choice ) {
+			return state.has_drawable( choice );
 		} );
 	},
 
