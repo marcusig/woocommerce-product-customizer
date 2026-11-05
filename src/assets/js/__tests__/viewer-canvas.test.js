@@ -380,3 +380,40 @@ describe( 'abandoned decodes', () => {
 		expect( typeof free ).toBe( 'function' );
 	} );
 } );
+
+describe( 'sharing a load that is given up', () => {
+	test( 'a caller that still wants the image loads it again; one that does not gets abandoned', async () => {
+		load();
+		global._ = { find: ( list, callback ) => ( list || [] ).find( callback ) };
+		const abandoned = PC.fe.views.viewer_canvas.abandoned;
+		const fetches = [];
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			textures: {},
+			is_removed: false,
+			texture_scale: () => 1,
+			touch: () => {},
+			set_texture: ( record, built, scale ) => Object.assign( record, { texture: built.texture, scale, bytes: 4 } ),
+			destroy_built: () => {},
+			fetch_texture( url, scale_for, wanted ) {
+				return new Promise( ( resolve ) => fetches.push( { wanted, resolve } ) );
+			},
+		} );
+		let second_wants = false;
+		const first = viewer.load_texture( 'a.png', {}, () => false );
+		const second = viewer.load_texture( 'a.png', {}, () => second_wants );
+		expect( fetches ).toHaveLength( 1 );
+		// Neither wants it when the slot comes: given up.
+		expect( fetches[ 0 ].wanted() ).toBe( false );
+		fetches[ 0 ].resolve( abandoned );
+		// The customer comes back to the second caller's angle meanwhile.
+		second_wants = true;
+		await expect( first ).resolves.toBe( abandoned );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		expect( fetches ).toHaveLength( 2 );
+		fetches[ 1 ].resolve( { built: { texture: 'T' }, natural: { width: 1, height: 1 }, scale: 1 } );
+		const record = await second;
+		expect( record.texture ).toBe( 'T' );
+		expect( viewer.textures[ 'a.png' ] ).toBe( record );
+		delete global._;
+	} );
+} );

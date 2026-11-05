@@ -570,6 +570,16 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			that.release_held( record );
 			that.after_change();
 			that.enforce_budget();
+		} ).catch( function( error ) {
+			// A bug must not leave the angle loading for ever: count it as a
+			// failed image, like one that could not be downloaded.
+			console.log( 'Product configurator: could not draw the image ' + url, error );
+			that.waiting[ url ] = _.without( that.waiting[ url ] || [], entry );
+			if ( ! that.waiting[ url ].length ) delete that.waiting[ url ];
+			if ( entry.removed || that.is_removed ) return;
+			entry.settled = true;
+			that.release_held( record );
+			that.after_change();
 		} );
 	},
 
@@ -796,9 +806,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				if ( ! loaded ) return null;
 				// Released while this caller waited: load it again.
 				if ( record.destroyed ) return that.load_texture( url, stack, wanted );
-				var wanted = that.texture_scale( stack, record.natural );
-				if ( wanted <= record.scale ) return record;
-				return that.upgrade_texture( record, wanted );
+				var needed = that.texture_scale( stack, record.natural );
+				if ( needed <= record.scale ) return record;
+				return that.upgrade_texture( record, needed );
 			} );
 		}
 
