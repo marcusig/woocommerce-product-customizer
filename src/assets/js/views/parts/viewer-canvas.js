@@ -54,6 +54,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.url_bucket = null;
 		this.resolution_timer = null;
 		this.background = null;
+		// Full-size decodes in flight, and the ones waiting: see decode_slot().
+		this.decoding = 0;
+		this.decode_queue = [];
+		// Entries waiting for a texture, by URL: they pin it (is_pinned()).
+		this.waiting = {};
 		this.html_items = [];
 		this.pending_layers = {};
 		this.sync_scheduled = false;
@@ -513,8 +518,24 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			return;
 		}
 		var that = this;
-		this.load_texture( entry.url, stack ).then( function( texture_record ) {
+		var url = entry.url;
+		// From the moment a texture resolves until its sprite exists, nothing
+		// else marks it as used, and another load's enforce_budget() would
+		// release it. The waiting entry pins it for that window.
+		( this.waiting[ url ] = this.waiting[ url ] || [] ).push( entry );
+		this.load_texture( url, stack ).then( function( texture_record ) {
+			that.waiting[ url ] = _.without( that.waiting[ url ] || [], entry );
+			if ( ! that.waiting[ url ].length ) delete that.waiting[ url ];
 			if ( entry.removed || that.is_removed ) return;
+			if ( texture_record && ( texture_record.destroyed || ! texture_record.texture ) ) {
+				// Released anyway (a remount, a context loss): load it again, once.
+				entry.retries = ( entry.retries || 0 ) + 1;
+				if ( entry.retries <= 1 ) {
+					that.load_entry( stack, record, entry );
+					return;
+				}
+				texture_record = null;
+			}
 			if ( texture_record ) {
 				var natural = texture_record.natural;
 				if ( ! stack.size ) {
@@ -566,10 +587,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * fails is assumed to lack CORS headers: WebGL cannot read it at all, while
 	 * the <img> stack can still show it, so the viewer falls back.
 	 *
-	 * @param {String} url
+	 * @param {String}  url
+	 * @param {Boolean} defer_decode Resolve once downloaded, without decoding:
+	 *                               the caller decodes in a slot (decode_slot()).
 	 * @return {Promise<HTMLImageElement|null>}
 	 */
-	load_image: function( url ) {
+	load_image: function( url, defer_decode ) {
 		var that = this;
 		var cross_origin = this.is_cross_origin( url );
 		return new Promise( function( resolve ) {
@@ -578,15 +601,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			// <img> stack used, so it is served from the same cache entry.
 			if ( cross_origin ) image.crossOrigin = 'anonymous';
 			image.onload = function() {
-				// decode() moves decoding off the main thread, but it stays pending
-				// while the page is not rendered (a background tab). It is only an
-				// optimisation: past a second the image is used anyway, so a
-				// capture asked for in the background still resolves.
-				var decoded = image.decode ? Promise.race( [
-					image.decode().catch( function() {} ),
-					new Promise( function( done ) { setTimeout( done, 1000 ); } ),
-				] ) : Promise.resolve();
-				decoded.then( function() {
+				if ( defer_decode ) {
+					resolve( that.is_removed || ! image.naturalWidth ? null : image );
+					return;
+				}
+				that.decode_image( image ).then( function() {
 					resolve( that.is_removed || ! image.naturalWidth ? null : image );
 				} );
 			};
@@ -599,6 +618,116 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				resolve( null );
 			};
 			image.src = url;
+		} );
+	},
+
+	/**
+	 * decode() moves decoding off the main thread, but it stays pending while
+	 * the page is not rendered (a background tab). It is only an optimisation:
+	 * past a second the image is used anyway, so a capture asked for in the
+	 * background still resolves.
+	 *
+	 * @return {Promise}
+	 */
+	decode_image: function( image ) {
+		if ( ! image.decode ) return Promise.resolve();
+		return Promise.race( [
+			image.decode().catch( function() {} ),
+			new Promise( function( done ) { setTimeout( done, 1000 ); } ),
+		] );
+	},
+
+	/**
+	 * How many images may be decoded at full size at once.
+	 *
+	 * Each one costs width × height × 4 until its texture is built (32 MiB for
+	 * 3840×2160), whatever the texture's final size. Started all together, the
+	 * first picture of a product with many layers briefly needs all of them at
+	 * once, which is what made iOS Safari kill the tab (see the performance
+	 * section of docs/canvas-viewer-spec.md). Downloads are not limited.
+	 *
+	 * @return {Number}
+	 */
+	decode_limit: function() {
+		var limit = PC.fe.views.viewer_canvas.small_screen() ? 3 : 6;
+		/**
+		 * Filter how many images the canvas viewer decodes at full size at once.
+		 *
+		 * @param {Number} limit
+		 * @param {Backbone.View} viewer
+		 */
+		limit = parseInt( wp.hooks.applyFilters( 'PC.fe.viewer.canvas.decode_limit', limit, this ), 10 );
+		return limit > 0 ? limit : 1;
+	},
+
+	/**
+	 * Wait for a decode slot, first come first served.
+	 *
+	 * @return {Promise<Function>} Resolves with the function that frees the slot.
+	 */
+	decode_slot: function() {
+		var that = this;
+		return new Promise( function( resolve ) {
+			var grant = function() {
+				that.decoding++;
+				var freed = false;
+				resolve( function() {
+					if ( freed ) return;
+					freed = true;
+					that.decoding--;
+					var next = that.decode_queue.shift();
+					if ( next ) next();
+				} );
+			};
+			if ( that.decoding < that.decode_limit() ) grant();
+			else that.decode_queue.push( grant );
+		} );
+	},
+
+	/**
+	 * Let the browser drop a full-size image once a smaller copy exists. A
+	 * texture drawn from the image itself (full size) keeps it.
+	 */
+	release_image: function( image, built ) {
+		if ( ! image ) return;
+		var source = built && built.texture && built.texture.source;
+		if ( source && source.resource === image ) return;
+		image.onload = null;
+		image.onerror = null;
+		image.removeAttribute( 'src' );
+	},
+
+	/**
+	 * Download an image and build its texture, decoding in a slot.
+	 *
+	 * @param {String}   url
+	 * @param {Function} scale_for Given the natural { width, height }, the scale
+	 *                             to build at; asked once the slot is granted, so
+	 *                             a resize while waiting is taken into account.
+	 * @return {Promise<Object|null>} { built, natural, scale }
+	 */
+	fetch_texture: function( url, scale_for ) {
+		var that = this;
+		return this.load_image( url, true ).then( function( image ) {
+			if ( ! image ) return null;
+			return that.decode_slot().then( function( free ) {
+				var finish = function( result ) {
+					free();
+					that.release_image( image, result && result.built );
+					return result;
+				};
+				if ( that.is_removed ) return finish( null );
+				var natural = { width: image.naturalWidth, height: image.naturalHeight };
+				var scale = scale_for( natural );
+				return that.decode_image( image ).then( function() {
+					return that.is_removed ? null : that.build_texture( image, natural, scale );
+				} ).then( function( built ) {
+					return finish( built ? { built: built, natural: natural, scale: scale } : null );
+				}, function( error ) {
+					console.log( 'Product configurator: could not prepare the image ' + url, error );
+					return finish( null );
+				} );
+			} );
 		} );
 	},
 
@@ -640,23 +769,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			upgrading: null,
 		};
 		this.textures[ url ] = record;
-		record.promise = this.load_image( url ).then( function( image ) {
-			if ( ! image || that.is_removed || record.destroyed ) {
+		record.promise = this.fetch_texture( url, function( natural ) {
+			return that.texture_scale( stack, natural );
+		} ).then( function( result ) {
+			if ( ! result || that.is_removed || record.destroyed ) {
+				if ( result ) that.destroy_built( result.built );
 				if ( that.textures[ url ] === record ) delete that.textures[ url ];
 				return null;
 			}
-			record.natural = { width: image.naturalWidth, height: image.naturalHeight };
-			var scale = that.texture_scale( stack, record.natural );
-			return that.build_texture( image, record.natural, scale ).then( function( built ) {
-				if ( ! built || that.is_removed || record.destroyed ) {
-					that.destroy_built( built );
-					if ( that.textures[ url ] === record ) delete that.textures[ url ];
-					return null;
-				}
-				that.set_texture( record, built, scale );
-				that.touch( record );
-				return record;
-			} );
+			record.natural = result.natural;
+			that.set_texture( record, result.built, result.scale );
+			that.touch( record );
+			return record;
 		} );
 		return record.promise;
 	},
@@ -667,29 +791,29 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	upgrade_texture: function( record, scale ) {
 		var that = this;
 		if ( record.upgrading && record.upgrading.scale >= scale ) return record.upgrading.promise;
-		var promise = this.load_image( record.url ).then( function( image ) {
-			if ( ! image || that.is_removed || record.destroyed ) return record.destroyed ? null : record;
-			return that.build_texture( image, record.natural, scale ).then( function( built ) {
-				if ( ! built || that.is_removed || record.destroyed ) {
-					that.destroy_built( built );
-					return record.destroyed ? null : record;
-				}
-				if ( scale <= record.scale ) {
-					that.destroy_built( built );
-					return record;
-				}
-				var old = { texture: record.texture, bitmap: record.bitmap };
-				that.set_texture( record, built, scale );
-				_.each( record.entries, function( entry ) {
-					if ( ! entry.sprite ) return;
-					entry.sprite.texture = record.texture;
-					that.fit_sprite( entry.sprite, record );
-				} );
-				that.destroy_built( old );
-				that.request_render();
-				that.enforce_budget();
+		var promise = this.fetch_texture( record.url, function() {
+			return scale;
+		} ).then( function( result ) {
+			var built = result && result.built;
+			if ( ! built || that.is_removed || record.destroyed ) {
+				that.destroy_built( built );
+				return record.destroyed ? null : record;
+			}
+			if ( scale <= record.scale ) {
+				that.destroy_built( built );
 				return record;
+			}
+			var old = { texture: record.texture, bitmap: record.bitmap };
+			that.set_texture( record, built, scale );
+			_.each( record.entries, function( entry ) {
+				if ( ! entry.sprite ) return;
+				entry.sprite.texture = record.texture;
+				that.fit_sprite( entry.sprite, record );
 			} );
+			that.destroy_built( old );
+			that.request_render();
+			that.enforce_budget();
+			return record;
 		} );
 		record.upgrading = { scale: scale, promise: promise };
 		promise.then( function() {
@@ -823,10 +947,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Number}
 	 */
 	texture_budget: function() {
-		var config = PC.fe.config || {};
-		var width = PC.fe.modal && PC.fe.modal.$el ? PC.fe.modal.$el.outerWidth() : 0;
-		var mobile = width && config.mobile_image_breakpoint && width < config.mobile_image_breakpoint;
-		var budget = ( mobile ? 96 : 256 ) * 1024 * 1024;
+		var budget = ( PC.fe.views.viewer_canvas.small_screen() ? 96 : 256 ) * 1024 * 1024;
 		/**
 		 * Filter how much GPU memory the canvas viewer's textures may use.
 		 *
@@ -846,9 +967,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	is_pinned: function( record ) {
 		var current = this.current_stack;
 		var target = this.target_stack;
-		return !! _.find( record.entries, function( entry ) {
+		var wanted = function( entry ) {
 			return entry.stack === current || entry.stack === target;
-		} );
+		};
+		return !! ( _.find( record.entries, wanted ) || _.find( this.waiting[ record.url ], wanted ) );
 	},
 
 	texture_bytes: function() {
@@ -1248,7 +1370,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// a few output-sized images however many layers the picture has.
 		var renderer = this.app.renderer;
 		var target = PIXI.RenderTexture.create( { width: width, height: height, resolution: 1 } );
-		var batch_size = 6;
+		var batch_size = this.decode_limit();
 		var drawn = 0;
 		var failed = false;
 		try {
@@ -1280,6 +1402,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				_.each( made, function( texture ) {
 					texture.destroy( true );
 				} );
+				_.each( images, function( image ) {
+					this.release_image( image );
+				}, this );
 			}
 			if ( failed ) {
 				console.log( 'Product configurator: cannot capture the configuration, an image could not be loaded.' );
@@ -1387,6 +1512,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		if ( this.context_timer ) clearTimeout( this.context_timer );
 		if ( this.resolution_timer ) clearTimeout( this.resolution_timer );
 		this.stop_background();
+		// Let the waiting loads run: each sees is_removed and gives up.
+		var waiting = this.decode_queue;
+		this.decode_queue = [];
+		_.each( waiting, function( grant ) {
+			grant();
+		} );
 		if ( this.resize_observer ) this.resize_observer.disconnect();
 		this.resize_observer = null;
 		this.stopListening();
@@ -1410,6 +1541,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// the sprites go with the stage.
 		_.each( _.values( this.textures ), this.destroy_record, this );
 		this.textures = {};
+		this.waiting = {};
 
 		if ( this.app ) {
 			var canvas = this.app.canvas;
@@ -1428,6 +1560,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * mount uses the <img> stack. { reason, detail } or null.
 	 */
 	disabled: null,
+
+	/**
+	 * Whether the configurator is narrower than the mobile image breakpoint,
+	 * where the stack switches to mobile images: smaller budgets apply there.
+	 *
+	 * @return {Boolean}
+	 */
+	small_screen: function() {
+		var config = PC.fe.config || {};
+		var width = PC.fe.modal && PC.fe.modal.$el ? PC.fe.modal.$el.outerWidth() : 0;
+		return !! ( width && config.mobile_image_breakpoint && width < config.mobile_image_breakpoint );
+	},
 
 	/**
 	 * Round a texture scale up to the next step of √2, capped at 1 (full size).

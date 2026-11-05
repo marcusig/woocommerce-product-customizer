@@ -259,3 +259,80 @@ describe( 'responsive images and budget', () => {
 		expect( budget() ).toBe( 1234 );
 	} );
 } );
+
+describe( 'full-size decodes', () => {
+	const with_width = ( width ) => {
+		const loaded = load( { config: { viewer_2d_renderer: 'canvas', mobile_image_breakpoint: 660 } } );
+		PC.fe.modal = { $el: { outerWidth: () => width } };
+		return loaded;
+	};
+
+	test( '6 at once, 3 under the mobile breakpoint, filterable but never below 1', () => {
+		const loaded = with_width( 1200 );
+		const limit = () => PC.fe.views.viewer_canvas.prototype.decode_limit.call( {} );
+		expect( limit() ).toBe( 6 );
+		PC.fe.modal.$el.outerWidth = () => 400;
+		expect( limit() ).toBe( 3 );
+		loaded.hooks.addFilter( 'PC.fe.viewer.canvas.decode_limit', 'test', () => 0 );
+		expect( limit() ).toBe( 1 );
+		loaded.hooks.addFilter( 'PC.fe.viewer.canvas.decode_limit', 'test', () => '8' );
+		expect( limit() ).toBe( 8 );
+	} );
+
+	test( 'slots are granted up to the limit, then first come first served', async () => {
+		with_width( 1200 );
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			decoding: 0,
+			decode_queue: [],
+			decode_limit: () => 2,
+		} );
+		const granted = [];
+		const frees = {};
+		const ask = ( name ) => viewer.decode_slot().then( ( free ) => {
+			granted.push( name );
+			frees[ name ] = free;
+		} );
+		const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		[ 'a', 'b', 'c', 'd', 'e' ].forEach( ask );
+		await flush();
+		expect( granted ).toEqual( [ 'a', 'b' ] );
+		expect( viewer.decoding ).toBe( 2 );
+
+		frees.b();
+		frees.b(); // freeing twice frees once
+		await flush();
+		expect( granted ).toEqual( [ 'a', 'b', 'c' ] );
+		expect( viewer.decoding ).toBe( 2 );
+
+		frees.a();
+		frees.c();
+		await flush();
+		expect( granted ).toEqual( [ 'a', 'b', 'c', 'd', 'e' ] );
+		frees.d();
+		frees.e();
+		expect( viewer.decoding ).toBe( 0 );
+		expect( viewer.decode_queue ).toEqual( [] );
+	} );
+} );
+
+describe( 'pinning', () => {
+	test( 'a texture an entry of the shown or next picture waits for is pinned, others are not', () => {
+		load();
+		global._ = { find: ( list, callback ) => ( list || [] ).find( callback ) };
+		const current = {};
+		const target = {};
+		const other = {};
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			current_stack: current,
+			target_stack: target,
+			waiting: { 'a.png': [ { stack: target } ], 'b.png': [ { stack: other } ] },
+		} );
+		const pinned = ( url, entries = [] ) => viewer.is_pinned( { url, entries } );
+		expect( pinned( 'a.png' ) ).toBe( true );
+		expect( pinned( 'b.png' ) ).toBe( false );
+		expect( pinned( 'c.png' ) ).toBe( false );
+		expect( pinned( 'c.png', [ { stack: current } ] ) ).toBe( true );
+		delete global._;
+	} );
+} );

@@ -232,6 +232,17 @@ picture of 150 images in 148 MiB instead of 4.6 GiB, loaded in 5 s on desktop Ch
 colour checked: every stripe pixel drawn at full alpha reads back with its placeholder's exact
 colour.
 
+**Decoding, a few at a time.** Whatever size the texture ends up, the image is first decoded at
+full size: width × height × 4 (32 MiB for 3840×2160) until the smaller copy exists. Started all
+together, the first picture of a product with many layers briefly needs every one of those at once;
+that is what made iOS Safari kill the tab on 7861 and 7859 (iPhone XS, 2026-11-05). So downloads run in
+parallel, but decoding and building the texture wait for a slot (`decode_slot()`): 6 at a time,
+3 below the mobile breakpoint, filter `PC.fe.viewer.canvas.decode_limit( limit, viewer )`. Once a
+downscaled copy exists, the full-size image drops its `src` so the browser can release it (a
+texture drawn from the image itself, at full size, keeps it). Capture uses the same limit as its
+batch size. On desktop Chrome, 7861's first picture still loads in 1.5 s at both limits; at
+375 px (resolution 2) its textures are 960×540, 59 MiB for the picture.
+
 **When.** `image_loading_mode`:
 
 - `lazy` (default): load what the current picture needs; preload on the choice's `preload-image`
@@ -404,7 +415,7 @@ What is measured:
 - GPU memory after visiting every angle (should plateau at the budget);
 - idle CPU (should be zero frames drawn).
 
-Two levels, with different bars:
+Three levels, with different bars:
 
 1. **Realistic: product 7860, "Stress test: 636 with conditions"** (636's 112 conditions kept).
    Conditional logic hides 150 of the 155 layers at start, so the default picture draws 3 images: ~95 MiB
@@ -413,7 +424,14 @@ Two levels, with different bars:
    **Accept** when the canvas viewer is no slower than the stack on first picture, faster on angle
    switch, GPU memory stays flat at the budget after many swaps on every angle, and the iPhone run
    survives visiting every angle twice.
-2. **Extreme: product 7859, "Stress test: 636 with local images"** (conditions removed on purpose).
+2. **Heavy: product 7861, "Stress test: 30 layers"**, a copy of 7859 (no conditions) keeping 30 of
+   its drawing layers, spread evenly so their stripes cover the picture, plus the group one sits in.
+   Every picture draws 30 full-size 3840×2160 images: ~950 MiB at full size, 30 MiB of textures
+   at a 1336 px modal on desktop, about 60 MiB on a phone (960×540 at resolution 2). That is
+   within the 96 MiB mobile budget, so this is the level where the phone should hold the whole
+   picture and still keep some of the other angles. It is the realistic upper end of a large
+   product with oversized images. **Accept** as for the realistic level, on the iPhone included.
+3. **Extreme: product 7859, "Stress test: 636 with local images"** (conditions removed on purpose).
    Every layer shows, so the first picture draws 150 full-size images: ~4.6 GiB of textures, held
    "only just" by desktop Chrome on the dev Mac in phase 2. No real product is expected to be
    this large. The `<img>` stack pays the same cost, since the browser decodes each image at full
@@ -458,9 +476,19 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 
 Then the image overlay spec.
 
-**Prove on an iPhone (outstanding):** Safari, 7860, many swaps and every angle visited twice, now
+**Prove on an iPhone (in progress):** Safari, 7860, many swaps and every angle visited twice, now
 with the real budget and eviction instead of the crude stub this was planned with (it moved after
-phase 3, which provides them). If memory cannot be held under budget without visible reloading on
+phase 3, which provides them). *First run, 2026-11-05, iPhone XS:* 7860 works well; 7859 dies
+quickly. The likely cause is the first picture starting all 150 full-size decodes at once (32 MiB
+each, several GB if they arrive together) rather than the textures (~300 MiB at resolution 2).
+7861 died after a couple of seconds as well, so decodes are now capped (above). With the cap,
+7861 holds on the XS (59 MiB after load; about 97 MiB of 96 MiB once angles were visited, the
+pinned picture going over during an angle switch, as allowed). The same run surfaced a race: a
+texture that had just resolved but had no sprite yet counted as unused, so another load's budget
+check could release it and the sprite was built from a null texture. Entries waiting for a texture
+now pin it (`waiting`, read by `is_pinned()`). For comparison, the `<img>` stack loads 7861 on the
+XS but crashed during fast angle switching. Next: 7859 with the cap; then 7861 again, switching
+angles fast. If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
 before phase 4. `PC.fe.modal.viewer.texture_stats()` from Safari's Web Inspector gives the numbers.
 
