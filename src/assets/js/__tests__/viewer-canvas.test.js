@@ -319,7 +319,7 @@ describe( 'full-size decodes', () => {
 describe( 'pinning', () => {
 	test( 'a texture an entry of the shown or next picture waits for is pinned, others are not', () => {
 		load();
-		global._ = { find: ( list, callback ) => ( list || [] ).find( callback ) };
+		global._ = { find: ( list, callback ) => ( list || [] ).find( callback ), contains: ( list, item ) => list.includes( item ) };
 		const current = {};
 		const target = {};
 		const other = {};
@@ -332,6 +332,13 @@ describe( 'pinning', () => {
 		expect( pinned( 'a.png' ) ).toBe( true );
 		expect( pinned( 'b.png' ) ).toBe( false );
 		expect( pinned( 'c.png' ) ).toBe( false );
+		expect( pinned( 'c.png', [ { stack: current } ] ) ).toBe( true );
+		// Covered by its flat copy, the outgoing angle no longer holds its textures...
+		viewer.cover = { angle_id: 1 };
+		expect( pinned( 'c.png', [ { stack: current } ] ) ).toBe( false );
+		expect( pinned( 'a.png' ) ).toBe( true );
+		// ...unless a transition is drawing it live.
+		viewer.transition = { from: { stack: current }, to: { cover: viewer.cover } };
 		expect( pinned( 'c.png', [ { stack: current } ] ) ).toBe( true );
 		delete global._;
 	} );

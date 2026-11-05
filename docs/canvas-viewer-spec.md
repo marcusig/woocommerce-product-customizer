@@ -289,27 +289,45 @@ stack fires, counted per *picture*, so a background load never holds the loading
 
 ## Snapshots
 
-*Designed 2026-11-05, not built; phase 4.* One goal of the canvas is transitions between views,
+*Built 2026-11-05 (phase 4).* One goal of the canvas is transitions between views,
 so two views must be on screen together. Two layered pictures at once double the pinned memory,
 which is what a phone cannot afford (7861: 59 MiB per picture against a 96 MiB budget). The
 outgoing view does not need its layers, though: nothing changes in it while it leaves. So it is
 drawn once, flat, and the flat copy is what leaves.
 
-**What.** A snapshot is one `RenderTexture` of an angle's picture at the size it is drawn on
-screen: box × renderer resolution, ×4 bytes. A 375 px phone box at resolution 2 is about
-750×420, 1.2 MiB; a 505 px desktop box at resolution 1 is 0.8 MiB. One per visited angle, so
-4 angles cost under 5 MiB however many layers they have. Rendered from the angle's stack
-container into the texture (one `renderer.render()`, GPU only, a few ms). It includes canvas
+**What.** A snapshot is one `RenderTexture` of an angle's picture the size of the canvas, at the
+renderer's resolution, ×4 bytes: on 7861, 0.4 MiB at 375 px (resolution 2), 0.6 MiB on desktop.
+One per visited angle, so 4 angles cost a few MiB however many layers they have. Rendered from
+the angle's stack (its `frame`, below) into the texture: one `renderer.render()`, GPU only. Drawn
+back as a sprite at the canvas origin, it lines up with the live stack to within a one-pixel
+column at the picture's edge (0.09% of the channels differ on 7861 at 375 px, from the sub-pixel
+position). It includes canvas
 add-on items (phase 5), since they draw in the stack; not custom HTML, which is DOM.
 
 **Taken** when an angle is left with its picture complete (at the start of the switch, from the
 stack on screen), and again when a complete picture is left after changes. Never from an
 incomplete picture: then the angle has no snapshot.
 
-**Valid** while what the angle would draw is unchanged. Each snapshot stores the picture's key:
-the ordered list of URLs its entries draw, as `sync_stack()` would make them now, plus the box
-size step. A choice change made on another angle, a breakpoint crossed or the box grown past a
-√2 step makes it stale. A stale snapshot is destroyed, not shown.
+**Valid** while what the angle would draw is unchanged, where it would draw it. Each snapshot
+stores two keys: `picture_key()`, the ordered list of files the angle draws, as `sync_stack()`
+would pick them now; and `layout_key()`, the canvas size and resolution and the stack's position
+and scale. A choice change made on another angle, a breakpoint crossed or any resize makes it
+stale (stricter than a √2 step, and simpler: resizes are rare). A stale snapshot is destroyed, not
+shown; after a resize, the ones that no longer line up are dropped 250 ms later
+(`prune_snapshots()`).
+
+**How it is drawn.** A snapshot shown in place of a stack is a *cover* (`make_cover()`). There is
+at most one, and it always stands for the current stack: the outgoing one while the incoming angle
+loads, or the incoming one, which becomes current at once, while its layers reload. The current
+stack's textures are pinned only while it is drawn live (`live_stacks()`): not under a cover,
+unless a transition is moving it. Once the stack under a cover is complete, `reveal()` draws it
+instead, with no transition (same angle, same pixels). A cover drawn while its own stack reloads
+stays until the stack is complete even if a choice changes meanwhile: that is the stack's "the old
+image stays until the new one has loaded", for the whole picture. A resize that moves the stack
+drops the cover (`uncover()`) rather than leave it misplaced.
+
+Each stack's container sits in a `frame` container; transitions move and fade frames (a cover has
+its own), while `layout()` keeps placing the containers inside them.
 
 **Used for:**
 
@@ -330,6 +348,15 @@ new one has loaded; snapshots are not involved). Capture: never from snapshots, 
 screen size; it keeps its own path. The loading state: `is-loading-image` and
 `PC.fe.viewer.layers.preload.complete` still follow the live picture, even while a snapshot
 covers it.
+
+**Checked** at 375 px on 7861 (desktop Chrome): leaving an angle covers it with its snapshot;
+coming back to any visited angle shows its snapshot at once, then the live stack; pinned memory
+during switches peaked at 59 MiB, one picture, against ~117 MiB before. With a choice changed on
+another angle, the stale snapshot was dropped and the outgoing cover held until the angle had
+loaded. 80 clicked choice and angle changes each with `slide-horizontal` and `fade` ended with one
+stack visible, no cover or frame left over, and the picture as the models say. A context loss
+mid-switch dropped the cover and every snapshot and restored normally; 8 remounts left one canvas
+and no warnings. On 7860 at desktop width, 40 clicked changes drew exactly what the models say.
 
 **Lifetime.** Destroyed when stale, on `remove()`, and on context loss (a render texture's
 content does not survive a lost context; Pixi cannot re-upload it). Counted separately in
@@ -352,7 +379,12 @@ resizes and add-on items call it. Transitions and fades run their own frame loop
 duration, then stop. An idle configurator draws nothing.
 
 **Angle transitions** (from the draft): `visibility` (default, parity with the stack), `fade`,
-`slide-horizontal`, `slide-vertical`; filter `PC.fe.viewer.canvas.angle_transition`, 350 ms.
+`slide-horizontal`, `slide-vertical`; filter `PC.fe.viewer.canvas.angle_transition`, 350 ms
+(`PC.fe.viewer.canvas.angle_transition_duration`). Slides go forward or back by the angles' order.
+They run between a snapshot cover and the incoming stack or its cover (above), so only one layered
+picture is drawn live, except when the outgoing picture was incomplete and has no snapshot. A
+transition ends on time even where frames do not run (a background tab), and a new angle change
+finishes the running one first.
 `prefers-reduced-motion` forces `visibility`. Swipe to change view keeps working unchanged: it is
 bound to `.mkl_pc_layers`.
 
@@ -541,7 +573,8 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    stable, 7859 loads but crashes after a while of fast switching. **Still to run:** the timing
    comparison against the stack.
 4. **Snapshots and transitions.** Snapshots (above), then angle transitions and fades on top of
-   them.
+   them. *Done 2026-11-05*, checked as described in the Snapshots section. Still to check: the
+   iPhone, especially 7859, which crashed holding two pictures during switches.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).

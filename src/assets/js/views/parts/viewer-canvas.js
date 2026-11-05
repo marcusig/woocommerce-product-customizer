@@ -59,6 +59,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.decode_queue = [];
 		// Entries waiting for a texture, by URL: they pin it (is_pinned()).
 		this.waiting = {};
+		// Flat copies of left angles, by angle id; the one drawn in place of
+		// the current stack, if any; the angle transition running. See the
+		// Snapshots section of docs/canvas-viewer-spec.md.
+		this.snapshots = {};
+		this.cover = null;
+		this.transition = null;
 		this.html_items = [];
 		this.pending_layers = {};
 		this.sync_scheduled = false;
@@ -261,7 +267,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		};
 		stack.container.sortableChildren = true;
 		stack.container.visible = false;
-		this.app.stage.addChild( stack.container );
+		// What angle transitions move and fade; layout() places the container
+		// inside it, so the two never fight over the position.
+		stack.frame = new PIXI.Container();
+		stack.frame.addChild( stack.container );
+		this.app.stage.addChild( stack.frame );
 
 		_.each( PC.fe.viewer_state.layers_in_image_order(), function( layer, index ) {
 			var node = new PIXI.Container();
@@ -338,6 +348,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			this.app.renderer.resize( width, height );
 		}
 		this.layout();
+		// A flat copy only lines up with the layout it was taken in.
+		if ( this.cover && this.current_stack && this.cover.snapshot.layout !== this.layout_key( this.current_stack ) ) {
+			this.uncover();
+		}
 		this.request_render();
 
 		// Crossing a breakpoint changes which file each choice shows: resync, and
@@ -355,6 +369,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			if ( that.is_removed ) return;
 			// Below the mobile breakpoint the budget is smaller.
 			that.enforce_budget();
+			that.prune_snapshots();
 			if ( that.current_stack ) that.check_resolution( that.current_stack );
 			if ( that.target_stack && that.target_stack !== that.current_stack ) that.check_resolution( that.target_stack );
 		}, 250 );
@@ -1032,10 +1047,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * being prepared to replace it (held images included).
 	 */
 	is_pinned: function( record ) {
-		var current = this.current_stack;
 		var target = this.target_stack;
+		var live = this.live_stacks();
 		var wanted = function( entry ) {
-			return entry.stack === current || entry.stack === target;
+			return entry.stack === target || _.contains( live, entry.stack );
 		};
 		return !! ( _.find( record.entries, wanted ) || _.find( this.waiting[ record.url ], wanted ) );
 	},
@@ -1189,6 +1204,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			stats.bytes += record.bytes;
 			if ( this.is_pinned( record ) ) stats.pinned_bytes += record.bytes;
 		}, this );
+		// Outside the budget: one per angle at most.
+		stats.snapshots = _.size( this.snapshots );
+		stats.snapshot_bytes = 0;
+		_.each( this.snapshots, function( snapshot ) {
+			stats.snapshot_bytes += snapshot.bytes;
+		} );
 		return stats;
 	},
 
@@ -1226,6 +1247,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		if ( this.is_removed ) return;
 		if ( this.target_stack && this.target_stack !== this.current_stack && this.is_stack_settled( this.target_stack ) ) {
 			this.swap_stacks();
+		} else if ( this.cover && this.target_stack === this.current_stack && this.is_stack_settled( this.current_stack ) ) {
+			this.reveal();
 		}
 		this.update_loading();
 		this.request_render();
@@ -1280,15 +1303,387 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			this.current_stack = stack;
 			stack.container.visible = true;
 		} else if ( this.current_stack !== stack ) {
-			var that = this;
-			this.angle_wait_timer = setTimeout( function() {
-				that.swap_stacks();
-				that.request_render();
-			}, wp.hooks.applyFilters( 'PC.fe.viewer.swap_timeout', 5000, this ) );
+			this.leave_current( stack );
 		}
+		// Coming back to the angle a cover stands for: the cover stays until
+		// that angle is complete again (after_change() reveals it).
 
 		this.layout();
 		this.after_change();
+	},
+
+	/**
+	 * Leave the stack on screen for another angle.
+	 *
+	 * The outgoing view becomes a flat copy (a cover), so its layers no
+	 * longer need to stay in memory while the incoming angle loads. An
+	 * incoming angle with a valid flat copy shows at once; otherwise the
+	 * cover stays until it is complete (after_change() swaps), or until
+	 * PC.fe.viewer.swap_timeout.
+	 *
+	 * @param {Object} stack The incoming stack.
+	 */
+	leave_current: function( stack ) {
+		this.finish_transition();
+		var current = this.current_stack;
+		if ( ! this.cover ) {
+			var own = this.take_snapshot( current );
+			if ( own ) this.cover = this.make_cover( current, own );
+		}
+
+		var incoming = this.valid_snapshot( stack );
+		if ( incoming ) {
+			var from = this.cover ? this.cover_display( this.cover ) : this.stack_display( current );
+			this.cover = this.make_cover( stack, incoming );
+			this.current_stack = stack;
+			this.run_transition( from, this.cover_display( this.cover ), this.is_forward( current, stack ) );
+			this.enforce_budget();
+			return;
+		}
+
+		var that = this;
+		this.angle_wait_timer = setTimeout( function() {
+			that.swap_stacks();
+			that.request_render();
+		}, wp.hooks.applyFilters( 'PC.fe.viewer.swap_timeout', 5000, this ) );
+		// Covered, the outgoing angle's textures are no longer pinned.
+		this.enforce_budget();
+	},
+
+	/**
+	 * The current stack is complete: draw it instead of its cover. Same
+	 * angle, same pixels, so no transition.
+	 */
+	reveal: function() {
+		if ( ! this.cover ) return;
+		// Still moving in: reveal when the transition ends.
+		if ( this.transition && this.transition.to.cover === this.cover ) {
+			this.transition.then_reveal = true;
+			return;
+		}
+		var cover = this.cover;
+		this.cover = null;
+		this.current_stack.container.visible = true;
+		this.destroy_cover( cover );
+		this.request_render();
+	},
+
+	/**
+	 * Draw the current stack as it is, without its cover (the cover no longer
+	 * lines up, or the context was lost).
+	 */
+	uncover: function() {
+		if ( ! this.cover ) return;
+		this.finish_transition();
+		var cover = this.cover;
+		this.cover = null;
+		if ( this.current_stack ) this.current_stack.container.visible = true;
+		this.destroy_cover( cover );
+		this.request_render();
+	},
+
+	/**
+	 * The stacks drawn live on screen: their textures are pinned.
+	 *
+	 * @return {Array}
+	 */
+	live_stacks: function() {
+		var live = [];
+		if ( this.current_stack && ! this.cover ) live.push( this.current_stack );
+		if ( this.transition ) {
+			if ( this.transition.from.stack ) live.push( this.transition.from.stack );
+			if ( this.transition.to.stack ) live.push( this.transition.to.stack );
+		}
+		return live;
+	},
+
+	/*
+	 * Snapshots: flat copies of an angle's picture, at the size it is drawn.
+	 * --------------------------------------------------------------------- */
+
+	/**
+	 * Where a stack is drawn. A flat copy only lines up with the same one.
+	 *
+	 * @return {String}
+	 */
+	layout_key: function( stack ) {
+		var renderer = this.app.renderer;
+		var container = stack.container;
+		return [
+			renderer.width,
+			renderer.height,
+			renderer.resolution,
+			Math.round( container.x * 100 ),
+			Math.round( container.y * 100 ),
+			Math.round( container.scale.x * 1e6 ),
+			Math.round( container.scale.y * 1e6 ),
+		].join( ',' );
+	},
+
+	/**
+	 * What a stack would draw now, in order: the files sync_stack() picks.
+	 *
+	 * @return {String}
+	 */
+	picture_key: function( stack ) {
+		var state = PC.fe.viewer_state;
+		var parts = [];
+		_.each( state.layers_in_image_order(), function( layer ) {
+			_.each( state.shown_choices( layer ), function( choice ) {
+				if ( ! state.has_drawable( choice ) ) return;
+				var url = this.image_url( choice, stack.angle_id );
+				if ( url ) parts.push( url );
+			}, this );
+		}, this );
+		return parts.join( '\n' );
+	},
+
+	/**
+	 * Every entry loaded and no previous image held.
+	 */
+	is_stack_complete: function( stack ) {
+		return this.is_stack_settled( stack ) && ! _.find( stack.layers, function( record ) {
+			return record.held.length;
+		} );
+	},
+
+	/**
+	 * A flat copy of a stack on screen, if its picture is complete. Reuses the
+	 * stored one when nothing changed.
+	 *
+	 * @return {Object|null} { angle_id, layout, picture, texture, bytes }
+	 */
+	take_snapshot: function( stack ) {
+		if ( ! stack || ! this.app || ! stack.size || ! stack.container.visible || ! this.is_stack_complete( stack ) ) return null;
+		var layout = this.layout_key( stack );
+		var picture = this.picture_key( stack );
+		var existing = this.snapshots[ stack.angle_id ];
+		if ( existing && existing.layout === layout && existing.picture === picture ) return existing;
+
+		var renderer = this.app.renderer;
+		var texture = PIXI.RenderTexture.create( {
+			width: renderer.width / renderer.resolution,
+			height: renderer.height / renderer.resolution,
+			resolution: renderer.resolution,
+		} );
+		renderer.render( { container: stack.frame, target: texture, clear: true, clearColor: [ 0, 0, 0, 0 ] } );
+		this.drop_snapshot( stack.angle_id );
+		var snapshot = {
+			angle_id: stack.angle_id,
+			layout: layout,
+			picture: picture,
+			texture: texture,
+			bytes: texture.source.pixelWidth * texture.source.pixelHeight * 4,
+			dropped: false,
+			destroyed: false,
+		};
+		this.snapshots[ stack.angle_id ] = snapshot;
+		return snapshot;
+	},
+
+	/**
+	 * The stored flat copy of a stack, if it still shows what the stack would
+	 * draw, where it would draw it. A stale one is dropped, never shown.
+	 *
+	 * @return {Object|null}
+	 */
+	valid_snapshot: function( stack ) {
+		var snapshot = this.snapshots[ stack.angle_id ];
+		if ( ! snapshot ) return null;
+		if ( stack.size && snapshot.layout === this.layout_key( stack ) && snapshot.picture === this.picture_key( stack ) ) {
+			return snapshot;
+		}
+		this.drop_snapshot( stack.angle_id );
+		return null;
+	},
+
+	drop_snapshot: function( angle_id ) {
+		var snapshot = this.snapshots[ angle_id ];
+		if ( ! snapshot ) return;
+		delete this.snapshots[ angle_id ];
+		snapshot.dropped = true;
+		// A cover still drawing it destroys it when it goes.
+		if ( ! this.snapshot_in_use( snapshot ) ) this.destroy_snapshot( snapshot );
+	},
+
+	destroy_snapshot: function( snapshot ) {
+		if ( snapshot.destroyed ) return;
+		snapshot.destroyed = true;
+		snapshot.texture.destroy( true );
+	},
+
+	/**
+	 * After a resize: drop the flat copies that no longer line up.
+	 */
+	prune_snapshots: function() {
+		if ( ! this.app ) return;
+		_.each( _.keys( this.snapshots ), function( angle_id ) {
+			var stack = this.stacks[ angle_id ];
+			if ( ! stack || this.snapshots[ angle_id ].layout !== this.layout_key( stack ) ) this.drop_snapshot( angle_id );
+		}, this );
+	},
+
+	snapshot_in_use: function( snapshot ) {
+		var drawn_by = function( cover ) {
+			return cover && cover.frame && cover.snapshot === snapshot;
+		};
+		var transition = this.transition;
+		return !! ( drawn_by( this.cover ) || ( transition && ( drawn_by( transition.from.cover ) || drawn_by( transition.to.cover ) ) ) );
+	},
+
+	/**
+	 * Draw a flat copy in place of a stack.
+	 *
+	 * @return {Object} The cover: { angle_id, snapshot, frame }
+	 */
+	make_cover: function( stack, snapshot ) {
+		var frame = new PIXI.Container();
+		frame.addChild( new PIXI.Sprite( snapshot.texture ) );
+		this.app.stage.addChild( frame );
+		stack.container.visible = false;
+		this.request_render();
+		return { angle_id: stack.angle_id, snapshot: snapshot, frame: frame };
+	},
+
+	destroy_cover: function( cover ) {
+		if ( ! cover || ! cover.frame ) return;
+		// The sprite goes, the texture is the snapshot's.
+		cover.frame.destroy( { children: true } );
+		cover.frame = null;
+		if ( cover.snapshot.dropped && ! this.snapshot_in_use( cover.snapshot ) ) this.destroy_snapshot( cover.snapshot );
+	},
+
+	/*
+	 * Angle transitions.
+	 * --------------------------------------------------------------------- */
+
+	stack_display: function( stack ) {
+		return {
+			frame: stack.frame,
+			stack: stack,
+			leave: function() {
+				stack.container.visible = false;
+			},
+		};
+	},
+
+	cover_display: function( cover ) {
+		var that = this;
+		return {
+			frame: cover.frame,
+			cover: cover,
+			leave: function() {
+				that.destroy_cover( cover );
+			},
+		};
+	},
+
+	/**
+	 * Whether the incoming angle comes after the outgoing one, for the
+	 * direction of slides.
+	 */
+	is_forward: function( from_stack, to_stack ) {
+		if ( ! from_stack || ! to_stack ) return true;
+		var from = PC.fe.angles.indexOf( PC.fe.angles.get( from_stack.angle_id ) );
+		var to = PC.fe.angles.indexOf( PC.fe.angles.get( to_stack.angle_id ) );
+		return from < 0 || to < 0 || to > from;
+	},
+
+	/**
+	 * @return {String} visibility, fade, slide-horizontal or slide-vertical.
+	 */
+	angle_transition: function() {
+		/**
+		 * Filter how the canvas viewer changes angle.
+		 *
+		 * @param {String} transition visibility (default, like the <img> stack), fade,
+		 *                            slide-horizontal or slide-vertical.
+		 * @param {Backbone.View} viewer
+		 */
+		var transition = wp.hooks.applyFilters( 'PC.fe.viewer.canvas.angle_transition', 'visibility', this );
+		if ( window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) return 'visibility';
+		return _.contains( [ 'fade', 'slide-horizontal', 'slide-vertical' ], transition ) ? transition : 'visibility';
+	},
+
+	/**
+	 * Move from one display (a stack or a cover) to another. The outgoing one
+	 * leaves at the end (hidden, or destroyed for a cover).
+	 */
+	run_transition: function( from, to, forward ) {
+		var that = this;
+		// The incoming display on top.
+		this.app.stage.addChild( to.frame );
+		var type = this.angle_transition();
+		if ( 'visibility' === type ) {
+			from.leave();
+			this.request_render();
+			return;
+		}
+
+		/**
+		 * Filter how long an angle transition takes, in milliseconds.
+		 *
+		 * @param {Number} duration
+		 * @param {Backbone.View} viewer
+		 */
+		var duration = Math.max( 0, wp.hooks.applyFilters( 'PC.fe.viewer.canvas.angle_transition_duration', 350, this ) );
+		var renderer = this.app.renderer;
+		var width = renderer.width / renderer.resolution;
+		var height = renderer.height / renderer.resolution;
+		var direction = forward ? 1 : -1;
+		var apply = function( progress ) {
+			if ( 'fade' === type ) {
+				from.frame.alpha = 1 - progress;
+				to.frame.alpha = progress;
+			} else if ( 'slide-horizontal' === type ) {
+				from.frame.x = -progress * width * direction;
+				to.frame.x = ( 1 - progress ) * width * direction;
+			} else {
+				from.frame.y = -progress * height * direction;
+				to.frame.y = ( 1 - progress ) * height * direction;
+			}
+		};
+
+		var transition = { from: from, to: to, frame: null, safety: null, then_reveal: false };
+		transition.end = function() {
+			if ( that.transition !== transition ) return;
+			that.transition = null;
+			cancelAnimationFrame( transition.frame );
+			clearTimeout( transition.safety );
+			_.each( [ from.frame, to.frame ], function( frame ) {
+				if ( ! frame || frame.destroyed ) return;
+				frame.alpha = 1;
+				frame.position.set( 0, 0 );
+			} );
+			from.leave();
+			if ( transition.then_reveal ) that.reveal();
+			// The outgoing angle is no longer drawn live.
+			that.enforce_budget();
+			that.request_render();
+		};
+		this.transition = transition;
+		apply( 0 );
+
+		var start = null;
+		var step = function( now ) {
+			if ( that.transition !== transition || that.is_removed ) return;
+			if ( null === start ) start = now;
+			var t = duration ? Math.min( 1, ( now - start ) / duration ) : 1;
+			apply( t < 0.5 ? 2 * t * t : -1 + ( 4 - 2 * t ) * t );
+			if ( t < 1 ) {
+				that.app.render();
+				transition.frame = requestAnimationFrame( step );
+			} else {
+				transition.end();
+			}
+		};
+		transition.frame = requestAnimationFrame( step );
+		// Frames do not run in a background tab: end on time anyway.
+		transition.safety = setTimeout( transition.end, duration + 250 );
+	},
+
+	finish_transition: function() {
+		if ( this.transition ) this.transition.end();
 	},
 
 	swap_stacks: function() {
@@ -1296,10 +1691,15 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			clearTimeout( this.angle_wait_timer );
 			this.angle_wait_timer = null;
 		}
-		if ( ! this.target_stack || this.target_stack === this.current_stack ) return;
-		if ( this.current_stack ) this.current_stack.container.visible = false;
-		this.target_stack.container.visible = true;
-		this.current_stack = this.target_stack;
+		var target = this.target_stack;
+		if ( ! target || target === this.current_stack ) return;
+		this.finish_transition();
+		var from = this.cover ? this.cover_display( this.cover ) : this.stack_display( this.current_stack );
+		var forward = this.is_forward( this.current_stack, target );
+		this.cover = null;
+		this.current_stack = target;
+		target.container.visible = true;
+		this.run_transition( from, this.stack_display( target ), forward );
 		// The outgoing angle's textures are no longer pinned.
 		this.enforce_budget();
 		if ( ! this.is_loading ) this.start_background();
@@ -1357,6 +1757,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	},
 
 	on_context_lost: function() {
+		// A render texture's content does not survive a lost context, and
+		// Pixi cannot upload it again: the flat copies go.
+		this.finish_transition();
+		this.uncover();
+		_.each( _.keys( this.snapshots ), this.drop_snapshot, this );
 		wp.hooks.doAction( 'PC.fe.viewer.context.lost', this, null );
 		var that = this;
 		if ( this.context_timer ) clearTimeout( this.context_timer );
@@ -1582,6 +1987,16 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		if ( this.angle_wait_timer ) clearTimeout( this.angle_wait_timer );
 		if ( this.context_timer ) clearTimeout( this.context_timer );
 		if ( this.resolution_timer ) clearTimeout( this.resolution_timer );
+		if ( this.transition ) {
+			cancelAnimationFrame( this.transition.frame );
+			clearTimeout( this.transition.safety );
+			this.transition = null;
+		}
+		this.cover = null;
+		_.each( this.snapshots, function( snapshot ) {
+			snapshot.texture.destroy( true );
+		} );
+		this.snapshots = {};
 		this.stop_background();
 		// Let the waiting loads run: each sees is_removed and gives up.
 		var waiting = this.decode_queue;
