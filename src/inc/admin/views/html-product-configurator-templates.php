@@ -1157,11 +1157,15 @@ IMPORT / EXPORT
 		<# if ( data.conditions ) { #>
 			<div class="preview-content--collection">
 				<h4><?php esc_html_e( 'Conditions', 'product-configurator-for-woocommerce' ); ?></h4>
-				<ul class="ul-disc">
-					<# PC._us.each( data.conditions, function( condition ) { #>
-						<li>{{condition.name}}</li>
-					<# }); #>
-				</ul>
+				<# if ( data.conditions.length ) { #>
+					<ul class="ul-disc">
+						<# PC._us.each( data.conditions, function( condition ) { #>
+							<li>{{condition.name}}</li>
+						<# }); #>
+					</ul>
+				<# } else { #>
+					<p><?php esc_html_e( 'None. Any conditions this product already has will be removed.', 'product-configurator-for-woocommerce' ); ?></p>
+				<# } #>
 			</div>
 		<# } #>
 	</div>

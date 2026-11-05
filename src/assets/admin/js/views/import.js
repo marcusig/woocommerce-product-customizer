@@ -94,12 +94,21 @@ PC.import.views = PC.import.views || {};
 		export: function() {
 			// Same component list as copying to a global configurator, so the 3D settings and
 			// objects (and anything an add-on registers) travel with the file.
-			PC.app.ensureConditionsLoaded( function() {
+			PC.app.ensureConditionsLoaded( function( loaded ) {
+				// An empty conditions list in the file means "this configuration has none" and
+				// clears them on import, so a list that never arrived must not be written as one.
+				if ( false === loaded ) {
+					alert( 'The conditions could not be loaded, so the configuration was not exported. Reload the page and try again.' );
+					return;
+				}
 				var data = {};
 				_.each( PC.app.getTransferableComponents(), function( key ) {
-					// Layers, angles and content are always written, empty or not: the importer
-					// reads them unconditionally.
-					if ( _.contains( [ 'layers', 'angles', 'content' ], key ) || PC.app.componentHasData( key ) ) {
+					// Layers, angles, content and conditions are always written, empty or not. The
+					// importer reads the first three unconditionally, and a conditions key that is
+					// present (even empty) replaces the destination's conditions, while a missing
+					// one leaves them alone (older files, and room for partial imports later).
+					// getTransferableComponents() only lists conditions when the add-on is active.
+					if ( _.contains( [ 'layers', 'angles', 'content', 'conditions' ], key ) || PC.app.componentHasData( key ) ) {
 						data[ key ] = PC.app.get_collection( key );
 					}
 				} );
@@ -362,7 +371,8 @@ PC.import.views = PC.import.views || {};
 
 			PC.app.mark_all_layers_and_content_modified_for_save();
 
-			// Add the conditions
+			// Add the conditions. A conditions key that is present replaces the current ones, even
+			// when it is empty (the exported configuration had none); a missing key keeps them.
 			if ( Import.imported_data.collections.conditions && PC.views.conditional ) {
 				var conditions = this.col = new PC.conditionsCollection( Import.imported_data.collections.conditions, { parse: true } );
 				PC.app.get_product().set( 'conditions' , conditions );
