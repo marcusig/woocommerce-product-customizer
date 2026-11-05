@@ -336,3 +336,47 @@ describe( 'pinning', () => {
 		delete global._;
 	} );
 } );
+
+describe( 'abandoned decodes', () => {
+	test( 'a waiter nobody wants when its turn comes gives its slot to the next', async () => {
+		load();
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			decoding: 0,
+			decode_queue: [],
+			decode_limit: () => 1,
+		} );
+		const wanted = { a: true, b: true, c: true, d: true };
+		const outcome = {};
+		const frees = {};
+		const ask = ( name ) => viewer.decode_slot( () => wanted[ name ] ).then( ( free ) => {
+			outcome[ name ] = free ? 'granted' : 'abandoned';
+			frees[ name ] = free;
+		} );
+		const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		[ 'a', 'b', 'c', 'd' ].forEach( ask );
+		await flush();
+		expect( outcome ).toEqual( { a: 'granted' } );
+
+		// The angle b and c were loading for was left before their turn.
+		wanted.b = false;
+		wanted.c = false;
+		frees.a();
+		await flush();
+		expect( outcome ).toEqual( { a: 'granted', b: 'abandoned', c: 'abandoned', d: 'granted' } );
+		expect( viewer.decoding ).toBe( 1 );
+		frees.d();
+		expect( viewer.decoding ).toBe( 0 );
+	} );
+
+	test( 'the first waiter is granted straight away when a slot is free', async () => {
+		load();
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			decoding: 0,
+			decode_queue: [],
+			decode_limit: () => 1,
+		} );
+		const free = await viewer.decode_slot( () => false );
+		expect( typeof free ).toBe( 'function' );
+	} );
+} );

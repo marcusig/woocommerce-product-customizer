@@ -523,10 +523,23 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// else marks it as used, and another load's enforce_budget() would
 		// release it. The waiting entry pins it for that window.
 		( this.waiting[ url ] = this.waiting[ url ] || [] ).push( entry );
-		this.load_texture( url, stack ).then( function( texture_record ) {
+		var wanted = function() {
+			return ! entry.removed && ( entry.stack === that.current_stack || entry.stack === that.target_stack );
+		};
+		this.load_texture( url, stack, wanted ).then( function( texture_record ) {
 			that.waiting[ url ] = _.without( that.waiting[ url ] || [], entry );
 			if ( ! that.waiting[ url ].length ) delete that.waiting[ url ];
 			if ( entry.removed || that.is_removed ) return;
+			if ( PC.fe.views.viewer_canvas.abandoned === texture_record ) {
+				// Its angle was left before the image's turn to decode came. The
+				// entry goes, so showing that angle again creates and loads it anew.
+				if ( record.shown[ entry.key ] === entry ) delete record.shown[ entry.key ];
+				entry.removed = true;
+				entry.settled = true;
+				that.release_held( record );
+				that.after_change();
+				return;
+			}
 			if ( texture_record && ( texture_record.destroyed || ! texture_record.texture ) ) {
 				// Released anyway (a remount, a context loss): load it again, once.
 				entry.retries = ( entry.retries || 0 ) + 1;
@@ -663,23 +676,34 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	/**
 	 * Wait for a decode slot, first come first served.
 	 *
-	 * @return {Promise<Function>} Resolves with the function that frees the slot.
+	 * A waiter whose `wanted` says no when its turn comes is skipped: fast
+	 * angle switching only decodes for the angles still shown or coming.
+	 *
+	 * @param {Function} wanted Optional.
+	 * @return {Promise<Function|null>} The function that frees the slot, or
+	 *                                  null when the slot was given up.
 	 */
-	decode_slot: function() {
+	decode_slot: function( wanted ) {
 		var that = this;
 		return new Promise( function( resolve ) {
-			var grant = function() {
+			var grant = function( force ) {
+				if ( ! force && wanted && ! that.is_removed && ! wanted() ) {
+					resolve( null );
+					return false;
+				}
 				that.decoding++;
 				var freed = false;
 				resolve( function() {
 					if ( freed ) return;
 					freed = true;
 					that.decoding--;
-					var next = that.decode_queue.shift();
-					if ( next ) next();
+					while ( that.decode_queue.length && false === that.decode_queue.shift()() ) {
+						// Given up: try the next one.
+					}
 				} );
+				return true;
 			};
-			if ( that.decoding < that.decode_limit() ) grant();
+			if ( that.decoding < that.decode_limit() ) grant( true );
 			else that.decode_queue.push( grant );
 		} );
 	},
@@ -704,13 +728,19 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @param {Function} scale_for Given the natural { width, height }, the scale
 	 *                             to build at; asked once the slot is granted, so
 	 *                             a resize while waiting is taken into account.
-	 * @return {Promise<Object|null>} { built, natural, scale }
+	 * @param {Function} wanted    Asked when the slot comes; false gives it up.
+	 * @return {Promise<Object|null>} { built, natural, scale }, null, or
+	 *                                PC.fe.views.viewer_canvas.abandoned.
 	 */
-	fetch_texture: function( url, scale_for ) {
+	fetch_texture: function( url, scale_for, wanted ) {
 		var that = this;
 		return this.load_image( url, true ).then( function( image ) {
 			if ( ! image ) return null;
-			return that.decode_slot().then( function( free ) {
+			return that.decode_slot( wanted ).then( function( free ) {
+				if ( ! free ) {
+					that.release_image( image );
+					return PC.fe.views.viewer_canvas.abandoned;
+				}
 				var finish = function( result ) {
 					free();
 					that.release_image( image, result && result.built );
@@ -738,18 +768,34 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * texture_scale()). When a bigger box needs more pixels, the same record is
 	 * upgraded and every sprite using it switches over.
 	 *
-	 * @param {String} url
-	 * @param {Object} stack
-	 * @return {Promise<Object|null>} The texture record, or null.
+	 * A load that is still waiting for its decode slot when nobody wants it
+	 * any more (every caller's `wanted` says no) gives the slot up and
+	 * resolves with PC.fe.views.viewer_canvas.abandoned.
+	 *
+	 * @param {String}   url
+	 * @param {Object}   stack
+	 * @param {Function} wanted Whether this caller still needs the texture;
+	 *                          omitted, it always does.
+	 * @return {Promise<Object|null>} The texture record, null, or `abandoned`.
 	 */
-	load_texture: function( url, stack ) {
+	load_texture: function( url, stack, wanted ) {
 		var record = this.textures[ url ];
 		var that = this;
+		var abandoned = PC.fe.views.viewer_canvas.abandoned;
+		wanted = wanted || function() {
+			return true;
+		};
 		if ( record ) {
+			if ( record.claims ) record.claims.push( wanted );
 			return record.promise.then( function( loaded ) {
-				if ( ! loaded || that.is_removed ) return null;
+				if ( that.is_removed ) return null;
+				if ( abandoned === loaded ) {
+					// Given up for the other callers: this one loads it, if still needed.
+					return wanted() ? that.load_texture( url, stack, wanted ) : abandoned;
+				}
+				if ( ! loaded ) return null;
 				// Released while this caller waited: load it again.
-				if ( record.destroyed ) return that.load_texture( url, stack );
+				if ( record.destroyed ) return that.load_texture( url, stack, wanted );
 				var wanted = that.texture_scale( stack, record.natural );
 				if ( wanted <= record.scale ) return record;
 				return that.upgrade_texture( record, wanted );
@@ -767,11 +813,22 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			destroyed: false,
 			promise: null,
 			upgrading: null,
+			// Every caller's `wanted`, until the decode slot is granted.
+			claims: [ wanted ],
 		};
 		this.textures[ url ] = record;
 		record.promise = this.fetch_texture( url, function( natural ) {
 			return that.texture_scale( stack, natural );
+		}, function() {
+			return !! _.find( record.claims, function( claim ) {
+				return claim();
+			} );
 		} ).then( function( result ) {
+			record.claims = null;
+			if ( abandoned === result ) {
+				if ( that.textures[ url ] === record ) delete that.textures[ url ];
+				return abandoned;
+			}
 			if ( ! result || that.is_removed || record.destroyed ) {
 				if ( result ) that.destroy_built( result.built );
 				if ( that.textures[ url ] === record ) delete that.textures[ url ];
@@ -1034,8 +1091,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var url = this.image_url( choice, stack.angle_id );
 		if ( ! url ) return;
 		var that = this;
-		this.load_texture( url, stack ).then( function( record ) {
-			if ( record ) that.touch( record );
+		this.load_texture( url, stack, function() {
+			return stack === that.target_stack;
+		} ).then( function( record ) {
+			if ( record && PC.fe.views.viewer_canvas.abandoned !== record ) that.touch( record );
 			that.enforce_budget();
 		} );
 	},
@@ -1079,7 +1138,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				job.stopped = true;
 				return;
 			}
-			that.load_texture( item.url, stack ).then( next );
+			that.load_texture( item.url, stack, function() {
+				return ! job.stopped;
+			} ).then( next );
 		};
 		next();
 		next();
@@ -1560,6 +1621,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * mount uses the <img> stack. { reason, detail } or null.
 	 */
 	disabled: null,
+
+	/**
+	 * What load_texture() resolves with when its decode was given up because
+	 * nobody wanted the image any more.
+	 */
+	abandoned: { abandoned: true },
 
 	/**
 	 * Whether the configurator is narrower than the mobile image breakpoint,

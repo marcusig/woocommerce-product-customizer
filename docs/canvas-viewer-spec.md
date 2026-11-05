@@ -112,9 +112,11 @@ default: stores may have CSS that depends on that markup.
 ```
 app.stage
   fit                       ← scaled and centred to the canvas ("contain")
-    angle_stack[angle_id]   ← one per angle that has been shown; only the active one (and the
-      layer_node[layer_id]     outgoing one during a transition) is visible
+    angle_stack[angle_id]   ← one per angle that has been shown; only the active one is visible
+      layer_node[layer_id]
         choice_node[layer_id:choice_id]
+    snapshot[angle_id]      ← a flat copy of a left angle (see Snapshots); shown for the outgoing
+                              view during a switch, and for an angle coming back while it reloads
 ```
 
 - Nodes are keyed `layer_id:choice_id`, like `viewer.layer_views` - choice ids repeat across layers.
@@ -243,6 +245,15 @@ texture drawn from the image itself, at full size, keeps it). Capture uses the s
 batch size. On desktop Chrome, 7861's first picture still loads in 1.5 s at both limits; at
 375 px (resolution 2) its textures are 960×540, 59 MiB for the picture.
 
+Each load waiting for a slot carries a `wanted` check, asked when its turn comes: an entry's load
+is wanted while its angle is shown or coming, a hover preload while its angle is the one coming,
+a background load until the background job stops. Several callers waiting on one URL share the
+load; it is given up only when none of them wants it. A load given up resolves with
+`PC.fe.views.viewer_canvas.abandoned`, and its entry leaves the layer, so showing that angle again
+creates and loads it anew. Switching angles fast therefore only decodes for where the customer
+ends up: on 7861 at 375 px, 40 switches 20 to 170 ms apart gave up 420 queued decodes and ran
+61, and every angle was complete when visited afterwards.
+
 **When.** `image_loading_mode`:
 
 - `lazy` (default): load what the current picture needs; preload on the choice's `preload-image`
@@ -258,8 +269,10 @@ images exhausts mobile Safari.
 - Budget in bytes (`width × height × 4`), filter `PC.fe.viewer.canvas.texture_budget`. Defaults:
   256 MB, 96 MB when the viewer is under `mobile_image_breakpoint` (decision F); confirmed or
   adjusted by the phase 3 measurements.
-- Textures used by the visible picture, and by the outgoing picture during a transition, are
-  pinned. Everything else is least-recently-used and destroyed when over budget.
+- Textures used by the visible picture, and by the incoming picture during an angle switch, are
+  pinned, as are textures an entry of either is waiting for. Everything else is
+  least-recently-used and destroyed when over budget. (Until snapshots, below, the outgoing
+  picture stays up and pinned during a switch: on 7861 at 375 px that is ~100 MiB, two pictures.)
 - Background loads never release anything to make room; they stop when the next would exceed the
   budget. A hover preload is one image the customer is about to pick, so it may release unpinned
   textures like any load. Neither ever touches a pinned texture.
@@ -273,6 +286,63 @@ images exhausts mobile Safari.
 **Loading state.** `is-loading-image` on the root, `PC.fe.viewer.layer.preload.complete` per item
 and `PC.fe.viewer.layers.preload.complete` when the current picture is complete - the names the
 stack fires, counted per *picture*, so a background load never holds the loading class.
+
+## Snapshots
+
+*Designed 2026-11-05, not built; phase 4.* One goal of the canvas is transitions between views,
+so two views must be on screen together. Two layered pictures at once double the pinned memory,
+which is what a phone cannot afford (7861: 59 MiB per picture against a 96 MiB budget). The
+outgoing view does not need its layers, though: nothing changes in it while it leaves. So it is
+drawn once, flat, and the flat copy is what leaves.
+
+**What.** A snapshot is one `RenderTexture` of an angle's picture at the size it is drawn on
+screen: box × renderer resolution, ×4 bytes. A 375 px phone box at resolution 2 is about
+750×420, 1.2 MiB; a 505 px desktop box at resolution 1 is 0.8 MiB. One per visited angle, so
+4 angles cost under 5 MiB however many layers they have. Rendered from the angle's stack
+container into the texture (one `renderer.render()`, GPU only, a few ms). It includes canvas
+add-on items (phase 5), since they draw in the stack; not custom HTML, which is DOM.
+
+**Taken** when an angle is left with its picture complete (at the start of the switch, from the
+stack on screen), and again when a complete picture is left after changes. Never from an
+incomplete picture: then the angle has no snapshot.
+
+**Valid** while what the angle would draw is unchanged. Each snapshot stores the picture's key:
+the ordered list of URLs its entries draw, as `sync_stack()` would make them now, plus the box
+size step. A choice change made on another angle, a breakpoint crossed or the box grown past a
+√2 step makes it stale. A stale snapshot is destroyed, not shown.
+
+**Used for:**
+
+1. *The outgoing view.* At an angle switch the outgoing stack is replaced on screen by its
+   snapshot sprite, and the stack is hidden. Its textures are no longer pinned, so they compete in
+   the budget like any cached angle. Pinned during a switch: the incoming picture, plus 1.2 MiB.
+2. *Transitions.* `fade` and the slides run between the outgoing snapshot and the incoming view.
+   The incoming side is its live stack once complete, or its valid snapshot at once (then the
+   live stack takes over when complete; same textures, same size, no visible change). With
+   neither, the outgoing snapshot stays until the incoming picture is complete or
+   `PC.fe.viewer.swap_timeout` passes, as the stack does today, then the transition runs.
+3. *Coming back.* An angle with a valid snapshot shows at once while its layers reload behind
+   it, including after the budget released them. On a phone this lets the budget hold only the
+   picture on screen without angle switches looking slower.
+
+**What stays the same.** Choice swaps within an angle: unchanged (the old image stays until the
+new one has loaded; snapshots are not involved). Capture: never from snapshots, which are at
+screen size; it keeps its own path. The loading state: `is-loading-image` and
+`PC.fe.viewer.layers.preload.complete` still follow the live picture, even while a snapshot
+covers it.
+
+**Lifetime.** Destroyed when stale, on `remove()`, and on context loss (a render texture's
+content does not survive a lost context; Pixi cannot re-upload it). Counted separately in
+`texture_stats()` as `snapshot_bytes`, outside the budget: they are bounded by the angle count.
+
+**Decided (Marc, 2026-11-05):**
+
+- The outgoing angle's layer textures are left to the LRU, also on phones, not released as soon
+  as its snapshot exists: a return looks instant either way, and kept textures make it complete
+  sooner.
+- Coming back to an angle whose snapshot is stale holds the current view until that angle is
+  complete (today's behaviour). A stale snapshot is never shown: it would show choices the
+  customer has since changed.
 
 ## Rendering
 
@@ -469,7 +539,8 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    identically with bitmap sources. `__tests__/viewer-canvas.test.js` covers the scale steps,
    eviction order, the responsive pick and the budget. **Still to run:** the iPhone part of the
    performance run (below), and the timing comparison against the stack.
-4. **Polish.** Angle transitions and fades.
+4. **Snapshots and transitions.** Snapshots (above), then angle transitions and fades on top of
+   them.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
