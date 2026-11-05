@@ -537,8 +537,9 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    stopped; a hover preload loaded without pinning or the loading state. Capture identical to the
    stack's on 613 and on 7860. 15 remounts released every texture; context restore redraws
    identically with bitmap sources. `__tests__/viewer-canvas.test.js` covers the scale steps,
-   eviction order, the responsive pick and the budget. **Still to run:** the iPhone part of the
-   performance run (below), and the timing comparison against the stack.
+   eviction order, the responsive pick and the budget. iPhone XS run done (below): 7860 and 7861
+   stable, 7859 loads but crashes after a while of fast switching. **Still to run:** the timing
+   comparison against the stack.
 4. **Snapshots and transitions.** Snapshots (above), then angle transitions and fades on top of
    them.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
@@ -547,7 +548,7 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 
 Then the image overlay spec.
 
-**Prove on an iPhone (in progress):** Safari, 7860, many swaps and every angle visited twice, now
+**Prove on an iPhone (done 2026-11-05, iPhone XS):** Safari, 7860, many swaps and every angle visited twice, now
 with the real budget and eviction instead of the crude stub this was planned with (it moved after
 phase 3, which provides them). *First run, 2026-11-05, iPhone XS:* 7860 works well; 7859 dies
 quickly. The likely cause is the first picture starting all 150 full-size decodes at once (32 MiB
@@ -558,8 +559,19 @@ pinned picture going over during an angle switch, as allowed). The same run surf
 texture that had just resolved but had no sprite yet counted as unused, so another load's budget
 check could release it and the sprite was built from a null texture. Entries waiting for a texture
 now pin it (`waiting`, read by `is_pinned()`). For comparison, the `<img>` stack loads 7861 on the
-XS but crashed during fast angle switching. Next: 7859 with the cap; then 7861 again, switching
-angles fast. If memory cannot be held under budget without visible reloading on
+XS but crashed during fast angle switching. With the cap, 7859 loads every image on the XS
+(150 textures at 960×540, 2 MiB each). Choice changes and quick angle switches then crashed it
+after a while; the last reading before that was 208 textures, 411 MiB, all pinned: the picture
+on screen plus the incoming one, both held during the switch, against a 96 MiB budget (about
+twice that in real memory with the bitmap sources). That double picture is what snapshots remove
+(phase 4): pinned during a switch would be one picture, ~300 MiB, plus a 1.2 MiB snapshot. If 7859
+still crashes after that, the next lever is releasing each texture's bitmap source once uploaded
+(rebuilt from the URL on context restore), which roughly halves real memory. 7859 is the extreme
+level, so a crash there does not block. 7861 with fast angle switching, the case that crashed
+the `<img>` stack, is stable on the XS (with abandoned decodes, 9faff541): by hand, then with a console script making
+300 random choice and angle changes 100 to 200 ms apart while Marc opened and closed layers - no
+errors, 105 MiB at most, 89 MiB pinned at most, 95 MiB at the end. The iPhone part of the run is
+done; the timing comparison against the stack remains. If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
 before phase 4. `PC.fe.modal.viewer.texture_stats()` from Safari's Web Inspector gives the numbers.
 
