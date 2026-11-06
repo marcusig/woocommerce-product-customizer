@@ -8,6 +8,7 @@ const clean = require('gulp-clean');
 const concat = require('gulp-concat-util');
 const { exec, spawn } = require('child_process');
 const path = require('path');
+const { Transform } = require('stream');
 
 // const replace = require('gulp-replace');
 var plumber = require('gulp-plumber');
@@ -190,11 +191,35 @@ gulp.task('scss', function(done) {
 
 });
 
+/**
+ * Date a concatenated bundle now.
+ *
+ * gulp-concat-util clones the first source file, stat included, so without this
+ * the bundle keeps the first part's mtime (views/parts/3d-viewer.js, untouched for
+ * weeks) whatever changed. The frontend versions scripts with filemtime(), so the
+ * URL never changed and browsers - and customers after an update, since the zip
+ * keeps the date - went on serving the cached bundle.
+ */
+function stamp_now() {
+	return new Transform( {
+		objectMode: true,
+		transform( file, encoding, callback ) {
+			if ( file.stat ) {
+				const now = new Date();
+				file.stat.mtime = now;
+				file.stat.atime = now;
+			}
+			callback( null, file );
+		},
+	} );
+}
+
 gulp.task('concat_js_views', function(done) {
 	return gulp.src(['src/assets/js/views/parts/*.js'], { base: 'src', allowEmpty: true })
 		.pipe( concat( 'configurator.js' ) )
 		.pipe( concat.header( 'var PC = PC || {};\nPC.fe = PC.fe || {};\n\nPC.fe.views = PC.fe.views || {};\nPC.options = PC.options || {};\n\n!( function( $, _ ) {\n\n\'use strict\';\n' ) )
 		.pipe( concat.footer( '\n} ) ( jQuery, PC._us || window._ );\n' ) )
+		.pipe( stamp_now() )
 		.pipe(gulp.dest( 'dist/assets/js/views/' ))
 		.pipe(uglify())
 		.pipe( rename( { suffix: '.min' } ) )
@@ -224,6 +249,7 @@ gulp.task('concat_product_configurator', function(done) {
 	return gulp.src(productConfiguratorParts, { allowEmpty: true })
 		.pipe(plumber(reportError))
 		.pipe(concat('product_configurator.js'))
+		.pipe(stamp_now())
 		.pipe(gulp.dest('dist/assets/js/'))
 		.pipe(uglify())
 		.pipe(rename({ suffix: '.min' }))
