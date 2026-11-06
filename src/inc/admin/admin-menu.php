@@ -35,7 +35,7 @@ class Admin_Menu {
 			mkl_pc_get_admin_menu_capability(),
 			$menu_slug,
 			array( $this, 'render_parent_page' ),
-			'dashicons-admin-customizer',
+			$this->get_menu_icon(),
 			58.7
 		);
 
@@ -52,6 +52,48 @@ class Admin_Menu {
 		 * @param string $menu_slug Parent menu slug.
 		 */
 		do_action( 'mkl_pc_admin_menu', $menu_slug );
+	}
+
+	/**
+	 * Get the parent menu icon.
+	 *
+	 * WordPress 7.2 renders admin menu icons as inline SVGs and accepts registered
+	 * icon names. `dashicons-admin-customizer` has no SVG replacement, so on 7.2+ the
+	 * menu uses the plugin's own layers icon from a non-public `mkl-pc` collection.
+	 * Earlier versions keep the Dashicon.
+	 *
+	 * @return string Icon name or Dashicon class.
+	 */
+	private function get_menu_icon() {
+		$fallback = 'dashicons-admin-customizer';
+
+		if ( ! function_exists( 'wp_is_valid_icon_name' ) || ! class_exists( 'WP_Icon_Collections_Registry' ) ) {
+			return $fallback;
+		}
+
+		$icon_name = 'mkl-pc/configurator';
+
+		if ( ! \WP_Icon_Collections_Registry::get_instance()->is_registered( 'mkl-pc' ) ) {
+			wp_register_icon_collection(
+				'mkl-pc',
+				array(
+					'label'  => __( 'Product Configurator', 'product-configurator-for-woocommerce' ),
+					'public' => false,
+				)
+			);
+		}
+
+		if ( ! \WP_Icons_Registry::get_instance()->is_registered( $icon_name ) ) {
+			wp_register_icon(
+				$icon_name,
+				array(
+					'label'     => __( 'Product Configurator', 'product-configurator-for-woocommerce' ),
+					'file_path' => MKL_PC_ASSETS_PATH . 'icons/layers.svg',
+				)
+			);
+		}
+
+		return \WP_Icons_Registry::get_instance()->is_registered( $icon_name ) ? $icon_name : $fallback;
 	}
 
 	/**
