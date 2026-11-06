@@ -230,6 +230,11 @@ class DB {
 	}
 
 	/**
+	 * Skips the write when the stored value already matches. This runs on read paths (the editor's
+	 * storage state, the config cache rebuild), and saving the product fires
+	 * woocommerce_after_product_object_save, which rebuilds the config cache and lands here again.
+	 * On data that never verifies (legacy blobs) an unconditional save loops until memory runs out.
+	 *
 	 * @param int $parent_id
 	 * @param int $value      1 = ok cache, 0 = invalidate / recompute.
 	 * @return void
@@ -237,6 +242,10 @@ class DB {
 	private function set_integrity_cache_value( $parent_id, $value ) {
 		$parent = $this->get_owner( (int) $parent_id );
 		if ( ! $parent ) {
+			return;
+		}
+		// Missing and 0 mean the same thing ("recompute"), so neither needs a write for 0.
+		if ( (int) $parent->get_meta( self::META_INTEGRITY_CACHE, true ) === (int) $value ) {
 			return;
 		}
 		$parent->update_meta_data( self::META_INTEGRITY_CACHE, (int) $value );

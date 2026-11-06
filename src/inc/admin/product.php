@@ -19,6 +19,13 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		private $variable;
 		private $three_d;
 		private $should_update_cache = false;
+		/**
+		 * True while the configuration cache is being written. Building it can save the product
+		 * (e.g. the storage integrity flag), and that nested save must not start another write.
+		 *
+		 * @var bool
+		 */
+		private $writing_cache = false;
 		public function __construct() {
 			$this->_hooks();
 			$this->variable = new Admin_Variable_Product();
@@ -891,9 +898,14 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function write_configuration_cache_on_product_save( $obj ) {
-			if ( $this->should_update_cache ) {
+			if ( $this->should_update_cache && ! $this->writing_cache ) {
 				$this->should_update_cache = false;
-				$this->write_configuration_cache( $obj->get_id() );
+				$this->writing_cache       = true;
+				try {
+					$this->write_configuration_cache( $obj->get_id() );
+				} finally {
+					$this->writing_cache = false;
+				}
 			}
 		}
 
@@ -904,8 +916,15 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @return void
 		 */
 		public function check_before_product_save( $obj ) {
+			// A save made while the cache is being written comes from that write: don't re-arm.
+			if ( $this->writing_cache ) {
+				return;
+			}
 			if ( $obj->get_id() ) {
-				$changes = $obj->get_changes();
+				// Only real product props count. Some plugins inject their own keys into `changes`
+				// (Advanced Dynamic Pricing adds `adpCustomInitialPrice` to every product it loads),
+				// which would make every save look like an edit.
+				$changes = array_intersect_key( $obj->get_changes(), $obj->get_data() );
 				if ( ! empty( $changes ) ) {
 					$this->should_update_cache = true;
 				}

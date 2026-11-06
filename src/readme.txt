@@ -252,6 +252,10 @@ Open Source SVG icons:
 
 == Changelog ==
 
+= 2.1.1 - 06/Nov/2026 =
+
+* FIX: Product editor running out of memory on unmigrated configurators when Advanced Dynamic Pricing is active
+
 = 2.1.0 - 04/Nov/2026 =
 
 * FEATURE: Request a quote: customers request a quote for their configuration, with a form you can customize
