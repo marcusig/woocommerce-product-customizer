@@ -408,9 +408,48 @@ angle, not only the one shown: battery and data on phones, which is why the budg
 not the device class. The first picture always comes first: nothing syncs in the background while
 the shown angle is loading.
 
+**When not all views fit: refresh their snapshots when idle.** Waiting does not make memory:
+bringing a hidden angle up to date by loading its stack means two pictures at once, the peak
+snapshots removed from angle switches (and what crashed 7859 on the XS). What a hidden angle
+needs is a correct snapshot, not a live stack, and a snapshot can be rebuilt a few images at a
+time, the way capture works:
+
+1. After a change has made the snapshot of a visited angle stale, and the configurator has been
+   idle for 2 s, load one or two of that angle's images, built exactly as the live stack would
+   build them (`fetch_texture()` at `texture_scale()`, same layout), so the live picture
+   replaces the snapshot later without a visible change.
+2. Draw them into a new render texture at the snapshot's size and the angle's layout, then
+   destroy them at once.
+3. Repeat in image order until every layer is drawn, then swap the new snapshot in.
+
+Memory during a refresh: the picture on screen, plus two textures and one render texture, however
+many layers the angle has. A layer cannot be patched in place (the layers above it cover it in a
+flat image), so the whole angle is redrawn; its files usually come from the HTTP cache, so the
+cost is decoding, not downloading.
+
+- **Priority (prerequisite).** The decode queue is first come, first served today, so a refresh
+  in progress would delay the images of a choice the customer just made. Background loads (this,
+  eager mode, the all-live sync above) get a lower priority than loads for the picture being
+  shown or coming, and a customer action jumps ahead of them.
+- **Stopping.** Any choice change, hover preload or angle change stops the refresh (its loads are
+  no longer `wanted`); the half-built texture is destroyed, and the refresh starts again after the
+  next idle period.
+- **Limits:** visited angles only; only angles whose snapshot is stale; each change refreshed at
+  most once; the most recently visited angle first; nothing when the browser asks to save data
+  (`navigator.connection.saveData`).
+- **Not when one picture does not fit the budget** (`P > B`, 7859 on a phone): refreshing would
+  mostly churn. There, coming back to an angle after a change reloads it, as now.
+
+| Budget | Hidden visited angles |
+| --- | --- |
+| All fit (`P × N ≤ 0.75 × B`) | live, synced in the background |
+| One picture fits (`P ≤ B`) | snapshots refreshed after 2 s idle |
+| One picture does not fit | snapshots dropped when stale; reload on return |
+
 **Open points:**
 
 - *The thresholds* (0.75 to enter, 1 to leave): starting values, to adjust after a phone run.
+- *The idle delay* for snapshot refreshes: 2 s to start with.
 - *A device-aware budget:* `navigator.deviceMemory` where the browser has it (Chrome, Edge; not
   Safari or Firefox), e.g. ≤ 2 GB → 64 MiB, 4 GB → 96 MiB, ≥ 8 GB → 256 MiB, falling back to the
   breakpoint rule; the `PC.fe.viewer.canvas.texture_budget` filter keeps the last word.
@@ -626,7 +665,8 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 4. **Snapshots and transitions.** Snapshots (above), then angle transitions and fades on top of
    them. *Done 2026-11-05*, checked as described in the Snapshots section. Still to check: the
    iPhone, especially 7859, which crashed holding two pictures during switches.
-4b. **Other angles live** where the budget allows (section above).
+4b. **Other angles live** where the budget allows, idle snapshot refreshes where it does not (section
+    above). The decode-queue priority comes first.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
