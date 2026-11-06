@@ -371,6 +371,57 @@ content does not survive a lost context; Pixi cannot re-upload it). Counted sepa
   complete (today's behaviour). A stale snapshot is never shown: it would show choices the
   customer has since changed.
 
+## Keeping other angles live (phase 4b)
+
+*Agreed in principle 2026-11-05, not built.* Only the angle being shown follows choice changes
+(`flush()` syncs the target stack); the others catch up when visited. So coming back to an angle
+after a change always reloads it, and its snapshot is stale. Where memory allows, the visited
+angles should instead stay in sync in the background, so a return is complete at once.
+
+**Not the flat copy.** Snapshots stay as they are. A cover costs about a MiB and frees nothing by
+itself: it only lets the outgoing layers be released if the budget needs the room. On desktop,
+7860 and 7861 never release anything, and a cover over a complete stack is revealed at once.
+Drawing two live pictures during a transition instead would look the same and cost a picture.
+
+**One measure, not per-device rules.** What one picture costs in texture bytes already combines
+the layer count, the image resolution, the box size and the pixel density. Measured once the
+current picture is complete: the bytes of the textures its entries draw (`P`). The device comes
+in through the budget (`B`). With `N` visited angles:
+
+- **All live** while `P × N ≤ 0.75 × B`. After the current picture is complete, and after the
+  hover preload, the other visited stacks are synced in the background (`sync_stack()`), two
+  loads at a time like eager mode and before it, each load `wanted` only while all-live still
+  holds. Synced stacks are not pinned; the budget still governs them.
+- **Current behaviour** otherwise: only the shown angle follows changes, the others keep their
+  snapshots and release layers as needed.
+- **Hysteresis:** all-live stops as soon as `P × N > B` or an eviction releases a texture of a
+  visited stack, and is only resumed below the 0.75 mark, so a product near the limit does not
+  load and release the same images in turn. Checked after each complete picture, angle switch,
+  resize (the budget changes below the mobile breakpoint) and choice change.
+
+Expected: 7860 (~2 MiB a picture) all live everywhere; 7861 all live on desktop (30 MiB × 4
+against 256), current behaviour on a phone (59 MiB × 4 against 96); 7859 current behaviour
+everywhere.
+
+**The cost to keep in mind:** every choice change then downloads and decodes for every visited
+angle, not only the one shown: battery and data on phones, which is why the budget decides and
+not the device class. The first picture always comes first: nothing syncs in the background while
+the shown angle is loading.
+
+**Open points:**
+
+- *The thresholds* (0.75 to enter, 1 to leave): starting values, to adjust after a phone run.
+- *A device-aware budget:* `navigator.deviceMemory` where the browser has it (Chrome, Edge; not
+  Safari or Firefox), e.g. ≤ 2 GB → 64 MiB, 4 GB → 96 MiB, ≥ 8 GB → 256 MiB, falling back to the
+  breakpoint rule; the `PC.fe.viewer.canvas.texture_budget` filter keeps the last word.
+- *Visited angles only, or every angle?* Syncing unvisited angles too would make the first visit
+  of each instant, at the cost of loading pictures the customer may never look at. Recommended:
+  visited only, with every angle as a later option (it is eager mode for angles).
+- *Several views at once* (a grid of angles, live thumbnails) would need all live for real, with
+  several stacks on screen. **Decided (Marc, 2026-11-06):** the same rule applies, live where it
+  fits, snapshots where it does not. Likely only for custom projects, unless core generates live
+  angle thumbnails; nothing is built for it now.
+
 ## Rendering
 
 On demand, like the 3D viewer (`requestRender`): the Pixi ticker is stopped (`autoStart: false`),
@@ -575,6 +626,7 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 4. **Snapshots and transitions.** Snapshots (above), then angle transitions and fades on top of
    them. *Done 2026-11-05*, checked as described in the Snapshots section. Still to check: the
    iPhone, especially 7859, which crashed holding two pictures during switches.
+4b. **Other angles live** where the budget allows (section above).
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
