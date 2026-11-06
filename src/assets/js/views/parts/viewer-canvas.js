@@ -146,6 +146,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				autoStart: false,
 				resolution: Math.min( window.devicePixelRatio || 1, 2 ),
 				preference: 'webgl',
+				// The viewer manages its textures itself (texture_budget()), and
+				// frees their images once uploaded (free_source()): Pixi's
+				// collector would unload an idle texture from the GPU and upload
+				// it again from an image that is gone.
+				gcActive: false,
 			} );
 		} catch ( error ) {
 			this.fall_back( 'webgl', error );
@@ -967,6 +972,68 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		record.bitmap = built.bitmap;
 		record.scale = scale;
 		record.bytes = built.texture.width * built.texture.height * 4;
+		record.freed = this.free_source( built );
+	},
+
+	/**
+	 * Upload a texture now and free the image it was built from.
+	 *
+	 * Until then every texture is held twice: on the GPU, and as the bitmap,
+	 * canvas or image Pixi uploads from, which is just as big. That copy only
+	 * serves a second upload, and the viewer never needs one: Pixi's collector
+	 * is off (start()), an upgrade builds a new texture, and a restored
+	 * context loads every image again (reload_textures()).
+	 *
+	 * @param {Object} built { texture, bitmap }
+	 * @return {Boolean} Whether the image was freed.
+	 */
+	free_source: function( built ) {
+		var source = built && built.texture && built.texture.source;
+		var resource = source && source.resource;
+		var renderer = this.app && this.app.renderer;
+		if ( ! resource || ! renderer || ! renderer.texture || 'function' !== typeof renderer.texture.initSource ) return false;
+		var gl = renderer.gl;
+		// Nothing to upload to: keep it, the restored context reloads anyway.
+		if ( gl && gl.isContextLost && gl.isContextLost() ) return false;
+		try {
+			renderer.texture.initSource( source );
+		} catch ( error ) {
+			return false;
+		}
+		if ( 'function' === typeof resource.close ) {
+			resource.close();
+		} else if ( 'CANVAS' === resource.nodeName ) {
+			resource.width = 0;
+			resource.height = 0;
+		} else if ( 'IMG' === resource.nodeName ) {
+			resource.onload = null;
+			resource.onerror = null;
+			resource.removeAttribute( 'src' );
+		}
+		return true;
+	},
+
+	/**
+	 * After a restored context: the GPU kept nothing and the images were
+	 * freed, so every texture goes and the angles on screen load again. The
+	 * others load when shown, or in the background (start_background()).
+	 */
+	reload_textures: function() {
+		this.stop_background();
+		this.stop_refresh();
+		_.each( this.stacks, function( stack ) {
+			_.each( stack.layers, function( record ) {
+				this.drop_held( record );
+				_.each( record.shown, this.drop_entry, this );
+				record.shown = {};
+			}, this );
+		}, this );
+		_.each( _.values( this.textures ), this.destroy_record, this );
+		this.textures = {};
+		this.live_blocked = false;
+		if ( this.current_stack ) this.sync_stack( this.current_stack );
+		if ( this.target_stack && this.target_stack !== this.current_stack ) this.sync_stack( this.target_stack );
+		this.after_change();
 	},
 
 	/**
@@ -1270,11 +1337,13 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Object} { count, bytes, pinned_bytes, budget }
 	 */
 	texture_stats: function() {
-		var stats = { count: 0, bytes: 0, pinned_bytes: 0, budget: this.texture_budget() };
+		var stats = { count: 0, bytes: 0, pinned_bytes: 0, budget: this.texture_budget(), kept_bytes: 0 };
 		_.each( this.textures, function( record ) {
 			if ( ! record.texture ) return;
 			stats.count++;
 			stats.bytes += record.bytes;
+			// Images not freed after upload (free_source()): held a second time.
+			if ( ! record.freed ) stats.kept_bytes += record.bytes;
 			if ( this.is_pinned( record ) ) stats.pinned_bytes += record.bytes;
 		}, this );
 		// Outside the budget: one per angle at most.
@@ -2127,6 +2196,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	on_context_restored: function() {
 		if ( this.context_timer ) clearTimeout( this.context_timer );
 		this.context_timer = null;
+		this.reload_textures();
 		wp.hooks.doAction( 'PC.fe.viewer.context.restored', this, null );
 		this.request_render();
 	},

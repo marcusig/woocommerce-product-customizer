@@ -508,3 +508,91 @@ describe( 'how other angles are kept', () => {
 		expect( viewer.update_mode() ).toBe( 'refresh' );
 	} );
 } );
+
+describe( 'freeing images after upload', () => {
+	const viewer_with = ( { lost = false, init_throws = false } = {} ) => {
+		const uploaded = [];
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			app: {
+				renderer: {
+					gl: { isContextLost: () => lost },
+					texture: {
+						initSource: ( source ) => {
+							if ( init_throws ) throw new Error( 'no' );
+							uploaded.push( source );
+						},
+					},
+				},
+			},
+		} );
+		return { viewer, uploaded };
+	};
+	const built_with = ( resource ) => ( { texture: { source: { resource } } } );
+
+	test( 'uploads first, then closes a bitmap, empties a canvas, unloads an image', () => {
+		load();
+		const { viewer, uploaded } = viewer_with();
+		const bitmap = { close: jest.fn() };
+		const built = built_with( bitmap );
+		expect( viewer.free_source( built ) ).toBe( true );
+		expect( uploaded ).toEqual( [ built.texture.source ] );
+		expect( bitmap.close ).toHaveBeenCalled();
+
+		const canvas = document.createElement( 'canvas' );
+		canvas.width = 960;
+		canvas.height = 540;
+		expect( viewer.free_source( built_with( canvas ) ) ).toBe( true );
+		expect( [ canvas.width, canvas.height ] ).toEqual( [ 0, 0 ] );
+
+		const image = document.createElement( 'img' );
+		image.setAttribute( 'src', 'a.png' );
+		expect( viewer.free_source( built_with( image ) ) ).toBe( true );
+		expect( image.hasAttribute( 'src' ) ).toBe( false );
+	} );
+
+	test( 'keeps the image when there is nothing to upload to, or the upload fails', () => {
+		load();
+		const bitmap = { close: jest.fn() };
+		expect( viewer_with( { lost: true } ).viewer.free_source( built_with( bitmap ) ) ).toBe( false );
+		expect( viewer_with( { init_throws: true } ).viewer.free_source( built_with( bitmap ) ) ).toBe( false );
+		expect( bitmap.close ).not.toHaveBeenCalled();
+	} );
+
+	test( 'a restored context drops every texture and loads the angles on screen again', () => {
+		load();
+		global._ = {
+			each: ( list, callback, context ) => Object.keys( list || {} ).forEach( ( key ) => callback.call( context, list[ key ], key ) ),
+			values: ( object ) => Object.values( object || {} ),
+		};
+		const synced = [];
+		const destroyed = [];
+		const dropped = [];
+		const shown = { key: 'x' };
+		const current = { layers: { 1: { shown: { x: shown }, held: [] } } };
+		const other = { layers: { 1: { shown: { y: { key: 'y' } }, held: [] } } };
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			stacks: { 1: current, 2: other },
+			current_stack: current,
+			target_stack: current,
+			textures: { 'a.png': { url: 'a.png' }, 'b.png': { url: 'b.png' } },
+			live_blocked: true,
+			stop_background: () => {},
+			stop_refresh: () => {},
+			drop_held: () => {},
+			drop_entry: ( entry ) => dropped.push( entry.key ),
+			destroy_record: ( record ) => destroyed.push( record.url ),
+			sync_stack: ( stack ) => synced.push( stack ),
+			after_change: () => {},
+		} );
+		viewer.reload_textures();
+		expect( dropped.sort() ).toEqual( [ 'x', 'y' ] );
+		expect( destroyed.sort() ).toEqual( [ 'a.png', 'b.png' ] );
+		expect( viewer.textures ).toEqual( {} );
+		expect( current.layers[ 1 ].shown ).toEqual( {} );
+		expect( other.layers[ 1 ].shown ).toEqual( {} );
+		// Only the angle on screen loads now; the others when shown.
+		expect( synced ).toEqual( [ current ] );
+		expect( viewer.live_blocked ).toBe( false );
+		delete global._;
+	} );
+} );

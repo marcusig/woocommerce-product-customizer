@@ -241,7 +241,7 @@ that is what made iOS Safari kill the tab on 7861 and 7859 (iPhone XS, 2026-11-0
 parallel, but decoding and building the texture wait for a slot (`decode_slot()`): 6 at a time,
 3 below the mobile breakpoint, filter `PC.fe.viewer.canvas.decode_limit( limit, viewer )`. Once a
 downscaled copy exists, the full-size image drops its `src` so the browser can release it (a
-texture drawn from the image itself, at full size, keeps it). Capture uses the same limit as its
+texture drawn from the image itself, at full size, keeps it until it is uploaded, below). Capture uses the same limit as its
 batch size. On desktop Chrome, 7861's first picture still loads in 1.5 s at both limits; at
 375 px (resolution 2) its textures are 960×540, 59 MiB for the picture.
 
@@ -253,6 +253,28 @@ load; it is given up only when none of them wants it. A load given up resolves w
 creates and loads it anew. Switching angles fast therefore only decodes for where the customer
 ends up: on 7861 at 375 px, 40 switches 20 to 170 ms apart gave up 420 queued decodes and ran
 61, and every angle was complete when visited afterwards.
+
+**Images are freed once uploaded** (`free_source()`, 2026-11-06). Pixi keeps the resource a
+texture was uploaded from (the downscaled bitmap, or the canvas or image) for as long as the
+texture lives, as just as many bytes again in ordinary memory: the 96 MiB budget really cost about
+190 MiB. So `set_texture()` uploads each texture at once (`renderer.texture.initSource()`) and
+then closes the bitmap, empties the canvas or unloads the image. Nothing needs the copy after that:
+
+- Pixi's garbage collector is off (`gcActive: false` in `app.init()`). On, it unloads a texture
+  unused for a minute from the GPU and uploads it again from its resource when drawn, which no
+  longer exists. The budget already decides what goes.
+- A sharper texture (`upgrade_texture()`) is a new texture from a new download.
+- A lost context loses the GPU copy too, so a restore reloads every image (context loss, below).
+- While the context is lost, or if the upload throws, the copy is kept (`free_source()` returns
+  false); the restore reloads it anyway.
+
+`texture_stats().kept_bytes` counts textures whose copy is still held: 0 in normal running.
+Checked at 375 px on 7861 (desktop Chrome): all 30 bitmaps closed after load, the picture
+identical channel for channel to the same picture with the copies kept, a lost and restored
+context reloaded every texture and drew the same pixels, 150 clicked changes and switches with no
+errors and nothing kept, and an idle-refreshed snapshot identical to the live picture. Pixi's list
+of managed textures grows over a long session, but only with empty slots; the live entries always
+matched the viewer's textures and snapshots.
 
 **When.** `image_loading_mode`:
 
@@ -280,7 +302,8 @@ images exhausts mobile Safari.
   that angle again loads those images again.
 - The budget is checked after each load, after an angle switch (the outgoing angle is no longer
   pinned) and after a resize (the budget is smaller below the mobile breakpoint).
-- `texture_stats()` on the viewer returns `{ count, bytes, pinned_bytes, budget }` for measuring.
+- `texture_stats()` on the viewer returns `{ count, bytes, pinned_bytes, budget, kept_bytes }`
+  for measuring, plus `mode`, `picture_bytes`, `snapshots` and `snapshot_bytes` (phase 4b).
 - The viewer owns what it loads; add-on items own and destroy their own textures.
 
 **Loading state.** `is-loading-image` on the root, `PC.fe.viewer.layer.preload.complete` per item
@@ -501,8 +524,11 @@ bound to `.mkl_pc_layers`.
 
 **Context loss.** Listen for `webglcontextlost` / `webglcontextrestored` on the canvas and fire the
 same hooks as the 3D viewer (`PC.fe.viewer.context.lost`, `PC.fe.viewer.context.restored`). On
-restore, redraw: Pixi re-uploads the textures from their images (checked on product 613: screen
-and capture identical before the loss and after the restore). Not restored within 3 s: fall back
+restore, every texture goes and the angles on screen load again (`reload_textures()`): their
+images were freed after upload, so Pixi has nothing to upload again from. The other angles load
+when shown, or in the background as usual. Until 2026-11-06 Pixi re-uploaded from the kept images
+(checked then on product 613: screen and capture identical before the loss and after the
+restore); the reload was checked the same way on 7861. Not restored within 3 s: fall back
 (table above).
 
 **Teardown.** `remove()` stops loops, disconnects the `ResizeObserver`, ends waits, destroys
@@ -687,7 +713,8 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    them. *Done 2026-11-05*, checked as described in the Snapshots section. Still to check: the
    iPhone, especially 7859, which crashed holding two pictures during switches.
 4b. **Other angles live** where the budget allows, idle snapshot refreshes where it does not (section
-    above), with the decode-queue priority. *Done 2026-11-06*; the iPhone run is still to do.
+    above), with the decode-queue priority. *Done 2026-11-06.* First iPhone runs below; they led to
+    freeing each texture's image once uploaded (Textures section), the same day.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
@@ -720,6 +747,16 @@ errors, 105 MiB at most, 89 MiB pinned at most, 95 MiB at the end. The iPhone pa
 done; the timing comparison against the stack remains. If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
 before phase 4. `PC.fe.modal.viewer.texture_stats()` from Safari's Web Inspector gives the numbers.
+
+*Phase 4b on the XS, 2026-11-06, 7861 with the console script:* the first run died at step 80 with
+"t is not a function" and no `mode` in the stats: Safari was running a bundle cached from before
+64d00287. The build dated the joined bundle with its first part's mtime, so the `filemtime()`
+version never changed; the gulpfile now dates it at build time. The second run, on the real 4b
+bundle, died after 200 steps with no script errors: `live` at step 20 (one angle visited), then
+`refresh`, textures steady at 95 MiB of the 96 MiB budget, pinned between 0 and 49 MiB. The
+memory the budget did not count was each texture's image, kept by Pixi after upload (about as
+much again); it is now freed (Textures section). Next: the same run on the XS with that change,
+watching `kept_bytes` (should stay 0).
 
 ## What to keep from the draft
 
