@@ -373,7 +373,7 @@ content does not survive a lost context; Pixi cannot re-upload it). Counted sepa
 
 ## Keeping other angles live (phase 4b)
 
-*Agreed in principle 2026-11-05, not built.* Only the angle being shown follows choice changes
+*Built 2026-11-06.* Only the angle being shown follows choice changes
 (`flush()` syncs the target stack); the others catch up when visited. So coming back to an angle
 after a change always reloads it, and its snapshot is stale. Where memory allows, the visited
 angles should instead stay in sync in the background, so a return is complete at once.
@@ -445,6 +445,27 @@ cost is decoding, not downloading.
 | All fit (`P × N ≤ 0.75 × B`) | live, synced in the background |
 | One picture fits (`P ≤ B`) | snapshots refreshed after 2 s idle |
 | One picture does not fit | snapshots dropped when stale; reload on return |
+
+**As built.** `update_mode()` picks `live`, `refresh` or `reload` (filter
+`PC.fe.viewer.canvas.views_mode( mode, viewer, { picture, angles, budget } )`), measuring the
+picture whenever the shown one is complete; `texture_stats()` reports `mode` and `picture_bytes`.
+Live: `sync_others()` runs from `start_background()`, after any change once the shown angle has
+settled. An eviction of another angle's texture blocks live mode until a resize (the budget may
+have changed). The decode queue hands a freed slot to the first waiter for the shown or coming
+picture, else the first background one (`next_decode()`); hover preloads count as the customer's.
+Refresh: idle is 2 s without a choice change, hover preload or angle change, and with the shown
+picture complete (`PC.fe.viewer.canvas.idle_delay`); `refresh_snapshot()` uses a texture the
+viewer already holds as it is.
+
+**Checked** (desktop Chrome, 2026-11-06): 7861 at desktop width is `live`: after three choice
+changes the three hidden angles were complete in the background, and switching to one was
+immediate. At 375 px it is `refresh`: one choice change made the three snapshots stale; they were
+rebuilt most recent first, done 15 s after the change (about 4 s per angle of 30 images), and the
+rebuilt snapshot matched the live picture as closely as one taken from the screen (the same edge
+column). A choice made during a refresh stopped it, discarded the half-built texture and left the
+queue empty. 7860 at 375 px is `live` (6 MiB a picture), 7859 `reload` (297 MiB against 96). 70
+clicked changes with idle pauses ended with no errors and the picture as the models say.
+`__tests__/viewer-canvas.test.js` covers the priority order and the mode thresholds.
 
 **Open points:**
 
@@ -666,7 +687,7 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    them. *Done 2026-11-05*, checked as described in the Snapshots section. Still to check: the
    iPhone, especially 7859, which crashed holding two pictures during switches.
 4b. **Other angles live** where the budget allows, idle snapshot refreshes where it does not (section
-    above). The decode-queue priority comes first.
+    above), with the decode-queue priority. *Done 2026-11-06*; the iPhone run is still to do.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).

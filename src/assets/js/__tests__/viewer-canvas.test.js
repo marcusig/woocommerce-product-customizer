@@ -424,3 +424,87 @@ describe( 'sharing a load that is given up', () => {
 		delete global._;
 	} );
 } );
+
+describe( 'decode priority', () => {
+	test( 'a freed slot goes to the shown picture before background work, in order within each', async () => {
+		load();
+		const viewer = Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			decoding: 0,
+			decode_queue: [],
+			decode_limit: () => 1,
+		} );
+		const order = [];
+		const frees = {};
+		const ask = ( name, background ) => viewer.decode_slot( () => true, () => background ).then( ( free ) => {
+			order.push( name );
+			frees[ name ] = free;
+		} );
+		const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		ask( 'shown', false );
+		ask( 'other angle 1', true );
+		ask( 'other angle 2', true );
+		ask( 'new choice', false );
+		await flush();
+		expect( order ).toEqual( [ 'shown' ] );
+		frees.shown();
+		await flush();
+		// The customer's new choice jumps the background queue.
+		expect( order ).toEqual( [ 'shown', 'new choice' ] );
+		frees[ 'new choice' ]();
+		await flush();
+		frees[ 'other angle 1' ]();
+		await flush();
+		expect( order ).toEqual( [ 'shown', 'new choice', 'other angle 1', 'other angle 2' ] );
+	} );
+} );
+
+describe( 'how other angles are kept', () => {
+	const MiB = 1024 * 1024;
+	const viewer_with = ( { picture, angles, budget, mode = 'refresh', blocked = false } ) => {
+		load();
+		global._ = { size: ( object ) => Object.keys( object ).length };
+		const stacks = {};
+		for ( let i = 0; i < angles; i++ ) stacks[ i ] = {};
+		return Object.assign( Object.create( PC.fe.views.viewer_canvas.prototype ), {
+			stacks,
+			current_stack: null,
+			picture_bytes: picture * MiB,
+			mode,
+			live_blocked: blocked,
+			texture_budget: () => budget * MiB,
+		} );
+	};
+	afterEach( () => {
+		delete global._;
+	} );
+
+	test( 'live while every visited angle fits in 75% of the budget', () => {
+		// 7860: 2 MiB a picture.
+		expect( viewer_with( { picture: 2, angles: 4, budget: 96 } ).update_mode() ).toBe( 'live' );
+		// 7861 on desktop: 30 MiB × 4 against 256.
+		expect( viewer_with( { picture: 30, angles: 4, budget: 256 } ).update_mode() ).toBe( 'live' );
+		// 7861 on a phone: 59 MiB × 4 against 96 - refreshed snapshots instead.
+		expect( viewer_with( { picture: 59, angles: 4, budget: 96 } ).update_mode() ).toBe( 'refresh' );
+		// 7859 on a phone: one picture alone is over budget.
+		expect( viewer_with( { picture: 296, angles: 4, budget: 96 } ).update_mode() ).toBe( 'reload' );
+	} );
+
+	test( 'hysteresis: once live, it stays live up to the whole budget', () => {
+		// 200 MiB of 256: 78%, above the 75% to start...
+		expect( viewer_with( { picture: 50, angles: 4, budget: 256 } ).update_mode() ).toBe( 'refresh' );
+		// ...but not enough to stop.
+		expect( viewer_with( { picture: 50, angles: 4, budget: 256, mode: 'live' } ).update_mode() ).toBe( 'live' );
+		expect( viewer_with( { picture: 70, angles: 4, budget: 256, mode: 'live' } ).update_mode() ).toBe( 'refresh' );
+	} );
+
+	test( 'an eviction blocks live mode; nothing measured keeps the mode; a filter has the last word', () => {
+		expect( viewer_with( { picture: 2, angles: 4, budget: 96, blocked: true } ).update_mode() ).toBe( 'refresh' );
+		expect( viewer_with( { picture: 0, angles: 4, budget: 96, mode: 'live' } ).update_mode() ).toBe( 'live' );
+		const viewer = viewer_with( { picture: 2, angles: 4, budget: 96 } );
+		wp.hooks.addFilter( 'PC.fe.viewer.canvas.views_mode', 'test', () => 'reload' );
+		expect( viewer.update_mode() ).toBe( 'reload' );
+		wp.hooks.addFilter( 'PC.fe.viewer.canvas.views_mode', 'test', () => 'nonsense' );
+		expect( viewer.update_mode() ).toBe( 'refresh' );
+	} );
+} );

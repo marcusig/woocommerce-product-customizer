@@ -65,6 +65,15 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.snapshots = {};
 		this.cover = null;
 		this.transition = null;
+		// How the angles not shown are kept (phase 4b): 'live', 'refresh' or
+		// 'reload'. See update_mode().
+		this.mode = 'refresh';
+		this.picture_bytes = 0;
+		this.live_blocked = false;
+		this.background_dirty = false;
+		this.idle_timer = null;
+		this.refresh_job = null;
+		this.show_clock = 0;
 		this.html_items = [];
 		this.pending_layers = {};
 		this.sync_scheduled = false;
@@ -348,6 +357,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			this.app.renderer.resize( width, height );
 		}
 		this.layout();
+		this.stop_refresh();
 		// A flat copy only lines up with the layout it was taken in.
 		if ( this.cover && this.current_stack && this.cover.snapshot.layout !== this.layout_key( this.current_stack ) ) {
 			this.uncover();
@@ -370,6 +380,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			// Below the mobile breakpoint the budget is smaller.
 			that.enforce_budget();
 			that.prune_snapshots();
+			// The budget may have changed: live mode may be tried again.
+			that.live_blocked = false;
+			that.update_mode();
 			if ( that.current_stack ) that.check_resolution( that.current_stack );
 			if ( that.target_stack && that.target_stack !== that.current_stack ) that.check_resolution( that.target_stack );
 		}, 250 );
@@ -406,6 +419,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	flush: function() {
 		this.sync_scheduled = false;
 		if ( this.is_removed || ! this.target_stack ) return;
+		this.note_activity();
+		// Other angles follow once the shown one is done (update_loading()).
+		this.background_dirty = true;
 		var layer_ids = _.keys( this.pending_layers );
 		this.pending_layers = {};
 		_.each( layer_ids, function( layer_id ) {
@@ -538,10 +554,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// else marks it as used, and another load's enforce_budget() would
 		// release it. The waiting entry pins it for that window.
 		( this.waiting[ url ] = this.waiting[ url ] || [] ).push( entry );
-		var wanted = function() {
-			return ! entry.removed && ( entry.stack === that.current_stack || entry.stack === that.target_stack );
+		var shown_or_coming = function() {
+			return entry.stack === that.current_stack || entry.stack === that.target_stack;
 		};
-		this.load_texture( url, stack, wanted ).then( function( texture_record ) {
+		var wanted = function() {
+			if ( entry.removed ) return false;
+			// Another visited angle only while they are kept live (update_mode()).
+			return shown_or_coming() || ( 'live' === that.mode && that.stacks[ entry.stack.angle_id ] === entry.stack );
+		};
+		var background = function() {
+			return ! shown_or_coming();
+		};
+		this.load_texture( url, stack, wanted, background ).then( function( texture_record ) {
 			that.waiting[ url ] = _.without( that.waiting[ url ] || [], entry );
 			if ( ! that.waiting[ url ].length ) delete that.waiting[ url ];
 			if ( entry.removed || that.is_removed ) return;
@@ -708,29 +732,51 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Promise<Function|null>} The function that frees the slot, or
 	 *                                  null when the slot was given up.
 	 */
-	decode_slot: function( wanted ) {
+	decode_slot: function( wanted, background ) {
 		var that = this;
 		return new Promise( function( resolve ) {
-			var grant = function( force ) {
-				if ( ! force && wanted && ! that.is_removed && ! wanted() ) {
+			var waiter = {
+				wanted: function() {
+					return that.is_removed || ! wanted || !! wanted();
+				},
+				background: function() {
+					return !! ( background && background() );
+				},
+				give_up: function() {
 					resolve( null );
-					return false;
-				}
-				that.decoding++;
-				var freed = false;
-				resolve( function() {
-					if ( freed ) return;
-					freed = true;
-					that.decoding--;
-					while ( that.decode_queue.length && false === that.decode_queue.shift()() ) {
-						// Given up: try the next one.
-					}
-				} );
-				return true;
+				},
+				grant: function() {
+					that.decoding++;
+					var freed = false;
+					resolve( function() {
+						if ( freed ) return;
+						freed = true;
+						that.decoding--;
+						that.next_decode();
+					} );
+				},
 			};
-			if ( that.decoding < that.decode_limit() ) grant( true );
-			else that.decode_queue.push( grant );
+			if ( that.decoding < that.decode_limit() ) waiter.grant();
+			else that.decode_queue.push( waiter );
 		} );
+	},
+
+	/**
+	 * Hand a freed slot on: waiters nobody wants any more give up, then the
+	 * first one for the picture shown or coming goes, else the first
+	 * background one (eager mode, other angles, snapshot refreshes).
+	 */
+	next_decode: function() {
+		this.decode_queue = this.decode_queue.filter( function( waiter ) {
+			if ( waiter.wanted() ) return true;
+			waiter.give_up();
+			return false;
+		} );
+		if ( ! this.decode_queue.length || this.decoding >= this.decode_limit() ) return;
+		var index = this.decode_queue.findIndex( function( waiter ) {
+			return ! waiter.background();
+		} );
+		this.decode_queue.splice( index < 0 ? 0 : index, 1 )[ 0 ].grant();
 	},
 
 	/**
@@ -753,15 +799,16 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @param {Function} scale_for Given the natural { width, height }, the scale
 	 *                             to build at; asked once the slot is granted, so
 	 *                             a resize while waiting is taken into account.
-	 * @param {Function} wanted    Asked when the slot comes; false gives it up.
+	 * @param {Function} wanted     Asked when the slot comes; false gives it up.
+	 * @param {Function} background True while only background work wants it.
 	 * @return {Promise<Object|null>} { built, natural, scale }, null, or
 	 *                                PC.fe.views.viewer_canvas.abandoned.
 	 */
-	fetch_texture: function( url, scale_for, wanted ) {
+	fetch_texture: function( url, scale_for, wanted, background ) {
 		var that = this;
 		return this.load_image( url, true ).then( function( image ) {
 			if ( ! image ) return null;
-			return that.decode_slot( wanted ).then( function( free ) {
+			return that.decode_slot( wanted, background ).then( function( free ) {
 				if ( ! free ) {
 					that.release_image( image );
 					return PC.fe.views.viewer_canvas.abandoned;
@@ -799,28 +846,34 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 *
 	 * @param {String}   url
 	 * @param {Object}   stack
-	 * @param {Function} wanted Whether this caller still needs the texture;
-	 *                          omitted, it always does.
+	 * @param {Function} wanted     Whether this caller still needs the texture;
+	 *                              omitted, it always does.
+	 * @param {Function} background True while this caller is background work;
+	 *                              omitted, it is not.
 	 * @return {Promise<Object|null>} The texture record, null, or `abandoned`.
 	 */
-	load_texture: function( url, stack, wanted ) {
+	load_texture: function( url, stack, wanted, background ) {
 		var record = this.textures[ url ];
 		var that = this;
 		var abandoned = PC.fe.views.viewer_canvas.abandoned;
 		wanted = wanted || function() {
 			return true;
 		};
+		background = background || function() {
+			return false;
+		};
+		var claim = { wanted: wanted, background: background };
 		if ( record ) {
-			if ( record.claims ) record.claims.push( wanted );
+			if ( record.claims ) record.claims.push( claim );
 			return record.promise.then( function( loaded ) {
 				if ( that.is_removed ) return null;
 				if ( abandoned === loaded ) {
 					// Given up for the other callers: this one loads it, if still needed.
-					return wanted() ? that.load_texture( url, stack, wanted ) : abandoned;
+					return wanted() ? that.load_texture( url, stack, wanted, background ) : abandoned;
 				}
 				if ( ! loaded ) return null;
 				// Released while this caller waited: load it again.
-				if ( record.destroyed ) return that.load_texture( url, stack, wanted );
+				if ( record.destroyed ) return that.load_texture( url, stack, wanted, background );
 				var needed = that.texture_scale( stack, record.natural );
 				if ( needed <= record.scale ) return record;
 				return that.upgrade_texture( record, needed );
@@ -839,14 +892,19 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			promise: null,
 			upgrading: null,
 			// Every caller's `wanted`, until the decode slot is granted.
-			claims: [ wanted ],
+			claims: [ claim ],
 		};
 		this.textures[ url ] = record;
 		record.promise = this.fetch_texture( url, function( natural ) {
 			return that.texture_scale( stack, natural );
 		}, function() {
-			return !! _.find( record.claims, function( claim ) {
-				return claim();
+			return !! _.find( record.claims, function( item ) {
+				return item.wanted();
+			} );
+		}, function() {
+			// Background only while no caller that still wants it is in the foreground.
+			return ! _.find( record.claims, function( item ) {
+				return item.wanted() && ! item.background();
 			} );
 		} ).then( function( result ) {
 			record.claims = null;
@@ -1085,6 +1143,14 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * angles not on screen; showing that angle again loads the image again.
 	 */
 	evict_texture: function( record ) {
+		// Keeping the other angles live does not fit after all: stop until the
+		// budget changes (a resize).
+		if ( 'live' === this.mode && _.find( record.entries, function( entry ) {
+			return entry.stack !== this.current_stack && entry.stack !== this.target_stack;
+		}, this ) ) {
+			this.live_blocked = true;
+			this.mode = 'refresh';
+		}
 		_.each( record.entries.slice(), function( entry ) {
 			var layer_record = entry.stack && entry.stack.layers[ entry.model.get( 'layerId' ) ];
 			if ( layer_record ) {
@@ -1113,6 +1179,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	preload: function( choice ) {
 		var stack = this.target_stack;
 		if ( ! stack || this.is_removed || choice.get( 'active' ) ) return;
+		this.note_activity();
 		var url = this.image_url( choice, stack.angle_id );
 		if ( ! url ) return;
 		var that = this;
@@ -1132,7 +1199,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	start_background: function() {
 		this.stop_background();
 		var stack = this.current_stack;
-		if ( ! stack || stack !== this.target_stack || this.is_removed ) return;
+		if ( ! stack || stack !== this.target_stack || this.is_removed || this.cover ) return;
+		// Other visited angles first, when they are kept live; they queue
+		// before eager loads and below anything the customer asks for.
+		this.update_mode();
+		if ( 'live' === this.mode ) this.sync_others();
 		if ( 'lazy' === ( PC.fe.config && PC.fe.config.image_loading_mode || 'lazy' ) ) return;
 
 		var queue = [];
@@ -1165,6 +1236,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			}
 			that.load_texture( item.url, stack, function() {
 				return ! job.stopped;
+			}, function() {
+				return true;
 			} ).then( next );
 		};
 		next();
@@ -1205,6 +1278,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			if ( this.is_pinned( record ) ) stats.pinned_bytes += record.bytes;
 		}, this );
 		// Outside the budget: one per angle at most.
+		stats.mode = this.mode;
+		stats.picture_bytes = this.picture_bytes;
 		stats.snapshots = _.size( this.snapshots );
 		stats.snapshot_bytes = 0;
 		_.each( this.snapshots, function( snapshot ) {
@@ -1263,7 +1338,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.$loading_marker.toggleClass( 'loading', this.is_loading );
 		if ( was_loading && ! this.is_loading ) {
 			wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
+		}
+		if ( ! this.is_loading && ( was_loading || this.background_dirty ) ) {
+			this.background_dirty = false;
 			this.start_background();
+			this.schedule_idle();
 		}
 	},
 
@@ -1282,7 +1361,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 */
 	show_angle: function( angle_id ) {
 		this.stop_background();
+		this.note_activity();
 		var stack = this.ensure_stack( angle_id );
+		stack.last_shown = ++this.show_clock;
 		this.target_stack = stack;
 		this.sync_stack( stack );
 		// Laid out while hidden; its kept textures may be too small for the box
@@ -1426,16 +1507,35 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {String}
 	 */
 	picture_key: function( stack ) {
+		return this.picture_items( stack ).join( '\n' );
+	},
+
+	/**
+	 * The files a stack would draw now, in drawing order: layers in image
+	 * order, then the choices of a layer by their index (the zIndex of their
+	 * sprites).
+	 *
+	 * @return {Array<String>}
+	 */
+	picture_items: function( stack ) {
 		var state = PC.fe.viewer_state;
-		var parts = [];
+		var urls = [];
 		_.each( state.layers_in_image_order(), function( layer ) {
-			_.each( state.shown_choices( layer ), function( choice ) {
-				if ( ! state.has_drawable( choice ) ) return;
+			var choices = PC.fe.getLayerContent( layer.id );
+			var shown = _.filter( state.shown_choices( layer ), function( choice ) {
+				return state.has_drawable( choice );
+			} );
+			if ( choices && shown.length > 1 ) {
+				shown = _.sortBy( shown, function( choice ) {
+					return choices.indexOf( choice );
+				} );
+			}
+			_.each( shown, function( choice ) {
 				var url = this.image_url( choice, stack.angle_id );
-				if ( url ) parts.push( url );
+				if ( url ) urls.push( url );
 			}, this );
 		}, this );
-		return parts.join( '\n' );
+		return urls;
 	},
 
 	/**
@@ -1478,6 +1578,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			destroyed: false,
 		};
 		this.snapshots[ stack.angle_id ] = snapshot;
+		stack.had_snapshot = true;
 		return snapshot;
 	},
 
@@ -1551,6 +1652,257 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		cover.frame.destroy( { children: true } );
 		cover.frame = null;
 		if ( cover.snapshot.dropped && ! this.snapshot_in_use( cover.snapshot ) ) this.destroy_snapshot( cover.snapshot );
+	},
+
+	/*
+	 * Other angles (phase 4b): kept live where the budget allows, their
+	 * snapshots refreshed when idle where it does not.
+	 * --------------------------------------------------------------------- */
+
+	/**
+	 * What one picture costs: the bytes of the textures the current stack draws.
+	 */
+	picture_cost: function( stack ) {
+		var seen = {};
+		var bytes = 0;
+		_.each( stack.layers, function( record ) {
+			_.each( record.shown, function( entry ) {
+				var texture_record = entry.record;
+				if ( ! texture_record || ! texture_record.texture || seen[ texture_record.url ] ) return;
+				seen[ texture_record.url ] = true;
+				bytes += texture_record.bytes;
+			} );
+		} );
+		return bytes;
+	},
+
+	/**
+	 * Choose how the visited angles not shown are kept:
+	 *
+	 * - live: they follow choice changes in the background, while one picture
+	 *   times the visited angles fits in 75% of the budget (and until it no
+	 *   longer fits in all of it, or an eviction says otherwise);
+	 * - refresh: their stale snapshots are rebuilt when idle, while one
+	 *   picture fits in the budget;
+	 * - reload: neither; coming back after a change reloads the angle.
+	 *
+	 * The picture's cost is measured whenever the shown one is complete.
+	 */
+	update_mode: function() {
+		var stack = this.current_stack;
+		if ( stack && stack === this.target_stack && ! this.cover && this.is_stack_complete( stack ) ) {
+			var cost = this.picture_cost( stack );
+			if ( cost ) this.picture_bytes = cost;
+		}
+		var picture = this.picture_bytes;
+		if ( ! picture ) return this.mode;
+		var budget = this.texture_budget();
+		var all = picture * _.size( this.stacks );
+		var live;
+		if ( this.live_blocked ) live = false;
+		else if ( 'live' === this.mode ) live = all <= budget;
+		else live = all <= 0.75 * budget;
+		var mode = live ? 'live' : ( picture <= budget ? 'refresh' : 'reload' );
+		/**
+		 * Filter how the canvas viewer keeps the angles not shown.
+		 *
+		 * @param {String} mode    live, refresh or reload.
+		 * @param {Backbone.View} viewer
+		 * @param {Object} measure { picture, angles, budget } (bytes, count, bytes)
+		 */
+		mode = wp.hooks.applyFilters( 'PC.fe.viewer.canvas.views_mode', mode, this, { picture: picture, angles: _.size( this.stacks ), budget: budget } );
+		if ( 'live' !== mode && 'reload' !== mode ) mode = 'refresh';
+		this.mode = mode;
+		return mode;
+	},
+
+	/**
+	 * Bring the visited angles not shown up to date. Their loads are
+	 * background work, wanted only while the mode stays live.
+	 */
+	sync_others: function() {
+		_.each( this.stacks, function( stack ) {
+			if ( stack === this.current_stack || stack === this.target_stack ) return;
+			this.sync_stack( stack );
+		}, this );
+	},
+
+	/**
+	 * The customer did something: a refresh in progress stops, and the idle
+	 * delay starts again.
+	 */
+	note_activity: function() {
+		this.stop_refresh();
+		this.schedule_idle();
+	},
+
+	schedule_idle: function() {
+		if ( this.is_removed ) return;
+		if ( this.idle_timer ) clearTimeout( this.idle_timer );
+		var that = this;
+		/**
+		 * Filter how long the configurator must be idle before the canvas
+		 * viewer refreshes the snapshots of other angles, in milliseconds.
+		 *
+		 * @param {Number} delay
+		 * @param {Backbone.View} viewer
+		 */
+		var delay = wp.hooks.applyFilters( 'PC.fe.viewer.canvas.idle_delay', 2000, this );
+		this.idle_timer = setTimeout( function() {
+			that.idle_timer = null;
+			that.on_idle();
+		}, delay );
+	},
+
+	on_idle: function() {
+		if ( this.is_removed || ! this.app || this.refresh_job ) return;
+		// Still busy: update_loading() starts the delay again once done.
+		if ( this.is_loading || this.cover || this.transition || this.current_stack !== this.target_stack ) return;
+		if ( 'refresh' !== this.update_mode() ) return;
+		if ( window.navigator && navigator.connection && navigator.connection.saveData ) return;
+		var stack = this.next_refresh();
+		if ( stack ) this.refresh_snapshot( stack );
+	},
+
+	/**
+	 * The visited angle to refresh next: one that had a snapshot, whose
+	 * snapshot is now stale, not refreshed for this picture yet, most recently
+	 * shown first.
+	 *
+	 * @return {Object|null}
+	 */
+	next_refresh: function() {
+		var best = null;
+		_.each( this.stacks, function( stack ) {
+			if ( stack === this.current_stack || ! stack.size || ! stack.had_snapshot ) return;
+			if ( stack.refreshed_for === this.picture_key( stack ) ) return;
+			if ( this.valid_snapshot( stack ) ) return;
+			if ( ! best || ( stack.last_shown || 0 ) > ( best.last_shown || 0 ) ) best = stack;
+		}, this );
+		return best;
+	},
+
+	/**
+	 * Rebuild a stack's snapshot two images at a time, without loading the
+	 * stack: each pair is drawn into the new texture at the stack's layout,
+	 * then released. Textures are built as the stack would build them, so the
+	 * live picture later replaces the snapshot without a visible change.
+	 */
+	refresh_snapshot: function( stack ) {
+		var that = this;
+		var abandoned = PC.fe.views.viewer_canvas.abandoned;
+		var renderer = this.app.renderer;
+		var layout = this.layout_key( stack );
+		var picture = this.picture_key( stack );
+		var urls = this.picture_items( stack );
+		stack.refreshed_for = picture;
+
+		var texture = PIXI.RenderTexture.create( {
+			width: renderer.width / renderer.resolution,
+			height: renderer.height / renderer.resolution,
+			resolution: renderer.resolution,
+		} );
+		var job = { stopped: false, stack: stack };
+		this.refresh_job = job;
+		var drawn = 0;
+		var wanted = function() {
+			return ! job.stopped && ! that.is_removed && !! that.app;
+		};
+		var background = function() {
+			return true;
+		};
+		var release = function( items ) {
+			_.each( items, function( item ) {
+				if ( item && item.built ) that.destroy_built( item.built );
+			} );
+		};
+		var end = function() {
+			if ( that.refresh_job === job ) that.refresh_job = null;
+		};
+		var give_up = function() {
+			end();
+			if ( ! texture.destroyed ) texture.destroy( true );
+		};
+		// A texture the viewer holds is used as it is; others are built for this.
+		var get = function( url ) {
+			var record = that.textures[ url ];
+			if ( record && record.texture && ! record.destroyed ) {
+				return Promise.resolve( { texture: record.texture, natural: record.natural } );
+			}
+			return that.fetch_texture( url, function( natural ) {
+				return that.texture_scale( stack, natural );
+			}, wanted, background ).then( function( result ) {
+				if ( ! result || abandoned === result ) return null;
+				return { texture: result.built.texture, natural: result.natural, built: result.built };
+			} );
+		};
+		var draw = function( items ) {
+			var container = new PIXI.Container();
+			container.position.copyFrom( stack.container.position );
+			container.scale.copyFrom( stack.container.scale );
+			_.each( items, function( item ) {
+				// Released meanwhile (a texture the viewer held): the snapshot
+				// would miss it, so this refresh does not count.
+				if ( ! item || item.texture.destroyed ) {
+					if ( item ) stack.refreshed_for = null;
+					return;
+				}
+				var sprite = new PIXI.Sprite( item.texture );
+				that.fit_sprite( sprite, item );
+				sprite.position.set( ( stack.size.width - item.natural.width ) / 2, ( stack.size.height - item.natural.height ) / 2 );
+				container.addChild( sprite );
+			} );
+			renderer.render( { container: container, target: texture, clear: 0 === drawn, clearColor: [ 0, 0, 0, 0 ] } );
+			drawn++;
+			// The sprites go; the textures are released by the caller.
+			container.destroy( { children: true } );
+		};
+		var finish = function() {
+			end();
+			if ( ! that.app || that.is_removed || layout !== that.layout_key( stack ) || picture !== that.picture_key( stack ) ) {
+				if ( ! texture.destroyed ) texture.destroy( true );
+				return;
+			}
+			that.drop_snapshot( stack.angle_id );
+			that.snapshots[ stack.angle_id ] = {
+				angle_id: stack.angle_id,
+				layout: layout,
+				picture: picture,
+				texture: texture,
+				bytes: texture.source.pixelWidth * texture.source.pixelHeight * 4,
+				dropped: false,
+				destroyed: false,
+			};
+			// The next stale angle, if the customer is still idle.
+			setTimeout( function() {
+				that.on_idle();
+			}, 0 );
+		};
+		var step = function( index ) {
+			if ( ! wanted() ) return give_up();
+			if ( index >= urls.length ) {
+				if ( ! drawn ) draw( [] );
+				return finish();
+			}
+			return Promise.all( _.map( urls.slice( index, index + 2 ), get ) ).then( function( items ) {
+				if ( ! wanted() ) {
+					release( items );
+					return give_up();
+				}
+				draw( items );
+				release( items );
+				return step( index + 2 );
+			} );
+		};
+		Promise.resolve( step( 0 ) ).catch( function( error ) {
+			console.log( 'Product configurator: could not refresh the snapshot of an angle.', error );
+			give_up();
+		} );
+	},
+
+	stop_refresh: function() {
+		if ( this.refresh_job ) this.refresh_job.stopped = true;
+		this.refresh_job = null;
 	},
 
 	/*
@@ -1761,6 +2113,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// Pixi cannot upload it again: the flat copies go.
 		this.finish_transition();
 		this.uncover();
+		this.stop_refresh();
 		_.each( _.keys( this.snapshots ), this.drop_snapshot, this );
 		wp.hooks.doAction( 'PC.fe.viewer.context.lost', this, null );
 		var that = this;
@@ -1993,6 +2346,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			this.transition = null;
 		}
 		this.cover = null;
+		if ( this.idle_timer ) clearTimeout( this.idle_timer );
+		this.idle_timer = null;
+		this.stop_refresh();
 		_.each( this.snapshots, function( snapshot ) {
 			snapshot.texture.destroy( true );
 		} );
@@ -2001,8 +2357,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// Let the waiting loads run: each sees is_removed and gives up.
 		var waiting = this.decode_queue;
 		this.decode_queue = [];
-		_.each( waiting, function( grant ) {
-			grant();
+		_.each( waiting, function( waiter ) {
+			waiter.give_up();
 		} );
 		if ( this.resize_observer ) this.resize_observer.disconnect();
 		this.resize_observer = null;
