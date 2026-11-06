@@ -252,7 +252,7 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.1.1 - 06/Nov/2026 =
+= 2.1.1 - unreleased
 
 * FIX: Product editor running out of memory on unmigrated configurators when Advanced Dynamic Pricing is active
 
