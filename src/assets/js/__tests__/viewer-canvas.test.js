@@ -258,6 +258,35 @@ describe( 'responsive images and budget', () => {
 		loaded.hooks.addFilter( 'PC.fe.viewer.canvas.texture_budget', 'test', () => 1234 );
 		expect( budget() ).toBe( 1234 );
 	} );
+
+	test( 'a device reporting little memory only ever lowers the budget', () => {
+		const MiB = 1024 * 1024;
+		const set_memory = ( value ) => Object.defineProperty( window.navigator, 'deviceMemory', { value, configurable: true } );
+		const loaded = with_width( 1200 );
+		const budget = () => PC.fe.views.viewer_canvas.prototype.texture_budget.call( {} );
+		try {
+			set_memory( 8 );
+			expect( budget() ).toBe( 256 * MiB );
+			set_memory( 4 );
+			expect( budget() ).toBe( 128 * MiB );
+			set_memory( 2 );
+			expect( budget() ).toBe( 64 * MiB );
+			set_memory( 0.5 );
+			expect( budget() ).toBe( 64 * MiB );
+			// Under the breakpoint, 4 GB keeps the smaller mobile budget.
+			PC.fe.modal.$el.outerWidth = () => 400;
+			set_memory( 4 );
+			expect( budget() ).toBe( 96 * MiB );
+			set_memory( 1 );
+			expect( budget() ).toBe( 64 * MiB );
+			// The filter still has the last word.
+			loaded.hooks.addFilter( 'PC.fe.viewer.canvas.texture_budget', 'test', () => 1234 );
+			expect( budget() ).toBe( 1234 );
+		} finally {
+			delete window.navigator.deviceMemory;
+		}
+		expect( PC.fe.views.viewer_canvas.memory_cap() ).toBe( 0 );
+	} );
 } );
 
 describe( 'full-size decodes', () => {

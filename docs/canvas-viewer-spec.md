@@ -330,7 +330,9 @@ images exhausts mobile Safari.
 
 - Budget in bytes (`width × height × 4`), filter `PC.fe.viewer.canvas.texture_budget`. Defaults:
   256 MB, 96 MB when the viewer is under `mobile_image_breakpoint` (decision F); confirmed or
-  adjusted by the phase 3 measurements.
+  adjusted by the phase 3 measurements. A device that reports little memory lowers it, never
+  raises it (`memory_cap()`, 2026-11-07): `navigator.deviceMemory` ≤ 2 GB → at most 64 MiB, 4 GB →
+  at most 128 MiB. Only Chromium reports it, so iPhones and iPads keep the breakpoint rule.
 - Textures used by the visible picture, and by the incoming picture during an angle switch, are
   pinned, as are textures an entry of either is waiting for. Everything else is
   least-recently-used and destroyed when over budget. (Until snapshots, below, the outgoing
@@ -532,14 +534,33 @@ clicked changes with idle pauses ended with no errors and the picture as the mod
 
 **Open points:**
 
-- *The thresholds* (0.75 to enter, 1 to leave): starting values, to adjust after a phone run.
-- *The idle delay* for snapshot refreshes: 2 s to start with.
-- *A device-aware budget:* `navigator.deviceMemory` where the browser has it (Chrome, Edge; not
-  Safari or Firefox), e.g. ≤ 2 GB → 64 MiB, 4 GB → 96 MiB, ≥ 8 GB → 256 MiB, falling back to the
-  breakpoint rule; the `PC.fe.viewer.canvas.texture_budget` filter keeps the last word.
-- *Visited angles only, or every angle?* Syncing unvisited angles too would make the first visit
-  of each instant, at the cost of loading pictures the customer may never look at. Recommended:
-  visited only, with every angle as a later option (it is eager mode for angles).
+Reviewed 2026-11-07 (Marc agreed), after the XS runs showed texture memory holding at the budget
+and the tab dying on the number of full-size decodes:
+
+- *The thresholds* (0.75 to enter, 1 to leave): **kept.** They guard texture memory, which held on
+  every run. In decodes `live` is the cheaper mode (a change decodes one image per angle, where
+  `refresh` redraws whole angles), so there is no reason to make it harder to enter on phones.
+- *The idle delay* for snapshot refreshes: **2 s, kept** until the human-pace run below. A click
+  during a refresh throws away what was drawn; if that run shows refreshes started and stopped
+  over and over, raise it on small screens only.
+- *A device-aware budget:* **built, lower-only** (Memory budget, above). Raising budgets on
+  untested devices buys nothing measured. Not checked on a real low-memory device. Untested gap:
+  an iPad is above the breakpoint, so it gets 256 MiB, and Safari does not report its memory.
+- *Visited angles only, or every angle?* **Visited only.** Syncing unvisited angles too would make
+  the first visit of each instant, at the cost of decoding pictures the customer may never look
+  at, for every change in `live` mode: on phones, the cost that kills the tab. Every angle stays
+  a later option (it is eager mode for angles).
+- *The idle refresh is the most decode-heavy work, and it runs at human pace.* In `refresh` mode
+  each idle period redraws every stale visited angle in full, one after another: on 7861 on a
+  phone, up to 90 full-size decodes after one considered click, more than a burst of fast clicks.
+  The stress runs never let it run (no 2 s idle). **Next:** an XS run at human pace (e.g. 40
+  steps, 8 s + 4 s jitter, no pauses). If it dies: below the mobile breakpoint, refresh only the
+  most recently visited angle after a change, behind a filter; a return to an older one reloads
+  it while the current view is held, as `reload` mode does. Mobile-sized files cut this cost about
+  7 times as well.
+  **Run 2026-11-07: passed** with both decoders (7861 on the XS, 40 steps 8-12 s apart, `refresh`
+  mode, the idle refresh running between steps). The refresh stays as built; the cap is not
+  needed.
 - *Several views at once* (a grid of angles, live thumbnails) would need all live for real, with
   several stacks on screen. **Decided (Marc, 2026-11-06):** the same rule applies, live where it
   fits, snapshots where it does not. Likely only for custom projects, unless core generates live

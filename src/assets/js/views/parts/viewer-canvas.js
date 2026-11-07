@@ -1324,7 +1324,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Number}
 	 */
 	texture_budget: function() {
-		var budget = ( PC.fe.views.viewer_canvas.small_screen() ? 96 : 256 ) * 1024 * 1024;
+		var statics = PC.fe.views.viewer_canvas;
+		var budget = ( statics.small_screen() ? 96 : 256 ) * 1024 * 1024;
+		// A device that says it has little memory gets less, never more.
+		var cap = statics.memory_cap();
+		if ( cap ) budget = Math.min( budget, cap * 1024 * 1024 );
 		/**
 		 * Filter how much GPU memory the canvas viewer's textures may use.
 		 *
@@ -2660,6 +2664,22 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var config = PC.fe.config || {};
 		var width = PC.fe.modal && PC.fe.modal.$el ? PC.fe.modal.$el.outerWidth() : 0;
 		return !! ( width && config.mobile_image_breakpoint && width < config.mobile_image_breakpoint );
+	},
+
+	/**
+	 * The most texture memory the device's own memory allows, in MiB, or 0 for
+	 * no limit. Only Chromium browsers report it (navigator.deviceMemory,
+	 * rounded, at most 8), so Safari and Firefox always get 0. It only ever
+	 * lowers the budget: the breakpoint rule is what was measured.
+	 *
+	 * @return {Number}
+	 */
+	memory_cap: function() {
+		var memory = window.navigator && navigator.deviceMemory;
+		if ( ! ( memory > 0 ) ) return 0;
+		if ( memory <= 2 ) return 64;
+		if ( memory <= 4 ) return 128;
+		return 0;
 	},
 
 	/**
