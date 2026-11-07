@@ -596,3 +596,92 @@ describe( 'freeing images after upload', () => {
 		delete global._;
 	} );
 } );
+
+describe( 'image decoder switch', () => {
+	afterEach( () => {
+		delete window.createImageBitmap;
+	} );
+
+	const viewer = () => Object.create( PC.fe.views.viewer_canvas.prototype );
+
+	test( '<img> by default; blob only when asked and supported', () => {
+		load();
+		window.fetch = window.fetch || ( () => {} );
+		URL.createObjectURL = URL.createObjectURL || ( () => '' );
+		expect( viewer().image_decoder() ).toBe( 'element' );
+		wp.hooks.addFilter( 'PC.fe.viewer.canvas.image_decoder', 'test', () => 'blob' );
+		// No createImageBitmap (jsdom): stays on <img>.
+		expect( viewer().image_decoder() ).toBe( 'element' );
+		window.createImageBitmap = () => Promise.resolve();
+		expect( viewer().image_decoder() ).toBe( 'blob' );
+		wp.hooks.addFilter( 'PC.fe.viewer.canvas.image_decoder', 'test', () => 'nonsense' );
+		expect( viewer().image_decoder() ).toBe( 'element' );
+	} );
+
+	test( 'resized as it decodes; drawn smaller when the browser ignores the resize', async () => {
+		load();
+		global.PIXI.Texture = function( options ) {
+			this.source = options.source;
+		};
+		global.PIXI.ImageSource = function( options ) {
+			this.resource = options.resource;
+		};
+		const calls = [];
+		const close = jest.fn();
+		let ignore_resize = false;
+		window.createImageBitmap = ( blob, options ) => {
+			calls.push( options );
+			return Promise.resolve( ignore_resize ? { width: 400, height: 200, close } : { width: options.resizeWidth, height: options.resizeHeight, close } );
+		};
+		const v = Object.assign( viewer(), { downscale: ( bitmap, width, height ) => ( { canvas: true, width, height } ) } );
+		const built = await v.build_bitmap( 'blob', { width: 400, height: 200 }, 0.5 );
+		expect( calls[ 0 ] ).toEqual( { premultiplyAlpha: 'premultiply', resizeWidth: 200, resizeHeight: 100, resizeQuality: 'high' } );
+		expect( built.bitmap.width ).toBe( 200 );
+		expect( built.texture.source.resource ).toBe( built.bitmap );
+
+		ignore_resize = true;
+		const drawn = await v.build_bitmap( 'blob', { width: 400, height: 200 }, 0.5 );
+		expect( close ).toHaveBeenCalled();
+		expect( drawn.bitmap ).toBe( null );
+		expect( drawn.texture.source.resource ).toEqual( { canvas: true, width: 200, height: 100 } );
+
+		// Full size: no resize options at all.
+		ignore_resize = false;
+		calls.length = 0;
+		window.createImageBitmap = ( blob, options ) => {
+			calls.push( options );
+			return Promise.resolve( { width: 400, height: 200, close } );
+		};
+		await v.build_bitmap( 'blob', { width: 400, height: 200 }, 1 );
+		expect( calls[ 0 ] ).toEqual( { premultiplyAlpha: 'premultiply' } );
+	} );
+
+	test( 'a file createImageBitmap cannot decode goes through <img>, after freeing its slot', async () => {
+		load();
+		const freed = jest.fn();
+		const element = jest.fn( () => Promise.resolve( 'from element' ) );
+		const v = Object.assign( viewer(), {
+			is_removed: false,
+			load_blob: () => Promise.resolve( { blob: 'svg', natural: { width: 10, height: 10 } } ),
+			decode_slot: () => Promise.resolve( freed ),
+			build_bitmap: () => Promise.reject( new Error( 'cannot decode' ) ),
+			fetch_element: element,
+		} );
+		const wanted = () => true;
+		await expect( v.fetch_bitmap( 'a.svg', () => 1, wanted ) ).resolves.toBe( 'from element' );
+		expect( freed ).toHaveBeenCalled();
+		expect( element ).toHaveBeenCalledWith( 'a.svg', expect.any( Function ), wanted, undefined );
+	} );
+
+	test( 'a load nobody wants any more gives up its slot before decoding', async () => {
+		load();
+		const build = jest.fn();
+		const v = Object.assign( viewer(), {
+			load_blob: () => Promise.resolve( { blob: 'b', natural: { width: 10, height: 10 } } ),
+			decode_slot: () => Promise.resolve( null ),
+			build_bitmap: build,
+		} );
+		await expect( v.fetch_bitmap( 'a.png', () => 1, () => false ) ).resolves.toBe( PC.fe.views.viewer_canvas.abandoned );
+		expect( build ).not.toHaveBeenCalled();
+	} );
+} );

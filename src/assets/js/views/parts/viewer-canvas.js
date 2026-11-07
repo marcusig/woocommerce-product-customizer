@@ -810,6 +810,43 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 *                                PC.fe.views.viewer_canvas.abandoned.
 	 */
 	fetch_texture: function( url, scale_for, wanted, background ) {
+		if ( 'blob' === this.image_decoder() ) return this.fetch_bitmap( url, scale_for, wanted, background );
+		return this.fetch_element( url, scale_for, wanted, background );
+	},
+
+	/**
+	 * How images are decoded: through an <img> element ('element', the
+	 * default for now), or fetched and decoded straight into a downscaled
+	 * bitmap ('blob'). Read for each load, so a switch applies to the next
+	 * one (reload_textures() reloads everything).
+	 *
+	 * @return {String} element | blob
+	 */
+	image_decoder: function() {
+		/**
+		 * Filter how the canvas viewer decodes its images.
+		 *
+		 * 'element' loads each image in an <img>, decodes it at full size and
+		 * downscales a copy; Safari keeps those full-size decodes in its image
+		 * cache for a while. 'blob' fetches the file and decodes it with
+		 * createImageBitmap( blob ), resized as it decodes, so no <img> holds
+		 * it. Falls back to 'element' where fetch or createImageBitmap is
+		 * missing, and for an image createImageBitmap cannot decode.
+		 *
+		 * @param {String} decoder element | blob
+		 * @param {Backbone.View} viewer
+		 */
+		var decoder = wp.hooks.applyFilters( 'PC.fe.viewer.canvas.image_decoder', 'element', this );
+		if ( 'blob' !== decoder ) return 'element';
+		if ( 'function' !== typeof window.fetch || 'function' !== typeof window.createImageBitmap || ! window.URL || 'function' !== typeof URL.createObjectURL ) return 'element';
+		return 'blob';
+	},
+
+	/**
+	 * fetch_texture() through an <img>: downloaded, then decoded at full size
+	 * in a decode slot and downscaled (build_texture()).
+	 */
+	fetch_element: function( url, scale_for, wanted, background ) {
 		var that = this;
 		return this.load_image( url, true ).then( function( image ) {
 			if ( ! image ) return null;
@@ -836,6 +873,142 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				} );
 			} );
 		} );
+	},
+
+	/**
+	 * fetch_texture() without an <img>: the file is fetched, its size read
+	 * from a header-only load, then decoded in a decode slot straight to the
+	 * texture's size (build_bitmap()). An image createImageBitmap() cannot
+	 * decode (an SVG in some browsers) goes through fetch_element() instead.
+	 */
+	fetch_bitmap: function( url, scale_for, wanted, background ) {
+		var that = this;
+		return this.load_blob( url ).then( function( loaded ) {
+			if ( ! loaded ) return null;
+			return that.decode_slot( wanted, background ).then( function( free ) {
+				if ( ! free ) return PC.fe.views.viewer_canvas.abandoned;
+				if ( that.is_removed ) {
+					free();
+					return null;
+				}
+				var natural = loaded.natural;
+				var scale = scale_for( natural );
+				return that.build_bitmap( loaded.blob, natural, scale ).then( function( built ) {
+					free();
+					if ( built && that.is_removed ) {
+						that.destroy_built( built );
+						return null;
+					}
+					return built ? { built: built, natural: natural, scale: scale } : null;
+				}, function( error ) {
+					free();
+					if ( that.is_removed ) return null;
+					console.log( 'Product configurator: could not decode the image ' + url + ' from its file, loading it as an image', error );
+					return that.fetch_element( url, scale_for, wanted, background );
+				} );
+			} );
+		} );
+	},
+
+	/**
+	 * Download an image file and read its size.
+	 *
+	 * The request matches the one an <img> would make (no credentials for
+	 * other domains), so it shares the HTTP cache. A cross-origin failure is
+	 * taken for missing CORS headers, as in load_image().
+	 *
+	 * @param {String} url
+	 * @return {Promise<Object|null>} { blob, natural }
+	 */
+	load_blob: function( url ) {
+		var that = this;
+		var cross_origin = this.is_cross_origin( url );
+		return window.fetch( url, {
+			mode: cross_origin ? 'cors' : 'same-origin',
+			credentials: cross_origin ? 'omit' : 'same-origin',
+		} ).then( function( response ) {
+			if ( ! response.ok ) throw new Error( 'HTTP ' + response.status );
+			return response.blob();
+		} ).then( function( blob ) {
+			if ( that.is_removed ) return null;
+			return that.blob_size( blob ).then( function( natural ) {
+				if ( ! natural ) throw new Error( 'not an image' );
+				return { blob: blob, natural: natural };
+			} );
+		} ).catch( function( error ) {
+			if ( that.is_removed ) return null;
+			if ( cross_origin ) {
+				that.fall_back( 'cors', url );
+			} else {
+				console.log( 'Product configurator: could not load the image ' + url, error );
+			}
+			return null;
+		} );
+	},
+
+	/**
+	 * An image file's natural size, from an <img> that only loads it: the
+	 * size comes from the file's header, and an image never drawn nor
+	 * decode()d is not decoded. The element and its object URL go at once.
+	 *
+	 * @param {Blob} blob
+	 * @return {Promise<Object|null>} { width, height }
+	 */
+	blob_size: function( blob ) {
+		return new Promise( function( resolve ) {
+			var link = URL.createObjectURL( blob );
+			var image = new Image();
+			var done = function( size ) {
+				image.onload = null;
+				image.onerror = null;
+				image.removeAttribute( 'src' );
+				URL.revokeObjectURL( link );
+				resolve( size );
+			};
+			image.onload = function() {
+				done( image.naturalWidth ? { width: image.naturalWidth, height: image.naturalHeight } : null );
+			};
+			image.onerror = function() {
+				done( null );
+			};
+			image.src = link;
+		} );
+	},
+
+	/**
+	 * A texture decoded from an image file at a scale, resized as it decodes.
+	 * A browser that ignores the resize options hands back the full image,
+	 * which is then drawn smaller on a 2D canvas and closed.
+	 *
+	 * @param {Blob}   blob
+	 * @param {Object} natural { width, height }
+	 * @param {Number} scale
+	 * @return {Promise<Object|null>} { texture, bitmap }; rejects when the
+	 *                                browser cannot decode the file.
+	 */
+	build_bitmap: function( blob, natural, scale ) {
+		var that = this;
+		var width = Math.max( 1, Math.round( natural.width * scale ) );
+		var height = Math.max( 1, Math.round( natural.height * scale ) );
+		var options = { premultiplyAlpha: 'premultiply' };
+		if ( width < natural.width || height < natural.height ) {
+			options.resizeWidth = width;
+			options.resizeHeight = height;
+			options.resizeQuality = 'high';
+		}
+		return window.createImageBitmap( blob, options ).then( function( bitmap ) {
+			if ( bitmap.width === width && bitmap.height === height ) return that.make_built( bitmap, bitmap );
+			var canvas = that.downscale( bitmap, width, height );
+			bitmap.close();
+			return canvas ? that.make_built( canvas ) : null;
+		} );
+	},
+
+	make_built: function( resource, bitmap ) {
+		return {
+			texture: new PIXI.Texture( { source: new PIXI.ImageSource( { resource: resource } ) } ),
+			bitmap: bitmap || null,
+		};
 	},
 
 	/**
@@ -1050,16 +1223,13 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	build_texture: function( image, natural, scale ) {
 		var width = Math.max( 1, Math.round( natural.width * scale ) );
 		var height = Math.max( 1, Math.round( natural.height * scale ) );
+		var that = this;
 		var make = function( resource, bitmap ) {
-			return {
-				texture: new PIXI.Texture( { source: new PIXI.ImageSource( { resource: resource } ) } ),
-				bitmap: bitmap || null,
-			};
+			return that.make_built( resource, bitmap );
 		};
 		if ( width >= natural.width && height >= natural.height ) {
 			return Promise.resolve( make( image ) );
 		}
-		var that = this;
 		var canvas_copy = function() {
 			var canvas = that.downscale( image, width, height );
 			return canvas ? make( canvas ) : make( image );
@@ -1348,6 +1518,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		}, this );
 		// Outside the budget: one per angle at most.
 		stats.mode = this.mode;
+		stats.decoder = this.image_decoder();
 		stats.picture_bytes = this.picture_bytes;
 		stats.snapshots = _.size( this.snapshots );
 		stats.snapshot_bytes = 0;

@@ -218,6 +218,20 @@ as the stack (the modal's), so both viewers request the same files. A resize tha
 breakpoint resyncs every layer; each one swaps to the new file the way a selection change does,
 holding the old image until the new one has loaded.
 
+**Smaller files on phones: a documented recommendation, not a default** (Marc, 2026-11-07).
+`url_mobile` is only set when *Preview Image size - mobile* (`preview_image_size_mobile`) names a
+WordPress size; its default, `inherit`, sends phones the same file as desktops
+(`set_thumbnail_url()`, and only for images with an attachment id). Whatever the texture ends up
+at, the browser decodes the whole file first: 32 MiB for 3840×2160, against about 5 MiB for
+`1536x1536` (1536×864), which is still more than a phone's box needs (about 1125 device px on an
+XS). That decode is what the iPhone runs keep dying on, so the user docs for the canvas renderer
+should recommend setting the mobile size (e.g. `1536x1536`) when the images are large. Considered
+and left for later: treating `inherit` as `1536x1536` when the renderer is `canvas` (no existing
+site would change, since nobody runs the canvas yet). Against it for now: it changes what the
+setting means, and the capture uses the same per-screen URL, so cart and order images made on a
+phone would come from the smaller files too (the stack already does this when the setting is
+set).
+
 **How sharp.** A texture keeps only the resolution the box shows: the device pixels one image
 pixel covers (the stack's scale × the renderer's resolution), rounded up to a step of √2 and never
 above full size (`scale_step()`). A texture holds at most twice the pixels on screen, and a resize
@@ -275,6 +289,32 @@ context reloaded every texture and drew the same pixels, 150 clicked changes and
 errors and nothing kept, and an idle-refreshed snapshot identical to the live picture. Pixi's list
 of managed textures grows over a long session, but only with empty slots; the live entries always
 matched the viewer's textures and snapshots.
+
+**Two decoders, behind a switch** (2026-11-07, filter `PC.fe.viewer.canvas.image_decoder`,
+`element` by default for now). `element` is the path above: an `<img>`, `decode()` at full size,
+then a downscaled copy. `blob` never puts the image in an element: `fetch()` the file (same
+credentials as an `<img>`, so the same HTTP cache entry), read its size from a header-only load
+of an object URL (`blob_size()`: loaded, never drawn nor `decode()`d, then dropped), then in the
+decode slot `createImageBitmap( blob, { resizeWidth, resizeHeight, premultiplyAlpha } )`
+(`build_bitmap()`). A browser that ignores the resize options gets the full bitmap drawn smaller on
+a canvas and closed; a file `createImageBitmap()` cannot decode (SVG in some browsers) goes through
+`element`; without `fetch` or `createImageBitmap` it is `element`. The switch is read per load, so
+`reload_textures()` after changing it reloads everything through the other path.
+`texture_stats().decoder` says which is in use. Capture keeps its own `<img>` loads.
+
+Why: on the XS, 7861 dies after a number of full-size decodes, whatever the pace or concurrency
+(iPhone runs below). The suspicion is that Safari keeps each `<img>`'s full-size decode (32 MiB
+for 3840×2160) in its image cache for a while after the `src` is removed, out of the viewer's
+reach. With `blob` the full-size decode, if WebKit makes one at all, only lives inside
+`createImageBitmap()`. The XS runs did not bear it out: both decoders pass and fail at about the
+same pace, and with both something builds up across runs in one tab until a reload (iPhone runs
+below). So `element` stays the default; `blob` stays behind the switch, off, until a device shows
+a difference. What does cut the cost is a smaller file (Which URL, above).
+
+Checked (desktop Chrome, 7861): at 375 px and at the pane's width, the picture through `blob`
+identical channel for channel to `element` (30 textures at 960×540 and 480×270); 150 clicked
+steps through `blob` with no errors, nothing kept, the picture complete; both paths served all 30
+files from the HTTP cache on a reload.
 
 **When.** `image_loading_mode`:
 
@@ -631,6 +671,9 @@ Known consumers to adjust:
 - Setting `viewer_2d_renderer` in the viewer settings section, with the CORS hint and the custom
   HTML limitation.
 - No change to layer, choice or angle forms. The admin preview keeps the `<img>` stack for now.
+- User docs, when the renderer ships: the CORS and custom HTML limits, and the recommendation to
+  set *Preview Image size - mobile* for large images (Textures → Which URL). The v2 docs have no
+  settings page yet, so this is a new page or a section of the renderer's.
 - **Canvas-only features never switch the renderer themselves** (decision A). Setting one up while
   the renderer is `dom` shows an admin notice in its settings ("Image overlays need the Canvas
   viewer", with a link to the setting). The first such feature is the image overlay; the notice
@@ -757,6 +800,34 @@ bundle, died after 200 steps with no script errors: `live` at step 20 (one angle
 memory the budget did not count was each texture's image, kept by Pixi after upload (about as
 much again); it is now freed (Textures section). Next: the same run on the XS with that change,
 watching `kept_bytes` (should stay 0).
+
+*With images freed after upload (2026-11-06/07):* still dies, at 220, 80, 80 and 120 steps, with
+no errors and textures flat at 95 MiB. DOM, listeners and JS heap measured flat on desktop
+(9,622 to 9,625 elements, 5,515 jQuery listeners, heap 44 to 37 MiB over 150 steps). Three runs
+to tell causes apart: one decode at a time died at 180, a slower pace (400-600 ms) at 120, half
+the budget plus the slower pace at 60. Half the budget is below one picture (`reload` mode), so
+every angle switch decodes 30 images again: the crash follows how many full-size decodes were
+made, not concurrency, time or texture memory. Hence the `blob` decoder (Textures section).
+
+*Element vs blob (2026-11-07, 7861, steps of interval + random jitter in ms):*
+
+| Decoder | Pace | Result |
+|---|---|---|
+| `element` (bundle of 10:05) | 1500 + 300, 4 s pause every 10 steps | passed 300 |
+| `blob` (bundle of 10:47) | 300 + 100 | died at 200 |
+| `blob` | 500 + 200, fresh tab | passed 300, twice (after a reload) |
+| `blob` | 500 + 200, second run in the same tab | died at 120 |
+| `element` | 500 + 200, fresh tab | passed 300; the tab crashed shortly after |
+
+No clear difference between the two. Both last longer the slower the pace, and with both
+something builds up across runs in one tab that a reload clears. Nothing on the viewer's side
+grows (WebGL objects counted against textures and snapshots, JS heap, DOM, queues), so it is
+inside Safari. The phone was hot by the last runs, so throttling may blur them. Human pace passes;
+only a sustained two to three changes a second breaks it, on images with no mobile size
+(placeholder attachment ids are 0, so 7861 always decodes 3840×2160 files: the worst case). The
+`<img>` stack crashed on 7861 too, on fast angle switching alone. Not built: pacing full-size
+decodes on small screens, which would only slow the build-up and has to keep the first
+picture's 30 decodes fast.
 
 ## What to keep from the draft
 
