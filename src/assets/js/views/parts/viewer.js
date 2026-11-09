@@ -303,6 +303,18 @@ PC.fe.views.viewer = Backbone.View.extend({
 	},
 
 	/**
+	 * The loaded mask the view of a choice cut its image with, if any: the CSS
+	 * mask is not part of what drawImage() reads. See layer-masks.js.
+	 *
+	 * @param {Backbone.Model} choice
+	 * @return {HTMLImageElement|null}
+	 */
+	get_capture_mask: function( choice ) {
+		var view = this.layer_views ? this.layer_views[ this.view_key( choice ) ] : null;
+		return view && view.mask_image ? view.mask_image : null;
+	},
+
+	/**
 	 * Whether a layer is hidden by conditional logic, itself or through a group.
 	 *
 	 * Kept for callers of the viewer; the rule lives in PC.fe.viewer_state.
@@ -348,13 +360,14 @@ PC.fe.views.viewer = Backbone.View.extend({
 				);
 				return Promise.resolve( null );
 			}
-			if ( 'none' !== source ) sources.push( source );
+			if ( 'none' !== source ) sources.push( { el: source, mask: that.get_capture_mask( models[ i ] ) } );
 		}
 
 		if ( ! sources.length ) return Promise.resolve( null );
 
 		var width = 0, height = 0;
-		_.each( sources, function( el ) {
+		_.each( sources, function( source ) {
+			var el = source.el;
 			width = Math.max( width, el.naturalWidth || el.width || 0 );
 			height = Math.max( height, el.naturalHeight || el.height || 0 );
 		} );
@@ -380,8 +393,13 @@ PC.fe.views.viewer = Backbone.View.extend({
 		var ctx = canvas.getContext( '2d' );
 
 		try {
-			_.each( sources, function( el ) {
-				ctx.drawImage( el, 0, 0, canvas.width, canvas.height );
+			_.each( sources, function( source ) {
+				// A CSS mask is not part of the image: cut it here (layer-masks.js).
+				if ( source.mask ) {
+					PC.fe.layer_masks.draw_masked( ctx, source.el, source.mask, canvas.width, canvas.height );
+				} else {
+					ctx.drawImage( source.el, 0, 0, canvas.width, canvas.height );
+				}
 			} );
 		} catch ( err ) {
 			console.log( 'Product configurator: could not compose the captured image.', err );

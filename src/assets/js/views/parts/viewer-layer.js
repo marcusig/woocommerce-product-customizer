@@ -56,7 +56,8 @@ PC.fe.views.viewer_static_layer = Backbone.View.extend({
 		classes = wp.hooks.applyFilters( 'PC.fe.viewer.static_layer.classes', classes, this );
 		this.$el.addClass( classes.join( ' ' ) );
 		if ( img ) {
-			this.el.src = img;
+			// Masked layers get their src once the mask is ready (layer-masks.js).
+			PC.fe.layer_masks.set_src( this, PC.fe.layers.get( this.model.get( 'layerId' ) ), img );
 			this.parent.imagesLoading ++;
 			this.parent.$el.addClass('is-loading-image');
 		}
@@ -125,16 +126,17 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 				this.counted = true;
 				this.parent.$el.addClass('is-loading-image');
 				this.$el.addClass( 'loading' );
-				this.el.src = img
+				// Masked layers get their src once the mask is ready (layer-masks.js).
+				PC.fe.layer_masks.set_src( this, this.layer, img );
 			} 
 			this.$el.addClass( 'active' );
 		} else {
 			if ( ! this.is_loaded ) {
 				this.$el.addClass( 'loading' );
 				if ( 'lazy' == PC.fe.config.image_loading_mode && ! force ) {
-					this.el.src = this.empty_img;
+					PC.fe.layer_masks.set_src( this, this.layer, this.empty_img );
 				} else {
-					this.el.src = img;	
+					PC.fe.layer_masks.set_src( this, this.layer, img );
 				}
 			}
 			this.$el.removeClass( 'active' );

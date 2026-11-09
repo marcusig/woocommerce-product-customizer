@@ -190,6 +190,18 @@ saved one when `Choice::is_stored()`, as `get_image_id()` does for `image`.
    scaling, a half-size mask centred, an unreadable mask (unmasked, logged); on 613, the band cut
    by the case image's alpha, 0.18 s against 0.13 s unmasked at 600 px.
 3. **`<img>` stack.** CSS masks, preload and loading state, failure, capture; Image order preview.
+   *Built 2026-11-09:* `PC.fe.layer_masks` (`views/parts/layer-masks.js`). Every `src` the layer
+   views set goes through `set_src()`: a masked image gets its `src` only once its mask has
+   loaded (CORS mode, once per page) and its CSS mask is set, so it keeps its `loading` state and
+   its place in `imagesLoading` meanwhile, and an image pool holds the previous image; a late
+   answer (angle changed, view removed or retired) is dropped. `capture()` cuts each masked
+   source on a scratch canvas (`destination-in`). The Image order preview cuts its tiles the
+   same way (loading the mask without `crossOrigin`, like its images). Checked on 613 with the
+   case image as the band's mask: CSS mask on screen, no `src` until the mask was in, unmasked on
+   the back view, a new band choice masked, both pool settings, an unloadable mask (unmasked,
+   logged); the stack's capture against the server merge of the same picture differs on 166
+   visible pixels by up to 14, against 170 by up to 12 without the mask (rounding they already
+   had). Not checked: Safari, and the Image order preview by eye.
 4. **Canvas viewer.** Mask textures, node and per-sprite masks, loading, snapshots, capture.
    Checked: canvas, stack and server pictures of the same configurations compared pixel by
    pixel (they must match, within rounding), Safari on the iPhone.
