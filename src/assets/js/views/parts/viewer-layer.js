@@ -19,11 +19,40 @@ PC.fe.views.viewer_static_layer = Backbone.View.extend({
 	loaded: function(event) {
 		this.$el.removeClass( 'loading' );
 		wp.hooks.doAction( 'PC.fe.viewer.layer.preload.complete', this );
+		this.release();
+	},
+	/**
+	 * Count this image off the viewer's tally of images being loaded.
+	 *
+	 * The layer renders on every `change` of the angles collection - twice per
+	 * angle switch - but the browser reports one load for the src it ends up
+	 * with. So it is counted once while it loads, and counted off once: see
+	 * viewer_layer.release(). Counting it per render left a count behind on
+	 * every angle switch, and the viewer kept `is-loading-image` for good.
+	 */
+	release: function() {
+		if ( ! this.counted ) return;
+		this.counted = false;
+
 		this.parent.imagesLoading --;
 		if( this.parent.imagesLoading == 0 ) {
 			this.parent.$el.removeClass('is-loading-image');
 			wp.hooks.doAction( 'PC.fe.viewer.layers.preload.complete', this );
 		}
+	},
+	/**
+	 * Release a load that will never complete, like viewer_layer.remove().
+	 */
+	remove: function() {
+		if ( this.counted && this.parent ) {
+			this.counted = false;
+			this.parent.imagesLoading --;
+			if ( 0 >= this.parent.imagesLoading ) {
+				this.parent.imagesLoading = 0;
+				this.parent.$el.removeClass( 'is-loading-image' );
+			}
+		}
+		return Backbone.View.prototype.remove.apply( this, arguments );
 	},
 	render: function() {
 		var img = this.model.get_image();
@@ -39,7 +68,7 @@ PC.fe.views.viewer_static_layer = Backbone.View.extend({
 
 		wp.hooks.doAction( 'PC.fe.viewer.static_layer.render', this );
 
-		var classes = [ 'active', 'static', 'loading' ];
+		var classes = [ 'active', 'static' ];
 		
 		classes.push( this.model.collection.getType() );
 		
@@ -55,9 +84,17 @@ PC.fe.views.viewer_static_layer = Backbone.View.extend({
 		 */
 		classes = wp.hooks.applyFilters( 'PC.fe.viewer.static_layer.classes', classes, this );
 		this.$el.addClass( classes.join( ' ' ) );
-		if ( img ) {
+		// Only a new src means a new load. Setting the one it already has would
+		// wait for a load event that may never come.
+		if ( img && img !== this.el.getAttribute( 'src' ) ) {
+			this.$el.addClass( 'loading' );
 			this.el.src = img;
-			this.parent.imagesLoading ++;
+			// Already counted if the previous src is still loading: the browser
+			// drops that request and reports the new one only.
+			if ( ! this.counted ) {
+				this.counted = true;
+				this.parent.imagesLoading ++;
+			}
 			this.parent.$el.addClass('is-loading-image');
 		}
 		this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
