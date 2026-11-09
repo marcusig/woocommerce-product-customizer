@@ -690,6 +690,11 @@ For the image overlay spec to start from:
 - Redraws (other sizes, admin edits) fall back to the merge, which draws such a layer as best it
   can (the customer image unwarped, or left out). The image overlay spec decides which, and whether
   the admin editor posts a fresh capture when it saves.
+- **Full resolution for printing** (Marc, 2026-11-09, a later step): merging a configuration at full
+  size on demand from the admin, without the storefront paying for it. For layers only the browser
+  can draw, that picture comes from `capture( { width, height } )` in the admin editor, so the
+  order must keep the original upload and its placement, not only a preview. See the layer masks
+  spec, "Later: full-resolution output for printing".
 
 ## Add-ons
 
