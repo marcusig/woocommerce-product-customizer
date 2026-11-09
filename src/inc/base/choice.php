@@ -398,6 +398,57 @@ class Choice {
 	}
 
 	/**
+	 * The mask cutting this choice's image in the merged picture: the layer's mask for the
+	 * angle the image comes from. See docs/layer-masks-spec.md.
+	 *
+	 * A stored configuration keeps the mask it was saved with (`layer_data->mask`), like its
+	 * image, so changing the layer's masks later does not change past orders. Configurations
+	 * saved before masks existed have none saved and fall back to the layer.
+	 *
+	 * @return int Attachment ID of the mask, or 0 when the image is not masked.
+	 */
+	public function get_mask_id() {
+		$mask_id = null;
+
+		if ( $this->is_stored() ) {
+			$saved = $this->get_saved( 'mask' );
+			if ( null !== $saved ) $mask_id = absint( $saved );
+		}
+
+		if ( null === $mask_id ) {
+			$mask_id = self::find_mask_id( $this->get_layer( 'masks' ), $this->angle_id );
+		}
+
+		/**
+		 * mkl_pc/choice/mask_id - Filters the mask resolved for a choice's image
+		 *
+		 * @param int    $mask_id Attachment ID, 0 for none.
+		 * @param Choice $choice
+		 * @return int
+		 */
+		return absint( apply_filters( 'mkl_pc/choice/mask_id', $mask_id, $this ) );
+	}
+
+	/**
+	 * The mask of an angle in a layer's `masks` list.
+	 *
+	 * @param mixed      $masks    [ { angleId, image: { id, url, dimensions } } ], as arrays or objects.
+	 * @param int|string $angle_id
+	 * @return int Attachment ID, or 0.
+	 */
+	public static function find_mask_id( $masks, $angle_id ) {
+		if ( ! is_array( $masks ) || '' === (string) $angle_id ) return 0;
+		foreach ( $masks as $mask ) {
+			if ( is_object( $mask ) ) $mask = (array) $mask;
+			if ( ! is_array( $mask ) || ! isset( $mask['angleId'] ) || (string) $mask['angleId'] !== (string) $angle_id ) continue;
+			$image = isset( $mask['image'] ) ? $mask['image'] : null;
+			if ( is_object( $image ) ) $image = (array) $image;
+			return is_array( $image ) && ! empty( $image['id'] ) ? absint( $image['id'] ) : 0;
+		}
+		return 0;
+	}
+
+	/**
 	 * Get the image ID that was saved with the configuration, in `layer_data`.
 	 *
 	 * Unlike {@see Choice::get_image_id()} this never touches the product's current content, so

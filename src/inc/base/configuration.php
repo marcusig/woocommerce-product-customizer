@@ -271,12 +271,17 @@ class Configuration {
 		if ( ! property_exists( $this, 'content' ) || ! is_array( $this->content ) || empty( $this->content ) ) return false;
 
 		$images = [];
+		$masked = false;
 		foreach ( $this->content as $layer ) {
 			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
 			if ( $image ) {
 				$images[] = $layer->image;
+				if ( self::get_layer_mask_id( $layer ) ) $masked = true;
 			}
 		}
+
+		// A masked image is not the attachment as it is: it has to be merged, to be cut.
+		if ( $masked ) return false;
 
 		if ( 1 === count( $images ) && $image_url = wp_get_attachment_url( $images[0] ) ) {
 			if ( 'id' == $return ) return $images[0];
@@ -311,7 +316,7 @@ class Configuration {
 
 		foreach ( $this->content as $layer ) {
 			if ( ! $layer->image ) continue;
-			$image_file_name .= '-'.$layer->image;
+			$image_file_name .= '-' . self::get_layer_token( $layer );
 		}
 
 		if ( $dimensions = $this->resolve_size( $size ) ) {
@@ -462,9 +467,13 @@ class Configuration {
 	}
 
 	/**
-	 * The layer images to composite, keyed by attachment id
+	 * The layer images to composite, bottom first
 	 *
-	 * @return array
+	 * Keyed by the layer's token: the attachment id, plus its mask when it has one. The same
+	 * image under two masks (one fabric on two areas of a shirt) is two entries; the same
+	 * image twice without a mask is still one, as it always was.
+	 *
+	 * @return array Paths, or { path, mask } for a masked image.
 	 */
 	private function collect_layer_images() {
 		$images = array();
@@ -473,12 +482,68 @@ class Configuration {
 
 		foreach ( $this->content as $layer ) {
 			$image = apply_filters( 'mkl-pc-serve-image-process-layer-image', $this->get_image_path_for_merging( $layer->image ), $layer );
-			if ( $image ) {
-				$images[ $layer->image ] = $image;
+			if ( ! $image ) continue;
+
+			$mask_id = self::get_layer_mask_id( $layer );
+			if ( $mask_id ) {
+				$mask = $this->get_image_path_for_merging( $mask_id );
+				// A mask that cannot be read leaves the image unmasked (docs/layer-masks-spec.md).
+				if ( ! $mask || ! is_file( $mask ) ) {
+					if ( function_exists( 'wc_get_logger' ) ) {
+						wc_get_logger()->warning(
+							sprintf( 'MKL Product Configurator: the layer mask %d could not be read, the image %s is merged unmasked.', $mask_id, $layer->image ),
+							array( 'source' => 'mkl-pc' )
+						);
+					}
+					$mask = '';
+				}
+				$images[ self::get_layer_token( $layer ) ] = $mask ? array( 'path' => $image, 'mask' => $mask ) : $image;
+				continue;
 			}
+
+			$images[ $layer->image ] = $image;
 		}
 
 		return $images;
+	}
+
+	/**
+	 * The mask of an entry of `content`, 0 for none.
+	 *
+	 * @param object|array $layer
+	 * @return int
+	 */
+	public static function get_layer_mask_id( $layer ) {
+		if ( is_object( $layer ) ) return isset( $layer->mask ) ? absint( $layer->mask ) : 0;
+		if ( is_array( $layer ) ) return isset( $layer['mask'] ) ? absint( $layer['mask'] ) : 0;
+		return 0;
+	}
+
+	/**
+	 * An entry of `content` as it appears in file names and merge URLs: the image, and
+	 * `m<mask id>` when it is masked. Ids are digits and add-on tokens are hex (text
+	 * overlay's are md5), so the `m` cannot be part of either.
+	 *
+	 * @param object|array $layer
+	 * @return string
+	 */
+	public static function get_layer_token( $layer ) {
+		$image = is_object( $layer ) ? $layer->image : ( is_array( $layer ) && isset( $layer['image'] ) ? $layer['image'] : '' );
+		$mask_id = self::get_layer_mask_id( $layer );
+		return $mask_id ? $image . 'm' . $mask_id : (string) $image;
+	}
+
+	/**
+	 * Read a token back (see get_layer_token()). Only an attachment id carries a mask.
+	 *
+	 * @param string $token
+	 * @return array { image, mask? }
+	 */
+	public static function parse_layer_token( $token ) {
+		if ( preg_match( '/^(\d+)m(\d+)$/', (string) $token, $matches ) ) {
+			return array( 'image' => $matches[1], 'mask' => (int) $matches[2] );
+		}
+		return array( 'image' => $token );
 	}
 
 	/**
@@ -647,7 +712,7 @@ class Configuration {
 
 			// collect images
 			foreach ( $this->content as $layer ) {
-				$images[] = $layer->image;
+				$images[] = self::get_layer_token( $layer );
 			}
 
 			// No images, return an empty one

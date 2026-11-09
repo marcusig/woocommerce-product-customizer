@@ -123,7 +123,8 @@ class Frontend_Woocommerce {
 		}
 		$content = [];
 		foreach( $images as $image ) {
-			$content[] = [ 'image' => $image ];
+			// `<image>m<mask>` for a masked image (Configuration::get_layer_token()).
+			$content[] = Configuration::parse_layer_token( $image );
 		}
 		$configuration = new Configuration( NULL, array( 'product_id' => $product_id, 'content' => json_encode( $content ) ) );
 

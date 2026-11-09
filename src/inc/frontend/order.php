@@ -666,7 +666,10 @@ if ( ! class_exists('MKL\PC\Frontend_Order') ) {
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer ) continue;
 				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
-					$choices[] = [ 'image' => $choice_image ];
+					$entry = [ 'image' => $choice_image ];
+					// A masked image keeps its mask, so the merge cuts it the way the viewer did.
+					if ( $mask_id = $layer->get_mask_id() ) $entry['mask'] = $mask_id;
+					$choices[] = $entry;
 				}
 			}
 

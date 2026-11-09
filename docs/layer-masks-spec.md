@@ -179,6 +179,16 @@ saved one when `Choice::is_stored()`, as `get_image_id()` does for `image`.
 2. **Server merge.** The routine (Imagick and GD), the file name, one-image stacks, saved masks.
    Checked against a product with masked layers: the merged picture against a reference composed
    by hand, and the GD timing at full size.
+   *Built 2026-11-09:* `Choice::get_mask_id()` (saved `layer_data->mask` first, then the layer's
+   mask for the choice's angle); cart, order and YITH merge lists carry `mask`; `save-data.js`
+   saves it (only when there is one, so other payloads are unchanged). In `Configuration`, an
+   entry's token is `<image>m<mask>` (file names, the on-the-fly URL, the REST route), the merge
+   list is keyed by that token (one fabric under two masks stays two entries), and a masked
+   one-image stack is merged. `Images::merge()` keeps its old path when nothing is masked; with
+   masks it scales every image to the output first, then `apply_mask()` (Imagick `DSTIN`, or the
+   GD loop), centring a mask of another size. Checked with GD: opaque, 50% and clear mask pixels,
+   scaling, a half-size mask centred, an unreadable mask (unmasked, logged); on 613, the band cut
+   by the case image's alpha, 0.18 s against 0.13 s unmasked at 600 px.
 3. **`<img>` stack.** CSS masks, preload and loading state, failure, capture; Image order preview.
 4. **Canvas viewer.** Mask textures, node and per-sprite masks, loading, snapshots, capture.
    Checked: canvas, stack and server pictures of the same configurations compared pixel by
