@@ -685,7 +685,7 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 	</div>
 
 	<# if ( 'summary' != data.type ) { #>
-		<div class="mkl-pc-image-settings">
+		<div class="mkl-pc-image-settings" data-override-field="image">
 			<h2><?php esc_html_e('Layer\'s icon', 'product-configurator-for-woocommerce' ) ?></h2>
 			<div class="thumbnail thumbnail-image">
 				<# if ( data.image.url != '' ) { #>

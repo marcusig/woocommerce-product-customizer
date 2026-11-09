@@ -2343,6 +2343,16 @@ class DB {
 		
 		if ( ! $product ) return [];
 
+		// A link's layer already holds its own values; which ones they are, and the values kept
+		// behind switched-off overrides, are the editor's (docs/global-layer-overrides-spec.md).
+		if ( ! empty( $init_data['layers'] ) && is_array( $init_data['layers'] ) ) {
+			foreach ( $init_data['layers'] as $index => $layer ) {
+				if ( is_array( $layer ) && isset( $layer['overrides'] ) ) {
+					unset( $init_data['layers'][ $index ]['overrides'] );
+				}
+			}
+		}
+
 		$product_type = apply_filters( 'mkl_product_configurator_get_front_end_data/product_type', $product->get_type(), $product );
 		// get the products 'title' attribute
 		$parent_id_for_type = ( 'variation' === $product_type ) ? $product->get_parent_id() : $id;
@@ -2635,6 +2645,23 @@ class DB {
 			// (docs/layer-masks-spec.md).
 			if ( ! empty( $chunk['masks'] ) && is_array( $chunk['masks'] ) && $this->remap_layer_masks( $chunk['masks'] ) ) {
 				$layer_changed = true;
+			}
+			// A link to a global layer keeps its own values in `overrides` (switched-off ones too,
+			// docs/global-layer-overrides-spec.md): the global layer's images are its own business.
+			if ( ! empty( $chunk['overrides']['values'] ) && is_array( $chunk['overrides']['values'] ) ) {
+				$values = &$chunk['overrides']['values'];
+				if ( ! empty( $values['image']['url'] ) ) {
+					$new_layer_id = $this->_find_image_id( $values['image']['url'], isset( $values['image']['id'] ) ? $values['image']['id'] : 0 );
+					if ( $new_layer_id && ( ! isset( $values['image']['id'] ) || $new_layer_id != $values['image']['id'] ) ) {
+						$values['image']['id']  = $new_layer_id;
+						$values['image']['url'] = wp_get_attachment_url( $new_layer_id );
+						$layer_changed = true;
+					}
+				}
+				if ( ! empty( $values['masks'] ) && is_array( $values['masks'] ) && $this->remap_layer_masks( $values['masks'] ) ) {
+					$layer_changed = true;
+				}
+				unset( $values );
 			}
 			if ( $layer_changed ) {
 				if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_layer_' . $layer_id, $chunk ) ) {

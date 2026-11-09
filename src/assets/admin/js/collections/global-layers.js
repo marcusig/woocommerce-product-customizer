@@ -209,6 +209,11 @@ var PC = PC || {};
 				if ( content_data ) {
 					model.set( 'content', content_data );
 				}
+				// The product can link this global layer several times: the other links take the
+				// new settings and choices too (docs/global-layer-overrides-spec.md).
+				if ( global_id && PC.admin && PC.admin.layer_overrides ) {
+					PC.admin.layer_overrides.refresh_links( global_id, layer_data, content_data );
+				}
 				if ( options.success ) {
 					options.success( model, response );
 				}

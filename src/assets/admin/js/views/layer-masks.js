@@ -197,7 +197,9 @@
 		if ( ! $container.length ) return;
 		form.layer_masks_view = new PC.views.layer_masks( {
 			layer: form.model,
-			locked: form.$el.hasClass( 'is-global-locked' ),
+			locked: PC.admin && PC.admin.layer_overrides
+				? PC.admin.layer_overrides.is_field_locked( form, 'masks' )
+				: form.$el.hasClass( 'is-global-locked' ),
 		} );
 		$container.append( form.layer_masks_view.render().el );
 	} );
