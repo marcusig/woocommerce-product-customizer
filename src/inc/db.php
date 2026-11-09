@@ -2343,6 +2343,16 @@ class DB {
 		
 		if ( ! $product ) return [];
 
+		// A link's layer already holds its own values; which ones they are, and the values kept
+		// behind switched-off overrides, are the editor's (docs/global-layer-overrides-spec.md).
+		if ( ! empty( $init_data['layers'] ) && is_array( $init_data['layers'] ) ) {
+			foreach ( $init_data['layers'] as $index => $layer ) {
+				if ( is_array( $layer ) && isset( $layer['overrides'] ) ) {
+					unset( $init_data['layers'][ $index ]['overrides'] );
+				}
+			}
+		}
+
 		$product_type = apply_filters( 'mkl_product_configurator_get_front_end_data/product_type', $product->get_type(), $product );
 		// get the products 'title' attribute
 		$parent_id_for_type = ( 'variation' === $product_type ) ? $product->get_parent_id() : $id;

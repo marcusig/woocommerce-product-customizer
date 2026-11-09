@@ -1,7 +1,7 @@
 # Linked global layers with overrides
 
-Status: **specified 2026-11-09.** All open points decided 2026-11-09. Phase 1 (data) built
-2026-11-09; phases 2 and 3 not started.
+Status: **specified 2026-11-09.** All open points decided 2026-11-09. Phases 1 (data) and 2
+(editor) built 2026-11-09; phase 3 (docs) not started.
 
 One global layer linked several times into the same product (or into many), each link changing a
 few of the layer's settings for itself: its name, its [mask](layer-masks-spec.md), its 3D target.
@@ -78,7 +78,10 @@ and "Collar fabric" waits in `values` for the switch.
   the other languages. In the data they are fields like any other, listed in `fields` with
   `name`: the editor ties them to the one switch, the server knows nothing of languages.
 - `strip_layers_to_references()` keeps `overrides`: `fields` filtered against the excluded list,
-  `values` filtered the same way, the whole key dropped when both are empty. A listed field's
+  `values` filtered the same way, the whole key dropped when both are empty. Resolving also sends
+  `overrides.global`, the global values of the overridden fields, so the editor can switch one off
+  and save the global layer without fetching it; it is never stored, and the front-end data drops
+  `overrides` altogether. A listed field's
   value is taken from the layer the editor sent (its effective value, what the form edited), the
   kept value only when the layer lacks the key; so the editor only has to keep `fields` right.
   A layer that is not a link loses any `overrides` it carries. `resolve_layers()`
@@ -132,13 +135,25 @@ needs its own code, and an add-on's layer fields get the switch for free.
 
 - **Off** (default): the field shows the global value, locked like the rest of the form outside
   global edit mode. In global edit mode it is editable as the global value, as today.
-- **On**: the field shows the link's value, always editable (global edit mode or not), marked
-  **This link only**. Switching it on the first time starts from the global value; switching it
+- **On**: the field shows the link's value, editable, marked **This link only**. Switching it on the first time starts from the global value; switching it
   on again restores the link's kept value.
 - Switching it **off** shows the global value again; the link's value is kept for later.
 
-So "Edit global layer" keeps meaning "edit what every link shares", and the link's own settings
-never need it.
+**"Edit original" is separate from the overrides** (Marc, 2026-11-09): it shows and edits the
+global layer, every field with its global value, overridden ones included, so a shared value never
+needs the global layer's own screen. The screen knows nothing of the link's overrides (Marc): no
+switches, no badges, no marks. Entering it, the model's overridden fields take their global values (the link's wait in
+`overrides.values`, with `overrides.editing_original` set); saving keeps what the form shows as the
+new global values; leaving (save, cancel, discard) puts the link's values back. Doing it in the
+model rather than in the form means the mask view, the layer icon and the 3D pickers edit the
+global layer with no code of their own. Should the product be saved meanwhile, the server takes
+the link's values from `values` while `editing_original` is set. The link's own settings never
+need that mode.
+
+The form locks **field by field** (`.is-locked` on each field wrapper, set by
+`update_global_lock_state()` and the overrides module), not with the section overlay other locked
+forms use: a section holds both locked and overridden fields, and every switch has to stay
+clickable.
 
 Which fields get a switch:
 
@@ -148,7 +163,11 @@ Which fields get a switch:
   field holding its own input opts in with `'overridable' => true` (the 3D model and object
   pickers, `object_3d_id` and `target_object_id`). Fields on the excluded list (`type`,
   `not_a_choice`) never get one.
-- `name_{lang}` fields have no switch of their own: they follow `name`'s.
+- `name_{lang}` fields have no switch of their own: they follow `name`'s (`description_{lang}`
+  follow `description`). The groups are sent as `PC_lang.layer_override_groups`, filter
+  `mkl_pc_layer_override_groups`.
+- Blocks outside the settings take a switch with `data-override-field="{key}"`: the layer icon
+  (`image`).
 - The Mask section is one field (`masks`): off, it shows the global masks read-only; on, the
   pickers edit the link's list.
 

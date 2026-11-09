@@ -104,6 +104,11 @@ if ( ! class_exists('MKL\PC\Abstract_Settings') ) {
 			}
 
 			$classes = isset( $options['classes'] ) ? $options['classes'] . ' ' : '';
+			// Linked global layers: a field can opt in to, or out of, its own override switch
+			// (docs/global-layer-overrides-spec.md). Fields with an input of their own get one anyway.
+			if ( isset( $options['overridable'] ) ) {
+				$classes .= $options['overridable'] ? 'can-override ' : 'no-override ';
+			}
 
 			switch ($options['type']) {
 				case 'html':

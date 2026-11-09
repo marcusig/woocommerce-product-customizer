@@ -78,7 +78,13 @@ check( 'resolved: overridden masks', $collar_masks[0]['image']['url'] === ( $lay
 check( 'resolved: switched-off field shows the global value', 'Fabric' === ( $layers[10]['admin_label'] ?? null ) );
 check( 'resolved: excluded field stays the global one', 'simple' === ( $layers[10]['type'] ?? null ) );
 check( 'resolved: overrides handed to the editor', array( 'name', 'masks' ) === ( $layers[10]['overrides']['fields'] ?? null ) && 'Collar fabric' === ( $layers[10]['overrides']['values']['admin_label'] ?? null ) );
+check( 'resolved: global values of the overridden fields, for the editor', 'Fabrics ' . $tag === ( $layers[10]['overrides']['global']['name'] ?? null ) && $global_masks[0]['image']['url'] === ( $layers[10]['overrides']['global']['masks'][0]['image']['url'] ?? null ) && ! isset( $layers[10]['overrides']['global']['admin_label'] ), wp_json_encode( $layers[10]['overrides']['global'] ?? null ) );
 check( 'resolved: the other link inherits', 'Fabrics ' . $tag === ( $layers[11]['name'] ?? null ) && $global_masks[0]['image']['url'] === ( $layers[11]['masks'][0]['image']['url'] ?? null ) && ! isset( $layers[11]['overrides'] ) );
+
+$front = $db->get_front_end_data( $product_id );
+$front_layers = $layers_by_id( $front['layers'] ?? array() );
+check( 'front end: the link\'s values, without the bookkeeping', 'Collar' === ( $front_layers[10]['name'] ?? null ) && ! isset( $front_layers[10]['overrides'] ), wp_json_encode( $front_layers[10] ?? null ) );
+$db->set_context( 'admin' );
 
 // Saving what the editor got back keeps everything as it was (strip ∘ resolve).
 $db->set( $product_id, $product_id, 'layers', array_values( $layers ) );
@@ -104,6 +110,16 @@ wp_cache_flush();
 $layers = $layers_by_id( $db->get( 'layers', $product_id ) );
 check( 'switched on again: the kept name is back', 'Collar' === ( $layers[10]['name'] ?? null ) );
 
+// The product saved while "Edit original" is on: the layer shows the global values, the link's
+// are in `values`.
+$original = $layers[10];
+$original['name'] = 'Fabrics ' . $tag;
+$original['overrides']['values']['name'] = 'Collar';
+$original['overrides']['editing_original'] = true;
+$db->set( $product_id, $product_id, 'layers', array( $original, $layers[11] ) );
+$chunk = $raw_chunk( $product_id, 10 );
+check( 'saved during Edit original: the link keeps its own value', 'Collar' === ( $chunk['overrides']['values']['name'] ?? null ) && ! isset( $chunk['overrides']['editing_original'] ), wp_json_encode( $chunk['overrides'] ?? null ) );
+
 // An import onto a site where the global id means nothing keeps the effective values, as its own.
 $foreign = $layers[10];
 $foreign['global_id'] = 999999999;
@@ -117,6 +133,11 @@ check( 'excluded fields filterable', in_array( 'html_id', ( function() {
 	remove_filter( 'mkl_pc_global_layer_override_excluded_fields', $f );
 	return $out;
 } )(), true ) );
+
+// A link's overrides never reach the global layer, whatever the editor sends.
+MKL\PC\Global_Layers::save( array( '_id' => 1, 'name' => 'Fabrics ' . $tag, 'type' => 'simple', 'admin_label' => 'Fabric', 'masks' => $global_masks, 'overrides' => array( 'fields' => array( 'name' ), 'values' => array( 'name' => 'Leak' ) ) ), array( array( '_id' => 1, 'layerId' => 1, 'name' => 'Blue' ) ), $global_id );
+$stored_global = MKL\PC\Global_Layers::get( $global_id );
+check( 'global layer never stores overrides', ! isset( $stored_global['layer']['overrides'] ), wp_json_encode( $stored_global['layer'] ) );
 
 // The global layer goes: each link becomes a plain layer with its own values.
 wp_delete_post( $global_id, true );

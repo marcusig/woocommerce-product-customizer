@@ -481,6 +481,10 @@ class Global_Layers {
 		if ( is_wp_error( $global_id ) ) {
 			return $global_id;
 		}
+		// A link's overrides are its own: saved from a link, the payload must not carry them.
+		if ( is_array( $layer ) ) {
+			unset( $layer['overrides'] );
+		}
 		$layer   = self::normalize_for_set( $layer, (int) $global_id, 'layers' );
 		$content = self::normalize_for_set( $content, (int) $global_id, 'content' );
 		update_post_meta( $global_id, Schema::META_LAYER, $layer );

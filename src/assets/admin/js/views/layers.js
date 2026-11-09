@@ -481,18 +481,29 @@ TODO:
 			this.listenTo( this.model, 'change:is_global', this.on_change_global );
 			this.listenTo( this.model, 'destroy', this.remove );
 		},
-		mark_layer_modified: function() {
+		mark_layer_modified: function( model, options ) {
+			// A new global definition reaching this link: nothing of the product changed.
+			if ( options && options.pc_from_global ) {
+				return;
+			}
 			var changed = this.model.changedAttributes && this.model.changedAttributes();
 			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
 				return;
 			}
 			// Global layer attribute edits are persisted via "Save changes to global layer", not the product save.
+			// A link's overrides are its own, though: the product saves them
+			// (docs/global-layer-overrides-spec.md).
 			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) && PC.app.get_global_layers &&
 					PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) ) ) {
-				if ( PC.app.markGlobalSessionDirty ) {
+				var kinds = PC.admin && PC.admin.layer_overrides
+					? PC.admin.layer_overrides.classify_changes( this.model, changed )
+					: { own: false, global: true };
+				if ( kinds.global && PC.app.markGlobalSessionDirty ) {
 					PC.app.markGlobalSessionDirty();
 				}
-				return;
+				if ( ! kinds.own ) {
+					return;
+				}
 			}
 			var collection_name = this.collectionName || 'layers';
 			if ( collection_name === 'layers' ) {
@@ -744,6 +755,15 @@ TODO:
 			if ( this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
 				this.global_editing = PC.app.get_global_layers().is_editing_layer( this.model.get( 'global_id' ) );
 			}
+			// "Edit original" shows the global values, overridden fields included; the link's own
+			// values are back outside it (docs/global-layer-overrides-spec.md).
+			if ( PC.admin && PC.admin.layer_overrides ) {
+				if ( this.global_editing ) {
+					PC.admin.layer_overrides.enter_original( this.model );
+				} else {
+					PC.admin.layer_overrides.leave_original( this.model, false );
+				}
+			}
 			var data = this.model.attributes;
 			
 			if ( 
@@ -796,6 +816,12 @@ TODO:
 			// Disable inputs when locked
 			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"]' );
 			inputs.prop( 'disabled', locked );
+			// Locked field by field, so single fields can be unlocked (overrides, below).
+			this.$( '.setting:not(.setting-section), [data-override-field]' ).toggleClass( 'is-locked', locked );
+			// A link's fields can each be overridden, and an overridden one stays editable.
+			if ( PC.admin && PC.admin.layer_overrides ) {
+				PC.admin.layer_overrides.decorate_form( this, locked );
+			}
 		},
 		on_make_global: function( e ) {
 			e.preventDefault();
@@ -877,8 +903,9 @@ TODO:
 			if ( global_id ) {
 				PC.app.get_global_layers().set_editing_layer( global_id, false );
 			}
-			// Local toggle off by default; persistence handled on save
-			this.model.set( { is_global: false, global_id: null } );
+			// Local toggle off by default; persistence handled on save. The layer keeps the values it
+			// shows, overrides included, as its own.
+			this.model.set( { is_global: false, global_id: null, overrides: null } );
 			PC.app.is_modified['layers'] = true;
 			// The choices were being served from the global layer; the product needs its own copy
 			// now, or the layer keeps reading from a layer it is no longer connected to.
@@ -926,6 +953,9 @@ TODO:
 				success: function( model, response ) {
 					self.global_editing = false;
 					PC.app.get_global_layers().set_editing_layer( global_id, false );
+					if ( PC.admin && PC.admin.layer_overrides ) {
+						PC.admin.layer_overrides.leave_original( self.model, true );
+					}
 					if ( response && response.layer ) {
 						var global_model = PC.app.get_global_layers().get_or_create( global_id );
 						global_model.set( { layer: response.layer, content: response.content } );
@@ -955,6 +985,9 @@ TODO:
 		cancel_global: function( e ) {
 			if ( e ) e.preventDefault();
 			this.global_editing = false;
+			if ( PC.admin && PC.admin.layer_overrides ) {
+				PC.admin.layer_overrides.leave_original( this.model, false );
+			}
 			// Clear edit state in global collection
 			if ( this.model.get( 'global_id' ) ) {
 				PC.app.get_global_layers().set_editing_layer( this.model.get( 'global_id' ), false );

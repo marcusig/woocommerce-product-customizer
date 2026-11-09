@@ -338,7 +338,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'mkl_pc-data-migration-overlay',
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
 				) ),
-				array( 'backbone/views/layer_masks', 'views/layer-masks.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
+				array( 'backbone/views/layer_overrides', 'views/layer-overrides.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
+				array( 'backbone/views/layer_masks', 'views/layer-masks.js', array( 'mkl_pc/js/admin/backbone/views/layers', 'mkl_pc/js/admin/backbone/views/layer_overrides' ) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array( 'backbone/views/image_order_preview', 'views/image-order-preview.js' ),
 				array( 'backbone/views/image_order', 'views/image-order.js', array(
@@ -437,6 +438,14 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'angles_no_delete_message' => esc_html__( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
 					/* translators: 1: sizes of the layer's images, e.g. "2000 × 2000", 2: size of the mask */
 					'mask_size_mismatch' => esc_html__( 'Images of this layer on this view are %1$s, the mask is %2$s. A mask must be the same size as the images it cuts.', 'product-configurator-for-woocommerce' ),
+					// Linked global layers (docs/global-layer-overrides-spec.md).
+					'override_on' => esc_html__( 'Override for this link', 'product-configurator-for-woocommerce' ),
+					'override_off' => esc_html__( 'Use the global layer\'s value', 'product-configurator-for-woocommerce' ),
+					'override_badge' => esc_html__( 'This link only', 'product-configurator-for-woocommerce' ),
+					'override_html_id_hint' => esc_html__( 'This global layer is used more than once in this product: override the ID on each link, or the page will have the same ID twice.', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of times the global layer is already used in this product */
+					'import_global_layer_links' => esc_html__( 'Already in this product: %d', 'product-configurator-for-woocommerce' ),
+					'layer_override_groups' => $this->get_layer_override_groups(),
 					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
 					/* translators: %s: layer name */
 					'image_order_move_front' => esc_attr__( 'Move %s forward', 'product-configurator-for-woocommerce' ),
@@ -642,6 +651,32 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @param string $name - The screen post tyme
 		 * @return boolean
 		 */
+		/**
+		 * Layer fields that follow another field's override switch on a linked global layer: its
+		 * translations (docs/global-layer-overrides-spec.md).
+		 *
+		 * @return array field => fields following it
+		 */
+		private function get_layer_override_groups() {
+			$groups    = array( 'name' => array(), 'description' => array() );
+			$languages = mkl_pc( 'languages' );
+			if ( $languages && ! empty( $languages->get_languages() ) ) {
+				$default = $languages->get_default_language();
+				foreach ( (array) $languages->get_languages() as $language ) {
+					if ( $language == $default ) continue;
+					$language = str_replace( '-', '_', $language );
+					$groups['name'][]        = 'name_' . $language;
+					$groups['description'][] = 'description_' . $language;
+				}
+			}
+			/**
+			 * Filter the layer fields switched together on a linked global layer.
+			 *
+			 * @param array $groups field => fields following it
+			 */
+			return apply_filters( 'mkl_pc_layer_override_groups', $groups );
+		}
+
 		private function _current_screen_is( $name ) {
 			$screen = get_current_screen();
 			

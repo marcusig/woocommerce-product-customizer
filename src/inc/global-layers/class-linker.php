@@ -93,6 +93,15 @@ final class Linker {
 					$overrides = self::normalize_overrides( isset( $layer['overrides'] ) ? $layer['overrides'] : null );
 					unset( $resolved['overrides'] );
 					if ( $overrides ) {
+						// The global values of the overridden fields, so the editor can switch an
+						// override off, and save the global layer without the link's values,
+						// without fetching the global layer. Never stored (normalize_overrides()).
+						$overrides['global'] = array();
+						foreach ( $overrides['fields'] as $field ) {
+							if ( array_key_exists( $field, $resolved ) ) {
+								$overrides['global'][ $field ] = $resolved[ $field ];
+							}
+						}
 						$resolved              = self::apply_overrides( $resolved, $overrides );
 						$resolved['overrides'] = $overrides;
 					}
@@ -658,7 +667,10 @@ final class Linker {
 		if ( ! isset( $overrides['values'] ) || ! is_array( $overrides['values'] ) ) {
 			$overrides['values'] = array();
 		}
-		if ( isset( $overrides['fields'] ) && is_array( $overrides['fields'] ) ) {
+		// "Edit original" was on when the product was saved: the layer shows the global values,
+		// the link's are in `values` (views/layer-overrides.js).
+		$editing_original = ! empty( $overrides['editing_original'] ) && 'false' !== $overrides['editing_original'];
+		if ( ! $editing_original && isset( $overrides['fields'] ) && is_array( $overrides['fields'] ) ) {
 			foreach ( $overrides['fields'] as $field ) {
 				if ( is_string( $field ) && array_key_exists( $field, $layer ) ) {
 					$overrides['values'][ $field ] = $layer[ $field ];

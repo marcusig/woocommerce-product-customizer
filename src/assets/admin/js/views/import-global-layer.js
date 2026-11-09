@@ -120,6 +120,14 @@ PC.views = PC.views || {};
 			_.each( ordered, function ( layer ) {
 				var $item = $( self.itemTemplate( layer ) );
 				$item.toggleClass( 'is-incompatible', layer.compatible === false );
+				// Importing it again adds another link (docs/global-layer-overrides-spec.md).
+				var links = PC.admin && PC.admin.layer_overrides ? PC.admin.layer_overrides.count_links( layer.global_id ) : 0;
+				if ( links ) {
+					var label = ( typeof PC_lang !== 'undefined' && PC_lang.import_global_layer_links ) || 'Already in this product: %d';
+					$item.find( '.layer-info h4' ).after(
+						$( '<span class="mkl-pc-global-layer-links"></span>' ).text( label.replace( '%d', links ) )
+					);
+				}
 				self.$list.append( $item );
 			} );
 		},
@@ -223,6 +231,7 @@ PC.views = PC.views || {};
 							active: false,
 						} );
 
+						var already_linked = PC.admin && PC.admin.layer_overrides ? PC.admin.layer_overrides.count_links( global_id ) : 0;
 						var new_layer = layers_col.create( new_layer_data );
 						PC.app.is_modified.layers = true;
 
@@ -241,6 +250,14 @@ PC.views = PC.views || {};
 						}
 
 						self.close();
+
+						// Another link to a layer already here: two rows with the same name until
+						// one is renamed, so this one opens with its name ready to override.
+						if ( already_linked && PC.admin && PC.admin.layer_overrides ) {
+							PC.admin.layer_overrides.switch_on( new_layer, 'name' );
+							var view = PC.app.findLayerListItemViewForModel && PC.app.findLayerListItemViewForModel( new_layer );
+							if ( view && view.edit ) view.edit();
+						}
 					} else {
 						alert( 'Error: Could not fetch layer data.' );
 						self.reset_import_button_label();

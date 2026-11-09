@@ -152,6 +152,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				'masks' => array(
 					'label' => __( 'Mask', 'product-configurator-for-woocommerce' ),
 					'type' => 'custom',
+					'overridable' => true,
 					'html' => '<div class="mkl-pc-layer-masks"></div>',
 					'hide_label' => true,
 					'priority' => 10,
@@ -301,6 +302,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 10,
+					'overridable' => true,
 					'html'      => Abstract_Settings::get_objects3d_select_html( array(
 						'setting'     => 'object_3d_id',
 						'placeholder' => __( '— None —', 'product-configurator-for-woocommerce' ),
@@ -312,6 +314,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 12,
+					'overridable' => true,
 					'help'      => __( 'Optional. Narrows the layer to one object of the model: its choices show, hide, recolour or move this object instead of the whole model. Choices can pick their own. On a layer without choices, the object is shown while the layer is shown: use conditional logic to show or hide it.', 'product-configurator-for-woocommerce' ),
 					'html'      => '<div class="mkl-pc-setting--container">'
 						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Whole model', 'product-configurator-for-woocommerce' ) . '"> '

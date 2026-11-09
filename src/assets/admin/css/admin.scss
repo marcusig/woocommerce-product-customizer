@@ -4770,10 +4770,11 @@ html .mkl-pc-admin-dialog-mount {
 	}
 }
 
-html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened {
+// The layer form of a linked layer locks field by field instead (`.is-locked`, below).
+html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.is-opened {
     position: relative;
 }
-html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before {
+html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.is-opened::before {
     content: '';
     display: block;
     position: absolute;
@@ -4785,11 +4786,119 @@ html .pc-modal .pc-sidebar .is-global-locked .setting-section.is-opened::before 
     background: #ffffff6e;
 }
 
-.layer-form.is-global.is-global-locked .setting-section .section-fields, 
-.layer-form.is-global.is-global-locked .mkl-pc-image-settings,
 .is-global-locked.is-global-layer .mkl-pc-image-settings {
     pointer-events: none;
     cursor: no-drop;
+}
+
+/*
+ * Linked global layers lock field by field (docs/global-layer-overrides-spec.md): the form marks
+ * each locked field `.is-locked` (layer_form.update_global_lock_state(), layer_overrides), so an
+ * overridden field and every override switch stay usable.
+ */
+.layer-form.is-global .is-locked {
+	cursor: no-drop;
+	> :not(.mkl-pc-override-switch):not(h2) {
+		pointer-events: none;
+		opacity: 0.6;
+	}
+}
+.layer-form.is-global {
+	// A bar in the margin, outside the field's box: overriding a field moves nothing.
+	.setting.is-overridden,
+	.mkl-pc-image-settings.is-overridden {
+		position: relative;
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: -8px;
+			width: 3px;
+			border-radius: 2px;
+			background: var(--global-layer-primary, #642077);
+		}
+	}
+}
+// The switch sits in the field's top-right corner, on the label line.
+.layer-form .has-override-switch {
+	position: relative;
+	> label.name,
+	> h2 {
+		padding-right: 30px;
+	}
+	&.is-overridden > label.name,
+	&.is-overridden > h2 {
+		padding-right: 120px;
+	}
+}
+.mkl-pc-override-switch {
+	position: absolute;
+	top: 0;
+	right: 0;
+	z-index: 3;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+.mkl-pc-override-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-radius: 2px;
+	background: none;
+	color: #757575;
+	cursor: pointer;
+	.dashicons {
+		width: 16px;
+		height: 16px;
+		font-size: 16px;
+	}
+	&:hover,
+	&:focus-visible {
+		color: var(--global-layer-primary, #642077);
+		background: var(--global-layer-bg, #f3ecff);
+	}
+	&:focus-visible {
+		outline: 2px solid var(--global-layer-primary, #642077);
+		outline-offset: 1px;
+	}
+	.is-overridden > .mkl-pc-override-switch & {
+		color: var(--global-layer-primary, #642077);
+	}
+}
+.mkl-pc-override-badge {
+	display: inline-block;
+	padding: 1px 6px;
+	border-radius: 3px;
+	background: var(--global-layer-bg, #f3ecff);
+	color: var(--global-layer-primary, #642077);
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+// Half-width fields: the coloured border says it, the badge would cover the label.
+.layer-form .col-half.is-overridden {
+	.mkl-pc-override-badge {
+		display: none;
+	}
+	> label.name {
+		padding-right: 30px;
+	}
+}
+.mkl-pc-override-hint {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: #996800;
+}
+.mkl-pc-global-layer-links {
+	display: inline-block;
+	font-size: 12px;
+	color: var(--global-layer-primary, #7b2ff7);
 }
 
 .layer-form.is-saving {
