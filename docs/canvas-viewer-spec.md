@@ -742,6 +742,45 @@ Three levels, with different bars:
    505 px box, against 4.6 GiB). **Accept** when it does not crash, on desktop or iPhone. Slow loading and reloads on
    angle switch are acceptable as long as the picture ends up right.
 
+**Timing against the stack** (2026-11-08/09, desktop Chrome, built-in browser pane). Both viewers
+in the same page with the same HTTP cache: the `PC.fe.viewer.renderer` filter picks one, and a
+seeded random sequence of choice and angle clicks is replayed by button id from a freshly loaded
+page, so both make the same clicks (checked on every pair). A step is timed from the click to the
+first frame with the whole picture. Canvas: shown stack complete, no cover or transition, plus a
+frame to draw. Stack: every visible image complete (`loaded`, a lower bound, since Chrome
+decodes at paint), then `decode()`d and a frame (the number given). "First open" is the
+customer's first click on Configure, from a page loaded without `?open_configurator`, so nothing is
+decoded yet. Remounts would favour the stack, since Chrome keeps the decoded images of the
+viewer it replaces. The script is `uploads/pc-stress/_timing.js` (not in the repo).
+
+| | Canvas | Stack |
+|---|---|---|
+| 7860, 1440×900, first open (3 rounds) | 584, 518, 703 ms (`blob`: 670, 871, 406) | 824, 432, 1632 ms |
+| 7860, 1440×900, choice, median (2 seeds) | 95, 116 ms | 79, 163 ms |
+| 7860, 1440×900, 4 choices turning many layers on through conditions | 5.2 s in all | 16.6 s in all |
+| 7860, 1440×900, angle: first visit | 210-470 ms, once 1.4 s | 130-990 ms, every switch |
+| 7860, 1440×900, angle: return | 25-35 ms | the same as a first visit |
+| 7860, 375×812, choice / angle, median | 161 / 46 ms | 126 / 262 ms |
+| 613, 1440×900, choice / angle, median | 26 / 25 ms | 26 / 27 ms |
+| 613, 1440×900, first open (2 rounds) | 102, 131 ms | 43, 64 ms |
+
+Against the bar: on 7860, first open faster and angle switches much faster from the second visit
+on; ordinary choices about level; the heavy, condition-driven changes about three times faster.
+A first visit of an angle can be slower (every layer decoded, downscaled and uploaded, where the
+stack only decodes). On 613, whose images are small, both take about two frames for everything,
+but the first open is 60-70 ms slower. That is the page's first WebGL setup (context, shaders): a
+bare Pixi init takes 10-23 ms once a page has one, and the first canvas mount in a page took 200
+ms against 56 ms for the second. Under a tenth of a second, after a click. If it should go:
+create the Pixi application at idle once the page has a configurator, before the click (not
+built). Not measured: first open on a phone, and Safari. The iPhone runs cover memory, not time.
+
+Found on the way, not a canvas issue: in the `<img>` stack, a product with static layers keeps
+`is-loading-image` after its first angle change, and `PC.fe.viewer.layers.preload.complete`
+stops firing. `viewer_static_layer` counts its image on every render, and an angle change
+renders it twice (a `change` event for each angle whose `active` flips) with one load to count
+off. On 613: 6 counts left per switch. Same code on `master`; the bundled themes give the class
+no style, so nothing shows, but anything hooked on that action stops hearing it.
+
 ## Phasing
 
 Each phase ships on its own; the setting stays `dom` by default throughout.
@@ -771,8 +810,9 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
    stack's on 613 and on 7860. 15 remounts released every texture; context restore redraws
    identically with bitmap sources. `__tests__/viewer-canvas.test.js` covers the scale steps,
    eviction order, the responsive pick and the budget. iPhone XS run done (below): 7860 and 7861
-   stable, 7859 loads but crashes after a while of fast switching. **Still to run:** the timing
-   comparison against the stack.
+   stable, 7859 loads but crashes after a while of fast switching. Timing comparison against the
+   stack done 2026-11-09 (Performance section): faster on heavy products, level on light ones,
+   except a first open 60-70 ms slower on a light product (first WebGL setup).
 4. **Snapshots and transitions.** Snapshots (above), then angle transitions and fades on top of
    them. *Done 2026-11-05*, checked as described in the Snapshots section. Still to check: the
    iPhone, especially 7859, which crashed holding two pictures during switches.
@@ -808,7 +848,7 @@ level, so a crash there does not block. 7861 with fast angle switching, the case
 the `<img>` stack, is stable on the XS (with abandoned decodes, 9faff541): by hand, then with a console script making
 300 random choice and angle changes 100 to 200 ms apart while Marc opened and closed layers - no
 errors, 105 MiB at most, 89 MiB pinned at most, 95 MiB at the end. The iPhone part of the run is
-done; the timing comparison against the stack remains. If memory cannot be held under budget without visible reloading on
+done, and so is the timing comparison against the stack (Performance section). If memory cannot be held under budget without visible reloading on
 angle switch, the angle-stack design changes (fewer cached angles, smaller textures on mobile)
 before phase 4. `PC.fe.modal.viewer.texture_stats()` from Safari's Web Inspector gives the numbers.
 
