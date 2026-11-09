@@ -714,3 +714,159 @@ describe( 'image decoder switch', () => {
 		expect( build ).not.toHaveBeenCalled();
 	} );
 } );
+
+describe( 'add-on items (PC.fe.viewer.canvas.item)', () => {
+	/** The underscore functions the item code uses. */
+	const underscore = {
+		each: ( list, callback, context ) => {
+			if ( Array.isArray( list ) ) list.forEach( ( value, index ) => callback.call( context, value, index ) );
+			else Object.keys( list || {} ).forEach( ( key ) => callback.call( context, list[ key ], key ) );
+		},
+		map: ( list, callback, context ) => list.map( ( value ) => callback.call( context, value ) ),
+		find: ( list, callback ) => ( list || [] ).find( callback ),
+		values: ( object ) => Object.values( object ),
+		compact: ( list ) => list.filter( Boolean ),
+		contains: ( list, item ) => list.includes( item ),
+		without: ( list, item ) => list.filter( ( value ) => value !== item ),
+		keys: ( object ) => Object.keys( object ),
+	};
+	const text_choice = () => make_model( { id: 1, layerId: 3, layer_type: 'text-overlay' } );
+	const image_choice = ( id, url ) => Object.assign( make_model( { id, layerId: 1 } ), { url } );
+	const item_for_text = ( item ) => ( current, choice ) => ( 'text-overlay' === choice.get( 'layer_type' ) ? item : current );
+
+	beforeEach( () => {
+		global._ = underscore;
+	} );
+	afterEach( () => {
+		delete global._;
+	} );
+
+	test( 'a DOM item view with a canvas item keeps the canvas; an item without create() does not count', () => {
+		const loaded = load( {
+			config: { viewer_2d_renderer: 'canvas' },
+			layers: [ make_model( { id: 3, name: 'Engraving' } ) ],
+			contents: { 3: make_collection( [ text_choice() ] ) },
+		} );
+		const Overlay_View = function() {};
+		loaded.hooks.addFilter( 'PC.fe.viewer.item.view', 'MKL/PC/TO', ( View, choice ) => ( 'text-overlay' === choice.get( 'layer_type' ) ? Overlay_View : View ) );
+		const asked = [];
+		loaded.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'MKL/PC/TO', ( item, choice, context ) => {
+			asked.push( context );
+			return item_for_text( { create: () => null } )( item, choice );
+		} );
+		expect( loaded.main_view() ).toBe( PC.fe.views.viewer_canvas );
+		expect( loaded.fired ).toEqual( [] );
+		// Only asking: no viewer yet.
+		expect( asked[ 0 ].viewer ).toBeNull();
+
+		loaded.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'MKL/PC/TO', item_for_text( { update: () => {} } ) );
+		expect( loaded.main_view() ).toBe( Default_Viewer );
+		expect( loaded.fired ).toEqual( [ { reason: 'dom_item_view', detail: 'Engraving' } ] );
+	} );
+
+	function make_viewer( hooks ) {
+		const statics = PC.fe.views.viewer_canvas;
+		PC.fe.viewer_state = { has_drawable: ( choice ) => !! choice.url };
+		PC.fe.layers.get = () => null;
+		return Object.assign( Object.create( statics.prototype ), {
+			items: {},
+			dirty_items: [],
+			stacks: {},
+			app: { renderer: { resolution: 2 } },
+			image_url: ( choice ) => choice.url || '',
+			hooks,
+		} );
+	}
+
+	test( 'the picture lists items by key, so a change of what an item draws makes flat copies stale', () => {
+		const loaded = load();
+		const viewer = make_viewer( loaded.hooks );
+		let text = 'Hello';
+		loaded.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'test', item_for_text( { create: () => null, key: ( angle_id ) => angle_id + ':' + text } ) );
+		const choices = [ image_choice( 1, 'case.png' ), text_choice(), make_model( { id: 2, layerId: 1 } ) ];
+		const parts = viewer.parts_of( choices, 7 );
+		expect( parts.map( ( part ) => part.url || part.key ) ).toEqual( [ 'case.png', 'item:3:1:7:Hello' ] );
+
+		viewer.ordered_choices = () => choices;
+		const before = viewer.picture_key( { angle_id: 7 } );
+		text = 'Hello!';
+		expect( viewer.picture_key( { angle_id: 7 } ) ).not.toBe( before );
+		// Asked once per choice and viewer.
+		expect( Object.keys( viewer.items ) ).toEqual( [ '1:1', '3:1', '1:2' ] );
+	} );
+
+	test( 'an entry waits for ready(), then its container joins the layer node; nothing at the angle still settles', async () => {
+		const loaded = load();
+		const viewer = make_viewer( loaded.hooks );
+		viewer.release_held = jest.fn();
+		viewer.after_change = jest.fn();
+		let resolve_ready;
+		const container = { zIndex: 0 };
+		const item = {
+			ready: () => new Promise( ( resolve ) => { resolve_ready = resolve; } ),
+			create: jest.fn( () => container ),
+		};
+		const node = { children: [], addChild( child ) { this.children.push( child ); } };
+		const stack = { angle_id: 4, size: { width: 800, height: 600 }, container: { scale: { x: 0.5 } } };
+		const entry = { item, index: 2, settled: false, removed: false, sprite: null };
+		viewer.load_entry( stack, { node }, entry );
+		expect( entry.settled ).toBe( false );
+		expect( item.create ).not.toHaveBeenCalled();
+
+		resolve_ready();
+		await Promise.resolve();
+		expect( item.create ).toHaveBeenCalledWith( 4, { size: stack.size, resolution: 1, capture: false } );
+		expect( node.children ).toEqual( [ container ] );
+		expect( container.zIndex ).toBe( 2 );
+		expect( entry ).toMatchObject( { settled: true, sprite: container } );
+
+		const nothing = { item: { create: () => null }, index: 0, settled: false, sprite: null };
+		viewer.load_entry( stack, { node }, nothing );
+		expect( nothing ).toMatchObject( { settled: true, sprite: null } );
+	} );
+
+	test( 'request_render() updates every container of that item once, before the next frame', () => {
+		const loaded = load();
+		const viewer = make_viewer( loaded.hooks );
+		viewer.note_activity = jest.fn();
+		viewer.after_change = jest.fn();
+		const changed = { create: () => ( {} ), update: jest.fn() };
+		const other = { create: () => ( {} ), update: jest.fn() };
+		const stack = ( angle_id, entries ) => ( { angle_id, size: null, container: { scale: { x: 1 } }, layers: { 3: { shown: entries } } } );
+		viewer.stacks = {
+			1: stack( 1, { a: { item: changed, sprite: 'c1' }, b: { item: other, sprite: 'c2' } } ),
+			2: stack( 2, { a: { item: changed, sprite: 'c3' }, c: { url: 'x.png', sprite: 's' } } ),
+		};
+		viewer.items[ '3:1' ] = changed;
+		viewer.item_context( text_choice() ).request_render();
+		viewer.item_context( text_choice() ).request_render();
+		expect( viewer.dirty_items ).toEqual( [ changed ] );
+		expect( viewer.background_dirty ).toBe( true );
+		expect( viewer.after_change ).toHaveBeenCalled();
+
+		viewer.apply_item_updates();
+		expect( changed.update.mock.calls.map( ( call ) => [ call[ 0 ], call[ 1 ] ] ) ).toEqual( [ [ 'c1', 1 ], [ 'c3', 2 ] ] );
+		expect( other.update ).not.toHaveBeenCalled();
+		viewer.apply_item_updates();
+		expect( changed.update ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	test( 'one-off drawings wait for ready(), draw anyway when it fails, and survive a throwing create()', async () => {
+		load();
+		const statics = PC.fe.views.viewer_canvas;
+		const container = {};
+		await expect( statics.draw_item_once( { ready: () => Promise.reject( new Error( 'font' ) ), create: () => container }, 1, {} ) )
+			.resolves.toMatchObject( { container } );
+		await expect( statics.draw_item_once( { create: () => { throw new Error( 'bug' ); } }, 1, {} ) )
+			.resolves.toMatchObject( { container: null } );
+	} );
+
+	test( 'a container leaves through destroy_container(), with its children', () => {
+		load();
+		const order = [];
+		const parent = { removeChild: () => order.push( 'removed' ) };
+		const container = { parent, destroyed: false, destroy: ( options ) => order.push( [ 'destroy', options ] ) };
+		PC.fe.views.viewer_canvas.destroy_item_container( { destroy_container: () => order.push( 'item' ) }, container );
+		expect( order ).toEqual( [ 'item', 'removed', [ 'destroy', { children: true } ] ] );
+	} );
+} );

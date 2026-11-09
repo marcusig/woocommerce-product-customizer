@@ -646,37 +646,78 @@ for 2D products that use it, or server-side compositing.
 ## Add-ons
 
 `PC.fe.viewer.item.view` returns a Backbone view whose `$el` is inserted in the DOM; it keeps that
-meaning and is not called by the canvas viewer. Canvas items get their own filter:
+meaning and is not called by the canvas viewer. Canvas items get their own filter. *Built
+2026-11-09* (`ask_item()` in `viewer-canvas.js` documents it too):
 
 ```js
 /**
- * @param {Object|null} item    null, or an item factory
+ * @param {Object|null} item    null, or an item
  * @param {Backbone.Model} choice
- * @param {Object} context      { viewer, layer, request_render }
+ * @param {Object} context      { viewer, layer, request_render() }; viewer is null when the
+ *                              viewer only asks whether there is an item (decision C)
  */
 wp.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'my-addon', function( item, choice, context ) {
 	if ( 'text-overlay' !== choice.collection.layer_type ) return item;
 	return {
-		create: function( angle_id ) { /* return a PIXI.Container */ },
-		set_angle: function( angle_id ) {},  // optional
-		destroy: function() {},
+		// Required. The choice drawn at an angle, in the pixels of the angle's image; null when
+		// there is nothing at that angle. options: { size, resolution, capture }.
+		create: function( angle_id, options ) { return new PIXI.Container(); },
+		update: function( container, angle_id, options ) {},  // optional
+		key: function( angle_id ) { return ''; },             // optional
+		ready: function( angle_id ) { return Promise.resolve(); }, // optional
+		destroy_container: function( container ) {},          // optional
+		destroy: function() {},                               // optional
 	};
 } );
 ```
 
-- The viewer places the returned container in the choice node, so order, visibility and capture
-  come for free. An item calls `context.request_render()` when it changes.
+- **One item per choice and viewer**, asked once and kept. It must be cheap to make: the
+  decision C check asks too, with `context.viewer` null, and drops the answer.
+- **`create()` is called more than once.** Once per angle stack shown (each angle has its own
+  container, so live angles in 4b just work), and again for one-off drawings: capture
+  (`options.capture` true, at the output's resolution) and the idle snapshot refresh. The viewer
+  destroys those right after. The item does not track its containers; the viewer owns them, places
+  each in the choice's layer node (order, visibility and the hold-until-loaded swap come for free)
+  and destroys it with its children, after `destroy_container()`.
+- **Coordinates:** the angle's image pixels, like the sprites; the stack's transform scales them.
+  `options.size` is that image size (null until known; `update()` runs once it is), so an item can
+  centre itself the way the stack centres an image of another size. `options.resolution` is device
+  pixels per image pixel: an item drawing text sets its `resolution` from it so text is
+  rasterised as sharp as it is shown. A resize that changes it calls `update()`.
+- **Changes:** the item calls `context.request_render()`. Before the next frame (and before a
+  snapshot is taken), `update()` runs once on every container of that item, on every angle, so a
+  live angle in 4b follows. It also counts as activity for the idle refresh.
+- **`key( angle_id )`** says what the item draws there (text, font, colour, whether the font has
+  loaded). It joins `picture_key()`, so a changed key makes the other angles' snapshots stale and
+  the idle refresh redraws them with the item. Without `key()`, those snapshots keep the old
+  drawing.
+- **`ready( angle_id )`**: the entry counts as loading until it resolves (the loading state,
+  `is_stack_complete()`, angle switches wait for it), and capture waits for it too. A rejected
+  `ready()` still draws: a fallback font beats an endless loader. A throwing `create()` is logged
+  and draws nothing.
+- **Context loss:** `reload_textures()` drops every entry, items included, and the shown angles
+  create theirs again. Items need not handle it.
+- **A picture of its own:** `viewer.render_to_canvas( container, width, height )` draws any
+  container off screen with the viewer's renderer into a straight-alpha 2D canvas (the same
+  unpremultiply as capture). Text overlay's cart PNG uses it instead of a WebGL context of its own.
 - An add-on that registers `PC.fe.viewer.item.view` for a layer and no `PC.fe.viewer.canvas.item`
-  makes the product fall back to the `<img>` stack (table above). Existing text-overlay products
-  keep working before text overlay is ported.
+  makes the product fall back to the `<img>` stack (table above). An item without `create()` does
+  not count. Existing text-overlay products keep working before text overlay is ported.
 - The pool's `PC.fe.viewer.layer_is_pooled` does not apply; every choice is a node.
+- Checked on product 613 with a stub item (a `PIXI.Text` of the choice's text): fallback lifted,
+  `ready()` held the loading state, one `update()` per text change, live angle updated in place,
+  in refresh mode the other angle's snapshot went stale and the idle refresh redrew it with the
+  item, capture included it at the output resolution, a resize updated its resolution, a lost and
+  restored context redrew it, and a remount destroyed every container.
+  `__tests__/viewer-canvas.test.js` covers the C check, the picture key, `ready()`, the update
+  fan-out, one-off drawings and container teardown.
 
 Not fired by the canvas viewer (DOM-only, documented): `PC.fe.viewer.item.tag`,
 `PC.fe.viewer.item.view`, `PC.fe.viewer.layer.classes`, `PC.fe.viewer.layer.render`,
 `PC.fe.viewer.layer.render.after`, `PC.fe.viewer.static_layer.*`, `PC.fe.choice-img.init`.
-`PC.fe.viewer.html_item.added` fires with the HTML view. `PC.fe.viewer.item.added` waits for
-phase 5: until there are canvas items there is nothing to pass that a listener expecting a view
-could use (nothing listens to it today).
+`PC.fe.viewer.html_item.added` fires with the HTML view. `PC.fe.viewer.item.added` is not fired
+either: a listener expects a view, an item has none, and nothing listens to it today. A
+canvas-specific action can come when someone needs one.
 
 Known consumers to adjust:
 
@@ -819,7 +860,8 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 4b. **Other angles live** where the budget allows, idle snapshot refreshes where it does not (section
     above), with the decode-queue priority. *Done 2026-11-06.* First iPhone runs below; they led to
     freeing each texture's image once uploaded (Textures section), the same day.
-5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route.
+5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route. *Hook
+   built 2026-11-09* (Add-ons section); the text overlay port and the Save your design route next.
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
 

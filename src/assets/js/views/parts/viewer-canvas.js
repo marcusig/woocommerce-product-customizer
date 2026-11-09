@@ -75,6 +75,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.refresh_job = null;
 		this.show_clock = 0;
 		this.html_items = [];
+		// Add-on items drawn in the scene, by choice key (canvas_item()), and
+		// the ones that changed since the last frame.
+		this.items = {};
+		this.dirty_items = [];
 		this.pending_layers = {};
 		this.sync_scheduled = false;
 		this.render_frame = null;
@@ -207,6 +211,100 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 */
 	view_key: function( choice ) {
 		return choice.get( 'layerId' ) + ':' + choice.id;
+	},
+
+	/**
+	 * The add-on item drawing a choice in the scene, or null for a plain image.
+	 * Asked once per choice and viewer. See the Add-ons section of
+	 * docs/canvas-viewer-spec.md.
+	 *
+	 * @param {Backbone.Model} choice
+	 * @return {Object|null}
+	 */
+	canvas_item: function( choice ) {
+		var key = this.view_key( choice );
+		if ( key in this.items ) return this.items[ key ];
+		var item = PC.fe.views.viewer_canvas.ask_item( choice, this.item_context( choice ) );
+		this.items[ key ] = item;
+		return item;
+	},
+
+	/**
+	 * What an item gets to talk to the viewer.
+	 */
+	item_context: function( choice ) {
+		var that = this;
+		var item = null;
+		return {
+			viewer: this,
+			layer: PC.fe.layers.get( choice.get( 'layerId' ) ) || null,
+			// The item changed: update() runs on each of its containers before
+			// the next frame is drawn.
+			request_render: function() {
+				item = item || that.items[ that.view_key( choice ) ];
+				if ( item ) that.item_changed( item );
+			},
+		};
+	},
+
+	/**
+	 * What the viewer passes to an item's create() and update() for a stack.
+	 *
+	 * resolution: device pixels per pixel of the angle's image, so text is
+	 * rasterised as sharp as it is shown.
+	 */
+	item_options: function( stack ) {
+		var renderer = this.app && this.app.renderer;
+		var scale = stack.container.scale.x || 1;
+		return {
+			size: stack.size,
+			resolution: scale * ( renderer ? renderer.resolution : 1 ),
+			capture: false,
+		};
+	},
+
+	item_changed: function( item ) {
+		if ( this.is_removed ) return;
+		if ( -1 === this.dirty_items.indexOf( item ) ) this.dirty_items.push( item );
+		this.note_activity();
+		// Other angles' snapshots may now be stale: the idle refresh redraws them.
+		this.background_dirty = true;
+		this.after_change();
+	},
+
+	/**
+	 * Run update() on the containers of the items that changed.
+	 */
+	apply_item_updates: function() {
+		if ( ! this.dirty_items.length ) return;
+		var dirty = this.dirty_items;
+		this.dirty_items = [];
+		this.each_item_entry( function( entry, stack ) {
+			if ( -1 === dirty.indexOf( entry.item ) ) return;
+			this.update_item_entry( entry, stack );
+		} );
+	},
+
+	update_item_entry: function( entry, stack, options ) {
+		if ( ! entry.sprite || ! entry.item.update ) return;
+		options = options || this.item_options( stack );
+		entry.item_resolution = options.resolution;
+		entry.item_size = options.size;
+		try {
+			entry.item.update( entry.sprite, stack.angle_id, options );
+		} catch ( error ) {
+			console.log( 'Product configurator: an add-on item could not update.', error );
+		}
+	},
+
+	each_item_entry: function( callback ) {
+		_.each( this.stacks, function( stack ) {
+			_.each( stack.layers, function( record ) {
+				_.each( record.shown, function( entry ) {
+					if ( entry.item ) callback.call( this, entry, stack );
+				}, this );
+			}, this );
+		}, this );
 	},
 
 	/**
@@ -351,6 +449,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			stack.container.scale.set( scale, scale );
 			stack.container.position.set( ( width - stack.size.width * scale ) / 2, ( height - stack.size.height * scale ) / 2 );
 		} );
+		// Items drawn at another resolution than they are now shown at, or
+		// before the angle's size was known (the first image tells).
+		this.each_item_entry( function( entry, stack ) {
+			var options = this.item_options( stack );
+			if ( entry.item_resolution !== options.resolution || entry.item_size !== options.size ) this.update_item_entry( entry, stack, options );
+		} );
 	},
 
 	on_resize: function() {
@@ -456,9 +560,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var choices = PC.fe.getLayerContent( record.layer.id );
 
 		_.each( state.shown_choices( record.layer ), function( choice ) {
-			if ( ! state.has_drawable( choice ) ) return;
+			var item = this.canvas_item( choice );
+			if ( ! item && ! state.has_drawable( choice ) ) return;
 			var key = this.view_key( choice );
-			var url = this.image_url( choice, stack.angle_id );
+			// An item draws itself: it has no file, and stays as it is.
+			var url = item ? null : this.image_url( choice, stack.angle_id );
 			wanted[ key ] = true;
 			if ( record.shown[ key ] ) {
 				if ( record.shown[ key ].url === url ) return;
@@ -471,6 +577,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				key: key,
 				model: choice,
 				url: url,
+				item: item,
 				stack: stack,
 				record: null,
 				index: choices ? choices.indexOf( choice ) : 0,
@@ -538,7 +645,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		entry.removed = true;
 		entry.settled = true;
 		if ( entry.sprite ) {
-			entry.sprite.destroy();
+			// An item's container goes with what it holds; its textures are the
+			// item's (text, a canvas), not the viewer's.
+			if ( entry.item ) PC.fe.views.viewer_canvas.destroy_item_container( entry.item, entry.sprite );
+			else entry.sprite.destroy();
 			entry.sprite = null;
 		}
 		if ( entry.record ) {
@@ -548,6 +658,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	},
 
 	load_entry: function( stack, record, entry ) {
+		if ( entry.item ) return this.load_item_entry( stack, record, entry );
 		if ( ! entry.url ) {
 			// Nothing to draw at this angle, and that is fine.
 			entry.settled = true;
@@ -625,6 +736,48 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			that.release_held( record );
 			that.after_change();
 		} );
+	},
+
+	/**
+	 * An add-on item's entry: once the item is ready (its fonts loaded, say),
+	 * it creates its container for the angle, placed in the choice's layer
+	 * node like an image. Counts as loading until then.
+	 */
+	load_item_entry: function( stack, record, entry ) {
+		var that = this;
+		var item = entry.item;
+		var ready;
+		try {
+			ready = item.ready ? item.ready( stack.angle_id ) : null;
+		} catch ( error ) {
+			ready = null;
+		}
+		var done = function() {
+			if ( entry.removed || that.is_removed || ! that.app ) return;
+			var options = that.item_options( stack );
+			var container = null;
+			try {
+				container = item.create( stack.angle_id, options ) || null;
+			} catch ( error ) {
+				console.log( 'Product configurator: an add-on item could not be drawn.', error );
+			}
+			if ( container ) {
+				container.zIndex = entry.index;
+				record.node.addChild( container );
+				entry.sprite = container;
+				entry.item_resolution = options.resolution;
+				entry.item_size = options.size;
+			}
+			entry.settled = true;
+			that.release_held( record );
+			that.after_change();
+		};
+		if ( ready && 'function' === typeof ready.then ) {
+			// A failed ready() still draws: a fallback font beats an endless loader.
+			ready.then( done, done );
+		} else {
+			done();
+		}
 	},
 
 	/**
@@ -1751,35 +1904,74 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {String}
 	 */
 	picture_key: function( stack ) {
-		return this.picture_items( stack ).join( '\n' );
+		return _.map( this.picture_items( stack ), function( part ) {
+			return part.url || part.key;
+		} ).join( '\n' );
 	},
 
 	/**
-	 * The files a stack would draw now, in drawing order: layers in image
-	 * order, then the choices of a layer by their index (the zIndex of their
-	 * sprites).
+	 * What a stack would draw now, in drawing order: layers in image order,
+	 * then the choices of a layer by their index (the zIndex of their sprites).
 	 *
-	 * @return {Array<String>}
+	 * Each part is { url } for an image, or { item, choice, key } for an
+	 * add-on item, whose key says what it draws (its key(), when it has one).
+	 *
+	 * @return {Array<Object>}
 	 */
 	picture_items: function( stack ) {
+		return this.parts_of( this.ordered_choices(), stack.angle_id );
+	},
+
+	/**
+	 * The choices drawn now, in drawing order.
+	 *
+	 * @return {Array<Backbone.Model>}
+	 */
+	ordered_choices: function() {
 		var state = PC.fe.viewer_state;
-		var urls = [];
+		var list = [];
 		_.each( state.layers_in_image_order(), function( layer ) {
 			var choices = PC.fe.getLayerContent( layer.id );
-			var shown = _.filter( state.shown_choices( layer ), function( choice ) {
-				return state.has_drawable( choice );
-			} );
+			var shown = state.shown_choices( layer );
 			if ( choices && shown.length > 1 ) {
 				shown = _.sortBy( shown, function( choice ) {
 					return choices.indexOf( choice );
 				} );
 			}
-			_.each( shown, function( choice ) {
-				var url = this.image_url( choice, stack.angle_id );
-				if ( url ) urls.push( url );
-			}, this );
+			list = list.concat( shown );
+		} );
+		return list;
+	},
+
+	/**
+	 * What to draw for each choice at an angle (see picture_items()).
+	 *
+	 * @param {Array<Backbone.Model>} choices
+	 * @param {String|Number} angle_id
+	 * @return {Array<Object>}
+	 */
+	parts_of: function( choices, angle_id ) {
+		var state = PC.fe.viewer_state;
+		var parts = [];
+		_.each( choices, function( choice ) {
+			var item = this.canvas_item( choice );
+			if ( item ) {
+				var key = 'item:' + this.view_key( choice );
+				if ( item.key ) {
+					try {
+						key += ':' + item.key( angle_id );
+					} catch ( error ) {
+						// A failing key() counts as no change.
+					}
+				}
+				parts.push( { item: item, choice: choice, key: key } );
+				return;
+			}
+			if ( ! state.has_drawable( choice ) ) return;
+			var url = this.image_url( choice, angle_id );
+			if ( url ) parts.push( { url: url } );
 		}, this );
-		return urls;
+		return parts;
 	},
 
 	/**
@@ -1799,6 +1991,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 */
 	take_snapshot: function( stack ) {
 		if ( ! stack || ! this.app || ! stack.size || ! stack.container.visible || ! this.is_stack_complete( stack ) ) return null;
+		// What an item's key() says must be what the copy shows.
+		this.apply_item_updates();
 		var layout = this.layout_key( stack );
 		var picture = this.picture_key( stack );
 		var existing = this.snapshots[ stack.angle_id ];
@@ -2038,7 +2232,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var renderer = this.app.renderer;
 		var layout = this.layout_key( stack );
 		var picture = this.picture_key( stack );
-		var urls = this.picture_items( stack );
+		var parts = this.picture_items( stack );
 		stack.refreshed_for = picture;
 
 		var texture = PIXI.RenderTexture.create( {
@@ -2055,9 +2249,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var background = function() {
 			return true;
 		};
+		var statics = PC.fe.views.viewer_canvas;
 		var release = function( items ) {
 			_.each( items, function( item ) {
 				if ( item && item.built ) that.destroy_built( item.built );
+				if ( item && item.container ) statics.destroy_item_container( item.item, item.container );
 			} );
 		};
 		var end = function() {
@@ -2068,7 +2264,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			if ( ! texture.destroyed ) texture.destroy( true );
 		};
 		// A texture the viewer holds is used as it is; others are built for this.
-		var get = function( url ) {
+		// An item draws a container of its own for this, destroyed after.
+		var get = function( part ) {
+			if ( part.item ) return statics.draw_item_once( part.item, stack.angle_id, that.item_options( stack ) );
+			var url = part.url;
 			var record = that.textures[ url ];
 			if ( record && record.texture && ! record.destroyed ) {
 				return Promise.resolve( { texture: record.texture, natural: record.natural } );
@@ -2085,6 +2284,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			container.position.copyFrom( stack.container.position );
 			container.scale.copyFrom( stack.container.scale );
 			_.each( items, function( item ) {
+				if ( item && item.container ) {
+					container.addChild( item.container );
+					return;
+				}
 				// Released meanwhile (a texture the viewer held): the snapshot
 				// would miss it, so this refresh does not count.
 				if ( ! item || item.texture.destroyed ) {
@@ -2098,7 +2301,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			} );
 			renderer.render( { container: container, target: texture, clear: 0 === drawn, clearColor: [ 0, 0, 0, 0 ] } );
 			drawn++;
-			// The sprites go; the textures are released by the caller.
+			// The sprites go; the textures and items' containers are released by
+			// the caller.
+			_.each( items, function( item ) {
+				if ( item && item.container ) container.removeChild( item.container );
+			} );
 			container.destroy( { children: true } );
 		};
 		var finish = function() {
@@ -2124,11 +2331,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		};
 		var step = function( index ) {
 			if ( ! wanted() ) return give_up();
-			if ( index >= urls.length ) {
+			if ( index >= parts.length ) {
 				if ( ! drawn ) draw( [] );
 				return finish();
 			}
-			return Promise.all( _.map( urls.slice( index, index + 2 ), get ) ).then( function( items ) {
+			return Promise.all( _.map( parts.slice( index, index + 2 ), get ) ).then( function( items ) {
 				if ( ! wanted() ) {
 					release( items );
 					return give_up();
@@ -2348,6 +2555,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		this.render_frame = requestAnimationFrame( function() {
 			that.render_frame = null;
 			if ( ! that.app || that.is_removed ) return;
+			that.apply_item_updates();
 			that.app.render();
 		} );
 	},
@@ -2401,18 +2609,17 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		/** This filter is documented in viewer.js (get_capture_models). */
 		var models = wp.hooks.applyFilters( 'PC.fe.viewer.capture.models', state.picture(), this );
 
-		var urls = [];
-		_.each( models, function( choice ) {
-			if ( ! state.has_drawable( choice ) ) return;
-			var url = this.image_url( choice, angle.id );
-			if ( url ) urls.push( url );
-		}, this );
-		if ( ! urls.length ) return null;
+		var parts = this.parts_of( models, angle.id );
+		if ( ! parts.length ) return null;
 
 		var size = this.angle_size( angle.id ) || ( this.stacks[ angle.id ] && this.stacks[ angle.id ].size );
 		if ( ! size ) {
 			// No stored dimensions and nothing shown yet: the first image decides.
-			var first = await this.load_image( urls[ 0 ] );
+			var first_image = _.find( parts, function( part ) {
+				return part.url;
+			} );
+			if ( ! first_image ) return null;
+			var first = await this.load_image( first_image.url );
 			if ( ! first ) return null;
 			size = { width: first.naturalWidth, height: first.naturalHeight };
 		}
@@ -2441,23 +2648,48 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 
 		// Drawn a few images at a time into one render texture, each resized
 		// first the way the <img> stack's capture resizes it, so memory stays at
-		// a few output-sized images however many layers the picture has.
+		// a few output-sized images however many layers the picture has. Items
+		// draw a container of their own for it, at the output's resolution.
 		var renderer = this.app.renderer;
 		var target = PIXI.RenderTexture.create( { width: width, height: height, resolution: 1 } );
 		var batch_size = this.decode_limit();
+		var item_options = { size: size, resolution: Math.max( scale_x, scale_y ), capture: true };
+		var statics = PC.fe.views.viewer_canvas;
+		var that = this;
 		var drawn = 0;
 		var failed = false;
+		var canvas;
+		var context;
 		try {
-			for ( var start = 0; start < urls.length && ! failed; start += batch_size ) {
-				var images = await Promise.all( _.map( urls.slice( start, start + batch_size ), this.load_image, this ) );
-				if ( this.is_removed || ! this.app ) return null;
+			for ( var start = 0; start < parts.length && ! failed; start += batch_size ) {
+				var images = await Promise.all( _.map( parts.slice( start, start + batch_size ), function( part ) {
+					if ( part.item ) return statics.draw_item_once( part.item, angle.id, item_options );
+					return that.load_image( part.url );
+				} ) );
+				if ( this.is_removed || ! this.app ) {
+					statics.release_drawn_items( images );
+					return null;
+				}
 				if ( _.contains( images, null ) ) {
 					failed = true;
+					statics.release_drawn_items( images );
+					_.each( images, function( image ) {
+						if ( image && ! image.item ) this.release_image( image );
+					}, this );
 					break;
 				}
 				var batch = new PIXI.Container();
 				var made = [];
 				_.each( images, function( image ) {
+					if ( image.item ) {
+						if ( ! image.container ) return;
+						// The item draws in the angle's pixels; the output is scaled.
+						var holder = new PIXI.Container();
+						holder.scale.set( scale_x, scale_y );
+						holder.addChild( image.container );
+						batch.addChild( holder );
+						return;
+					}
 					var natural = { width: image.naturalWidth, height: image.naturalHeight };
 					var out_width = Math.max( 1, Math.round( natural.width * scale_x ) );
 					var out_height = Math.max( 1, Math.round( natural.height * scale_y ) );
@@ -2472,12 +2704,17 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				}, this );
 				renderer.render( { container: batch, target: target, clear: 0 === drawn, clearColor: [ 0, 0, 0, 0 ] } );
 				drawn += images.length;
+				// Items' containers go the item's way, before the batch goes.
+				_.each( images, function( image ) {
+					if ( image.item && image.container && image.container.parent ) image.container.parent.removeChild( image.container );
+				} );
+				statics.release_drawn_items( images );
 				batch.destroy( { children: true } );
 				_.each( made, function( texture ) {
 					texture.destroy( true );
 				} );
 				_.each( images, function( image ) {
-					this.release_image( image );
+					if ( ! image.item ) this.release_image( image );
 				}, this );
 			}
 			if ( failed ) {
@@ -2485,12 +2722,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				return null;
 			}
 
-			var canvas = document.createElement( 'canvas' );
-			canvas.width = width;
-			canvas.height = height;
-			var context = canvas.getContext( '2d' );
-			var extracted = renderer.extract.pixels( { target: target } );
-			context.putImageData( this.unpremultiply( extracted.pixels, extracted.width, extracted.height ), 0, 0 );
+			canvas = this.target_to_canvas( target );
+			context = canvas.getContext( '2d' );
 		} catch ( error ) {
 			console.log( 'Product configurator: could not compose the captured image.', error );
 			return null;
@@ -2509,6 +2742,47 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				resolve( null );
 			}
 		} );
+	},
+
+	/**
+	 * Draw a container off screen into a 2D canvas, with straight alpha.
+	 *
+	 * For add-ons that need a picture of their own (text overlay sends its
+	 * text as a PNG with the cart item) without a WebGL context of their own.
+	 * The container is drawn at its own transform; nothing on screen changes.
+	 *
+	 * @param {PIXI.Container} container
+	 * @param {Number} width  Output pixels.
+	 * @param {Number} height
+	 * @return {HTMLCanvasElement|null}
+	 */
+	render_to_canvas: function( container, width, height ) {
+		if ( ! this.app || this.is_removed || ! width || ! height ) return null;
+		var target = PIXI.RenderTexture.create( { width: Math.round( width ), height: Math.round( height ), resolution: 1 } );
+		try {
+			this.app.renderer.render( { container: container, target: target, clear: true, clearColor: [ 0, 0, 0, 0 ] } );
+			return this.target_to_canvas( target );
+		} catch ( error ) {
+			console.log( 'Product configurator: could not draw an add-on picture.', error );
+			return null;
+		} finally {
+			target.destroy( true );
+		}
+	},
+
+	/**
+	 * A render texture's pixels in a new 2D canvas.
+	 *
+	 * @param {PIXI.RenderTexture} target
+	 * @return {HTMLCanvasElement}
+	 */
+	target_to_canvas: function( target ) {
+		var extracted = this.app.renderer.extract.pixels( { target: target } );
+		var canvas = document.createElement( 'canvas' );
+		canvas.width = extracted.width;
+		canvas.height = extracted.height;
+		canvas.getContext( '2d' ).putImageData( this.unpremultiply( extracted.pixels, extracted.width, extracted.height ), 0, 0 );
+		return canvas;
 	},
 
 	/**
@@ -2612,8 +2886,24 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		_.each( this.stacks, function( stack ) {
 			_.each( stack.layers, function( record ) {
 				if ( record.hold_timer ) clearTimeout( record.hold_timer );
-			} );
+				// Items clean up their containers while the renderer is there.
+				_.each( record.shown, function( entry ) {
+					if ( entry.item ) this.drop_entry( entry );
+				}, this );
+				_.each( record.held, function( entry ) {
+					if ( entry.item ) this.drop_entry( entry );
+				}, this );
+			}, this );
+		}, this );
+		_.each( _.compact( _.values( this.items ) ), function( item ) {
+			try {
+				if ( item.destroy ) item.destroy();
+			} catch ( error ) {
+				console.log( 'Product configurator: an add-on item could not clean up.', error );
+			}
 		} );
+		this.items = {};
+		this.dirty_items = [];
 		this.stacks = {};
 		this.current_stack = null;
 		this.target_stack = null;
@@ -2653,6 +2943,84 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * nobody wanted the image any more.
 	 */
 	abandoned: { abandoned: true },
+
+	/**
+	 * Ask add-ons for the item drawing a choice in the scene.
+	 *
+	 * An item is an object:
+	 *   create( angle_id, options ) -> PIXI.Container|null  Required. The choice
+	 *       drawn for an angle, in the pixels of the angle's image (the viewer
+	 *       scales it with the stack). null: nothing at this angle. Called for
+	 *       each angle shown, and again for one-off drawings (capture, the idle
+	 *       snapshot refresh) that are destroyed right after.
+	 *       options: { size, resolution, capture }: the angle's image size
+	 *       ({ width, height }, or null before it is known), device pixels per
+	 *       image pixel (for text resolution), whether it is for a capture.
+	 *   update( container, angle_id, options )  Optional. Bring a container in
+	 *       line with the item after context.request_render(), or when the
+	 *       options changed (a resize).
+	 *   key( angle_id ) -> String  Optional. What it draws at that angle; when
+	 *       it changes, flat copies of other angles are redrawn. Without it,
+	 *       those copies keep the old drawing.
+	 *   ready( angle_id ) -> Promise  Optional. Resolves once it can draw
+	 *       properly (fonts loaded); the picture counts as loading until then.
+	 *   destroy_container( container )  Optional. Before the viewer destroys a
+	 *       container (with its children).
+	 *   destroy()  Optional. The viewer goes.
+	 *
+	 * @param {Backbone.Model} choice
+	 * @param {Object} context { viewer, layer, request_render() }; viewer is
+	 *                         null when only asking whether there is an item.
+	 * @return {Object|null}
+	 */
+	ask_item: function( choice, context ) {
+		var item = wp.hooks.applyFilters( 'PC.fe.viewer.canvas.item', null, choice, context );
+		return item && 'function' === typeof item.create ? item : null;
+	},
+
+	/**
+	 * A one-off drawing of an item, once it is ready.
+	 *
+	 * @return {Promise<Object>} { item, container } (container may be null)
+	 */
+	draw_item_once: function( item, angle_id, options ) {
+		var ready;
+		try {
+			ready = item.ready ? item.ready( angle_id ) : null;
+		} catch ( error ) {
+			ready = null;
+		}
+		var draw = function() {
+			var container = null;
+			try {
+				container = item.create( angle_id, options ) || null;
+			} catch ( error ) {
+				console.log( 'Product configurator: an add-on item could not be drawn.', error );
+			}
+			return { item: item, container: container };
+		};
+		return Promise.resolve( ready ).then( draw, draw );
+	},
+
+	release_drawn_items: function( drawn ) {
+		_.each( drawn, function( entry ) {
+			if ( entry && entry.item && entry.container ) {
+				PC.fe.views.viewer_canvas.destroy_item_container( entry.item, entry.container );
+				entry.container = null;
+			}
+		} );
+	},
+
+	destroy_item_container: function( item, container ) {
+		if ( container.destroyed ) return;
+		try {
+			if ( item.destroy_container ) item.destroy_container( container );
+		} catch ( error ) {
+			console.log( 'Product configurator: an add-on item could not clean up.', error );
+		}
+		if ( container.parent ) container.parent.removeChild( container );
+		container.destroy( { children: true } );
+	},
 
 	/**
 	 * Whether the configurator is narrower than the mobile image breakpoint,
@@ -2749,13 +3117,16 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		}
 
 		// A layer an add-on draws as DOM (its own item view) cannot be put in the
-		// scene; the whole product uses the <img> stack instead (decision C).
+		// scene, unless the add-on also gives a canvas item for it; otherwise
+		// the whole product uses the <img> stack instead (decision C).
 		if ( ! PC.fe.layers || ! PC.fe.contents ) return null;
+		var that = this;
 		var dom_layer = PC.fe.layers.find( function( layer ) {
 			var choices = PC.fe.getLayerContent( layer.id );
 			if ( ! choices ) return false;
 			return choices.find( function( choice ) {
-				return PC.fe.views.viewer_layer !== wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, choice, null );
+				if ( PC.fe.views.viewer_layer === wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, choice, null ) ) return false;
+				return ! that.ask_item( choice, { viewer: null, layer: layer, request_render: function() {} } );
 			} );
 		} );
 		if ( dom_layer ) {
