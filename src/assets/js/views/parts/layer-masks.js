@@ -89,22 +89,27 @@ PC.fe.layer_masks = {
 	 * (a fabric covering a whole shirt), and an image pool keeps the previous
 	 * image meanwhile. Without one, the src is set at once, as before.
 	 *
-	 * The view keeps the loaded mask in `mask_image`, for capture().
+	 * The view keeps the loaded mask in `mask_image`, for capture(), and the
+	 * URL of the mask last asked for in `mask_url` (mask_changed()).
 	 *
-	 * @param {Backbone.View}  view  viewer_layer or viewer_static_layer.
+	 * @param {Backbone.View}  view     viewer_layer or viewer_static_layer.
 	 * @param {Backbone.Model} layer
 	 * @param {String}         src
+	 * @param {Boolean}        keep_src Only bring the mask in line: the image
+	 *                                  already shows src (a static layer with
+	 *                                  the same file on another view). Setting
+	 *                                  it again could wait for a load event that
+	 *                                  never comes.
 	 */
-	set_src: function( view, layer, src ) {
+	set_src: function( view, layer, src, keep_src ) {
 		var token = view.mask_token = {};
-		var angle = PC.fe.angles.findWhere( { active: true } );
-		// The transparent placeholder has nothing to cut.
-		var mask = src && 0 !== src.indexOf( 'data:' ) ? this.get( layer, angle && angle.id ) : null;
+		var mask = this.mask_for( layer, src );
+		view.mask_url = mask ? mask.url : '';
 
 		if ( ! mask ) {
 			if ( view.mask_image || view.el.style.getPropertyValue( 'mask-image' ) || view.el.style.getPropertyValue( '-webkit-mask-image' ) ) this.apply( view.el, null );
 			view.mask_image = null;
-			view.el.src = src;
+			if ( ! keep_src ) view.el.src = src;
 			return;
 		}
 
@@ -114,8 +119,33 @@ PC.fe.layer_masks = {
 			if ( view.mask_token !== token || view.is_removed || view.is_retired ) return;
 			that.apply( view.el, image ? mask.url : null );
 			view.mask_image = image;
-			view.el.src = src;
+			if ( ! keep_src ) view.el.src = src;
 		} );
+	},
+
+	/**
+	 * The mask an image of a layer is cut with on the active angle, if any.
+	 * The transparent placeholder has nothing to cut.
+	 *
+	 * @return {Object|null} { id, url, dimensions }
+	 */
+	mask_for: function( layer, src ) {
+		if ( ! src || 0 === src.indexOf( 'data:' ) ) return null;
+		var angle = PC.fe.angles.findWhere( { active: true } );
+		return this.get( layer, angle && angle.id );
+	},
+
+	/**
+	 * Whether the mask a view should show on the active angle is not the one
+	 * it last asked for.
+	 *
+	 * @param {Backbone.View}  view
+	 * @param {Backbone.Model} layer
+	 * @return {Boolean}
+	 */
+	mask_changed: function( view, layer ) {
+		var mask = this.mask_for( layer, view.el.getAttribute( 'src' ) );
+		return ( mask ? mask.url : '' ) !== ( view.mask_url || '' );
 	},
 
 	/**
