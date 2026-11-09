@@ -2622,23 +2622,65 @@ class DB {
 				}
 			}
 			if ( empty( $chunk ) || ! is_array( $chunk ) ) continue;
+			$layer_changed = false;
 			if ( isset( $chunk['image'] ) && ! empty( $chunk['image']['url'] ) ) {
 				$new_layer_id = $this->_find_image_id( $chunk['image']['url'], isset( $chunk['image']['id'] ) ? $chunk['image']['id'] : 0 );
 				if ( $new_layer_id && ( ! isset( $chunk['image']['id'] ) || $new_layer_id != $chunk['image']['id'] ) ) {
 					$chunk['image']['id'] = $new_layer_id;
 					$chunk['image']['url'] = wp_get_attachment_url( $new_layer_id );
-					if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_layer_' . $layer_id, $chunk ) ) {
-						continue;
-					}
-					$product->save();
-					do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_layer_' . $layer_id );
+					$layer_changed = true;
 				}
+			}
+			// Layer masks, one image per view, remapped like a choice's images
+			// (docs/layer-masks-spec.md).
+			if ( ! empty( $chunk['masks'] ) && is_array( $chunk['masks'] ) && $this->remap_layer_masks( $chunk['masks'] ) ) {
+				$layer_changed = true;
+			}
+			if ( $layer_changed ) {
+				if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_layer_' . $layer_id, $chunk ) ) {
+					continue;
+				}
+				$product->save();
+				do_action( 'wpml_sync_custom_field', $product_id, '_mkl_product_configurator_layer_' . $layer_id );
 			}
 		}
 
 		$this->scan_3d_files( $product_id );
 
 		return $this->changed_items_count;
+	}
+
+	/**
+	 * Point a layer's masks at this site's attachments, found by file name, in place.
+	 *
+	 * The stored id is kept when it still serves the stored URL; otherwise an attachment with the
+	 * same file name takes its place, id and URL. Nothing found leaves the mask as it is: the id
+	 * _find_image_id() falls back to may be an unrelated attachment on this site, so a match only
+	 * counts when its file name is the stored one.
+	 *
+	 * @param array $masks [ { angleId, image: { id, url, dimensions } } ], changed in place.
+	 * @return bool Whether a mask changed.
+	 */
+	private function remap_layer_masks( &$masks ) {
+		$changed = false;
+		$file_name = function( $url ) {
+			return strtolower( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) );
+		};
+		foreach ( $masks as $key => $mask ) {
+			if ( ! is_array( $mask ) || empty( $mask['image'] ) || ! is_array( $mask['image'] ) || empty( $mask['image']['url'] ) ) continue;
+			$url = $mask['image']['url'];
+			$old_id = isset( $mask['image']['id'] ) ? (int) $mask['image']['id'] : 0;
+			if ( $old_id && wp_get_attachment_url( $old_id ) === $url ) continue;
+			$new_id = (int) $this->_find_image_id( $url, $old_id );
+			$new_url = $new_id ? wp_get_attachment_url( $new_id ) : '';
+			if ( ! $new_url || $file_name( $new_url ) !== $file_name( $url ) ) continue;
+			if ( $new_id !== $old_id || $new_url !== $url ) {
+				$masks[ $key ]['image']['id'] = $new_id;
+				$masks[ $key ]['image']['url'] = $new_url;
+				$changed = true;
+			}
+		}
+		return $changed;
 	}
 
 	/**

@@ -227,6 +227,10 @@ saved one when `Choice::is_stored()`, as `get_image_id()` does for `image`.
    Checked: canvas, stack and server pictures of the same configurations compared pixel by
    pixel (they must match, within rounding), Safari on the iPhone.
 5. **Docs.** A user page (masks, sizes, CORS, the theme condition), and the hooks.
+   *Drafted 2026-11-09 in wpc-docs:* `general-usage/masking-a-layer.md` (with a screenshot still to
+   take), `mkl_pc/choice/mask_id` and the saved `mask` key in the data hooks, the saved `mask` in
+   the JS save-data section, and the `<image>m<mask>` token next to
+   `mkl_pc/cart_item/merge_layer_image_id`.
 
 Phase 2 can ship before 3 and 4 only if the viewers already ignore the field safely; simplest is
 to ship 1-4 together.
