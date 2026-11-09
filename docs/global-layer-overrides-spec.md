@@ -1,7 +1,8 @@
 # Linked global layers with overrides
 
-Status: **specified 2026-11-09.** All open points decided 2026-11-09. Phases 1 (data) and 2
-(editor) built 2026-11-09; phase 3 (docs) not started.
+Status: **specified 2026-11-09.** All open points decided 2026-11-09. Phases 1 (data), 2
+(editor) and 3 (docs, wpc-docs `global-layers/overriding-a-global-layer-in-one-product.md`)
+built 2026-11-09.
 
 One global layer linked several times into the same product (or into many), each link changing a
 few of the layer's settings for itself: its name, its [mask](layer-masks-spec.md), its 3D target.
@@ -200,8 +201,8 @@ collections are reloaded the same way.
 
 The import dialog marks a global layer already linked in this product ("In this product: 2
 links"). Importing it again adds another link, as today. Nothing is overridden on a new link; the
-form makes it plain that it still shows the global name, and a second link opens with the name's
-switch on ([open point C](#open-points)).
+form makes it plain that it still shows the global name: a second link opens, and its name field
+says the layer is used several times ([open point C](#open-points)).
 
 ## Not in this step
 
@@ -238,5 +239,8 @@ global edit from one link not leaking into the others, localize.
   than on the collar. *Decided 2026-11-09:* not now. The data has room for it later
   (`overrides.choices[ choiceId ]`), and the 2026-11-06 proposal had it as "maybe".
 - **C. A new link's name.** Two links named "Fabrics" in the layer list are confusing until one is
-  renamed. *Decided 2026-11-09:* no automatic override (that would be a value nobody chose), but the import
-  dialog's second link opens the layer form with the name field ready to override.
+  renamed. *Decided 2026-11-09:* no automatic override (that would be a value nobody chose). The
+  second link opens with the name switch **off**, and the name field says the layer is used N
+  times in this product (shown on every link while the name is not overridden). A first build
+  switched the name on: left unchanged, that froze the link on the global name of the day, with
+  nothing to show why later renames did not reach it.

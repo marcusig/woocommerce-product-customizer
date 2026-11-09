@@ -442,6 +442,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'override_on' => esc_html__( 'Override for this link', 'product-configurator-for-woocommerce' ),
 					'override_off' => esc_html__( 'Use the global layer\'s value', 'product-configurator-for-woocommerce' ),
 					'override_badge' => esc_html__( 'This link only', 'product-configurator-for-woocommerce' ),
+					/* translators: %d: number of times the global layer is used in this product */
+					'override_name_hint' => esc_html__( 'This global layer is used %d times in this product: override the name to tell them apart.', 'product-configurator-for-woocommerce' ),
 					'override_html_id_hint' => esc_html__( 'This global layer is used more than once in this product: override the ID on each link, or the page will have the same ID twice.', 'product-configurator-for-woocommerce' ),
 					/* translators: %d: number of times the global layer is already used in this product */
 					'import_global_layer_links' => esc_html__( 'Already in this product: %d', 'product-configurator-for-woocommerce' ),

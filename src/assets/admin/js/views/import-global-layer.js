@@ -252,9 +252,10 @@ PC.views = PC.views || {};
 						self.close();
 
 						// Another link to a layer already here: two rows with the same name until
-						// one is renamed, so this one opens with its name ready to override.
-						if ( already_linked && PC.admin && PC.admin.layer_overrides ) {
-							PC.admin.layer_overrides.switch_on( new_layer, 'name' );
+						// one is renamed, so this one opens, and its name field says so. Nothing is
+						// overridden for the user: a name left as it is keeps following the global
+						// layer.
+						if ( already_linked ) {
 							var view = PC.app.findLayerListItemViewForModel && PC.app.findLayerListItemViewForModel( new_layer );
 							if ( view && view.edit ) view.edit();
 						}

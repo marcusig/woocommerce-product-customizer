@@ -406,6 +406,13 @@ PC.admin = PC.admin || {};
 			} );
 			form.$el.toggleClass( 'has-overrides', O.get( model ).fields.length > 0 );
 
+			// The same global layer used more than once: the list shows the same name until one is
+			// renamed for its link.
+			var links = O.count_links( model.get( 'global_id' ) );
+			if ( links > 1 && ! O.is_overridden( model, 'name' ) ) {
+				form.$( '.setting-id-name' ).append( $( '<p class="mkl-pc-override-hint"></p>' ).text( lang( 'override_name_hint', 'This global layer is used %d times in this product: override the name to tell them apart.' ).replace( '%d', links ) ) );
+			}
+
 			// Two links share the global layer's HTML id until one is overridden.
 			if ( ! O.is_overridden( model, 'html_id' ) && model.get( 'html_id' ) && O.count_links( model.get( 'global_id' ) ) > 1 ) {
 				form.$( '.setting-id-html_id' ).append( $( '<p class="mkl-pc-override-hint"></p>' ).text( lang( 'override_html_id_hint', 'This global layer is used more than once in this product: override the ID on each link, or the page will have the same ID twice.' ) ) );
