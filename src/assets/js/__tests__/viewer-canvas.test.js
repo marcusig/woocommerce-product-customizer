@@ -870,3 +870,140 @@ describe( 'add-on items (PC.fe.viewer.canvas.item)', () => {
 		expect( order ).toEqual( [ 'item', 'removed', [ 'destroy', { children: true } ] ] );
 	} );
 } );
+
+describe( 'layer masks (docs/layer-masks-spec.md)', () => {
+	const underscore = {
+		each: ( list, callback, context ) => {
+			if ( Array.isArray( list ) ) list.forEach( ( value, index ) => callback.call( context, value, index ) );
+			else Object.keys( list || {} ).forEach( ( key ) => callback.call( context, list[ key ], key ) );
+		},
+		map: ( list, callback, context ) => list.map( ( value ) => callback.call( context, value ) ),
+		find: ( list, callback, context ) => ( Array.isArray( list ) ? list : Object.values( list || {} ) ).find( ( value ) => callback.call( context, value ) ),
+		filter: ( list, callback ) => list.filter( callback ),
+		values: ( object ) => Object.values( object || {} ),
+		isArray: Array.isArray,
+		reject: ( list, callback ) => list.filter( ( item ) => ! callback( item ) ),
+		without: ( list, item ) => list.filter( ( value ) => value !== item ),
+		contains: ( list, item ) => list.includes( item ),
+	};
+
+	beforeEach( () => {
+		global._ = underscore;
+	} );
+	afterEach( () => {
+		delete global._;
+	} );
+
+	test( 'a mask texture has its own key: same file, no shared texture', () => {
+		load();
+		const statics = PC.fe.views.viewer_canvas;
+		expect( statics.mask_key( 'https://shop.test/case.png' ) ).toBe( 'https://shop.test/case.png#pc-mask' );
+		expect( statics.is_mask_key( statics.mask_key( 'case.png' ) ) ).toBe( true );
+		expect( statics.is_mask_key( 'case.png' ) ).toBe( false );
+	} );
+
+	test( 'a layer waiting for its mask keeps the picture loading; a failed one does not', () => {
+		load();
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		const settled = { settled: true };
+		const stack = { layers: { 3: { shown: { a: settled }, held: [], mask: { done: false } } } };
+		expect( viewer.is_stack_settled( stack ) ).toBe( false );
+		expect( viewer.count_loading( stack ) ).toBe( 1 );
+		stack.layers[ 3 ].mask = { done: true, failed: true };
+		expect( viewer.is_stack_settled( stack ) ).toBe( true );
+		expect( viewer.count_loading( stack ) ).toBe( 0 );
+		// Given up while its angle was not shown: still pending, loaded again when shown.
+		stack.layers[ 3 ].mask = { done: false, abandoned: true };
+		expect( viewer.is_stack_settled( stack ) ).toBe( false );
+	} );
+
+	test( 'the picture key names each image\'s mask, so a mask change makes snapshots stale', () => {
+		load();
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		let masks = [ { angleId: 1, image: { url: 'mask-a.png' } } ];
+		const layer = { get: ( key ) => ( 'masks' === key ? masks : undefined ) };
+		PC.fe.layers.get = () => layer;
+		PC.fe.viewer_state = { has_drawable: () => true };
+		PC.fe.layer_masks = {
+			get: ( l, angle_id ) => {
+				const mask = ( l.get( 'masks' ) || [] ).find( ( item ) => String( item.angleId ) === String( angle_id ) );
+				return mask ? mask.image : null;
+			},
+		};
+		viewer.items = {};
+		viewer.canvas_item = () => null;
+		viewer.image_url = ( choice ) => choice.url;
+		const choice = Object.assign( make_model( { id: 1, layerId: 3 } ), { url: 'fabric.png' } );
+		viewer.ordered_choices = () => [ choice ];
+
+		expect( viewer.parts_of( [ choice ], 1 ) ).toEqual( [ { url: 'fabric.png', mask: 'mask-a.png' } ] );
+		expect( viewer.parts_of( [ choice ], 2 ) ).toEqual( [ { url: 'fabric.png' } ] );
+		const before = viewer.picture_key( { angle_id: 1 } );
+		expect( before ).toBe( 'fabric.png mask:mask-a.png' );
+		masks = [ { angleId: 1, image: { url: 'mask-b.png' } } ];
+		expect( viewer.picture_key( { angle_id: 1 } ) ).not.toBe( before );
+	} );
+
+	test( 'one image: the node is masked; several: each sprite, with no stray mask sprites', () => {
+		load();
+		const made = [];
+		global.PIXI.Sprite = function( texture ) {
+			this.texture = texture;
+			this.parent = null;
+			this.destroyed = false;
+			this.scale = { set: () => {} };
+			this.position = { set: () => {} };
+			this.destroy = () => {
+				this.destroyed = true;
+			};
+			made.push( this );
+		};
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		viewer.request_render = () => {};
+		viewer.fit_sprite = () => {};
+		const node = {
+			children: [],
+			mask: null,
+			addChild( child ) {
+				child.parent = this;
+				this.children.push( child );
+			},
+			removeChild( child ) {
+				this.children = this.children.filter( ( item ) => item !== child );
+				child.parent = null;
+			},
+		};
+		const texture = { id: 'mask-texture' };
+		const texture_record = { texture, natural: { width: 10, height: 10 }, destroyed: false };
+		const a = { sprite: { mask: null } };
+		const b = { sprite: { mask: null } };
+		const record = { node, shown: { a }, held: [], mask: { done: true, texture_record } };
+		const stack = { size: { width: 10, height: 10 } };
+
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBe( record.mask_sprite );
+		expect( a.sprite.mask ).toBeNull();
+
+		record.shown.b = b;
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBeNull();
+		expect( a.sprite.mask ).toBe( a.mask_sprite );
+		expect( b.sprite.mask ).toBe( b.mask_sprite );
+		expect( a.mask_sprite ).not.toBe( b.mask_sprite );
+		expect( node.children ).toEqual( [ a.mask_sprite, b.mask_sprite ] );
+
+		delete record.shown.b;
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBe( record.mask_sprite );
+		expect( a.sprite.mask ).toBeNull();
+		// b's mask sprite goes with b (drop_entry); a's own one is gone.
+		expect( node.children ).toEqual( [ b.mask_sprite, record.mask_sprite ] );
+		expect( a.mask_sprite ).toBeNull();
+
+		// A failed mask: everything unmasked.
+		record.mask = { done: true, failed: true, texture_record: null };
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBeNull();
+		expect( record.mask_sprite ).toBeNull();
+	} );
+} );

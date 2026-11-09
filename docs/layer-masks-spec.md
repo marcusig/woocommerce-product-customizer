@@ -71,9 +71,13 @@ The three places must produce the same pixels, so the rule is written once:
 - **Placement:** the mask covers the image exactly (same size, same position).
 
 Pixi reads its sprite mask from the mask's **red channel** times its alpha (`a = alphaMul *
-masky.r` in Pixi 8.16's mask filter), not from alpha alone, so a black alpha mask would hide
-everything there. The canvas viewer makes each mask texture white-with-alpha when it builds it
-(below); the files stay plain alpha PNGs.
+masky.r` in Pixi 8.16's mask filter, with `alphaMul` = the mask's alpha), not from alpha alone,
+so a black alpha mask would hide everything there. Its textures are premultiplied, so a white
+mask with alpha a gives a × a: soft edges come out squared (a 50% edge at 25%; measured on 613,
+296 pixels off by up to 53 against the server). The canvas viewer therefore redraws each mask
+**opaque, grey = the mask's alpha** (white where it shows, black where it hides), which gives
+1 × a exactly. Outside the mask sprite, Pixi hides everything anyway (its mask clamp). The files
+stay plain alpha PNGs.
 
 ## The `<img>` stack
 
@@ -117,8 +121,9 @@ views, per angle (the mask changes with the angle, like the image's `src`), with
 ## The canvas viewer
 
 - **Textures.** A mask is loaded as a texture of the viewer: `load_texture()`, the budget, the
-  scale steps, eviction and pinning (the stack showing it pins it). When it is built, its colour
-  is set to white keeping its alpha (one 2D-canvas pass, `source-in` fill, at the downscaled size
+  scale steps, eviction and pinning (the stack showing it pins it). When it is built, it is
+  redrawn opaque grey, grey = alpha (one 2D-canvas pass: `source-in` white, then `destination-over`
+  black, at the downscaled size
   the texture is built at anyway).
 - **Drawing** (decision 7). On a layer showing one image (simple and static layers, the common
   case), the layer node gets `node.mask = sprite`, the sprite placed like the layer's images. On a
@@ -203,6 +208,22 @@ saved one when `Choice::is_stored()`, as `get_image_id()` does for `image`.
    visible pixels by up to 14, against 170 by up to 12 without the mask (rounding they already
    had). Not checked: Safari, and the Image order preview by eye.
 4. **Canvas viewer.** Mask textures, node and per-sprite masks, loading, snapshots, capture.
+   *Built 2026-11-09:* a mask texture is loaded under `mask_key()` (the URL plus `#pc-mask`, so
+   it shares the file's HTTP cache but not its image texture) and built through `whiten()`. Each
+   layer record of a stack holds its `mask` (`sync_mask()`): pending until loaded, failed, or
+   abandoned (its angle left before the decode; loaded again when shown). A pending mask keeps the
+   layer loading and its images wait (`mask_ready()` in `load_entry()`). `apply_mask()` masks the
+   node for one image and each sprite for several. Mask textures list their `mask_users`, which
+   pin them; evicting one drops that layer's images in that stack too, so both load again
+   together. Upgrades, context restore, `picture_cost()`, the picture key, the idle refresh and
+   `capture()` all carry masks. Checked on 613 (band masked by the case image): live stack and
+   capture against the server merge, 166 visible pixels off by up to 14 (as unmasked); a
+   refreshed snapshot pixel-identical to the live picture; per-sprite masks with two band images
+   and back to the node with one; an unloadable mask (unmasked, picture complete); a lost and
+   restored context; the mask evicted under a 1-byte budget and reloaded with its images. Found
+   on the way: the idle refresh threw on an add-on item with nothing to draw at the angle (text
+   overlay on 613's front), fixed. Seen once and not reproduced since: a Pixi error in a render
+   (`reading 'clear'` in its batcher) in a session where that refresh was throwing.
    Checked: canvas, stack and server pictures of the same configurations compared pixel by
    pixel (they must match, within rounding), Safari on the iPhone.
 5. **Docs.** A user page (masks, sizes, CORS, the theme condition), and the hooks.
