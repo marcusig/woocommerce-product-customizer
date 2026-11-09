@@ -162,8 +162,8 @@ saved one when `Choice::is_stored()`, as `get_image_id()` does for `image`.
 
 ## Admin
 
-- New layer section **Mask**, shown for 2D configurators and image layers, between Display and
-  Selection. One picker per angle, modelled on the choice form's per-angle picture
+- New layer section **Mask**, shown for 2D configurators and image layers, after Selection
+  settings (Marc, 2026-11-09). One picker per angle, modelled on the choice form's per-angle picture
   (`PC.views.choice_picture` in `admin/js/views/choices.js`); layer settings have no image field
   type today.
 - **Size check.** Next to each angle's mask, a warning when one of the layer's choice images on

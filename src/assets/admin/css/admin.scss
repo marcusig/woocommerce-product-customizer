@@ -3572,6 +3572,63 @@ label.euler-axis {
 .mkl-pc-setting--container {
 	width: 100%;
 }
+
+// Layer form, Mask section: one row per view (views/layer-masks.js)
+.mkl-pc-layer-masks__list {
+	display: grid;
+	gap: 12px;
+}
+.mkl-pc-layer-mask {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 10px;
+	&__view {
+		flex: 1 1 100%;
+		font-weight: 500;
+		overflow-wrap: anywhere;
+	}
+	&__picture {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 64px;
+		height: 64px;
+		padding: 2px;
+		border: 1px solid $light-border-color;
+		border-radius: 2px;
+		cursor: pointer;
+		// A checkerboard, so the mask's transparent parts read as transparent
+		background: repeating-conic-gradient( #dcdcde 0% 25%, #fff 0% 50% ) 50% / 12px 12px;
+		img {
+			display: block;
+			max-width: 100%;
+			max-height: 100%;
+		}
+		&:disabled {
+			cursor: default;
+		}
+	}
+	&__details {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 0;
+		min-width: 0;
+	}
+	&__file {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	&__size {
+		color: #757575;
+		font-size: 12px;
+	}
+	&__warning {
+		flex: 1 1 100%;
+		margin: 0;
+	}
+}
 .mkl-pc-admin-ui--content-mode {
 	.mkl-pc-admin-ui__content.content {
 		position: relative;
