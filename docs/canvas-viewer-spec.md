@@ -723,8 +723,8 @@ Known consumers to adjust:
 
 | Consumer | Today | Change |
 |---|---|---|
-| Text overlay | DOM item view with its own Pixi app per choice | Canvas item: drops its own `Application`, adds a container. Phase 5 |
-| Save your design | `capture_viewer_image()` first; `pdf_render_method === 'pixi'` and the html2canvas fallback scrape `.mkl_pc_layers` children | Route `pixi` to `capture_viewer_image()` when the viewer is canvas |
+| Text overlay | DOM item view with its own Pixi app per choice | Canvas item, *done 2026-11-09* (text-overlay `canvas-item`, 526f836): drawing shared by both previews (`text-drawing.js`), `Overlay_Canvas_Item` per choice; cart PNG through `render_to_canvas()`. On 613 the canvas capture is pixel-identical to the stack's, the cart PNG has the same alpha and now straight colour at the edges (the DOM preview's was premultiplied: 500 edge pixels too dark). Found on the way: the stack's capture had no text at all (WebGL canvas read after its frame, no `preserveDrawingBuffer`), fixed in 400d833 with `get_capture_source()` |
+| Save your design | `capture_viewer_image()` first; `pdf_render_method === 'pixi'` (the default) and the html2canvas fallback scrape `.mkl_pc_layers` children | *Done 2026-11-09* (save-your-design `canvas-viewer`): with the canvas viewer, `build_image()` always uses `capture_viewer_image()`, whatever the method; when that fails the PDF goes without a picture instead of a scraped one. Before, the `pixi` method found no layer and sent an empty 88-byte PNG |
 | `pc-fe-main.js` swipe | Binds to `.mkl_pc_layers` | None |
 | `ev` theme | `PC.fe.viewer.render` hook | None |
 
@@ -860,8 +860,9 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 4b. **Other angles live** where the budget allows, idle snapshot refreshes where it does not (section
     above), with the decode-queue priority. *Done 2026-11-06.* First iPhone runs below; they led to
     freeing each texture's image once uploaded (Textures section), the same day.
-5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route. *Hook
-   built 2026-11-09* (Add-ons section); the text overlay port and the Save your design route next.
+5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route. *Hook,
+   text overlay port and Save your design route built 2026-11-09* (Add-ons section). Left: `canvas`
+   as the default for new installs, and the user docs (Admin section).
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
 
