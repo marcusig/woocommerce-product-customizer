@@ -650,6 +650,47 @@ Flag for the image overlay spec, not solved here: a warped or shaded customer im
 reproduced by `Images::merge()`. That feature will need either a canvas-viewer screenshot accepted
 for 2D products that use it, or server-side compositing.
 
+### Should the browser send the whole picture? (Marc, 2026-11-09)
+
+Asked when text overlay was ported: the browser already sends text overlay's PNG, so why not send
+the whole picture and drop the server merge? **Decided: the server-merged image stays the default
+for 2D. A picture from the browser is used only for layers the server cannot draw.**
+
+Why the merge stays:
+
+- **It can be redrawn.** Other display sizes, the picture after an admin edits an order
+  (the admin configuration editor), the Fix images tool and the planned headless quote API (no
+  browser at all) rebuild it from the configuration. A posted picture exists in one size and
+  cannot be redrawn.
+- **Text overlay gains little.** The server merges its PNG like any other layer, and the result
+  matches the preview: same alpha, and true colour at the edges since the port
+  (`render_to_canvas()`). Its PNG would still be needed for the redraws above, so a whole picture
+  would add an upload, not replace one.
+- **Phones.** `capture()` loads every layer image again at full size to draw at cart size: the
+  decode load that killed the iPhone XS on 7861 (Textures section), at add-to-cart time. The merge
+  costs the customer nothing. 3D has no alternative; 2D does.
+- **Trust.** Anyone can post a PNG; that is why `accepts_3d_screenshot()` only takes one for 3D
+  products. The merged picture is always built from the store's own files.
+- **Storage.** Merged files are named by their image ids (`product_<id>-conf-<imageIds>`), so the
+  same configuration shares one file across carts and orders. Captures would be one file per cart
+  item.
+
+Where the browser's picture is right: anything only the browser can draw, the image overlay first.
+For the image overlay spec to start from:
+
+- The server accepts a posted picture for a 2D product only when the **configuration** it builds
+  contains such a layer (decided server-side from the layer types, never from a flag the browser
+  sends). `accepts_3d_screenshot()` becomes a wider check with the same PNG and size validation.
+- That picture becomes the cart, quote and order picture, through the 3D path that already exists
+  (`pc_3d_screenshot`, the hidden input for quote plugins, the `cart-temp/` → `orders/` folders).
+  The merge stays the fallback when no picture arrives.
+- Below the mobile breakpoint the capture uses the mobile image URLs, not the full-size files, so
+  add-to-cart does not repeat the decode load. Needs an option on `capture()` (the URL bucket),
+  not built.
+- Redraws (other sizes, admin edits) fall back to the merge, which draws such a layer as best it
+  can (the customer image unwarped, or left out). The image overlay spec decides which, and whether
+  the admin editor posts a fresh capture when it saves.
+
 ## Add-ons
 
 `PC.fe.viewer.item.view` returns a Backbone view whose `$el` is inserted in the DOM; it keeps that
