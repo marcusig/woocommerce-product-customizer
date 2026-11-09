@@ -2636,6 +2636,23 @@ class DB {
 			if ( ! empty( $chunk['masks'] ) && is_array( $chunk['masks'] ) && $this->remap_layer_masks( $chunk['masks'] ) ) {
 				$layer_changed = true;
 			}
+			// A link to a global layer keeps its own values in `overrides` (switched-off ones too,
+			// docs/global-layer-overrides-spec.md): the global layer's images are its own business.
+			if ( ! empty( $chunk['overrides']['values'] ) && is_array( $chunk['overrides']['values'] ) ) {
+				$values = &$chunk['overrides']['values'];
+				if ( ! empty( $values['image']['url'] ) ) {
+					$new_layer_id = $this->_find_image_id( $values['image']['url'], isset( $values['image']['id'] ) ? $values['image']['id'] : 0 );
+					if ( $new_layer_id && ( ! isset( $values['image']['id'] ) || $new_layer_id != $values['image']['id'] ) ) {
+						$values['image']['id']  = $new_layer_id;
+						$values['image']['url'] = wp_get_attachment_url( $new_layer_id );
+						$layer_changed = true;
+					}
+				}
+				if ( ! empty( $values['masks'] ) && is_array( $values['masks'] ) && $this->remap_layer_masks( $values['masks'] ) ) {
+					$layer_changed = true;
+				}
+				unset( $values );
+			}
 			if ( $layer_changed ) {
 				if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_layer_' . $layer_id, $chunk ) ) {
 					continue;

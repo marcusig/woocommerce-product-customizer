@@ -88,6 +88,14 @@ final class Linker {
 					if ( isset( $layer['image_order'] ) ) {
 						$resolved['image_order'] = $layer['image_order'];
 					}
+					// This link's own settings (docs/global-layer-overrides-spec.md). Handed on as
+					// well, so the editor knows which values are the link's and keeps the others.
+					$overrides = self::normalize_overrides( isset( $layer['overrides'] ) ? $layer['overrides'] : null );
+					unset( $resolved['overrides'] );
+					if ( $overrides ) {
+						$resolved              = self::apply_overrides( $resolved, $overrides );
+						$resolved['overrides'] = $overrides;
+					}
 					$layers[ $index ] = $resolved;
 				}
 			}
@@ -179,6 +187,11 @@ final class Linker {
 			return $layers;
 		}
 		foreach ( $layers as $index => $layer ) {
+			// Only a link has overrides: a disconnected layer holds its values as its own.
+			if ( is_array( $layer ) && isset( $layer['overrides'] ) && ( empty( $layer['is_global'] ) || empty( $layer['global_id'] ) ) ) {
+				unset( $layer['overrides'] );
+				$layers[ $index ] = $layer;
+			}
 			if ( isset( $layer['is_global'] ) && $layer['is_global'] && ! empty( $layer['global_id'] ) ) {
 				// A global id is a post id on this site and means nothing anywhere else, so an
 				// imported file can carry one that points at nothing here. Stripping the layer to a
@@ -188,6 +201,9 @@ final class Linker {
 				if ( ! \MKL\PC\Global_Layers::is_global_layer_id( $layer['global_id'] ) ) {
 					$layer['is_global'] = false;
 					$layer['global_id'] = null;
+					// The layer already holds this link's values (it was resolved before it was
+					// exported); the bookkeeping of which ones were the link's means nothing now.
+					unset( $layer['overrides'] );
 					$layers[ $index ]   = $layer;
 					continue;
 				}
@@ -210,6 +226,10 @@ final class Linker {
 				}
 				if ( isset( $layer['image_order'] ) ) {
 					$ref['image_order'] = $layer['image_order'];
+				}
+				$overrides = self::overrides_from_layer( $layer );
+				if ( $overrides ) {
+					$ref['overrides'] = $overrides;
 				}
 				$layers[ $index ] = $ref;
 			}
@@ -499,6 +519,13 @@ final class Linker {
 
 			if ( $layer_is_ref ) {
 				$local = $global['layer'];
+				unset( $local['overrides'] );
+				// Each link keeps its own name, mask... as a plain layer. Kept values of switched-off
+				// overrides go: there is no global value left to switch back to.
+				$overrides = self::normalize_overrides( isset( $layer['overrides'] ) ? $layer['overrides'] : null );
+				if ( $overrides ) {
+					$local = self::apply_overrides( $local, $overrides );
+				}
 				foreach ( array( '_id', 'id', 'order', 'image_order' ) as $key ) {
 					if ( isset( $layer[ $key ] ) ) {
 						$local[ $key ] = $layer[ $key ];
@@ -530,6 +557,136 @@ final class Linker {
 		}
 
 		return $changed;
+	}
+
+	/**
+	 * Layer settings a link can never override: what makes the layer what it is, and what the
+	 * reference already keeps per link.
+	 *
+	 * @return string[]
+	 */
+	public static function override_excluded_fields() {
+		$excluded = array( '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'overrides' );
+		/**
+		 * Filter the layer settings a link to a global layer cannot override.
+		 *
+		 * See docs/global-layer-overrides-spec.md. The structural fields above are always excluded.
+		 *
+		 * @param string[] $fields
+		 */
+		$filtered = apply_filters( 'mkl_pc_global_layer_override_excluded_fields', $excluded );
+		return array_values( array_unique( array_merge( $excluded, is_array( $filtered ) ? array_map( 'strval', $filtered ) : array() ) ) );
+	}
+
+	/**
+	 * Whether a field may be overridden on a link.
+	 *
+	 * @param mixed $field
+	 * @return bool
+	 */
+	private static function is_overridable_field( $field ) {
+		if ( ! is_string( $field ) || ! preg_match( '/^[A-Za-z0-9_\-]+$/', $field ) ) {
+			return false;
+		}
+		return ! in_array( $field, self::override_excluded_fields(), true );
+	}
+
+	/**
+	 * A link's overrides in their stored shape, or null when there are none.
+	 *
+	 * `fields` lists the overridden settings, `values` the link's values - including those of
+	 * overrides switched off, kept so switching one back on restores it. Reading applies only the
+	 * listed fields. A listed field without a value is dropped: overriding with nothing is not a
+	 * value anyone chose.
+	 *
+	 * @param mixed $overrides
+	 * @return array|null { fields: string[], values: array }
+	 */
+	public static function normalize_overrides( $overrides ) {
+		if ( is_object( $overrides ) ) {
+			$overrides = json_decode( wp_json_encode( $overrides ), true );
+		}
+		if ( ! is_array( $overrides ) ) {
+			return null;
+		}
+		$values = array();
+		if ( isset( $overrides['values'] ) && is_array( $overrides['values'] ) ) {
+			foreach ( $overrides['values'] as $field => $value ) {
+				if ( self::is_overridable_field( $field ) ) {
+					$values[ $field ] = $value;
+				}
+			}
+		}
+		$fields = array();
+		if ( isset( $overrides['fields'] ) && is_array( $overrides['fields'] ) ) {
+			foreach ( $overrides['fields'] as $field ) {
+				if ( self::is_overridable_field( $field ) && array_key_exists( $field, $values ) && ! in_array( $field, $fields, true ) ) {
+					$fields[] = $field;
+				}
+			}
+		}
+		if ( empty( $fields ) && empty( $values ) ) {
+			return null;
+		}
+		return array(
+			'fields' => $fields,
+			'values' => $values,
+		);
+	}
+
+	/**
+	 * The overrides to store for a layer the editor sent.
+	 *
+	 * The editor sends the layer's effective values and `overrides`. A listed field's value is
+	 * taken from the layer itself, which is what the form edited; the stored value is the fallback
+	 * when the layer does not carry the key.
+	 *
+	 * @param array $layer
+	 * @return array|null
+	 */
+	private static function overrides_from_layer( $layer ) {
+		if ( ! isset( $layer['overrides'] ) ) {
+			return null;
+		}
+		$overrides = $layer['overrides'];
+		if ( is_object( $overrides ) ) {
+			$overrides = json_decode( wp_json_encode( $overrides ), true );
+		}
+		if ( ! is_array( $overrides ) ) {
+			return null;
+		}
+		if ( ! isset( $overrides['values'] ) || ! is_array( $overrides['values'] ) ) {
+			$overrides['values'] = array();
+		}
+		if ( isset( $overrides['fields'] ) && is_array( $overrides['fields'] ) ) {
+			foreach ( $overrides['fields'] as $field ) {
+				if ( is_string( $field ) && array_key_exists( $field, $layer ) ) {
+					$overrides['values'][ $field ] = $layer[ $field ];
+				}
+			}
+		}
+		return self::normalize_overrides( $overrides );
+	}
+
+	/**
+	 * Apply a link's overridden fields over a layer definition.
+	 *
+	 * Values replace the global ones whole: `masks` is the link's whole list.
+	 *
+	 * @param array      $layer
+	 * @param array|null $overrides As normalize_overrides() returns it.
+	 * @return array
+	 */
+	public static function apply_overrides( $layer, $overrides ) {
+		if ( ! is_array( $layer ) || ! is_array( $overrides ) || empty( $overrides['fields'] ) ) {
+			return $layer;
+		}
+		foreach ( $overrides['fields'] as $field ) {
+			if ( self::is_overridable_field( $field ) && array_key_exists( $field, $overrides['values'] ) ) {
+				$layer[ $field ] = $overrides['values'][ $field ];
+			}
+		}
+		return $layer;
 	}
 
 	/**

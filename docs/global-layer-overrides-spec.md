@@ -1,6 +1,7 @@
 # Linked global layers with overrides
 
-Status: **specified 2026-11-09, not built.** All open points decided 2026-11-09.
+Status: **specified 2026-11-09.** All open points decided 2026-11-09. Phase 1 (data) built
+2026-11-09; phases 2 and 3 not started.
 
 One global layer linked several times into the same product (or into many), each link changing a
 few of the layer's settings for itself: its name, its [mask](layer-masks-spec.md), its 3D target.
@@ -72,11 +73,15 @@ and "Collar fabric" waits in `values` for the switch.
   `overrides`. That list is `mkl_pc_global_layer_override_excluded_fields` (PHP); the server never
   stores or applies anything on it. `order` and `image_order` are already per-link and stay as
   they are.
-- **Translations follow their field**: `name_{lang}` (and any `{field}_{lang}`) are overridden
+- **Translations follow their field**: `name_{lang}` (and `description_{lang}`) are overridden
   with `name`, under its switch. Overriding the name without them would show the global name in
-  the other languages.
+  the other languages. In the data they are fields like any other, listed in `fields` with
+  `name`: the editor ties them to the one switch, the server knows nothing of languages.
 - `strip_layers_to_references()` keeps `overrides`: `fields` filtered against the excluded list,
-  `values` filtered the same way, the whole key dropped when both are empty. `resolve_layers()`
+  `values` filtered the same way, the whole key dropped when both are empty. A listed field's
+  value is taken from the layer the editor sent (its effective value, what the form edited), the
+  kept value only when the layer lacks the key; so the editor only has to keep `fields` right.
+  A layer that is not a link loses any `overrides` it carries. `resolve_layers()`
   applies the listed fields over the global definition and hands `overrides` through, so the
   editor knows which fields are the link's and has the stored values for the switches.
 - Sanitizing: `Data_Sanitizer` walks by key, so `overrides.values.name` is sanitized as a name and
