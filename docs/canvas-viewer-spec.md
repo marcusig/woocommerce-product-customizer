@@ -44,7 +44,14 @@ through all of them for no gain - the data is identical.
 - New **global** setting `viewer_2d_renderer`: `dom` or `canvas`. No per-product override for
   now (decision A); add one if it is asked for. Filters cover per-product needs in the meantime.
 - Default: `dom` everywhere until phase 5 has shipped; from then on `canvas` for new installs only,
-  existing installs keep `dom` (decision B - the `viewer_active_images_only` rollout).
+  existing installs keep `dom` (decision B - the `viewer_active_images_only` rollout). *Built
+  2026-11-09:* `viewer_2d_renderer => 'canvas'` in `Settings::get_initial_settings()`, which only the
+  first install writes; a store without the value stored reads `dom` (checked with wp-cli both ways).
+  The option labels lost "(default)" and "(beta)", and the description says which stores start where.
+- **Release order:** a store on the canvas with a Save your design older than its `canvas-viewer`
+  fix gets an empty picture in its PDFs (the default `pixi` method scrapes layer images). Ship that
+  Save your design release no later than the core release that makes `canvas` the default. An older
+  text overlay is safe: its products fall back to the image stack (decision C).
 - PHP filter `mkl_pc_viewer_2d_renderer( $renderer, $product_id )`, exposed to the front end as
   `PC.fe.config.viewer_2d_renderer`.
 - Wired through the existing seam: a `PC.fe.viewer.main_view` filter returns
@@ -861,8 +868,8 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
     above), with the decode-queue priority. *Done 2026-11-06.* First iPhone runs below; they led to
     freeing each texture's image once uploaded (Textures section), the same day.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route. *Hook,
-   text overlay port and Save your design route built 2026-11-09* (Add-ons section). Left: `canvas`
-   as the default for new installs, and the user docs (Admin section).
+   text overlay port and Save your design route built 2026-11-09* (Add-ons section). `canvas` as
+   the default for new installs built the same day. Left: the user docs (Admin section).
 6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
    per-view spec (data and admin).
 
