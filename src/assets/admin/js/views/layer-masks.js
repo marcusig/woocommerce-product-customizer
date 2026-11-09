@@ -1,0 +1,204 @@
+/*
+	PC.views.layer_masks
+	-> The Mask section of the layer form: one mask image per view (angle).
+
+	A layer's `masks` is a list shaped like a choice's `images`:
+	[ { angleId, image: { id, url, dimensions: { width, height } } } ].
+	A view without an entry draws the layer unmasked. See docs/layer-masks-spec.md.
+*/
+( function( $, _ ) {
+	PC.views = PC.views || {};
+
+	PC.views.layer_masks = Backbone.View.extend( {
+		className: 'mkl-pc-layer-masks__list',
+		template: wp.template( 'mkl-pc-layer-mask' ),
+
+		/*
+		 * Own class names: the layer form handles `.edit-attachment`, `.remove-attachment`
+		 * and `select-media` for the layer's own image, and would overwrite it.
+		 */
+		events: {
+			'click .edit-mask': 'edit_mask',
+			'click .remove-mask': 'remove_mask',
+			'select-media': 'select_mask',
+		},
+
+		initialize: function( options ) {
+			this.options = options || {};
+			this.layer = this.options.layer;
+			this.angles = PC.app.get_collection( 'angles' );
+			this.editing = null;
+			if ( this.angles ) this.listenTo( this.angles, 'add remove reset change:name', this.render );
+			this.listenTo( this.layer, 'change:masks', this.render );
+		},
+
+		render: function() {
+			this.$el.empty();
+			if ( ! this.angles ) return this;
+			this.angles.each( function( angle ) {
+				var mask = this.get_mask( angle.id );
+				var image = mask && mask.image;
+				var dimensions = image && image.dimensions;
+				this.$el.append( this.template( {
+					angle_id: angle.id,
+					angle_name: angle.get( 'name' ),
+					url: image && image.url ? image.url : '',
+					file_name: image && image.url ? PC.views.layer_masks.file_name( image.url ) : '',
+					size: PC.views.layer_masks.size_label( dimensions ),
+					size_warning: image && image.url ? this.size_warning( angle.id, dimensions ) : '',
+					locked: !! this.options.locked,
+				} ) );
+			}, this );
+			return this;
+		},
+
+		/**
+		 * The mask entry for a view, or null.
+		 */
+		get_mask: function( angle_id ) {
+			return _.find( this.layer.get( 'masks' ) || [], function( mask ) {
+				return mask && String( mask.angleId ) === String( angle_id );
+			} ) || null;
+		},
+
+		/**
+		 * Replace the mask of a view (null removes it). A new list each time, so
+		 * Backbone sees the change and the layer is marked as modified.
+		 */
+		set_mask: function( angle_id, image ) {
+			var masks = _.reject( this.layer.get( 'masks' ) || [], function( mask ) {
+				return ! mask || String( mask.angleId ) === String( angle_id );
+			} );
+			if ( image ) masks.push( { angleId: angle_id, image: image } );
+			this.layer.set( 'masks', masks );
+		},
+
+		edit_mask: function( event ) {
+			event.preventDefault();
+			event.stopPropagation();
+			if ( this.options.locked ) return;
+			this.editing = $( event.currentTarget ).closest( '.mkl-pc-layer-mask' ).data( 'angle' );
+			var mask = this.get_mask( this.editing );
+			var media_options = { el: this.$el };
+			if ( mask && mask.image && mask.image.id ) media_options.selection = mask.image.id;
+			PC.media.open( media_options );
+		},
+
+		select_mask: function( event, attachment ) {
+			// The layer form listens to the same event for the layer's image.
+			event.stopPropagation();
+			if ( null === this.editing || ! attachment ) return;
+			this.set_mask( this.editing, {
+				id: attachment.id,
+				url: attachment.get( 'url' ),
+				dimensions: {
+					width: attachment.get( 'width' ),
+					height: attachment.get( 'height' ),
+				},
+			} );
+			this.editing = null;
+		},
+
+		remove_mask: function( event ) {
+			event.preventDefault();
+			event.stopPropagation();
+			if ( this.options.locked ) return;
+			this.set_mask( $( event.currentTarget ).closest( '.mkl-pc-layer-mask' ).data( 'angle' ), null );
+		},
+
+		/**
+		 * A warning when images of this layer on the view have another size than
+		 * the mask: the <img> stack stretches the mask over each image while the
+		 * canvas and the server centre it, so they only agree on equal sizes.
+		 */
+		size_warning: function( angle_id, mask_dimensions ) {
+			var sizes = PC.views.layer_masks.mismatched_sizes(
+				PC.views.layer_masks.image_sizes( this.layer, angle_id ),
+				mask_dimensions
+			);
+			if ( ! sizes.length ) return '';
+			var message = ( window.PC_lang && PC_lang.mask_size_mismatch ) || 'Images of this layer on this view are %1$s, the mask is %2$s.';
+			return message
+				.replace( '%1$s', sizes.join( ', ' ) )
+				.replace( '%2$s', PC.views.layer_masks.size_label( mask_dimensions ) );
+		},
+	}, {
+
+		/**
+		 * The dimensions of the layer's choice images on a view. Images saved
+		 * without dimensions are left out: nothing can be said about them.
+		 *
+		 * @return {Array<Object>} { width, height }
+		 */
+		image_sizes: function( layer, angle_id ) {
+			var choices = PC.app.get_layer_content ? PC.app.get_layer_content( layer.id ) : null;
+			var sizes = [];
+			if ( ! choices ) return sizes;
+			choices.each( function( choice ) {
+				var images = choice.get( 'images' );
+				if ( ! images || ! images.find ) return;
+				var picture = images.find( function( model ) {
+					return String( model.get( 'angleId' ) ) === String( angle_id );
+				} );
+				var image = picture && picture.get( 'image' );
+				if ( ! image || ! image.url || ! image.dimensions ) return;
+				var width = parseInt( image.dimensions.width, 10 );
+				var height = parseInt( image.dimensions.height, 10 );
+				if ( width > 0 && height > 0 ) sizes.push( { width: width, height: height } );
+			} );
+			return sizes;
+		},
+
+		/**
+		 * The distinct sizes that differ from the mask's, as labels.
+		 *
+		 * @return {Array<String>}
+		 */
+		mismatched_sizes: function( sizes, mask_dimensions ) {
+			var width = mask_dimensions ? parseInt( mask_dimensions.width, 10 ) : 0;
+			var height = mask_dimensions ? parseInt( mask_dimensions.height, 10 ) : 0;
+			if ( ! width || ! height ) return [];
+			var labels = [];
+			_.each( sizes, function( size ) {
+				if ( size.width === width && size.height === height ) return;
+				var label = PC.views.layer_masks.size_label( size );
+				if ( -1 === labels.indexOf( label ) ) labels.push( label );
+			} );
+			return labels;
+		},
+
+		/**
+		 * The file name at the end of a URL, without a query string, decoded.
+		 */
+		file_name: function( url ) {
+			var name = String( url || '' ).split( /[?#]/ )[ 0 ].split( '/' ).pop();
+			try {
+				return decodeURIComponent( name );
+			} catch ( error ) {
+				return name;
+			}
+		},
+
+		size_label: function( dimensions ) {
+			if ( ! dimensions || ! dimensions.width || ! dimensions.height ) return '';
+			return parseInt( dimensions.width, 10 ) + ' × ' + parseInt( dimensions.height, 10 );
+		},
+	} );
+
+	/**
+	 * Mount the section's view each time the layer form renders.
+	 */
+	wp.hooks.addAction( 'PC.admin.layer_form.render', 'mkl/pc/layer_masks', function( form ) {
+		if ( form.layer_masks_view ) {
+			form.layer_masks_view.remove();
+			form.layer_masks_view = null;
+		}
+		var $container = form.$( '.mkl-pc-layer-masks' );
+		if ( ! $container.length ) return;
+		form.layer_masks_view = new PC.views.layer_masks( {
+			layer: form.model,
+			locked: form.$el.hasClass( 'is-global-locked' ),
+		} );
+		$container.append( form.layer_masks_view.render().el );
+	} );
+} )( jQuery, PC._us || window._ );

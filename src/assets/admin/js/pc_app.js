@@ -1592,22 +1592,40 @@ PC.toJSON = function( item ) {
 		 * The editor fetches conditions lazily, so anything that has to send the whole
 		 * configuration elsewhere has to ask for them first or it silently sends none.
 		 *
+		 * A collection being present is not enough: the add-on prefetches in the background and
+		 * stores the (still empty) collection before the request returns. Its own loader knows
+		 * whether that request is in flight, so it is used when available.
+		 *
 		 * @param {Function} done Called once conditions are available, the add-on is inactive,
-		 *                        or the fetch failed.
+		 *                        or the fetch failed. Receives false when the fetch failed, so a
+		 *                        caller that would read an empty collection as "no conditions"
+		 *                        can tell the difference.
 		 * @return {void}
 		 */
 		ensureConditionsLoaded: function( done ) {
 			var product = this.get_product();
-			if ( ! PC.views.conditional || ! product || product.get( 'conditions' ) ) {
-				done();
+			if ( ! PC.views.conditional || ! product ) {
+				done( true );
+				return;
+			}
+			if ( PC.conditionalLogic && PC.conditionalLogic.load ) {
+				PC.conditionalLogic.load( product.id ).then( function( collection ) {
+					done( ! ( collection && collection.load_failed ) );
+				}, function() {
+					done( false );
+				} );
+				return;
+			}
+			if ( product.get( 'conditions' ) ) {
+				done( true );
 				return;
 			}
 			var conditions = new PC.conditionsCollection();
 			product.set( 'conditions', conditions );
 			conditions.fetch( {
 				url: conditions.url() + '&id=' + product.id,
-				success: function() { done(); },
-				error: function() { done(); }
+				success: function() { done( true ); },
+				error: function() { done( false ); }
 			} );
 		},
 		/**

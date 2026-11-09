@@ -154,6 +154,21 @@ PC.views = PC.views || {};
 		},
 
 		/**
+		 * The layer's mask in the current view, if it has one (docs/layer-masks-spec.md).
+		 *
+		 * @param {Backbone.Model} layer
+		 * @return {Object|null} { id, url, dimensions }
+		 */
+		mask_data: function( layer ) {
+			if ( ! this.angle_id ) return null;
+			var wanted = this.angle_id;
+			var mask = _.find( layer.get( 'masks' ) || [], function( item ) {
+				return item && String( item.angleId ) === String( wanted );
+			} );
+			return mask && mask.image && mask.image.url ? mask.image : null;
+		},
+
+		/**
 		 * Everything the preview needs to draw, one entry per layer that has an image.
 		 *
 		 * @return {Array}
@@ -174,12 +189,14 @@ PC.views = PC.views || {};
 
 				var image = this.image_data( choice );
 				if ( ! image ) return;
+				var mask = this.mask_data( layer );
 				entries.push( {
 					kind: 'image',
 					layer_id: layer.id,
 					url: image.url,
 					attachment_id: parseInt( image.id, 10 ) || 0,
 					dimensions: image.dimensions || null,
+					mask_url: mask ? mask.url : '',
 				} );
 			}, this );
 			return entries;
@@ -432,10 +449,10 @@ PC.views = PC.views || {};
 			var self = this;
 			var img = new Image();
 
-			var done = function( ok ) {
+			var finish = function( ok, mask ) {
 				if ( generation !== self.generation ) return;
 				if ( ok ) {
-					self.make_tile( entry, img );
+					self.make_tile( entry, img, mask );
 				} else {
 					self.failed[ entry.layer_id ] = true;
 				}
@@ -443,12 +460,26 @@ PC.views = PC.views || {};
 				// on to is the tile rather than the decoded image behind it.
 				img.onload = img.onerror = null;
 				img.src = '';
+				if ( mask ) {
+					mask.onload = mask.onerror = null;
+					mask.src = '';
+				}
 
 				self.loaded++;
 				self.in_flight--;
 				self.set_status( self.loaded >= self.total ? 'ready' : 'loading' );
 				self.request_redraw();
 				self.pump( generation );
+			};
+
+			// A masked layer is cut by its mask, as the configurator cuts it. A mask that
+			// cannot load leaves the layer whole, as it does there.
+			var done = function( ok ) {
+				if ( ! ok || ! entry.mask_url || generation !== self.generation ) return finish( ok, null );
+				var mask = new Image();
+				mask.onload = function() { finish( true, mask ); };
+				mask.onerror = function() { finish( true, null ); };
+				mask.src = entry.mask_url;
 			};
 
 			img.onload = function() { done( true ); };
@@ -572,13 +603,19 @@ PC.views = PC.views || {};
 			this.tiles[ entry.layer_id ] = tile;
 		},
 
-		make_tile: function( entry, img ) {
+		make_tile: function( entry, img, mask ) {
 			if ( ! img.naturalWidth || ! img.naturalHeight ) return;
 			var tile = document.createElement( 'canvas' );
 			tile.width = this.width;
 			tile.height = this.height;
 			var ctx = tile.getContext( '2d' );
 			ctx.drawImage( img, 0, 0, this.width, this.height );
+			if ( mask && mask.naturalWidth ) {
+				// Keep the image only where the mask is opaque, stretched like the image.
+				ctx.globalCompositeOperation = 'destination-in';
+				ctx.drawImage( mask, 0, 0, this.width, this.height );
+				ctx.globalCompositeOperation = 'source-over';
+			}
 			this.tiles[ entry.layer_id ] = tile;
 		},
 

@@ -98,6 +98,29 @@ function mkl_pc_is_valid_configurator_type( $type ) {
 }
 
 /**
+ * How a 2D configurator is drawn: the stack of images ('dom'), or one canvas ('canvas').
+ *
+ * A renderer of the 2D configurator, not a configurator type: the data is the same either way.
+ * 3D configurators are not affected. See docs/canvas-viewer-spec.md.
+ *
+ * @param int $product_id Parent product ID, or 0 when unknown.
+ * @return string 'dom' or 'canvas'.
+ */
+function mkl_pc_get_viewer_2d_renderer( $product_id = 0 ) {
+	$renderer = mkl_pc( 'settings' )->get( 'viewer_2d_renderer', 'dom' );
+
+	/**
+	 * Filter the renderer of the 2D viewer.
+	 *
+	 * @param string $renderer   'dom' (the image stack) or 'canvas'.
+	 * @param int    $product_id Parent product ID, or 0 when unknown.
+	 */
+	$renderer = apply_filters( 'mkl_pc_viewer_2d_renderer', $renderer, (int) $product_id );
+
+	return 'canvas' === $renderer ? 'canvas' : 'dom';
+}
+
+/**
  * Allowed Three.js material property names for actions_3d material_property.
  *
  * Scalar/boolean props only — colors and textures use dedicated action types.

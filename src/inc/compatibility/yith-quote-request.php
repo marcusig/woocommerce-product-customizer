@@ -765,7 +765,10 @@ class Compat_Yith_Raq {
 			foreach ( $configurator_data as $layer ) {
 				if ( ! $layer  || ! is_callable( [ $layer, 'get_image_id' ] ) ) continue;
 				if ( $choice_image = $layer->get_image_id( 'image' ) ) {
-					$choices[] = [ 'image' => $choice_image ];
+					$entry = [ 'image' => $choice_image ];
+					// A masked image keeps its mask, so the merge cuts it the way the viewer did.
+					if ( is_callable( [ $layer, 'get_mask_id' ] ) && ( $mask_id = $layer->get_mask_id() ) ) $entry['mask'] = $mask_id;
+					$choices[] = $entry;
 				}
 			}
 

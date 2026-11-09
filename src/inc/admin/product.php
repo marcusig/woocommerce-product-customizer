@@ -338,6 +338,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'mkl_pc-data-migration-overlay',
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
 				) ),
+				array( 'backbone/views/layer_masks', 'views/layer-masks.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array( 'backbone/views/image_order_preview', 'views/image-order-preview.js' ),
 				array( 'backbone/views/image_order', 'views/image-order.js', array(
@@ -434,6 +435,8 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'list_filter_placeholder' => esc_html__( 'Filter list…', 'product-configurator-for-woocommerce' ),
 					'group_with_content_warning' => esc_html__( 'Changing the type to group will discard the content you already added to this layer.', 'product-configurator-for-woocommerce' ) . ' ' . esc_html__( 'Do you want to continue?', 'product-configurator-for-woocommerce' ),
 					'angles_no_delete_message' => esc_html__( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
+					/* translators: 1: sizes of the layer's images, e.g. "2000 × 2000", 2: size of the mask */
+					'mask_size_mismatch' => esc_html__( 'Images of this layer on this view are %1$s, the mask is %2$s. A mask must be the same size as the images it cuts.', 'product-configurator-for-woocommerce' ),
 					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
 					/* translators: %s: layer name */
 					'image_order_move_front' => esc_attr__( 'Move %s forward', 'product-configurator-for-woocommerce' ),

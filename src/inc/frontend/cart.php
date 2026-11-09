@@ -1247,7 +1247,10 @@ if ( ! class_exists('MKL\PC\Frontend_Cart') ) {
 				 */
 				$choice_image = apply_filters( 'mkl_pc/cart_item/merge_layer_image_id', $layer->get_image_id( 'image' ), $layer );
 				if ( $choice_image ) {
-					$choices[] = [ 'image' => $choice_image ];
+					$entry = [ 'image' => $choice_image ];
+					// A masked image keeps its mask, so the merge cuts it the way the viewer did.
+					if ( $mask_id = $layer->get_mask_id() ) $entry['mask'] = $mask_id;
+					$choices[] = $entry;
 				}
 			}
 

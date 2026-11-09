@@ -147,6 +147,19 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				),
 
 
+				// One mask per view: see docs/layer-masks-spec.md. The pickers are a view of their
+				// own (views/layer-masks.js), mounted in this container.
+				'masks' => array(
+					'label' => __( 'Mask', 'product-configurator-for-woocommerce' ),
+					'type' => 'custom',
+					'html' => '<div class="mkl-pc-layer-masks"></div>',
+					'hide_label' => true,
+					'priority' => 10,
+					'section' => 'mask',
+					'condition' => '"simple" == data.type || "multiple" == data.type',
+					'help' => __( 'An image per view, the same size as this layer\'s images on that view. The layer only shows where the mask is opaque; leave a view empty to show the layer whole.', 'product-configurator-for-woocommerce' ),
+				),
+
 				'display_mode' => array(
 					'label' => __( 'Display mode', 'product-configurator-for-woocommerce' ),
 					'type' => 'image_select',
@@ -380,6 +393,11 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 				}
 			}
 
+			// Masks are 2D only; without its section the field would land in General.
+			if ( $post && '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				unset( $settings['masks'] );
+			}
+
 			return apply_filters( 'mkl_pc_layer_default_settings', $settings );
 		}
 
@@ -416,6 +434,15 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'fields' => [
 					],
 				),
+				'_mask' => array(
+					'id' => 'mask',
+					'label' => __( 'Mask', 'product-configurator-for-woocommerce' ),
+					// After Selection settings (25), before Translations (140) and Advanced (150).
+					'priority' => 30,
+					'collapsible' => true,
+					'fields' => [
+					],
+				),
 				'_selection' => array(
 					'id' => 'selection',
 					'label' => __( 'Selection settings', 'product-configurator-for-woocommerce' ),
@@ -437,6 +464,8 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 
 			global $post;
 			if ( '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
+				// Masks are 2D only: a 3D product has no stacked images to cut.
+				unset( $sections['_mask'] );
 				$sections['_threed'] = array(
 					'id' => 'threed',
 					'label' => __( '3D', 'product-configurator-for-woocommerce' ),

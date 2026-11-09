@@ -941,6 +941,33 @@ CONTENT TEMPLATES
 	</div>
 </script>
 
+<script type="text/html" id="tmpl-mkl-pc-layer-mask">
+	<div class="mkl-pc-layer-mask" data-angle="{{data.angle_id}}">
+		<span class="mkl-pc-layer-mask__view">{{data.angle_name}}</span>
+		<button type="button" class="mkl-pc-layer-mask__picture edit-mask"<# if ( data.locked ) { #> disabled<# } #>>
+			<# if ( data.url ) { #>
+				<img src="{{data.url}}" alt="">
+				<span class="screen-reader-text"><?php esc_html_e( 'Change the mask of this view', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } else { #>
+				<span class="dashicons dashicons-plus" aria-hidden="true"></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Add a mask for this view', 'product-configurator-for-woocommerce' ); ?></span>
+			<# } #>
+		</button>
+		<# if ( data.url ) { #>
+			<span class="mkl-pc-layer-mask__details">
+				<span class="mkl-pc-layer-mask__file" title="{{data.file_name}}">{{data.file_name}}</span>
+				<span class="mkl-pc-layer-mask__size">{{data.size}}</span>
+			</span>
+			<# if ( ! data.locked ) { #>
+				<button type="button" class="button-link remove-mask"><?php esc_html_e( 'Remove', 'product-configurator-for-woocommerce' ); ?></button>
+			<# } #>
+		<# } #>
+		<# if ( data.size_warning ) { #>
+			<p class="mkl-pc-setting--warning mkl-pc-layer-mask__warning">{{data.size_warning}}</p>
+		<# } #>
+	</div>
+</script>
+
 <script type="text/html" id="tmpl-mkl-pc-content-choice-pictures">
 	<div class="pictures">
 		<# if ( ! data.is_group ) { #>
@@ -1157,11 +1184,15 @@ IMPORT / EXPORT
 		<# if ( data.conditions ) { #>
 			<div class="preview-content--collection">
 				<h4><?php esc_html_e( 'Conditions', 'product-configurator-for-woocommerce' ); ?></h4>
-				<ul class="ul-disc">
-					<# PC._us.each( data.conditions, function( condition ) { #>
-						<li>{{condition.name}}</li>
-					<# }); #>
-				</ul>
+				<# if ( data.conditions.length ) { #>
+					<ul class="ul-disc">
+						<# PC._us.each( data.conditions, function( condition ) { #>
+							<li>{{condition.name}}</li>
+						<# }); #>
+					</ul>
+				<# } else { #>
+					<p><?php esc_html_e( 'None. Any conditions this product already has will be removed.', 'product-configurator-for-woocommerce' ); ?></p>
+				<# } #>
 			</div>
 		<# } #>
 	</div>
