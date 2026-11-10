@@ -4580,6 +4580,144 @@ html .mkl-pc-admin-dialog-mount {
 	}
 }
 
+/*
+ * Zone editor (views/zone-editor.js): a zone drawn on a view's image.
+ */
+.mkl-pc-admin-dialog--zone-editor {
+	.mkl-pc-admin-dialog__panel {
+		width: min(100%, 1100px);
+		max-height: min(94vh, 900px);
+	}
+	.mkl-pc-zone-editor {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.mkl-pc-zone-editor__toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 16px;
+		padding: 12px 16px;
+		border-bottom: 1px solid $light-border-color;
+		.description {
+			flex-basis: 100%;
+			margin: 0;
+		}
+	}
+	.mkl-pc-zone-editor__view {
+		margin: 0;
+		font-weight: 600;
+	}
+	.mkl-pc-zone-editor__image-name {
+		margin: 0;
+		color: #646970;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 240px;
+	}
+	.mkl-pc-zone-editor__fields {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.mkl-pc-zone-editor__field {
+		display: flex;
+		flex-direction: column;
+		font-size: 11px;
+		color: #646970;
+		input {
+			width: 84px;
+		}
+	}
+	.mkl-pc-zone-editor__viewport {
+		flex: 1;
+		min-height: 0;
+		overflow: auto;
+		padding: 16px;
+		background: repeating-conic-gradient(#f0f0f1 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+	}
+	.mkl-pc-zone-editor__empty {
+		margin: 40px auto;
+		text-align: center;
+		color: #646970;
+	}
+	.mkl-pc-zone-editor__stage {
+		display: none;
+		position: relative;
+		width: fit-content;
+		max-width: 100%;
+		margin: 0 auto;
+		user-select: none;
+		touch-action: none;
+	}
+	&.has-image {
+		.mkl-pc-zone-editor__empty {
+			display: none;
+		}
+		.mkl-pc-zone-editor__stage {
+			display: block;
+		}
+	}
+	.mkl-pc-zone-editor__picture {
+		display: block;
+		max-width: 100%;
+		max-height: 70vh;
+		height: auto;
+	}
+	// The mask, shown faintly: where the zone's content can show.
+	.mkl-pc-zone-editor__mask {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		opacity: 0.35;
+		pointer-events: none;
+	}
+	.mkl-pc-zone-editor__zone {
+		position: absolute;
+		box-sizing: border-box;
+		transform-origin: 50% 0;
+		border: 2px solid var(--global-layer-primary, #642077);
+		background: rgba(100, 32, 119, 0.12);
+		cursor: move;
+		&:focus-visible {
+			outline: 2px solid #2271b1;
+			outline-offset: 2px;
+		}
+	}
+	.mkl-pc-zone-editor__inner {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		pointer-events: none;
+	}
+	.mkl-pc-zone-editor__handle {
+		position: absolute;
+		width: 12px;
+		height: 12px;
+		margin: -6px 0 0 -6px;
+		box-sizing: border-box;
+		border: 2px solid var(--global-layer-primary, #642077);
+		background: #fff;
+		border-radius: 2px;
+		&--nw { left: 0; top: 0; cursor: nwse-resize; }
+		&--n { left: 50%; top: 0; cursor: ns-resize; }
+		&--ne { left: 100%; top: 0; cursor: nesw-resize; }
+		&--e { left: 100%; top: 50%; cursor: ew-resize; }
+		&--se { left: 100%; top: 100%; cursor: nwse-resize; }
+		&--s { left: 50%; top: 100%; cursor: ns-resize; }
+		&--sw { left: 0; top: 100%; cursor: nesw-resize; }
+		&--w { left: 0; top: 50%; cursor: ew-resize; }
+	}
+	&.is-dragging {
+		cursor: grabbing;
+	}
+}
+
 .mkl-pc-admin-dialog--import-global-layer {
 	.mkl-pc-import-global-layer {
 		display: flex;

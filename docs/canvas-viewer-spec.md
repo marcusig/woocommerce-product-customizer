@@ -718,6 +718,7 @@ wp.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'my-addon', function( item, choi
 		update: function( container, angle_id, options ) {},  // optional
 		key: function( angle_id ) { return ''; },             // optional
 		ready: function( angle_id ) { return Promise.resolve(); }, // optional
+		mask: function( angle_id ) { return undefined; },     // optional
 		destroy_container: function( container ) {},          // optional
 		destroy: function() {},                               // optional
 	};
@@ -748,6 +749,13 @@ wp.hooks.addFilter( 'PC.fe.viewer.canvas.item', 'my-addon', function( item, choi
   `is_stack_complete()`, angle switches wait for it), and capture waits for it too. A rejected
   `ready()` still draws: a fallback font beats an endless loader. A throwing `create()` is logged
   and draws nothing.
+- **`mask( angle_id )`** says what cuts the item at an angle (added 2026-11-10 for the image
+  upload preview, `image-overlay-spec.md`). Without the method, or when it returns `undefined`,
+  the item is cut by its layer's mask like the layer's images. A URL cuts it with that mask
+  instead (an alpha PNG the size of the angle's images, centred like them, as layer masks are);
+  `''` or `null`, with none. The same mask applies on screen, in snapshot refreshes and in
+  `capture()` (`item_mask_url()`); the item's entry waits for it like an image waits for its
+  layer's. Before 2026-11-10, refreshes and captures drew items uncut even on a masked layer.
 - **Context loss:** `reload_textures()` drops every entry, items included, and the shown angles
   create theirs again. Items need not handle it.
 - **A picture of its own:** `viewer.render_to_canvas( container, width, height )` draws any

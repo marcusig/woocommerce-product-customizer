@@ -1,10 +1,22 @@
 /*
-	PC.views.layer_masks
-	-> The Mask section of the layer form: one mask image per view (angle).
+	PC.views.layer_masks (also PC.views.mask_picker)
+	-> One mask image per view (angle): the Mask section of the layer form, and any
+	   other list of masks shaped the same way.
 
 	A layer's `masks` is a list shaped like a choice's `images`:
 	[ { angleId, image: { id, url, dimensions: { width, height } } } ].
 	A view without an entry draws the layer unmasked. See docs/layer-masks-spec.md.
+
+	Options:
+	- layer | model:   the model holding the list (`layer` for the layer form);
+	- attribute:       the list's attribute, 'masks' by default;
+	- angle_ids:       the views listed, all of them by default (an array, or a function);
+	- sizes( angle_id ): the image sizes a mask on that view must match, for the size
+	                   warning ({ width, height } list). The layer's choice images by default;
+	- size_message:    the warning, with %1$s (those sizes) and %2$s (the mask's);
+	- locked.
+
+	Image upload zones use it on the field's choice, with `zone_masks` (docs/image-overlay-spec.md).
 */
 ( function( $, _ ) {
 	PC.views = PC.views || {};
@@ -25,17 +37,44 @@
 
 		initialize: function( options ) {
 			this.options = options || {};
-			this.layer = this.options.layer;
+			this.model = this.options.model || this.options.layer;
+			// Kept for code reading view.layer.
+			this.layer = this.model;
+			this.attribute = this.options.attribute || 'masks';
 			this.angles = PC.app.get_collection( 'angles' );
 			this.editing = null;
 			if ( this.angles ) this.listenTo( this.angles, 'add remove reset change:name', this.render );
-			this.listenTo( this.layer, 'change:masks', this.render );
+			this.listenTo( this.model, 'change:' + this.attribute, this.render );
+		},
+
+		/**
+		 * The model holding the list, and the list.
+		 */
+		holder: function() {
+			return this.model || this.layer;
+		},
+
+		list: function() {
+			return this.holder().get( this.attribute || 'masks' ) || [];
+		},
+
+		/**
+		 * Whether a view is listed.
+		 */
+		lists_angle: function( angle_id ) {
+			var ids = this.options.angle_ids;
+			if ( 'function' === typeof ids ) ids = ids();
+			if ( ! ids ) return true;
+			return !! _.find( ids, function( id ) {
+				return String( id ) === String( angle_id );
+			} );
 		},
 
 		render: function() {
 			this.$el.empty();
 			if ( ! this.angles ) return this;
 			this.angles.each( function( angle ) {
+				if ( ! this.lists_angle( angle.id ) ) return;
 				var mask = this.get_mask( angle.id );
 				var image = mask && mask.image;
 				var dimensions = image && image.dimensions;
@@ -56,7 +95,7 @@
 		 * The mask entry for a view, or null.
 		 */
 		get_mask: function( angle_id ) {
-			return _.find( this.layer.get( 'masks' ) || [], function( mask ) {
+			return _.find( this.list(), function( mask ) {
 				return mask && String( mask.angleId ) === String( angle_id );
 			} ) || null;
 		},
@@ -66,11 +105,11 @@
 		 * Backbone sees the change and the layer is marked as modified.
 		 */
 		set_mask: function( angle_id, image ) {
-			var masks = _.reject( this.layer.get( 'masks' ) || [], function( mask ) {
+			var masks = _.reject( this.list(), function( mask ) {
 				return ! mask || String( mask.angleId ) === String( angle_id );
 			} );
 			if ( image ) masks.push( { angleId: angle_id, image: image } );
-			this.layer.set( 'masks', masks );
+			this.holder().set( this.attribute || 'masks', masks );
 		},
 
 		edit_mask: function( event ) {
@@ -113,11 +152,11 @@
 		 */
 		size_warning: function( angle_id, mask_dimensions ) {
 			var sizes = PC.views.layer_masks.mismatched_sizes(
-				PC.views.layer_masks.image_sizes( this.layer, angle_id ),
+				this.options && this.options.sizes ? this.options.sizes( angle_id ) || [] : PC.views.layer_masks.image_sizes( this.holder(), angle_id ),
 				mask_dimensions
 			);
 			if ( ! sizes.length ) return '';
-			var message = ( window.PC_lang && PC_lang.mask_size_mismatch ) || 'Images of this layer on this view are %1$s, the mask is %2$s.';
+			var message = ( this.options && this.options.size_message ) || ( window.PC_lang && PC_lang.mask_size_mismatch ) || 'Images of this layer on this view are %1$s, the mask is %2$s.';
 			return message
 				.replace( '%1$s', sizes.join( ', ' ) )
 				.replace( '%2$s', PC.views.layer_masks.size_label( mask_dimensions ) );
@@ -184,6 +223,8 @@
 			return parseInt( dimensions.width, 10 ) + ' × ' + parseInt( dimensions.height, 10 );
 		},
 	} );
+
+	PC.views.mask_picker = PC.views.layer_masks;
 
 	/**
 	 * Mount the section's view each time the layer form renders.

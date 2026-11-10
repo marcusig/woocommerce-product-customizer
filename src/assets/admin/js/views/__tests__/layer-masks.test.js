@@ -205,3 +205,28 @@ describe( 'mounting', () => {
 		expect( without_section.layer_masks_view ).toBeUndefined();
 	} );
 } );
+
+describe( 'masks of another model (PC.views.mask_picker)', () => {
+	test( 'any model and list, its own sizes and message, only the views asked for', () => {
+		const { View } = load();
+		expect( PC.views.mask_picker ).toBe( View );
+		const choice = make_model( { id: 7 } );
+		const view = Object.create( View.prototype );
+		view.model = choice;
+		view.attribute = 'zone_masks';
+		view.options = {
+			angle_ids: () => [ 2 ],
+			sizes: ( angle_id ) => ( 2 === Number( angle_id ) ? [ { width: 1000, height: 1000 } ] : [] ),
+			size_message: 'The view is %1$s, the mask is %2$s.',
+		};
+
+		view.set_mask( 2, { id: 5, url: 'zone.png', dimensions: { width: 800, height: 800 } } );
+		expect( choice.get( 'zone_masks' ) ).toEqual( [ { angleId: 2, image: { id: 5, url: 'zone.png', dimensions: { width: 800, height: 800 } } } ] );
+		expect( choice.get( 'masks' ) ).toBeUndefined();
+		expect( view.get_mask( 2 ).image.id ).toBe( 5 );
+		expect( view.size_warning( 2, { width: 800, height: 800 } ) ).toBe( 'The view is 1000 × 1000, the mask is 800 × 800.' );
+		expect( view.size_warning( 2, { width: 1000, height: 1000 } ) ).toBe( '' );
+		expect( view.lists_angle( 2 ) ).toBe( true );
+		expect( view.lists_angle( 1 ) ).toBe( false );
+	} );
+} );

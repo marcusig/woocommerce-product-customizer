@@ -3,7 +3,7 @@
 Status: **draft 2026-11-10, not built.** Decided (Marc, 2026-11-10): it is an enhancement of
 Form builder's upload field, on form layers **and** on choices of simple and multiple layers; the
 zones and their masks sit on that field, and an upload without a zone mask takes the layer's;
-form layers get no mask. B, C, D and G decided the same day; open points F and I below.
+form layers get no mask. B, C, D, F, G and I decided the same day; nothing open.
 
 The customer uploads an image through a Form builder upload field. It shows in the configurator
 preview, placed in a zone the admin draws on each view and cut to shape by a
@@ -69,29 +69,31 @@ Not in this step:
   the server-merged picture stays the default for 2D; a browser picture only for layers the server
   cannot draw.
 
-Gap found while writing this: the canvas viewer cuts an add-on item with the layer mask only
-when the layer shows a single image (the mask then sits on the layer's node, item included);
-with several images the item is not cut. For the upload that is wrong both ways: on an Artwork
-layer showing one image, a zone mask would be cut again by the layer's; with several, an upload
-relying on the layer's mask would not be cut at all. Fixed in phase 1: the layer's node mask never
-reaches item containers, and an item is masked on its own, by the mask the item asks for (the
-upload: its zone's, else the layer's; text overlay: the layer's, which also fixes text on a
-masked layer).
+Gap found while writing this: an add-on item is cut by its layer's mask on screen, but the
+snapshot refresh and `capture()` drew items uncut, so text overlay on a masked layer was cut in
+the preview and not in the captured picture. And an item could not ask for another mask than its
+layer's. Phase 1 adds `mask( angle_id )` to the item contract (canvas-viewer-spec.md, Add-ons):
+the upload's item returns its zone's mask, or `undefined` for the layer's; the same mask applies
+on screen, in refreshes and in captures.
 
 ## Admin
 
 On an upload field, a **Preview** section:
 
 - **Show the image in the preview** (off by default: existing fields do not change).
-- **Zones**, one per view, drawn on the view's reference image, each with an optional **mask**
-  (`image_zones`, a collection of `{ angleId, ref_image, position: { x, y, width, height,
-  rotation }, mask: { id, url, dimensions } }`; the zone is the shape of text overlay's positions).
-  A view without a zone does not show the image.
+- **Zones**, one per view, drawn on the view's reference image with core's zone editor
+  (`image_zones`: `[ { angleId, ref_image: { url, id, width, height }, position: { x, y, width,
+  height, rotation } } ]`, the shape of text overlay's positions: `x, y` is the zone's top centre,
+  and it turns around that point). A view without a zone does not show the image.
+- **Zone masks**, one optional mask per view, kept as their own list on the field's choice,
+  `zone_masks`, shaped exactly like a layer's `masks` (`[ { angleId, image: { id, url,
+  dimensions } } ]`), so core's mask picker (`PC.views.mask_picker` with `attribute:
+  'zone_masks'`) and the existing sanitising of that shape apply as they are.
 - **The mask** follows the layer masks' rules: an alpha PNG the size of the view's images (checked
   against the zone's reference image, with the same size warning), opaque where the image may
   show. It is drawn aligned with the view, not with the zone, so the zone rectangle says where the
   image is placed and the mask says what of it shows: a mug's printable area, a phone case's
-  camera hole. The picker is core's mask picker, shown per zone.
+  camera hole. The size warning compares the mask with the zone's reference image.
 - **Fit**: *Cover* (fill the zone, crop the overflow; default) or *Contain* (whole image, may
   leave space).
 - **The customer may move and zoom** the image (decision C), on by default; a field setting turns
@@ -254,9 +256,11 @@ Not built now (Marc, 2026-11-09). What they are, so nothing here blocks them:
 
 ## Phasing
 
-1. **Core.** Item masking in the canvas viewer (the gap above); the mask picker and the canvas
-   mask loading usable outside a layer (for a zone of a choice); the zone editor where open point
-   I puts it.
+1. **Core.** `mask()` on canvas items (the gap above); the mask picker usable on any model
+   and list (`PC.views.mask_picker`); the zone editor (`PC.views.zone_editor`, views/zone-editor.js:
+   reference image, drag to move, handles to resize in the zone's turned frame, number fields,
+   the mask shown faintly, a new zone starting on the mask's opaque box, a `decorate()` hook for a
+   preview inside the zone). Text overlay moving onto it is its own later step.
 2. **Form builder admin.** The Preview section, its settings, zones, the canvas-viewer notice.
 3. **Form builder front end.** Capped decode, the canvas item, placement and its controls, the
    placement in the configuration. Jest for the placement maths; iPhone run with a full-size phone
@@ -286,14 +290,11 @@ Marc, 2026-11-10, with A, E and H (where it lives, the original, zones on the fi
   an upload field whose maximum number of files is 1; raising the maximum on a field with the
   preview on turns the preview off, and the section says why.
 
-## Open points
-
-- **F. Limits.** The field's accepted types and number stay as they are. Proposed additions: none
-  in the admin; the composition's pixel limit as a filter (above). The upload size stays PHP's.
-- **I. Where the zone editor lives.** It is text overlay's today, and Form builder cannot depend on
-  text overlay. Options: (1) **move it into core** as a generic "zone on a view" editor both
-  add-ons use (proposed: one editor to maintain, and core already owns views and their images);
-  (2) a copy in Form builder.
+- **F. Limits: no new admin settings.** The field's accepted types and number stay as they are. The
+  composition's pixel limit is a filter (above). The upload size stays PHP's.
+- **I. The zone editor moves into core.** It is text overlay's today, and Form builder cannot depend on
+  text overlay. It becomes a generic "zone on a view" editor in core that both
+  add-ons use: one editor to maintain, and core already owns views and their images.
 
 Earlier points closed by the Form builder decision: A (where it lives), E (the original is kept as
 Form builder keeps it today), H (zones are on the field).

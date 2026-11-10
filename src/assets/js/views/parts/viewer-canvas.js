@@ -390,7 +390,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			node.sortableChildren = true;
 			node.zIndex = index;
 			stack.container.addChild( node );
-			stack.layers[ layer.id ] = { layer: layer, node: node, shown: {}, held: [], hold_timer: null, mask: null };
+			stack.layers[ layer.id ] = { layer: layer, node: node, shown: {}, held: [], hold_timer: null, mask: null, item_masks: {} };
 		} );
 
 		if ( stack.size ) this.add_probe( stack );
@@ -562,6 +562,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// The layer's mask on this angle first: its images wait for it.
 		this.sync_mask( stack, record );
 
+		var to_load = [];
 		_.each( state.shown_choices( record.layer ), function( choice ) {
 			var item = this.canvas_item( choice );
 			if ( ! item && ! state.has_drawable( choice ) ) return;
@@ -589,8 +590,16 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				removed: false,
 			};
 			record.shown[ key ] = entry;
+			to_load.push( entry );
+		}, this );
+
+		// The masks the layer's items ask for, before they load: they wait for them.
+		this.sync_item_masks( stack, record );
+		_.each( to_load, function( entry ) {
 			this.load_entry( stack, record, entry );
 		}, this );
+		// What an item asks to be cut with can change while nothing else does.
+		if ( this.has_masks( record ) || ( record.node && record.node.mask ) ) this.apply_mask( stack, record );
 
 		_.each( _.keys( record.shown ), function( key ) {
 			if ( wanted[ key ] ) return;
@@ -664,7 +673,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		}
 		// One image fewer: a layer back to one image goes back to the node mask.
 		var layer_record = entry.stack && entry.stack.layers && entry.model ? entry.stack.layers[ entry.model.get( 'layerId' ) ] : null;
-		if ( layer_record && layer_record.mask ) this.apply_mask( entry.stack, layer_record );
+		if ( layer_record && this.has_masks( layer_record ) ) this.apply_mask( entry.stack, layer_record );
 	},
 
 	/*
@@ -691,16 +700,69 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			this.apply_mask( stack, record );
 			return;
 		}
+		record.mask = this.load_mask( stack, record, url, function( loaded ) {
+			return record.mask === loaded;
+		} );
+	},
 
+	/**
+	 * The masks a layer's add-on items ask for, other than the layer's own
+	 * (item_mask_url()): loaded and pinned like the layer's, dropped once no
+	 * item of the layer, shown or held, asks for them.
+	 */
+	sync_item_masks: function( stack, record ) {
+		record.item_masks = record.item_masks || {};
+		var layer_url = record.mask ? record.mask.url : '';
+		var wanted = {};
+		_.each( _.values( record.shown ).concat( record.held ), function( entry ) {
+			if ( ! entry.item ) return;
+			var url = this.entry_mask_url( stack, record, entry );
+			if ( url && url !== layer_url ) wanted[ url ] = true;
+		}, this );
+		_.each( _.keys( record.item_masks ), function( url ) {
+			if ( ! wanted[ url ] ) this.drop_item_mask( record, url );
+		}, this );
+		_.each( _.keys( wanted ), function( url ) {
+			var mask = record.item_masks[ url ];
+			if ( mask && ! mask.abandoned && ! ( mask.texture_record && mask.texture_record.destroyed ) ) return;
+			if ( mask ) this.drop_item_mask( record, url );
+			record.item_masks[ url ] = this.load_mask( stack, record, url, function( loaded ) {
+				return record.item_masks[ url ] === loaded;
+			} );
+		}, this );
+	},
+
+	/**
+	 * The mask an entry is cut with: the layer's for an image, the one the
+	 * item asks for (statics.item_mask_url()) for an add-on item. '' for none.
+	 */
+	entry_mask_url: function( stack, record, entry ) {
+		if ( ! entry.item ) return record.mask ? record.mask.url : '';
+		return PC.fe.views.viewer_canvas.item_mask_url( entry.item, record.layer, stack.angle_id );
+	},
+
+	/**
+	 * Load a mask for a layer of a stack: a texture of the viewer under its
+	 * mask key, redrawn as Pixi reads masks (whiten()), inside the budget, pinned
+	 * by the layer while in use (mask_users). Applied once in; one that cannot
+	 * load leaves what it cuts uncut (layer masks decision 6).
+	 *
+	 * @param {Object}   stack
+	 * @param {Object}   record  The layer's record.
+	 * @param {String}   url
+	 * @param {Function} current Whether the returned mask is still the one in use.
+	 * @return {Object} The mask: { url, key, texture_record, done, failed, abandoned, promise }
+	 */
+	load_mask: function( stack, record, url, current ) {
 		var that = this;
 		var statics = PC.fe.views.viewer_canvas;
 		var key = statics.mask_key( url );
-		mask = record.mask = { url: url, key: key, texture_record: null, done: false, failed: false, abandoned: false, promise: null };
+		var mask = { url: url, key: key, texture_record: null, done: false, failed: false, abandoned: false, promise: null };
 		var shown_or_coming = function() {
 			return stack === that.current_stack || stack === that.target_stack;
 		};
 		var wanted = function() {
-			return record.mask === mask && ( shown_or_coming() || ( 'live' === that.mode && that.stacks[ stack.angle_id ] === stack ) );
+			return current( mask ) && ( shown_or_coming() || ( 'live' === that.mode && that.stacks[ stack.angle_id ] === stack ) );
 		};
 		// Pinned while it loads, like an image waiting for its sprite.
 		var waiter = { stack: stack, mask: true };
@@ -708,7 +770,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var settle = function( texture_record ) {
 			that.waiting[ key ] = _.without( that.waiting[ key ] || [], waiter );
 			if ( ! that.waiting[ key ].length ) delete that.waiting[ key ];
-			if ( that.is_removed || record.mask !== mask ) return;
+			if ( that.is_removed || ! current( mask ) ) return;
 			if ( statics.abandoned === texture_record ) {
 				// Its angle was left: loaded again when shown (the layer stays pending).
 				mask.abandoned = true;
@@ -716,11 +778,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			}
 			if ( texture_record && texture_record.texture && ! texture_record.destroyed ) {
 				mask.texture_record = texture_record;
-				( texture_record.mask_users = texture_record.mask_users || [] ).push( { stack: stack, record: record } );
+				( texture_record.mask_users = texture_record.mask_users || [] ).push( { stack: stack, record: record, mask: mask } );
 				that.touch( texture_record );
 			} else {
 				mask.failed = true;
-				console.log( 'Product configurator: the layer mask ' + url + ' could not be loaded, the layer is drawn unmasked.' );
+				console.log( 'Product configurator: the mask ' + url + ' could not be loaded, what it cuts is drawn unmasked.' );
 			}
 			mask.done = true;
 			that.apply_mask( stack, record );
@@ -730,16 +792,28 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		mask.promise = this.load_texture( key, stack, wanted, function() {
 			return ! shown_or_coming();
 		} ).then( settle, function( error ) {
-			console.log( 'Product configurator: could not prepare the layer mask ' + url, error );
+			console.log( 'Product configurator: could not prepare the mask ' + url, error );
 			settle( null );
 		} );
+		return mask;
+	},
+
+	/**
+	 * Whether a layer has a mask, its own or one of its items'.
+	 */
+	has_masks: function( record ) {
+		return !! record.mask || ( !! record.item_masks && Object.keys( record.item_masks ).length > 0 );
 	},
 
 	/**
 	 * Whether a layer is still waiting for its mask.
 	 */
 	mask_pending: function( record ) {
-		return !! ( record.mask && ! record.mask.done );
+		if ( record.mask && ! record.mask.done ) return true;
+		var masks = record.item_masks || {};
+		return Object.keys( masks ).some( function( url ) {
+			return masks[ url ] && ! masks[ url ].done;
+		} );
 	},
 
 	/**
@@ -748,7 +822,13 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Promise}
 	 */
 	mask_ready: function( record ) {
-		return record.mask && record.mask.promise ? record.mask.promise : Promise.resolve();
+		var masks = record.item_masks || {};
+		var promises = [];
+		if ( record.mask && record.mask.promise ) promises.push( record.mask.promise );
+		Object.keys( masks ).forEach( function( url ) {
+			if ( masks[ url ] && masks[ url ].promise ) promises.push( masks[ url ].promise );
+		} );
+		return promises.length ? Promise.all( promises ) : Promise.resolve();
 	},
 
 	/**
@@ -758,12 +838,43 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	drop_mask: function( record ) {
 		var mask = record.mask;
 		record.mask = null;
-		if ( mask && mask.texture_record && mask.texture_record.mask_users ) {
-			mask.texture_record.mask_users = _.reject( mask.texture_record.mask_users, function( user ) {
-				return user.record === record;
-			} );
-		}
+		this.unpin_mask( mask );
 		this.clear_mask_sprites( record );
+	},
+
+	/**
+	 * Forget a mask an item of the layer asked for.
+	 */
+	drop_item_mask: function( record, url ) {
+		var mask = record.item_masks[ url ];
+		delete record.item_masks[ url ];
+		this.unpin_mask( mask );
+		this.clear_mask_sprites( record );
+	},
+
+	/**
+	 * Every mask of a layer, its own and its items'.
+	 */
+	drop_masks: function( record ) {
+		var that = this;
+		Object.keys( record.item_masks || {} ).forEach( function( url ) {
+			that.drop_item_mask( record, url );
+		} );
+		this.drop_mask( record );
+	},
+
+	unpin_mask: function( mask ) {
+		if ( ! mask || ! mask.texture_record || ! mask.texture_record.mask_users ) return;
+		mask.texture_record.mask_users = _.reject( mask.texture_record.mask_users, function( user ) {
+			return user.mask === mask;
+		} );
+	},
+
+	/**
+	 * Whether a mask is one of the layer's, its own or an item's.
+	 */
+	holds_mask: function( record, mask ) {
+		return !! mask && ( record.mask === mask || ( record.item_masks || {} )[ mask.url ] === mask );
 	},
 
 	clear_mask_sprites: function( record ) {
@@ -784,22 +895,36 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	},
 
 	/**
-	 * Cut a layer's images with its mask (decision 7: each image on its own).
+	 * Cut a layer's images with its mask (decision 7: each image on its own),
+	 * and its add-on items with the mask each asks for (item_mask_url()).
 	 *
-	 * A layer drawing one image masks its node, the cheap way; one drawing
-	 * several (a multiple choice layer, or an image held during a swap) masks
-	 * each sprite, so overlapping images are cut the way the <img> stack and the
-	 * server merge cut them. The mask sprites live in the node, placed like an
-	 * image of the mask's size; Pixi does not draw a sprite used as a mask.
+	 * A layer drawing one image cut by the layer's mask masks its node, the
+	 * cheap way. Anything else masks each sprite: several images (a multiple
+	 * choice layer, or an image held during a swap), so overlapping images are
+	 * cut the way the <img> stack and the server merge cut them; or an item
+	 * asking for another mask than the layer's, or none, which the node mask
+	 * would cut anyway. The mask sprites live in the node, placed like an image
+	 * of the mask's size; Pixi does not draw a sprite used as a mask.
 	 */
 	apply_mask: function( stack, record ) {
 		if ( ! record || this.is_removed ) return;
-		var mask = record.mask;
-		var texture_record = mask && mask.texture_record && mask.texture_record.texture && ! mask.texture_record.destroyed ? mask.texture_record : null;
-		var entries = _.filter( _.values( record.shown ).concat( record.held ), function( entry ) {
+		var usable = function( mask ) {
+			return mask && mask.texture_record && mask.texture_record.texture && ! mask.texture_record.destroyed ? mask.texture_record : null;
+		};
+		var layer_url = record.mask ? record.mask.url : '';
+		var plan = _.map( _.filter( _.values( record.shown ).concat( record.held ), function( entry ) {
 			return !! entry.sprite;
-		} );
-		if ( ! texture_record ) {
+		} ), function( entry ) {
+			// An image: the layer's mask.
+			if ( ! entry.item ) return { entry: entry, texture_record: usable( record.mask ), layer: true };
+			var url = this.entry_mask_url( stack, record, entry );
+			var mask = ! url ? null : ( url === layer_url ? record.mask : ( record.item_masks || {} )[ url ] );
+			return { entry: entry, texture_record: usable( mask ), layer: !! url && url === layer_url };
+		}, this );
+		var layer_texture = usable( record.mask );
+		if ( ! layer_texture && ! _.find( plan, function( step ) {
+			return step.texture_record;
+		} ) ) {
 			this.clear_mask_sprites( record );
 			this.request_render();
 			return;
@@ -807,7 +932,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 
 		var statics = PC.fe.views.viewer_canvas;
 		var that = this;
-		var ensure = function( sprite ) {
+		var ensure = function( sprite, texture_record ) {
 			if ( sprite && sprite.texture === texture_record.texture && ! sprite.destroyed ) {
 				that.place_mask_sprite( sprite, stack, texture_record );
 				return sprite;
@@ -818,15 +943,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			record.node.addChild( sprite );
 			return sprite;
 		};
+		var unmask = function( entry ) {
+			if ( ! entry.mask_sprite ) return;
+			entry.sprite.mask = null;
+			statics.destroy_sprite( entry.mask_sprite );
+			entry.mask_sprite = null;
+		};
 
-		if ( entries.length <= 1 ) {
-			_.each( entries, function( entry ) {
-				if ( ! entry.mask_sprite ) return;
-				entry.sprite.mask = null;
-				statics.destroy_sprite( entry.mask_sprite );
-				entry.mask_sprite = null;
+		if ( layer_texture && plan.length <= 1 && ( ! plan.length || plan[ 0 ].layer ) ) {
+			_.each( plan, function( step ) {
+				unmask( step.entry );
 			} );
-			record.mask_sprite = ensure( record.mask_sprite );
+			record.mask_sprite = ensure( record.mask_sprite, layer_texture );
 			record.node.mask = record.mask_sprite;
 		} else {
 			record.node.mask = null;
@@ -834,9 +962,13 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				statics.destroy_sprite( record.mask_sprite );
 				record.mask_sprite = null;
 			}
-			_.each( entries, function( entry ) {
-				entry.mask_sprite = ensure( entry.mask_sprite );
-				entry.sprite.mask = entry.mask_sprite;
+			_.each( plan, function( step ) {
+				if ( ! step.texture_record ) {
+					unmask( step.entry );
+					return;
+				}
+				step.entry.mask_sprite = ensure( step.entry.mask_sprite, step.texture_record );
+				step.entry.sprite.mask = step.entry.mask_sprite;
 			} );
 		}
 		this.request_render();
@@ -969,16 +1101,25 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				entry.sprite = container;
 				entry.item_resolution = options.resolution;
 				entry.item_size = options.size;
+				if ( that.has_masks( record ) ) that.apply_mask( stack, record );
 			}
 			entry.settled = true;
 			that.release_held( record );
 			that.after_change();
 		};
+		// Never drawn uncut: the layer's masks first, its own and its items'.
+		var masked = function() {
+			if ( that.mask_pending( record ) ) {
+				that.mask_ready( record ).then( done, done );
+			} else {
+				done();
+			}
+		};
 		if ( ready && 'function' === typeof ready.then ) {
 			// A failed ready() still draws: a fallback font beats an endless loader.
-			ready.then( done, done );
+			ready.then( masked, masked );
 		} else {
-			done();
+			masked();
 		}
 	},
 
@@ -1570,7 +1711,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				this.drop_held( record );
 				_.each( record.shown, this.drop_entry, this );
 				record.shown = {};
-				this.drop_mask( record );
+				this.drop_masks( record );
 			}, this );
 		}, this );
 		_.each( _.values( this.textures ), this.destroy_record, this );
@@ -1774,11 +1915,11 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		// again together when their angle is shown, never the images uncut.
 		_.each( ( record.mask_users || [] ).slice(), function( user ) {
 			var layer_record = user.record;
-			if ( ! layer_record.mask || layer_record.mask.texture_record !== record ) return;
+			if ( ! this.holds_mask( layer_record, user.mask ) || user.mask.texture_record !== record ) return;
 			this.drop_held( layer_record );
 			_.each( _.values( layer_record.shown ), this.drop_entry, this );
 			layer_record.shown = {};
-			this.drop_mask( layer_record );
+			this.drop_masks( layer_record );
 		}, this );
 		record.mask_users = [];
 		_.each( record.entries.slice(), function( entry ) {
@@ -2143,8 +2284,8 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 */
 	picture_key: function( stack ) {
 		return _.map( this.picture_items( stack ), function( part ) {
-			if ( ! part.url ) return part.key;
-			return part.mask ? part.url + ' mask:' + part.mask : part.url;
+			var key = part.url || part.key;
+			return part.mask ? key + ' mask:' + part.mask : key;
 		} ).join( '\n' );
 	},
 
@@ -2153,8 +2294,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * then the choices of a layer by their index (the zIndex of their sprites).
 	 *
 	 * Each part is { url, mask? } for an image (mask: its layer's mask URL on
-	 * that angle), or { item, choice, key } for an
-	 * add-on item, whose key says what it draws (its key(), when it has one).
+	 * that angle), or { item, choice, key, mask? } for an add-on item, whose
+	 * key says what it draws (its key(), when it has one) and mask the mask it
+	 * is cut with (item_mask_url()).
 	 *
 	 * @return {Array<Object>}
 	 */
@@ -2204,7 +2346,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 						// A failing key() counts as no change.
 					}
 				}
-				parts.push( { item: item, choice: choice, key: key } );
+				var item_part = { item: item, choice: choice, key: key };
+				var item_mask = PC.fe.views.viewer_canvas.item_mask_url( item, PC.fe.layers.get( choice.get( 'layerId' ) ), angle_id );
+				if ( item_mask ) item_part.mask = item_mask;
+				parts.push( item_part );
 				return;
 			}
 			if ( ! state.has_drawable( choice ) ) return;
@@ -2355,11 +2500,13 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				seen[ texture_record.url ] = true;
 				bytes += texture_record.bytes;
 			} );
-			var mask_record = record.mask && record.mask.texture_record;
-			if ( mask_record && mask_record.texture && ! seen[ mask_record.url ] ) {
+			// Its masks: the layer's and its items'.
+			_.each( [ record.mask ].concat( _.values( record.item_masks ) ), function( mask ) {
+				var mask_record = mask && mask.texture_record;
+				if ( ! mask_record || ! mask_record.texture || seen[ mask_record.url ] ) return;
 				seen[ mask_record.url ] = true;
 				bytes += mask_record.bytes;
-			}
+			} );
 		} );
 		return bytes;
 	},
@@ -2529,7 +2676,15 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			} );
 		};
 		var get = function( part ) {
-			if ( part.item ) return statics.draw_item_once( part.item, stack.angle_id, that.item_options( stack ) );
+			if ( part.item ) {
+				var drawn_item = statics.draw_item_once( part.item, stack.angle_id, that.item_options( stack ) );
+				if ( ! part.mask ) return drawn_item;
+				// Cut like on screen (item_mask_url()).
+				return Promise.all( [ drawn_item, get_texture( statics.mask_key( part.mask ) ) ] ).then( function( pair ) {
+					pair[ 0 ].mask = pair[ 1 ];
+					return pair[ 0 ];
+				} );
+			}
 			// A masked image comes with its mask (under its mask key, see whiten()).
 			if ( part.mask ) {
 				return Promise.all( [ get_texture( part.url ), get_texture( statics.mask_key( part.mask ) ) ] ).then( function( pair ) {
@@ -2550,7 +2705,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			_.each( items, function( item ) {
 				// An add-on item: its own container, or nothing at this angle.
 				if ( item && item.item ) {
-					if ( item.container ) container.addChild( item.container );
+					if ( ! item.container ) return;
+					if ( item.mask && item.mask.texture.destroyed ) {
+						stack.refreshed_for = null;
+						return;
+					}
+					container.addChild( item.container );
+					if ( item.mask ) {
+						var item_mask_sprite = new PIXI.Sprite( item.mask.texture );
+						that.place_mask_sprite( item_mask_sprite, stack, item.mask );
+						container.addChild( item_mask_sprite );
+						item.container.mask = item_mask_sprite;
+					}
 					return;
 				}
 				// Released meanwhile (a texture the viewer held): the snapshot
@@ -2581,7 +2747,10 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			// The sprites go; the textures and items' containers are released by
 			// the caller.
 			_.each( items, function( item ) {
-				if ( item && item.container ) container.removeChild( item.container );
+				if ( item && item.container ) {
+					item.container.mask = null;
+					container.removeChild( item.container );
+				}
 			} );
 			container.destroy( { children: true } );
 		};
@@ -2970,6 +3139,21 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 				}
 				var batch = new PIXI.Container();
 				var made = [];
+				// A mask at the output's scale, as opaque grey (whiten()), or null.
+				var mask_sprite_for = function( index ) {
+					var mask_image = masks[ index ];
+					if ( ! mask_image || ! mask_image.naturalWidth ) return null;
+					var mask_natural = { width: mask_image.naturalWidth, height: mask_image.naturalHeight };
+					var white = statics.whiten( mask_image, Math.max( 1, Math.round( mask_natural.width * scale_x ) ), Math.max( 1, Math.round( mask_natural.height * scale_y ) ) );
+					if ( ! white ) return null;
+					var mask_texture = new PIXI.Texture( { source: new PIXI.ImageSource( { resource: white } ) } );
+					made.push( mask_texture );
+					var mask_sprite = new PIXI.Sprite( mask_texture );
+					mask_sprite.scale.set( mask_natural.width * scale_x / mask_texture.width, mask_natural.height * scale_y / mask_texture.height );
+					mask_sprite.position.set( ( size.width - mask_natural.width ) / 2 * scale_x, ( size.height - mask_natural.height ) / 2 * scale_y );
+					batch.addChild( mask_sprite );
+					return mask_sprite;
+				};
 				_.each( images, function( image, index ) {
 					if ( image.item ) {
 						if ( ! image.container ) return;
@@ -2978,6 +3162,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 						holder.scale.set( scale_x, scale_y );
 						holder.addChild( image.container );
 						batch.addChild( holder );
+						// Cut like on screen (item_mask_url()).
+						var item_mask = mask_sprite_for( index );
+						if ( item_mask ) holder.mask = item_mask;
 						return;
 					}
 					var natural = { width: image.naturalWidth, height: image.naturalHeight };
@@ -2992,27 +3179,18 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 					sprite.position.set( ( size.width - natural.width ) / 2 * scale_x, ( size.height - natural.height ) / 2 * scale_y );
 					batch.addChild( sprite );
 
-					var mask_image = masks[ index ];
-					if ( mask_image && mask_image.naturalWidth ) {
-						// Each image its own mask (decision 7), as opaque grey (whiten()).
-						var mask_natural = { width: mask_image.naturalWidth, height: mask_image.naturalHeight };
-						var white = statics.whiten( mask_image, Math.max( 1, Math.round( mask_natural.width * scale_x ) ), Math.max( 1, Math.round( mask_natural.height * scale_y ) ) );
-						if ( white ) {
-							var mask_texture = new PIXI.Texture( { source: new PIXI.ImageSource( { resource: white } ) } );
-							made.push( mask_texture );
-							var mask_sprite = new PIXI.Sprite( mask_texture );
-							mask_sprite.scale.set( mask_natural.width * scale_x / mask_texture.width, mask_natural.height * scale_y / mask_texture.height );
-							mask_sprite.position.set( ( size.width - mask_natural.width ) / 2 * scale_x, ( size.height - mask_natural.height ) / 2 * scale_y );
-							batch.addChild( mask_sprite );
-							sprite.mask = mask_sprite;
-						}
-					}
+					// Each image its own mask (decision 7).
+					var image_mask = mask_sprite_for( index );
+					if ( image_mask ) sprite.mask = image_mask;
 				}, this );
 				renderer.render( { container: batch, target: target, clear: 0 === drawn, clearColor: [ 0, 0, 0, 0 ] } );
 				drawn += images.length;
 				// Items' containers go the item's way, before the batch goes.
 				_.each( images, function( image ) {
-					if ( image.item && image.container && image.container.parent ) image.container.parent.removeChild( image.container );
+					if ( image.item && image.container && image.container.parent ) {
+						image.container.parent.mask = null;
+						image.container.parent.removeChild( image.container );
+					}
 				} );
 				statics.release_drawn_items( images );
 				batch.destroy( { children: true } );
@@ -3272,6 +3450,34 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 
 	is_mask_key: function( url ) {
 		return /#pc-mask$/.test( String( url || '' ) );
+	},
+
+	/**
+	 * The mask an add-on item is cut with at an angle, as a URL ('' for none).
+	 *
+	 * An item without a mask() method, or whose mask() returns undefined, is
+	 * cut by its layer's mask, like the layer's images. mask() returning a URL
+	 * cuts it with that mask instead; returning '' or null, with none. The mask
+	 * follows the layer masks' rules: an alpha PNG the size of the angle's
+	 * images, centred like them (docs/layer-masks-spec.md).
+	 *
+	 * @param {Object}         item
+	 * @param {Backbone.Model} layer
+	 * @param {Number|String}  angle_id
+	 * @return {String}
+	 */
+	item_mask_url: function( item, layer, angle_id ) {
+		var own;
+		if ( item && 'function' === typeof item.mask ) {
+			try {
+				own = item.mask( angle_id );
+			} catch ( error ) {
+				own = undefined;
+			}
+		}
+		if ( undefined !== own ) return own ? String( own ) : '';
+		var image = PC.fe.layer_masks && layer ? PC.fe.layer_masks.get( layer, angle_id ) : null;
+		return image && image.url ? image.url : '';
 	},
 
 	/**

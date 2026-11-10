@@ -1007,3 +1007,148 @@ describe( 'layer masks (docs/layer-masks-spec.md)', () => {
 		expect( record.mask_sprite ).toBeNull();
 	} );
 } );
+
+describe( 'item masks (mask() on canvas items, docs/image-overlay-spec.md)', () => {
+	beforeEach( () => {
+		global._ = {
+			each: ( list, callback, context ) => {
+				if ( Array.isArray( list ) ) list.forEach( ( value, index ) => callback.call( context, value, index ) );
+				else Object.keys( list || {} ).forEach( ( key ) => callback.call( context, list[ key ], key ) );
+			},
+			map: ( list, callback, context ) => list.map( ( value ) => callback.call( context, value ) ),
+			filter: ( list, callback ) => list.filter( callback ),
+			find: ( list, callback, context ) => ( Array.isArray( list ) ? list : Object.values( list || {} ) ).find( ( value ) => callback.call( context, value ) ),
+			values: ( object ) => Object.values( object || {} ),
+		};
+	} );
+	afterEach( () => {
+		delete global._;
+	} );
+
+	const layer_masks = () => ( {
+		get: ( l, angle_id ) => {
+			const mask = ( ( l && l.get( 'masks' ) ) || [] ).find( ( item ) => String( item.angleId ) === String( angle_id ) );
+			return mask ? mask.image : null;
+		},
+	} );
+	const masked_layer = { get: ( key ) => ( 'masks' === key ? [ { angleId: 1, image: { url: 'layer-mask.png' } } ] : undefined ) };
+
+	test( 'an item is cut by its layer\'s mask, unless it asks for its own or for none', () => {
+		load();
+		PC.fe.layer_masks = layer_masks();
+		const url = PC.fe.views.viewer_canvas.item_mask_url;
+		expect( url( {}, masked_layer, 1 ) ).toBe( 'layer-mask.png' );
+		expect( url( { mask: () => undefined }, masked_layer, 1 ) ).toBe( 'layer-mask.png' );
+		expect( url( { mask: () => 'zone-mask.png' }, masked_layer, 1 ) ).toBe( 'zone-mask.png' );
+		expect( url( { mask: () => '' }, masked_layer, 1 ) ).toBe( '' );
+		expect( url( { mask: () => null }, masked_layer, 1 ) ).toBe( '' );
+		expect( url( {}, masked_layer, 2 ) ).toBe( '' );
+		// A throwing mask() counts as asking for nothing special.
+		expect( url( { mask: () => {
+			throw new Error( 'oops' );
+		} }, masked_layer, 1 ) ).toBe( 'layer-mask.png' );
+	} );
+
+	test( 'captures and refreshes get the item\'s mask, and the picture key names it', () => {
+		load();
+		PC.fe.layer_masks = layer_masks();
+		PC.fe.layers.get = () => masked_layer;
+		PC.fe.viewer_state = { has_drawable: () => true };
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		let zone_mask = 'zone-a.png';
+		const item = { mask: () => zone_mask };
+		const plain = {};
+		const choice = make_model( { id: 1, layerId: 3 } );
+		const other = make_model( { id: 2, layerId: 3 } );
+		viewer.canvas_item = ( c ) => ( c === choice ? item : plain );
+		viewer.view_key = ( c ) => '3:' + c.id;
+		viewer.ordered_choices = () => [ choice, other ];
+
+		const parts = viewer.parts_of( [ choice, other ], 1 );
+		expect( parts[ 0 ].mask ).toBe( 'zone-a.png' );
+		expect( parts[ 1 ].mask ).toBe( 'layer-mask.png' );
+		const before = viewer.picture_key( { angle_id: 1 } );
+		expect( before ).toBe( 'item:3:1 mask:zone-a.png\nitem:3:2 mask:layer-mask.png' );
+		zone_mask = 'zone-b.png';
+		expect( viewer.picture_key( { angle_id: 1 } ) ).not.toBe( before );
+	} );
+
+	test( 'an item asking for another mask than the layer\'s keeps the node unmasked', () => {
+		load();
+		PC.fe.layer_masks = layer_masks();
+		global.PIXI.Sprite = function( texture ) {
+			this.texture = texture;
+			this.parent = null;
+			this.destroyed = false;
+			this.scale = { set: () => {} };
+			this.position = { set: () => {} };
+			this.destroy = () => {
+				this.destroyed = true;
+			};
+		};
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		viewer.request_render = () => {};
+		viewer.fit_sprite = () => {};
+		const node = {
+			children: [],
+			mask: null,
+			addChild( child ) {
+				child.parent = this;
+				this.children.push( child );
+			},
+			removeChild( child ) {
+				this.children = this.children.filter( ( c ) => c !== child );
+				child.parent = null;
+			},
+		};
+		const record_of = ( id ) => ( { texture: { id }, natural: { width: 10, height: 10 }, destroyed: false } );
+		const layer_texture = record_of( 'layer' );
+		const zone_texture = record_of( 'zone' );
+		let own = 'zone.png';
+		const item = { sprite: { mask: null }, item: { mask: () => own } };
+		const record = {
+			node,
+			layer: masked_layer,
+			shown: { item },
+			held: [],
+			mask: { url: 'layer-mask.png', done: true, texture_record: layer_texture },
+			item_masks: { 'zone.png': { url: 'zone.png', done: true, texture_record: zone_texture } },
+		};
+		const stack = { angle_id: 1, size: { width: 10, height: 10 } };
+
+		// Alone in its layer: cut by its own mask, not by the layer's through the node.
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBeNull();
+		expect( item.sprite.mask.texture ).toBe( zone_texture.texture );
+
+		// With an image of the layer: each cut by its own.
+		const image = { sprite: { mask: null } };
+		record.shown.image = image;
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBeNull();
+		expect( image.sprite.mask.texture ).toBe( layer_texture.texture );
+		expect( item.sprite.mask.texture ).toBe( zone_texture.texture );
+
+		// Asking for no mask: uncut, while the image keeps the layer's.
+		own = '';
+		viewer.apply_mask( stack, record );
+		expect( item.sprite.mask ).toBeNull();
+		expect( image.sprite.mask.texture ).toBe( layer_texture.texture );
+
+		// Asking for the layer's, alone again: the cheap node mask.
+		own = undefined;
+		delete record.shown.image;
+		viewer.apply_mask( stack, record );
+		expect( node.mask ).toBe( record.mask_sprite );
+		expect( item.sprite.mask ).toBeNull();
+	} );
+
+	test( 'an item\'s mask still loading keeps the picture loading', () => {
+		load();
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		const stack = { layers: { 3: { shown: { a: { settled: true } }, held: [], mask: null, item_masks: { 'zone.png': { done: false } } } } };
+		expect( viewer.is_stack_settled( stack ) ).toBe( false );
+		stack.layers[ 3 ].item_masks[ 'zone.png' ].done = true;
+		expect( viewer.is_stack_settled( stack ) ).toBe( true );
+	} );
+} );
