@@ -2569,6 +2569,23 @@ class DB {
 			if ( empty( $item ) || ! is_array( $item['choices'] ) ) continue;
 			$changed = false;
 			foreach ( $item['choices'] as $choice_key => $choice ) {
+				/**
+				 * Filter mkl_pc/db/scan_images/choice: remap the images an add-on keeps in a choice
+				 * (Form builder's upload zones and zone masks, say), after an import. Return the
+				 * choice changed to have it saved. DB::remap_image_reference() remaps one image
+				 * the way layer masks are remapped.
+				 *
+				 * @param array $choice
+				 * @param DB    $db
+				 * @param int   $product_id
+				 * @param int   $layer_id
+				 */
+				$fixed = apply_filters( 'mkl_pc/db/scan_images/choice', $choice, $this, $product_id, $layer_id );
+				if ( is_array( $fixed ) && $fixed !== $choice ) {
+					$item['choices'][ $choice_key ] = $fixed;
+					$choice = $fixed;
+					$changed = true;
+				}
 				if ( ! isset( $choice['images'] ) || ! is_array( $choice['images'] ) ) continue;
 				foreach ( $choice['images'] as $ik => $image ) {
 					if ( isset( $image['image'] ) && ! empty( $image['image']['url'] ) ) {
@@ -2690,24 +2707,43 @@ class DB {
 	 */
 	private function remap_layer_masks( &$masks ) {
 		$changed = false;
-		$file_name = function( $url ) {
-			return strtolower( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) );
-		};
 		foreach ( $masks as $key => $mask ) {
-			if ( ! is_array( $mask ) || empty( $mask['image'] ) || ! is_array( $mask['image'] ) || empty( $mask['image']['url'] ) ) continue;
-			$url = $mask['image']['url'];
-			$old_id = isset( $mask['image']['id'] ) ? (int) $mask['image']['id'] : 0;
-			if ( $old_id && wp_get_attachment_url( $old_id ) === $url ) continue;
-			$new_id = (int) $this->_find_image_id( $url, $old_id );
-			$new_url = $new_id ? wp_get_attachment_url( $new_id ) : '';
-			if ( ! $new_url || $file_name( $new_url ) !== $file_name( $url ) ) continue;
-			if ( $new_id !== $old_id || $new_url !== $url ) {
-				$masks[ $key ]['image']['id'] = $new_id;
-				$masks[ $key ]['image']['url'] = $new_url;
+			if ( ! is_array( $mask ) || empty( $mask['image'] ) || ! is_array( $mask['image'] ) ) continue;
+			$remapped = $this->remap_image_reference( $mask['image'] );
+			if ( null !== $remapped ) {
+				$masks[ $key ]['image'] = $remapped;
 				$changed = true;
 			}
 		}
 		return $changed;
+	}
+
+	/**
+	 * Point one image reference ({ id, url, ... }) at this site's attachment, found by file name.
+	 *
+	 * The stored id is kept when it still serves the stored URL; otherwise an attachment with the
+	 * same file name takes its place, id and URL. Nothing found leaves it as it is: the id
+	 * _find_image_id() falls back to may be an unrelated attachment on this site, so a match only
+	 * counts when its file name is the stored one. Other keys (dimensions, width...) are kept.
+	 *
+	 * @param array $image
+	 * @return array|null The remapped image, or null when nothing changes.
+	 */
+	public function remap_image_reference( $image ) {
+		if ( ! is_array( $image ) || empty( $image['url'] ) ) return null;
+		$file_name = function( $url ) {
+			return strtolower( wp_basename( (string) wp_parse_url( $url, PHP_URL_PATH ) ) );
+		};
+		$url = $image['url'];
+		$old_id = isset( $image['id'] ) ? (int) $image['id'] : 0;
+		if ( $old_id && wp_get_attachment_url( $old_id ) === $url ) return null;
+		$new_id = (int) $this->_find_image_id( $url, $old_id );
+		$new_url = $new_id ? wp_get_attachment_url( $new_id ) : '';
+		if ( ! $new_url || $file_name( $new_url ) !== $file_name( $url ) ) return null;
+		if ( $new_id === $old_id && $new_url === $url ) return null;
+		$image['id'] = $new_id;
+		$image['url'] = $new_url;
+		return $image;
 	}
 
 	/**
