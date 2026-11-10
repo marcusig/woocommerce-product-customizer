@@ -116,6 +116,10 @@ another, and the shop would place the form layer where the artwork goes in the i
   as any choice does (the item hook is per choice, and the viewer draws selected choices only).
   Before a file is chosen, the choice's own images show: a placeholder.
 - **In a form layer**, the field is a choice of its own; the image shows once a file is chosen.
+  Form fields are never selected, so Form builder adds them to the drawn choices through core's
+  `PC.fe.viewer.shown_choices` filter (canvas viewer only).
+- **Only fields drawn in the configurator** (Marc, 2026-11-10): a quote request form layer showing
+  its fields in the request window gets no preview, and its Preview section says so.
 
 ### Masks
 

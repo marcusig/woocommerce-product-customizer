@@ -267,6 +267,21 @@ describe( 'PC.fe.viewer_state rules', () => {
 		expect( PC.fe.viewer_state.shown_choices( layer ).map( ( choice ) => choice.id ) ).toEqual( [ 1, 3 ] );
 	} );
 
+	test( 'add-ons can add choices drawn without being selected; conditional logic still hides them', () => {
+		const choices = [ 1, 2, 3 ].map( ( id ) => make_model( { id, layerId: 1, active: 1 === id, image: false } ) );
+		const layer = make_model( { id: 1, type: 'form' } );
+		install( { layers: make_collection( [ layer ] ), contents: { 1: make_collection( choices ) } }, true );
+		const filter = global.wp.hooks.applyFilters;
+		global.wp.hooks.applyFilters = ( name, value, ...args ) => {
+			// An upload field shown in the preview: choice 3, and choice 1 again.
+			if ( 'PC.fe.viewer.shown_choices' === name ) return value.concat( [ choices[ 2 ], choices[ 0 ] ] );
+			return filter( name, value, ...args );
+		};
+		expect( PC.fe.viewer_state.shown_choices( layer ).map( ( choice ) => choice.id ) ).toEqual( [ 1, 3 ] );
+		choices[ 2 ].attributes.cshow = false;
+		expect( PC.fe.viewer_state.shown_choices( layer ).map( ( choice ) => choice.id ) ).toEqual( [ 1 ] );
+	} );
+
 	test( 'has_drawable() accepts an image, or a layer type that draws itself', () => {
 		install( { layers: make_collection( [] ), contents: {} }, false );
 		expect( PC.fe.viewer_state.has_drawable( make_model( { image: true } ) ) ).toBe( true );

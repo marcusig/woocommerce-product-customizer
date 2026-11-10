@@ -57,16 +57,36 @@ PC.fe.viewer_state = {
 		if ( ! choices ) return [];
 		if ( this.is_layer_hidden( layer ) ) return [];
 
+		var shown;
 		if ( layer.get( 'not_a_choice' ) ) {
 			var first = choices.first();
-			return first ? [ first ] : [];
+			shown = first ? [ first ] : [];
+		} else {
+			var that = this;
+			shown = choices.filter( function( choice ) {
+				if ( ! choice.get( 'active' ) ) return false;
+				if ( choice.get( 'is_group' ) ) return false;
+				return ! that.is_choice_hidden( choice );
+			} );
 		}
 
-		var that = this;
-		return choices.filter( function( choice ) {
-			if ( ! choice.get( 'active' ) ) return false;
-			if ( choice.get( 'is_group' ) ) return false;
-			return ! that.is_choice_hidden( choice );
+		/**
+		 * Filter PC.fe.viewer.shown_choices: the choices of a layer drawn in the picture.
+		 *
+		 * For choices that draw without being selected, such as Form builder's upload fields
+		 * shown in the preview (docs/image-overlay-spec.md). Added choices are drawn by
+		 * their canvas item; conditional logic still hides them.
+		 *
+		 * @param {Array}               shown   choice models
+		 * @param {Backbone.Model}      layer
+		 * @param {Backbone.Collection} choices the layer's choices
+		 */
+		var filtered = wp.hooks.applyFilters( 'PC.fe.viewer.shown_choices', shown, layer, choices );
+		if ( filtered === shown || ! filtered || ! filtered.length ) return filtered || [];
+		var hide = this;
+		return filtered.filter( function( choice, index ) {
+			// Once each, and never what conditional logic hides.
+			return filtered.indexOf( choice ) === index && ( -1 !== shown.indexOf( choice ) || ! hide.is_choice_hidden( choice ) );
 		} );
 	},
 
