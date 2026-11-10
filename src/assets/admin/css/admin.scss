@@ -3628,6 +3628,56 @@ label.euler-axis {
 		flex: 1 1 100%;
 		margin: 0;
 	}
+	// A tile, its caption under it (the `compact` option).
+	&--compact {
+		flex-direction: column;
+		flex-wrap: nowrap;
+		align-items: center;
+		gap: 4px;
+		.mkl-pc-layer-mask__picture {
+			width: 72px;
+			height: 72px;
+		}
+		.mkl-pc-layer-mask__caption {
+			color: #646970;
+			font-size: 12px;
+		}
+		.mkl-pc-layer-mask__warning {
+			flex: 0 0 auto;
+			max-width: 160px;
+			font-size: 12px;
+		}
+	}
+	&__tile {
+		position: relative;
+		display: block;
+	}
+	&__remove {
+		position: absolute;
+		top: -6px;
+		right: -6px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		padding: 0;
+		border: 1px solid $light-border-color;
+		border-radius: 50%;
+		background: #fff;
+		color: #50575e;
+		cursor: pointer;
+		.dashicons {
+			width: 16px;
+			height: 16px;
+			font-size: 16px;
+		}
+		&:hover,
+		&:focus-visible {
+			color: #b32d2e;
+			border-color: #b32d2e;
+		}
+	}
 }
 .mkl-pc-admin-ui--content-mode {
 	.mkl-pc-admin-ui__content.content {
@@ -4599,6 +4649,10 @@ html .mkl-pc-admin-dialog-mount {
 		min-height: 0;
 		.mkl-pc-admin-dialog__footer-actions {
 			grid-column: 1 / -1;
+		}
+		// Apart from Done and Cancel, on the left.
+		.mkl-pc-zone-editor__remove {
+			margin-right: auto;
 		}
 	}
 	.mkl-pc-zone-editor__toolbar {

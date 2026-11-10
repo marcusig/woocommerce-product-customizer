@@ -229,4 +229,28 @@ describe( 'masks of another model (PC.views.mask_picker)', () => {
 		expect( view.lists_angle( 2 ) ).toBe( true );
 		expect( view.lists_angle( 1 ) ).toBe( false );
 	} );
+
+	test( 'compact: the template gets the option and the caption', () => {
+		const { View } = load();
+		const choice = make_model( { id: 7, zone_masks: [ { angleId: 2, image: { id: 5, url: 'https://example.com/zone.png', dimensions: { width: 800, height: 600 } } } ] } );
+		const seen = [];
+		const view = Object.create( View.prototype );
+		view.model = choice;
+		view.attribute = 'zone_masks';
+		view.options = { angle_ids: [ 2 ], compact: true, label: 'Mask', sizes: () => [] };
+		view.angles = { each: ( callback, context ) => [ { id: 1, get: () => 'Front' }, { id: 2, get: () => 'Back' } ].forEach( callback, context ) };
+		view.template = ( data ) => {
+			seen.push( data );
+			return '';
+		};
+		view.$el = { empty() {}, append() {} };
+		view.render();
+		expect( seen ).toHaveLength( 1 );
+		expect( seen[ 0 ] ).toMatchObject( { angle_id: 2, compact: true, label: 'Mask', file_name: 'zone.png', size: '800 × 600' } );
+
+		seen.length = 0;
+		view.options = { angle_ids: [ 2 ], sizes: () => [] };
+		view.render();
+		expect( seen[ 0 ] ).toMatchObject( { compact: false, label: '' } );
+	} );
 } );

@@ -14,6 +14,8 @@
 	- sizes( angle_id ): the image sizes a mask on that view must match, for the size
 	                   warning ({ width, height } list). The layer's choice images by default;
 	- size_message:    the warning, with %1$s (those sizes) and %2$s (the mask's);
+	- compact:         a tile per view, without the view's name: the file's name and size in its
+	                   tooltip, a corner button to remove it, `label` under it ('Mask' by default);
 	- locked.
 
 	Image upload zones use it on the field's choice, with `zone_masks` (docs/image-overlay-spec.md).
@@ -86,6 +88,8 @@
 					size: PC.views.layer_masks.size_label( dimensions ),
 					size_warning: image && image.url ? this.size_warning( angle.id, dimensions ) : '',
 					locked: !! this.options.locked,
+					compact: !! this.options.compact,
+					label: this.options.label || '',
 				} ) );
 			}, this );
 			return this;

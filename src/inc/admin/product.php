@@ -464,6 +464,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 						'zone'         => __( 'Zone', 'product-configurator-for-woocommerce' ),
 						'done'         => __( 'Done', 'product-configurator-for-woocommerce' ),
 						'cancel'       => __( 'Cancel', 'product-configurator-for-woocommerce' ),
+						'remove'       => __( 'Remove the zone', 'product-configurator-for-woocommerce' ),
 					),
 					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
 					/* translators: %s: layer name */

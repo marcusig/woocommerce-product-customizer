@@ -118,3 +118,15 @@ describe( 'zone geometry', () => {
 		expect( Z.alpha_box( new Uint8ClampedArray( width * height * 4 ), width, height ) ).toBeNull();
 	} );
 } );
+
+describe( 'removing the zone', () => {
+	test( 'with a remove option, the footer button calls it and closes', () => {
+		const View = load();
+		expect( View.prototype.events()[ 'click .mkl-pc-zone-editor__remove' ] ).toBe( 'remove_zone' );
+		const remove = jest.fn();
+		const editor = { options: { remove }, close: jest.fn() };
+		View.prototype.remove_zone.call( editor, { preventDefault() {} } );
+		expect( remove ).toHaveBeenCalledTimes( 1 );
+		expect( editor.close ).toHaveBeenCalledTimes( 1 );
+	} );
+} );

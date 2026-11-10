@@ -21,7 +21,8 @@
 	- mask_url: a mask shown over the image, the layer's or the zone's (where the zone can show).
 	  A zone without a position starts on the box around its opaque pixels;
 	- decorate( $inner, zone ): draw a preview inside the zone (a sample image, text);
-	- save( zone ): called on Done with the edited zone.
+	- save( zone ): called on Done with the edited zone;
+	- remove(): when given, the footer has "Remove the zone", which calls it and closes.
 
 	Hooks: action `PC.admin.zone_editor.render` ( editor ) after each drawing of the zone.
 */
@@ -51,6 +52,7 @@ PC.views = PC.views || {};
 				'keydown .mkl-pc-zone-editor__zone': 'key_down',
 				'click .mkl-pc-zone-editor__done': 'done',
 				'click .mkl-pc-zone-editor__cancel': 'close',
+				'click .mkl-pc-zone-editor__remove': 'remove_zone',
 			} );
 		},
 
@@ -121,6 +123,7 @@ PC.views = PC.views || {};
 				+ '</div>'
 				+ toolbar
 				+ '<div class="mkl-pc-admin-dialog__footer-actions">'
+				+ ( this.options.remove ? '<button type="button" class="button-link button-link-delete mkl-pc-zone-editor__remove">' + _.escape( lang( 'remove', 'Remove the zone' ) ) + '</button>' : '' )
 				+ '<button type="button" class="button button-primary mkl-pc-zone-editor__done">' + _.escape( lang( 'done', 'Done' ) ) + '</button>'
 				+ '<button type="button" class="button mkl-pc-zone-editor__cancel">' + _.escape( lang( 'cancel', 'Cancel' ) ) + '</button>'
 				+ '</div>'
@@ -333,6 +336,12 @@ PC.views = PC.views || {};
 					position: PC.views.zone_editor.rounded( this.zone.position ),
 				} );
 			}
+			this.close();
+		},
+
+		remove_zone: function( event ) {
+			if ( event ) event.preventDefault();
+			if ( this.options.remove ) this.options.remove();
 			this.close();
 		},
 

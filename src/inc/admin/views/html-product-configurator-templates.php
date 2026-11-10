@@ -942,6 +942,31 @@ CONTENT TEMPLATES
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-layer-mask">
+	<# if ( data.compact ) { #>
+	<div class="mkl-pc-layer-mask mkl-pc-layer-mask--compact" data-angle="{{data.angle_id}}">
+		<span class="mkl-pc-layer-mask__tile">
+			<button type="button" class="mkl-pc-layer-mask__picture edit-mask"<# if ( data.url ) { #> title="{{data.file_name}} ({{data.size}})"<# } #><# if ( data.locked ) { #> disabled<# } #>>
+				<# if ( data.url ) { #>
+					<img src="{{data.url}}" alt="">
+					<span class="screen-reader-text"><?php esc_html_e( 'Change the mask of this view', 'product-configurator-for-woocommerce' ); ?></span>
+				<# } else { #>
+					<span class="dashicons dashicons-plus" aria-hidden="true"></span>
+					<span class="screen-reader-text"><?php esc_html_e( 'Add a mask for this view', 'product-configurator-for-woocommerce' ); ?></span>
+				<# } #>
+			</button>
+			<# if ( data.url && ! data.locked ) { #>
+				<button type="button" class="mkl-pc-layer-mask__remove remove-mask" title="<?php esc_attr_e( 'Remove the mask', 'product-configurator-for-woocommerce' ); ?>">
+					<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+					<span class="screen-reader-text"><?php esc_html_e( 'Remove the mask', 'product-configurator-for-woocommerce' ); ?></span>
+				</button>
+			<# } #>
+		</span>
+		<span class="mkl-pc-layer-mask__caption">{{ data.label || '<?php echo esc_js( __( 'Mask', 'product-configurator-for-woocommerce' ) ); ?>' }}</span>
+		<# if ( data.size_warning ) { #>
+			<p class="mkl-pc-setting--warning mkl-pc-layer-mask__warning">{{data.size_warning}}</p>
+		<# } #>
+	</div>
+	<# } else { #>
 	<div class="mkl-pc-layer-mask" data-angle="{{data.angle_id}}">
 		<span class="mkl-pc-layer-mask__view">{{data.angle_name}}</span>
 		<button type="button" class="mkl-pc-layer-mask__picture edit-mask"<# if ( data.locked ) { #> disabled<# } #>>
@@ -966,6 +991,7 @@ CONTENT TEMPLATES
 			<p class="mkl-pc-setting--warning mkl-pc-layer-mask__warning">{{data.size_warning}}</p>
 		<# } #>
 	</div>
+	<# } #>
 </script>
 
 <script type="text/html" id="tmpl-mkl-pc-content-choice-pictures">
