@@ -362,7 +362,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array( 'backbone/views/content', 'views/content.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
 				array('backbone/views/import', 'views/import.js'),
 				array( 'backbone/views/admin_dialog', 'views/admin-dialog.js', array( 'wp-hooks' ) ),
-				array( 'backbone/views/zone_editor', 'views/zone-editor.js', array( 'mkl_pc/js/admin/backbone/views/admin_dialog' ) ),
+				array( 'backbone/views/zone_editor', 'views/zone-editor.js', array( 'mkl_pc/js/admin/backbone/views/admin_dialog', 'mkl_pc/js/admin/backbone/views/image_order_preview' ) ),
 				array(
 					'backbone/views/import_global_layer',
 					'views/import-global-layer.js',
@@ -449,20 +449,21 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					/* translators: %d: number of times the global layer is already used in this product */
 					'import_global_layer_links' => esc_html__( 'Already in this product: %d', 'product-configurator-for-woocommerce' ),
 					'layer_override_groups' => $this->get_layer_override_groups(),
-					// The zone editor (views/zone-editor.js, docs/image-overlay-spec.md).
+					// The zone editor (views/zone-editor.js, docs/image-overlay-spec.md). Not
+					// escaped here: the dialog escapes what it inserts.
 					'zone_editor' => array(
-						'title'        => esc_html__( 'Zone', 'product-configurator-for-woocommerce' ),
-						'choose_image' => esc_html__( 'Choose the view\'s image', 'product-configurator-for-woocommerce' ),
-						'no_image'     => esc_html__( 'Choose the view\'s image to draw the zone on it.', 'product-configurator-for-woocommerce' ),
-						'x'            => esc_html__( 'X (centre)', 'product-configurator-for-woocommerce' ),
-						'y'            => esc_html__( 'Y (top)', 'product-configurator-for-woocommerce' ),
-						'width'        => esc_html__( 'Width', 'product-configurator-for-woocommerce' ),
-						'height'       => esc_html__( 'Height', 'product-configurator-for-woocommerce' ),
-						'rotation'     => esc_html__( 'Rotation (°)', 'product-configurator-for-woocommerce' ),
-						'help'         => esc_html__( 'Drag the zone to move it, its handles to resize it. Arrow keys move it by one pixel, with Shift by ten.', 'product-configurator-for-woocommerce' ),
-						'zone'         => esc_html__( 'Zone', 'product-configurator-for-woocommerce' ),
-						'done'         => esc_html__( 'Done', 'product-configurator-for-woocommerce' ),
-						'cancel'       => esc_html__( 'Cancel', 'product-configurator-for-woocommerce' ),
+						'title'        => __( 'Zone', 'product-configurator-for-woocommerce' ),
+						'choose_image' => __( 'Choose the view\'s image', 'product-configurator-for-woocommerce' ),
+						'no_image'     => __( 'Choose the view\'s image to draw the zone on it.', 'product-configurator-for-woocommerce' ),
+						'x'            => __( 'X (centre)', 'product-configurator-for-woocommerce' ),
+						'y'            => __( 'Y (top)', 'product-configurator-for-woocommerce' ),
+						'width'        => __( 'Width', 'product-configurator-for-woocommerce' ),
+						'height'       => __( 'Height', 'product-configurator-for-woocommerce' ),
+						'rotation'     => __( 'Rotation (°)', 'product-configurator-for-woocommerce' ),
+						'help'         => __( 'Drag the zone to move it, its handles to resize it. Arrow keys move it by one pixel, with Shift by ten.', 'product-configurator-for-woocommerce' ),
+						'zone'         => __( 'Zone', 'product-configurator-for-woocommerce' ),
+						'done'         => __( 'Done', 'product-configurator-for-woocommerce' ),
+						'cancel'       => __( 'Cancel', 'product-configurator-for-woocommerce' ),
 					),
 					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
 					/* translators: %s: layer name */

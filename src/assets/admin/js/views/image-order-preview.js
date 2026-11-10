@@ -54,12 +54,21 @@ PC.views = PC.views || {};
 			'click .mkl-pc-preview__retry': 'on_retry',
 		},
 
+		/**
+		 * On the Image order screen, { parent }: the screen's layers, in the order its list
+		 * shows, with a view selector. Elsewhere (the zone editor's background), without a
+		 * parent:
+		 * - layers:   the layers to draw, bottom first (default: all of them, stack_order());
+		 * - angle_id: the view, fixed (no selector);
+		 * - max_size: longest edge of the canvas (default PREVIEW_MAX).
+		 */
 		initialize: function( options ) {
 			this.options = options || {};
-			this.parent = options.parent;
-			this.col = options.parent.col;
+			this.parent = this.options.parent || null;
+			this.col = this.parent ? this.parent.col : PC.app.get_collection( 'layers' );
 			this.content = PC.app.get_product().get( 'content' );
 			this.angles = PC.app.get_admin().angles;
+			this.max_size = this.options.max_size || PREVIEW_MAX;
 
 			this.tiles = {};          // layerId -> small canvas
 			this.failed = {};         // layerId -> true
@@ -70,9 +79,20 @@ PC.views = PC.views || {};
 			this.sources = null;      // attachment id -> scaled URL, once resolved
 			this.fonts = {};          // family -> load promise, shared across rebuilds
 
-			this.angle_id = this.default_angle_id();
+			this.angle_id = undefined !== this.options.angle_id ? this.options.angle_id : this.default_angle_id();
 
 			this.render();
+		},
+
+		/**
+		 * The layers drawn, bottom first.
+		 *
+		 * @return {Array<Backbone.Model>}
+		 */
+		layer_list: function() {
+			if ( this.options.layers ) return this.options.layers;
+			if ( this.parent || ! this.col ) return this.col ? this.col.models : [];
+			return PC.views.image_order_preview.stack_order( this.col );
 		},
 
 		remove: function() {
@@ -93,7 +113,8 @@ PC.views = PC.views || {};
 
 		render: function() {
 			this.$el.html( this.template( {
-				angles: this.angles ? this.angles.map( function( a ) {
+				// A fixed view has no selector.
+				angles: this.angles && undefined === this.options.angle_id ? this.angles.map( function( a ) {
 					return { id: a.id, name: a.get( 'name' ) || '' };
 				} ) : [],
 				angle_id: this.angle_id,
@@ -175,7 +196,7 @@ PC.views = PC.views || {};
 		 */
 		collect: function() {
 			var entries = [];
-			this.col.each( function( layer ) {
+			_.each( this.layer_list(), function( layer ) {
 				var choice = this.choice_for( layer );
 
 				// A text overlay carries no picture - it draws type into a zone. Ask for
@@ -382,8 +403,9 @@ PC.views = PC.views || {};
 			var ratio = dims ? ( dims.width / dims.height ) : 1;
 			if ( ! isFinite( ratio ) || ratio <= 0 ) ratio = 1;
 
-			this.width = ratio >= 1 ? PREVIEW_MAX : Math.round( PREVIEW_MAX * ratio );
-			this.height = ratio >= 1 ? Math.round( PREVIEW_MAX / ratio ) : PREVIEW_MAX;
+			var max = this.max_size;
+			this.width = ratio >= 1 ? max : Math.round( max * ratio );
+			this.height = ratio >= 1 ? Math.round( max / ratio ) : max;
 
 			// The canvas' own width/height give it an intrinsic aspect ratio, which is
 			// what lets CSS scale it down by either axis without distorting it.
@@ -639,11 +661,19 @@ PC.views = PC.views || {};
 			if ( ! this.ctx ) return;
 			this.ctx.clearRect( 0, 0, this.width, this.height );
 
-			var rows = this.parent.rows();
+			// Without the screen (the zone editor's background): the layers given, front first
+			// like the screen's rows.
+			var parent = this.parent;
+			var rows = parent ? parent.rows() : _.map( this.layer_list().slice().reverse(), function( model ) {
+				return { model: model };
+			} );
+			var is_hidden = function( id ) {
+				return !! ( parent && parent.is_layer_hidden && parent.is_layer_hidden( id ) );
+			};
 			var highlighted = this.highlighted;
 			// If whatever is highlighted is not on screen, there is nothing to set off
 			// against the rest, so draw everything at full strength.
-			if ( null !== highlighted && this.parent.is_layer_hidden && this.parent.is_layer_hidden( highlighted ) ) {
+			if ( null !== highlighted && is_hidden( highlighted ) ) {
 				highlighted = null;
 			}
 
@@ -651,7 +681,7 @@ PC.views = PC.views || {};
 			for ( var i = rows.length - 1; i >= 0; i-- ) {
 				var row = rows[ i ];
 				if ( ! row || ! row.model ) continue;
-				if ( this.parent.is_layer_hidden && this.parent.is_layer_hidden( row.model.id ) ) continue;
+				if ( is_hidden( row.model.id ) ) continue;
 				var tile = this.tiles[ row.model.id ];
 				if ( ! tile ) continue;
 				this.ctx.globalAlpha = ( null === highlighted || row.model.id === highlighted ) ? 1 : 0.15;
@@ -718,6 +748,29 @@ PC.views = PC.views || {};
 			this.$el.toggleClass( 'is-loading', 'loading' === state );
 			this.$( '.mkl-pc-preview__spinner' ).toggleClass( 'is-active', 'loading' === state );
 			this.$( '.mkl-pc-preview__retry' ).prop( 'hidden', ! failed || 'loading' === state );
+		},
+	}, {
+
+		/**
+		 * Layers in the order their images stack, bottom first: the menu's order, or the
+		 * image order once one exists (any layer with an image_order above 0, as the
+		 * frontend viewer decides it).
+		 *
+		 * @param {Backbone.Collection} layers
+		 * @return {Array<Backbone.Model>}
+		 */
+		stack_order: function( layers ) {
+			var by = function( attr ) {
+				return function( m ) {
+					var value = parseFloat( m.get( attr ) );
+					return isNaN( value ) ? 0 : value;
+				};
+			};
+			var models = _.sortBy( layers.models, by( 'order' ) );
+			var custom = _.find( models, function( m ) {
+				return by( 'image_order' )( m ) > 0;
+			} );
+			return custom ? _.sortBy( models, by( 'image_order' ) ) : models;
 		},
 	} );
 

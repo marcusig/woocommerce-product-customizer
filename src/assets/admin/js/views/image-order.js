@@ -329,14 +329,7 @@ PC.views = PC.views || {};
 		 * @return {Array} layer models
 		 */
 		stack_order: function() {
-			var by = function( attr ) {
-				return function( m ) {
-					var value = parseFloat( m.get( attr ) );
-					return isNaN( value ) ? 0 : value;
-				};
-			};
-			var models = _.sortBy( this.col.models, by( 'order' ) );
-			return this.has_custom_order() ? _.sortBy( models, by( 'image_order' ) ) : models;
+			return PC.views.image_order_preview.stack_order( this.col );
 		},
 
 		/* ----------------------------------------------------------------- list */

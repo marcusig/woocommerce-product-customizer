@@ -13,6 +13,10 @@
 
 	Options:
 	- title, angle_name;
+	- angle_id: the view. The zone is then drawn over the view's default configuration (every
+	  layer's default choice on it, stacked as the Image order screen previews it), the
+	  reference image only giving the zone's pixel space. Choosing another image shows that
+	  image instead;
 	- zone: the zone to edit (copied: nothing changes before Done);
 	- mask_url: a mask shown over the image, the layer's or the zone's (where the zone can show).
 	  A zone without a position starts on the box around its opaque pixels;
@@ -52,10 +56,16 @@ PC.views = PC.views || {};
 
 		initialize: function( options ) {
 			this.options = options || {};
+			this.background = null;
+			// The view's default configuration under the zone, until an image is chosen.
+			this.use_background = undefined !== this.options.angle_id && null !== this.options.angle_id && !! PC.views.image_order_preview;
 			var zone = this.options.zone || {};
 			this.zone = {
 				ref_image: zone.ref_image ? _.clone( zone.ref_image ) : null,
-				position: zone.position ? _.clone( zone.position ) : null,
+				// Numbers, whatever the stored data holds.
+				position: zone.position ? PC.views.zone_editor.clamp( _.mapObject( zone.position, function( value ) {
+					return parseFloat( value ) || 0;
+				} ) ) : null,
 			};
 			this.scale = 1;
 			this._on_move = this.pointer_move.bind( this );
@@ -81,11 +91,8 @@ PC.views = PC.views || {};
 			var handles = _.map( HANDLES, function( handle ) {
 				return '<span class="mkl-pc-zone-editor__handle mkl-pc-zone-editor__handle--' + handle + '" data-handle="' + handle + '"></span>';
 			} ).join( '' );
-			return '<div class="mkl-pc-zone-editor">'
-				+ '<div class="mkl-pc-zone-editor__toolbar">'
+			var toolbar = '<div class="mkl-pc-zone-editor__toolbar">'
 				+ ( this.options.angle_name ? '<p class="mkl-pc-zone-editor__view">' + _.escape( this.options.angle_name ) + '</p>' : '' )
-				+ '<button type="button" class="button mkl-pc-zone-editor__image">' + _.escape( lang( 'choose_image', 'Choose the view\'s image' ) ) + '</button>'
-				+ '<p class="mkl-pc-zone-editor__image-name"></p>'
 				+ '<div class="mkl-pc-zone-editor__fields">'
 				+ field( 'x', lang( 'x', 'X (centre)' ) )
 				+ field( 'y', lang( 'y', 'Y (top)' ) )
@@ -94,17 +101,25 @@ PC.views = PC.views || {};
 				+ field( 'rotation', lang( 'rotation', 'Rotation (°)' ) )
 				+ '</div>'
 				+ '<p class="description">' + _.escape( lang( 'help', 'Drag the zone to move it, its handles to resize it. Arrow keys move it by one pixel, with Shift by ten.' ) ) + '</p>'
+				+ '<div class="mkl-pc-zone-editor__image-picker">'
+				+ '<button type="button" class="button mkl-pc-zone-editor__image">' + _.escape( lang( 'choose_image', 'Choose the view\'s image' ) ) + '</button>'
+				+ '<p class="mkl-pc-zone-editor__image-name"></p>'
 				+ '</div>'
+				+ '</div>';
+			// The picture takes the room; the settings sit on the right (below on narrow screens).
+			return '<div class="mkl-pc-zone-editor">'
 				+ '<div class="mkl-pc-zone-editor__viewport">'
 				+ '<p class="mkl-pc-zone-editor__empty">' + _.escape( lang( 'no_image', 'Choose the view\'s image to draw the zone on it.' ) ) + '</p>'
 				+ '<div class="mkl-pc-zone-editor__stage">'
 				+ '<img class="mkl-pc-zone-editor__picture" alt="">'
+				+ '<div class="mkl-pc-zone-editor__background"></div>'
 				+ ( this.options.mask_url ? '<img class="mkl-pc-zone-editor__mask" alt="" src="' + _.escape( this.options.mask_url ) + '">' : '' )
 				+ '<div class="mkl-pc-zone-editor__zone" tabindex="0" role="group" aria-label="' + _.escape( lang( 'zone', 'Zone' ) ) + '">'
 				+ '<div class="mkl-pc-zone-editor__inner"></div>' + handles
 				+ '</div>'
 				+ '</div>'
 				+ '</div>'
+				+ toolbar
 				+ '<div class="mkl-pc-admin-dialog__footer-actions">'
 				+ '<button type="button" class="button button-primary mkl-pc-zone-editor__done">' + _.escape( lang( 'done', 'Done' ) ) + '</button>'
 				+ '<button type="button" class="button mkl-pc-zone-editor__cancel">' + _.escape( lang( 'cancel', 'Cancel' ) ) + '</button>'
@@ -139,6 +154,8 @@ PC.views = PC.views || {};
 				this.zone.position = PC.views.zone_editor.rescale( this.zone.position, previous, ref_image );
 			}
 			this.zone.ref_image = ref_image;
+			// An image chosen on purpose: that is what the zone is drawn on.
+			this.use_background = false;
 			this.show_image();
 		},
 
@@ -147,6 +164,7 @@ PC.views = PC.views || {};
 			var has_image = !! ( ref_image && ref_image.url );
 			this.$( '.mkl-pc-admin-dialog' ).toggleClass( 'has-image', has_image );
 			this.$( '.mkl-pc-zone-editor__image-name' ).text( has_image ? PC.views.zone_editor.file_name( ref_image.url ) : '' );
+			this.show_background( has_image && this.use_background );
 			if ( ! has_image ) return;
 			var that = this;
 			this.$picture.one( 'load', function() {
@@ -154,6 +172,31 @@ PC.views = PC.views || {};
 					that.layout();
 				} );
 			} ).attr( 'src', ref_image.url );
+		},
+
+		/**
+		 * The view's default configuration, drawn by the Image order preview over the
+		 * reference image's box (the image itself stays, invisible, for the size).
+		 */
+		show_background: function( on ) {
+			this.$( '.mkl-pc-admin-dialog' ).toggleClass( 'has-background', !! on );
+			if ( ! on ) {
+				if ( this.background ) this.background.remove();
+				this.background = null;
+				return;
+			}
+			if ( this.background ) return;
+			try {
+				this.background = new PC.views.image_order_preview( {
+					angle_id: this.options.angle_id,
+					max_size: 1200,
+				} );
+				this.$( '.mkl-pc-zone-editor__background' ).append( this.background.$el );
+			} catch ( error ) {
+				console.log( 'Product configurator: the view could not be previewed under the zone.', error );
+				this.background = null;
+				this.$( '.mkl-pc-admin-dialog' ).removeClass( 'has-background' );
+			}
 		},
 
 		/**
@@ -295,6 +338,7 @@ PC.views = PC.views || {};
 
 		close: function( event ) {
 			this.pointer_up();
+			this.show_background( false );
 			$( window ).off( 'resize.mklPcZoneEditor_' + this.cid );
 			return PC.views.admin_dialog.prototype.close.call( this, event );
 		},

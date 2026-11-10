@@ -4584,74 +4584,95 @@ html .mkl-pc-admin-dialog-mount {
  * Zone editor (views/zone-editor.js): a zone drawn on a view's image.
  */
 .mkl-pc-admin-dialog--zone-editor {
+	--zone-editor-height: min(94vh, 1000px);
 	.mkl-pc-admin-dialog__panel {
-		width: min(100%, 1100px);
-		max-height: min(94vh, 900px);
+		width: min(100%, 1400px);
+		height: var(--zone-editor-height);
+		max-height: var(--zone-editor-height);
 	}
+	// The picture on the left, taking the room; the settings in a column on the right.
 	.mkl-pc-zone-editor {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 280px;
+		grid-template-rows: minmax(0, 1fr) auto;
 		flex: 1;
 		min-height: 0;
+		.mkl-pc-admin-dialog__footer-actions {
+			grid-column: 1 / -1;
+		}
 	}
 	.mkl-pc-zone-editor__toolbar {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 8px 16px;
-		padding: 12px 16px;
-		border-bottom: 1px solid $light-border-color;
+		flex-direction: column;
+		gap: 12px;
+		padding: 16px;
+		border-left: 1px solid $light-border-color;
+		overflow-y: auto;
 		.description {
-			flex-basis: 100%;
 			margin: 0;
 		}
 	}
 	.mkl-pc-zone-editor__view {
 		margin: 0;
 		font-weight: 600;
+		font-size: 14px;
+	}
+	.mkl-pc-zone-editor__image-picker {
+		margin-top: auto;
+		padding-top: 12px;
+		border-top: 1px solid $light-border-color;
 	}
 	.mkl-pc-zone-editor__image-name {
-		margin: 0;
+		margin: 6px 0 0;
 		color: #646970;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		max-width: 240px;
 	}
 	.mkl-pc-zone-editor__fields {
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
 		gap: 8px;
 	}
 	.mkl-pc-zone-editor__field {
 		display: flex;
 		flex-direction: column;
+		gap: 2px;
 		font-size: 11px;
 		color: #646970;
 		input {
-			width: 84px;
+			width: 100%;
 		}
 	}
 	.mkl-pc-zone-editor__viewport {
-		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		min-height: 0;
 		overflow: auto;
 		padding: 16px;
-		background: repeating-conic-gradient(#f0f0f1 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+		background: #f0f0f1;
 	}
 	.mkl-pc-zone-editor__empty {
 		margin: 40px auto;
 		text-align: center;
 		color: #646970;
 	}
+	// One checkerboard, behind the image only: layer images are transparent.
 	.mkl-pc-zone-editor__stage {
 		display: none;
 		position: relative;
 		width: fit-content;
 		max-width: 100%;
-		margin: 0 auto;
+		margin: auto;
 		user-select: none;
 		touch-action: none;
+		background-color: #fff;
+		background-image:
+			linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%),
+			linear-gradient(45deg, #eaeaea 25%, transparent 25%, transparent 75%, #eaeaea 75%);
+		background-size: 16px 16px;
+		background-position: 0 0, 8px 8px;
 	}
 	&.has-image {
 		.mkl-pc-zone-editor__empty {
@@ -4664,8 +4685,50 @@ html .mkl-pc-admin-dialog-mount {
 	.mkl-pc-zone-editor__picture {
 		display: block;
 		max-width: 100%;
-		max-height: 70vh;
+		// The dialog's height, less its header, footer and the viewport's padding.
+		max-height: calc(var(--zone-editor-height) - 150px);
 		height: auto;
+	}
+	// The view's default configuration (the Image order preview), over the reference
+	// image's box; the image stays for the size.
+	.mkl-pc-zone-editor__background {
+		display: none;
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		.mkl-pc-preview,
+		.mkl-pc-preview__inner,
+		.mkl-pc-preview__canvas-wrap {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+			// The stage's checkerboard shows through.
+			background: none;
+			border: 0;
+			box-shadow: none;
+		}
+		.mkl-pc-preview__canvas {
+			display: block;
+			width: 100% !important;
+			height: 100% !important;
+			max-width: none;
+			max-height: none !important;
+			// The stage has the checkerboard.
+			background: none;
+			border-radius: 0;
+		}
+		.mkl-pc-preview__side {
+			display: none;
+		}
+	}
+	&.has-background {
+		.mkl-pc-zone-editor__picture {
+			visibility: hidden;
+		}
+		.mkl-pc-zone-editor__background {
+			display: block;
+		}
 	}
 	// The mask, shown faintly: where the zone's content can show.
 	.mkl-pc-zone-editor__mask {
@@ -4715,6 +4778,21 @@ html .mkl-pc-admin-dialog-mount {
 	}
 	&.is-dragging {
 		cursor: grabbing;
+	}
+	@media (max-width: 782px) {
+		--zone-editor-height: 94vh;
+		.mkl-pc-zone-editor {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: minmax(0, 1fr) auto auto;
+		}
+		.mkl-pc-zone-editor__toolbar {
+			border-left: 0;
+			border-top: 1px solid $light-border-color;
+			max-height: 40vh;
+		}
+		.mkl-pc-zone-editor__picture {
+			max-height: calc(var(--zone-editor-height) * 0.5);
+		}
 	}
 }
 
