@@ -5807,3 +5807,10 @@ html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.i
 		margin-top: 8px;
 	}
 }
+
+// The settings' checkboxes copy the block editor's markup (settings/abstract.php), where React only
+// adds the tick when checked; ours is always there. WordPress 7.2 colours the tick with `color`, so
+// it is drawn in currentColor, and hidden here while unchecked.
+.components-checkbox-control__input:not(:checked) ~ svg.components-checkbox-control__checked {
+	display: none;
+}
