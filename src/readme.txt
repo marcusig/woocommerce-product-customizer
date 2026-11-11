@@ -4,7 +4,7 @@ Tags: 3D configurator, product customizer, product builder, woocommerce, request
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.1
-Stable tag: 2.1.0
+Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -252,8 +252,12 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.1.1 - unreleased
+= 2.2.0 - unreleased =
 
+* FEATURE: Each view can have its own image order (canvas viewer)
+* TWEAK: Image order screen: the view, the order's state and its actions in one bar
+* DEV: Zone editor, mask picker and masks on canvas items, for add-ons
+* DEV: PC.fe.viewer.shown_choices filter, and a Fix images hook for images kept by add-ons
 * FIX: Product editor running out of memory on unmigrated configurators when Advanced Dynamic Pricing is active
 
 = 2.1.0 - 04/Nov/2026 =
