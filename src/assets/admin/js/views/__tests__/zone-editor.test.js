@@ -130,3 +130,27 @@ describe( 'removing the zone', () => {
 		expect( editor.close ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
+
+describe( 'what other add-ons keep and set', () => {
+	test( 'other position keys (text overlay\'s leading) survive rounding and moves', () => {
+		const Z = load();
+		const position = { x: 10.4, y: 20.6, width: 100.2, height: 50.7, rotation: 12.345, leading: 7 };
+		expect( Z.rounded( position ) ).toEqual( { x: 10, y: 21, width: 100, height: 51, rotation: 12.3, leading: 7 } );
+		expect( Z.move( position, 5, 5 ).leading ).toBe( 7 );
+		expect( Z.clamp( position ).leading ).toBe( 7 );
+	} );
+
+	test( 'a default_position option places a new zone', async () => {
+		const View = load();
+		const editor = { options: { default_position: () => ( { x: 50, y: 10, width: 2, height: 30, rotation: 0 } ) }, zone: { ref_image: { width: 400, height: 300 }, position: null } };
+		await View.prototype.ensure_position.call( editor );
+		// Clamped: at least 4 px wide.
+		expect( editor.zone.position ).toEqual( { x: 50, y: 10, width: 4, height: 30, rotation: 0 } );
+	} );
+
+	test( 'labels: the caller\'s first, then the editor\'s', () => {
+		const View = load();
+		expect( View.prototype.label.call( { options: { labels: { choose_image: 'Choose a texture' } } }, 'choose_image', 'x' ) ).toBe( 'Choose a texture' );
+		expect( View.prototype.label.call( { options: {} }, 'no_image', 'Fallback' ) ).toBe( 'Fallback' );
+	} );
+} );

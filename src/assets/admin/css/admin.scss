@@ -4909,9 +4909,11 @@ html .mkl-pc-admin-dialog-mount {
 			outline-offset: 2px;
 		}
 	}
+	// The zone's whole box, border included: an absolute child starts inside the border, and a
+	// preview drawn there (text overlay's text) was off by the border's width.
 	.mkl-pc-zone-editor__inner {
 		position: absolute;
-		inset: 0;
+		inset: -2px;
 		overflow: hidden;
 		pointer-events: none;
 	}
@@ -5813,4 +5815,15 @@ html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.i
 // it is drawn in currentColor, and hidden here while unchecked.
 .components-checkbox-control__input:not(:checked) ~ svg.components-checkbox-control__checked {
 	display: none;
+}
+
+// An add-on's own settings in the zone editor's side column (text overlay's text settings).
+.mkl-pc-zone-editor__settings {
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid #dcdcde;
+
+	&:empty {
+		display: none;
+	}
 }

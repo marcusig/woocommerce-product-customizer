@@ -8,7 +8,8 @@
 		ref_image: { url, id, width, height },  // the view's image the zone is drawn on
 		position: { x, y, width, height, rotation }
 	}
-	in the reference image's pixels. (x, y) is the zone's TOP CENTRE, and the zone turns around it
+	in the reference image's pixels. Other keys in `position` (text overlay's `leading`) are kept
+	as they are. (x, y) is the zone's TOP CENTRE, and the zone turns around it
 	by `rotation` degrees, as text overlay draws it (text-drawing.js, pivot at width / 2, 0).
 
 	Options:
@@ -20,9 +21,24 @@
 	- zone: the zone to edit (copied: nothing changes before Done);
 	- mask_url: a mask shown over the image, the layer's or the zone's (where the zone can show).
 	  A zone without a position starts on the box around its opaque pixels;
-	- decorate( $inner, zone ): draw a preview inside the zone (a sample image, text);
+	- exclude_layer_id: a layer left out of that background (the one whose zone this is, when it
+	  draws something there itself);
+	- default_position( ref_image ): the position a zone without one starts at (else the mask's
+	  opaque box, or centred);
+	- decorate( $inner, zone, editor ): draw a preview inside the zone (a sample image, text);
+	- settings( $panel, editor ): add the caller's own settings to the side column, under the
+	  zone's. Call editor.redraw() when they change what decorate() draws;
+	- image_size: the image size (a WordPress size name) to take when an image is chosen, when the
+	  attachment has it; else the full image. A zone's pixels must be the size its images are
+	  drawn at;
+	- labels: { choose_image, no_image } to name the reference image otherwise
+	  (a texture, in 3D);
 	- save( zone ): called on Done with the edited zone;
-	- remove(): when given, the footer has "Remove the zone", which calls it and closes.
+	- remove(): when given, the footer has "Remove the zone", which calls it and closes;
+	- on_close(): after the dialog closes, whichever way (Done, Cancel, Escape, Remove).
+
+	PC.views.zone_editor.view_image( angle_id, choice ) gives a view's reference image when a zone
+	has none yet: the choice's own image there, else the first one of its layer, else of any layer.
 
 	Hooks: action `PC.admin.zone_editor.render` ( editor ) after each drawing of the zone.
 */
@@ -48,6 +64,7 @@ PC.views = PC.views || {};
 				'select-media': 'select_image',
 				'input .mkl-pc-zone-editor__field input': 'field_changed',
 				'change .mkl-pc-zone-editor__field input': 'field_changed',
+				'focusout .mkl-pc-zone-editor__field input': 'field_left',
 				'pointerdown .mkl-pc-zone-editor__zone': 'pointer_down',
 				'keydown .mkl-pc-zone-editor__zone': 'key_down',
 				'click .mkl-pc-zone-editor__done': 'done',
@@ -81,8 +98,26 @@ PC.views = PC.views || {};
 			this.$stage = this.$( '.mkl-pc-zone-editor__stage' );
 			this.$picture = this.$( '.mkl-pc-zone-editor__picture' );
 			this.$zone = this.$( '.mkl-pc-zone-editor__zone' );
+			if ( this.options.settings ) {
+				try {
+					this.options.settings( this.$( '.mkl-pc-zone-editor__settings' ), this );
+				} catch ( error ) {
+					console.log( 'Product configurator: the zone editor\'s settings could not be added.', error );
+				}
+			}
 			this.show_image();
 			this.open();
+		},
+
+		/** The caller's label for a text, else the editor's own. */
+		label: function( key, fallback ) {
+			var labels = this.options.labels || {};
+			return labels[ key ] || lang( key, fallback );
+		},
+
+		/** Draw the zone again: the caller's settings changed what decorate() draws. */
+		redraw: function() {
+			this.draw();
 		},
 
 		renderDialogBody: function() {
@@ -104,14 +139,15 @@ PC.views = PC.views || {};
 				+ '</div>'
 				+ '<p class="description">' + _.escape( lang( 'help', 'Drag the zone to move it, its handles to resize it. Arrow keys move it by one pixel, with Shift by ten.' ) ) + '</p>'
 				+ '<div class="mkl-pc-zone-editor__image-picker">'
-				+ '<button type="button" class="button mkl-pc-zone-editor__image">' + _.escape( lang( 'choose_image', 'Choose the view\'s image' ) ) + '</button>'
+				+ '<button type="button" class="button mkl-pc-zone-editor__image">' + _.escape( this.label( 'choose_image', 'Choose the view\'s image' ) ) + '</button>'
 				+ '<p class="mkl-pc-zone-editor__image-name"></p>'
 				+ '</div>'
+				+ '<div class="mkl-pc-zone-editor__settings"></div>'
 				+ '</div>';
 			// The picture takes the room; the settings sit on the right (below on narrow screens).
 			return '<div class="mkl-pc-zone-editor">'
 				+ '<div class="mkl-pc-zone-editor__viewport">'
-				+ '<p class="mkl-pc-zone-editor__empty">' + _.escape( lang( 'no_image', 'Choose the view\'s image to draw the zone on it.' ) ) + '</p>'
+				+ '<p class="mkl-pc-zone-editor__empty">' + _.escape( this.label( 'no_image', 'Choose the view\'s image to draw the zone on it.' ) ) + '</p>'
 				+ '<div class="mkl-pc-zone-editor__stage">'
 				+ '<img class="mkl-pc-zone-editor__picture" alt="">'
 				+ '<div class="mkl-pc-zone-editor__background"></div>'
@@ -151,6 +187,13 @@ PC.views = PC.views || {};
 				width: parseInt( attachment.get( 'width' ), 10 ) || 0,
 				height: parseInt( attachment.get( 'height' ), 10 ) || 0,
 			};
+			var sizes = attachment.get( 'sizes' );
+			var sized = this.options.image_size && sizes && sizes[ this.options.image_size ];
+			if ( sized && sized.url && sized.width && sized.height ) {
+				ref_image.url = sized.url;
+				ref_image.width = parseInt( sized.width, 10 );
+				ref_image.height = parseInt( sized.height, 10 );
+			}
 			if ( ! ref_image.width || ! ref_image.height ) return;
 			// Another size: the zone keeps its place relative to the image.
 			if ( this.zone.position && previous && previous.width && previous.height ) {
@@ -190,10 +233,15 @@ PC.views = PC.views || {};
 			}
 			if ( this.background ) return;
 			try {
-				this.background = new PC.views.image_order_preview( {
-					angle_id: this.options.angle_id,
-					max_size: 1200,
-				} );
+				var options = { angle_id: this.options.angle_id, max_size: 1200 };
+				var excluded = this.options.exclude_layer_id;
+				if ( undefined !== excluded && null !== excluded ) {
+					var layers = PC.app.get_collection( 'layers' );
+					options.layers = _.reject( PC.views.image_order_preview.stack_order( layers, this.options.angle_id ), function( layer ) {
+						return String( layer.id ) === String( excluded );
+					} );
+				}
+				this.background = new PC.views.image_order_preview( options );
 				this.$( '.mkl-pc-zone-editor__background' ).append( this.background.$el );
 			} catch ( error ) {
 				console.log( 'Product configurator: the view could not be previewed under the zone.', error );
@@ -211,6 +259,13 @@ PC.views = PC.views || {};
 			var that = this;
 			var ref_image = this.zone.ref_image;
 			if ( this.zone.position || ! ref_image ) return Promise.resolve();
+			if ( this.options.default_position ) {
+				var given = this.options.default_position( ref_image );
+				if ( given ) {
+					this.zone.position = PC.views.zone_editor.clamp( given );
+					return Promise.resolve();
+				}
+			}
 			var centred = function() {
 				that.zone.position = that.zone.position || PC.views.zone_editor.default_position( ref_image );
 			};
@@ -248,16 +303,17 @@ PC.views = PC.views || {};
 				height: position.height * scale + 'px',
 				transform: 'rotate(' + ( parseFloat( position.rotation ) || 0 ) + 'deg)',
 			} );
-			var focused = document.activeElement;
+			// Not the field being typed in: only focused (the dialog focuses the first one), it is filled.
+			var typing = this.typing;
 			this.$( '.mkl-pc-zone-editor__field input' ).each( function() {
-				if ( this === focused ) return;
+				if ( this === typing && this === document.activeElement ) return;
 				var value = position[ this.getAttribute( 'data-field' ) ];
 				this.value = Math.round( parseFloat( value ) || 0 );
 			} );
 			var $inner = this.$( '.mkl-pc-zone-editor__inner' );
 			if ( this.options.decorate ) {
 				try {
-					this.options.decorate( $inner, this.zone );
+					this.options.decorate( $inner, this.zone, this );
 				} catch ( error ) {
 					console.log( 'Product configurator: the zone preview could not be drawn.', error );
 				}
@@ -275,6 +331,7 @@ PC.views = PC.views || {};
 		 * ------------------------------------------------------------------ */
 
 		field_changed: function( event ) {
+			this.typing = event.currentTarget;
 			if ( ! this.zone.position ) return;
 			var name = event.currentTarget.getAttribute( 'data-field' );
 			var value = parseFloat( event.currentTarget.value );
@@ -282,6 +339,12 @@ PC.views = PC.views || {};
 			var position = _.clone( this.zone.position );
 			position[ name ] = value;
 			this.set_position( position );
+		},
+
+		/** Leaving a field: it shows the zone's value again (rounded, clamped). */
+		field_left: function() {
+			this.typing = null;
+			this.draw();
 		},
 
 		pointer_down: function( event ) {
@@ -349,7 +412,13 @@ PC.views = PC.views || {};
 			this.pointer_up();
 			this.show_background( false );
 			$( window ).off( 'resize.mklPcZoneEditor_' + this.cid );
-			return PC.views.admin_dialog.prototype.close.call( this, event );
+			var result = PC.views.admin_dialog.prototype.close.call( this, event );
+			if ( this.options.on_close ) {
+				var on_close = this.options.on_close;
+				this.options.on_close = null;
+				on_close();
+			}
+			return result;
 		},
 	}, {
 
@@ -436,13 +505,14 @@ PC.views = PC.views || {};
 		},
 
 		rounded: function( position ) {
-			return {
+			// Other keys (text overlay's leading) as they are.
+			return _.extend( {}, position, {
 				x: Math.round( position.x ),
 				y: Math.round( position.y ),
 				width: Math.round( position.width ),
 				height: Math.round( position.height ),
 				rotation: Math.round( ( parseFloat( position.rotation ) || 0 ) * 10 ) / 10,
-			};
+			} );
 		},
 
 		/**
@@ -508,6 +578,50 @@ PC.views = PC.views || {};
 				};
 				image.src = url;
 			} );
+		},
+
+		/**
+		 * A view's reference image, { url, id, width, height }: the choice's own image on that
+		 * view, else the first image there of the choice's layer, else of any layer. Null when
+		 * the view has no image with stored dimensions.
+		 *
+		 * @param {String|Number}  angle_id
+		 * @param {Backbone.Model} [choice]
+		 * @return {Object|null}
+		 */
+		view_image: function( angle_id, choice ) {
+			var from_choice = function( model ) {
+				var images = model && model.get( 'images' );
+				if ( ! images || ! images.find ) return null;
+				var picture = images.find( function( image ) {
+					return String( image.get( 'angleId' ) ) === String( angle_id );
+				} );
+				var image = picture && picture.get( 'image' );
+				if ( ! image || ! image.url || ! image.dimensions ) return null;
+				var width = parseInt( image.dimensions.width, 10 );
+				var height = parseInt( image.dimensions.height, 10 );
+				if ( ! width || ! height ) return null;
+				return { url: image.url, id: image.id || 0, width: width, height: height };
+			};
+			var first_in = function( choices ) {
+				var result = null;
+				if ( choices && choices.find ) {
+					choices.find( function( model ) {
+						result = from_choice( model );
+						return !! result;
+					} );
+				}
+				return result;
+			};
+			var found = choice ? from_choice( choice ) || first_in( choice.collection ) : null;
+			if ( found ) return found;
+			var layers = PC.app && PC.app.get_collection && PC.app.get_collection( 'layers' );
+			if ( ! layers ) return null;
+			layers.find( function( layer ) {
+				found = first_in( PC.app.get_layer_content( layer.id ) );
+				return !! found;
+			} );
+			return found;
 		},
 
 		file_name: function( url ) {
