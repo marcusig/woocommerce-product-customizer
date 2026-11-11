@@ -88,6 +88,12 @@ final class Linker {
 					if ( isset( $layer['image_order'] ) ) {
 						$resolved['image_order'] = $layer['image_order'];
 					}
+					// Keyed by this product's view ids: never shared.
+					if ( isset( $layer['image_order_by_angle'] ) ) {
+						$resolved['image_order_by_angle'] = $layer['image_order_by_angle'];
+					} else {
+						unset( $resolved['image_order_by_angle'] );
+					}
 					// This link's own settings (docs/global-layer-overrides-spec.md). Handed on as
 					// well, so the editor knows which values are the link's and keeps the others.
 					$overrides = self::normalize_overrides( isset( $layer['overrides'] ) ? $layer['overrides'] : null );
@@ -235,6 +241,9 @@ final class Linker {
 				}
 				if ( isset( $layer['image_order'] ) ) {
 					$ref['image_order'] = $layer['image_order'];
+				}
+				if ( isset( $layer['image_order_by_angle'] ) ) {
+					$ref['image_order_by_angle'] = $layer['image_order_by_angle'];
 				}
 				$overrides = self::overrides_from_layer( $layer );
 				if ( $overrides ) {
@@ -535,7 +544,8 @@ final class Linker {
 				if ( $overrides ) {
 					$local = self::apply_overrides( $local, $overrides );
 				}
-				foreach ( array( '_id', 'id', 'order', 'image_order' ) as $key ) {
+				unset( $local['image_order_by_angle'] );
+				foreach ( array( '_id', 'id', 'order', 'image_order', 'image_order_by_angle' ) as $key ) {
 					if ( isset( $layer[ $key ] ) ) {
 						$local[ $key ] = $layer[ $key ];
 					}
@@ -575,7 +585,7 @@ final class Linker {
 	 * @return string[]
 	 */
 	public static function override_excluded_fields() {
-		$excluded = array( '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'overrides' );
+		$excluded = array( '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides' );
 		/**
 		 * Filter the layer settings a link to a global layer cannot override.
 		 *

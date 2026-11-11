@@ -194,7 +194,9 @@ PC.fe.save_data = {
 		// Save where the layer sits in the merged image, so the stacking order of a saved
 		// configuration survives the layers being reordered later. `image_order` is only set on
 		// the layers that are composited out of the layer order.
-		var image_order = parseInt( model_data.image_order, 10 );
+		// The cart view's own order when it has one (canvas viewer): the server composes that view.
+		var view_order = PC.fe.viewer_state ? PC.fe.viewer_state.view_image_order( model, angle_id ) : null;
+		var image_order = null !== view_order ? view_order : parseInt( model_data.image_order, 10 );
 		if ( isNaN( image_order ) ) image_order = parseInt( model_data.order, 10 );
 		if ( isNaN( image_order ) ) image_order = 0;
 		image_order = wp.hooks.applyFilters( 'PC.fe.save_data.parse_choices.image_order', image_order, model );

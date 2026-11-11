@@ -102,24 +102,63 @@ PC.fe.viewer_state = {
 	},
 
 	/**
+	 * Where a layer sits in a view's picture, bottom first: the view's own order when it has
+	 * one (`image_order_by_angle`, a sparse map of angle id to order, set by the Image order
+	 * screen; canvas viewer only), else the configurator's `image_order`.
+	 *
+	 * @param {Backbone.Model} layer
+	 * @param {String|Number}  [angle_id]
+	 * @return {Number}
+	 */
+	image_order: function( layer, angle_id ) {
+		var own = PC.fe.viewer_state.view_image_order( layer, angle_id );
+		if ( null !== own ) return own;
+		return parseInt( layer.get( 'image_order' ) ) || 0;
+	},
+
+	/**
+	 * Views have their own orders only in the canvas viewer: it keeps one stack per view.
+	 * The <img> stack keeps the configurator's order (decision, Marc 2026-11-10).
+	 */
+	has_view_orders: function() {
+		var Canvas = PC.fe.views && PC.fe.views.viewer_canvas;
+		return !! ( Canvas && Canvas.renderer && 'canvas' === Canvas.renderer() && ! Canvas.disabled );
+	},
+
+	/**
+	 * The view's own order for a layer, or null.
+	 */
+	view_image_order: function( layer, angle_id ) {
+		if ( undefined === angle_id || null === angle_id ) return null;
+		if ( ! PC.fe.viewer_state.has_view_orders() ) return null;
+		var map = layer.get( 'image_order_by_angle' );
+		if ( ! map || 'object' !== typeof map || ! Object.prototype.hasOwnProperty.call( map, angle_id ) ) return null;
+		var value = parseFloat( map[ angle_id ] );
+		return isNaN( value ) ? null : value;
+	},
+
+	/**
 	 * The layers, bottom of the picture first.
 	 *
+	 * @param {String|Number} [angle_id] The view: its own order when it has one.
 	 * @return {Array} layer models
 	 */
-	layers_in_image_order: function() {
+	layers_in_image_order: function( angle_id ) {
+		var state = PC.fe.viewer_state;
 		return PC.fe.layers.sortBy( function( layer ) {
-			return parseInt( layer.get( 'image_order' ) ) || 0;
+			return state.image_order( layer, angle_id );
 		} );
 	},
 
 	/**
 	 * Every choice in the current picture, bottom layer first.
 	 *
+	 * @param {String|Number} [angle_id] The view: its own order when it has one.
 	 * @return {Array} choice models
 	 */
-	picture: function() {
+	picture: function( angle_id ) {
 		var models = [];
-		_.each( this.layers_in_image_order(), function( layer ) {
+		_.each( this.layers_in_image_order( angle_id ), function( layer ) {
 			models.push.apply( models, this.shown_choices( layer ) );
 		}, this );
 		return models;

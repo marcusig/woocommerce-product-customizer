@@ -466,6 +466,37 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 						'cancel'       => __( 'Cancel', 'product-configurator-for-woocommerce' ),
 						'remove'       => __( 'Remove the zone', 'product-configurator-for-woocommerce' ),
 					),
+					// Views' own image orders: canvas viewer only (docs/canvas-viewer-spec.md, Order).
+					'image_order_views' => $this->view_image_orders_enabled(),
+					// The bar's state (image-order.js, sync_bar()).
+					'image_order_status_follows' => esc_html__( 'The images follow the layer list', 'product-configurator-for-woocommerce' ),
+					'image_order_status_custom' => esc_html__( 'The images have their own order', 'product-configurator-for-woocommerce' ),
+					'image_order_status_default_follows' => esc_html__( 'Default order · follows the layer list', 'product-configurator-for-woocommerce' ),
+					'image_order_status_default_custom' => esc_html__( 'Default order · custom', 'product-configurator-for-woocommerce' ),
+					'image_order_status_own' => esc_html__( 'Own order for this view', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view names, e.g. "Front, Side" */
+					'image_order_scope_shared' => esc_html__( 'Also used by %s.', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_scope_own_one' => esc_html__( '%s has its own order.', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view names, e.g. "Back, Side" */
+					'image_order_scope_own_many' => esc_html__( '%s have their own order.', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_scope_only' => esc_html__( 'Changes here only affect %s.', 'product-configurator-for-woocommerce' ),
+					'image_order_scope_dom' => esc_html__( 'Only the canvas viewer uses the orders of the views: with the image stack viewer, every view uses the default order.', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_fork' => esc_html__( 'Give %s its own order', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_reset' => esc_html__( 'Use the default order for %s', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_forked' => esc_html__( '%s now has its own order.', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_reset_confirm' => esc_html__( '%s will use the default order again. Continue?', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_reset_done' => esc_html__( '%s uses the default order.', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_refork_confirm' => esc_html__( 'The order of %s will be replaced by the default order. Continue?', 'product-configurator-for-woocommerce' ),
+					/* translators: %s: view name */
+					'image_order_view_reforked' => esc_html__( '%s starts again from the default order.', 'product-configurator-for-woocommerce' ),
 					'reset_image_order_confirm' => esc_html__( 'The images will be stacked in the layer order again. Continue?', 'product-configurator-for-woocommerce' ),
 					/* translators: %s: layer name */
 					'image_order_move_front' => esc_attr__( 'Move %s forward', 'product-configurator-for-woocommerce' ),
@@ -671,6 +702,19 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 		 * @param string $name - The screen post tyme
 		 * @return boolean
 		 */
+		/**
+		 * Whether views can have their own image order here: the product's 2D viewer is the
+		 * canvas viewer, which keeps a stack per view. Not on 3D configurators.
+		 *
+		 * @return bool
+		 */
+		private function view_image_orders_enabled() {
+			global $post;
+			$product_id = ( $post && isset( $post->ID ) ) ? (int) $post->ID : 0;
+			if ( $product_id && '3d' === mkl_pc_get_configurator_type( $product_id ) ) return false;
+			return 'canvas' === mkl_pc_get_viewer_2d_renderer( $product_id );
+		}
+
 		/**
 		 * Layer fields that follow another field's override switch on a linked global layer: its
 		 * translations (docs/global-layer-overrides-spec.md).

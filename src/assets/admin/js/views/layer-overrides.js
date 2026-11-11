@@ -40,12 +40,12 @@ PC.admin = PC.admin || {};
 		 * What makes the layer what it is, or is already the link's own: never overridden.
 		 * Mirrors Linker::override_excluded_fields().
 		 */
-		excluded: [ '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'overrides' ],
+		excluded: [ '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides' ],
 
 		/**
 		 * Attributes of the link itself, which a new global definition never replaces.
 		 */
-		link_attributes: [ '_id', 'id', 'layerId', 'is_global', 'global_id', 'order', 'image_order', 'overrides', 'active', 'parent' ],
+		link_attributes: [ '_id', 'id', 'layerId', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides', 'active', 'parent' ],
 
 		/**
 		 * A layer of this product linked to a global layer (not the global layer's own screen).

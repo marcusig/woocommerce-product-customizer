@@ -61,6 +61,25 @@ var PC = PC || {};
 			var max = this.maxOrder( 'image_order' );
 			return max > 0 ? max + 1 : 0;
 		},
+		/**
+		 * The views' own orders to give a new layer: in front, in each view that has one
+		 * (`image_order_by_angle`). Null when no view has its own order.
+		 *
+		 * @return {Object|null}
+		 */
+		next_image_order_by_angle: function() {
+			var next = {};
+			this.each( function( layer ) {
+				var own = layer.get( 'image_order_by_angle' );
+				if ( ! own || 'object' !== typeof own ) return;
+				_.each( own, function( value, angle_id ) {
+					value = parseFloat( value );
+					if ( isNaN( value ) ) return;
+					if ( ! _.has( next, angle_id ) || value + 1 > next[ angle_id ] ) next[ angle_id ] = value + 1;
+				} );
+			} );
+			return _.isEmpty( next ) ? null : next;
+		},
 		comparator: function( layer ) {
 			var value = parseFloat( layer.get( this.orderBy || 'order' ) );
 			// Stored values come back as strings, and the floating add button inserts
@@ -76,6 +95,7 @@ var PC = PC || {};
 				_id: PC.app.get_new_id( this ),
 				order: this.nextOrder(),
 				image_order: this.next_image_order(),
+				image_order_by_angle: this.next_image_order_by_angle() || undefined,
 				active: true,
 				is_global: false,
 				global_id: null

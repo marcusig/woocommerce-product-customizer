@@ -114,6 +114,22 @@ PC.views = PC.views || {};
 					} );
 					
 				}, this );
+				// Its own image order goes too: view ids are reused, and a new view must not
+				// inherit an old one's order.
+				if ( this.layers ) {
+					this.layers.each( function( layer ) {
+						var own = layer.get( 'image_order_by_angle' );
+						if ( ! own || 'object' !== typeof own || ! _.has( own, model.id ) ) return;
+						var next = _.omit( own, String( model.id ) );
+						if ( _.isEmpty( next ) ) {
+							layer.unset( 'image_order_by_angle' );
+						} else {
+							layer.set( 'image_order_by_angle', next );
+						}
+						PC.app.is_modified.layers = true;
+						if ( layer.get( '_id' ) && PC.app.modified_layer_ids ) PC.app.modified_layer_ids[ layer.get( '_id' ) ] = true;
+					} );
+				}
 				PC.app.is_modified[ 'content' ] = true;
 				if ( PC.app.syncSidebarSaveButtonState ) {
 					PC.app.syncSidebarSaveButtonState();

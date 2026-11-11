@@ -299,4 +299,54 @@ describe( 'PC.fe.viewer_state rules', () => {
 		install( { layers: make_collection( layers ), contents: {} }, false );
 		expect( PC.fe.viewer_state.layers_in_image_order().map( ( layer ) => layer.id ) ).toEqual( [ 2, 4, 3, 1 ] );
 	} );
+
+	describe( 'a view\'s own order (image_order_by_angle)', () => {
+		const layers = () => [
+			make_model( { id: 1, image_order: 0, image_order_by_angle: { 2: '2' } } ),
+			make_model( { id: 2, image_order: 1, image_order_by_angle: { 2: 0 } } ),
+			make_model( { id: 3, image_order: 2, image_order_by_angle: { 2: '1', 3: 'x' } } ),
+		];
+		const with_canvas = ( canvas ) => {
+			PC.fe.views = { viewer_canvas: { renderer: () => ( canvas ? 'canvas' : 'dom' ), disabled: false } };
+		};
+		const ids = ( angle_id ) => PC.fe.viewer_state.layers_in_image_order( angle_id ).map( ( layer ) => layer.id );
+
+		test( 'the canvas viewer stacks a view in its own order', () => {
+			install( { layers: make_collection( layers() ), contents: {} }, false );
+			with_canvas( true );
+			expect( ids( 2 ) ).toEqual( [ 2, 3, 1 ] );
+			expect( ids( '2' ) ).toEqual( [ 2, 3, 1 ] );
+		} );
+
+		test( 'other views, no view and unreadable values keep the default order', () => {
+			install( { layers: make_collection( layers() ), contents: {} }, false );
+			with_canvas( true );
+			expect( ids( 1 ) ).toEqual( [ 1, 2, 3 ] );
+			expect( ids() ).toEqual( [ 1, 2, 3 ] );
+			expect( ids( 3 ) ).toEqual( [ 1, 2, 3 ] );
+			expect( PC.fe.viewer_state.view_image_order( layers()[ 2 ], 3 ) ).toBe( null );
+		} );
+
+		test( 'the image stack viewer ignores it', () => {
+			install( { layers: make_collection( layers() ), contents: {} }, false );
+			with_canvas( false );
+			expect( ids( 2 ) ).toEqual( [ 1, 2, 3 ] );
+			PC.fe.views.viewer_canvas = { renderer: () => 'canvas', disabled: { reason: 'webgl' } };
+			expect( ids( 2 ) ).toEqual( [ 1, 2, 3 ] );
+		} );
+
+		test( 'a layer without one keeps its image order in that view', () => {
+			const list = layers();
+			list.push( make_model( { id: 4, image_order: 5 } ) );
+			install( { layers: make_collection( list ), contents: {} }, false );
+			with_canvas( true );
+			expect( ids( 2 ) ).toEqual( [ 2, 3, 1, 4 ] );
+		} );
+
+		test( 'an empty map (an empty PHP array) is no order', () => {
+			install( { layers: make_collection( [ make_model( { id: 1, image_order: 1, image_order_by_angle: [] } ), make_model( { id: 2, image_order: 0 } ) ] ), contents: {} }, false );
+			with_canvas( true );
+			expect( ids( 1 ) ).toEqual( [ 2, 1 ] );
+		} );
+	} );
 } );

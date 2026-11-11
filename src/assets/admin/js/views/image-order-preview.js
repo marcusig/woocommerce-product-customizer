@@ -92,7 +92,7 @@ PC.views = PC.views || {};
 		layer_list: function() {
 			if ( this.options.layers ) return this.options.layers;
 			if ( this.parent || ! this.col ) return this.col ? this.col.models : [];
-			return PC.views.image_order_preview.stack_order( this.col );
+			return PC.views.image_order_preview.stack_order( this.col, this.angle_id );
 		},
 
 		remove: function() {
@@ -113,8 +113,9 @@ PC.views = PC.views || {};
 
 		render: function() {
 			this.$el.html( this.template( {
-				// A fixed view has no selector.
-				angles: this.angles && undefined === this.options.angle_id ? this.angles.map( function( a ) {
+				// A fixed view has no selector, nor the Image order screen's preview: the screen's bar
+				// picks the view (the list follows it too).
+				angles: this.angles && undefined === this.options.angle_id && ! this.parent ? this.angles.map( function( a ) {
 					return { id: a.id, name: a.get( 'name' ) || '' };
 				} ) : [],
 				angle_id: this.angle_id,
@@ -716,7 +717,16 @@ PC.views = PC.views || {};
 			// "2" that should be a 2 quietly matches nothing.
 			var value = $( e.currentTarget ).val();
 			var angle = this.angles ? this.angles.get( value ) : null;
-			this.angle_id = angle ? angle.id : value;
+			this.set_angle( angle ? angle.id : value );
+		},
+
+		/**
+		 * Show another view (the Image order screen's bar picks it).
+		 *
+		 * @param {String|Number} angle_id
+		 */
+		set_angle: function( angle_id ) {
+			this.angle_id = angle_id;
 			this.build();
 			// Conditions can test which view is selected, so what they hide is a
 			// per-view answer too.
@@ -759,7 +769,7 @@ PC.views = PC.views || {};
 		 * @param {Backbone.Collection} layers
 		 * @return {Array<Backbone.Model>}
 		 */
-		stack_order: function( layers ) {
+		stack_order: function( layers, angle_id ) {
 			var by = function( attr ) {
 				return function( m ) {
 					var value = parseFloat( m.get( attr ) );
@@ -767,10 +777,35 @@ PC.views = PC.views || {};
 				};
 			};
 			var models = _.sortBy( layers.models, by( 'order' ) );
+			// The view's own order (image_order_by_angle), as the canvas viewer resolves it
+			// (PC.fe.viewer_state.image_order()): a layer without one keeps its image_order.
+			var own = PC.views.image_order_preview.view_order;
+			if ( undefined !== angle_id && null !== angle_id && _.some( models, function( m ) {
+				return null !== own( m, angle_id );
+			} ) ) {
+				return _.sortBy( models, function( m ) {
+					var value = own( m, angle_id );
+					return null !== value ? value : by( 'image_order' )( m );
+				} );
+			}
 			var custom = _.find( models, function( m ) {
 				return by( 'image_order' )( m ) > 0;
 			} );
 			return custom ? _.sortBy( models, by( 'image_order' ) ) : models;
+		},
+
+		/**
+		 * A layer's position in a view's own order, or null when the view has none for it.
+		 *
+		 * @param {Backbone.Model} layer
+		 * @param {String|Number}  angle_id
+		 * @return {Number|null}
+		 */
+		view_order: function( layer, angle_id ) {
+			var map = layer.get( 'image_order_by_angle' );
+			if ( ! map || 'object' !== typeof map || ! _.has( map, String( angle_id ) ) ) return null;
+			var value = parseFloat( map[ angle_id ] );
+			return isNaN( value ) ? null : value;
 		},
 	} );
 

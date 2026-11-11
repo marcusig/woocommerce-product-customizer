@@ -305,12 +305,33 @@ class Choice {
 	 *                    exists and the configuration pre-dates the saving of `image_order`.
 	 */
 	public function get_image_order() {
+		// A stored configuration saved its view's order already (save-data.js).
+		$saved = $this->is_stored() ? $this->get_saved( 'image_order' ) : null;
+		if ( null === $saved ) {
+			$own = $this->get_view_image_order();
+			if ( null !== $own ) return $own;
+		}
+
 		$order = $this->get_layer( 'image_order' );
 
 		// `image_order` is false on layers that follow the layer order instead.
 		if ( ! is_numeric( $order ) ) $order = $this->get_layer( 'order' );
 
 		return is_numeric( $order ) ? (int) $order : null;
+	}
+
+	/**
+	 * This view's own position for the layer (`image_order_by_angle`, set on the Image order
+	 * screen), or null when the view follows the configurator's order. Canvas viewer only:
+	 * the image stack keeps one order for every view.
+	 *
+	 * @return int|null
+	 */
+	public function get_view_image_order() {
+		$by_angle = $this->get_layer( 'image_order_by_angle' );
+		if ( ! is_array( $by_angle ) || ! isset( $by_angle[ $this->angle_id ] ) || ! is_numeric( $by_angle[ $this->angle_id ] ) ) return null;
+		if ( 'canvas' !== mkl_pc_get_viewer_2d_renderer( $this->product_id ) ) return null;
+		return (int) $by_angle[ $this->angle_id ];
 	}
 
 	public function set_choice( $key, $value ) {

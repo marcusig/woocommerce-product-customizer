@@ -385,7 +385,9 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		stack.frame.addChild( stack.container );
 		this.app.stage.addChild( stack.frame );
 
-		_.each( PC.fe.viewer_state.layers_in_image_order(), function( layer, index ) {
+		// In the view's own order when it has one: each view keeps its stack, so a view's
+		// order is set once, here, and switching views reorders nothing.
+		_.each( PC.fe.viewer_state.layers_in_image_order( angle_id ), function( layer, index ) {
 			var node = new PIXI.Container();
 			node.sortableChildren = true;
 			node.zIndex = index;
@@ -1979,7 +1981,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 
 		var queue = [];
 		var seen = {};
-		_.each( PC.fe.viewer_state.layers_in_image_order(), function( layer ) {
+		_.each( PC.fe.viewer_state.layers_in_image_order( stack.angle_id ), function( layer ) {
 			var choices = PC.fe.getLayerContent( layer.id );
 			if ( ! choices ) return;
 			choices.each( function( choice ) {
@@ -2301,18 +2303,19 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Array<Object>}
 	 */
 	picture_items: function( stack ) {
-		return this.parts_of( this.ordered_choices(), stack.angle_id );
+		return this.parts_of( this.ordered_choices( stack.angle_id ), stack.angle_id );
 	},
 
 	/**
 	 * The choices drawn now, in drawing order.
 	 *
+	 * @param {String|Number} angle_id The view: its own order when it has one.
 	 * @return {Array<Backbone.Model>}
 	 */
-	ordered_choices: function() {
+	ordered_choices: function( angle_id ) {
 		var state = PC.fe.viewer_state;
 		var list = [];
-		_.each( state.layers_in_image_order(), function( layer ) {
+		_.each( state.layers_in_image_order( angle_id ), function( layer ) {
 			var choices = PC.fe.getLayerContent( layer.id );
 			var shown = state.shown_choices( layer );
 			if ( choices && shown.length > 1 ) {
@@ -3053,7 +3056,7 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		var state = PC.fe.viewer_state;
 
 		/** This filter is documented in viewer.js (get_capture_models). */
-		var models = wp.hooks.applyFilters( 'PC.fe.viewer.capture.models', state.picture(), this );
+		var models = wp.hooks.applyFilters( 'PC.fe.viewer.capture.models', state.picture( angle.id ), this );
 
 		var parts = this.parts_of( models, angle.id );
 		if ( ! parts.length ) return null;

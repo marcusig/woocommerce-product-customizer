@@ -2466,9 +2466,27 @@ html .pc-modal-container {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	justify-content: space-between;
 	gap: 8px 12px;
 	margin-bottom: 12px;
+}
+
+// "Order for [view]": what the list is editing.
+.mkl-pc-order-view {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: #646970;
+
+	&[hidden] {
+		display: none;
+	}
+
+	.mkl-pc-order-view__select {
+		min-height: 30px;
+		font-weight: 600;
+		color: #1d2327;
+	}
 }
 
 .mkl-pc-order-state {
@@ -2487,20 +2505,8 @@ html .pc-modal-container {
 		background: #c3c4c7;
 	}
 
-	.mkl-pc-order-state__chip--custom {
-		display: none;
-	}
-
 	&.is-custom {
 		color: #1d2327;
-
-		.mkl-pc-order-state__chip--follows {
-			display: none;
-		}
-
-		.mkl-pc-order-state__chip--custom {
-			display: inline;
-		}
 
 		.mkl-pc-order-state__dot {
 			background: var(--wp-admin-theme-color, #2271b1);
@@ -2508,14 +2514,110 @@ html .pc-modal-container {
 	}
 }
 
-.mkl-pc-image-order .mkl-pc-order-reset {
-	display: none;
-	flex: 0 0 auto;
-	font-size: 13px;
+// The actions that apply, in one menu (the look of the Layers screen's "More actions").
+.mkl-pc-order-menu {
+	position: relative;
+	margin-left: auto;
+
+	&[hidden] {
+		display: none;
+	}
+
+	.mkl-pc-order-menu__toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 30px;
+		min-height: 30px;
+		padding: 0;
+
+		svg {
+			fill: currentColor;
+		}
+	}
+
+	.mkl-pc-order-menu__list {
+		position: absolute;
+		top: calc(100% + 4px);
+		right: 0;
+		min-width: 260px;
+		max-width: min(340px, 92vw);
+		padding: 6px 0;
+		background: #fff;
+		border: 1px solid #dcdcde;
+		border-radius: 4px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+		z-index: 30;
+		box-sizing: border-box;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.mkl-pc-order-menu__item {
+		display: block;
+		width: 100%;
+		margin: 0;
+		padding: 8px 14px;
+		font-size: 13px;
+		line-height: 1.4;
+		text-align: left;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		cursor: pointer;
+		color: #1d2327;
+
+		&[hidden] {
+			display: none;
+		}
+
+		&:hover,
+		&:focus {
+			background: #f6f7f7;
+			color: var(--wp-admin-theme-color, #2271b1);
+			outline: none;
+		}
+
+		&:focus-visible {
+			box-shadow: inset 0 0 0 2px var(--wp-admin-theme-color, #2271b1);
+		}
+	}
+
+	.mkl-pc-order-menu__label,
+	.mkl-pc-order-menu__hint {
+		display: block;
+	}
+
+	.mkl-pc-order-menu__hint {
+		margin-top: 2px;
+		font-size: 12px;
+		color: #646970;
+	}
+
+	.mkl-pc-order-menu__sep {
+		display: block;
+		height: 1px;
+		margin: 6px 0;
+		background: #dcdcde;
+
+		&[hidden] {
+			display: none;
+		}
+	}
 }
 
-.mkl-pc-image-order__bar.is-custom .mkl-pc-order-reset {
-	display: inline;
+// What else shares the order on screen.
+.mkl-pc-image-order__scope {
+	margin: -4px 0 12px;
+	font-size: 12px;
+	color: #646970;
+
+	&[hidden] {
+		display: none;
+	}
 }
 
 /* ------------------------------------------------------------------ filter */
@@ -2927,6 +3029,7 @@ html .pc-modal-container {
 .mkl-pc-image-order--empty {
 	.mkl-pc-stack,
 	.mkl-pc-image-order__bar,
+	.mkl-pc-image-order__scope,
 	.mkl-pc-image-order__filter,
 	.mkl-pc-image-order__selection {
 		display: none;

@@ -16,6 +16,13 @@ PC.views = PC.views || {};
  *
  * Four ways to move a layer, because stacks get long: drag, the step buttons, a
  * position typed straight into the row, and the bulk actions on a selection.
+ *
+ * A view can have its own order (`image_order_by_angle`: angle id to position, on each
+ * layer; canvas viewer only). The bar says what the list is editing: the view picked in it
+ * ("Order for"), and that view's order, its own or the default one. While a view has none,
+ * editing the list edits the default order, as before. The actions that apply are in the
+ * bar's menu: give the view its own order (a copy of the default), use the default order
+ * again, copy the default again, reset the default order to the layer list.
  */
 ( function( $, _ ) {
 
@@ -26,7 +33,11 @@ PC.views = PC.views || {};
 		collectionName: 'layers',
 
 		events: {
-			'click .mkl-pc-order-reset': 'reset_order',
+			'change .mkl-pc-order-view__select': 'on_view_select',
+			'click .mkl-pc-order-menu__toggle': 'toggle_menu',
+			'keydown .mkl-pc-order-menu__toggle': 'on_menu_toggle_keydown',
+			'click .mkl-pc-order-menu__item': 'on_menu_item',
+			'keydown .mkl-pc-order-menu__list': 'on_menu_keydown',
 			'click .mkl-pc-stack-vis': 'on_toggle_visible',
 			'click .mkl-pc-stack-move__btn--front': 'on_move_front',
 			'click .mkl-pc-stack-move__btn--back': 'on_move_back',
@@ -74,10 +85,15 @@ PC.views = PC.views || {};
 
 			this.listenTo( this.col, 'destroy', this.render_list );
 
+			// The view the list shows: the preview's (default_angle_id(), the same rule), and
+			// whichever the bar's picker switches to (on_view_select()).
+			this.angle_id = this.default_angle_id();
+
 			this.render();
 		},
 
 		remove: function() {
+			$( document ).off( '.mklPcOrderMenu' + this.cid );
 			this.destroy_items();
 			if ( this.$list ) this.$list.off( '.mklPcPreview' );
 			if ( this.preview ) {
@@ -91,6 +107,7 @@ PC.views = PC.views || {};
 			this.$el.append( this.template( _.extend( {}, this.model ? this.model.attributes : {} ) ) );
 			this.$list = this.$( '.mkl-pc-stack__list' );
 			this.$selection_bar = this.$( '.mkl-pc-image-order__selection' );
+			this.render_view_select();
 			this.render_list();
 			this.mount_preview();
 			return this;
@@ -329,7 +346,136 @@ PC.views = PC.views || {};
 		 * @return {Array} layer models
 		 */
 		stack_order: function() {
-			return PC.views.image_order_preview.stack_order( this.col );
+			return PC.views.image_order_preview.stack_order( this.col, this.view_order_angle() );
+		},
+
+		/* ---------------------------------------------------- the views' orders */
+
+		default_angle_id: function() {
+			var angles = this.admin.angles;
+			if ( ! angles || ! angles.length ) return null;
+			var angle = angles.findWhere( { has_thumbnails: true } ) || angles.first();
+			return angle ? angle.id : null;
+		},
+
+		/**
+		 * The bar's view picker: shown when views can have their own order, or one has.
+		 */
+		render_view_select: function() {
+			var angles = this.admin.angles;
+			var $select = this.$( '.mkl-pc-order-view__select' ).empty();
+			if ( ! angles ) return;
+			angles.each( function( angle ) {
+				$( '<option></option>' ).val( angle.id ).text( angle.get( 'name' ) || '' ).prop( 'selected', String( angle.id ) === String( this.angle_id ) ).appendTo( $select );
+			}, this );
+		},
+
+		shows_views: function() {
+			var angles = this.admin.angles;
+			if ( ! angles || angles.length < 2 ) return false;
+			return this.view_orders_enabled() || angles.some( function( angle ) {
+				return this.has_view_order( angle.id );
+			}, this );
+		},
+
+		on_view_select: function( e ) {
+			var value = $( e.currentTarget ).val();
+			var angle = this.admin.angles ? this.admin.angles.get( value ) : null;
+			this.angle_id = angle ? angle.id : value;
+			this.render_list();
+			if ( this.preview && this.preview.set_angle ) this.preview.set_angle( this.angle_id );
+		},
+
+		/** Views can have their own order: the canvas viewer, more than one view. */
+		view_orders_enabled: function() {
+			var angles = this.admin.angles;
+			return !! ( PC.lang && PC.lang.image_order_views ) && !! angles && angles.length > 1;
+		},
+
+		/** Whether a view has its own order. */
+		has_view_order: function( angle_id ) {
+			if ( undefined === angle_id || null === angle_id ) return false;
+			return this.col.some( function( m ) {
+				return null !== PC.views.image_order_preview.view_order( m, angle_id );
+			} );
+		},
+
+		/** The view whose own order the list edits, or null: the default order. */
+		view_order_angle: function() {
+			return this.has_view_order( this.angle_id ) ? this.angle_id : null;
+		},
+
+		angle_name: function( angle_id ) {
+			var angle = this.admin.angles ? this.admin.angles.get( angle_id ) : null;
+			return ( angle && angle.get( 'name' ) ) || '';
+		},
+
+		/**
+		 * Set a layer's position in a view's own order. Values from the DB may be an empty
+		 * array (an empty PHP array), so the map is rebuilt as an object.
+		 */
+		set_view_order: function( layer, angle_id, value ) {
+			var own = layer.get( 'image_order_by_angle' );
+			var next = _.extend( {}, own && 'object' === typeof own && ! _.isArray( own ) ? own : {} );
+			next[ angle_id ] = value;
+			layer.set( 'image_order_by_angle', next );
+		},
+
+		/**
+		 * "Give this view its own order": the view starts from the default order. Also "Copy
+		 * the default order again" (again: true), over the view's own order.
+		 */
+		fork_view_order: function( again ) {
+			var angle_id = this.angle_id;
+			if ( undefined === angle_id || null === angle_id ) return;
+			if ( this.has_view_order( angle_id ) !== !! again ) return;
+			var name = this.angle_name( angle_id );
+			if ( again && ! window.confirm( this.lang( 'image_order_view_refork_confirm', 'The order of %s will be replaced by the default order. Continue?' ).replace( '%s', name ) ) ) return;
+			var changed = [];
+			_.each( PC.views.image_order_preview.stack_order( this.col ), function( layer, index ) {
+				this.set_view_order( layer, angle_id, index );
+				changed.push( layer );
+			}, this );
+			if ( changed.length ) this.mark_modified( changed );
+			this.render_list();
+			this.refresh_preview();
+			this.speak( again
+				? this.lang( 'image_order_view_reforked', '%s starts again from the default order.' ).replace( '%s', name )
+				: this.lang( 'image_order_view_forked', '%s now has its own order.' ).replace( '%s', name ) );
+		},
+
+		/**
+		 * "Use the default order": the view's own order goes.
+		 */
+		reset_view_order: function() {
+			var angle_id = this.angle_id;
+			if ( ! this.has_view_order( angle_id ) ) return;
+			var name = this.angle_name( angle_id );
+			if ( ! window.confirm( this.lang( 'image_order_view_reset_confirm', '%s will use the default order again. Continue?' ).replace( '%s', name ) ) ) return;
+			var changed = [];
+			this.col.each( function( layer ) {
+				var own = layer.get( 'image_order_by_angle' );
+				if ( ! own || 'object' !== typeof own || ! _.has( own, String( angle_id ) ) ) return;
+				var next = _.omit( own, String( angle_id ) );
+				if ( _.isEmpty( next ) ) {
+					layer.unset( 'image_order_by_angle' );
+				} else {
+					layer.set( 'image_order_by_angle', next );
+				}
+				changed.push( layer );
+			} );
+			if ( changed.length ) this.mark_modified( changed );
+			this.render_list();
+			this.refresh_preview();
+			this.speak( this.lang( 'image_order_view_reset_done', '%s uses the default order.' ).replace( '%s', name ) );
+		},
+
+		lang: function( key, fallback ) {
+			return ( PC.lang && PC.lang[ key ] ) || fallback;
+		},
+
+		speak: function( message ) {
+			if ( window.wp && wp.a11y && wp.a11y.speak ) wp.a11y.speak( message );
 		},
 
 		/* ----------------------------------------------------------------- list */
@@ -399,13 +545,21 @@ PC.views = PC.views || {};
 			var $rows = this.$list.children( '.mkl-list-item' );
 			var total = $rows.length;
 			var changed = [];
+			// Into the view's own order when it has one, else the default order.
+			var angle_id = this.view_order_angle();
+			var screen = this;
 
 			$rows.each( function( i, el ) {
 				var view = $( el ).data( 'view' );
 				if ( ! view || ! view.model ) return;
 				var value = total - 1 - i;
-				if ( parseFloat( view.model.get( 'image_order' ) ) === value ) return;
-				view.model.set( 'image_order', value );
+				if ( null !== angle_id ) {
+					if ( PC.views.image_order_preview.view_order( view.model, angle_id ) === value ) return;
+					screen.set_view_order( view.model, angle_id, value );
+				} else {
+					if ( parseFloat( view.model.get( 'image_order' ) ) === value ) return;
+					view.model.set( 'image_order', value );
+				}
 				changed.push( view.model );
 			} );
 
@@ -458,9 +612,7 @@ PC.views = PC.views || {};
 		 * Keep the badge, the row controls and the bulk bar in step with the list.
 		 */
 		sync_state: function() {
-			var custom = this.has_custom_order();
-			this.$( '.mkl-pc-order-state' ).toggleClass( 'is-custom', custom );
-			this.$( '.mkl-pc-image-order__bar' ).toggleClass( 'is-custom', custom );
+			this.sync_bar();
 
 			var filtering = this.is_filtering();
 			var total = this.items.length;
@@ -472,6 +624,170 @@ PC.views = PC.views || {};
 			}, this );
 
 			this.sync_selection_ui();
+		},
+
+		/**
+		 * The bar: the view, the state of the order the list shows, the line under it saying
+		 * what else shares it, and which menu items apply.
+		 */
+		sync_bar: function() {
+			var angle_id = this.angle_id;
+			var views = this.shows_views();
+			var own = this.has_view_order( angle_id );
+			var custom = this.has_custom_order();
+			var enabled = this.view_orders_enabled();
+			var name = this.angle_name( angle_id );
+
+			this.$( '.mkl-pc-order-view' ).prop( 'hidden', ! views );
+			this.$( '.mkl-pc-order-view__select' ).val( String( angle_id ) );
+
+			var status;
+			if ( own ) {
+				status = this.lang( 'image_order_status_own', 'Own order for this view' );
+			} else if ( views ) {
+				status = custom ? this.lang( 'image_order_status_default_custom', 'Default order · custom' ) : this.lang( 'image_order_status_default_follows', 'Default order · follows the layer list' );
+			} else {
+				status = custom ? this.lang( 'image_order_status_custom', 'The images have their own order' ) : this.lang( 'image_order_status_follows', 'The images follow the layer list' );
+			}
+			this.$( '.mkl-pc-order-state' ).toggleClass( 'is-custom', own || custom );
+			this.$( '.mkl-pc-order-state__text' ).text( status );
+
+			this.$( '.mkl-pc-image-order__scope' ).text( views ? this.scope_text( own ) : '' ).prop( 'hidden', ! views || ! this.scope_text( own ) );
+
+			// The items that apply now; no menu at all when none does.
+			var items = {
+				fork: views && enabled && ! own,
+				'reset-view': own,
+				refork: own && enabled,
+				'reset-default': ! own && custom,
+			};
+			var $list = this.$( '.mkl-pc-order-menu__list' );
+			_.each( items, function( shown, action ) {
+				$list.find( '[data-action="' + action + '"]' ).prop( 'hidden', ! shown );
+			} );
+			$list.find( '[data-action="fork"] .mkl-pc-order-menu__label' ).text( this.lang( 'image_order_view_fork', 'Give %s its own order' ).replace( '%s', name ) );
+			$list.find( '[data-action="reset-view"] .mkl-pc-order-menu__label' ).text( this.lang( 'image_order_view_reset', 'Use the default order for %s' ).replace( '%s', name ) );
+			// The separator only between the view's items and the default order's.
+			$list.find( '.mkl-pc-order-menu__sep' ).prop( 'hidden', ! ( ( items.fork || items[ 'reset-view' ] || items.refork ) && items[ 'reset-default' ] ) );
+			var any = _.some( items );
+			this.$( '.mkl-pc-order-menu' ).prop( 'hidden', ! any );
+			if ( ! any ) this.close_menu();
+		},
+
+		/**
+		 * Under the bar: which other views share the order on screen, which have their own;
+		 * or, on a view's own order, that only it changes.
+		 */
+		scope_text: function( own ) {
+			var angles = this.admin.angles;
+			if ( ! angles ) return '';
+			var current = this.angle_id;
+			var parts = [];
+			if ( own ) {
+				parts.push( this.lang( 'image_order_scope_only', 'Changes here only affect %s.' ).replace( '%s', this.angle_name( current ) ) );
+			} else {
+				var shared = [];
+				var separate = [];
+				angles.each( function( angle ) {
+					if ( String( angle.id ) === String( current ) ) return;
+					( this.has_view_order( angle.id ) ? separate : shared ).push( angle.get( 'name' ) || '' );
+				}, this );
+				// Only worth saying when some view does not follow the default.
+				if ( separate.length ) {
+					if ( shared.length ) parts.push( this.lang( 'image_order_scope_shared', 'Also used by %s.' ).replace( '%s', shared.join( ', ' ) ) );
+					parts.push( ( 1 === separate.length
+						? this.lang( 'image_order_scope_own_one', '%s has its own order.' )
+						: this.lang( 'image_order_scope_own_many', '%s have their own order.' ) ).replace( '%s', separate.join( ', ' ) ) );
+				}
+			}
+			var has_own = angles.some( function( angle ) {
+				return this.has_view_order( angle.id );
+			}, this );
+			if ( has_own && ! ( PC.lang && PC.lang.image_order_views ) ) {
+				parts.push( this.lang( 'image_order_scope_dom', 'Only the canvas viewer uses the orders of the views: with the image stack viewer, every view uses the default order.' ) );
+			}
+			return parts.join( ' ' );
+		},
+
+		/* ----------------------------------------------------------------- menu */
+
+		menu_items: function() {
+			return this.$( '.mkl-pc-order-menu__item' ).filter( function() {
+				return ! this.hidden;
+			} );
+		},
+
+		toggle_menu: function( e ) {
+			if ( e ) e.preventDefault();
+			if ( this.$( '.mkl-pc-order-menu__list' ).prop( 'hidden' ) ) {
+				this.open_menu();
+			} else {
+				this.close_menu( true );
+			}
+		},
+
+		open_menu: function( focus_last ) {
+			var $list = this.$( '.mkl-pc-order-menu__list' );
+			$list.prop( 'hidden', false );
+			this.$( '.mkl-pc-order-menu__toggle' ).attr( 'aria-expanded', 'true' );
+			var $items = this.menu_items();
+			$items.eq( focus_last ? $items.length - 1 : 0 ).trigger( 'focus' );
+			var self = this;
+			var ns = '.mklPcOrderMenu' + this.cid;
+			$( document ).off( ns ).on( 'pointerdown' + ns + ' focusin' + ns, function( event ) {
+				if ( ! $( event.target ).closest( self.$( '.mkl-pc-order-menu' ) ).length ) self.close_menu();
+			} );
+		},
+
+		/**
+		 * @param {Boolean} [refocus] Give the focus back to the menu button.
+		 */
+		close_menu: function( refocus ) {
+			$( document ).off( '.mklPcOrderMenu' + this.cid );
+			var $list = this.$( '.mkl-pc-order-menu__list' );
+			if ( $list.prop( 'hidden' ) ) return;
+			$list.prop( 'hidden', true );
+			var $toggle = this.$( '.mkl-pc-order-menu__toggle' ).attr( 'aria-expanded', 'false' );
+			if ( refocus ) $toggle.trigger( 'focus' );
+		},
+
+		on_menu_toggle_keydown: function( e ) {
+			if ( 'ArrowDown' !== e.key && 'ArrowUp' !== e.key ) return;
+			e.preventDefault();
+			this.open_menu( 'ArrowUp' === e.key );
+		},
+
+		on_menu_keydown: function( e ) {
+			var $items = this.menu_items();
+			var index = $items.index( document.activeElement );
+			var next = null;
+			if ( 'ArrowDown' === e.key ) next = ( index + 1 ) % $items.length;
+			if ( 'ArrowUp' === e.key ) next = ( index - 1 + $items.length ) % $items.length;
+			if ( 'Home' === e.key ) next = 0;
+			if ( 'End' === e.key ) next = $items.length - 1;
+			if ( null !== next ) {
+				e.preventDefault();
+				$items.eq( next ).trigger( 'focus' );
+				return;
+			}
+			if ( 'Escape' === e.key ) {
+				e.preventDefault();
+				e.stopPropagation();
+				this.close_menu( true );
+			} else if ( 'Tab' === e.key ) {
+				this.close_menu();
+			}
+		},
+
+		on_menu_item: function( e ) {
+			e.preventDefault();
+			var action = $( e.currentTarget ).data( 'action' );
+			// Back on the button: the item may disappear with what it does.
+			this.close_menu( true );
+			if ( 'fork' === action ) this.fork_view_order( false );
+			if ( 'refork' === action ) this.fork_view_order( true );
+			if ( 'reset-view' === action ) this.reset_view_order();
+			if ( 'reset-default' === action ) this.reset_order();
 		},
 
 		/* --------------------------------------------------------------- filter */

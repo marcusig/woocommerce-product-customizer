@@ -451,19 +451,45 @@ STRUCTURE / VIEWS TEMPLATES (They will share the same views, using different mod
 			<# if ( data.description ) { #><p class="mkl-pc-image-order__intro">{{data.description}}</p><# } #>
 		</div>
 
-		<div class="mkl-pc-image-order__bar">
-			<span class="mkl-pc-order-state">
-				<span class="mkl-pc-order-state__dot" aria-hidden="true"></span>
-				<span class="mkl-pc-order-state__chip mkl-pc-order-state__chip--follows"><?php echo esc_html_x( 'The images follow the layer order', 'Image order screen: state', 'product-configurator-for-woocommerce' ); ?></span>
-				<span class="mkl-pc-order-state__chip mkl-pc-order-state__chip--custom"><?php echo esc_html_x( 'The images have their own order', 'Image order screen: state', 'product-configurator-for-woocommerce' ); ?></span>
-			</span>
-			<button type="button" class="button-link mkl-pc-order-reset">
-				<?php echo esc_html_x( 'Reset to the layer order', 'Image order screen: action', 'product-configurator-for-woocommerce' ); ?>
-			</button>
-		</div>
-
 		<div class="mkl-pc-image-order__body">
 		<div class="mkl-pc-image-order__main">
+		<?php
+		// What the list is editing: the view (when views can have their own order), its order's
+		// state, and the actions that apply, in one menu. Texts and items: image-order.js, sync_bar().
+		?>
+		<div class="mkl-pc-image-order__bar">
+			<span class="mkl-pc-order-view" hidden>
+				<label for="mkl-pc-order-view-select" class="mkl-pc-order-view__label"><?php echo esc_html_x( 'Order for', 'Image order screen: view selector', 'product-configurator-for-woocommerce' ); ?></label>
+				<select id="mkl-pc-order-view-select" class="mkl-pc-order-view__select"></select>
+			</span>
+			<span class="mkl-pc-order-state">
+				<span class="mkl-pc-order-state__dot" aria-hidden="true"></span>
+				<span class="mkl-pc-order-state__text"></span>
+			</span>
+			<div class="mkl-pc-order-menu">
+				<button type="button" class="button mkl-pc-order-menu__toggle" aria-haspopup="true" aria-expanded="false" aria-controls="mkl-pc-order-menu-list" aria-label="<?php echo esc_attr_x( 'Image order actions', 'Image order screen: menu', 'product-configurator-for-woocommerce' ); ?>" title="<?php echo esc_attr_x( 'Image order actions', 'Image order screen: menu', 'product-configurator-for-woocommerce' ); ?>">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M13 19h-2v-2h2v2zm0-6h-2v-2h2v2zm0-6h-2V5h2v2z" /></svg>
+				</button>
+				<div class="mkl-pc-order-menu__list" id="mkl-pc-order-menu-list" role="menu" hidden>
+					<button type="button" role="menuitem" class="mkl-pc-order-menu__item" data-action="fork">
+						<span class="mkl-pc-order-menu__label"></span>
+						<span class="mkl-pc-order-menu__hint"><?php echo esc_html_x( 'Starts from the default order. Other views don\'t change.', 'Image order screen: menu', 'product-configurator-for-woocommerce' ); ?></span>
+					</button>
+					<button type="button" role="menuitem" class="mkl-pc-order-menu__item" data-action="reset-view">
+						<span class="mkl-pc-order-menu__label"></span>
+					</button>
+					<button type="button" role="menuitem" class="mkl-pc-order-menu__item" data-action="refork">
+						<span class="mkl-pc-order-menu__label"><?php echo esc_html_x( 'Copy the default order again', 'Image order screen: menu', 'product-configurator-for-woocommerce' ); ?></span>
+					</button>
+					<span class="mkl-pc-order-menu__sep" role="separator"></span>
+					<button type="button" role="menuitem" class="mkl-pc-order-menu__item" data-action="reset-default">
+						<span class="mkl-pc-order-menu__label"><?php echo esc_html_x( 'Reset the default order to the layer list', 'Image order screen: menu', 'product-configurator-for-woocommerce' ); ?></span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<p class="mkl-pc-image-order__scope" hidden></p>
+
 		<div class="mkl-pc-image-order__filter">
 			<input type="search" class="mkl-pc-list-filter-input mkl-pc-image-order__filter-input" placeholder="<?php echo esc_attr_x( 'Filter layers…', 'Image order screen: filter', 'product-configurator-for-woocommerce' ); ?>" autocomplete="off" />
 		</div>

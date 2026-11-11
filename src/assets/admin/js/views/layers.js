@@ -292,6 +292,7 @@ TODO:
 				name: name,
 				order: this.col.nextOrder(),
 				image_order: this.col.next_image_order ? this.col.next_image_order() : this.col.nextOrder( 'image_order' ),
+				image_order_by_angle: this.col.next_image_order_by_angle ? this.col.next_image_order_by_angle() || undefined : undefined,
 				is_global: false,
 				global_id: null,
 				active: true,
