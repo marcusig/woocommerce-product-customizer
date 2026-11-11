@@ -1,6 +1,6 @@
 # Image overlay on 3D products: the customer's upload on the model
 
-Status: **specced 2026-11-11, not built.** Decisions A to E answered (below).
+Status: **phases 1 (admin) and 2 (front end) built 2026-11-11**, not yet tried on a model; the print file is not. Decisions A to E answered (below).
 
 The 2D upload preview ([`image-overlay-spec.md`](image-overlay-spec.md)) left 3D out: "an image on
 a mesh is a decal or a texture swap, its own spec." This is that spec. It builds on what text
@@ -45,12 +45,17 @@ Worth reusing, because it is shipped and has been through the hard cases:
 
 On a 3D configurator, the upload field's Preview section has, instead of zones per view:
 
-- **Target**: an object of the model, chosen like text overlay's (decision A for which ones).
+- **Object**: the object of the model the image is drawn on (decision A), from every model in 3D
+  Objects, since an upload field is often on a form layer, which has no model. Stored as
+  `image_target_3d`, a composite id `sourceId:image_location_…`, the form the viewer's
+  `findObjectsByCompositeId` takes.
 - **Zone**: set in core's zone editor on a reference texture (no view; "texture" labels, as text
   overlay passes them). Stored on the choice as `image_zone_3d`: `{ ref_image, position }`, the
   same shape as a 2D zone.
 - **Mask**: optional, one, on the reference texture: the image only shows where it is opaque.
-  The same mask picker as 2D, with one entry instead of one per view.
+  The same mask picker as 2D, with one slot instead of one entry per view: `zone_masks_3d`,
+  `[ { angleId: '3d', image } ]`, the shape of `zone_masks` (core's `PC.views.mask_picker`
+  `slots` option).
 - **Fit, "cannot move or zoom", minimum width**: as in 2D.
 
 No setting for the view while editing (decision D): the choice's **Automatic angle switch** already
@@ -68,7 +73,10 @@ A small manager in Form builder, on the same runtime hook, for the fields with a
    the `map` of a clone of each material slot under the target, with `transparent` and a small
    `alphaTest` (decision B for what is under the image).
 4. Redrawn (debounced) when the placement or the file changes; flushed before save; the clones
-   removed and the originals put back when the field has no file or its choice is not shown.
+   removed and the originals put back when the field has no file or its choice is not shown. The
+   target then shows its own material: an author wanting it invisible gives it a transparent
+   material in the model. The clone is white and opaque, so the image keeps its colours, with a
+   polygon offset so a plate lying on the surface wins the depth test.
 5. Applied to every copy of the target (`findObjectsByCompositeId`): a model placed on several
    anchors shows the image on each.
 

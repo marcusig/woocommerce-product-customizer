@@ -11,6 +11,8 @@
 	- layer | model:   the model holding the list (`layer` for the layer form);
 	- attribute:       the list's attribute, 'masks' by default;
 	- angle_ids:       the views listed, all of them by default (an array, or a function);
+	- slots:           entries that are not views, listed instead of them: [ { id, name } ] (or a
+	                   function). Each is stored with its id as `angleId` (a 3D zone's one mask);
 	- sizes( angle_id ): the image sizes a mask on that view must match, for the size
 	                   warning ({ width, height } list). The layer's choice images by default;
 	- size_message:    the warning, with %1$s (those sizes) and %2$s (the mask's);
@@ -18,7 +20,8 @@
 	                   tooltip, a corner button to remove it, `label` under it ('Mask' by default);
 	- locked.
 
-	Image upload zones use it on the field's choice, with `zone_masks` (docs/image-overlay-spec.md).
+	Image upload zones use it on the field's choice, with `zone_masks` (docs/image-overlay-spec.md),
+	and with one slot for a 3D zone (docs/image-overlay-3d-spec.md).
 */
 ( function( $, _ ) {
 	PC.views = PC.views || {};
@@ -72,21 +75,36 @@
 			} );
 		},
 
+		/**
+		 * The entries listed: the slots when given, else the views asked for. { id, name }
+		 */
+		entries: function() {
+			var slots = this.options && this.options.slots;
+			if ( 'function' === typeof slots ) slots = slots();
+			if ( slots ) return _.map( slots, function( slot ) {
+				return { id: slot.id, name: slot.name || '' };
+			} );
+			var entries = [];
+			if ( ! this.angles ) return entries;
+			this.angles.each( function( angle ) {
+				if ( this.lists_angle( angle.id ) ) entries.push( { id: angle.id, name: angle.get( 'name' ) } );
+			}, this );
+			return entries;
+		},
+
 		render: function() {
 			this.$el.empty();
-			if ( ! this.angles ) return this;
-			this.angles.each( function( angle ) {
-				if ( ! this.lists_angle( angle.id ) ) return;
-				var mask = this.get_mask( angle.id );
+			_.each( this.entries(), function( entry ) {
+				var mask = this.get_mask( entry.id );
 				var image = mask && mask.image;
 				var dimensions = image && image.dimensions;
 				this.$el.append( this.template( {
-					angle_id: angle.id,
-					angle_name: angle.get( 'name' ),
+					angle_id: entry.id,
+					angle_name: entry.name,
 					url: image && image.url ? image.url : '',
 					file_name: image && image.url ? PC.views.layer_masks.file_name( image.url ) : '',
 					size: PC.views.layer_masks.size_label( dimensions ),
-					size_warning: image && image.url ? this.size_warning( angle.id, dimensions ) : '',
+					size_warning: image && image.url ? this.size_warning( entry.id, dimensions ) : '',
 					locked: !! this.options.locked,
 					compact: !! this.options.compact,
 					label: this.options.label || '',

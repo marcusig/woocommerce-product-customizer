@@ -17,6 +17,7 @@ const underscore = {
 	find: ( list, callback ) => ( list || [] ).find( callback ),
 	reject: ( list, callback ) => ( list || [] ).filter( ( item ) => ! callback( item ) ),
 	each: ( list, callback, context ) => ( list || [] ).forEach( ( item ) => callback.call( context, item ) ),
+	map: ( list, callback ) => ( list || [] ).map( callback ),
 };
 
 /** A Backbone-ish model: get/set, and `change:<key>` counted. */
@@ -252,5 +253,30 @@ describe( 'masks of another model (PC.views.mask_picker)', () => {
 		view.options = { angle_ids: [ 2 ], sizes: () => [] };
 		view.render();
 		expect( seen[ 0 ] ).toMatchObject( { compact: false, label: '' } );
+	} );
+
+	test( 'slots: entries that are not views, listed instead of them and stored by their id', () => {
+		const { View } = load();
+		const choice = make_model( { id: 7, zone_masks_3d: [ { angleId: '3d', image: { id: 6, url: 'https://example.com/label.png', dimensions: { width: 1024, height: 1024 } } } ] } );
+		const seen = [];
+		const view = Object.create( View.prototype );
+		view.model = choice;
+		view.attribute = 'zone_masks_3d';
+		view.options = { slots: () => [ { id: '3d' } ], compact: true, sizes: () => [ { width: 2048, height: 2048 } ], size_message: '%1$s / %2$s' };
+		view.angles = { each: ( callback, context ) => [ { id: 1, get: () => 'Front' } ].forEach( callback, context ) };
+		view.template = ( data ) => {
+			seen.push( data );
+			return '';
+		};
+		view.$el = { empty() {}, append() {} };
+		view.render();
+		// The views are not listed.
+		expect( seen ).toHaveLength( 1 );
+		expect( seen[ 0 ] ).toMatchObject( { angle_id: '3d', angle_name: '', file_name: 'label.png', size_warning: '2048 × 2048 / 1024 × 1024' } );
+
+		view.set_mask( '3d', null );
+		expect( choice.get( 'zone_masks_3d' ) ).toEqual( [] );
+		view.set_mask( '3d', { id: 8, url: 'other.png' } );
+		expect( choice.get( 'zone_masks_3d' ) ).toEqual( [ { angleId: '3d', image: { id: 8, url: 'other.png' } } ] );
 	} );
 } );
