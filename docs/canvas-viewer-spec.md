@@ -166,9 +166,9 @@ now call it, and the canvas viewer will too:
   anyway. Separate from `shown_choices()` because `capture()` never applied it (choices without
   an image resolve to "nothing to draw" there), and folding it in would change what
   `PC.fe.viewer.capture.models` receives;
-- `layers_in_image_order()` and `picture()` (every shown choice, bottom layer first).
-
-`layers_in_image_order()` takes no angle yet; phase 6 adds the angle and rung 1 of the ladder.
+- `layers_in_image_order( angle_id )` and `picture( angle_id )` (every shown choice, bottom layer
+  first), in that view's own order when it has one (Order, below);
+- `image_order( layer, angle_id )`, `view_image_order( layer, angle_id )` and `has_view_orders()`.
 
 Never decided from CSS classes (contract rule). Start-up state: the viewer builds from the models
 after `PC.fe.prepare_config`, so conditions applied before any view exists are already in `cshow`.
@@ -192,16 +192,61 @@ canvas does not have.
 
 ## Order
 
-The resolution ladder from the per-view image order spec, per layer, for the active angle:
+Built 2026-11-10 (phase 6). Per layer, for a view:
 
-1. `image_order_by_angle[ angle_id ]` if set;
-2. `image_order`, when any layer has a non-zero value;
-3. `order`.
+1. `image_order_by_angle[ angle_id ]`, when set and the canvas viewer is drawing;
+2. `image_order`;
+3. collection order on ties, which is the layer order (`layers_in_image_order()` is a stable sort).
 
-Until the per-view data exists, rung 1 never matches and the canvas viewer orders exactly as the
-`<img>` stack does. Restack on `PC.fe.angles` `change:active`, skipped when a precomputed
-"any per-view override?" flag is false. Unlike the DOM restack (which the per-view spec measured at
-~24,000 comparisons on product 636, 155 layers, done naively), this is one `zIndex` pass.
+`image_order_by_angle` is a sparse map on the layer, angle id to position, written by the Image
+order screen. Values come back from the DB as strings, and an empty map as `[]` (an empty PHP
+array); every reader parses, and treats a non-object as no map.
+
+**No restack.** Each view has its own `angle_stack`, built once by `ensure_stack( angle_id )`, so a
+view's order is set there and switching views reorders nothing. The "any override?" flag and the
+`change:active` restack the per-view spec planned were not needed. Everything that draws or loads for a view asks for that
+view's order: `ensure_stack`, `picture_items()` / `ordered_choices( angle_id )` (snapshots and
+`picture_key()`), the background loading queue, and `capture()` (`picture( angle.id )`).
+
+**Canvas viewer only** (Marc, 2026-11-10). The `<img>` stack keeps one order: reordering its
+elements on every view switch risked a visible reshuffle while the new view's images load, for
+little gain. `has_view_orders()` is the front-end gate (the canvas renderer, not disabled); a
+canvas that falls back to the stack falls back to the default order with it. A layer without an
+entry in a view that has an order keeps its `image_order` there.
+
+**Saved configurations.** `save-data.js` stores the cart view's resolved order in the choice's
+`image_order`, so the server composites what the customer saw and stored orders never change.
+`Choice::get_image_order()` prefers that saved value; without one (a live choice, or a
+configuration saved before), `get_view_image_order()` reads the layer's map for the choice's
+angle, when `mkl_pc_get_viewer_2d_renderer()` is `canvas`.
+
+**Global layers.** The map is keyed by this product's view ids, so it belongs to the link, like
+`order` and `image_order`: kept on the reference (`strip_layers_to_references`), never taken from
+the definition (`resolve_layers`), kept when a link is localized, and on the excluded and link-only
+lists (`Linker::override_excluded_fields()`, `layer-overrides.js`).
+
+**Stale views.** Deleting a view removes its key from every layer (`remove_relationships` in
+`views/app.js`): view ids are reused, and a new view must not inherit an old order. Partial view
+import does not remap: the importer's view step stores its settings and applies nothing.
+
+**New layers** get a key in every view that has an order, in front (`next_image_order_by_angle()`),
+as they go in front of a custom default order.
+
+### Admin
+
+The Image order screen's bar says what the list is editing: "Order for [view]" (shown when views
+can have their own order, `PC_lang.image_order_views`, or one already has), the state of the order
+on screen (default following the layer list, default custom, or the view's own), and a line under
+it saying which views share it. Actions are in one menu, only those that apply: give the view its
+own order (a copy of the default), use the default order again, copy the default again, reset the
+default order to the layer list. While a view has no order, editing the list edits the default
+order (the explicit fork, decided over forking on the first edit). The preview follows the bar's
+view and has no picker of its own on this screen. `stack_order( layers, angle_id )` in
+`image-order-preview.js` mirrors the front-end resolution, so the list and the preview show what the
+canvas draws; the zone editor's background uses it for its fixed view.
+
+Tests: `viewer-state.test.js` (the resolution and its gate), `tests/php/global-layers/view-image-order.php`
+(storage, global layers, the server's order).
 
 ## Textures
 
@@ -924,8 +969,9 @@ Each phase ships on its own; the setting stays `dom` by default throughout.
 5. **Add-ons.** `PC.fe.viewer.canvas.item`, text overlay port, Save your design route. *Hook,
    text overlay port and Save your design route built 2026-11-09* (Add-ons section). `canvas` as
    the default for new installs built the same day. Left: the user docs (Admin section).
-6. **Per-view order.** Rung 1 of the ladder and the restack flag, with phases 1 and 3 of the
-   per-view spec (data and admin).
+6. **Per-view order.** Rung 1 of the ladder, with phases 1 and 3 of the per-view spec (data and
+   admin). *Built 2026-11-10* (Order section): no restack was needed. User docs written the next
+   day.
 
 Then the image overlay spec.
 
