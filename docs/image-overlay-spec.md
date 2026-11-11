@@ -1,6 +1,7 @@
 # Image overlay: the customer's upload in the preview
 
-Status: **draft 2026-11-10, not built.** Decided (Marc, 2026-11-10): it is an enhancement of
+Status: **built 2026-11-10/11**, on the `image-overlay` branches of core and Form builder (phases
+below; user docs: wpc-docs `form-fields/showing-the-uploaded-image-in-the-preview.md`). Decided (Marc, 2026-11-10): it is an enhancement of
 Form builder's upload field, on form layers **and** on choices of simple and multiple layers; the
 zones and their masks sit on that field, and an upload without a zone mask takes the layer's;
 form layers get no mask. B, C, D, F, G and I decided the same day; nothing open.
@@ -188,10 +189,26 @@ setting):
 `x` and `y`: the image centre's offset from the zone centre, in zone widths and heights; `scale`:
 relative to the fit; `rotation`: degrees, on top of the zone's.
 
-With adjustments allowed (decision C): drag the image in the preview to move it, scroll or pinch
-to zoom, a **Reset** button by the field back to the fit. The item takes pointer events only inside
-its zone, on the view on screen; elsewhere the viewer behaves as usual. Keyboard: arrow keys move,
-+ and − zoom, while the image's handle has focus.
+With adjustments allowed (decision C), as built (Marc, 2026-11-10/11):
+
+- **"Edit position"**, one field at a time (zones may overlap, and every item listens on the
+  same viewer element, so two open fields would move together). It opens by itself when the
+  customer chooses a file (not for a file restored with a saved configuration or in the admin
+  editor), and from the field's **Edit position** button; Done (in the field, or a chip on the
+  viewer by the zone), Escape, removing the file or opening another field close it. A view
+  without the zone switches to the first one that has it. Outside it the viewer is untouched.
+- **In the viewer**, while editing: a handle (an HTML element, `touch-action: none`, placed after
+  every render from the zone node's corners) over the zone on the view on screen. A finger or
+  the mouse on it moves the image, two fingers pinch, the wheel zooms; a finger elsewhere scrolls
+  the page. It is `aria-hidden`: decoration for pointers.
+- **Under the field**: "Position your image", a fieldset with Size (a logarithmic range between
+  smaller and larger buttons), Move (up, down, left, right around Centre), Reset and Done; held
+  buttons repeat, arrow keys move (Shift: further), a polite live region says what changed and
+  when a limit is reached. Buttons at a limit are `aria-disabled`, not disabled, so focus stays.
+  The low resolution warning sits under Size, and stays visible when editing is closed.
+- **Limits** (`constrain()`): Cover never below the fit (the zone stays filled), Contain down to
+  0.2, both up to 10; an image larger than the zone keeps covering it, a smaller one stays inside;
+  the tightest over every zone, since one placement serves them all.
 
 ### What the configuration holds
 
@@ -224,7 +241,11 @@ Details:
   zone and the mask that applies (by id): moving the file into the order's folder keeps the composed picture valid.
 - **Decoding is guarded**: `getimagesize()` first, and no composition above a pixel limit (a
   50-megapixel photo is about 200 MB in GD). Over the limit, the picture is made without the
-  upload, and the order still has the file. The limit is a filter; default to measure in phase 3.
+  upload, and the order still has the file. The limit is the filter
+  `mkl_pc_form_builder/upload_preview/max_pixels`, 40 million by default.
+- **Composed pictures** live in `uploads/mkl-pc-upload-previews/`, named by token. A daily sweep
+  (Form builder's clean-up cron) deletes those older than a week that no order item, post meta
+  (except attachment file names and metadata), post content, persistent cart or session names.
 - **Quote requests** compose the same way when `quote-uploads.php` accepts the file.
 - **Cost**: one affine draw and one mask pass at the reference size per view, the first time;
   stored after. To measure against the GD numbers of the masks spec.
@@ -260,6 +281,10 @@ Not built now (Marc, 2026-11-09). What they are, so nothing here blocks them:
 
 ## Phasing
 
+Built 2026-11-10 (core `8f3f8082`, `e5c5a5ba`, `70b6b2d5`, `1db031b8`, `466ef7c5`; Form builder
+`8aa4f0e` to `33cc0e7` and `d39118c`), the controls and Edit position reworked on 2026-11-10/11
+after the first review.
+
 1. **Core.** `mask()` on canvas items (the gap above); the mask picker usable on any model
    and list (`PC.views.mask_picker`); the zone editor (`PC.views.zone_editor`, views/zone-editor.js:
    reference image, drag to move, handles to resize in the zone's turned frame, number fields,
@@ -267,12 +292,16 @@ Not built now (Marc, 2026-11-09). What they are, so nothing here blocks them:
    preview inside the zone). Text overlay moving onto it is its own later step.
 2. **Form builder admin.** The Preview section, its settings, zones, the canvas-viewer notice.
 3. **Form builder front end.** Capped decode, the canvas item, placement and its controls, the
-   placement in the configuration. Jest for the placement maths; iPhone run with a full-size phone
-   photo.
+   placement in the configuration. iPhone run with a full-size phone photo: **still to do** (real
+   touch has not been tested). Form builder has no Jest; the placement maths were checked with a
+   node script.
 4. **Server pictures.** Composition at add-to-cart and in quote requests, the token and the merge
-   hooks, the pixel limit, the admin editor reload. PHP suite comparing the composed layer with
-   the preview's capture.
-5. **Docs**: the upload field's page gains the preview.
+   hooks, the pixel limit, the admin editor reload (orders and native quote requests), Fix images
+   for zone masks, the sweep. Also fixed on the way: Form builder moved a quote request's
+   `$_FILES` into the cart's temporary folder (`is_quote_request()`), and its temporary uploads
+   were never cleaned up. PHP suite: the composition's pixels (inside the zone, outside it, at
+   the mask's edge).
+5. **Docs**: a page of its own, linked from the upload field's options and the 2D viewer page.
 
 ## Decisions
 
