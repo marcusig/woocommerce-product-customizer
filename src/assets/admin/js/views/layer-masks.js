@@ -18,6 +18,8 @@
 	- size_message:    the warning, with %1$s (those sizes) and %2$s (the mask's);
 	- compact:         a tile per view, without the view's name: the file's name and size in its
 	                   tooltip, a corner button to remove it, `label` under it ('Mask' by default);
+	- missing_notice( angle_id ): a warning shown on a view that has no mask, or '' (not in the
+	                   compact layout);
 	- locked.
 
 	Image upload zones use it on the field's choice, with `zone_masks` (docs/image-overlay-spec.md),
@@ -50,6 +52,8 @@
 			this.editing = null;
 			if ( this.angles ) this.listenTo( this.angles, 'add remove reset change:name', this.render );
 			this.listenTo( this.model, 'change:' + this.attribute, this.render );
+			// The notice depends on the layer's setting.
+			if ( this.options.missing_notice ) this.listenTo( this.model, 'change:draw_choice_color', this.render );
 		},
 
 		/**
@@ -105,6 +109,7 @@
 					file_name: image && image.url ? PC.views.layer_masks.file_name( image.url ) : '',
 					size: PC.views.layer_masks.size_label( dimensions ),
 					size_warning: image && image.url ? this.size_warning( entry.id, dimensions ) : '',
+					missing_notice: ! ( image && image.url ) && this.options.missing_notice ? this.options.missing_notice( entry.id ) || '' : '',
 					locked: !! this.options.locked,
 					compact: !! this.options.compact,
 					label: this.options.label || '',
@@ -263,6 +268,12 @@
 			locked: PC.admin && PC.admin.layer_overrides
 				? PC.admin.layer_overrides.is_field_locked( form, 'masks' )
 				: form.$el.hasClass( 'is-global-locked' ),
+			// Solid-colour choices need a mask on every view they draw on
+			// (docs/solid-colour-choices-spec.md).
+			missing_notice: function() {
+				if ( ! form.model.get( 'draw_choice_color' ) ) return '';
+				return ( window.PC_lang && PC_lang.mask_missing_for_color ) || 'No mask on this view: choice colours are not drawn here.';
+			},
 		} );
 		$container.append( form.layer_masks_view.render().el );
 	} );

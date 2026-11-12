@@ -178,6 +178,10 @@ class Data_Sanitizer {
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
 				],
+				'draw_choice_color' => [
+					'sanitize' => 'boolean',
+					'escape' => 'boolean',
+				],
 				'use_in_cart' => [ 
 					'sanitize' => 'boolean',
 					'escape' => 'boolean',
