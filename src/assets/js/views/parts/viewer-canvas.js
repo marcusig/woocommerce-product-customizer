@@ -138,6 +138,17 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 * @return {Promise}
 	 */
 	start: async function() {
+		// Pixi is loaded on demand (load_pixi()), unless something on the page already did.
+		var loaded = await PC.fe.views.viewer_canvas.load_pixi();
+		if ( this.is_removed ) return;
+		if ( ! loaded ) {
+			this.fall_back( 'pixi_missing' );
+			return;
+		}
+		if ( PIXI.isWebGLSupported && ! PIXI.isWebGLSupported() ) {
+			this.fall_back( 'webgl' );
+			return;
+		}
 		var app = new PIXI.Application();
 		var container = this.$layers.get( 0 );
 		try {
@@ -3792,10 +3803,12 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 	 */
 	unsupported_reason: function() {
 		if ( this.disabled ) return this.disabled;
-		if ( 'undefined' === typeof PIXI || ! PIXI.Application || ! PIXI.Texture ) {
+		// Pixi on the page, or one it can load (load_pixi()).
+		if ( ! this.has_pixi() && ! this.pixi_url() ) {
 			return { reason: 'pixi_missing' };
 		}
-		if ( PIXI.isWebGLSupported && ! PIXI.isWebGLSupported() ) {
+		var webgl = ( this.has_pixi() && PIXI.isWebGLSupported ) ? PIXI.isWebGLSupported() : this.webgl_supported();
+		if ( ! webgl ) {
 			return { reason: 'webgl' };
 		}
 
@@ -3816,6 +3829,110 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 			return { reason: 'dom_item_view', detail: dom_layer.get( 'admin_label' ) || dom_layer.get( 'name' ) || dom_layer.id };
 		}
 		return null;
+	},
+
+	/*
+	 * Pixi on demand: not a script dependency of the configurator, so its ~220 KB (gzipped) never
+	 * block the page. The viewer loads it when it starts; on canvas products it is also fetched in
+	 * the background once the page has loaded, so a configurator opened later finds it ready.
+	 * Add-ons drawing with Pixi call load_pixi() too. A `pixijs` script already on the page (an
+	 * add-on depending on the handle) is used as it is.
+	 * --------------------------------------------------------------------- */
+
+	pixi_loading: null,
+
+	has_pixi: function() {
+		return 'undefined' !== typeof PIXI && !! PIXI.Application && !! PIXI.Texture;
+	},
+
+	/**
+	 * Where Pixi is: PC.fe.config.pixi_url (mkl_pc_pixi_url()), or '' when the page has none.
+	 *
+	 * @return {String}
+	 */
+	pixi_url: function() {
+		var config = PC.fe.config || ( window.PC_config && PC_config.config ) || {};
+		return config.pixi_url || '';
+	},
+
+	/**
+	 * Load Pixi once. Resolves true when PIXI is usable, false when it could not be loaded.
+	 *
+	 * @return {Promise<Boolean>}
+	 */
+	load_pixi: function() {
+		var that = this;
+		if ( this.has_pixi() ) return Promise.resolve( true );
+		if ( this.pixi_loading ) return this.pixi_loading;
+		// A copy enqueued by an add-on, printed after the configurator's script and not run yet.
+		var script = document.getElementById( 'pixijs-js' );
+		var url = this.pixi_url();
+		if ( ! script && ! url ) return Promise.resolve( false );
+		this.pixi_loading = new Promise( function( resolve ) {
+			var settle = function() {
+				resolve( that.has_pixi() );
+			};
+			if ( ! script ) {
+				script = document.createElement( 'script' );
+				script.id = 'pixijs-js';
+				script.async = true;
+				script.src = url;
+				document.head.appendChild( script );
+			}
+			script.addEventListener( 'load', settle );
+			script.addEventListener( 'error', function() {
+				console.log( 'Product configurator: Pixi could not be loaded from ' + ( script.src || url ) + '.' );
+				that.pixi_loading = null;
+				resolve( false );
+			} );
+		} );
+		return this.pixi_loading;
+	},
+
+	/**
+	 * Fetch Pixi once the page has loaded and the browser is idle, on canvas products.
+	 */
+	preload_pixi: function() {
+		var that = this;
+		var start = function() {
+			if ( 'canvas' !== that.renderer() || that.has_pixi() || ! that.pixi_url() ) return;
+			if ( window.requestIdleCallback ) {
+				window.requestIdleCallback( function() {
+					that.load_pixi();
+				}, { timeout: 2000 } );
+			} else {
+				setTimeout( function() {
+					that.load_pixi();
+				}, 200 );
+			}
+		};
+		if ( 'complete' === document.readyState ) {
+			start();
+		} else {
+			window.addEventListener( 'load', start, { once: true } );
+		}
+	},
+
+	/**
+	 * WebGL without Pixi (before it is loaded): a context can be created. Pixi's own check
+	 * runs again in start(), once it is.
+	 *
+	 * @return {Boolean}
+	 */
+	webgl_supported: function() {
+		if ( undefined !== this.webgl_cache ) return this.webgl_cache;
+		var supported = false;
+		try {
+			var canvas = document.createElement( 'canvas' );
+			var gl = canvas.getContext( 'webgl2' ) || canvas.getContext( 'webgl' );
+			supported = !! gl;
+			var lose = gl && gl.getExtension( 'WEBGL_lose_context' );
+			if ( lose ) lose.loseContext();
+		} catch ( error ) {
+			supported = false;
+		}
+		this.webgl_cache = supported;
+		return supported;
 	},
 
 	report_fallback: function( reason, detail, viewer ) {
@@ -3840,3 +3957,6 @@ PC.fe.views.viewer_canvas = Backbone.View.extend( {
 		wp.hooks.doAction( 'PC.fe.viewer.canvas.fallback', reason, detail, viewer );
 	}
 } );
+
+// Fetch Pixi in the background on canvas products (see load_pixi()).
+PC.fe.views.viewer_canvas.preload_pixi();

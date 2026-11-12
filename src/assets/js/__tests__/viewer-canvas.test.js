@@ -1291,3 +1291,66 @@ describe( 'solid-colour choices (docs/solid-colour-choices-spec.md)', () => {
 		expect( node.children ).toEqual( [] );
 	} );
 } );
+
+describe( 'Pixi on demand (load_pixi())', () => {
+	const Canvas_Viewer_Check = ( loaded ) => loaded.main_view() === PC.fe.views.viewer_canvas;
+
+	afterEach( () => {
+		document.querySelectorAll( '#pixijs-js' ).forEach( ( el ) => el.remove() );
+	} );
+
+	test( 'no Pixi yet but a URL to load it from: the canvas viewer is chosen', () => {
+		const loaded = load( { config: { viewer_2d_renderer: 'canvas', pixi_url: 'https://shop.test/pixi.min.js?ver=8.16.0' }, pixi: null } );
+		PC.fe.views.viewer_canvas.webgl_supported = () => true;
+		expect( Canvas_Viewer_Check( loaded ) ).toBe( true );
+		expect( loaded.fired ).toEqual( [] );
+	} );
+
+	test( 'no Pixi and no WebGL, checked without Pixi: image stack', () => {
+		const loaded = load( { config: { viewer_2d_renderer: 'canvas', pixi_url: 'https://shop.test/pixi.min.js' }, pixi: null } );
+		PC.fe.views.viewer_canvas.webgl_supported = () => false;
+		expect( loaded.main_view() ).toBe( Default_Viewer );
+		expect( loaded.fired ).toEqual( [ { webgl_unavailable: true }, { reason: 'webgl', detail: undefined } ] );
+	} );
+
+	test( 'loads once, by a script tag, and resolves when PIXI is there', async () => {
+		load( { config: { viewer_2d_renderer: 'canvas', pixi_url: 'https://shop.test/pixi.min.js' }, pixi: null } );
+		const statics = PC.fe.views.viewer_canvas;
+		const first = statics.load_pixi();
+		expect( statics.load_pixi() ).toBe( first );
+		const tags = document.querySelectorAll( '#pixijs-js' );
+		expect( tags.length ).toBe( 1 );
+		expect( tags[ 0 ].src ).toBe( 'https://shop.test/pixi.min.js' );
+		global.PIXI = { Application: function() {}, Texture: {} };
+		tags[ 0 ].dispatchEvent( new Event( 'load' ) );
+		await expect( first ).resolves.toBe( true );
+		await expect( statics.load_pixi() ).resolves.toBe( true );
+	} );
+
+	test( 'a pixijs script an add-on enqueued is waited for, not loaded again', async () => {
+		load( { config: { viewer_2d_renderer: 'canvas', pixi_url: 'https://shop.test/pixi.min.js' }, pixi: null } );
+		const existing = document.createElement( 'script' );
+		existing.id = 'pixijs-js';
+		document.head.appendChild( existing );
+		const loading = PC.fe.views.viewer_canvas.load_pixi();
+		expect( document.querySelectorAll( '#pixijs-js' ).length ).toBe( 1 );
+		global.PIXI = { Application: function() {}, Texture: {} };
+		existing.dispatchEvent( new Event( 'load' ) );
+		await expect( loading ).resolves.toBe( true );
+	} );
+
+	test( 'a failed load resolves false, and a later call may try again', async () => {
+		load( { config: { viewer_2d_renderer: 'canvas', pixi_url: 'https://shop.test/pixi.min.js' }, pixi: null } );
+		const statics = PC.fe.views.viewer_canvas;
+		const loading = statics.load_pixi();
+		document.getElementById( 'pixijs-js' ).dispatchEvent( new Event( 'error' ) );
+		await expect( loading ).resolves.toBe( false );
+		expect( statics.pixi_loading ).toBeNull();
+	} );
+
+	test( 'nothing to load from: resolves false without a script', async () => {
+		load( { config: { viewer_2d_renderer: 'canvas' }, pixi: null } );
+		await expect( PC.fe.views.viewer_canvas.load_pixi() ).resolves.toBe( false );
+		expect( document.querySelectorAll( '#pixijs-js' ).length ).toBe( 0 );
+	} );
+} );
