@@ -1,6 +1,6 @@
 # Image overlay on 3D products: the customer's upload on the model
 
-Status: **phases 1 (admin) and 2 (front end) built 2026-11-11**, not yet tried on a model; the print file is not. Decisions A to E answered (below).
+Status: **phases 1 to 3 built 2026-11-11** (admin, front end, print file and docs), not yet tried on a model; dragging on the model (C) is the later step. Decisions A to E answered (below).
 
 The 2D upload preview ([`image-overlay-spec.md`](image-overlay-spec.md)) left 3D out: "an image on
 a mesh is a decal or a texture swap, its own spec." This is that spec. It builds on what text
@@ -74,9 +74,13 @@ A small manager in Form builder, on the same runtime hook, for the fields with a
    `alphaTest` (decision B for what is under the image).
 4. Redrawn (debounced) when the placement or the file changes; flushed before save; the clones
    removed and the originals put back when the field has no file or its choice is not shown. The
-   target then shows its own material: an author wanting it invisible gives it a transparent
-   material in the model. The clone is white and opaque, so the image keeps its colours, with a
-   polygon offset so a plate lying on the surface wins the depth test.
+   target then shows its own material, or the texture another choice's action gives it (one
+   choice a fabric, another the upload). With **Hide the object while it has no image**
+   (`upload_preview_hide_3d`, added 2026-11-12), it gets a clone with `visible` off instead, for a
+   mesh with nothing to show of its own (an unlit material whose texture was left out of the GLB
+   renders black). The material is hidden, not the object: the object's visibility belongs to
+   choice actions and conditions. The clone is white and opaque, so the image keeps its colours,
+   with a polygon offset so a plate lying on the surface wins the depth test.
 5. Applied to every copy of the target (`findObjectsByCompositeId`): a model placed on several
    anchors shows the image on each.
 
@@ -102,10 +106,16 @@ They are screenshots of the 3D viewer, so they show the image as soon as it is o
 before the screenshot (flushed in `before_save.promises`, as text overlay does). Nothing to
 compose on the server for the picture.
 
-**A print file** (decision E): the server can draw the same flat picture as 2D, the upload in the
-zone on the reference texture's canvas, cut by the mask, from the stored file and placement:
-`compose()` with the 3D zone instead of a view's. It is what a print shop needs, the texture's area
-with the image as placed, and it costs one call in the order.
+**A print file** (decision E), drawn by the server from the stored file and placement when the
+cart, the quote request or the admin editor has the file (`compose_print()`, Form builder): the
+zone, upright, at the upload's own resolution (one upload pixel per print pixel at the customer's
+size, up to `print_max_size`, 4096 by default), the upload as placed in it, cut by the zone's mask
+(the mask's part under the zone, turned upright). Not the texture-sized picture first proposed: at
+the texture's resolution a small zone would print a few hundred pixels of a large photo. Stored as
+the 2D picture is (a `u…` token in `mkl-pc-upload-previews/`, swept the same way), under
+`upload_print_file` in the choice's data, and linked as **Print files** in the order line and the
+quote request in the admin, through an admin-post download checked like the uploaded files'
+(`mkl_pc/user_can_download_attached_file`).
 
 ## Decisions
 
@@ -139,7 +149,7 @@ with the image as placed, and it costs one call in the order.
 1. **Admin**: the 3D Preview section (target, zone on a reference texture, mask).
 2. **Front end**: the manager, the colour map on cloned materials, flushing before save, the
    field controls. iPhone run (texture size and memory).
-3. **Print file** (E), and the docs.
+3. **Print file** (E), and the docs. Done.
 4. Later: dragging on the model (C).
 
 ## Related
