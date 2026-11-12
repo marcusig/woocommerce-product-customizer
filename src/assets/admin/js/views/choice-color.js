@@ -4,6 +4,9 @@
 	   viewer (`draw_choice_color`, docs/solid-colour-choices-spec.md):
 	   - a warning when the value is not a hex code the viewers can draw (it stays a swatch);
 	   - a hint that an image on a view replaces the colour there.
+	-> And, for the admin previews (Image order), copies of the viewers' fill_for() and
+	   svg_url() from views/parts/choice-color.js, which is not shipped as a file of its own.
+	   choice-color.test.js checks the copies agree.
 */
 ( function( $ ) {
 	PC.views = PC.views || {};
@@ -22,6 +25,66 @@
 			if ( /^#[0-9a-f]{6}$/.test( hex ) ) return hex;
 			if ( /^#[0-9a-f]{3}$/.test( hex ) ) return '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
 			return '';
+		},
+
+		/**
+		 * What a choice draws as a colour on a view, or null. Same as PC.fe.choice_color.fill_for().
+		 *
+		 * @param {Backbone.Model} layer
+		 * @param {Backbone.Model} choice
+		 * @param {Number|String}  angle_id
+		 * @return {Object|null} { color, mask: { id, url, dimensions }, width, height }
+		 */
+		fill_for: function( layer, choice, angle_id ) {
+			if ( ! layer || ! choice || choice.get( 'is_group' ) ) return null;
+			if ( ! layer.get( 'draw_choice_color' ) || layer.get( 'not_a_choice' ) ) return null;
+			var type = layer.get( 'type' );
+			if ( 'simple' !== type && 'multiple' !== type ) return null;
+			if ( undefined === angle_id || null === angle_id || '' === angle_id ) return null;
+
+			var images = choice.get( 'images' );
+			var picture = null;
+			if ( images && images.get ) picture = images.get( angle_id );
+			if ( ! picture && images && images.find ) {
+				picture = images.find( function( model ) {
+					var id = model.get ? model.get( 'angleId' ) : model.angleId;
+					return String( id ) === String( angle_id );
+				} );
+			}
+			var image = picture ? ( picture.get ? picture.get( 'image' ) : picture.image ) : null;
+			if ( image && image.url ) return null;
+
+			var color = this.normalize( choice.get( 'color' ) );
+			if ( ! color ) return null;
+
+			var masks = layer.get( 'masks' );
+			var entry = null;
+			for ( var i = 0; masks && i < masks.length; i++ ) {
+				if ( masks[ i ] && String( masks[ i ].angleId ) === String( angle_id ) ) {
+					entry = masks[ i ];
+					break;
+				}
+			}
+			var mask = entry && entry.image && entry.image.url ? entry.image : null;
+			var width = mask && mask.dimensions ? parseInt( mask.dimensions.width, 10 ) : 0;
+			var height = mask && mask.dimensions ? parseInt( mask.dimensions.height, 10 ) : 0;
+			if ( ! mask || ! ( width > 0 ) || ! ( height > 0 ) ) return null;
+
+			return { color: color, mask: mask, width: width, height: height };
+		},
+
+		/**
+		 * The fill as an SVG image URL. Same as PC.fe.choice_color.svg_url().
+		 *
+		 * @param {Object} fill From fill_for().
+		 * @return {String}
+		 */
+		svg_url: function( fill ) {
+			var w = fill.width, h = fill.height;
+			return 'data:image/svg+xml,' + encodeURIComponent(
+				'<svg xmlns="http://www.w3.org/2000/svg" data-pc-color="' + fill.color + '" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges">' +
+				'<rect width="' + w + '" height="' + h + '" fill="' + fill.color + '"/></svg>'
+			);
 		},
 
 		/**

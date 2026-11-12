@@ -264,7 +264,8 @@ PC.fe.save_data = {
 						} );
 					}
 
-					var img_id = choice.get_image( 'image', 'id', angle_id );
+					// An image id, or the choice's colour (docs/solid-colour-choices-spec.md).
+					var img_id = PC.fe.choice_color.saved_image( choice, angle_id );
 					var choice_data = {
 						is_choice: true,
 						layer_id: model.id,
@@ -292,7 +293,8 @@ PC.fe.save_data = {
 				var is_active = choice.get( 'active' );
 				if ( is_active || ( 'simple' != model.get( 'type' ) && 'multiple' != model.get( 'type' ) && 'form' != model.get( 'type' ) ) ) {
 					if ( false === choice.get( 'cshow' ) ) return;
-					var img_id = choice.get_image( 'image', 'id', angle_id ); 
+					// An image id, or the choice's colour (docs/solid-colour-choices-spec.md).
+					var img_id = PC.fe.choice_color.saved_image( choice, angle_id );
 					const choice_data = {
 						is_choice: true,
 						layer_id: model.id, 

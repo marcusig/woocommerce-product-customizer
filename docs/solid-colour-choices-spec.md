@@ -1,7 +1,7 @@
 # Solid-colour choices (2D)
 
-Status: **specified 2026-11-12, not built.** Decisions 1 to 7 are Marc's (2026-11-12); nothing is
-open.
+Status: **specified 2026-11-12; built (phases 1 to 5). Left: a run on the iPhone.** Decisions 1 to 7 are Marc's (2026-11-12);
+nothing is open.
 
 A layer can draw its choices' **colour** instead of an image: the choice's existing "Color hex
 code" fills the layer's area, cut by the layer's mask for that angle. One colour list then covers
@@ -40,8 +40,9 @@ else.
    nothing asked for it; it would be easy in all three places (SVG `fill-opacity`, sprite alpha,
    GD alpha).
 6. **The setting lives in the Mask section** (Marc, 2026-11-12, was open point C).
-7. **The colour is saved with the configuration** (Marc, 2026-11-12, was open point D), in
-   `layer_data->color`, like `image` and `mask`.
+7. **The colour is saved with the configuration** (Marc, 2026-11-12, was open point D). Built as
+   the choice's saved `image`, `s<rrggbb>`, next to its `mask` (see
+   [Saved configurations](#saved-configurations)), rather than a `color` key.
 
 ## What draws
 
@@ -106,28 +107,44 @@ only asks `has_image()`, so a colour choice would never get a layer view), and `
 
 ## The server merge
 
-- `Choice::get_color()`: the saved `layer_data->color` when `is_stored()`, else the choice's
-  `color` when the layer has `draw_choice_color` on and the choice has no image for its angle;
-  normalised to `#rrggbb`, empty otherwise. Filter `mkl_pc/choice/color`.
-- `content` entries get `color`, the way they got `mask`. Their `image` stays empty.
-- **Token** `s<rrggbb>m<mask id>`, e.g. `s1e90ffm68` ("solid"). `s` is not a hex digit, so it
-  cannot be read as part of an add-on token (text overlay's md5, the upload preview's `u<md5>`),
-  and `parse_layer_token()` matches `^s([0-9a-f]{6})m(\d+)$`. A colour always has a mask, so the
-  token always has both parts.
-- `collect_layer_images()` adds `{ color, mask }` for those entries; `merge_masked()` (a colour
+- **A colour travels as an image.** Wherever an image id goes (a choice's `image_id`, a `content`
+  entry's `image`, a saved `layer_data->image`), a colour goes as `s<rrggbb>` ("solid"), with
+  the layer's mask in `mask` as for a masked image. This is the seam text overlay's md5 tokens and
+  the upload preview's `u<md5>` already use, so the cart, order, YITH and native quote merge lists
+  needed no change. `s` is not a hex digit, so no add-on token can read as a colour.
+- `Choice::get_image_id( 'image' )` returns `s<rrggbb>` when nothing usable was saved and the
+  choice, as the product is now, has no image on its view, its layer has `draw_choice_color`
+  and a mask on that view, and its colour is a hex code (filter `mkl_pc/choice/color` on the
+  raw value). `Choice::get_color()` reads the colour back from it.
+- **Token** `s<rrggbb>m<mask id>`, e.g. `s1e90ffm68`; `parse_layer_token()` matches
+  `^(\d+|s[0-9a-f]{6})m(\d+)$`. Helpers on `Configuration`: `parse_color_image()`,
+  `color_image()`, `normalize_color()`.
+- `collect_layer_images()` gives `{ color, mask }` for those entries; `merge_masked()` (a colour
   always goes through the masked path) makes an `Image::canvas()` of the mask's size × the scale,
   filled with the colour, then `apply_mask()`. Same GD cost as a masked image at the output size
   (0.11 s at 1200×675). If the colour is the bottom layer, its size sets the picture's size, like
   a first image does.
-- A mask that cannot be read: the colour is merged unmasked and logged (masks spec, decision 6).
-- File names, the REST on-the-fly merge and the cart / order / YITH merge lists carry the token
-  like any other.
+- **Never a single attachment.** `content_has_single_image()`, `save_image()` and
+  `get_image_file()` count a colour as a layer (it has no file path) that must be merged, even
+  alone. `get_image_file()` used to refuse any stack of one, so a masked image alone was never
+  merged to a file either; it now is.
+- A mask that cannot be read: over other layers the colour fills the picture so far, unmasked,
+  and is logged (masks spec, decision 6); as the bottom layer nothing gives it a size, so it is
+  left out and logged.
+- File names and the REST on-the-fly merge carry the token like any other.
 
 ## Saved configurations
 
-`save-data.js` writes the colour into the choice's `layer_data` (`color`), next to `image` and
-`mask`, only when the choice draws one (decision 7). Orders and quotes then keep their colour when
-the choice's hex is changed later ([choice resolves live, not stored](#related)).
+`save-data.js` saves a choice that draws its colour with `image: 's<rrggbb>'`
+(`PC.fe.choice_color.saved_image()`), and so with its `mask`, which is only saved next to an
+image (decision 7). `get_saved_image_id()` already accepts alphanumeric tokens, so orders and
+quotes keep their colour when the choice's hex is changed later
+([choice resolves live, not stored](#related)).
+
+As for images, a saved image of `0` means "saved without one", while an empty or missing one
+means nothing usable was saved: the product's current state is used, colour included. So a
+choice saved without an image before its layer drew colours shows the colour if the picture is
+merged again.
 
 ## Admin
 
@@ -180,16 +197,65 @@ for it:
 
 1. **Data and admin.** `draw_choice_color`, the Mask section checkbox and notices, the choice form
    warning, `PC.fe.choice_color.fill()`, import/export.
-2. **Server merge.** `get_color()`, the `content` field, the token, the canvas fill in
-   `merge_masked()`, saved `color`. Checked: a colour under a mask against a reference composed by
-   hand; a colour as the bottom layer; an unreadable mask.
+   *Built 2026-11-12:* the layer setting (boolean in the sanitizer, removed on 3D); a
+   `missing_notice` option on `PC.views.layer_masks`; `PC.views.choice_color_hint`
+   (`admin/js/views/choice-color.js`) under the colour field; `PC.fe.choice_color`
+   (`views/parts/choice-color.js`): `normalize()`, `fill()`, `has_fill()`. Jest:
+   `choice-color.test.js`, which also checks the admin and front-end hex rules agree.
+2. **Server merge.** `get_color()`, the token, the canvas fill in `merge_masked()`, the saved
+   colour. Checked: a colour under a mask against a reference composed by hand; a colour as the
+   bottom layer; an unreadable mask.
+   *Built 2026-11-12:* the colour travels as `image` `s<rrggbb>` (see [The server merge](#the-server-merge)),
+   so no `color` key was added anywhere; `save-data.js` saves it through
+   `PC.fe.choice_color.saved_image()`. Suite `tests/php/solid-colour/merge.php` (36 checks): tokens;
+   a colour alone, at full and half size, its alpha equal to the mask's on every pixel and its colour
+   exact; a colour over the dial (colour inside the mask, dial outside); an unreadable mask over an
+   image and alone; Configuration file names and files; a masked image alone now merged; Choice live
+   (image wins, no mask, not a hex, setting off, the filter) and stored (kept colour, image 0, empty
+   image); the cart's merge list. The REST route served `67-s1e90ffm68` as expected (the case shape
+   in blue over the dial). All other suites pass but `quote-requests/yith-accept`, which fails on
+   master too.
 3. **`<img>` stack.** The data URL through `set_src()`, `has_drawable()`, capture, the Image order
    preview. Checked against the server merge, pixel by pixel within rounding, with and without the
    image pools.
+   *Built 2026-11-12:* `viewer_layer.render()` sets the SVG src and keeps `color_fill`;
+   `layer_masks.mask_for()` cuts a fill (`is_fill_url()`) but still never the transparent
+   placeholder; `viewer_state.has_drawable()` counts colours, which covers the pools and
+   `add_single_choice()`; `get_capture_source()` returns `fill_canvas()` for a fill. The rule is now
+   `fill_for( layer, choice, angle_id )`, without `PC.fe` globals, and the admin keeps a copy of it
+   and of `svg_url()` (Jest checks they agree on every case); the Image order preview draws a fill
+   as an SVG tile cut by the mask. Checked on 613 in the page (band layer, Steel and Brown leather
+   made colour choices on Front, nothing saved): the fill's `<img>` box equals the case image's
+   (412×670), so themes size it like a layer image; capture against the server merge at 532×864,
+   premultiplied, at most 4 off (the band's own image under the same mask: also at most 4), with
+   the case and with the band image as mask; switching colours, an image choice under the mask, the
+   Back view (image, no mask), back to Front; both pool settings; an unloadable mask (colour
+   unmasked at the mask's size, nothing left loading). Not checked: the Image order preview in the
+   admin, Safari.
 4. **Canvas viewer.** The colour part, the tinted sprite, the picture key. Checked against the
    stack and the server, a snapshot refresh, a failed mask.
+   *Built 2026-11-12:* `parts_of()` gives `{ fill, key, mask }` (key from `fill_key()`, so a colour
+   change makes snapshots stale); `sync_layer()` gives an entry its `fill` and `fill_key` and
+   compares both, like `url`, to decide whether it changed; `load_fill_entry()` waits for the
+   layer's mask (a failed one draws the colour uncut), then adds `fill_sprite()`: Pixi's shared
+   `Texture.WHITE`, tinted, at the mask's natural size, placed like an image of that size, so the
+   node and per-sprite masks apply unchanged; no texture record, nothing in the budget. The idle
+   refresh and `capture()` draw the same sprite (capture at the output's scale). Jest: parts and
+   picture key, the sprite, an entry waiting for its mask, one removed meanwhile. Checked on 613 in
+   the page, as for phase 3: capture against the server merge, at most 4 off on every visible
+   pixel (52 pixels), 70,081 opaque blue pixels, the same numbers as the stack's; switching colours,
+   an image under the mask, Back (image, unmasked) and Front again, nothing held or loading; a
+   refreshed snapshot identical to the live picture on every pixel; a lost and restored WebGL
+   context (same picture after); an unloadable mask (colour uncut, settled). Not checked: Safari
+   and the iPhone.
 5. **Docs.** A user page (colour choices, masks needed, an image wins, shading with an overlay
-   layer), the token and the saved `color` in the hooks pages.
+   layer), the `s<rrggbb>` token, `mkl_pc/choice/color`, and the saved colour image in the hooks
+   pages.
+   *Written 2026-11-12 in wpc-docs:* `general-usage/drawing-choice-colours-in-the-preview.md`
+   (two screenshots still to take), linked from the General usage index and from Masking a layer;
+   `mkl_pc/choice/color` in the data hooks (table row, a section with an example, the saved colour
+   in the saved-data list); the `s<rrggbb>m<mask>` token next to the masked one in the cart hooks;
+   the saved colour image in the JS save-data section.
 
 Ship 1 to 4 together, as for masks: a viewer that ignores the setting would show nothing where the
 server merge shows a colour.
@@ -205,5 +271,5 @@ None: A to D became decisions 4 to 7.
 - [`canvas-viewer-spec.md`](canvas-viewer-spec.md): parts, textures, snapshots.
 - [`image-overlay-spec.md`](image-overlay-spec.md): the other feature that fills a mask with
   something that is not a choice image.
-- Choice resolves live, not stored: why saved configurations keep their own `image`, `mask` and
-  now `color`.
+- Choice resolves live, not stored: why saved configurations keep their own `image` (now also a
+  colour) and `mask`.

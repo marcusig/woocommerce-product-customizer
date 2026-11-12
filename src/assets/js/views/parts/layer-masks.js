@@ -125,12 +125,14 @@ PC.fe.layer_masks = {
 
 	/**
 	 * The mask an image of a layer is cut with on the active angle, if any.
-	 * The transparent placeholder has nothing to cut.
+	 * The transparent placeholder has nothing to cut; a colour fill does
+	 * (choice-color.js).
 	 *
 	 * @return {Object|null} { id, url, dimensions }
 	 */
 	mask_for: function( layer, src ) {
-		if ( ! src || 0 === src.indexOf( 'data:' ) ) return null;
+		if ( ! src ) return null;
+		if ( 0 === src.indexOf( 'data:' ) && ! ( PC.fe.choice_color && PC.fe.choice_color.is_fill_url( src ) ) ) return null;
 		var angle = PC.fe.angles.findWhere( { active: true } );
 		return this.get( layer, angle && angle.id );
 	},

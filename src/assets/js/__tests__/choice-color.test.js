@@ -178,3 +178,94 @@ describe( 'admin hint (assets/admin/js/views/choice-color.js)', () => {
 		expect( admin.messages( true, '#19f' ).hint ).not.toBe( '' );
 	} );
 } );
+
+describe( 'saved_image', () => {
+	/** A choice whose get_image() answers like the model's, for the view asked. */
+	function with_get_image( choice, ids ) {
+		choice.get_image = ( image, what, angle_id ) => ( 'id' === what ? ids[ angle_id ] || '' : '' );
+		return choice;
+	}
+
+	test( 'the image id when the choice has an image on the view', () => {
+		const choice = with_get_image( make_choice( {}, [ { angleId: 1, image: { id: 5, url: 'https://example.test/fabric.png' } } ] ), { 1: 5 } );
+		expect( load( make_layer() ).saved_image( choice, 1 ) ).toBe( 5 );
+	} );
+
+	test( 's<rrggbb> when the choice draws its colour there', () => {
+		const choice = with_get_image( make_choice( { color: '#19F' } ), {} );
+		expect( load( make_layer() ).saved_image( choice, 1 ) ).toBe( 's1199ff' );
+	} );
+
+	test( 'nothing when it draws neither', () => {
+		const choice = with_get_image( make_choice(), {} );
+		expect( load( make_layer( { draw_choice_color: false } ) ).saved_image( choice, 1 ) ).toBe( '' );
+		expect( load( make_layer() ).saved_image( choice, 2 ) ).toBe( '' );
+	} );
+} );
+
+describe( 'svg_url and the stack', () => {
+	const fill = { color: '#1e90ff', mask: MASK, width: 1200, height: 900 };
+
+	test( 'an SVG of the mask size holding one rectangle of the colour', () => {
+		const helper = load( make_layer() );
+		const url = helper.svg_url( fill );
+		expect( url.indexOf( 'data:image/svg+xml,' ) ).toBe( 0 );
+		const svg = decodeURIComponent( url.slice( 'data:image/svg+xml,'.length ) );
+		expect( svg ).toContain( 'width="1200" height="900" viewBox="0 0 1200 900"' );
+		expect( svg ).toContain( '<rect width="1200" height="900" fill="#1e90ff"/>' );
+	} );
+
+	test( 'is_fill_url tells a fill from other data URLs', () => {
+		const helper = load( make_layer() );
+		expect( helper.is_fill_url( helper.svg_url( fill ) ) ).toBe( true );
+		expect( helper.is_fill_url( 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' ) ).toBe( false );
+		expect( helper.is_fill_url( 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E' ) ).toBe( false );
+		expect( helper.is_fill_url( 'https://example.test/a.png' ) ).toBe( false );
+		expect( helper.is_fill_url( undefined ) ).toBe( false );
+	} );
+
+	test( 'the stack cuts a fill with the mask, never the placeholder', () => {
+		const helper = load( make_layer(), { active: 1 } );
+		const layer = make_layer();
+		expect( PC.fe.layer_masks.mask_for( layer, helper.svg_url( fill ) ) ).toEqual( MASK );
+		expect( PC.fe.layer_masks.mask_for( layer, 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==' ) ).toBeNull();
+		expect( PC.fe.layer_masks.mask_for( layer, 'https://example.test/fabric.png' ) ).toEqual( MASK );
+	} );
+} );
+
+describe( 'admin copies (assets/admin/js/views/choice-color.js)', () => {
+	function load_both( layer ) {
+		const viewers = load( layer );
+		const admin_source = fs.readFileSync( path.join( __dirname, '../../admin/js/views/choice-color.js' ), 'utf8' );
+		global.PC.views = {};
+		global.wp = { hooks: { addAction: () => {} } };
+		global.jQuery = () => {};
+		( 0, eval )( admin_source );
+		return { viewers, admin: PC.views.choice_color_hint };
+	}
+
+	test( 'fill_for() and svg_url() agree with the viewers\' on every case', () => {
+		const image = { angleId: 1, image: { id: 5, url: 'https://example.test/fabric.png' } };
+		const cases = [
+			[ make_layer(), make_choice(), 1 ],
+			[ make_layer(), make_choice(), 2 ],
+			[ make_layer(), make_choice( { color: '#19F' } ), 1 ],
+			[ make_layer(), make_choice( { color: 'red' } ), 1 ],
+			[ make_layer(), make_choice( {}, [ image ] ), 1 ],
+			[ make_layer(), make_choice( { is_group: true } ), 1 ],
+			[ make_layer( { draw_choice_color: false } ), make_choice(), 1 ],
+			[ make_layer( { type: 'multiple' } ), make_choice(), 1 ],
+			[ make_layer( { type: 'group' } ), make_choice(), 1 ],
+			[ make_layer( { not_a_choice: true } ), make_choice(), 1 ],
+			[ make_layer( { masks: [ { angleId: 1, image: { id: 68, url: MASK.url } } ] } ), make_choice(), 1 ],
+			[ make_layer(), make_choice(), '' ],
+		];
+		cases.forEach( ( [ layer, choice, angle ] ) => {
+			const { viewers, admin } = load_both( layer );
+			const a = viewers.fill_for( layer, choice, angle );
+			const b = admin.fill_for( layer, choice, angle );
+			expect( b ).toEqual( a );
+			if ( a ) expect( admin.svg_url( b ) ).toBe( viewers.svg_url( a ) );
+		} );
+	} );
+} );

@@ -1152,3 +1152,142 @@ describe( 'item masks (mask() on canvas items, docs/image-overlay-spec.md)', () 
 		expect( viewer.is_stack_settled( stack ) ).toBe( true );
 	} );
 } );
+
+describe( 'solid-colour choices (docs/solid-colour-choices-spec.md)', () => {
+	const underscore = {
+		each: ( list, callback, context ) => {
+			if ( Array.isArray( list ) ) list.forEach( ( value, index ) => callback.call( context, value, index ) );
+			else Object.keys( list || {} ).forEach( ( key ) => callback.call( context, list[ key ], key ) );
+		},
+		map: ( list, callback, context ) => list.map( ( value ) => callback.call( context, value ) ),
+		find: ( list, callback, context ) => ( Array.isArray( list ) ? list : Object.values( list || {} ) ).find( ( value ) => callback.call( context, value ) ),
+		filter: ( list, callback ) => list.filter( callback ),
+		values: ( object ) => Object.values( object || {} ),
+		isArray: Array.isArray,
+		without: ( list, item ) => list.filter( ( value ) => value !== item ),
+	};
+	const MASK = { url: 'band-mask.png', dimensions: { width: 532, height: 864 } };
+
+	beforeEach( () => {
+		global._ = underscore;
+	} );
+	afterEach( () => {
+		delete global._;
+	} );
+
+	function colour_viewer( colour ) {
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		PC.fe.layers.get = () => ( { get: () => undefined } );
+		PC.fe.viewer_state = { has_drawable: () => true };
+		PC.fe.layer_masks = { get: () => null };
+		PC.fe.choice_color = { fill: ( choice, angle_id ) => ( 1 === angle_id ? { color: colour.value, mask: MASK, width: 532, height: 864 } : null ) };
+		viewer.canvas_item = () => null;
+		viewer.image_url = () => '';
+		return viewer;
+	}
+
+	test( 'a choice without an image draws its colour as a part, cut by the mask; the key follows the colour', () => {
+		load();
+		const colour = { value: '#1e90ff' };
+		const viewer = colour_viewer( colour );
+		const choice = make_model( { id: 1, layerId: 3 } );
+		viewer.ordered_choices = () => [ choice ];
+
+		const parts = viewer.parts_of( [ choice ], 1 );
+		expect( parts ).toEqual( [ { fill: { color: '#1e90ff', mask: MASK, width: 532, height: 864 }, key: 'fill:#1e90ff:532x864', mask: 'band-mask.png' } ] );
+		expect( viewer.parts_of( [ choice ], 2 ) ).toEqual( [] );
+		const before = viewer.picture_key( { angle_id: 1 } );
+		expect( before ).toBe( 'fill:#1e90ff:532x864 mask:band-mask.png' );
+		colour.value = '#c0392b';
+		expect( viewer.picture_key( { angle_id: 1 } ) ).not.toBe( before );
+	} );
+
+	test( 'the sprite is the shared white texture, tinted, at the fill size times the scale', () => {
+		load();
+		const white = { id: 'white' };
+		global.PIXI.Texture.WHITE = white;
+		global.PIXI.Sprite = function( texture ) {
+			this.texture = texture;
+		};
+		const statics = PC.fe.views.viewer_canvas;
+		const sprite = statics.fill_sprite( { color: '#1e90ff', width: 532, height: 864 } );
+		expect( sprite.texture ).toBe( white );
+		expect( sprite.tint ).toBe( '#1e90ff' );
+		expect( [ sprite.width, sprite.height ] ).toEqual( [ 532, 864 ] );
+		const scaled = statics.fill_sprite( { color: '#1e90ff', width: 532, height: 864 }, 0.5, 0.25 );
+		expect( [ scaled.width, scaled.height ] ).toEqual( [ 266, 216 ] );
+	} );
+
+	test( 'a fill entry waits for the layer\'s mask, then draws, centred, and settles', async () => {
+		load();
+		global.PIXI.Texture.WHITE = {};
+		global.PIXI.Sprite = function( texture ) {
+			this.texture = texture;
+			this.position = { set: ( x, y ) => {
+				this.at = [ x, y ];
+			} };
+		};
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		viewer.app = {};
+		let resolve_mask;
+		const mask_promise = new Promise( ( resolve ) => {
+			resolve_mask = resolve;
+		} );
+		let pending = true;
+		viewer.mask_pending = () => pending;
+		viewer.mask_ready = () => mask_promise;
+		const masked = [];
+		viewer.apply_mask = ( stack, record ) => masked.push( record );
+		viewer.release_held = () => {};
+		viewer.after_change = () => {};
+		viewer.add_probe = () => {};
+		const node = { children: [], addChild( child ) {
+			this.children.push( child );
+		} };
+		const record = { node };
+		const stack = { size: { width: 600, height: 900 } };
+		const entry = { fill: { color: '#1e90ff', width: 532, height: 864 }, index: 2, settled: false, removed: false };
+
+		viewer.load_fill_entry( stack, record, entry );
+		expect( entry.settled ).toBe( false );
+		expect( node.children ).toEqual( [] );
+
+		resolve_mask();
+		await mask_promise;
+		await Promise.resolve();
+		expect( entry.settled ).toBe( true );
+		expect( node.children ).toEqual( [ entry.sprite ] );
+		expect( entry.sprite.tint ).toBe( '#1e90ff' );
+		expect( entry.sprite.at ).toEqual( [ 34, 18 ] );
+		expect( entry.sprite.zIndex ).toBe( 2 );
+		expect( masked ).toEqual( [ record ] );
+
+		// Without a mask to wait for, at once; the first drawing sets the stack's size.
+		pending = false;
+		const bare = { node: { children: [], addChild( child ) {
+			this.children.push( child );
+		} } };
+		const empty_stack = {};
+		const second = { fill: { color: '#c0392b', width: 532, height: 864 }, index: 0, settled: false, removed: false };
+		viewer.load_fill_entry( empty_stack, bare, second );
+		expect( second.settled ).toBe( true );
+		expect( empty_stack.size ).toEqual( { width: 532, height: 864 } );
+		expect( second.sprite.at ).toEqual( [ 0, 0 ] );
+	} );
+
+	test( 'a fill entry removed before its mask is in draws nothing', async () => {
+		load();
+		const viewer = Object.create( PC.fe.views.viewer_canvas.prototype );
+		viewer.app = {};
+		viewer.mask_pending = () => true;
+		viewer.mask_ready = () => Promise.resolve();
+		const node = { children: [], addChild( child ) {
+			this.children.push( child );
+		} };
+		const entry = { fill: { color: '#1e90ff', width: 10, height: 10 }, removed: true, settled: true };
+		viewer.load_fill_entry( { size: { width: 10, height: 10 } }, { node }, entry );
+		await Promise.resolve();
+		await Promise.resolve();
+		expect( node.children ).toEqual( [] );
+	} );
+} );

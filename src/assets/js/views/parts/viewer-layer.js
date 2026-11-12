@@ -146,6 +146,10 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 		if ( width && PC.fe.config.large_image_breakpoint && width >= PC.fe.config.large_image_breakpoint && this.model.get_image( 'image', 'url_large' ) ) {
 			img = this.model.get_image( 'image', 'url_large' );
 		}
+		// No image on this view: the choice may fill its layer's mask with its colour
+		// (choice-color.js). capture() draws the fill from `color_fill`.
+		this.color_fill = img ? null : PC.fe.choice_color.fill( this.model );
+		if ( this.color_fill ) img = PC.fe.choice_color.svg_url( this.color_fill );
 		var classes = [];
 		
 		classes.push( this.model.collection.getType() );
@@ -186,8 +190,8 @@ PC.fe.views.viewer_layer = Backbone.View.extend({
 			}
 			this.$el.removeClass( 'active' );
 		}
-		
-		this.$el.data( 'dimensions', this.model.get_image( 'image', 'dimensions' ) );
+
+		this.$el.data( 'dimensions', this.color_fill ? { width: this.color_fill.width, height: this.color_fill.height } : this.model.get_image( 'image', 'dimensions' ) );
 		
 		// a11y - hide images from being read
 		if ( ! this.$el.attr( 'data-layer' ) ) {
