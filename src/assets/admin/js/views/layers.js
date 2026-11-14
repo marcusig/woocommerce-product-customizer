@@ -1409,18 +1409,72 @@ TODO:
 		}
 	} );
 
+	/**
+	 * A layer linked into this product, rather than the global layer's own screen.
+	 *
+	 * On that screen the layer is the global layer. Duplicating it there is not another
+	 * link to itself.
+	 *
+	 * @param {Backbone.Model} model
+	 * @return {Boolean}
+	 */
+	const is_product_global_link = function ( model ) {
+		if ( ! model || ! model.get( 'is_global' ) || ! model.get( 'global_id' ) ) {
+			return false;
+		}
+		return ! ( PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
+	};
+
+	/**
+	 * "(Copy)" on a linked layer has to be that link's own name, or saving the reference
+	 * drops it and both links show the global name again.
+	 *
+	 * @param {Backbone.Model} model
+	 * @param {String}         field
+	 */
+	const suffix_copied_field = function ( model, field ) {
+		var current = model.get( field );
+		if ( null == current || '' === String( current ) ) {
+			return;
+		}
+		var next = String( current ) + ' (Copy)';
+		var overrides = PC.admin && PC.admin.layer_overrides;
+		if ( overrides && overrides.is_link( model ) ) {
+			if ( ! overrides.is_overridden( model, field ) ) {
+				overrides.switch_on( model, field );
+			}
+			var stored = overrides.get( model );
+			stored.values[ field ] = next;
+			var attributes = {};
+			attributes[ field ] = next;
+			overrides.store( model, stored, attributes );
+			return;
+		}
+		model.set( field, next );
+	};
+
 	const duplicate_or_paste_layer = function ( { layer_data, choices_data = null, is_cloning = false, collection } ) {
 		const content = PC.app.get_product().get( 'content' );
 
 		// Create the new layer model
 		const new_layer_model = new PC.layer( layer_data );
+		const keep_link = is_product_global_link( new_layer_model );
+
+		// A link copied while "Edit original" is on holds the global values in its attributes
+		// and the link's own in `overrides`. The copy is the link, so put those back first.
+		if ( keep_link && PC.admin && PC.admin.layer_overrides && PC.admin.layer_overrides.is_editing_original( new_layer_model ) ) {
+			PC.admin.layer_overrides.leave_original( new_layer_model, false );
+		}
+
+		if ( ! keep_link ) {
+			new_layer_model.set( { is_global: false, global_id: null } );
+			new_layer_model.unset( 'overrides' );
+		}
 
 		// Tweak name/admin label if we're cloning
 		if ( is_cloning ) {
-			new_layer_model.set( 'name', new_layer_model.get( 'name' ) + ' (Copy)' );
-			if ( new_layer_model.get( 'admin_label' ) ) {
-				new_layer_model.set( 'admin_label', new_layer_model.get( 'admin_label' ) + ' (Copy)' );
-			}
+			suffix_copied_field( new_layer_model, 'name' );
+			suffix_copied_field( new_layer_model, 'admin_label' );
 		}
 
 		// Actually add the new layer to the collection
@@ -1431,14 +1485,20 @@ TODO:
 			item_data = PC.toJSON( new_layer_model );
 			item_data.order = collection.nextOrder();
 			item_data._id = PC.app.get_new_id( collection );
+			item_data.id = item_data._id;
 		}
 
 		const new_layer = collection.create( item_data );
 
-		// Choices duplication
+		// Choices duplication. A link's choices stay the global layer's: the content row
+		// points at the same global_id, and the choice ids are the global layer's.
 		if ( choices_data && Array.isArray( choices_data ) ) {
 			const new_choices = new PC.choices( [], { layer: new_layer } );
-			content.add( { layerId: new_layer.id, choices: new_choices } );
+			const content_row = { layerId: new_layer.id, choices: new_choices };
+			if ( new_layer.get( 'is_global' ) && new_layer.get( 'global_id' ) ) {
+				content_row.global_id = parseInt( new_layer.get( 'global_id' ), 10 );
+			}
+			content.add( content_row );
 
 			choices_data.forEach( choice_data => {
 				const choice_model = is_cloning ? choice_data.clone() : new PC.choice( choice_data );
@@ -1450,6 +1510,18 @@ TODO:
 			PC.app.is_modified[ 'content' ] = true;
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
+			}
+		}
+
+		if ( new_layer.get( 'is_global' ) && new_layer.get( 'global_id' ) && PC.app.setContentRowGlobalId ) {
+			var linked = PC.app.setContentRowGlobalId( new_layer, new_layer.get( 'global_id' ) );
+			if ( ! linked && content && content.add ) {
+				content.add( {
+					layerId: new_layer.id,
+					choices: new PC.choices( [], { layer: new_layer } ),
+					global_id: parseInt( new_layer.get( 'global_id' ), 10 ),
+				} );
+				PC.app.setContentRowGlobalId( new_layer, new_layer.get( 'global_id' ) );
 			}
 		}
 
