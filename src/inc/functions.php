@@ -121,6 +121,18 @@ function mkl_pc_get_viewer_2d_renderer( $product_id = 0 ) {
 }
 
 /**
+ * The URL of Pixi, which the canvas viewer loads on demand (PC.fe.views.viewer_canvas.load_pixi()):
+ * about 220 KB gzipped that no longer blocks the page. Add-ons drawing with Pixi call that loader
+ * too, rather than depending on the `pixijs` script handle; this function existing is how they
+ * know the loader is there.
+ *
+ * @return string
+ */
+function mkl_pc_pixi_url() {
+	return add_query_arg( 'ver', '8.16.0', MKL_PC_ASSETS_URL . 'js/vendor/pixi.min.js' );
+}
+
+/**
  * Allowed Three.js material property names for actions_3d material_property.
  *
  * Scalar/boolean props only — colors and textures use dedicated action types.

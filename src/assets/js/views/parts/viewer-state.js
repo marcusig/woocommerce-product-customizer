@@ -91,14 +91,18 @@ PC.fe.viewer_state = {
 	},
 
 	/**
-	 * Whether a choice gives a viewer something to draw: an image, or a layer
-	 * type that renders itself (the text overlay draws a canvas with no image).
+	 * Whether a choice gives a viewer something to draw: an image, its colour
+	 * (docs/solid-colour-choices-spec.md), or a layer type that renders itself
+	 * (the text overlay draws a canvas with no image).
 	 *
 	 * @param {Backbone.Model} choice
 	 * @return {Boolean}
 	 */
 	has_drawable: function( choice ) {
-		return choice.has_image() || !! wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, choice );
+		if ( choice.has_image() ) return true;
+		// A choice drawing its colour on some view (choice-color.js).
+		if ( PC.fe.choice_color && PC.fe.choice_color.has_fill( choice ) ) return true;
+		return !! wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, choice );
 	},
 
 	/**

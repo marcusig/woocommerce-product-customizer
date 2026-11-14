@@ -341,6 +341,7 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 				array( 'backbone/views/layer_overrides', 'views/layer-overrides.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
 				array( 'backbone/views/layer_masks', 'views/layer-masks.js', array( 'mkl_pc/js/admin/backbone/views/layers', 'mkl_pc/js/admin/backbone/views/layer_overrides' ) ),
 				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
+				array( 'backbone/views/choice_color', 'views/choice-color.js', array( 'mkl_pc/js/admin/backbone/views/choices' ) ),
 				array( 'backbone/views/image_order_preview', 'views/image-order-preview.js' ),
 				array( 'backbone/views/image_order', 'views/image-order.js', array(
 					'mkl_pc/js/admin/backbone/views/layers',
@@ -439,6 +440,10 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'angles_no_delete_message' => esc_html__( 'This item cannot be deleted: at least one view is required for the configurator to work', 'product-configurator-for-woocommerce' ),
 					/* translators: 1: sizes of the layer's images, e.g. "2000 × 2000", 2: size of the mask */
 					'mask_size_mismatch' => esc_html__( 'Images of this layer on this view are %1$s, the mask is %2$s. A mask must be the same size as the images it cuts.', 'product-configurator-for-woocommerce' ),
+					// Solid-colour choices (docs/solid-colour-choices-spec.md).
+					'mask_missing_for_color' => esc_html__( 'No mask on this view: choice colours are not drawn here.', 'product-configurator-for-woocommerce' ),
+					'choice_color_not_drawn' => esc_html__( 'This layer draws choice colours in the viewer, but only hex codes such as #1e90ff or #19f can be drawn. This colour is only used for the swatch.', 'product-configurator-for-woocommerce' ),
+					'choice_color_image_wins' => esc_html__( 'On views where this choice has an image, the image is shown instead of the colour.', 'product-configurator-for-woocommerce' ),
 					// Linked global layers (docs/global-layer-overrides-spec.md).
 					'override_on' => esc_html__( 'Override for this link', 'product-configurator-for-woocommerce' ),
 					'override_off' => esc_html__( 'Use the global layer\'s value', 'product-configurator-for-woocommerce' ),

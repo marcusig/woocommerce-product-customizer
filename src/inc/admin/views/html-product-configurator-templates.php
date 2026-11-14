@@ -1016,6 +1016,9 @@ CONTENT TEMPLATES
 		<# if ( data.size_warning ) { #>
 			<p class="mkl-pc-setting--warning mkl-pc-layer-mask__warning">{{data.size_warning}}</p>
 		<# } #>
+		<# if ( ! data.url && data.missing_notice ) { #>
+			<p class="mkl-pc-setting--warning mkl-pc-layer-mask__warning">{{data.missing_notice}}</p>
+		<# } #>
 	</div>
 	<# } #>
 </script>

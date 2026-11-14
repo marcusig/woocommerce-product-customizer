@@ -405,6 +405,8 @@ class Choice {
 		if ( null === $image_id ) {
 			$image = $this->get_image( $type );
 			$image_id = $image && isset( $image['id'] ) ? $image['id'] : '';
+			// No image on this view: the choice may fill its layer's mask with its colour.
+			if ( '' === $image_id && 'image' === $type ) $image_id = $this->get_live_color_image();
 		}
 
 		/**
@@ -448,6 +450,44 @@ class Choice {
 		 * @return int
 		 */
 		return absint( apply_filters( 'mkl_pc/choice/mask_id', $mask_id, $this ) );
+	}
+
+	/**
+	 * The solid colour this choice draws, if any (docs/solid-colour-choices-spec.md).
+	 *
+	 * Read from the image: a colour travels as `s<rrggbb>` wherever an image id does, and a
+	 * stored configuration keeps it in `layer_data->image`, so past orders keep their colour
+	 * when the choice's hex code changes later.
+	 *
+	 * @return string '#rrggbb', or ''.
+	 */
+	public function get_color() {
+		return Configuration::parse_color_image( $this->get_image_id( 'image' ) );
+	}
+
+	/**
+	 * The colour image of a choice as the product is now, or '': the layer draws choice
+	 * colours, the choice has no image on its view, its colour is a hex code, and the layer
+	 * has a mask on that view (the fill takes the mask's size). Same rule as
+	 * PC.fe.choice_color.fill().
+	 *
+	 * @return string `s<rrggbb>`, or ''.
+	 */
+	private function get_live_color_image() {
+		if ( ! $this->get_layer( 'draw_choice_color' ) || $this->get_layer( 'not_a_choice' ) ) return '';
+		if ( ! in_array( $this->get_layer( 'type' ), array( 'simple', 'multiple' ), true ) ) return '';
+		if ( $this->get_choice( 'is_group' ) ) return '';
+		if ( ! self::find_mask_id( $this->get_layer( 'masks' ), $this->angle_id ) ) return '';
+
+		/**
+		 * mkl_pc/choice/color - Filters the colour a choice without an image draws in the merged picture
+		 *
+		 * @param string $color  The choice's colour hex code, as entered.
+		 * @param Choice $choice
+		 * @return string '#rgb' or '#rrggbb'; anything else draws nothing.
+		 */
+		$color = apply_filters( 'mkl_pc/choice/color', $this->get_choice( 'color' ), $this );
+		return Configuration::color_image( $color );
 	}
 
 	/**

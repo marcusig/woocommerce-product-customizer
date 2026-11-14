@@ -90,17 +90,35 @@ var PC = PC || {};
 		sync: function( method, model, options ) {
 		},
 
+		/**
+		 * Attributes for a layer added by duplicating or pasting one.
+		 *
+		 * A link to a global layer stays a link: the copy keeps `is_global` and `global_id`
+		 * (and any per-link overrides). It can still be disconnected afterwards. A layer that
+		 * is not a link is stored as its own data.
+		 *
+		 * @param {Object} data Source layer attributes.
+		 * @return {Object}
+		 */
 		create_layer: function( data ) {
-			var m = _.extend( data, {
-				_id: PC.app.get_new_id( this ),
+			data = data || {};
+			var keep_global = !! ( data.is_global && data.global_id );
+			var global_id = keep_global ? data.global_id : null;
+			var new_id = PC.app.get_new_id( this );
+			var layer = _.extend( data, {
+				_id: new_id,
+				id: new_id,
 				order: this.nextOrder(),
 				image_order: this.next_image_order(),
 				image_order_by_angle: this.next_image_order_by_angle() || undefined,
 				active: true,
-				is_global: false,
-				global_id: null
+				is_global: keep_global,
+				global_id: global_id
 			} );
-			return m;
+			if ( ! keep_global ) {
+				delete layer.overrides;
+			}
+			return layer;
 		},
 		get_children: function( model ) {
 			if ( model.children ) return model.children;

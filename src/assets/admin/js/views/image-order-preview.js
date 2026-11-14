@@ -150,7 +150,7 @@ PC.views = PC.views || {};
 			if ( layer.get( 'not_a_choice' ) ) return choices.first();
 
 			var has_image_here = _.bind( function( choice ) {
-				return !! this.image_data( choice );
+				return !! this.image_data( choice ) || !! this.color_fill( layer, choice );
 			}, this );
 
 			var preferred = choices.findWhere( { is_default: true } );
@@ -173,6 +173,19 @@ PC.views = PC.views || {};
 			if ( ! picture ) return null;
 			var image = picture.get( 'image' );
 			return image && image.url ? image : null;
+		},
+
+		/**
+		 * The colour a choice fills its layer's mask with in the current view, if it draws one
+		 * (docs/solid-colour-choices-spec.md).
+		 *
+		 * @param {Backbone.Model} layer
+		 * @param {Backbone.Model} choice
+		 * @return {Object|null} { color, mask, width, height }
+		 */
+		color_fill: function( layer, choice ) {
+			if ( ! choice || ! this.angle_id || ! PC.views.choice_color_hint ) return null;
+			return PC.views.choice_color_hint.fill_for( layer, choice, this.angle_id );
 		},
 
 		/**
@@ -210,6 +223,9 @@ PC.views = PC.views || {};
 				}
 
 				var image = this.image_data( choice );
+				var fill = image ? null : this.color_fill( layer, choice );
+				// A colour draws as an SVG of the mask's size, cut by the mask like an image.
+				if ( fill ) image = { url: PC.views.choice_color_hint.svg_url( fill ), id: 0, dimensions: { width: fill.width, height: fill.height } };
 				if ( ! image ) return;
 				var mask = this.mask_data( layer );
 				entries.push( {

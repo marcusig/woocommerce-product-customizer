@@ -91,9 +91,42 @@ class Images {
 	 */
 	private function has_masks( $images ) {
 		foreach ( $images as $image ) {
-			if ( is_array( $image ) && ! empty( $image['mask'] ) ) return true;
+			if ( is_array( $image ) && ( ! empty( $image['mask'] ) || ! empty( $image['color'] ) ) ) return true;
 		}
 		return false;
+	}
+
+	/**
+	 * A solid colour as a layer image (docs/solid-colour-choices-spec.md): a canvas of the
+	 * mask's size at the merge's scale, filled with the colour. Without a readable mask the
+	 * colour fills the picture merged so far (unmasked, as a failed mask leaves an image),
+	 * and is skipped when it would be the first layer, as nothing gives it a size.
+	 *
+	 * @param array                          $item      { color, mask }
+	 * @param \Intervention\Image\Image|null $the_image The picture so far.
+	 * @param float|null                     $scale     The merge's scale, null when not set yet.
+	 * @param array|null                     $size      The output size.
+	 * @return array|null { image, scale }
+	 */
+	private function color_layer( $item, $the_image, $scale, $size ) {
+		$mask_size = ! empty( $item['mask'] ) && is_file( $item['mask'] ) ? @getimagesize( $item['mask'] ) : false; // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- an unreadable mask is logged by the caller
+		if ( $mask_size && $mask_size[0] > 0 && $mask_size[1] > 0 ) {
+			if ( null === $scale ) $scale = self::fit_scale( $mask_size[0], $mask_size[1], $size );
+			$width = max( 1, (int) round( $mask_size[0] * min( 1, $scale ) ) );
+			$height = max( 1, (int) round( $mask_size[1] * min( 1, $scale ) ) );
+		} elseif ( $the_image ) {
+			$width = $the_image->width();
+			$height = $the_image->height();
+		} else {
+			if ( function_exists( 'wc_get_logger' ) ) {
+				wc_get_logger()->warning( 'MKL Product Configurator: the colour ' . $item['color'] . ' has no mask to take its size from and is the bottom layer, so it is left out of the merged image.', array( 'source' => 'mkl-pc' ) );
+			}
+			return null;
+		}
+		return array(
+			'image' => Image::canvas( $width, $height, $item['color'] ),
+			'scale' => $scale,
+		);
 	}
 
 	/**
@@ -110,6 +143,20 @@ class Images {
 		$the_image = null;
 		$scale = null;
 		foreach ( $images as $item ) {
+			if ( is_array( $item ) && ! empty( $item['color'] ) ) {
+				$fill = $this->color_layer( $item, $the_image, $scale, $size );
+				if ( ! $fill ) continue;
+				$scale = $fill['scale'];
+				$layer = $fill['image'];
+				if ( ! empty( $item['mask'] ) && null !== $scale ) $this->apply_mask( $layer, $item['mask'], $scale );
+				if ( ! $the_image ) {
+					$the_image = $layer;
+				} else {
+					$the_image->insert( $layer, 'center-center' );
+				}
+				continue;
+			}
+
 			$path = is_array( $item ) ? ( isset( $item['path'] ) ? $item['path'] : '' ) : $item;
 			if ( ! $path || ! file_exists( $path ) ) continue;
 			$path = apply_filters( 'mkl_pc_images_merge__single_image_src', $path );

@@ -161,6 +161,17 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 					'help' => __( 'An image per view, the same size as this layer\'s images on that view. The layer only shows where the mask is opaque; leave a view empty to show the layer whole.', 'product-configurator-for-woocommerce' ),
 				),
 
+				// Choices without an image fill the mask with their colour (docs/solid-colour-choices-spec.md).
+				'draw_choice_color' => array(
+					'label' => __( 'Draw the choice colour in the viewer', 'product-configurator-for-woocommerce' ),
+					'help' => __( 'A choice with no image on a view fills this layer\'s mask with its colour hex code instead. Views without a mask draw nothing.', 'product-configurator-for-woocommerce' ),
+					'type' => 'checkbox',
+					'overridable' => true,
+					'priority' => 20,
+					'section' => 'mask',
+					'condition' => '"simple" == data.type || "multiple" == data.type',
+				),
+
 				'display_mode' => array(
 					'label' => __( 'Display mode', 'product-configurator-for-woocommerce' ),
 					'type' => 'image_select',
@@ -399,6 +410,7 @@ if ( ! class_exists('MKL\PC\Layer_Settings') ) {
 			// Masks are 2D only; without its section the field would land in General.
 			if ( $post && '3d' === mkl_pc_get_configurator_type( $post->ID ) ) {
 				unset( $settings['masks'] );
+				unset( $settings['draw_choice_color'] );
 			}
 
 			return apply_filters( 'mkl_pc_layer_default_settings', $settings );

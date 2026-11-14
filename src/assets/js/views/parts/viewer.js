@@ -207,7 +207,7 @@ PC.fe.views.viewer = Backbone.View.extend({
 	},
 
 	add_single_choice: function( model ) {
-		if ( model.has_image() || wp.hooks.applyFilters( 'PC.fe.viewer.item.render.empty.images', false, model ) ) {
+		if ( PC.fe.viewer_state.has_drawable( model ) ) {
 			var View = wp.hooks.applyFilters( 'PC.fe.viewer.item.view', PC.fe.views.viewer_layer, model, this );
 			var layer = new View( { model: model, parent: this } );
 			this.insert_image( layer.$el, this.sort_key( model ) );
@@ -290,14 +290,18 @@ PC.fe.views.viewer = Backbone.View.extend({
 			if ( 'IMG' === view.el.tagName ) {
 				// Only usable once decoded; an empty placeholder means "nothing here".
 				if ( ! view.el.getAttribute( 'src' ) || 0 === view.el.getAttribute( 'src' ).indexOf( 'data:image/gif' ) ) return 'none';
+				// A colour fill is drawn from its colour, not from its SVG (choice-color.js).
+				if ( view.color_fill && PC.fe.choice_color.is_fill_url( view.el.getAttribute( 'src' ) ) ) {
+					return view.el.complete ? PC.fe.choice_color.fill_canvas( view.color_fill ) : null;
+				}
 				return view.el.complete && view.el.naturalWidth ? view.el : null;
 			}
 			var canvas = view.el.querySelector ? view.el.querySelector( 'canvas' ) : null;
 			if ( canvas ) return canvas;
 		}
 
-		// No view (not rendered, or the choice carries no image at all).
-		if ( ! choice.has_image() ) return 'none';
+		// No view (not rendered, or the choice carries no image or colour at all).
+		if ( ! choice.has_image() && ! ( PC.fe.choice_color && PC.fe.choice_color.has_fill( choice ) ) ) return 'none';
 
 		return null;
 	},

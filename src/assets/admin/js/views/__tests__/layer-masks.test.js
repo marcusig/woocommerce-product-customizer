@@ -84,7 +84,7 @@ function load() {
 			get_collection: () => null,
 		},
 	};
-	global.PC_lang = { mask_size_mismatch: 'Images are %1$s, the mask is %2$s.' };
+	global.PC_lang = { mask_size_mismatch: 'Images are %1$s, the mask is %2$s.', mask_missing_for_color: 'No mask: no colours.' };
 	( 0, eval )( source );
 	return { View: PC.views.layer_masks, actions };
 }
@@ -196,7 +196,11 @@ describe( 'mounting', () => {
 		};
 		mount( form );
 		const first = form.layer_masks_view;
-		expect( first.options ).toEqual( { layer: form.model, locked: true } );
+		expect( first.options ).toEqual( { layer: form.model, locked: true, missing_notice: expect.any( Function ) } );
+		// Solid-colour choices: views without a mask say colours are not drawn there.
+		expect( first.options.missing_notice( 1 ) ).toBe( '' );
+		form.model.set( 'draw_choice_color', true );
+		expect( first.options.missing_notice( 1 ) ).toBe( 'No mask: no colours.' );
 		mount( form );
 		expect( removed ).toEqual( [ first ] );
 		expect( appended ).toEqual( [ first, form.layer_masks_view ] );
