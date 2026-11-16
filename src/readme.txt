@@ -252,7 +252,7 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.2.0 - 14/Nov/2026 =
+= 2.2.0 - 16/Nov/2026 =
 
 * FEATURE: Layer masks - use image alpha to create masks for layers.
 * FEATURE: A layer can draw its choices' Color hex code in its mask, instead of images
