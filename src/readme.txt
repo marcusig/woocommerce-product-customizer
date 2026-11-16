@@ -3,7 +3,7 @@ Contributors: mklacroix, marcusig
 Tags: 3D configurator, product customizer, product builder, woocommerce, request a quote
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
-Tested up to: 7.1
+Tested up to: 7.2
 Stable tag: 2.2.0
 Requires PHP: 7.4
 License: GPLv2+
@@ -252,13 +252,21 @@ Open Source SVG icons:
 
 == Changelog ==
 
-= 2.2.0 - unreleased =
+= 2.2.0 - 14/Nov/2026 =
 
+* FEATURE: Layer masks - use image alpha to create masks for layers.
+* FEATURE: A layer can draw its choices' Color hex code in its mask, instead of images
 * FEATURE: Each view can have its own image order (canvas viewer)
+* FEATURE: Introduced a new Canvas based viewer
+* FEATURE: Possibility to locally override data in a Global layer
 * TWEAK: Image order screen: the view, the order's state and its actions in one bar
+* TWEAK: Duplicating a global layer in the editor keeps the global layer reference
+* TWEAK: Pixi loads in the background, only for the canvas viewer
+* TWEAK: Compatibility with WordPress 7.2
 * DEV: Zone editor, mask picker and masks on canvas items, for add-ons
 * DEV: PC.fe.viewer.shown_choices filter, and a Fix images hook for images kept by add-ons
 * FIX: Product editor running out of memory on unmigrated configurators when Advanced Dynamic Pricing is active
+* FIX: Conditions export
 
 = 2.1.0 - 04/Nov/2026 =
 
@@ -372,4 +380,6 @@ Open Source SVG icons:
 
 == Upgrade Notice ==
 
+* 2.2.0 What's new: New Canvas viewer. Layer masks from image alpha, choice colours drawn into those masks, a separate image order per view, and local overrides on global layers.
+* 2.1.0 Built in Quote Request feature
 * 2.0.0 Major update: 3D configurator, global layers and global configurators. Configurator data moves to a new storage format, converted automatically. Back up your site before updating.
