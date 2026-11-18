@@ -34,9 +34,11 @@ define( 'MKL_PC_ASSETS_URL', plugin_dir_url( __FILE__ ) . 'assets/' );
 define( 'MKL_PC_PLUGIN_BASE_NAME', plugin_basename( __FILE__ ) );
 
 require_once MKL_PC_INCLUDE_PATH . 'plugin.php';
+require_once MKL_PC_INCLUDE_PATH . 'class-addon-update-compat.php';
 
 add_action( 'init', 'mkl_pc_load_plugin_textdomain', 30 );
 add_action( 'plugins_loaded', 'mkl_pc_init', 90 );
+add_action( 'plugins_loaded', [ 'MKL\\PC\\Addon_Update_Compat', 'boot' ], 99 );
 add_action( 'plugins_loaded', 'mkl_pc_maybe_deactivate_variable_addon', 5 );
 
 /**
