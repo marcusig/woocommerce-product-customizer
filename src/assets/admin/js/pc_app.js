@@ -1824,11 +1824,12 @@ PC.toJSON = function( item ) {
 				} );
 				// A rejected batch stops the chain, so the components queued behind it never run
 				// and never decrement `saving`. Without this the save never settles: the overlay
-				// stays up and no error is reported.
-				save_all_chain.fail( function() {
+				// stays up and no error is reported. Pass the rejection through so a 403 whose
+				// own callback did not run still has a message to show.
+				save_all_chain.fail( function( error ) {
 					if ( app.saving > 0 ) {
 						app.saving = 1;
-						app.error_saving( null, state, options, null );
+						app.error_saving( null, state, options, error );
 					}
 				} );
 			} else {
@@ -1838,7 +1839,126 @@ PC.toJSON = function( item ) {
 			// if ( this.saving == 0 ) this.admin.close();
 		},
 
-		error_saving: function( key, state, options, error, a, b ) {
+		/**
+		 * Text worth showing from a save error body.
+		 *
+		 * Accepts the unwrapped `{ message }` payload, the full `{ success, data }` JSON,
+		 * a WP_Error list, or a JSON string. Nonce failures (`-1`, `0`) and HTML error
+		 * pages yield nothing so the caller can substitute a session message.
+		 *
+		 * @param {*} payload
+		 * @return {string}
+		 */
+		message_from_save_response: function( payload ) {
+			if ( payload == null || payload === '' ) {
+				return '';
+			}
+			if ( typeof payload === 'number' ) {
+				payload = String( payload );
+			}
+			if ( typeof payload === 'string' ) {
+				var trimmed = payload.trim();
+				if ( ! trimmed || trimmed === '-1' || trimmed === '0' ) {
+					return '';
+				}
+				if ( trimmed.charAt( 0 ) === '<' ) {
+					return '';
+				}
+				if ( trimmed.charAt( 0 ) === '{' || trimmed.charAt( 0 ) === '[' ) {
+					try {
+						return this.message_from_save_response( JSON.parse( trimmed ) );
+					} catch ( parse_error ) {
+						return '';
+					}
+				}
+				return trimmed.length > 500 ? trimmed.slice( 0, 500 ) : trimmed;
+			}
+			if ( typeof payload !== 'object' ) {
+				return '';
+			}
+			if ( payload.data ) {
+				if ( typeof payload.data === 'string' && payload.data.trim() && payload.data.trim() !== '-1' && payload.data.trim() !== '0' ) {
+					return payload.data.trim();
+				}
+				if ( payload.data.message ) {
+					return String( payload.data.message );
+				}
+				if ( Array.isArray( payload.data ) ) {
+					var messages = [];
+					payload.data.forEach( function( item ) {
+						if ( item && item.message ) {
+							messages.push( String( item.message ) );
+						}
+					} );
+					if ( messages.length ) {
+						return messages.join( '\n' );
+					}
+				}
+			}
+			if ( payload.message && payload.message !== 'error' ) {
+				return String( payload.message );
+			}
+			return '';
+		},
+		/**
+		 * Alert text for a failed save.
+		 *
+		 * A 2xx `wp_send_json_error()` arrives as `{ message }`. A 403 (expired nonce or
+		 * logged-out session) arrives as the jqXHR, because jQuery treats it as a failed
+		 * request before `wp.ajax` can unwrap `response.data`.
+		 *
+		 * @param {*} error Rejection value, jqXHR, or empty when the chain is only settling.
+		 * @return {string}
+		 */
+		save_error_message: function( error ) {
+			var session_message = ( window.PC_lang && PC_lang.save_failed_session ) || 'The configuration could not be saved because the session has expired. Reload the page and try again.';
+			var generic_message = ( window.PC_lang && PC_lang.save_failed ) || 'The configuration could not be saved.';
+			var http_template = ( window.PC_lang && PC_lang.save_failed_http ) || 'The configuration could not be saved (HTTP %s).';
+			var from_body = '';
+			var response_text = '';
+			var status = 0;
+
+			if ( typeof error === 'string' || typeof error === 'number' ) {
+				response_text = String( error ).trim();
+				from_body = this.message_from_save_response( error );
+			} else if ( error && typeof error === 'object' ) {
+				status = parseInt( error.status, 10 ) || 0;
+				if ( typeof error.responseText === 'string' ) {
+					response_text = error.responseText.trim();
+				}
+				from_body = this.message_from_save_response( error.responseJSON );
+				if ( ! from_body && response_text ) {
+					from_body = this.message_from_save_response( response_text );
+				}
+				// Unwrapped payload: `{ message: '...' }` with no HTTP fields.
+				if ( ! from_body && ! status && ! error.responseText ) {
+					from_body = this.message_from_save_response( error );
+				}
+			}
+
+			if ( from_body ) {
+				return from_body;
+			}
+			if ( status === 401 || status === 403 || response_text === '-1' || response_text === '0' ) {
+				return session_message;
+			}
+			if ( status ) {
+				return http_template.replace( '%s', String( status ) );
+			}
+			return generic_message;
+		},
+		error_saving: function( key, state, options, error ) {
+			if ( ! this.errors ) {
+				this.errors = [];
+			}
+			// Record before the saving counter hits zero. A later part of the save never
+			// runs after a 403, and the call that finally alerts may carry no error of its own.
+			if ( typeof error !== 'undefined' && error !== null ) {
+				var message = this.save_error_message( error );
+				if ( message && this.errors.indexOf( message ) === -1 ) {
+					this.errors.push( message );
+				}
+			}
 			this.saving--;
 			if ( this.saving == 0 ) {
 				if ( this._chunk_storage_migration_ui && window.MKL_PC_DataMigrationOverlay ) {
@@ -1850,22 +1970,15 @@ PC.toJSON = function( item ) {
 				if ( state && state.state_saved ) {
 					state.state_saved( 1 );
 				}
-				if ( error && 'string' == typeof error && error.length > 0 ) this.errors.push( error );
-				if ( error && 'object' == typeof error ) {
-					const type = error?.status || 'unknown';
-					const response = error?.responseJSON;
-					this.errors.push( 'Error type: ' + type );
-					if ( response && response.data && response.data.message ) this.errors.push( 'Error message: ' + response.data.message );
-					// wp.ajax rejects a wp_send_json_error() with its data payload, not a jqXHR.
-					else if ( error.message ) this.errors.push( 'Error message: ' + error.message );
-					if ( !response && error?.responseText ) this.errors.push( 'Error response: ' + error.responseText );
+				if ( ! this.errors.length ) {
+					this.errors.push( this.save_error_message( null ) );
 				}
-				console.log( key, state, options, error, a, b, this.errors );
+				console.log( key, state, options, error, this.errors );
 				if ( options && options.failed ) {
 					options.failed( this.errors.slice() );
 				}
 				if ( ! options || ! options.suppress_error_alert ) {
-					alert( this.errors.join( "\n" ) );
+					window.alert( this.errors.join( '\n' ) );
 				}
 			}
 		},

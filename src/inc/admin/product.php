@@ -617,6 +617,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 
 				$pc_lang['global_layer_edit_conflict_confirm'] = __( 'This global layer was saved from somewhere else since you opened it: another window, another user, or another product using it.', 'product-configurator-for-woocommerce' ) . "\n\n" . __( 'Save anyway and overwrite those changes? Cancel keeps them; leave the layer without saving to load the latest version.', 'product-configurator-for-woocommerce' );
 				$pc_lang['edit_conflict_confirm'] = __( 'This configuration was saved from somewhere else since you opened it: another window, another user, or another product using the same global configurator.', 'product-configurator-for-woocommerce' ) . "\n\n" . __( 'Save anyway and overwrite those changes? Cancel keeps them; reload the editor to see the latest version.', 'product-configurator-for-woocommerce' );
+				// Shown in an alert(), so not HTML-escaped.
+				$pc_lang['save_failed'] = __( 'The configuration could not be saved.', 'product-configurator-for-woocommerce' );
+				$pc_lang['save_failed_session'] = __( 'The configuration could not be saved because the session has expired. Reload the page and try again.', 'product-configurator-for-woocommerce' );
+				/* translators: %s: HTTP status code */
+				$pc_lang['save_failed_http'] = __( 'The configuration could not be saved (HTTP %s).', 'product-configurator-for-woocommerce' );
 				if ( current_user_can( 'edit_post', $this->ID ) ) {
 					$pc_lang['update_nonce'] = wp_create_nonce( 'update-pc-post_' . $this->ID );
 				}

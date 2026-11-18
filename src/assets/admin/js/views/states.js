@@ -440,12 +440,14 @@ PC.views = PC.views || {};
 				if ( this.collectionName === 'content' ) PC.app.modified_content_layer_ids = {};
 			}
 		},
-		error_saving: function(r, s) {
-			this.$toolbar.removeClass('saving'); 
+		error_saving: function( error ) {
+			this.$toolbar.removeClass( 'saving' );
 			if ( PC.app.syncSidebarSaveButtonState ) {
 				PC.app.syncSidebarSaveButtonState();
 			}
-			alert(r);
+			// The argument is a jqXHR on a 403, or `{ message }` when wp.ajax unwraps a JSON error.
+			// alert() on that object shows nothing useful.
+			window.alert( PC.app.save_error_message( error ) );
 		},
 		save_all: function() {
 			PC.app.save_all( this );

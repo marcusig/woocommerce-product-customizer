@@ -387,7 +387,7 @@ class Ajax {
 		}
 
 		if ( ! check_ajax_referer( 'update-pc-post_' . $ref_id, 'nonce', false ) ) {
-			wp_send_json_error( [ 'message' => __( 'Error saving the data:', 'product-configurator-for-woocommerce' ). ' '.__( 'The session seems to have expired.', 'product-configurator-for-woocommerce' ) ], 403 );
+			wp_send_json_error( [ 'message' => __( 'The configuration could not be saved because the session has expired. Reload the page and try again.', 'product-configurator-for-woocommerce' ) ], 403 );
 		}
 
 		if ( ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'edit_post', $ref_id ) ) {
