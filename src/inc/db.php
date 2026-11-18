@@ -2210,6 +2210,14 @@ class DB {
 			$parent_id = $id;
 		}
 
+		/**
+		 * Fires before a product's configurator storage is read. Lets the WPML integration
+		 * fill in chunks a translation was created without.
+		 *
+		 * @param int $parent_id
+		 */
+		do_action( 'mkl_pc/storage/before_read', (int) $parent_id );
+
 		$init_data = array(
 			// 'menu' => $this->get_menu(),
 			'layers' => $this->get('layers', $parent_id),

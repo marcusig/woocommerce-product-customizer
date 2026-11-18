@@ -30,6 +30,147 @@ class Languages {
 		add_action( 'update_option_mkl_pc__settings', array( $this, 'wpml_register_translatable_settings' ), 10, 2 );
 		add_action( 'init', array( $this, 'pll_register_translatable_settings' ), 20 );
 		add_action( 'wpml_after_copy_custom_field', [ $this, 'wpml_maybe_fix_duplicate_data' ], 20, 3 );
+		add_action( 'wpml_after_copy_custom_field', [ $this, 'wpml_mirror_after_copy' ], 30, 3 );
+		add_action( 'mkl_pc/storage/before_read', [ $this, 'wpml_maybe_heal_translation' ] );
+		// WPML copies the parent's fields before WCML creates the translated variations, so the
+		// copy above finds none to pair. WCML's sync runs after them: mirror again there.
+		add_action( 'wcml_after_sync_product_data', [ $this, 'wcml_mirror_after_sync' ], 20, 2 );
+	}
+
+	/**
+	 * @param int $original_id
+	 * @param int $translation_id
+	 * @return void
+	 */
+	public function wcml_mirror_after_sync( $original_id, $translation_id ) {
+		$this->wpml_mirror_product_storage( (int) $original_id, (int) $translation_id );
+	}
+
+	/**
+	 * Per-layer chunk keys can't be listed in wpml-config.xml (WPML has no wildcard), so WPML
+	 * copies the layers index to a translation but none of the `_layer_{id}` / `_content_{id}`
+	 * rows it points to, and `wpml_sync_custom_field` ignores keys it doesn't know. The
+	 * translation then has an index with nothing behind it: "configuration seems incomplete".
+	 * Whenever WPML copies the index (or the last-updated stamp every save ends with), mirror
+	 * the chunks ourselves.
+	 *
+	 * @param int    $post_id_from
+	 * @param int    $post_id_to
+	 * @param string $meta_key
+	 * @return void
+	 */
+	public function wpml_mirror_after_copy( $post_id_from, $post_id_to, $meta_key ) {
+		if ( '_mkl_product_configurator_layers_index' !== $meta_key && '_mkl_product_configurator_last_updated' !== $meta_key ) return;
+		$this->wpml_mirror_product_storage( (int) $post_id_from, (int) $post_id_to );
+	}
+
+	/**
+	 * Heal translations created before the mirroring existed: WPML only copies again when the
+	 * original is saved, so until then the translation would keep its empty index.
+	 *
+	 * @param int $post_id
+	 * @return void
+	 */
+	public function wpml_maybe_heal_translation( $post_id ) {
+		static $checked = [];
+		$post_id = (int) $post_id;
+		if ( $post_id <= 0 || isset( $checked[ $post_id ] ) ) return;
+		$checked[ $post_id ] = true;
+		if ( ! $this->website_is_multilingual() || 'wpml' !== $this->ml_plugin ) return;
+		if ( 'product' !== get_post_type( $post_id ) ) return;
+		$original_id = (int) apply_filters( 'wpml_original_element_id', null, $post_id, 'post_product' );
+		if ( $original_id <= 0 || $original_id === $post_id ) return;
+		$this->wpml_mirror_product_storage( $original_id, $post_id );
+	}
+
+	/**
+	 * Whether WPML is set to copy the configurator data to translations (the wpml-config.xml
+	 * default). A site that switched it to "translate" keeps separate data per language.
+	 *
+	 * @return boolean
+	 */
+	private function wpml_copies_configurator_data() {
+		global $iclTranslationManagement;
+		$key = '_mkl_product_configurator_layers_index';
+		if ( $iclTranslationManagement && isset( $iclTranslationManagement->settings['custom_fields_translation'][ $key ] ) ) {
+			return defined( 'WPML_COPY_CUSTOM_FIELD' ) ? (int) WPML_COPY_CUSTOM_FIELD === (int) $iclTranslationManagement->settings['custom_fields_translation'][ $key ] : true;
+		}
+		return true;
+	}
+
+	/**
+	 * Mirror the chunked storage of a product, and of each of its variations, to a translation.
+	 *
+	 * @param int $from Original product id.
+	 * @param int $to   Translated product id.
+	 * @return void
+	 */
+	private function wpml_mirror_product_storage( $from, $to ) {
+		static $running = false;
+		if ( $running || $from <= 0 || $to <= 0 || $from === $to ) return;
+		if ( ! $this->wpml_copies_configurator_data() ) return;
+		$running = true;
+
+		$pairs = [ $from => $to ];
+		if ( 'product' === get_post_type( $from ) ) {
+			$language = apply_filters( 'wpml_element_language_code', null, [ 'element_id' => $to, 'element_type' => 'product' ] );
+			// Not get_posts(): WPML rewrites post_parent to the current language's product even
+			// with suppress_filters, so on a translated page it returned the translated variations.
+			global $wpdb;
+			$variation_ids = $language ? $wpdb->get_col( $wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts} WHERE post_parent = %d AND post_type = 'product_variation'",
+				$from
+			) ) : [];
+			foreach ( $variation_ids as $variation_id ) {
+				$translated = (int) apply_filters( 'wpml_object_id', $variation_id, 'product_variation', false, $language );
+				if ( $translated > 0 && $translated !== (int) $variation_id ) {
+					$pairs[ (int) $variation_id ] = $translated;
+				}
+			}
+		}
+
+		foreach ( $pairs as $source_id => $target_id ) {
+			if ( $this->wpml_mirror_chunks( $source_id, $target_id ) && class_exists( Global_Configurators\Cache_Invalidator::class ) ) {
+				Global_Configurators\Cache_Invalidator::invalidate_caches_for_post( $target_id );
+			}
+		}
+		$running = false;
+	}
+
+	/**
+	 * Make the target's chunk rows match the source's.
+	 *
+	 * @param int $source_id
+	 * @param int $target_id
+	 * @return boolean Whether anything changed.
+	 */
+	private function wpml_mirror_chunks( $source_id, $target_id ) {
+		$is_mirrored = function( $key ) {
+			return 0 === strpos( $key, '_mkl_product_configurator_layer_' )
+				|| 0 === strpos( $key, '_mkl_product_configurator_content_' )
+				|| in_array( $key, [
+					'_mkl_product_configurator_storage_format_version',
+					'_mkl_product_configurator_storage_encoding',
+					'_mkl_product_configurator_integrity_cache',
+				], true );
+		};
+		$source = array_filter( (array) get_post_meta( $source_id ), $is_mirrored, ARRAY_FILTER_USE_KEY );
+		$target = array_filter( (array) get_post_meta( $target_id ), $is_mirrored, ARRAY_FILTER_USE_KEY );
+
+		$changed = false;
+		foreach ( $source as $key => $values ) {
+			$value = end( $values );
+			if ( isset( $target[ $key ] ) && 1 === count( $target[ $key ] ) && reset( $target[ $key ] ) === $value ) continue;
+			delete_post_meta( $target_id, $key );
+			// Raw JSON rows: add_post_meta() unslashes, so pre-slash to keep the JSON's own escapes.
+			add_post_meta( $target_id, $key, wp_slash( maybe_unserialize( $value ) ) );
+			$changed = true;
+		}
+		foreach ( array_diff_key( $target, $source ) as $key => $values ) {
+			delete_post_meta( $target_id, $key );
+			$changed = true;
+		}
+		return $changed;
 	}
 
 	/**

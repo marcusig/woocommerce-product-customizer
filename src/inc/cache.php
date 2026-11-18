@@ -76,6 +76,8 @@ class Cache {
 	 */
 	public function get_config_file( $product_id, $generate_file = true, $format = 'js' ) {
 		$format = in_array( $format, array( 'js', 'json' ), true ) ? $format : 'js';
+		/** This action is documented in inc/db.php */
+		do_action( 'mkl_pc/storage/before_read', (int) $product_id );
 		$location = $this->get_cache_location();
 		$file_name = $this->get_config_file_name( $product_id, $format );
 		$default_url = $this->get_default_config_url( $product_id, $format );
@@ -117,11 +119,14 @@ class Cache {
 	 */
 	public function get_config_file_url( $product_id, $format = 'js' ) {
 		$format = in_array( $format, array( 'js', 'json' ), true ) ? $format : 'js';
+		// Before the URL is printed: a heal deletes a stale static file built from incomplete data.
+		/** This action is documented in inc/db.php */
+		do_action( 'mkl_pc/storage/before_read', (int) $product_id );
 		if ( $this->should_serve_live_data( $product_id ) ) {
 			return $this->get_default_config_url( $product_id, $format );
 		}
 		$location = $this->get_cache_location();
-		$url      = trailingslashit( $location['url'] ) . $this->get_config_file_name( $product_id, $format );
+		$url     = trailingslashit( $location['url'] ) . $this->get_config_file_name( $product_id, $format );
 		$product  = wc_get_product( $product_id );
 		$version  = $product ? $product->get_meta( '_mkl_product_configurator_last_updated' ) : '';
 		return $version ? add_query_arg( 'ver', rawurlencode( (string) $version ), $url ) : $url;
