@@ -155,9 +155,18 @@
 							var current_angle = PC.fe.angles.findWhere( { active: true } );
 							var current_index = PC.fe.angles.indexOf( current_angle );
 							var new_angle = false;
-							var previous_angle = 0 <= ( current_index - 1 ) ? PC.fe.angles.at( current_index - 1) : false;
-							var next_angle = PC.fe.angles.at( current_index + 1);
-							
+							// Views hidden by conditional logic ('cshow' false) can't be swiped to:
+							// step over them to the nearest visible view in that direction.
+							var step_to_visible = function( step ) {
+								for ( var i = current_index + step; 0 <= i && i < PC.fe.angles.length; i += step ) {
+									var candidate = PC.fe.angles.at( i );
+									if ( false !== candidate.get( 'cshow' ) ) return candidate;
+								}
+								return false;
+							};
+							var previous_angle = step_to_visible( -1 );
+							var next_angle = step_to_visible( 1 );
+
 							if ( 'end' == phase ) {
 								if ( 'right' == direction && previous_angle ) {
 									new_angle = previous_angle;

@@ -253,6 +253,8 @@ Open Source SVG icons:
 
 == Changelog ==
 
+* TWEAK: Swipping views should not show a view hidden with Conditional logic
+
 = 2.2.1 - 18/Nov/2026 =
 
 * FIX: Chunked storage compatibility with WPML
