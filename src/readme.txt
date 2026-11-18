@@ -252,6 +252,11 @@ Open Source SVG icons:
 
 == Changelog ==
 
+= 2.2.1 - 18/Nov/2026 =
+
+* FIX: Chunked storage compatibility with WPML
+* TWEAK: Better handling of session errors in the admin
+
 = 2.2.0 - 16/Nov/2026 =
 
 * FEATURE: Layer masks - use image alpha to create masks for layers.
