@@ -4,7 +4,7 @@ Tags: 3D configurator, product customizer, product builder, woocommerce, request
 Donate link: https://paypal.me/marclacro1x
 Requires at least: 6.0
 Tested up to: 7.2
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 Requires PHP: 7.4
 License: GPLv2+
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
