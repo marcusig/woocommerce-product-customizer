@@ -54,6 +54,7 @@ Have feedback, ideas, or found a bug? Report issues on [GitHub](https://github.c
 * **Fast Loading** – 3D scripts only load on products that use them, and secondary models can load on demand.
 * **Configuration Image in the Cart** – The cart, orders and quotes show a picture of the configured product, in 2D or 3D.
 * **Live Text Overlay** *(via add-on)* – Let customers preview custom text with your fonts and colors—ideal for engraving, embroidery, and personalization.
+* **Live image upload preview** *(via add-on)* – Let customers preview their uploaded image on the product for printing, engraving and personalization.
 * **3D Premium** *(via add-on)* – Clickable hotspots, model animations, augmented reality ("View in your space"), parts that snap onto anchors, and photo-style postprocessing.
 
 ==== Reuse configurators across your catalog ====
