@@ -68,6 +68,7 @@ class Global_Layers {
 		// the layer post, so without this the layer changes and the storefront keeps serving
 		// the old choices until each product happens to be saved again.
 		add_action( 'mkl_pc_saved_global_layer', array( __CLASS__, 'on_saved' ), 20, 1 );
+		add_action( 'post_updated', array( __CLASS__, 'on_post_updated' ), 10, 3 );
 		add_action( 'trashed_post', array( __CLASS__, 'on_post_status_changed' ), 20, 1 );
 		add_action( 'untrashed_post', array( __CLASS__, 'on_post_status_changed' ), 20, 1 );
 		add_action( 'before_delete_post', array( __CLASS__, 'on_before_delete' ), 20, 1 );
@@ -452,6 +453,48 @@ class Global_Layers {
 	}
 
 	/**
+	 * Post meta set once the title has been edited directly, which stops it following the layer.
+	 */
+	const TITLE_LOCKED_META = '_mkl_pc_title_locked';
+
+	/**
+	 * True while save() writes the post, so its own title changes don't count as direct edits.
+	 *
+	 * @var bool
+	 */
+	private static $saving = false;
+
+	/**
+	 * The title a layer gets when it hasn't been titled by hand: admin label, else name.
+	 *
+	 * @param mixed $layer
+	 * @return string
+	 */
+	private static function title_from_layer( $layer ) {
+		$label = is_array( $layer ) && isset( $layer['admin_label'] ) ? trim( (string) $layer['admin_label'] ) : '';
+		$name  = is_array( $layer ) && isset( $layer['name'] ) ? trim( (string) $layer['name'] ) : '';
+		$title = '' !== $label ? $label : $name;
+		return '' !== $title ? sanitize_text_field( $title ) : 'Global Layer';
+	}
+
+	/**
+	 * A title changed outside save() is a direct edit: remember it so later saves leave it alone.
+	 *
+	 * @param int      $post_id
+	 * @param \WP_Post $after
+	 * @param \WP_Post $before
+	 * @return void
+	 */
+	public static function on_post_updated( $post_id, $after, $before ) {
+		if ( self::$saving || ! $after || self::CPT_SLUG !== $after->post_type ) {
+			return;
+		}
+		if ( $after->post_title !== $before->post_title ) {
+			update_post_meta( $post_id, self::TITLE_LOCKED_META, 1 );
+		}
+	}
+
+	/**
 	 * Create or update a global layer
 	 *
 	 * @param array       $layer     Layer structure
@@ -465,7 +508,6 @@ class Global_Layers {
 		$postarr = array(
 			'post_type'   => self::CPT_SLUG,
 			'post_status' => 'publish',
-			'post_title'  => isset( $layer['name'] ) ? sanitize_text_field( $layer['name'] ) : 'Global Layer',
 		);
 		if ( $global_id ) {
 			// wp_update_post() applies the post_type above, so any other post would be turned into
@@ -474,9 +516,18 @@ class Global_Layers {
 				return new \WP_Error( 'mkl_pc_not_a_global_layer', __( 'This is not a global layer.', 'product-configurator-for-woocommerce' ) );
 			}
 			$postarr['ID'] = intval( $global_id );
-			$global_id     = wp_update_post( $postarr, true );
+			// A title edited directly is kept for good; otherwise it follows the admin label / name.
+			if ( ! get_post_meta( $global_id, self::TITLE_LOCKED_META, true ) ) {
+				$postarr['post_title'] = self::title_from_layer( $layer );
+			}
+			self::$saving = true;
+			$global_id    = wp_update_post( $postarr, true );
+			self::$saving = false;
 		} else {
-			$global_id = wp_insert_post( $postarr, true );
+			$postarr['post_title'] = self::title_from_layer( $layer );
+			self::$saving          = true;
+			$global_id             = wp_insert_post( $postarr, true );
+			self::$saving          = false;
 		}
 		if ( is_wp_error( $global_id ) ) {
 			return $global_id;
