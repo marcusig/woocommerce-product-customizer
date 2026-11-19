@@ -34,34 +34,49 @@ PC.admin = PC.admin || {};
 		return value;
 	};
 
-	var O = PC.admin.layer_overrides = {
+	/**
+	 * The override logic, for a layer or for a choice of a linked layer
+	 * (views/choice-overrides.js, docs/global-layer-choice-overrides-spec.md).
+	 *
+	 * @param {Object} config
+	 *   excluded         - fields never overridden;
+	 *   link_attributes  - attributes of the link itself, which a new global definition never replaces;
+	 *   groups_key       - PC_lang key of the translation groups;
+	 *   is_link          - whether a model is a link (function( model ) );
+	 *   unset_when_empty - drop `overrides` instead of setting it to null when there are none;
+	 *   read / write     - a field's value as stored in `values` / `global`, and as the model takes it
+	 *                      back (function( field, value ); the choices' `images` is a collection).
+	 */
+	PC.admin.create_overrides = function( config ) {
+
+	var read = config.read || function( model, field ) {
+		return copy( model.get( field ) );
+	};
+	var write = config.write || function( field, value ) {
+		return copy( value );
+	};
+
+	var Overrides = {
 
 		/**
-		 * What makes the layer what it is, or is already the link's own: never overridden.
-		 * Mirrors Linker::override_excluded_fields().
+		 * What makes the object what it is, or is already the link's own: never overridden.
 		 */
-		excluded: [ '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides' ],
+		excluded: config.excluded,
 
 		/**
 		 * Attributes of the link itself, which a new global definition never replaces.
 		 */
-		link_attributes: [ '_id', 'id', 'layerId', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides', 'active', 'parent' ],
+		link_attributes: config.link_attributes,
 
-		/**
-		 * A layer of this product linked to a global layer (not the global layer's own screen).
-		 */
-		is_link: function( model ) {
-			if ( ! model || ! model.get( 'is_global' ) || ! model.get( 'global_id' ) ) return false;
-			return ! ( PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
-		},
+		is_link: config.is_link,
 
 		get: function( model ) {
-			var o = ( model && model.get( 'overrides' ) ) || {};
+			var overrides = ( model && model.get( 'overrides' ) ) || {};
 			return {
-				fields: _.isArray( o.fields ) ? o.fields.slice() : [],
-				values: _.extend( {}, o.values ),
-				global: _.extend( {}, o.global ),
-				editing_original: !! o.editing_original,
+				fields: _.isArray( overrides.fields ) ? overrides.fields.slice() : [],
+				values: _.extend( {}, overrides.values ),
+				global: _.extend( {}, overrides.global ),
+				editing_original: !! overrides.editing_original,
 			};
 		},
 
@@ -69,15 +84,15 @@ PC.admin = PC.admin || {};
 		 * Whether "Edit original" is on for this link.
 		 */
 		is_editing_original: function( model ) {
-			return O.is_link( model ) && O.get( model ).editing_original;
+			return Overrides.is_link( model ) && Overrides.get( model ).editing_original;
 		},
 
 		is_overridden: function( model, field ) {
-			return O.is_link( model ) && -1 !== O.get( model ).fields.indexOf( field );
+			return Overrides.is_link( model ) && -1 !== Overrides.get( model ).fields.indexOf( field );
 		},
 
 		can_override: function( field ) {
-			return !! field && -1 === O.excluded.indexOf( field );
+			return !! field && -1 === Overrides.excluded.indexOf( field );
 		},
 
 		/**
@@ -87,7 +102,7 @@ PC.admin = PC.admin || {};
 		 * @return {String[]}
 		 */
 		group: function( field ) {
-			var groups = lang( 'layer_override_groups', {} );
+			var groups = lang( config.groups_key, {} );
 			return [ field ].concat( _.isArray( groups[ field ] ) ? groups[ field ] : [] );
 		},
 
@@ -95,18 +110,24 @@ PC.admin = PC.admin || {};
 		 * The field a translation follows, or null.
 		 */
 		follows: function( field ) {
-			var groups = lang( 'layer_override_groups', {} );
+			var groups = lang( config.groups_key, {} );
 			for ( var base in groups ) {
 				if ( _.isArray( groups[ base ] ) && -1 !== groups[ base ].indexOf( field ) ) return base;
 			}
 			return null;
 		},
 
-		store: function( model, o, attrs, options ) {
-			attrs = attrs || {};
-			if ( ! o.editing_original ) delete o.editing_original;
-			attrs.overrides = ( o.fields.length || ! _.isEmpty( o.values ) || o.editing_original ) ? o : null;
-			model.set( attrs, options );
+		store: function( model, overrides, attributes, options ) {
+			attributes = attributes || {};
+			if ( ! overrides.editing_original ) delete overrides.editing_original;
+			var any = overrides.fields.length || ! _.isEmpty( overrides.values ) || overrides.editing_original;
+			if ( any ) {
+				attributes.overrides = overrides;
+			} else if ( ! config.unset_when_empty ) {
+				attributes.overrides = null;
+			}
+			model.set( attributes, options );
+			if ( ! any && config.unset_when_empty ) model.unset( 'overrides', options );
 		},
 
 		/**
@@ -114,24 +135,24 @@ PC.admin = PC.admin || {};
 		 * The link's values wait in `values`.
 		 */
 		enter_original: function( model ) {
-			if ( ! O.is_link( model ) || O.is_editing_original( model ) ) return;
-			var o = O.get( model );
-			var attrs = {};
+			if ( ! Overrides.is_link( model ) || Overrides.is_editing_original( model ) ) return;
+			var overrides = Overrides.get( model );
+			var attributes = {};
 			var unset = [];
-			_.each( o.fields, function( f ) {
-				o.values[ f ] = copy( model.get( f ) );
-				if ( undefined === o.values[ f ] ) o.values[ f ] = null;
-				if ( _.has( o.global, f ) ) {
-					attrs[ f ] = copy( o.global[ f ] );
+			_.each( overrides.fields, function( field ) {
+				overrides.values[ field ] = read( model, field );
+				if ( undefined === overrides.values[ field ] ) overrides.values[ field ] = null;
+				if ( _.has( overrides.global, field ) ) {
+					attributes[ field ] = write( field, overrides.global[ field ] );
 				} else {
-					unset.push( f );
+					unset.push( field );
 				}
 			} );
-			o.editing_original = true;
+			overrides.editing_original = true;
 			// Not a change of the product, nor of the global layer.
-			O.store( model, o, attrs, { pc_from_global: true } );
-			_.each( unset, function( f ) {
-				model.unset( f, { pc_from_global: true } );
+			Overrides.store( model, overrides, attributes, { pc_from_global: true } );
+			_.each( unset, function( field ) {
+				model.unset( field, { pc_from_global: true } );
 			} );
 		},
 
@@ -143,22 +164,22 @@ PC.admin = PC.admin || {};
 		 *                               value of the overridden fields.
 		 */
 		leave_original: function( model, saved ) {
-			if ( ! O.is_editing_original( model ) ) return;
-			var o = O.get( model );
-			var attrs = {};
-			_.each( o.fields, function( f ) {
+			if ( ! Overrides.is_editing_original( model ) ) return;
+			var overrides = Overrides.get( model );
+			var attributes = {};
+			_.each( overrides.fields, function( field ) {
 				if ( saved ) {
-					var current = model.get( f );
+					var current = read( model, field );
 					if ( undefined === current ) {
-						delete o.global[ f ];
+						delete overrides.global[ field ];
 					} else {
-						o.global[ f ] = copy( current );
+						overrides.global[ field ] = current;
 					}
 				}
-				attrs[ f ] = copy( o.values[ f ] );
+				attributes[ field ] = write( field, overrides.values[ field ] );
 			} );
-			o.editing_original = false;
-			O.store( model, o, attrs, { pc_from_global: true } );
+			overrides.editing_original = false;
+			Overrides.store( model, overrides, attributes, { pc_from_global: true } );
 		},
 
 		/**
@@ -166,46 +187,46 @@ PC.admin = PC.admin || {};
 		 * global value, later from the value kept when it was switched off.
 		 */
 		switch_on: function( model, field ) {
-			var o = O.get( model );
-			var attrs = {};
-			_.each( O.group( field ), function( f ) {
-				if ( -1 !== o.fields.indexOf( f ) ) return;
-				var current = model.get( f );
+			var overrides = Overrides.get( model );
+			var attributes = {};
+			_.each( Overrides.group( field ), function( group_field ) {
+				if ( -1 !== overrides.fields.indexOf( group_field ) ) return;
+				var current = read( model, group_field );
 				// Inherited until now, so this is the global value.
-				if ( undefined !== current ) o.global[ f ] = copy( current );
-				var value = _.has( o.values, f ) ? o.values[ f ] : copy( current );
+				if ( undefined !== current ) overrides.global[ group_field ] = copy( current );
+				var value = _.has( overrides.values, group_field ) ? overrides.values[ group_field ] : current;
 				// A listed field needs a value to be stored: null where the global layer has none.
 				if ( undefined === value ) value = null;
-				o.values[ f ] = value;
-				o.fields.push( f );
-				attrs[ f ] = copy( value );
+				overrides.values[ group_field ] = value;
+				overrides.fields.push( group_field );
+				attributes[ group_field ] = write( group_field, value );
 			} );
-			O.store( model, o, attrs );
+			Overrides.store( model, overrides, attributes );
 		},
 
 		/**
 		 * Back to the global value; the link's value is kept for later.
 		 */
 		switch_off: function( model, field ) {
-			var o = O.get( model );
-			var attrs = {};
+			var overrides = Overrides.get( model );
+			var attributes = {};
 			var unset = [];
-			_.each( O.group( field ), function( f ) {
-				var index = o.fields.indexOf( f );
+			_.each( Overrides.group( field ), function( group_field ) {
+				var index = overrides.fields.indexOf( group_field );
 				if ( -1 === index ) return;
-				o.fields.splice( index, 1 );
-				o.values[ f ] = copy( model.get( f ) );
-				if ( undefined === o.values[ f ] ) o.values[ f ] = null;
-				if ( _.has( o.global, f ) ) {
-					attrs[ f ] = copy( o.global[ f ] );
+				overrides.fields.splice( index, 1 );
+				overrides.values[ group_field ] = read( model, group_field );
+				if ( undefined === overrides.values[ group_field ] ) overrides.values[ group_field ] = null;
+				if ( _.has( overrides.global, group_field ) ) {
+					attributes[ group_field ] = write( group_field, overrides.global[ group_field ] );
 				} else {
-					unset.push( f );
+					unset.push( group_field );
 				}
-				delete o.global[ f ];
+				delete overrides.global[ group_field ];
 			} );
-			O.store( model, o, attrs );
-			_.each( unset, function( f ) {
-				model.unset( f );
+			Overrides.store( model, overrides, attributes );
+			_.each( unset, function( group_field ) {
+				model.unset( group_field );
 			} );
 		},
 
@@ -219,14 +240,14 @@ PC.admin = PC.admin || {};
 		 */
 		global_attributes: function( model ) {
 			var data = PC.toJSON( model );
-			var o = O.get( model );
+			var overrides = Overrides.get( model );
 			delete data.overrides;
-			if ( o.editing_original ) return data;
-			_.each( o.fields, function( f ) {
-				if ( _.has( o.global, f ) ) {
-					data[ f ] = copy( o.global[ f ] );
+			if ( overrides.editing_original ) return data;
+			_.each( overrides.fields, function( field ) {
+				if ( _.has( overrides.global, field ) ) {
+					data[ field ] = copy( overrides.global[ field ] );
 				} else {
-					delete data[ f ];
+					delete data[ field ];
 				}
 			} );
 			return data;
@@ -242,42 +263,18 @@ PC.admin = PC.admin || {};
 		 */
 		apply_global: function( model, layer, options ) {
 			if ( ! model || ! layer || 'object' !== typeof layer ) return;
-			var attrs = _.omit( copy( layer ), O.link_attributes );
-			var o = O.get( model );
-			_.each( o.fields, function( f ) {
-				if ( _.has( attrs, f ) ) {
-					o.global[ f ] = attrs[ f ];
+			var attributes = _.omit( copy( layer ), Overrides.link_attributes );
+			var overrides = Overrides.get( model );
+			_.each( overrides.fields, function( field ) {
+				if ( _.has( attributes, field ) ) {
+					overrides.global[ field ] = attributes[ field ];
 				} else {
-					delete o.global[ f ];
+					delete overrides.global[ field ];
 				}
-				attrs[ f ] = copy( model.get( f ) );
+				attributes[ field ] = write( field, read( model, field ) );
 			} );
-			if ( o.fields.length || ! _.isEmpty( o.values ) ) attrs.overrides = o;
-			model.set( attrs, options );
-		},
-
-		/**
-		 * After the global layer was saved, bring every link to it up to date: settings, and the
-		 * choices of the links other than the one they were edited from.
-		 *
-		 * @param {Number} global_id
-		 * @param {Object|null} layer   Global layer definition saved, or null.
-		 * @param {Array|null}  choices Choices saved, or null.
-		 */
-		refresh_links: function( global_id, layer, choices ) {
-			var layers = PC.app && PC.app.get_collection && PC.app.get_collection( 'layers' );
-			if ( ! layers || ! global_id ) return;
-			var source_layer_id = ( _.isArray( choices ) && choices.length && choices[ 0 ] ) ? parseInt( choices[ 0 ].layerId, 10 ) : null;
-			layers.each( function( model ) {
-				if ( parseInt( model.get( 'global_id' ), 10 ) !== parseInt( global_id, 10 ) || ! model.get( 'is_global' ) ) return;
-				if ( layer ) O.apply_global( model, layer, { pc_from_global: true } );
-				if ( _.isArray( choices ) && parseInt( model.id, 10 ) !== source_layer_id ) {
-					var content = PC.app.get_layer_content( model.id );
-					if ( content && content.reset ) {
-						content.reset( PC.app.get_global_layers().process_content_layer_id( copy( choices ), model.id ) );
-					}
-				}
-			} );
+			if ( overrides.fields.length || ! _.isEmpty( overrides.values ) ) attributes.overrides = overrides;
+			model.set( attributes, options );
 		},
 
 		/**
@@ -289,24 +286,13 @@ PC.admin = PC.admin || {};
 		 * @return {{own: Boolean, global: Boolean}}
 		 */
 		classify_changes: function( model, changed ) {
-			var o = O.get( model );
-			var fields = o.editing_original ? [] : o.fields;
+			var overrides = Overrides.get( model );
+			var fields = overrides.editing_original ? [] : overrides.fields;
 			var keys = _.without( _.keys( changed || {} ), 'active' );
 			var own = _.filter( keys, function( key ) {
 				return 'overrides' === key || -1 !== fields.indexOf( key );
 			} );
 			return { own: own.length > 0, global: keys.length > own.length };
-		},
-
-		/**
-		 * The links to a global layer in this product.
-		 */
-		count_links: function( global_id ) {
-			var layers = PC.app && PC.app.get_collection && PC.app.get_collection( 'layers' );
-			if ( ! layers ) return 0;
-			return layers.filter( function( model ) {
-				return model.get( 'is_global' ) && parseInt( model.get( 'global_id' ), 10 ) === parseInt( global_id, 10 );
-			} ).length;
 		},
 
 		/*
@@ -316,12 +302,12 @@ PC.admin = PC.admin || {};
 		/**
 		 * The field a form element belongs to, if it can take a switch.
 		 *
-		 * @param {jQuery} $el A `.setting` wrapper or a `[data-override-field]` block.
+		 * @param {jQuery} $element A `.setting` wrapper or a `[data-override-field]` block.
 		 * @return {String|null}
 		 */
-		field_of: function( $el ) {
-			if ( $el.is( '[data-override-field]' ) ) return $el.attr( 'data-override-field' );
-			var match = ( $el.attr( 'class' ) || '' ).match( /(?:^|\s)setting-id-(\S+)/ );
+		field_of: function( $element ) {
+			if ( $element.is( '[data-override-field]' ) ) return $element.attr( 'data-override-field' );
+			var match = ( $element.attr( 'class' ) || '' ).match( /(?:^|\s)setting-id-(\S+)/ );
 			return match ? match[ 1 ] : null;
 		},
 
@@ -329,11 +315,11 @@ PC.admin = PC.admin || {};
 		 * Whether a wrapper gets a switch: it opts in, or it holds the field's own input and does
 		 * not opt out. Display-only fields (help, separators, html) get none.
 		 */
-		takes_switch: function( $el, field ) {
-			if ( ! O.can_override( field ) || O.follows( field ) ) return false;
-			if ( $el.is( '[data-override-field]' ) || $el.hasClass( 'can-override' ) ) return true;
-			if ( $el.hasClass( 'no-override' ) ) return false;
-			return $el.find( '[data-setting="' + field + '"]' ).length > 0;
+		takes_switch: function( $element, field ) {
+			if ( ! Overrides.can_override( field ) || Overrides.follows( field ) ) return false;
+			if ( $element.is( '[data-override-field]' ) || $element.hasClass( 'can-override' ) ) return true;
+			if ( $element.hasClass( 'no-override' ) ) return false;
+			return $element.find( '[data-setting="' + field + '"]' ).length > 0;
 		},
 
 		/**
@@ -363,73 +349,149 @@ PC.admin = PC.admin || {};
 		/**
 		 * Lock or unlock one field of the form.
 		 */
-		lock_field: function( $el, locked ) {
-			$el.toggleClass( 'is-locked', !! locked );
-			$el.find( 'input, textarea, select' ).prop( 'disabled', !! locked );
+		lock_field: function( $element, locked ) {
+			$element.toggleClass( 'is-locked', !! locked );
+			$element.find( 'input, textarea, select, button' ).not( '.mkl-pc-override-toggle' ).prop( 'disabled', !! locked );
+		},
+
+		/**
+		 * The override switches of a link's form, and which fields are locked.
+		 *
+		 * - The link's own view (form locked): every field gets a switch; overridden fields are
+		 *   unlocked.
+		 * - "Edit original" (form unlocked): the form edits the global object, every field
+		 *   editable with its global value (enter_original()), and knows nothing of the link's
+		 *   overrides: no switches, no marks.
+		 *
+		 * @param {Backbone.View} form
+		 * @param {Boolean}       locked Whether the form is locked (not editing the global object).
+		 */
+		decorate_fields: function( form, locked ) {
+			form.$( '.mkl-pc-override-switch' ).remove();
+			form.$( '.has-override-switch' ).removeClass( 'has-override-switch' );
+			form.$( '.is-overridden' ).removeClass( 'is-overridden' );
+			form.$el.removeClass( 'has-overrides' );
+			if ( ! Overrides.is_link( form.model ) || ! locked ) return false;
+
+			var model = form.model;
+			form.$( '.setting, [data-override-field]' ).each( function() {
+				var $element = $( this );
+				var field = Overrides.field_of( $element );
+				if ( ! field ) return;
+				var base = Overrides.follows( field );
+				var overridden = Overrides.is_overridden( model, base || field );
+				$element.toggleClass( 'is-overridden', overridden );
+				if ( overridden ) {
+					Overrides.lock_field( $element, false );
+				}
+				if ( Overrides.takes_switch( $element, field ) ) {
+					// In the corner: placed over the field's wrapper, nothing moves.
+					$element.addClass( 'has-override-switch' ).append( Overrides.switch_html( field, overridden ) );
+				}
+			} );
+			form.$el.toggleClass( 'has-overrides', Overrides.get( model ).fields.length > 0 );
+
+			form.$el.off( 'click.pc_overrides' ).on( 'click.pc_overrides', '.mkl-pc-override-toggle', function( event ) {
+				event.preventDefault();
+				event.stopPropagation();
+				var field = $( this ).attr( 'data-field' );
+				if ( '1' === $( this ).attr( 'data-on' ) ) {
+					Overrides.switch_on( form.model, field );
+					form.current_focus = field;
+				} else {
+					Overrides.switch_off( form.model, field );
+				}
+				form.render();
+			} );
+			return true;
+		},
+	};
+
+	return Overrides;
+	};
+
+	/*
+	 * Layers.
+	 * ------------------------------------------------------------------------------------------ */
+	var Layer_Overrides = PC.admin.layer_overrides = PC.admin.create_overrides( {
+		/**
+		 * What makes the layer what it is, or is already the link's own: never overridden.
+		 * Mirrors Linker::override_excluded_fields().
+		 */
+		excluded: [ '_id', 'id', 'layerId', 'type', 'not_a_choice', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides' ],
+		link_attributes: [ '_id', 'id', 'layerId', 'is_global', 'global_id', 'order', 'image_order', 'image_order_by_angle', 'overrides', 'active', 'parent' ],
+		groups_key: 'layer_override_groups',
+		/**
+		 * A layer of this product linked to a global layer (not the global layer's own screen).
+		 */
+		is_link: function( model ) {
+			if ( ! model || ! model.get( 'is_global' ) || ! model.get( 'global_id' ) ) return false;
+			return ! ( PC.app && PC.app.isGlobalLayerStandalone && PC.app.isGlobalLayerStandalone() );
+		},
+	} );
+
+	_.extend( Layer_Overrides, {
+
+		/**
+		 * After the global layer was saved, bring every link to it up to date: settings, and the
+		 * choices of the links other than the one they were edited from.
+		 *
+		 * @param {Number} global_id
+		 * @param {Object|null} layer   Global layer definition saved, or null.
+		 * @param {Array|null}  choices Choices saved, or null.
+		 */
+		refresh_links: function( global_id, layer, choices ) {
+			var layers = PC.app && PC.app.get_collection && PC.app.get_collection( 'layers' );
+			if ( ! layers || ! global_id ) return;
+			var source_layer_id = ( _.isArray( choices ) && choices.length && choices[ 0 ] ) ? parseInt( choices[ 0 ].layerId, 10 ) : null;
+			layers.each( function( model ) {
+				if ( parseInt( model.get( 'global_id' ), 10 ) !== parseInt( global_id, 10 ) || ! model.get( 'is_global' ) ) return;
+				if ( layer ) Layer_Overrides.apply_global( model, layer, { pc_from_global: true } );
+				if ( _.isArray( choices ) && parseInt( model.id, 10 ) !== source_layer_id ) {
+					var content = PC.app.get_layer_content( model.id );
+					if ( content && content.reset ) {
+						var data = PC.app.get_global_layers().process_content_layer_id( copy( choices ), model.id );
+						// The link's own choice overrides go back on top (docs/global-layer-choice-overrides-spec.md).
+						if ( PC.admin && PC.admin.choice_overrides ) data = PC.admin.choice_overrides.rebase( content.models, data );
+						content.reset( data );
+					}
+				}
+			} );
+		},
+
+		/**
+		 * The links to a global layer in this product.
+		 */
+		count_links: function( global_id ) {
+			var layers = PC.app && PC.app.get_collection && PC.app.get_collection( 'layers' );
+			if ( ! layers ) return 0;
+			return layers.filter( function( model ) {
+				return model.get( 'is_global' ) && parseInt( model.get( 'global_id' ), 10 ) === parseInt( global_id, 10 );
+			} ).length;
 		},
 
 		/**
 		 * The override switches of a link's form, and which fields are locked.
 		 * Called from layer_form.update_global_lock_state(), after the form locked every field.
 		 *
-		 * - The link's own view (form locked): every field gets a switch; overridden fields are
-		 *   unlocked.
-		 * - "Edit original" (form unlocked): the form edits the global layer, every field
-		 *   editable with its global value (enter_original()), and knows nothing of the link's
-		 *   overrides: no switches, no marks.
-		 *
 		 * @param {PC.views.layer_form} form
 		 * @param {Boolean}             locked Whether the form is locked (not editing the global layer).
 		 */
 		decorate_form: function( form, locked ) {
-			form.$( '.mkl-pc-override-switch' ).remove();
-			form.$( '.has-override-switch' ).removeClass( 'has-override-switch' );
-			form.$( '.is-overridden' ).removeClass( 'is-overridden' );
-			form.$el.removeClass( 'has-overrides' );
-			if ( ! O.is_link( form.model ) || ! locked ) return;
-
+			if ( ! Layer_Overrides.decorate_fields( form, locked ) ) return;
 			var model = form.model;
-			form.$( '.setting, [data-override-field]' ).each( function() {
-				var $el = $( this );
-				var field = O.field_of( $el );
-				if ( ! field ) return;
-				var base = O.follows( field );
-				var overridden = O.is_overridden( model, base || field );
-				$el.toggleClass( 'is-overridden', overridden );
-				if ( overridden ) {
-					O.lock_field( $el, false );
-				}
-				if ( O.takes_switch( $el, field ) ) {
-					// In the corner: placed over the field's wrapper, nothing moves.
-					$el.addClass( 'has-override-switch' ).append( O.switch_html( field, overridden ) );
-				}
-			} );
-			form.$el.toggleClass( 'has-overrides', O.get( model ).fields.length > 0 );
 
 			// The same global layer used more than once: the list shows the same name until one is
 			// renamed for its link.
-			var links = O.count_links( model.get( 'global_id' ) );
-			if ( links > 1 && ! O.is_overridden( model, 'name' ) ) {
+			var links = Layer_Overrides.count_links( model.get( 'global_id' ) );
+			if ( links > 1 && ! Layer_Overrides.is_overridden( model, 'name' ) ) {
 				form.$( '.setting-id-name' ).append( $( '<p class="mkl-pc-override-hint"></p>' ).text( lang( 'override_name_hint', 'This global layer is used %d times in this product: override the name to tell them apart.' ).replace( '%d', links ) ) );
 			}
 
 			// Two links share the global layer's HTML id until one is overridden.
-			if ( ! O.is_overridden( model, 'html_id' ) && model.get( 'html_id' ) && O.count_links( model.get( 'global_id' ) ) > 1 ) {
+			if ( ! Layer_Overrides.is_overridden( model, 'html_id' ) && model.get( 'html_id' ) && Layer_Overrides.count_links( model.get( 'global_id' ) ) > 1 ) {
 				form.$( '.setting-id-html_id' ).append( $( '<p class="mkl-pc-override-hint"></p>' ).text( lang( 'override_html_id_hint', 'This global layer is used more than once in this product: override the ID on each link, or the page will have the same ID twice.' ) ) );
 			}
-
-			form.$el.off( 'click.pc_overrides' ).on( 'click.pc_overrides', '.mkl-pc-override-toggle', function( e ) {
-				e.preventDefault();
-				e.stopPropagation();
-				var field = $( this ).attr( 'data-field' );
-				if ( '1' === $( this ).attr( 'data-on' ) ) {
-					O.switch_on( form.model, field );
-					form.current_focus = field;
-				} else {
-					O.switch_off( form.model, field );
-				}
-				form.render();
-			} );
 		},
 
 		/**
@@ -437,8 +499,8 @@ PC.admin = PC.admin || {};
 		 */
 		is_field_locked: function( form, field ) {
 			if ( ! form.$el.hasClass( 'is-global-locked' ) ) return false;
-			return ! O.is_overridden( form.model, field );
+			return ! Layer_Overrides.is_overridden( form.model, field );
 		},
-	};
+	} );
 
 } )( jQuery, PC._us || window._ );

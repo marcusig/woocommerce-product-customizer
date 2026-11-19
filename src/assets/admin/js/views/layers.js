@@ -904,6 +904,10 @@ TODO:
 			if ( global_id ) {
 				PC.app.get_global_layers().set_editing_layer( global_id, false );
 			}
+			// The choices keep the values they show as their own too (docs/global-layer-choice-overrides-spec.md).
+			if ( PC.admin && PC.admin.choice_overrides ) {
+				PC.admin.choice_overrides.disconnect( PC.app.get_layer_content( this.model.id ) );
+			}
 			// Local toggle off by default; persistence handled on save. The layer keeps the values it
 			// shows, overrides included, as its own.
 			this.model.set( { is_global: false, global_id: null, overrides: null } );
@@ -1503,6 +1507,8 @@ TODO:
 			choices_data.forEach( choice_data => {
 				const choice_model = is_cloning ? choice_data.clone() : new PC.choice( choice_data );
 				choice_model.set( 'layerId', new_layer.id );
+				// A copy that is no link holds the values it shows as its own.
+				if ( ! keep_link ) choice_model.unset( 'overrides' );
 				const new_item = new_choices.create( PC.toJSON( choice_model ) );
 				PC.app.modified_choices.push( new_item.get( 'layerId' ) + '_' + new_item.id );
 			} );

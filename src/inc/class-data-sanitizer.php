@@ -877,6 +877,11 @@ class Data_Sanitizer {
 	 */
 	private function _sanitize_or_escape( $action, $data, $the_key = '' ) {
 		$data_type = gettype( $data );
+		// The settings a link overrides on a layer or a choice: a list of setting names
+		// (`overrides.fields`, `overrides.choices[].fields`), not text.
+		if ( 'sanitize' === $action && 'fields' === $the_key && 'array' === $data_type && ! empty( $data ) && array_filter( $data, 'is_string' ) === $data ) {
+			return array_map( 'sanitize_key', $data );
+		}
 		if ( 'array' === $data_type ) {
 			foreach ( $data as $key => $value ) {
 				$data[$key] = $this->_sanitize_or_escape( $action, $value, $key );

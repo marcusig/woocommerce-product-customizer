@@ -532,6 +532,10 @@ class Global_Layers {
 		if ( is_wp_error( $global_id ) ) {
 			return $global_id;
 		}
+		// What the layer held before this write, for the next choice id: a choice deleted by it
+		// must not give its id back.
+		$previous = get_post_meta( $global_id, Schema::META_CONTENT, true );
+		$previous_choices = self::normalize_choices( \MKL\PC\Utils::safe_unserialize( $previous ) );
 		// A link's overrides are its own: saved from a link, the payload must not carry them.
 		if ( is_array( $layer ) ) {
 			unset( $layer['overrides'] );
@@ -539,6 +543,7 @@ class Global_Layers {
 		$layer   = self::normalize_for_set( $layer, (int) $global_id, 'layers' );
 		$content = self::normalize_for_set( $content, (int) $global_id, 'content' );
 		update_post_meta( $global_id, Schema::META_LAYER, $layer );
+		self::bump_next_choice_id( (int) $global_id, $previous_choices, $content );
 		update_post_meta( $global_id, Schema::META_CONTENT, self::normalize_content_for_storage( $content ) );
 		if ( is_array( $angles ) && ! empty( $angles ) ) {
 			update_post_meta( $global_id, Schema::META_ANGLES, array_values( $angles ) );
@@ -576,10 +581,75 @@ class Global_Layers {
 			return false;
 		}
 		$choices = self::normalize_for_set( $choices, $global_id, 'content' );
+		$previous_choices = self::normalize_choices( \MKL\PC\Utils::safe_unserialize( get_post_meta( $global_id, Schema::META_CONTENT, true ) ) );
+		self::bump_next_choice_id( $global_id, $previous_choices, $choices );
 		update_post_meta( $global_id, Schema::META_CONTENT, self::normalize_content_for_storage( $choices ) );
 		do_action( 'mkl_pc_saved_global_layer_content', $global_id, $choices );
 		self::on_saved( $global_id );
 		return true;
+	}
+
+	/**
+	 * The highest choice id in a list of choices.
+	 *
+	 * @param mixed $choices Choices, or content in either stored shape.
+	 * @return int 0 when there are none.
+	 */
+	private static function highest_choice_id( $choices ) {
+		$highest = 0;
+		foreach ( self::normalize_choices( $choices ) as $choice ) {
+			if ( ! is_array( $choice ) ) {
+				continue;
+			}
+			foreach ( array( '_id', 'id' ) as $key ) {
+				if ( isset( $choice[ $key ] ) && (int) $choice[ $key ] > $highest ) {
+					$highest = (int) $choice[ $key ];
+				}
+			}
+		}
+		return $highest;
+	}
+
+	/**
+	 * The id the next choice added to a global layer takes.
+	 *
+	 * A global layer never reuses a choice id: links keep overrides per choice id, and a new choice
+	 * taking the id of a deleted one would inherit them (docs/global-layer-choice-overrides-spec.md).
+	 * Stored next to the content, seeded from the current highest choice id the first time it is
+	 * read, and never lower than the highest id plus one, whatever was stored.
+	 *
+	 * @param int $global_id
+	 * @return int 0 when the id is not a global layer.
+	 */
+	public static function get_next_choice_id( $global_id ) {
+		$global_id = intval( $global_id );
+		if ( $global_id <= 0 || ! self::is_global_layer_id( $global_id ) ) {
+			return 0;
+		}
+		$stored  = (int) get_post_meta( $global_id, Schema::META_NEXT_CHOICE_ID, true );
+		$content = \MKL\PC\Utils::safe_unserialize( get_post_meta( $global_id, Schema::META_CONTENT, true ) );
+		$next    = max( $stored, self::highest_choice_id( $content ) + 1, 1 );
+		if ( $next !== $stored ) {
+			update_post_meta( $global_id, Schema::META_NEXT_CHOICE_ID, $next );
+		}
+		return $next;
+	}
+
+	/**
+	 * Keep the next choice id ahead of every id the layer has had: the ones it held before this
+	 * write, and the ones it is about to hold.
+	 *
+	 * @param int   $global_id
+	 * @param mixed $previous_choices Choices before the write.
+	 * @param mixed $new_content      Content being written.
+	 * @return void
+	 */
+	private static function bump_next_choice_id( $global_id, $previous_choices, $new_content ) {
+		$stored = (int) get_post_meta( $global_id, Schema::META_NEXT_CHOICE_ID, true );
+		$next   = max( $stored, self::highest_choice_id( $previous_choices ) + 1, self::highest_choice_id( $new_content ) + 1, 1 );
+		if ( $next !== $stored ) {
+			update_post_meta( $global_id, Schema::META_NEXT_CHOICE_ID, $next );
+		}
 	}
 
 	/**
@@ -602,6 +672,8 @@ class Global_Layers {
 				continue;
 			}
 			unset( $choices[ $index ]['layerId'] );
+			// A link's choice settings are its own: saved from a link, the payload must not carry them.
+			unset( $choices[ $index ]['overrides'] );
 		}
 		return array_values( $choices );
 	}

@@ -501,11 +501,83 @@ PC.toJSON = function( item ) {
 			var choices_data = [];
 			var layer_content = this.get_layer_content( layerModel.id );
 			if ( layer_content && layer_content.length ) {
-				layer_content.each( function( choice ) {
-					choices_data.push( choice.toJSON() );
-				} );
+				choices_data = this.build_global_choices_payload( layer_content );
 			}
 			return { layer_data: layer_data, choices_data: choices_data };
+		},
+		/**
+		 * The choices of a global layer as the global layer has them: never a link's overrides
+		 * (docs/global-layer-choice-overrides-spec.md).
+		 *
+		 * @param {Backbone.Collection} choices
+		 * @return {Object[]}
+		 */
+		build_global_choices_payload: function( choices ) {
+			var overrides = PC.admin && PC.admin.choice_overrides;
+			var data = [];
+			choices.each( function( choice ) {
+				data.push( overrides ? overrides.payload( choice ) : choice.toJSON() );
+			} );
+			return data;
+		},
+		/**
+		 * The id of the global layer a layer is, or links to.
+		 *
+		 * @param {Backbone.Model} layer
+		 * @return {Number} 0 for a local layer.
+		 */
+		get_global_id_of_layer: function( layer ) {
+			if ( ! layer ) return 0;
+			if ( this.isGlobalLayerStandalone() ) {
+				var info = this.admin_data.get( 'global_layer' ) || {};
+				return parseInt( info.id, 10 ) || 0;
+			}
+			return ( layer.get( 'is_global' ) && parseInt( layer.get( 'global_id' ), 10 ) ) || 0;
+		},
+		/**
+		 * The next free choice id of a global layer, as the server last said it.
+		 *
+		 * @param {Number} global_id
+		 * @return {Number} 0 when it is not known.
+		 */
+		get_next_choice_id: function( global_id ) {
+			var from_layers = this.get_global_layers().get( global_id );
+			var next = from_layers ? parseInt( from_layers.get( 'next_choice_id' ), 10 ) : 0;
+			if ( ! next && this.admin_data ) {
+				if ( this.isGlobalLayerStandalone() ) {
+					// The layer's own screen: with the layer's data.
+					var info = this.admin_data.get( 'global_layer' ) || {};
+					next = parseInt( info.next_choice_id, 10 ) || 0;
+				} else {
+					// A product: one per global layer it links, next to the edit tokens.
+					var ids = this.admin_data.get( 'global_layer_next_choice_ids' ) || {};
+					next = parseInt( ids[ global_id ], 10 ) || 0;
+				}
+			}
+			return next || 0;
+		},
+		set_next_choice_id: function( global_id, next ) {
+			this.get_global_layers().get_or_create( global_id ).set( 'next_choice_id', next );
+		},
+		/**
+		 * The id of a choice added to a layer.
+		 *
+		 * A global layer never reuses a choice id: links keep overrides by choice id, and the
+		 * highest id plus one would hand a deleted choice's id, and so its overrides, to a new
+		 * choice. Local layers keep the highest id plus one.
+		 *
+		 * @param {Backbone.Model}      layer
+		 * @param {Backbone.Collection} collection The layer's choices.
+		 * @return {Number}
+		 */
+		get_new_choice_id: function( layer, collection ) {
+			var id = this.get_new_id( collection );
+			var global_id = this.get_global_id_of_layer( layer );
+			if ( ! global_id ) return id;
+			// Never below an id in use, whatever the server said.
+			id = Math.max( id, this.get_next_choice_id( global_id ) );
+			this.set_next_choice_id( global_id, id + 1 );
+			return id;
 		},
 		setDataMigrationOverlay: function( phase ) {
 			if ( ! window.MKL_PC_DataMigrationOverlay ) {

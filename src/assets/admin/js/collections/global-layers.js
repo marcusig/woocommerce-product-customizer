@@ -162,6 +162,7 @@ var PC = PC || {};
 						layer: response.layer,
 						content: processed_content || null
 					} );
+					this.remember_next_choice_id( model, response );
 					model.set( 'edit_token', response.edit_token || '', { silent: true } );
 					if ( options.success ) options.success( model, response );
 				}
@@ -202,6 +203,9 @@ var PC = PC || {};
 				if ( response && response.global_id && response.edit_token ) {
 					collection.get_or_create( response.global_id ).set( 'edit_token', response.edit_token, { silent: true } );
 				}
+				if ( response && response.global_id ) {
+					collection.remember_next_choice_id( collection.get_or_create( response.global_id ), response );
+				}
 				// Update local model with saved data
 				if ( layer_data ) {
 					model.set( 'layer', layer_data );
@@ -220,6 +224,21 @@ var PC = PC || {};
 			}.bind( this ) ).fail( function( error ) {
 				if ( options.error ) options.error( model, error );
 			}.bind( this ) );
+		},
+
+		/**
+		 * The global layer's next free choice id comes with its data and with a save
+		 * (docs/global-layer-choice-overrides-spec.md). Never lowered: ids given out here since
+		 * may not have been saved yet.
+		 *
+		 * @param {Backbone.Model} model    Global layer entry.
+		 * @param {Object}         response Server response.
+		 */
+		remember_next_choice_id: function( model, response ) {
+			var next = response ? parseInt( response.next_choice_id, 10 ) : 0;
+			if ( next && next > ( parseInt( model.get( 'next_choice_id' ), 10 ) || 0 ) ) {
+				model.set( 'next_choice_id', next );
+			}
 		},
 
 		/**

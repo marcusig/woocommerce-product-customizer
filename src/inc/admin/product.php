@@ -339,8 +339,9 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router',
 				) ),
 				array( 'backbone/views/layer_overrides', 'views/layer-overrides.js', array( 'mkl_pc/js/admin/backbone/views/layers' ) ),
+				array( 'backbone/views/choice_overrides', 'views/choice-overrides.js', array( 'mkl_pc/js/admin/backbone/views/layer_overrides' ) ),
 				array( 'backbone/views/layer_masks', 'views/layer-masks.js', array( 'mkl_pc/js/admin/backbone/views/layers', 'mkl_pc/js/admin/backbone/views/layer_overrides' ) ),
-				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router' ) ),
+				array( 'backbone/views/choices', 'views/choices.js', array( 'mkl_pc/js/admin/backbone/views/mobile_admin_stack_router', 'mkl_pc/js/admin/backbone/views/choice_overrides' ) ),
 				array( 'backbone/views/choice_color', 'views/choice-color.js', array( 'mkl_pc/js/admin/backbone/views/choices' ) ),
 				array( 'backbone/views/image_order_preview', 'views/image-order-preview.js' ),
 				array( 'backbone/views/image_order', 'views/image-order.js', array(
@@ -454,6 +455,11 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 					/* translators: %d: number of times the global layer is already used in this product */
 					'import_global_layer_links' => esc_html__( 'Already in this product: %d', 'product-configurator-for-woocommerce' ),
 					'layer_override_groups' => $this->get_layer_override_groups(),
+					// Choices of a linked global layer (docs/global-layer-choice-overrides-spec.md).
+					'choice_override_groups' => $this->get_choice_override_groups(),
+					/* translators: %d: number of settings of a choice overridden for this link */
+					'choice_override_row_badge' => esc_html__( 'Has overrides', 'product-configurator-for-woocommerce' ),
+					'choice_override_count' => esc_html__( '%d overridden settings', 'product-configurator-for-woocommerce' ),
 					// The zone editor (views/zone-editor.js, docs/image-overlay-spec.md). Not
 					// escaped here: the dialog escapes what it inserts.
 					'zone_editor' => array(
@@ -749,6 +755,32 @@ if ( ! class_exists('MKL\PC\Admin_Product') ) {
 			 * @param array $groups field => fields following it
 			 */
 			return apply_filters( 'mkl_pc_layer_override_groups', $groups );
+		}
+
+		/**
+		 * Choice fields that follow another field's override switch on a linked global layer: its
+		 * translations (docs/global-layer-choice-overrides-spec.md).
+		 *
+		 * @return array field => fields following it
+		 */
+		private function get_choice_override_groups() {
+			$groups    = array( 'name' => array(), 'description' => array() );
+			$languages = mkl_pc( 'languages' );
+			if ( $languages && ! empty( $languages->get_languages() ) ) {
+				$default = $languages->get_default_language();
+				foreach ( (array) $languages->get_languages() as $language ) {
+					if ( $language == $default ) continue;
+					$language = str_replace( '-', '_', $language );
+					$groups['name'][]        = 'name_' . $language;
+					$groups['description'][] = 'description_' . $language;
+				}
+			}
+			/**
+			 * Filter the choice fields switched together on a linked global layer.
+			 *
+			 * @param array $groups field => fields following it
+			 */
+			return apply_filters( 'mkl_pc_choice_override_groups', $groups );
 		}
 
 		private function _current_screen_is( $name ) {

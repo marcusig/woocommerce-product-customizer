@@ -1996,8 +1996,30 @@ class DB {
 		$global_id = Global_Layer_Linker::get_content_layer_global_id( $product, $layer_id );
 		if ( $global_id > 0 ) {
 			$choices = isset( $layer_content['choices'] ) && is_array( $layer_content['choices'] ) ? $layer_content['choices'] : array();
-			if ( ! Global_Layers::save_content( $global_id, $choices ) ) {
+			// The choices come from a resolved read, so they carry this link's own settings
+			// (docs/global-layer-choice-overrides-spec.md): those go back to the link, the rest to
+			// the global layer.
+			$split = Global_Layer_Linker::split_resolved_choices( $global_id, $choices, $product->get_meta( '_mkl_product_configurator_content_' . $layer_id ) );
+			if ( $split['changed'] ) {
+				$reference = array( 'layerId' => (int) $layer_id, 'global_id' => $global_id );
+				if ( $split['overrides'] ) {
+					$reference['overrides'] = $split['overrides'];
+				}
+				if ( ! $this->write_structured_meta( $product, '_mkl_product_configurator_content_' . $layer_id, $reference ) ) {
+					return false;
+				}
+				$product->update_meta_data( '_mkl_product_configurator_last_updated', time() );
+				$product->save();
+				do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_content_' . $layer_id );
+				do_action( 'wpml_sync_custom_field', $owner_id, '_mkl_product_configurator_last_updated' );
+				$this->invalidate_layers_cache( $owner_id );
+			}
+			if ( ! Global_Layers::save_content( $global_id, $split['choices'] ) ) {
 				return false;
+			}
+			wp_cache_delete( 'mkl_pc_data_content_' . $owner_id, 'mkl_pc' );
+			if ( $owner_id !== (int) $product_id ) {
+				wp_cache_delete( 'mkl_pc_data_content_' . $product_id, 'mkl_pc' );
 			}
 			do_action( 'mkl_pc_saved_product_configuration_content', $product_id, array( $layer_content ) );
 			do_action( 'mkl_pc_saved_product_configuration', $product_id );
@@ -2396,7 +2418,14 @@ class DB {
 			}
 		}
 
-		return apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
+		$init_data = apply_filters( 'mkl_product_configurator_get_front_end_data', $init_data, $product );
+
+		// Same for the choices of a link (docs/global-layer-choice-overrides-spec.md).
+		if ( is_array( $init_data ) && ! empty( $init_data['content'] ) ) {
+			$init_data['content'] = Global_Layer_Linker::strip_choice_overrides_for_front_end( $init_data['content'] );
+		}
+
+		return $init_data;
 	}
 
 	/**
@@ -2620,6 +2649,11 @@ class DB {
 			}
 		}
 
+		// The settings a link to a global layer keeps for its choices (switched-off ones too,
+		// docs/global-layer-choice-overrides-spec.md). The resolved read above remapped the ones in
+		// use; the content chunk holds the rest.
+		$this->scan_choice_override_images( $product_id, $index );
+
 		// Update angles (single meta)
 		$angles = $this->get( 'angles', $product_id );
 		if ( is_array( $angles ) ) {
@@ -2700,6 +2734,95 @@ class DB {
 		$this->scan_3d_files( $product_id );
 
 		return $this->changed_items_count;
+	}
+
+	/**
+	 * Fix images: remap the image ids inside the choice overrides of a link's content chunks.
+	 *
+	 * Each entry's `values` is treated as a partial choice: its `images` are remapped as a choice's
+	 * are, and the `mkl_pc/db/scan_images/choice` filter gets it as well.
+	 *
+	 * @param int   $product_id
+	 * @param array $index Layer ids.
+	 * @return void
+	 */
+	private function scan_choice_override_images( $product_id, $index ) {
+		$owner_id = $this->resolve_storage_owner_id( $product_id, 0, 'content' );
+		if ( $owner_id <= 0 ) {
+			$owner_id = (int) $product_id;
+		}
+		$product = $this->get_owner( $owner_id );
+		if ( ! $product ) {
+			return;
+		}
+		foreach ( (array) $index as $layer_id ) {
+			$layer_id = (int) $layer_id;
+			if ( ! $layer_id ) continue;
+			$meta_key = '_mkl_product_configurator_content_' . $layer_id;
+			$chunk    = $product->get_meta( $meta_key );
+			if ( '' === $chunk ) continue;
+			$chunk = \MKL\PC\Utils::safe_unserialize( $chunk );
+			if ( is_string( $chunk ) ) {
+				$chunk = $this->decode_stored_json( $chunk );
+			}
+			if ( ! is_array( $chunk ) || empty( $chunk['global_id'] ) || empty( $chunk['overrides']['choices'] ) || ! is_array( $chunk['overrides']['choices'] ) ) continue;
+			$changed = false;
+			foreach ( $chunk['overrides']['choices'] as $key => $entry ) {
+				if ( ! is_array( $entry ) || empty( $entry['values'] ) || ! is_array( $entry['values'] ) ) continue;
+				$values = $entry['values'];
+				/** This filter is documented in DB::scan_product_images(). */
+				$fixed = apply_filters( 'mkl_pc/db/scan_images/choice', $values, $this, $product_id, $layer_id );
+				if ( is_array( $fixed ) && $fixed !== $values ) {
+					$values  = $fixed;
+					$changed = true;
+				}
+				if ( $this->remap_choice_images( $values ) ) {
+					$changed = true;
+				}
+				$chunk['overrides']['choices'][ $key ]['values'] = $values;
+			}
+			if ( ! $changed ) continue;
+			if ( ! $this->write_structured_meta( $product, $meta_key, $chunk ) ) continue;
+			$product->save();
+			do_action( 'wpml_sync_custom_field', $owner_id, $meta_key );
+			$this->invalidate_layers_cache( $owner_id );
+			wp_cache_delete( 'mkl_pc_data_content_' . $owner_id, 'mkl_pc' );
+			if ( $owner_id !== (int) $product_id ) {
+				wp_cache_delete( 'mkl_pc_data_content_' . $product_id, 'mkl_pc' );
+			}
+		}
+	}
+
+	/**
+	 * Point the images of a choice (or of a partial one) at this site's attachments, in place.
+	 *
+	 * @param array $choice
+	 * @return bool Whether something changed.
+	 */
+	private function remap_choice_images( &$choice ) {
+		if ( ! isset( $choice['images'] ) || ! is_array( $choice['images'] ) ) return false;
+		$changed = false;
+		foreach ( $choice['images'] as $image_key => $image ) {
+			if ( ! is_array( $image ) ) continue;
+			if ( isset( $image['image'] ) && ! empty( $image['image']['url'] ) ) {
+				$new_image_id = $this->_find_image_id( $image['image']['url'], isset( $image['image']['id'] ) ? $image['image']['id'] : 0 );
+				$new_url = wp_get_attachment_url( $new_image_id );
+				if ( $new_image_id && ( ! isset( $image['image']['id'] ) || $new_image_id != $image['image']['id'] ) || $new_url != $image['image']['url'] ) {
+					$choice['images'][ $image_key ]['image']['id'] = $new_image_id;
+					$choice['images'][ $image_key ]['image']['url'] = $new_url;
+					$changed = true;
+				}
+			}
+			if ( isset( $image['thumbnail'] ) && ! empty( $image['thumbnail']['url'] ) ) {
+				$new_thumbnail_id = $this->_find_image_id( $image['thumbnail']['url'], isset( $image['thumbnail']['id'] ) ? $image['thumbnail']['id'] : 0 );
+				if ( $new_thumbnail_id && ( ! isset( $image['thumbnail']['id'] ) || $new_thumbnail_id != $image['thumbnail']['id'] ) ) {
+					$choice['images'][ $image_key ]['thumbnail']['id'] = $new_thumbnail_id;
+					$choice['images'][ $image_key ]['thumbnail']['url'] = wp_get_attachment_url( $new_thumbnail_id );
+					$changed = true;
+				}
+			}
+		}
+		return $changed;
 	}
 
 	/**

@@ -171,6 +171,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 10,
+					'overridable' => true,
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 					'html'      => Abstract_Settings::get_objects3d_select_html( array(
 						'setting'     => 'object_3d_id',
@@ -184,6 +185,7 @@ if ( ! class_exists('MKL\PC\Choice_Settings') ) {
 					'type'      => 'html',
 					'section'   => 'threed',
 					'priority'  => 12,
+					'overridable' => true,
 					'condition' => '!data.not_a_choice && !data.is_group && ( "simple" == data.layer_type || "multiple" == data.layer_type)',
 					'html'      => '<div class="mkl-pc-setting--container">'
 						. '<input type="text" class="components-select-control__input" data-setting="target_object_id" value="<# if ( data.target_object_id ) { #>{{data.target_object_id}}<# } #>" placeholder="' . esc_attr__( 'Whole model', 'product-configurator-for-woocommerce' ) . '"> '

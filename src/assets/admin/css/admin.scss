@@ -5171,14 +5171,16 @@ html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.i
  * each locked field `.is-locked` (layer_form.update_global_lock_state(), layer_overrides), so an
  * overridden field and every override switch stay usable.
  */
-.layer-form.is-global .is-locked {
+.layer-form.is-global .is-locked,
+.choice-form.is-global .is-locked {
 	cursor: no-drop;
 	> :not(.mkl-pc-override-switch):not(h2) {
 		pointer-events: none;
 		opacity: 0.6;
 	}
 }
-.layer-form.is-global {
+.layer-form.is-global,
+.choice-form.is-global {
 	// A bar in the margin, outside the field's box: overriding a field moves nothing.
 	.setting.is-overridden,
 	.mkl-pc-image-settings.is-overridden {
@@ -5196,16 +5198,38 @@ html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.i
 	}
 }
 // The switch sits in the field's top-right corner, on the label line.
-.layer-form .has-override-switch {
+.layer-form .has-override-switch,
+.choice-form .has-override-switch {
 	position: relative;
 	> label.name,
-	> h2 {
+	> h2,
+	> h3 {
 		padding-right: 30px;
 	}
 	&.is-overridden > label.name,
-	&.is-overridden > h2 {
+	&.is-overridden > h2,
+	&.is-overridden > h3 {
 		padding-right: 120px;
 	}
+}
+// Linked choices (docs/global-layer-choice-overrides-spec.md): the form locks field by field, so the
+// whole-section veil of a locked global layer must not cover the switches and the overridden fields.
+html .pc-modal .pc-sidebar .is-global-locked .choice-form.is-global .setting-section.is-opened::before {
+	display: none;
+}
+// The picture block of a locked layer takes no clicks; an overridden one does, and so does its switch.
+.choice-form.is-global .mkl-pc-image-settings.is-overridden {
+	pointer-events: auto;
+	cursor: auto;
+}
+.choice-form.is-global .mkl-pc-override-switch {
+	pointer-events: auto;
+}
+// A choice row that has overrides on this link.
+.mkl-pc-override-badge--row {
+	flex: 0 0 auto;
+	margin-inline-start: auto;
+	margin-inline-end: 8px;
 }
 .mkl-pc-override-switch {
 	position: absolute;
@@ -5257,7 +5281,8 @@ html .pc-modal .pc-sidebar .is-global-locked:not(.layer-form) .setting-section.i
 	white-space: nowrap;
 }
 // Half-width fields: the coloured border says it, the badge would cover the label.
-.layer-form .col-half.is-overridden {
+.layer-form .col-half.is-overridden,
+.choice-form .col-half.is-overridden {
 	.mkl-pc-override-badge {
 		display: none;
 	}

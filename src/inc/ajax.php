@@ -163,12 +163,16 @@ class Ajax {
 					// Saving a global layer goes to the layer post, which has a token of its own. See save_global_layer().
 					if ( is_array( $data ) && ! empty( $data['layers'] ) && is_array( $data['layers'] ) ) {
 						$global_layer_edit_tokens = array();
+						// Ids for choices added from a link (docs/global-layer-choice-overrides-spec.md).
+						$global_layer_next_choice_ids = array();
 						foreach ( $data['layers'] as $layer ) {
 							if ( is_array( $layer ) && ! empty( $layer['global_id'] ) ) {
 								$global_layer_edit_tokens[ (int) $layer['global_id'] ] = (string) get_post_meta( (int) $layer['global_id'], self::EDIT_TOKEN_META, true );
+								$global_layer_next_choice_ids[ (int) $layer['global_id'] ] = Global_Layers::get_next_choice_id( (int) $layer['global_id'] );
 							}
 						}
 						$data['global_layer_edit_tokens'] = (object) $global_layer_edit_tokens;
+						$data['global_layer_next_choice_ids'] = (object) $global_layer_next_choice_ids;
 					}
 				}
 				break;
@@ -183,6 +187,10 @@ class Ajax {
 			case 'content' : // = choices
 				// var_dump( (microtime(true) - $start) *1000, 'Found that request[data] = content');
 				$data = $this->db->get_content( $id );
+				// A link's choice settings are for the editor; visitors get the values only.
+				if ( ! current_user_can( 'edit_posts' ) && is_array( $data ) && ! empty( $data['content'] ) ) {
+					$data['content'] = \MKL\PC\Global_Layer\Linker::strip_choice_overrides_for_front_end( $data['content'] );
+				}
 				$data = $this->db->escape( $data );
 				break;
 			default: 
@@ -1025,6 +1033,8 @@ class Ajax {
 		$data['layer'] = $this->db->escape( $data['layer'] );
 		$data['content'] = $this->db->escape( $data['content'] );
 		$data['edit_token'] = (string) get_post_meta( $global_id, self::EDIT_TOKEN_META, true );
+		// The id the next choice added to this layer takes (a global layer never reuses a choice id).
+		$data['next_choice_id'] = Global_Layers::get_next_choice_id( $global_id );
 
 		wp_send_json_success( $data );
 	}
@@ -1159,6 +1169,7 @@ class Ajax {
 			'layer' => $layer,
 			'content' => $content,
 			'edit_token' => $edit_token,
+			'next_choice_id' => Global_Layers::get_next_choice_id( (int) $result ),
 		) );
 	}
 

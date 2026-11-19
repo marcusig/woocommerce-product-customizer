@@ -909,7 +909,7 @@ CONTENT TEMPLATES
 		</div>
 
 		<# if ( wp.hooks.applyFilters( 'PC.admin.show_choice_images', true, data ) ) { #>
-			<div class="options mkl-pc-image-settings">
+			<div class="options mkl-pc-image-settings" data-override-field="images">
 				<# if ( data.is_group ) { #>
 					<h3><?php esc_html_e( 'Group thumbnail', 'product-configurator-for-woocommerce' ) ?></h3>
 				<# } else if ( 'text-overlay' == data.layer_type ) { #>

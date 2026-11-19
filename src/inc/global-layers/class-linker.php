@@ -154,6 +154,14 @@ final class Linker {
 						$resolved['choices'],
 						isset( $resolved['layerId'] ) ? $resolved['layerId'] : null
 					);
+					// This link's own choice settings (docs/global-layer-choice-overrides-spec.md),
+					// handed on as well, per choice, so the editor knows which values are the link's.
+					$resolved['choices'] = self::apply_choice_overrides(
+						$resolved['choices'],
+						isset( $entry['overrides'] ) ? $entry['overrides'] : null,
+						true
+					);
+					unset( $resolved['overrides'] );
 					$content[ $index ] = $resolved;
 				}
 			}
@@ -258,6 +266,33 @@ final class Linker {
 	/**
 	 * Strip global content entries to minimal references before saving to product meta.
 	 *
+	 * EDITOR -> SERVER CONTRACT for choice overrides (docs/global-layer-choice-overrides-spec.md).
+	 * The editor sends the content row of a link as it holds it: `{ layerId, global_id, choices }`,
+	 * every choice carrying its EFFECTIVE values, and, for each choice that has any, a per-choice key
+	 *
+	 *     choice.overrides = { fields: string[], values: object, global?: object, editing_original?: bool }
+	 *
+	 * which is exactly what resolve_content() handed to the editor, kept right by the editor:
+	 *
+	 * - `fields`: the settings overridden on this link (anything but the excluded system fields).
+	 * - `values`: the link's value per field, switched-off ones included (kept for switching back on).
+	 *   For a listed field the server takes the value from the choice itself (what the form edited);
+	 *   `values[field]` is only the fallback when the choice lacks the key.
+	 * - `editing_original`: true when the product is saved while "Edit original" shows the global
+	 *   values; the server then takes the link's values from `values` only. May also be set on the
+	 *   content row itself (`row.editing_original`) to apply to every choice of the row.
+	 * - `global` is read-only information for the editor; never stored.
+	 *
+	 * From those the server rebuilds the reference `{ layerId, global_id, overrides: { choices:
+	 * [ { id, fields, values } ] } }` (a LIST, not keyed by id). Entries without fields or values,
+	 * entries on the excluded list, and entries whose `id` matches no choice of the global layer are
+	 * dropped; `overrides` is dropped when nothing is left. A row without `choices` that already holds
+	 * `overrides.choices` in the stored shape keeps them (normalized). The per-choice `overrides` key
+	 * is never stored: the references hold no choices.
+	 *
+	 * A `global_id` that is no global layer on this site (an imported file) keeps the row as the
+	 * owner's own data: its choices already hold the effective values, so only the bookkeeping goes.
+	 *
 	 * @param mixed $content
 	 * @return mixed
 	 */
@@ -266,12 +301,74 @@ final class Linker {
 			return $content;
 		}
 		foreach ( $content as $index => $entry ) {
-			if ( isset( $entry['global_id'] ) && $entry['global_id'] ) {
-				$ref = array(
-					'layerId'   => isset( $entry['layerId'] ) ? $entry['layerId'] : null,
-					'global_id' => intval( $entry['global_id'] ),
-				);
-				$content[ $index ] = $ref;
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+			if ( empty( $entry['global_id'] ) ) {
+				// Only a link has choice overrides: a local layer holds its values as its own.
+				if ( isset( $entry['choices'] ) && is_array( $entry['choices'] ) ) {
+					$content[ $index ]['choices'] = self::drop_choice_overrides( $entry['choices'] );
+				}
+				unset( $content[ $index ]['overrides'], $content[ $index ]['editing_original'] );
+				continue;
+			}
+			$global_id = intval( $entry['global_id'] );
+
+			// A global id is a post id on this site and means nothing anywhere else: see
+			// strip_layers_to_references(). A row that carries its choices keeps them as its own.
+			if ( ! \MKL\PC\Global_Layers::is_global_layer_id( $global_id ) && isset( $entry['choices'] ) && is_array( $entry['choices'] ) ) {
+				$entry['choices']   = self::drop_choice_overrides( $entry['choices'] );
+				$entry['global_id'] = null;
+				unset( $entry['overrides'], $entry['editing_original'] );
+				$content[ $index ] = $entry;
+				continue;
+			}
+
+			$reference = array(
+				'layerId'   => isset( $entry['layerId'] ) ? $entry['layerId'] : null,
+				'global_id' => $global_id,
+			);
+			$overrides = self::choice_overrides_from_content_row( $entry, $global_id );
+			if ( $overrides ) {
+				$reference['overrides'] = $overrides;
+			}
+			$content[ $index ] = $reference;
+		}
+		return $content;
+	}
+
+	/**
+	 * Remove the per-choice `overrides` bookkeeping from a list of choices.
+	 *
+	 * @param array $choices
+	 * @return array
+	 */
+	public static function drop_choice_overrides( $choices ) {
+		if ( ! is_array( $choices ) ) {
+			return $choices;
+		}
+		foreach ( $choices as $index => $choice ) {
+			if ( is_array( $choice ) && isset( $choice['overrides'] ) ) {
+				unset( $choices[ $index ]['overrides'] );
+			}
+		}
+		return $choices;
+	}
+
+	/**
+	 * Drop the choice overrides from content headed for the storefront: a link's choices already
+	 * hold its values, which ones they are is the editor's business.
+	 *
+	 * @param mixed $content List of content rows.
+	 * @return mixed
+	 */
+	public static function strip_choice_overrides_for_front_end( $content ) {
+		if ( ! is_array( $content ) ) {
+			return $content;
+		}
+		foreach ( $content as $index => $row ) {
+			if ( is_array( $row ) && isset( $row['choices'] ) && is_array( $row['choices'] ) ) {
+				$content[ $index ]['choices'] = self::drop_choice_overrides( $row['choices'] );
 			}
 		}
 		return $content;
@@ -403,6 +500,9 @@ final class Linker {
 				continue;
 			}
 			$choices = self::stamp_choices_layer_id( \MKL\PC\Global_Layers::normalize_choices( $global['content'] ), $layer_id );
+			// This owner's own choice settings go with the copy; switched-off values are dropped.
+			$chunk   = self::decode_chunk( $content_product->get_meta( '_mkl_product_configurator_content_' . $layer_id ) );
+			$choices = self::apply_choice_overrides( $choices, is_array( $chunk ) && isset( $chunk['overrides'] ) ? $chunk['overrides'] : null );
 			$db->write_structured_meta(
 				$content_product,
 				'_mkl_product_configurator_content_' . $layer_id,
@@ -560,6 +660,9 @@ final class Linker {
 
 			if ( $content_is_ref ) {
 				$choices = self::stamp_choices_layer_id( \MKL\PC\Global_Layers::normalize_choices( $global['content'] ), $layer_id );
+				// Each owner keeps its own choice settings as plain choices, as the layer does.
+				$chunk   = self::decode_chunk( $product->get_meta( '_mkl_product_configurator_content_' . $layer_id ) );
+				$choices = self::apply_choice_overrides( $choices, is_array( $chunk ) && isset( $chunk['overrides'] ) ? $chunk['overrides'] : null );
 				$db->write_structured_meta(
 					$product,
 					'_mkl_product_configurator_content_' . $layer_id,
@@ -600,14 +703,18 @@ final class Linker {
 	/**
 	 * Whether a field may be overridden on a link.
 	 *
-	 * @param mixed $field
+	 * @param mixed         $field
+	 * @param string[]|null $excluded Fields that cannot be overridden; the layer ones by default.
 	 * @return bool
 	 */
-	private static function is_overridable_field( $field ) {
+	private static function is_overridable_field( $field, $excluded = null ) {
 		if ( ! is_string( $field ) || ! preg_match( '/^[A-Za-z0-9_\-]+$/', $field ) ) {
 			return false;
 		}
-		return ! in_array( $field, self::override_excluded_fields(), true );
+		if ( null === $excluded ) {
+			$excluded = self::override_excluded_fields();
+		}
+		return ! in_array( $field, $excluded, true );
 	}
 
 	/**
@@ -618,10 +725,11 @@ final class Linker {
 	 * listed fields. A listed field without a value is dropped: overriding with nothing is not a
 	 * value anyone chose.
 	 *
-	 * @param mixed $overrides
+	 * @param mixed         $overrides
+	 * @param string[]|null $excluded  Fields that cannot be overridden; the layer ones by default.
 	 * @return array|null { fields: string[], values: array }
 	 */
-	public static function normalize_overrides( $overrides ) {
+	public static function normalize_overrides( $overrides, $excluded = null ) {
 		if ( is_object( $overrides ) ) {
 			$overrides = json_decode( wp_json_encode( $overrides ), true );
 		}
@@ -631,7 +739,7 @@ final class Linker {
 		$values = array();
 		if ( isset( $overrides['values'] ) && is_array( $overrides['values'] ) ) {
 			foreach ( $overrides['values'] as $field => $value ) {
-				if ( self::is_overridable_field( $field ) ) {
+				if ( self::is_overridable_field( $field, $excluded ) ) {
 					$values[ $field ] = $value;
 				}
 			}
@@ -639,7 +747,7 @@ final class Linker {
 		$fields = array();
 		if ( isset( $overrides['fields'] ) && is_array( $overrides['fields'] ) ) {
 			foreach ( $overrides['fields'] as $field ) {
-				if ( self::is_overridable_field( $field ) && array_key_exists( $field, $values ) && ! in_array( $field, $fields, true ) ) {
+				if ( self::is_overridable_field( $field, $excluded ) && array_key_exists( $field, $values ) && ! in_array( $field, $fields, true ) ) {
 					$fields[] = $field;
 				}
 			}
@@ -695,20 +803,353 @@ final class Linker {
 	 *
 	 * Values replace the global ones whole: `masks` is the link's whole list.
 	 *
-	 * @param array      $layer
-	 * @param array|null $overrides As normalize_overrides() returns it.
+	 * @param array         $layer     A layer, or a choice.
+	 * @param array|null    $overrides As normalize_overrides() returns it.
+	 * @param string[]|null $excluded  Fields that cannot be overridden; the layer ones by default.
 	 * @return array
 	 */
-	public static function apply_overrides( $layer, $overrides ) {
+	public static function apply_overrides( $layer, $overrides, $excluded = null ) {
 		if ( ! is_array( $layer ) || ! is_array( $overrides ) || empty( $overrides['fields'] ) ) {
 			return $layer;
 		}
 		foreach ( $overrides['fields'] as $field ) {
-			if ( self::is_overridable_field( $field ) && array_key_exists( $field, $overrides['values'] ) ) {
+			if ( self::is_overridable_field( $field, $excluded ) && array_key_exists( $field, $overrides['values'] ) ) {
 				$layer[ $field ] = $overrides['values'][ $field ];
 			}
 		}
 		return $layer;
+	}
+
+	/**
+	 * Choice settings a link can never override: which choice it is and where it sits in the list.
+	 * The list itself (adding, removing, ordering, grouping) stays the global layer's.
+	 *
+	 * @return string[]
+	 */
+	public static function choice_override_excluded_fields() {
+		$excluded = array( '_id', 'id', 'layerId', 'is_group', 'parent', 'order', 'overrides' );
+		/**
+		 * Filter the choice settings a link to a global layer cannot override.
+		 *
+		 * See docs/global-layer-choice-overrides-spec.md. The structural fields above are always excluded.
+		 *
+		 * @param string[] $fields
+		 */
+		$filtered = apply_filters( 'mkl_pc_global_layer_choice_override_excluded_fields', $excluded );
+		return array_values( array_unique( array_merge( $excluded, is_array( $filtered ) ? array_map( 'strval', $filtered ) : array() ) ) );
+	}
+
+	/**
+	 * The id of a choice: `_id`, else `id`.
+	 *
+	 * @param mixed $choice
+	 * @return int 0 when it has none.
+	 */
+	private static function choice_id( $choice ) {
+		if ( ! is_array( $choice ) ) {
+			return 0;
+		}
+		if ( isset( $choice['_id'] ) && (int) $choice['_id'] > 0 ) {
+			return (int) $choice['_id'];
+		}
+		return ( isset( $choice['id'] ) && (int) $choice['id'] > 0 ) ? (int) $choice['id'] : 0;
+	}
+
+	/**
+	 * One link's overrides on one choice in their stored shape, or null when there are none.
+	 *
+	 * Same rules as normalize_overrides(), against the choice excluded list, plus the choice `id`.
+	 *
+	 * @param mixed         $entry    { id, fields, values }
+	 * @param string[]|null $excluded Choice excluded list; read from the filter when null.
+	 * @return array|null { id: int, fields: string[], values: array }
+	 */
+	public static function normalize_choice_entry( $entry, $excluded = null ) {
+		if ( is_object( $entry ) ) {
+			$entry = json_decode( wp_json_encode( $entry ), true );
+		}
+		if ( ! is_array( $entry ) || empty( $entry['id'] ) || (int) $entry['id'] <= 0 ) {
+			return null;
+		}
+		if ( null === $excluded ) {
+			$excluded = self::choice_override_excluded_fields();
+		}
+		$normalized = self::normalize_overrides( $entry, $excluded );
+		if ( ! $normalized ) {
+			return null;
+		}
+		return array(
+			'id'     => (int) $entry['id'],
+			'fields' => $normalized['fields'],
+			'values' => $normalized['values'],
+		);
+	}
+
+	/**
+	 * A content reference's choice overrides in their stored shape, or null when there are none.
+	 *
+	 * @param mixed         $overrides  The reference's `overrides`: { choices: [ { id, fields, values } ] }.
+	 * @param int[]|null    $valid_ids  Ids of the choices of the global layer; entries on other ids are dropped.
+	 * @param string[]|null $excluded   Choice excluded list; read from the filter when null.
+	 * @return array|null { choices: array[] }
+	 */
+	public static function normalize_choice_overrides( $overrides, $valid_ids = null, $excluded = null ) {
+		if ( is_object( $overrides ) ) {
+			$overrides = json_decode( wp_json_encode( $overrides ), true );
+		}
+		if ( ! is_array( $overrides ) || empty( $overrides['choices'] ) || ! is_array( $overrides['choices'] ) ) {
+			return null;
+		}
+		if ( null === $excluded ) {
+			$excluded = self::choice_override_excluded_fields();
+		}
+		$entries = array();
+		foreach ( $overrides['choices'] as $entry ) {
+			$entry = self::normalize_choice_entry( $entry, $excluded );
+			if ( ! $entry ) {
+				continue;
+			}
+			if ( is_array( $valid_ids ) && ! isset( $valid_ids[ $entry['id'] ] ) ) {
+				continue;
+			}
+			// One entry per choice; the last one wins.
+			$entries[ $entry['id'] ] = $entry;
+		}
+		if ( empty( $entries ) ) {
+			return null;
+		}
+		return array( 'choices' => array_values( $entries ) );
+	}
+
+	/**
+	 * Ids (as keys) of the choices a global layer has.
+	 *
+	 * @param int $global_id
+	 * @return array<int,true>
+	 */
+	private static function global_choice_ids( $global_id ) {
+		$global = \MKL\PC\Global_Layers::get( $global_id );
+		$ids    = array();
+		foreach ( \MKL\PC\Global_Layers::normalize_choices( $global['content'] ) as $choice ) {
+			$id = self::choice_id( $choice );
+			if ( $id ) {
+				$ids[ $id ] = true;
+			}
+		}
+		return $ids;
+	}
+
+	/**
+	 * The choice overrides to store for a content row the editor sent. See strip_content_to_references()
+	 * for the contract.
+	 *
+	 * @param array $row       Content row of a link.
+	 * @param int   $global_id The global layer it references.
+	 * @return array|null
+	 */
+	private static function choice_overrides_from_content_row( $row, $global_id ) {
+		$valid_ids = self::global_choice_ids( $global_id );
+		$excluded  = self::choice_override_excluded_fields();
+
+		// Stored shape (an exported reference, a write that holds no choices): normalize and keep.
+		if ( ! isset( $row['choices'] ) || ! is_array( $row['choices'] ) ) {
+			return self::normalize_choice_overrides( isset( $row['overrides'] ) ? $row['overrides'] : null, $valid_ids, $excluded );
+		}
+
+		$row_editing_original = ! empty( $row['editing_original'] ) && 'false' !== $row['editing_original'];
+		$entries              = array();
+		foreach ( $row['choices'] as $choice ) {
+			if ( ! is_array( $choice ) || ! isset( $choice['overrides'] ) ) {
+				continue;
+			}
+			$id = self::choice_id( $choice );
+			if ( ! $id || ! isset( $valid_ids[ $id ] ) ) {
+				continue;
+			}
+			$overrides = $choice['overrides'];
+			if ( is_object( $overrides ) ) {
+				$overrides = json_decode( wp_json_encode( $overrides ), true );
+			}
+			if ( ! is_array( $overrides ) ) {
+				continue;
+			}
+			if ( ! isset( $overrides['values'] ) || ! is_array( $overrides['values'] ) ) {
+				$overrides['values'] = array();
+			}
+			// "Edit original" was on when the product was saved: the choice shows the global
+			// values, the link's are in `values`.
+			$editing_original = $row_editing_original || ( ! empty( $overrides['editing_original'] ) && 'false' !== $overrides['editing_original'] );
+			if ( ! $editing_original && isset( $overrides['fields'] ) && is_array( $overrides['fields'] ) ) {
+				foreach ( $overrides['fields'] as $field ) {
+					if ( is_string( $field ) && array_key_exists( $field, $choice ) ) {
+						$overrides['values'][ $field ] = $choice[ $field ];
+					}
+				}
+			}
+			$overrides['id'] = $id;
+			$entry           = self::normalize_choice_entry( $overrides, $excluded );
+			if ( $entry ) {
+				$entries[ $id ] = $entry;
+			}
+		}
+		if ( empty( $entries ) ) {
+			return null;
+		}
+		return array( 'choices' => array_values( $entries ) );
+	}
+
+	/**
+	 * The choice overrides stored in an owner's content chunk, for the global layer it references.
+	 *
+	 * @param mixed $chunk Decoded content chunk.
+	 * @return array|null As normalize_choice_overrides() returns it.
+	 */
+	public static function choice_overrides_from_chunk( $chunk ) {
+		if ( ! is_array( $chunk ) || empty( $chunk['global_id'] ) || empty( $chunk['overrides'] ) ) {
+			return null;
+		}
+		return self::normalize_choice_overrides(
+			$chunk['overrides'],
+			self::global_choice_ids( (int) $chunk['global_id'] )
+		);
+	}
+
+	/**
+	 * Apply a link's choice overrides over the global layer's choices.
+	 *
+	 * Entries on a choice the global layer no longer has are ignored here, and dropped on the next
+	 * save of the owner.
+	 *
+	 * @param array      $choices    The global choices, in order.
+	 * @param mixed      $overrides  The reference's `overrides`: { choices: [ { id, fields, values } ] }.
+	 * @param bool       $for_editor Hand each overridden choice `overrides` ({ fields, values, global })
+	 *                               for the editor. Off, the choices come out plain (a local copy).
+	 * @return array
+	 */
+	public static function apply_choice_overrides( $choices, $overrides, $for_editor = false ) {
+		if ( ! is_array( $choices ) ) {
+			return array();
+		}
+		$excluded = self::choice_override_excluded_fields();
+		$overrides = self::normalize_choice_overrides( $overrides, null, $excluded );
+		if ( ! $overrides ) {
+			return $choices;
+		}
+		$by_id = array();
+		foreach ( $overrides['choices'] as $entry ) {
+			$by_id[ $entry['id'] ] = $entry;
+		}
+		foreach ( $choices as $index => $choice ) {
+			$id = self::choice_id( $choice );
+			if ( ! $id || ! isset( $by_id[ $id ] ) ) {
+				continue;
+			}
+			$entry = array(
+				'fields' => $by_id[ $id ]['fields'],
+				'values' => $by_id[ $id ]['values'],
+			);
+			unset( $choice['overrides'] );
+			if ( $for_editor ) {
+				// The global values of the overridden fields, so the editor can switch an override
+				// off, and save the global layer without the link's values. Never stored.
+				$entry['global'] = array();
+				foreach ( $entry['fields'] as $field ) {
+					if ( array_key_exists( $field, $choice ) ) {
+						$entry['global'][ $field ] = $choice[ $field ];
+					}
+				}
+			}
+			$choice = self::apply_overrides( $choice, $entry, $excluded );
+			if ( $for_editor ) {
+				$choice['overrides'] = $entry;
+			}
+			$choices[ $index ] = $choice;
+		}
+		return $choices;
+	}
+
+	/**
+	 * Split the resolved choices of a link into what belongs to the global layer and what is the
+	 * link's own, before they are written back (DB::set_content_layer()).
+	 *
+	 * The choices come from a resolved read, so every overridden field holds the link's value. For
+	 * each choice of the link's stored overrides: the overridden fields' values go to the link's
+	 * entry, and the global choice keeps its own value for them (restored from the global layer, never
+	 * taken from the resolved choice); every other field goes to the global choice. The overridden
+	 * fields are the stored ones: whatever `overrides` the choices carry is not trusted.
+	 *
+	 * @param int    $global_id  The global layer.
+	 * @param array  $choices    Resolved choices of the link.
+	 * @param mixed  $raw_chunk  The link's stored content chunk, as read from the meta.
+	 * @return array { choices: array (for the global layer), overrides: array|null (for the
+	 *               reference), changed: bool (whether the reference's overrides change) }
+	 */
+	public static function split_resolved_choices( $global_id, $choices, $raw_chunk ) {
+		$chunk    = self::decode_chunk( $raw_chunk );
+		$excluded = self::choice_override_excluded_fields();
+		$stored   = ( is_array( $chunk ) && isset( $chunk['overrides'] ) ) ? $chunk['overrides'] : null;
+		$current  = self::normalize_choice_overrides( $stored, null, $excluded );
+
+		$by_entry = array();
+		if ( $current ) {
+			foreach ( $current['choices'] as $entry ) {
+				$by_entry[ $entry['id'] ] = $entry;
+			}
+		}
+
+		$global        = \MKL\PC\Global_Layers::get( $global_id );
+		$global_by_id  = array();
+		foreach ( \MKL\PC\Global_Layers::normalize_choices( $global['content'] ) as $global_choice ) {
+			$id = self::choice_id( $global_choice );
+			if ( $id ) {
+				$global_by_id[ $id ] = $global_choice;
+			}
+		}
+
+		$output     = array();
+		$present = array();
+		foreach ( (array) $choices as $choice ) {
+			if ( ! is_array( $choice ) ) {
+				$output[] = $choice;
+				continue;
+			}
+			$id = self::choice_id( $choice );
+			unset( $choice['overrides'] );
+			if ( $id ) {
+				$present[ $id ] = true;
+			}
+			if ( $id && isset( $by_entry[ $id ], $global_by_id[ $id ] ) ) {
+				foreach ( $by_entry[ $id ]['fields'] as $field ) {
+					if ( array_key_exists( $field, $choice ) ) {
+						$by_entry[ $id ]['values'][ $field ] = $choice[ $field ];
+					}
+					if ( array_key_exists( $field, $global_by_id[ $id ] ) ) {
+						$choice[ $field ] = $global_by_id[ $id ][ $field ];
+					} else {
+						unset( $choice[ $field ] );
+					}
+				}
+			}
+			$output[] = $choice;
+		}
+
+		$entries = array();
+		foreach ( $by_entry as $id => $entry ) {
+			if ( isset( $present[ $id ] ) && isset( $global_by_id[ $id ] ) ) {
+				$entries[] = $entry;
+			}
+		}
+		$overrides = $entries ? array( 'choices' => $entries ) : null;
+
+		// Compare against what is stored, as stored, so a stray or stale entry is cleaned up too.
+		$stored_choices = ( is_array( $stored ) && isset( $stored['choices'] ) ) ? $stored['choices'] : null;
+		$changed        = wp_json_encode( $overrides ? $overrides['choices'] : null ) !== wp_json_encode( empty( $stored_choices ) ? null : $stored_choices );
+
+		return array(
+			'choices'   => $output,
+			'overrides' => $overrides,
+			'changed'   => $changed,
+		);
 	}
 
 	/**
@@ -779,6 +1220,8 @@ final class Linker {
 				'id'       => (int) $global_id,
 				'title'    => get_the_title( $global_id ),
 				'layer_id' => $layer_id,
+				// The id the next choice added to this layer takes; ids of deleted choices are never reused.
+				'next_choice_id' => \MKL\PC\Global_Layers::get_next_choice_id( $global_id ),
 			),
 		);
 
@@ -802,9 +1245,10 @@ final class Linker {
 
 		return array(
 			array(
-				'layerId'   => $layer_id,
-				'global_id' => (int) $global_id,
-				'choices'   => array_values( $choices ),
+				'layerId'        => $layer_id,
+				'global_id'      => (int) $global_id,
+				'choices'        => array_values( $choices ),
+				'next_choice_id' => \MKL\PC\Global_Layers::get_next_choice_id( $global_id ),
 			),
 		);
 	}

@@ -296,9 +296,10 @@ PC.views = PC.views || {};
 			}
 
 			// Save using global_layers collection
-			var xhr = PC.app.get_global_layers().save_global_layer( global_id, null, PC.app.state.active_layer.col.toJSON(), {
+			var xhr = PC.app.get_global_layers().save_global_layer( global_id, null, PC.app.build_global_choices_payload( PC.app.state.active_layer.col ), {
 				success: function( model, response ) {
-					// Save successful
+					// Save successful: the link's values are back, the overridden fields' global values are the saved ones.
+					if ( PC.admin && PC.admin.choice_overrides ) PC.admin.choice_overrides.leave_all( self.active_layer.col, true );
 					self.active_layer.editing_choices = false;
 					PC.app.get_global_layers().set_editing_choices( global_id, false );
 					if ( PC.app.clearDirtyStateForLayer ) {

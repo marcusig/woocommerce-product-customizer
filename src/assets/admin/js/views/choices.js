@@ -98,6 +98,7 @@ PC.views = PC.views || {};
 				var global_id = this.model.get( 'global_id' );
 				this.editing_choices = PC.app.get_global_layers().is_editing_choices( global_id );
 			}
+			this.sync_choice_overrides();
 			this.$el.empty();
 			this.$el.html( this.template( _.extend( { has_clipboard_data: this.has_clipboard_data(), is_editing_choices: this.editing_choices }, this.model.attributes ) ) );
 			this.remove_views();
@@ -123,6 +124,19 @@ PC.views = PC.views || {};
 			}
 			return this;
 		},
+		/**
+		 * "Edit original" shows the global values of the overridden fields, and the link's own
+		 * values are back outside it (docs/global-layer-choice-overrides-spec.md).
+		 */
+		sync_choice_overrides: function() {
+			var overrides = PC.admin && PC.admin.choice_overrides;
+			if ( ! overrides || ! this.col || ! overrides.is_link_layer( this.model ) ) return;
+			if ( this.editing_choices ) {
+				overrides.enter_all( this.col );
+			} else {
+				overrides.leave_all( this.col, false );
+			}
+		},
 		update_lock_state: function() {
 			// Disable sortable when locked; is-global-locked on the content shell comes from update_global_actions_visibility
 			if ( this.$list && this.$list.sortable( 'instance' ) ) {
@@ -133,7 +147,9 @@ PC.views = PC.views || {};
 			}
 		},
 
-		choices_changed: function( model ) {
+		choices_changed: function( model, options ) {
+			// "Edit original" swapping the overridden fields: not a change of the product, nor of the global layer.
+			if ( options && options.pc_from_global ) return;
 			var changed = model.changedAttributes && model.changedAttributes();
 			if ( ! changed || _.isEmpty( _.omit( changed, 'active' ) ) ) {
 				return;
@@ -317,6 +333,7 @@ PC.views = PC.views || {};
 		on_edit_choices: function( e ) {
 			if ( e ) e.preventDefault();
 			this.editing_choices = true;
+			if ( PC.admin && PC.admin.choice_overrides ) PC.admin.choice_overrides.enter_all( this.col );
 			// Store in global collection
 			if ( this.model && this.model.get( 'is_global' ) && this.model.get( 'global_id' ) ) {
 				if ( PC.app.clearGlobalSessionDirty ) {
@@ -392,6 +409,10 @@ PC.views = PC.views || {};
 				PC.app.get_global_layers().fetch_global_choices( global_id, this.model.id, {
 					success: function( choices, response ) {
 						if ( choices && Array.isArray( choices ) ) {
+							// The link's own choice overrides go back on top, and its values with them.
+							if ( PC.admin && PC.admin.choice_overrides ) {
+								choices = PC.admin.choice_overrides.rebase( self.col.models, choices, { leave: true } );
+							}
 							self.col.reset( choices );
 							PC.app.is_modified[self.collectionName] = false;
 							self.render();
@@ -446,7 +467,7 @@ PC.views = PC.views || {};
 
 		new_attributes: function( name ) {
 			return {
-				_id: PC.app.get_new_id( this.col ),
+				_id: PC.app.get_new_choice_id( this.model, this.col ),
 				name: name,
 				order: this.col.nextOrder(),
 				active: true,
@@ -519,8 +540,9 @@ PC.views = PC.views || {};
 			// Step 1: Create all layers and store ID mapping
 			_.each( json.models, ( item ) => {
 				const original_id = item._id;
-				item._id = PC.app.get_new_id( this.col );
+				item._id = PC.app.get_new_choice_id( this.model, this.col );
 				item.layerId = this.model.id;
+				delete item.overrides;
 				item.order = this.col.nextOrder();
 
 				const new_choice = this.col.create( item );
@@ -575,6 +597,7 @@ PC.views = PC.views || {};
 			this.options = options || {}; 
 			this.form_target = options.form_target; 
 			this.listenTo( this.model, 'change:active', this.activate ); 
+			this.listenTo( this.model, 'change:overrides', this.update_override_badge ); 
 			this.listenTo( this.model, 'change:name change:admin_label', this.update_label ); 
 			this.listenTo( this.model, 'destroy', this.remove ); 
 		},		
@@ -587,11 +610,26 @@ PC.views = PC.views || {};
 				this.label = new PC.views.choiceLabel( { model: this.model } );
 				this.$( '.mkl-pc-admin-list-row__body' ).append( this.label.$el );
 			}
+			this.update_override_badge();
 			if ( this.model.get( 'active' ) == true || this.model.get( 'active' ) == 'true' ) this.edit();
 			return this;
 		},
 		update_label: function() {
 			this.label.render();
+		},
+		/**
+		 * Mark a choice that has overrides on this link (docs/global-layer-choice-overrides-spec.md),
+		 * so the few of 135 fabrics that differ can be read at a glance.
+		 */
+		update_override_badge: function() {
+			var overrides = PC.admin && PC.admin.choice_overrides;
+			var $body = this.$el.children( '.mkl-pc-admin-list-row__inner' ).children( '.mkl-pc-admin-list-row__body' );
+			$body.find( '.mkl-pc-override-badge' ).remove();
+			this.$el.removeClass( 'has-override' );
+			var $badge = overrides ? overrides.row_badge( this.model ) : null;
+			if ( ! $badge ) return;
+			this.$el.addClass( 'has-override' );
+			$body.append( $badge );
 		},
 		update_order: function( event, index, parent ) {
 			event.stopPropagation();
@@ -764,7 +802,12 @@ PC.views = PC.views || {};
 
 				// Reset is_default in the other choices
 				if ( 'is_default' == setting && new_val && 'simple' == this.layer.get( 'type' ) ) {
-					this.model.collection.invoke( 'set', { is_default: false } );
+					if ( PC.admin && PC.admin.choice_overrides && PC.admin.choice_overrides.is_link( this.model ) ) {
+						// On a link, the global defaults of the other choices are not its to change.
+						PC.admin.choice_overrides.clear_other_defaults( this.model );
+					} else {
+						this.model.collection.invoke( 'set', { is_default: false } );
+					}
 				}
 
 			} else if ( 'text' === event.currentTarget.type || 'textarea' === event.currentTarget.type ) {
@@ -804,7 +847,9 @@ PC.views = PC.views || {};
 		},
 		duplicate_choice: function() {
 			var new_choice = this.model.clone();
-			new_choice.set( '_id', PC.app.get_new_id( this.model.collection ) );
+			new_choice.set( '_id', PC.app.get_new_choice_id( this.layer, this.model.collection ) );
+			// The copy is a choice of its own: the original's overrides are not its.
+			new_choice.unset( 'overrides' );
 			new_choice.set( 'name', new_choice.get( 'name' ) + ' (Copy)' );
 			if ( new_choice.get( 'admin_label' ) ) {
 				new_choice.set( 'admin_label', new_choice.get( 'admin_label' ) + ' (Copy)' );
@@ -928,6 +973,11 @@ PC.views = PC.views || {};
 			// Disable inputs when locked (locked = not editing)
 			var inputs = this.$( '.setting input, .setting textarea, .setting select, .setting [type="checkbox"], .setting [type="radio"], .setting button' );
 			inputs.prop( 'disabled', ! is_editing );
+
+			// A link's fields each have an override switch, and an overridden one stays editable.
+			if ( PC.admin && PC.admin.choice_overrides ) {
+				PC.admin.choice_overrides.decorate_form( this, ! is_editing );
+			}
 		}
 	});
 

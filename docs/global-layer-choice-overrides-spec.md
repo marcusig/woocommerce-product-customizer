@@ -190,7 +190,8 @@ take a target: the layer model and its `overrides`, or a choice model and its en
   choice pickers and the angle image pickers opt in (`images` is one field: the whole set).
 - Translations follow their field (`PC_lang.choice_override_groups`, filter
   `mkl_pc_choice_override_groups`).
-- The choice list marks a choice that has overrides on this link (a badge on the row), so a link
+- The choice list marks a choice that has overrides on this link (a **Has overrides** badge on the
+  row; "This link only" is the field-level mark), so a link
   that changes a few of 135 fabrics can be read at a glance.
 
 Adding, deleting, reordering and grouping choices stay locked on a link: they change the global
@@ -222,7 +223,7 @@ to the global layer session. With choice overrides:
 
 - **In a product, outside "Edit original":** a linked layer's rows are editable, and an edit is an
   override. Changing a row's price switches on the override of the price fields the screen edits,
-  for that choice on that link, with the new value. The row shows **This link only**, and has an
+  for that choice on that link, with the new value. The row shows **Has overrides**, and has an
   action that switches the override off (the global price is back, and the link's value is kept,
   as with the form switch). A bulk action (`+10 %` on 40 selected fabrics) works the same way:
   one override per changed row.

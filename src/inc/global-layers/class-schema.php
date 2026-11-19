@@ -33,6 +33,14 @@ final class Schema {
 	const META_CONTENT = '_mkl_pc_content';
 
 	/**
+	 * CPT meta: the id the next choice added to the layer takes.
+	 *
+	 * Never decreases, so the id of a deleted choice is not given to another one: links keep
+	 * per-choice overrides keyed by choice id (docs/global-layer-choice-overrides-spec.md).
+	 */
+	const META_NEXT_CHOICE_ID = '_mkl_pc_next_choice_id';
+
+	/**
 	 * CPT meta: views snapshot the layer is edited against.
 	 */
 	const META_ANGLES = '_mkl_pc_angles';
