@@ -238,6 +238,8 @@ global edit from one link not leaking into the others, localize.
 - **B. Choice-level overrides**, for example a different price for the same fabric on the body
   than on the collar. *Decided 2026-11-09:* not now. The data has room for it later
   (`overrides.choices[ choiceId ]`), and the 2026-11-06 proposal had it as "maybe".
+  *Specified 2026-11-19* in [global-layer-choice-overrides-spec.md](global-layer-choice-overrides-spec.md),
+  stored on the content reference rather than here.
 - **C. A new link's name.** Two links named "Fabrics" in the layer list are confusing until one is
   renamed. *Decided 2026-11-09:* no automatic override (that would be a value nobody chose). The
   second link opens with the name switch **off**, and the name field says the layer is used N
