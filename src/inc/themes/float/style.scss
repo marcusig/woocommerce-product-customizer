@@ -655,6 +655,7 @@ $inner_space: 1em;
     bottom: 100%;
     left: 0;
     background: linear-gradient(to top, #ededed, #ededed00);
+	pointer-events: none;
 }
 
 .mkl_pc .mkl_pc_container .mkl_pc_bg.default-bg ~ .mkl_pc_toolbar section.choices.scrolled + .form::after {
