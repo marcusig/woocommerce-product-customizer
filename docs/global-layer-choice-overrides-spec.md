@@ -238,6 +238,10 @@ to the global layer session. With choice overrides:
   is not overridden changes nothing, so a plain round trip stays quiet. Locked rows are still
   reported only when the file would change them.
 - Undo goes back to the row's state before the action, override switch included.
+- **Option rows** (select and radio fields of the Form builder): an option's price and value live in
+  one `select_field_options` list, so editing one option's price overrides the whole list for the
+  link. Later global changes to that field's options (labels, new options) do not reach the link
+  until the override is switched off. *Decided 2026-11-20 (Marc):* accepted, no per-option override.
 
 The screen goes through the same choice-model API as the form switch (switch on, set value, switch
 off), so it has no override logic of its own.
