@@ -253,6 +253,7 @@ Open Source SVG icons:
 
 == Changelog ==
 
+* TWEAK: Global layers title to use Admin label, name or the post Title
 * TWEAK: Swipping views should not show a view hidden with Conditional logic
 
 = 2.2.1 - 18/Nov/2026 =
