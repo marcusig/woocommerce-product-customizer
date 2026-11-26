@@ -1432,8 +1432,11 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 			 */
 			do_action( 'mkl_pc_addons_tab_before' );
 			echo '<div class="mkl-pc-addons">';
+			$inactive_plugin_files = $this->get_inactive_addon_plugin_files();
 			foreach( $this->addons as $addon ) {
-				$this->display_addon( $addon, in_array( $addon->product_name, array_keys( $installed_addons ) ) );
+				$is_active   = in_array( $addon->product_name, array_keys( $installed_addons ) );
+				$plugin_file = ( ! $is_active && isset( $inactive_plugin_files[ $addon->product_name ] ) ) ? $inactive_plugin_files[ $addon->product_name ] : '';
+				$this->display_addon( $addon, $is_active, $plugin_file );
 			}
 			// $this->display_mkl_theme();
 			echo '</div>';
@@ -1457,13 +1460,43 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 		}
 
 		/**
+		 * Add-ons whose files are on disk but which are not active on this site.
+		 *
+		 * Add-on folders follow the woocommerce-mkl-pc-{product_name} convention.
+		 *
+		 * @return array Plugin file (relative to the plugins folder), keyed by product name.
+		 */
+		private function get_inactive_addon_plugin_files() {
+			if ( ! function_exists( 'get_plugins' ) ) require_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+			$plugin_files_by_folder = [];
+			foreach ( array_keys( get_plugins() ) as $plugin_file ) {
+				$folder = dirname( $plugin_file );
+				if ( '.' !== $folder && ! isset( $plugin_files_by_folder[ $folder ] ) ) {
+					$plugin_files_by_folder[ $folder ] = $plugin_file;
+				}
+			}
+
+			$inactive_plugin_files = [];
+			foreach ( (array) $this->addons as $addon ) {
+				$folder = 'woocommerce-mkl-pc-' . $addon->product_name;
+				if ( isset( $plugin_files_by_folder[ $folder ] ) && ! is_plugin_active( $plugin_files_by_folder[ $folder ] ) ) {
+					$inactive_plugin_files[ $addon->product_name ] = $plugin_files_by_folder[ $folder ];
+				}
+			}
+
+			return $inactive_plugin_files;
+		}
+
+		/**
 		 * Display a single addon
 		 *
 		 * @param object $addon
-		 * @param boolean $is_installed
+		 * @param boolean $is_installed Whether the add-on is active and registered.
+		 * @param string  $inactive_plugin_file Plugin file when the add-on is installed but not active.
 		 * @return void
 		 */
-		public function display_addon( $addon, $is_installed = false ) {
+		public function display_addon( $addon, $is_installed = false, $inactive_plugin_file = '' ) {
 		?>	
 			<div class="mkl-pc-addon<?php echo $is_installed ? ' installed' : ''; ?>">
 				<figure>
@@ -1491,6 +1524,12 @@ if ( ! class_exists('MKL\PC\Admin_Settings') ) {
 				$addon_actions = apply_filters( 'mkl_pc_addon_card_actions', '', $addon, $is_installed );
 				if ( $addon_actions ) :
 					echo $addon_actions; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup built by trusted callbacks.
+				elseif ( ! $is_installed && $inactive_plugin_file ) :
+					if ( current_user_can( 'activate_plugins' ) ) : ?>
+						<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'plugins.php?action=activate&plugin=' . rawurlencode( $inactive_plugin_file ) ), 'activate-plugin_' . $inactive_plugin_file ) ); ?>" class="button button-secondary button-large"><?php esc_html_e( 'Activate', 'product-configurator-for-woocommerce' ) ?></a>
+					<?php else : ?>
+						<p class="description"><?php esc_html_e( 'This add-on is installed but not active on this site.', 'product-configurator-for-woocommerce' ) ?></p>
+					<?php endif;
 				elseif ( ! $is_installed ) : ?>
 					<a href="<?php echo esc_url( $addon->product_url ) ?>" class="button button-primary button-large"><?php esc_html_e( 'Get the addon now', 'product-configurator-for-woocommerce' ) ?> <span class="dashicons dashicons-external"></span></a>
 				<?php elseif(isset($addon->doc_url) && $addon->doc_url):  ?>
